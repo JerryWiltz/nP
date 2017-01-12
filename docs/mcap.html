@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Microwave Computer Analysis and something else beginging with P</title> 
+    <link href="../styles/assert.css" rel="stylesheet" type="text/css">
+    <script type="text/javascript" src="js/Complex.js"></script>
+    <script type="text/javascript" src="js/Nport.js"></script>
+    <script type="text/javascript" src="js/Matrix.js"></script>
+  </head>
+  <body>
+    <script type="text/javascript">
+      document.write("This is indeed MCAP evolution!!" + "<br>");
+      
+      // Block 1 defines the network (Complex works)      
+      document.write("<br>");
+      document.write("Block 1 defines the network." + "<br>");
+            
+      var R1 = new Nport(430);
+      R1.shuntRspars();
+      document.write(R1.out() + "<br>");
+      
+      var R2 = new Nport(10);
+      R2.seriesRspars();
+      document.write(R2.out() + "<br>");
+      
+      var R3 = new Nport(430);
+      R3.shuntRspars();
+      document.write(R3.out() + "<br>");
+      
+      // Block 2 defines the 'Gamma', 'S', 'Gamma-S', and output Matrixes
+      document.write("<br>");
+      document.write("Block 2 defines the 'Gamma', 'S', 'Gamma-S', and output Matrixes." + "<br>");
+
+      //var M1 = createMxN(2,2);
+      //document.write(M1[0][0] + "<br>");
+      
+      //series 20 ohm resistor (this works, by the way!!)      
+      var A = [[-.166, -.833, 1, 0, 0],
+               [-.833, -.166, 0, 1, 0],
+               [    1,     0, 0, 0, 1],
+               [    0,     1, 0, 0, 0]];
+      
+      B = new Matrix(A);
+      B.gaussFwdBkElimination();
+      document.write(B.out() + "<br>");
+    
+      C = Array.createMxNxInitial(4,5,10);
+      document.write(C[3][4] + "<br>");
+      
+      D = Array.createMxNxInitial(4,5,7);
+      document.write(D[3][4] + "<br>" + "<br>");      
+      document.write("Matrix subtract" + "<br>");
+      E = new Matrix(C);
+      F = new Matrix(D);
+      G = new Matrix();
+      
+      G = E.sub(F);
+      document.write(G.out() + "<br>");
+      
+      // Block 3 will plot the output
+      document.write("<br>");
+      document.write("Block 3 will plot the output." + "<br>");
+      
+    </script>
+  </body>
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>3dB Pad</title> 
+    <link href="../styles/assert.css" rel="stylesheet" type="text/css">
+    <script type="text/javascript" src="js/mathHelper.js"></script>
+  </head>
+  <body>
+    <script type="text/javascript">
+      document.write("This is indeed complex variable gaussian elimination and back substitution." + "<br>");
+      //3dB pi pad comprized of 430 ohm parallel, 10 ohm series, and 430 ohm parallel resistors
+      
+      //Define terminations
+      var zo = 50;
+      var yo = 1/zo;
+      Zo = new Complex(zo,0);
+      Yo = new Complex(yo,0);
+      
+      for(var freq = 100; freq < 3100; freq = freq + 100) { // begin frequency loop
+      
+      //Need to compute parallel C s-pars C=3.2836374930057163e-12
+      R1 = new Complex(0,-1/(2 * Math.PI * freq * 1e6 * 3.2836374930057163e-12));
+      Y1 = Complex.Divide(new Complex(1,0),R1);
+      R1s11 = Complex.Divide(new Complex.negative(Y1),Complex.Add(Y1,Complex.Add(Yo,Yo)));
+      R1s21 = Complex.Divide(Complex.Multiply(new Complex(2,0), Yo), Complex.Add(Y1, Complex.Add(Yo, Yo)));
+      negR1s11 = Complex.Subtract(new Complex(0,0),R1s11);
+      negR1s21 = Complex.Subtract(new Complex(0,0),R1s21);
+      
+      //Need to compute series L s-pars L=9.130721710870328e-9
+      R2 = new Complex(0,2 * Math.PI * freq * 1e6 * 9.130721710870328e-9);
+      R2s11 = Complex.Divide(R2,Complex.Add(R2,Complex.Add(Zo, Zo)));
+      R2s21 = Complex.Divide(Complex.Multiply(new Complex(2,0), Zo), Complex.Add(R2, Complex.Add(Zo, Zo)));
+      negR2s11 = Complex.Subtract(new Complex(0,0),R2s11);
+      negR2s21 = Complex.Subtract(new Complex(0,0),R2s21);
+      
+      // define one and zero
+      one = new Complex(1,0);
+      zero = new Complex(0,0);
+      //                0         1        2          3         4         5     6    7     8 
+      var A = [[negR1s11, negR1s21,    zero,      zero,     zero,     zero, zero,  one, zero], //0
+               [negR1s21, negR1s11,     one,      zero,     zero,     zero, zero, zero, zero], //1
+               [    zero,      one, negR2s11, negR2s21,     zero,     zero, zero, zero, zero], //2
+               [    zero,     zero, negR2s21, negR2s11,      one,     zero, zero, zero, zero], //3
+               [    zero,     zero,     zero,      one, negR1s11, negR1s21, zero, zero, zero], //4
+               [    zero,     zero,     zero,     zero, negR1s21, negR1s11,  one, zero, zero], //5
+               [    zero,     zero,     zero,     zero,     zero,      one, zero, zero, zero], //6
+               [     one,     zero,     zero,     zero,     zero,     zero, zero, zero, one]]; //7
+      
+      var numRows = A.length;
+      var numCols = A[0].length;
+
+      // Complex variable forward Elimination routine
+      for(var constRow = 0; constRow < numRows; constRow++) { // this row stays the same
+        for(var row = constRow+1; row < numRows; row++) { // this row moves down
+          //var a = -A[row][constRow]/A[constRow][constRow]; // this computes "a"
+          var a = new Complex.negative(Complex.Divide(A[row][constRow],A[constRow][constRow]));
+            for(var col = constRow; col < numCols; col++) { // this sweeps across the columns
+              //A[row][col] = A[row][col] + a*A[constRow][col];
+              A[row][col] = Complex.Add(A[row][col] , Complex.Multiply(a,A[constRow][col]));
+            }
+        }
+      }
+     
+      // Complex back substitution routine      
+      for(var row = numRows -1; row > -1; row--) {
+      //var accum = 0;
+      var accum = new Complex(0,0);
+        for(var col = numRows -1; col > row; col--) {
+        //accum = accum + A[row][col]*A[col][numCols -1];
+        accum = Complex.Add(accum, Complex.Multiply(A[row][col], A[col][numCols -1]));  
+        }
+      //A[row][numCols -1] = (1/A[row][row]) * (A[row][numCols -1] - accum);
+      A[row][numCols -1] = Complex.Multiply(Complex.Divide(new Complex(1,0),A[row][row]), Complex.Subtract(A[row][numCols -1], accum));
+      }
+      
+      // print out the final answer
+      document.write(freq  + " MHz____" +  (20*Math.log10(A[7][8].magnitude())).toFixed(2) + " dB____" + (20*Math.log10(A[6][8].magnitude())).toFixed(2) + " dB" + "<br>");
+     
+      }// end frequency loop 
+        
+/*         
+      // print out the updated matrix
+      for(var row = 0; row < numRows; row++) {
+        for( col = 0; col < numCols; col++) {
+          document.write( A[row][col].getRe().toFixed(6) + "____");
+        }
+        document.write("<br>");
+      }
+*/      
+     
+    </script>
+  </body>
+</html>

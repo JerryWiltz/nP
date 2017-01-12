@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>ShuntAdmittanceSpar</title> 
+    <link href="../styles/assert.css" rel="stylesheet" type="text/css">
+    <script type="text/javascript" src="js/mathHelper.js"></script>
+  </head>
+  <body>
+    <script type="text/javascript">
+      document.write("This is indeed ShuntAdmittanceSpar." + "<br>");
+      
+      s = new Complex(2,3);
+      //r = new Complex.negative(s);
+      y = Complex.Add(new Complex.negative(s),new Complex.negative(s));
+      //s11= Complex.Divide(Y1.negative(),Complex.Add(Y1,Complex.Add(Yo,Yo)));
+      
+     
+      
+      document.write(y.getRe() +"<br>");
+      document.write(y.getIm() +"<br>");
+      
+      //document.write(r.getRe() +"<br>");
+      //document.write(r.getIm() +"<br>");
+      
+      document.write(s.getRe() +"<br>");
+      document.write(s.getIm() +"<br>");
+      
+    </script>
+  </body>
+</html>
