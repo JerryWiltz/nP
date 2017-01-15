@@ -5,7 +5,7 @@ lowPass(1.0, 1.5, 0.1, 30);
 
 // Outer function to compute the low pass chebyshev filter prototype
 // It is taken from Matthaei, Young, and Jones (MYJ)
-function lowPass(fCuttoff, fRejection, dBRipple, dBRejection) {
+function lowPass(maxPassFreq, minRejFreq, passbandRipple,  rejLevel) {
   
   var Table;
   
@@ -13,12 +13,12 @@ function lowPass(fCuttoff, fRejection, dBRipple, dBRejection) {
   
       // Inner function of lowPass() that computed the w/w1 in MYJ on page 86
     function normalizedBandwidth() {
-      return fRejection/fCuttoff;
+      return minRejFreq/maxPassFreq;
     }
   
     // Inner function of lowPass() that computes the formula 4.03-5 on page 87  
       function epsilon() { 
-    return Math.pow(10,(dBRipple/10))-1;
+    return Math.pow(10,(passbandRipple/10))-1;
     }
   
     // Inner function of lowPass() that computes the number of sections, n, in a filter. Solve formula 4.03-4 for n on page 86
@@ -26,7 +26,7 @@ function lowPass(fCuttoff, fRejection, dBRipple, dBRejection) {
     
         // Inner and helper function of n() to compute the arcCosh, verified that arcCosh(1.3) = 0.76543
         function arcCosh(x) {return Math.log(x + Math.sqrt((x * x)-1));}
-        //return Math.ceil(arcCosh(Math.sqrt((Math.pow(10,(dBRejection/10))-1)/epsilon(dBRipple)))/arcCosh(normalizedBandwidth(fCuttoff, fRejection)));
+        //return Math.ceil(arcCosh(Math.sqrt((Math.pow(10,(  rejLevel/10))-1)/epsilon(passbandRipple)))/arcCosh(normalizedBandwidth(maxPassFreq, minRejFreq)));
       return 3;
     
     }
@@ -41,7 +41,7 @@ function lowPass(fCuttoff, fRejection, dBRipple, dBRejection) {
       // Inner and helper function of gk() to compute the cosh(x)
       function coth(x) {return (Math.exp(x) + Math.exp(-x))/(Math.exp(x) - Math.exp(-x));}
       // Inner and helper function of gk() compute the B(x) on page 99
-      function B() {return Math.log(coth(dBRipple/17.37));}
+      function B() {return Math.log(coth(passbandRipple/17.37));}
       // Inner and helper function of gk() cumpute sinh(x)
       function sinh(x) {return (Math.exp(x) - Math.exp(-x))/2;}
       // Inner and helper function of gk() compute G() on page 99

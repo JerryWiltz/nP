@@ -9,7 +9,32 @@
 	<script type="text/javascript" src="lowPassFilter.js"></script>
   </head>
   <body>
-    <script>
-    </script>
+<table>
+  <tr><th>Enter Filter Data</th>
+    <td></td>
+    <th>Future area for frequency reponse plot</th></tr>
+  <tr><td>Max Pass Freq (GHz):</td>
+    <td><input id="amount" onchange="calculate();"></td>
+    <td rowspan=8>
+      <canvas id="graph" width="500" height="250">Put this in a canvas</canvas></td></tr>
+  <tr><td>Min Rej Fre (GHz):</td>
+      <td><input id="apr" onchange="calculate();"></td>
+  <tr><td>Passband Ripple (dB):</td>
+      <td><input id="years" onchange="calculate();"></td>
+  <tr><td>Rej Level(dB):</td>
+      <td><input id="zipcode" onchange="calculate();"></td>
+  <tr><td>Normalized BW (w/w1):</td>
+      <td><button onclick="calculate();">Calculate</button></td></tr>
+  <tr><td>Number of Sections (n):</td>
+      <td>$<span class="output" id="payment"></span></td></tr>
+  <tr><td>Total Payment:</td>
+      <td>$<span class="output" id="total"></span></td></tr>
+  <tr><td>Total Interest:</td>
+      <td>$<span class="output" id="totalinterest"></span></td></tr>
+  <tr><th>Sponsors:</th><td colspan=2>
+      Apply for your loan with one of these fine lenders:
+      <div id="lenders"></div></td></tr>
+</table 
+    
   </body>
 </html>
