@@ -6,29 +6,29 @@
     <script type="text/javascript" src="js/Complex.js"></script>
     <script type="text/javascript" src="js/Nport.js"></script>
     <script type="text/javascript" src="js/matrix.js"></script>
-	<script type="text/javascript" src="lowPassFilter.js"></script>
+	<script type="text/javascript" src="js/lowPass.js"></script>
   </head>
   <body>
 <table>
-  <tr><th>Enter Filter Data</th>
+  <tr><th>Enter Low Pass Data</th>
     <td></td>
     <th>Future area for frequency reponse plot</th></tr>
   <tr><td>Max Pass Freq (GHz):</td>
-    <td><input id="amount" onchange="calculate();"></td>
+    <td><input id="maxPassFreq" onchange="calculate();"></td>
     <td rowspan=8>
       <canvas id="graph" width="500" height="250">Put this in a canvas</canvas></td></tr>
-  <tr><td>Min Rej Fre (GHz):</td>
-      <td><input id="apr" onchange="calculate();"></td>
+  <tr><td>Min Rej Freq (GHz):</td>
+      <td><input id="minRejFreq" onchange="lowPass();"></td>
   <tr><td>Passband Ripple (dB):</td>
-      <td><input id="years" onchange="calculate();"></td>
+      <td><input id="passbandRipple" onchange="lowPass();"></td>
   <tr><td>Rej Level(dB):</td>
-      <td><input id="zipcode" onchange="calculate();"></td>
-  <tr><td>Normalized BW (w/w1):</td>
-      <td><button onclick="calculate();">Calculate</button></td></tr>
+      <td><input id="rejLevel" onchange="lowPass();"></td>
+  <tr><td>Generate BW - Sections:</td>
+      <td><button onclick="lowPass();">BW - Sections </button></td></tr>
+  <tr><td>w/w1:</td>
+      <td>$<span class="output" id="w"></span></td></tr>
   <tr><td>Number of Sections (n):</td>
-      <td>$<span class="output" id="payment"></span></td></tr>
-  <tr><td>Total Payment:</td>
-      <td>$<span class="output" id="total"></span></td></tr>
+      <td>$<span class="output" id="n"></span></td></tr>
   <tr><td>Total Interest:</td>
       <td>$<span class="output" id="totalinterest"></span></td></tr>
   <tr><th>Sponsors:</th><td colspan=2>

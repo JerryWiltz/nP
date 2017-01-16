@@ -1,11 +1,20 @@
 // This is a script to compute the low pass chebyshev filter prototype
 // It is taken from Matthaei, Young, and Jones (MYJ)
 
-lowPass(1.0, 1.5, 0.1, 30);
+//lowPass(1.0, 1.5, 0.1, 30);
 
 // Outer function to compute the low pass chebyshev filter prototype
 // It is taken from Matthaei, Young, and Jones (MYJ)
-function lowPass(maxPassFreq, minRejFreq, passbandRipple,  rejLevel) {
+//function lowPass(maxPassFreq, minRejFreq, passbandRipple, rejLevel) {
+function lowPass() {
+    // input elements
+  var maxPassFreq = document.getElementById("maxPassFreq");
+  var minRejFreq = document.getElementById("minRejFreq");
+  var passbandRipple = document.getElementById("passbandRipple");
+  var rejLevel = document.getElementById("rejLevel");
+  
+
+  
   
   var Table;
   
@@ -15,7 +24,7 @@ function lowPass(maxPassFreq, minRejFreq, passbandRipple,  rejLevel) {
     function normalizedBandwidth() {
       return minRejFreq/maxPassFreq;
     }
-  
+	
     // Inner function of lowPass() that computes the formula 4.03-5 on page 87  
       function epsilon() { 
     return Math.pow(10,(passbandRipple/10))-1;
@@ -27,10 +36,17 @@ function lowPass(maxPassFreq, minRejFreq, passbandRipple,  rejLevel) {
         // Inner and helper function of n() to compute the arcCosh, verified that arcCosh(1.3) = 0.76543
         function arcCosh(x) {return Math.log(x + Math.sqrt((x * x)-1));}
         //return Math.ceil(arcCosh(Math.sqrt((Math.pow(10,(  rejLevel/10))-1)/epsilon(passbandRipple)))/arcCosh(normalizedBandwidth(maxPassFreq, minRejFreq)));
-      return 3;
+      return n = 3;
     
     }
+	
+}
 
+    //Fill in the output fields, rounding to 2 decimal places
+    w.innerHTML = normalizedBandwidth().toFixed(2);
+    n.innerHTML = n().toFixed(2);
+	
+/*
     // Inner function of LowPass() that computes all the gk's shown in formula 4.05-2 on page 99
     function gk() {
       // Create lowPassTable to hold ak, bk, and gk based on n()
@@ -96,6 +112,7 @@ function lowPass(maxPassFreq, minRejFreq, passbandRipple,  rejLevel) {
       document.write( Table[row][0] +"    "+ Table[row][1] +"    "+ Table[row][2] +"    "+ Table[row][3] +"<br>");    
       }  
 }
+*/
 
 /*
 var testArray = new Array(2);
@@ -105,7 +122,7 @@ testArray[0].setIm(5);
 testArray[1] = new Complex(45, 55);
 
 document.write(testArray[1].getIm());
-*/
+
 
 Rin = new Complex(50,0); 
 Rload = new Complex(50,0);
@@ -119,3 +136,5 @@ document.write(s11.magnitude()+"<br>");
 document.write(s11.angle()*(180.0/Math.PI)+"<br>");
 document.write(s21.magnitude()+"<br>");
 document.write(s21.angle()*(180.0/Math.PI)+"<br>");
+
+*/
