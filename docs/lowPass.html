@@ -14,7 +14,7 @@
     <td></td>
     <th>Future area for frequency reponse plot</th></tr>
   <tr><td>Max Pass Freq (GHz):</td>
-    <td><input id="maxPassFreq" onchange="calculate();"></td>
+    <td><input id="maxPassFreq" onchange="lowPass();"></td>
     <td rowspan=8>
       <canvas id="graph" width="500" height="250">Put this in a canvas</canvas></td></tr>
   <tr><td>Min Rej Freq (GHz):</td>
@@ -24,13 +24,13 @@
   <tr><td>Rej Level(dB):</td>
       <td><input id="rejLevel" onchange="lowPass();"></td>
   <tr><td>Generate BW - Sections:</td>
-      <td><button onclick="lowPass();">BW - Sections </button></td></tr>
+      <td><button onclick="lowPass();">Calc Sections </button></td></tr>
   <tr><td>w/w1:</td>
-      <td>$<span class="output" id="w"></span></td></tr>
+      <td><span class="output" id="w"></span></td></tr>
   <tr><td>Number of Sections (n):</td>
-      <td>$<span class="output" id="n"></span></td></tr>
+      <td><span class="output" id="n"></span></td></tr>
   <tr><td>Total Interest:</td>
-      <td>$<span class="output" id="totalinterest"></span></td></tr>
+      <td><span class="output" id="totalinterest"></span></td></tr>
   <tr><th>Sponsors:</th><td colspan=2>
       Apply for your loan with one of these fine lenders:
       <div id="lenders"></div></td></tr>

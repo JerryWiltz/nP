@@ -1,50 +1,35 @@
 // This is a script to compute the low pass chebyshev filter prototype
 // It is taken from Matthaei, Young, and Jones (MYJ)
 
-//lowPass(1.0, 1.5, 0.1, 30);
 
 // Outer function to compute the low pass chebyshev filter prototype
-// It is taken from Matthaei, Young, and Jones (MYJ)
-//function lowPass(maxPassFreq, minRejFreq, passbandRipple, rejLevel) {
+// From book, Matthaei, Young, and Jones (MYJ)
 function lowPass() {
-    // input elements
-  var maxPassFreq = document.getElementById("maxPassFreq");
-  var minRejFreq = document.getElementById("minRejFreq");
-  var passbandRipple = document.getElementById("passbandRipple");
-  var rejLevel = document.getElementById("rejLevel");
-  
+  // input elements
+	var maxPassFreq = parseFloat((document.getElementById("maxPassFreq")).value);
+	var minRejFreq = parseFloat((document.getElementById("minRejFreq")).value);
+	var passbandRipple = parseFloat((document.getElementById("passbandRipple")).value);
+	var rejLevel = parseFloat((document.getElementById("rejLevel")).value);
+   
+	var Table;
 
-  
-  
-  var Table;
-  
-// All the inner functions have access to the outer function scope and parameters
-  
-      // Inner function of lowPass() that computed the w/w1 in MYJ on page 86
+     // Computes the w/w1 in MYJ on page 86
     function normalizedBandwidth() {
-      return minRejFreq/maxPassFreq;
+		return minRejFreq/maxPassFreq;
+    }
+
+    // Computes the number of sections, n, in a filter. Solve formula 4.03-4 for n on page 86
+    function numberSections() {
+		function epsilon() { return Math.pow(10,(passbandRipple/10))-1;} // Computes the formula 4.03-5 on page 87
+		function arcCosh(x) {return Math.log(x + Math.sqrt((x * x)-1));}
+        return Math.ceil(arcCosh(Math.sqrt((Math.pow(10,(rejLevel/10))-1)/epsilon(passbandRipple)))/arcCosh(normalizedBandwidth(maxPassFreq, minRejFreq)));    
     }
 	
-    // Inner function of lowPass() that computes the formula 4.03-5 on page 87  
-      function epsilon() { 
-    return Math.pow(10,(passbandRipple/10))-1;
-    }
-  
-    // Inner function of lowPass() that computes the number of sections, n, in a filter. Solve formula 4.03-4 for n on page 86
-    function n() {
-    
-        // Inner and helper function of n() to compute the arcCosh, verified that arcCosh(1.3) = 0.76543
-        function arcCosh(x) {return Math.log(x + Math.sqrt((x * x)-1));}
-        //return Math.ceil(arcCosh(Math.sqrt((Math.pow(10,(  rejLevel/10))-1)/epsilon(passbandRipple)))/arcCosh(normalizedBandwidth(maxPassFreq, minRejFreq)));
-      return n = 3;
-    
-    }
-	
+    //Fill in the output fields, rounding to 2 decimal places;
+	w.innerHTML = normalizedBandwidth().toFixed(2);
+    n.innerHTML = numberSections().toFixed(0);
 }
 
-    //Fill in the output fields, rounding to 2 decimal places
-    w.innerHTML = normalizedBandwidth().toFixed(2);
-    n.innerHTML = n().toFixed(2);
 	
 /*
     // Inner function of LowPass() that computes all the gk's shown in formula 4.05-2 on page 99
@@ -110,9 +95,10 @@ function lowPass() {
     // Print ak's, bk's, and gk's
     for(var row = 0; row < Table.length; row++) {
       document.write( Table[row][0] +"    "+ Table[row][1] +"    "+ Table[row][2] +"    "+ Table[row][3] +"<br>");    
-      }  
-}
-*/
+      } 
+*/	  
+
+
 
 /*
 var testArray = new Array(2);
