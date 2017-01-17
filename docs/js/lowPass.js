@@ -12,41 +12,35 @@ function lowPass() {
 	var rejLevel = parseFloat((document.getElementById("rejLevel")).value);
    
 	var Table;
-
-     // Computes the w/w1 in MYJ on page 86
-    function normalizedBandwidth() {
+     
+    function normalizedBandwidth() { // Computes the w/w1 in MYJ on page 86 of MYJ
 		return minRejFreq/maxPassFreq;
     }
-
-    // Computes the number of sections, n, in a filter. Solve formula 4.03-4 for n on page 86
-    function numberSections() {
-		function epsilon() { return Math.pow(10,(passbandRipple/10))-1;} // Computes the formula 4.03-5 on page 87
+    
+    function numberSections() { // Formula 4.03-4 for n on page 86 of MYJ
+		function epsilon() { return Math.pow(10,(passbandRipple/10))-1;} // Formula 4.03-5 on page 87 on MYJ
 		function arcCosh(x) {return Math.log(x + Math.sqrt((x * x)-1));}
-        return Math.ceil(arcCosh(Math.sqrt((Math.pow(10,(rejLevel/10))-1)/epsilon(passbandRipple)))/arcCosh(normalizedBandwidth(maxPassFreq, minRejFreq)));    
+        return Math.ceil(arcCosh(Math.sqrt((Math.pow(10,(rejLevel/10))-1)/epsilon(passbandRipple)))/arcCosh(normalizedBandwidth(maxPassFreq, minRejFreq)));
+		//return 3;
     }
 	
-    //Fill in the output fields, rounding to 2 decimal places;
+    //Fill in the output fields
 	w.innerHTML = normalizedBandwidth().toFixed(2);
     n.innerHTML = numberSections().toFixed(0);
-}
-
 	
-/*
-    // Inner function of LowPass() that computes all the gk's shown in formula 4.05-2 on page 99
-    function gk() {
-      // Create lowPassTable to hold ak, bk, and gk based on n()
-      var lowPassTable = new Array(1 + n() + 1);  // corresponds with g0 + gk + g(k+1)
-      for(var i = 0; i < lowPassTable.length; i++)
-        lowPassTable[i] = new Array(4); // Each row has 4 columns:ak, bk, gk, and R,C,L's
-          
-      // Inner and helper function of gk() to compute the cosh(x)
-      function coth(x) {return (Math.exp(x) + Math.exp(-x))/(Math.exp(x) - Math.exp(-x));}
-      // Inner and helper function of gk() compute the B(x) on page 99
-      function B() {return Math.log(coth(passbandRipple/17.37));}
-      // Inner and helper function of gk() cumpute sinh(x)
-      function sinh(x) {return (Math.exp(x) - Math.exp(-x))/2;}
-      // Inner and helper function of gk() compute G() on page 99
-      function G() {return sinh(B()/(2 * n()));}
+	// Save to the local browser
+	save(maxPassFreq, minRejFreq, passbandRipple, rejLevel);	
+    
+    function gk() { // Computes gk's shown in formula 4.05-2 on page 99 of MYJ
+		// Create table "lowPassTable" to hold ak, bk, and gk based on numberSections()
+		var lowPassTable = new Array(1 + numberSections() + 1);  // corresponds with g0 + gk + g(k+1)
+		for(var i = 0; i < lowPassTable.length; i++)
+			lowPassTable[i] = new Array(4); // Each row has 4 columns:ak, bk, gk, and R,C,L's
+
+		function coth(x) {return (Math.exp(x) + Math.exp(-x))/(Math.exp(x) - Math.exp(-x));}	
+		function B() {return Math.log(coth(passbandRipple/17.37));} // B(x) on page 99 of MYJ
+		function sinh(x) {return (Math.exp(x) - Math.exp(-x))/2;}
+		function G() {return sinh(B()/(2 * numberSections()));} // Compute G() on page 99 of MYJ
       
       // Initialize the lowPassFilter array
       //lowPassTable[0][0] for g0=1;
@@ -54,12 +48,12 @@ function lowPass() {
       
       // Populate the ak column
       for(var row = 1; row < lowPassTable.length -1; row++) {
-        lowPassTable[row][0] = Math.sin(((2 * row - 1) * Math.PI)/(2 * n()) );    
+        lowPassTable[row][0] = Math.sin(((2 * row - 1) * Math.PI)/(2 * numberSections()) );    
       }
       
       // Populate the bk column
       for(var row = 1; row < lowPassTable.length -1; row++) {
-        lowPassTable[row][1] = Math.pow(G(),2) + Math.pow(Math.sin(row * Math.PI/n()),2);    
+        lowPassTable[row][1] = Math.pow(G(),2) + Math.pow(Math.sin(row * Math.PI/numberSections()),2);    
       }
       
       // populate the first q1 in the cell
@@ -71,7 +65,7 @@ function lowPass() {
       }
       
       // Populate the last g(k+1) in the cell
-      lowPassTable[n()+1][2] = (n() % 2 === 0 ) ? Math.pow(coth(B()/4),2) : 1 ;
+      lowPassTable[numberSections()+1][2] = (numberSections() % 2 === 0 ) ? Math.pow(coth(B()/4),2) : 1 ;
       
       // Populate the first resistor in the cell
       lowPassTable[0][3] = lowPassTable[0][2] * 50;
@@ -82,10 +76,10 @@ function lowPass() {
       }      
            
       // Populate the last resistor in the cell
-      lowPassTable[n()+1][3] = lowPassTable[n()+1][2] * 50;      
+      lowPassTable[numberSections()+1][3] = lowPassTable[numberSections()+1][2] * 50;      
       
       
-      //return lowPassTable[n()+1][2];
+      //return lowPassTable[numberSections()+1][2];
       return lowPassTable;
       
     }
@@ -93,10 +87,14 @@ function lowPass() {
     Table = gk();
   
     // Print ak's, bk's, and gk's
-    for(var row = 0; row < Table.length; row++) {
-      document.write( Table[row][0] +"    "+ Table[row][1] +"    "+ Table[row][2] +"    "+ Table[row][3] +"<br>");    
-      } 
-*/	  
+    //for(var row = 1; row < Table.length -1; row++) { // this worked
+		//document.write( Table[row][0] +"    "+ Table[row][1] +"    "+ Table[row][2] +"    "+ Table[row][3] +"<br>"); this worked
+		//document.write( Table[row][3] +"<br>"); // this worked
+		//var testOut = 
+		//filterElements.innerHTML = Table[row][3].toString() + "<br>";
+		filterElements.innerHTML = "<p>this a test test<br>this is the next line<br>this is the line after that</p>"
+     // } 
+}	  
 
 
 
@@ -124,3 +122,22 @@ document.write(s21.magnitude()+"<br>");
 document.write(s21.angle()*(180.0/Math.PI)+"<br>");
 
 */
+
+function save(maxPassFreq, minRejFreq, passbandRipple, rejLevel) {
+  if(window.localStorage) {
+    localStorage.maxPassFreq = maxPassFreq;
+    localStorage.minRejFreq = minRejFreq;
+    localStorage.passbandRipple = passbandRipple;
+    localStorage.rejLevel = rejLevel;
+  }
+}
+
+// Automatically attempt to restore the input fields when the document first loads.
+window.onload = function () {
+  if(window.localStorage && localStorage.maxPassFreq) {
+  document.getElementById("maxPassFreq").value = localStorage.maxPassFreq;
+  document.getElementById("minRejFreq").value = localStorage.minRejFreq;
+  document.getElementById("passbandRipple").value = localStorage.passbandRipple;
+  document.getElementById("rejLevel").value = localStorage.rejLevel;
+  }
+}

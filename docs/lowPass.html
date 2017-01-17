@@ -9,6 +9,7 @@
 	<script type="text/javascript" src="js/lowPass.js"></script>
   </head>
   <body>
+  
 <table>
   <tr><th>Enter Low Pass Data</th>
     <td></td>
@@ -23,17 +24,17 @@
       <td><input id="passbandRipple" onchange="lowPass();"></td>
   <tr><td>Rej Level(dB):</td>
       <td><input id="rejLevel" onchange="lowPass();"></td>
-  <tr><td>Generate BW - Sections:</td>
-      <td><button onclick="lowPass();">Calc Sections </button></td></tr>
+  <tr><td>Press to Calculate:</td>
+      <td><button onclick="lowPass();">Calculate</button></td></tr>
   <tr><td>w/w1:</td>
       <td><span class="output" id="w"></span></td></tr>
   <tr><td>Number of Sections (n):</td>
       <td><span class="output" id="n"></span></td></tr>
-  <tr><td>Total Interest:</td>
-      <td><span class="output" id="totalinterest"></span></td></tr>
-  <tr><th>Sponsors:</th><td colspan=2>
+  <tr><td>Filter Elements:</td>
+      <td><p class="output" id="filterElements"></p></td></tr>
+  <!--<tr><th>Sponsors:</th><td colspan=2>
       Apply for your loan with one of these fine lenders:
-      <div id="lenders"></div></td></tr>
+      <div id="lenders"></div></td></tr> -->
 </table 
     
   </body>
