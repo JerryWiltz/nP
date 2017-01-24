@@ -11,7 +11,6 @@ function lowPass() {
 	var passbandRipple = parseFloat((document.getElementById("passbandRipple")).value);
 	var rejLevel = parseFloat((document.getElementById("rejLevel")).value);
 
-   
 	var Table;
 	
 	var lcLumpedComponentTextout = ""; // The text variable for the innerHTML below

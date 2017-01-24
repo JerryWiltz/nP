@@ -1,52 +1,68 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>MCAP</title> 
-    <link href="../styles/assert.css" rel="stylesheet" type="text/css">
-    <script type="text/javascript" src="js/Complex.js"></script>
+    <title>MCAP PI-Attenutor Example</title> 
+    <link href="css/assert.css" rel="stylesheet" type="text/css">
+    <script type="text/javascript" src="js/assert.js"></script>
+	<script type="text/javascript" src="js/Complex.js"></script>
     <script type="text/javascript" src="js/Nport.js"></script>
     <script type="text/javascript" src="js/matrix.js"></script>
   </head>
   <body>
-    <script type="text/javascript">
-      document.write("This is indeed MCAP evolution!!" + "<br>");
+	<script type="text/javascript">
+	document.write("This is indeed MCAP evolution!!" + "<br>");
       
-      // Block 1 defines the network (Complex works)      
-      document.write("<br>");
-      document.write("Block 1 defines the network." + "<br>");
+	// Block 1 defines the network (Complex works)      
+	document.write("<br>");
+	document.write("Block 1 defines the network." + "<br>");
             
-      var R1 = new Nport(430);
-      R1.shuntRspars();
-      document.write(R1.out() + "<br>");
-      
-      var R2 = new Nport(10);
-      R2.seriesRspars();
-      document.write(R2.out() + "<br>");
-      
-      var R3 = new Nport(430);
-      R3.shuntRspars();
-      document.write(R3.out() + "<br>");
-      
-      // Block 2 defines the 'Gamma', 'S', 'Gamma-S', and output Matrixes
-      document.write("<br>");
-      document.write("Block 2 defines the 'Gamma', 'S', 'Gamma-S', and output Matrixes." + "<br>");
+	var R1 = new Nport();// Nport spars are [s11, s21, s12, s22]
+	R1.shuntRspars(430); // Shunt spars are [0.054945054945054944, 0.9450549450549449, 0.9450549450549449, 0.054945054945054944]
+	document.write(R1.spars[1].mag() + "<br>");
 
-      //var M1 = createMxN(2,2);
-      //document.write(M1[0][0] + "<br>");
+	var R2 = new Nport();
+	R2.seriesRspars(10); // Series spars are [0.0909090909090909, 0.9090909090909091, 0.9090909090909091, 0.0909090909090909]
+	document.write(R2.spars[1].mag() + "<br>");
       
-      //series 20 ohm resistor (this works, by the way!!)      
-      var A = [[-.166, -.833, 1, 0, 0],
-               [-.833, -.166, 0, 1, 0],
-               [    1,     0, 0, 0, 1],
-               [    0,     1, 0, 0, 0]];
-      
-      B = new Matrix(A);
-      B.gaussFwdBkElimination();
-      document.write(B.out() + "<br>");
-    
-      C = Array.createMxNxInitial(4,5,10);
-      document.write(C[3][4] + "<br>");
-      
+	var R3 = new Nport();
+	R3.shuntRspars(430); // Shunt spars are [0.054945054945054944, 0.9450549450549449, 0.9450549450549449, 0.054945054945054944]
+	document.write(R3.spars[1].neg().getR() + "<br>"); // .neg().getR() works, I get -0.945...
+
+	// Block 2 defines the 'Gamma', 'S', 'Gamma-S', and output Matrixes
+	// PI-Attenuator spars are [0.0142851, 0.8058717, 0.8058717, 0.0142851]
+	document.write("<br>");
+	document.write("Block 2 defines the 'Gamma', 'S', 'Gamma-S', and output Matrixes." + "<br>");
+	
+	one = new Complex(1,0);
+	zero = new Complex(0,0);
+
+	//                    0                  1                  2                  3                  4                  5     6     7      8 
+	var B =[[R1.spars[0].neg(), R1.spars[2].neg(),              zero,              zero,              zero,              zero, zero,  one, zero], //0
+			[R1.spars[1].neg(), R1.spars[3].neg(),               one,              zero,              zero,              zero, zero, zero, zero], //1
+			[             zero,               one, R2.spars[0].neg(), R2.spars[2].neg(),              zero,              zero, zero, zero, zero],//2
+			[             zero,              zero, R2.spars[1].neg(), R2.spars[3].neg(),               one,              zero, zero, zero, zero], //3
+			[             zero,              zero,              zero,               one, R3.spars[0].neg(), R3.spars[2].neg(), zero, zero, zero], //4
+			[             zero,              zero,              zero,              zero, R3.spars[1].neg(), R3.spars[3].neg(),  one, zero, zero], //5
+			[             zero,              zero,              zero,              zero,              zero,               one, zero, zero,  one], //6  [6][8] is S11  
+			[              one,              zero,              zero,              zero,              zero,              zero, zero, zero, zero]];//7  [7][8] is S21
+	
+	var OutMatrixB = gaussFwdBkEliminationCmplx(B);
+	document.write(OutMatrixB[6][8].mag() + "<br>"); //s11 = 0.014208507670850776 or -36.9 dB
+	document.write(OutMatrixB[7][8].mag() + "<br>"); //s21 = 0.8058751743375173   or -1.87 dB
+
+	var C =[[R1.spars], 
+			[R2.spars],
+			[R3.spars]]; // C[0][0].length = 4, C[1][0].length = 4, C[2][0].length = 4
+
+	document.write("<br>");
+	document.write(  33 + "<br>");	
+	document.write(C[2][0].length + "<br>");			
+			
+/* 	
+   
+      C = dimMatrix(8,9,new Complex(0, 0));
+      document.write(C[3][4].getI() + "<br>");
+     
       D = Array.createMxNxInitial(4,5,7);
       document.write(D[3][4] + "<br>" + "<br>");      
       document.write("Matrix subtract" + "<br>");
@@ -60,7 +76,7 @@
       // Block 3 will plot the output
       document.write("<br>");
       document.write("Block 3 will plot the output." + "<br>");
-      
+*/      
     </script>
   </body>
 </html>
