@@ -18,15 +18,15 @@
             
 	var R1 = new Nport();// Nport spars are [s11, s21, s12, s22]
 	R1.shuntRspars(430); // Shunt spars are [0.054945054945054944, 0.9450549450549449, 0.9450549450549449, 0.054945054945054944]
-	document.write(R1.spars[1].mag() + "<br>");
+	document.write(R1.spars[0][0].mag() + "<br>");
 
 	var R2 = new Nport();
 	R2.seriesRspars(10); // Series spars are [0.0909090909090909, 0.9090909090909091, 0.9090909090909091, 0.0909090909090909]
-	document.write(R2.spars[1].mag() + "<br>");
+	document.write(R2.spars[1][0].mag() + "<br>");
       
 	var R3 = new Nport();
 	R3.shuntRspars(430); // Shunt spars are [0.054945054945054944, 0.9450549450549449, 0.9450549450549449, 0.054945054945054944]
-	document.write(R3.spars[1].neg().getR() + "<br>"); // .neg().getR() works, I get -0.945...
+	document.write(R3.spars[1][0].neg().getR() + "<br>"); // .neg().getR() works, I get -0.945...
 
 	// Block 2 defines the 'Gamma', 'S', 'Gamma-S', and output Matrixes
 	// PI-Attenuator spars are [0.0142851, 0.8058717, 0.8058717, 0.0142851]
@@ -37,46 +37,56 @@
 	zero = new Complex(0,0);
 
 	//                    0                  1                  2                  3                  4                  5     6     7      8 
-	var B =[[R1.spars[0].neg(), R1.spars[2].neg(),              zero,              zero,              zero,              zero, zero,  one, zero], //0
-			[R1.spars[1].neg(), R1.spars[3].neg(),               one,              zero,              zero,              zero, zero, zero, zero], //1
-			[             zero,               one, R2.spars[0].neg(), R2.spars[2].neg(),              zero,              zero, zero, zero, zero],//2
-			[             zero,              zero, R2.spars[1].neg(), R2.spars[3].neg(),               one,              zero, zero, zero, zero], //3
-			[             zero,              zero,              zero,               one, R3.spars[0].neg(), R3.spars[2].neg(), zero, zero, zero], //4
-			[             zero,              zero,              zero,              zero, R3.spars[1].neg(), R3.spars[3].neg(),  one, zero, zero], //5
-			[             zero,              zero,              zero,              zero,              zero,               one, zero, zero,  one], //6  [6][8] is S11  
-			[              one,              zero,              zero,              zero,              zero,              zero, zero, zero, zero]];//7  [7][8] is S21
+	var B =[[R1.spars[0][0].neg(), R1.spars[0][1].neg(),                 zero,                 zero,                 zero,                 zero, zero,  one, zero], //0
+			[R1.spars[1][0].neg(), R1.spars[1][1].neg(),                  one,                 zero,                 zero,                 zero, zero, zero, zero], //1
+			[                zero,                  one, R2.spars[0][0].neg(), R2.spars[0][1].neg(),                 zero,                 zero, zero, zero, zero],//2
+			[                zero,                 zero, R2.spars[1][0].neg(), R2.spars[1][1].neg(),                  one,                 zero, zero, zero, zero], //3
+			[                zero,                 zero,                 zero,                  one, R3.spars[0][0].neg(), R3.spars[0][1].neg(), zero, zero, zero], //4
+			[                zero,                 zero,                 zero,                 zero, R3.spars[1][0].neg(), R3.spars[1][1].neg(),  one, zero, zero], //5
+			[                zero,                 zero,                 zero,                 zero,                 zero,                  one, zero, zero,  one], //6  [6][8] is S11  
+			[                 one,                 zero,                 zero,                 zero,                 zero,                 zero, zero, zero, zero]];//7  [7][8] is S21
 	
 	var OutMatrixB = gaussFwdBkEliminationCmplx(B);
-	document.write(OutMatrixB[6][8].mag() + "<br>"); //s11 = 0.014208507670850776 or -36.9 dB
-	document.write(OutMatrixB[7][8].mag() + "<br>"); //s21 = 0.8058751743375173   or -1.87 dB
+	document.write(OutMatrixB[6][8].mag() + " s11 = 0.014208507670850776 " + "<br>"); //s11 = 0.014208507670850776 or -36.9 dB
+	document.write(OutMatrixB[7][8].mag() + " s21 = 0.8058751743375173:" + "<br>"); //s21 = 0.8058751743375173   or -1.87 dB
 
-	var C =[[R1.spars], 
-			[R2.spars],
-			[R3.spars]]; // C[0][0].length = 4, C[1][0].length = 4, C[2][0].length = 4
+	var C =[[R1.spars, R1.spars.length, 1, 2            ],  // [Nport            , n = R1.spars.length = 2, port number 
+			[R2.spars, R2.spars.length, 3, 4            ],  // [Nport            , n = R2.spars.length = 2, port number 
+			[R3.spars, R3.spars.length, 5, 6            ],  // [Nport            , n = R3.spars.length = 2, port number 
+			[     one,               1, 8               ],  // [input port       , n = 1                             , port number
+			[     one,               1, 7               ],  // [output port      , n = 1                             , port number
+			[       8,               1, 2, 3, 4, 5, 6, 7]]; // [hookup pairs: 8-1, 1-8; 2-3, 3-2; 4-5, 5-4; 6-7, 7-6  each of these gets a "one" in the matrix
 
+	
+	function hookup (inputMatrix) { // Somehow write a function that produces "hookupMatrix" from C where "hookupMatrix" is the same as B 
+	var rowNum = 0;
+	var colNum = 0;
+	var hookupMatrix = [];
+	for(var row = 0; row < inputMatrix.length - 1; row++) { // Determine umber of rows for hookupMatrix. Don't include the last row of inputMatrix
+	rowNum = rowNum + inputMatrix[row][1];
+	}
+	// Determine number of columns for hookupMatrix
+	colNum = rowNum + 1;
+	// Initialixze hookupMatrix with complex zeros
+	hookupMatrix = dimMatrix(rowNum, colNum, new Complex(0, 0));
+	// Populate hookupMatrix with spars
+	for(var row = 0; row < inputMatrix[0][1]; row++) {
+		for(var col = 0; col < inputMatrix[0][1]; col++) {
+		hookupMatrix[row][col] = inputMatrix[0][0][row][col];
+		}
+	}	
+	// Populate hookupMatrix with ports ( input and output port in this case)
+	// Populate hookupMatrix with complex ones for the interconnect matrix
+	// Set appropriate element of last columm to a complex one for s11, s21
+	// Return the hookupMatrix such that "gaussFwdBkEliminationCmplx(hookupMatrix)" returns
+	return hookupMatrix[1][0].mag();
+	//return inputMatrix[0][0][0][0].mag();
+	}
+	
 	document.write("<br>");
-	document.write(  33 + "<br>");	
-	document.write(C[2][0].length + "<br>");			
-			
-/* 	
-   
-      C = dimMatrix(8,9,new Complex(0, 0));
-      document.write(C[3][4].getI() + "<br>");
-     
-      D = Array.createMxNxInitial(4,5,7);
-      document.write(D[3][4] + "<br>" + "<br>");      
-      document.write("Matrix subtract" + "<br>");
-      E = new Matrix(C);
-      F = new Matrix(D);
-      G = new Matrix();
+	document.write(hookup(C) + "<br>");			
+
       
-      G = E.sub(F);
-      document.write(G.out() + "<br>");
-      
-      // Block 3 will plot the output
-      document.write("<br>");
-      document.write("Block 3 will plot the output." + "<br>");
-*/      
     </script>
   </body>
 </html>

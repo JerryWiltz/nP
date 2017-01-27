@@ -24,7 +24,8 @@ Nport.prototype.seriesZspars = function (Z) { // not tested
   var s21 = (Two.mul(Zo)).div(Z.add(Zo.add(Zo)));
   var s12 = s21;
   var s22 = s11;
-  this.spars = [s11, s21, s12, s22];
+  this.spars = [[s11, s12],
+				[s21, s22]];
 }
 
 Nport.prototype.seriesRspars = function (seriesR) { // this works 12/9/16
@@ -35,7 +36,8 @@ Nport.prototype.seriesRspars = function (seriesR) { // this works 12/9/16
   var s21 = (Two.mul(Zo)).div(Z.add(Zo.add(Zo)));
   var s12 = s21;
   var s22 = s11;
-  this.spars = [s11, s21, s12, s22];
+   this.spars = [[s11, s12],
+				[s21, s22]];
 }
 
 Nport.prototype.seriesLspars = function (seriesL, F) { // this works 12/9/16
@@ -47,7 +49,8 @@ Nport.prototype.seriesLspars = function (seriesL, F) { // this works 12/9/16
   var s21 = (Two.mul(Zo)).div(Z.add(Zo.add(Zo)));
   var s12 = s21;
   var s22 = s11;
-  this.spars = [s11, s21, s12, s22];
+  this.spars = [[s11, s12],
+				[s21, s22]];
 }
 
 Nport.prototype.shuntYspars = function (shuntY) { // not tested
@@ -57,7 +60,8 @@ Nport.prototype.shuntYspars = function (shuntY) { // not tested
   var s21 = (Two.mul(Yo)).div(shuntY.add(Yo.add(Yo)));  
   var s12 = s21;
   var s22 = s11;
-  this.spars = [s11, s21, s12, s22];
+  this.spars = [[s11, s12],
+				[s21, s22]];
 }
 
 Nport.prototype.shuntRspars = function (shuntR) { // this works 12/9/16
@@ -69,7 +73,8 @@ Nport.prototype.shuntRspars = function (shuntR) { // this works 12/9/16
   var s21 = (Two.mul(Yo)).div(Y.add(Yo.add(Yo)));  
   var s12 = s21;
   var s22 = s11;
-  this.spars = [s11, s21, s12, s22];
+  this.spars = [[s11, s12],
+				[s21, s22]];
 }
 
 Nport.prototype.shuntCspars = function (shuntC, F) { // this works 12/9/16
@@ -82,5 +87,6 @@ Nport.prototype.shuntCspars = function (shuntC, F) { // this works 12/9/16
   var s21 = (Two.mul(Yo)).div(Y.add(Yo.add(Yo)));  
   var s12 = s21;
   var s22 = s11;
-  this.spars = [s11, s21, s12, s22];
+  this.spars = [[s11, s12],
+				[s21, s22]];
 }
