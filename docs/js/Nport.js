@@ -17,6 +17,11 @@ function Nport() {
 Nport.prototype.getSpars = function() {return this.spars;}  // this works
 Nport.prototype.getYo = function() {return this.Yo;}  // this works
 
+Nport.prototype.inOutOnePort = function () { // A generic input and output port
+	var s11 = new Complex (1,0);	
+  this.spars = [[s11]];
+}
+
 Nport.prototype.seriesZspars = function (Z) { // not tested
   var Zo = this.Zo;
   var Two = new Complex(2,0);
@@ -90,3 +95,21 @@ Nport.prototype.shuntCspars = function (shuntC, F) { // this works 12/9/16
   this.spars = [[s11, s12],
 				[s21, s22]];
 }
+
+Nport.prototype.dummyThreePort = function () { // this is a dummy 3 way Nport
+	var s11 = new Complex (4,0);
+	var s12 = new Complex (5,0);
+	var s13 = new Complex (6,0);
+	
+	var s21 = new Complex (7,0);
+	var s22 = new Complex (8,0);
+	var s23 = new Complex (9,0);
+	
+	var s31 = new Complex (10,0);
+	var s32 = new Complex (11,0);
+	var s33 = new Complex (12,0);
+	
+  this.spars = [[s11, s12, s13],
+				[s21, s22, s23],
+				[s31, s32, s33]];
+}				

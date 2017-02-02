@@ -27,6 +27,15 @@
 	var R3 = new Nport();
 	R3.shuntRspars(430); // Shunt spars are [0.054945054945054944, 0.9450549450549449, 0.9450549450549449, 0.054945054945054944]
 	document.write(R3.spars[1][0].neg().getR() + "<br>"); // .neg().getR() works, I get -0.945...
+	
+	var R4 = new Nport();
+	R4.dummyThreePort();
+	
+	var input = new Nport();
+	input.inOutOnePort();
+	
+	var output = new Nport();
+	output.inOutOnePort();	
 
 	// Block 2 defines the 'Gamma', 'S', 'Gamma-S', and output Matrixes
 	// PI-Attenuator spars are [0.0142851, 0.8058717, 0.8058717, 0.0142851]
@@ -46,46 +55,65 @@
 			[                zero,                 zero,                 zero,                 zero,                 zero,                  one, zero, zero,  one], //6  [6][8] is S11  
 			[                 one,                 zero,                 zero,                 zero,                 zero,                 zero, zero, zero, zero]];//7  [7][8] is S21
 	
+	printRealPartComplexMatrix(B); // Run this to show correct matrix	
+	
+	
 	var OutMatrixB = gaussFwdBkEliminationCmplx(B);
 	document.write(OutMatrixB[6][8].mag() + " s11 = 0.014208507670850776 " + "<br>"); //s11 = 0.014208507670850776 or -36.9 dB
 	document.write(OutMatrixB[7][8].mag() + " s21 = 0.8058751743375173:" + "<br>"); //s21 = 0.8058751743375173   or -1.87 dB
 
-	var C =[[R1.spars, R1.spars.length, 1, 2            ],  // [Nport            , n = R1.spars.length = 2, port number 
-			[R2.spars, R2.spars.length, 3, 4            ],  // [Nport            , n = R2.spars.length = 2, port number 
-			[R3.spars, R3.spars.length, 5, 6            ],  // [Nport            , n = R3.spars.length = 2, port number 
-			[     one,               1, 8               ],  // [input port       , n = 1                             , port number
-			[     one,               1, 7               ],  // [output port      , n = 1                             , port number
-			[       8,               1, 2, 3, 4, 5, 6, 7]]; // [hookup pairs: 8-1, 1-8; 2-3, 3-2; 4-5, 5-4; 6-7, 7-6  each of these gets a "one" in the matrix
+	var C =[[    R1.spars,     R1.spars.length, 1, 2            ],  // [Nport            , n = R1.spars.length = 2, port number 
+			[    R2.spars,     R2.spars.length, 3, 4            ],  // [Nport            , n = R2.spars.length = 2, port number 
+			[    R3.spars,     R3.spars.length, 5, 6            ],  // [Nport            , n = R3.spars.length = 2, port number 
+			[ input.spars,  input.spars.length, 8               ],  // [input port       , n = 1                             , port number
+			[output.spars, output.spars.length, 7               ],  // [output port      , n = 1                             , port number
+			[           8,                   1, 2, 3, 4, 5, 6, 7]]; // [hookup pairs: 8-1, 1-8; 2-3, 3-2; 4-5, 5-4; 6-7, 7-6  each of these gets a "one" in the matrix
 
-	
+
 	function hookup (inputMatrix) { // Somehow write a function that produces "hookupMatrix" from C where "hookupMatrix" is the same as B 
 	var rowNum = 0;
 	var colNum = 0;
 	var hookupMatrix = [];
+	var index = 0; // this creates the diagonal in the hookupMatrix
 	for(var row = 0; row < inputMatrix.length - 1; row++) { // Determine umber of rows for hookupMatrix. Don't include the last row of inputMatrix
 	rowNum = rowNum + inputMatrix[row][1];
 	}
 	// Determine number of columns for hookupMatrix
 	colNum = rowNum + 1;
 	// Initialixze hookupMatrix with complex zeros
-	hookupMatrix = dimMatrix(rowNum, colNum, new Complex(0, 0));
-	// Populate hookupMatrix with spars
-	for(var row = 0; row < inputMatrix[0][1]; row++) {
-		for(var col = 0; col < inputMatrix[0][1]; col++) {
-		hookupMatrix[row][col] = inputMatrix[0][0][row][col];
+	hookupMatrix = dimMatrix(rowNum, colNum, new Complex(0, 0)); // this works, it matches the dimentions of the B matrix
+	// Populate hookupMatrix with Nport spars
+	for(var lineCount = 0; lineCount < inputMatrix.length - 3; lineCount++) {
+		for(var row = 0; row < inputMatrix[lineCount][1]; row++) {
+			for(var col = 0; col < inputMatrix[lineCount][1]; col++) {
+			hookupMatrix[row + index][col + index] = inputMatrix[lineCount][0][row][col].neg();
+			}
 		}
-	}	
-	// Populate hookupMatrix with ports ( input and output port in this case)
+		index = index + inputMatrix[lineCount][1];
+	}
 	// Populate hookupMatrix with complex ones for the interconnect matrix
+	for(var count = 0; count < inputMatrix[5].length; count += 2) {
+		row = inputMatrix[5][count] - 1;
+		col = inputMatrix[5][count + 1] - 1;
+		hookupMatrix[row][col] = new Complex(1, 0);
+		hookupMatrix[col][row] = new Complex(1, 0);
+	}
 	// Set appropriate element of last columm to a complex one for s11, s21
+	hookupMatrix[rowNum - 2][colNum - 1] = new Complex(1,0);
 	// Return the hookupMatrix such that "gaussFwdBkEliminationCmplx(hookupMatrix)" returns
-	return hookupMatrix[1][0].mag();
+	return hookupMatrix;
+	//return hookupMatrix[2][2].mag();
 	//return inputMatrix[0][0][0][0].mag();
 	}
 	
+	//document.write("<br>");
+	//document.write(hookup(C) + "<br>");
 	document.write("<br>");
-	document.write(hookup(C) + "<br>");			
-
+	printRealPartComplexMatrix(hookup (C)); // Run this to show hookup(C) is the correct matrix
+	
+	var OutMatrixD = gaussFwdBkEliminationCmplx(hookup (C));
+	document.write(OutMatrixD[6][8].mag() + " s11 = 0.014208507670850776 " + "<br>"); //s11 = 0.014208507670850776 or -36.9 dB
+	document.write(OutMatrixD[7][8].mag() + " s21 = 0.8058751743375173:" + "<br>"); //s21 = 0.8058751743375173   or -1.87 dB
       
     </script>
   </body>

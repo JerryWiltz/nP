@@ -78,3 +78,13 @@ function subMatrix (MatrixA, MatrixB) { //this works
   }
   return A;
 }
+
+function printRealPartComplexMatrix(matrix) {
+	var out = "";
+	for(var row = 0; row < matrix.length ; row++) {
+		for( var col = 0; col < matrix[0].length; col++) {
+		out += matrix[row][col].getR().toFixed(3) + ( !(col === (matrix[0].length-1)) ? "_____" : "<br>"); // Adds line break between each component		
+		}
+	}
+	document.write(out + "<br>");
+}
