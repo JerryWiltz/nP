@@ -1,52 +1,35 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>MCAP PI-Attenutor Example</title> 
-    <link href="css/assert.css" rel="stylesheet" type="text/css">
-    <script type="text/javascript" src="js/assert.js"></script>
-	<script type="text/javascript" src="js/Complex.js"></script>
-    <script type="text/javascript" src="js/Nport.js"></script>
-    <script type="text/javascript" src="js/matrix.js"></script>
-  </head>
-  <body>
+	<head>
+		<title>MCAP PI-Attenutor Example</title> 
+		<link href="css/assert.css" rel="stylesheet" type="text/css">
+		<script type="text/javascript" src="js/assert.js"></script>
+		<script type="text/javascript" src="js/Complex.js"></script>
+		<script type="text/javascript" src="js/Nport.js"></script>
+		<script type="text/javascript" src="js/matrix.js"></script>
+	</head>
+	<body>
 	<script type="text/javascript">
-	document.write("This is indeed MCAP evolution!!" + "<br>");
+	document.write("MCAP: inputMatrix -> analysisMatrix -> outputMatrix " + "<br>");
       
-	// Block 1 defines the network (Complex works)      
+	// Block 1 defines the 430-10-430 PI Pad network that is hard wired with a lot of repeat typing.   
 	document.write("<br>");
-	document.write("Block 1 defines the network." + "<br>");
+	document.write("Block 1 defines the 430-10-430 PI Pad network that is hard wired with a lot of repeat typing." + "<br>");
             
 	var R1 = new Nport();// Nport spars are [s11, s21, s12, s22]
 	R1.shuntRspars(430); // Shunt spars are [0.054945054945054944, 0.9450549450549449, 0.9450549450549449, 0.054945054945054944]
-	document.write(R1.spars[0][0].mag() + "<br>");
 
 	var R2 = new Nport();
 	R2.seriesRspars(10); // Series spars are [0.0909090909090909, 0.9090909090909091, 0.9090909090909091, 0.0909090909090909]
-	document.write(R2.spars[1][0].mag() + "<br>");
       
 	var R3 = new Nport();
 	R3.shuntRspars(430); // Shunt spars are [0.054945054945054944, 0.9450549450549449, 0.9450549450549449, 0.054945054945054944]
-	document.write(R3.spars[1][0].neg().getR() + "<br>"); // .neg().getR() works, I get -0.945...
-	
-	var R4 = new Nport();
-	R4.dummyThreePort();
-	
-	var input = new Nport();
-	input.inOutOnePort();
-	
-	var output = new Nport();
-	output.inOutOnePort();	
 
-	// Block 2 defines the 'Gamma', 'S', 'Gamma-S', and output Matrixes
-	// PI-Attenuator spars are [0.0142851, 0.8058717, 0.8058717, 0.0142851]
-	document.write("<br>");
-	document.write("Block 2 defines the 'Gamma', 'S', 'Gamma-S', and output Matrixes." + "<br>");
-	
 	one = new Complex(1,0);
 	zero = new Complex(0,0);
 
 	//                    0                  1                  2                  3                  4                  5     6     7      8 
-	var B =[[R1.spars[0][0].neg(), R1.spars[0][1].neg(),                 zero,                 zero,                 zero,                 zero, zero,  one, zero], //0
+	var A =[[R1.spars[0][0].neg(), R1.spars[0][1].neg(),                 zero,                 zero,                 zero,                 zero, zero,  one, zero], //0
 			[R1.spars[1][0].neg(), R1.spars[1][1].neg(),                  one,                 zero,                 zero,                 zero, zero, zero, zero], //1
 			[                zero,                  one, R2.spars[0][0].neg(), R2.spars[0][1].neg(),                 zero,                 zero, zero, zero, zero],//2
 			[                zero,                 zero, R2.spars[1][0].neg(), R2.spars[1][1].neg(),                  one,                 zero, zero, zero, zero], //3
@@ -55,27 +38,58 @@
 			[                zero,                 zero,                 zero,                 zero,                 zero,                  one, zero, zero,  one], //6  [6][8] is S11  
 			[                 one,                 zero,                 zero,                 zero,                 zero,                 zero, zero, zero, zero]];//7  [7][8] is S21
 	
-	printRealPartComplexMatrix(B); // Run this to show correct matrix	
+	printRealPartComplexMatrix(A); // Run this to show correct matrix	
 	
-	
-	var OutMatrixB = gaussFwdBkEliminationCmplx(B);
+	var OutMatrixB = gaussFwdBkEliminationCmplx(A);
 	document.write(OutMatrixB[6][8].mag() + " s11 = 0.014208507670850776 " + "<br>"); //s11 = 0.014208507670850776 or -36.9 dB
-	document.write(OutMatrixB[7][8].mag() + " s21 = 0.8058751743375173:" + "<br>"); //s21 = 0.8058751743375173   or -1.87 dB
+	document.write(OutMatrixB[7][8].mag() + " s21 = 0.8058751743375173" + "<br>"); //s21 = 0.8058751743375173   or -1.87 dB
+	
+	// Block 2 defines the variable inputMatrix, in this case a pa430-se10-pa430 PI Pad network with one-time typing.   
+	document.write("<br>");
+	document.write("Block 2 defines the 430-10-430 PI Pad network that uses an input matrix with minimal typing." + "<br>");	
 
-	var C =[[    R1.spars,     R1.spars.length, 1, 2            ],  // [Nport            , n = R1.spars.length = 2, port number 
-			[    R2.spars,     R2.spars.length, 3, 4            ],  // [Nport            , n = R2.spars.length = 2, port number 
-			[    R3.spars,     R3.spars.length, 5, 6            ],  // [Nport            , n = R3.spars.length = 2, port number 
-			[ input.spars,  input.spars.length, 8               ],  // [input port       , n = 1                             , port number
-			[output.spars, output.spars.length, 7               ],  // [output port      , n = 1                             , port number
-			[           8,                   1, 2, 3, 4, 5, 6, 7]]; // [hookup pairs: 8-1, 1-8; 2-3, 3-2; 4-5, 5-4; 6-7, 7-6  each of these gets a "one" in the matrix
+	var input = new Nport();
+	input.inOutOnePort();
+	
+	var output = new Nport();
+	output.inOutOnePort();
+	
 
+			
+	var inputMatrix = [
+	["R10", "shuntRspars", 0 ,430, 1, 2],
+	["R20", "seriesRspars", 0  , 10, 3, 4],
+	["R30", "shuntRspars",  0 ,430, 5, 6], 
+	[input, 8],
+	[output, 7],
+	[8, 1, 2, 3, 4, 5, 6, 7]
+	]; // [hookup pairs: 8-1, 1-8; 2-3, 3-2; 4-5, 5-4; 6-7, 7-6  each of these gets a "one" in the matrix
+	
+	switch(inputMatrix[0][1]) {
+		case "shuntRspars":
+			inputMatrix[0][2] = new Nport();
+			inputMatrix[0][2].shuntRspars(inputMatrix[0][3]);
+			document.write(inputMatrix[0][2].spars[0][0].getR());
+		break;
+    // add the default keyword here
+	}
+	
+	
+	document.write("<br>");
 
-	function hookup (inputMatrix) { // Somehow write a function that produces "hookupMatrix" from C where "hookupMatrix" is the same as B 
+	
+/*	
+	
+	function hookup (inputMatrix) { // A function that produces a "hookupMatrix" from an "inputMatrix"
 	var rowNum = 0;
 	var colNum = 0;
+	var row = 0;
+	var col = 0;
 	var hookupMatrix = [];
+	var lineCount = 0;
 	var index = 0; // this creates the diagonal in the hookupMatrix
-	for(var row = 0; row < inputMatrix.length - 1; row++) { // Determine umber of rows for hookupMatrix. Don't include the last row of inputMatrix
+	var count = 0;
+	for(row = 0; row < inputMatrix.length - 1; row += 1) { // Determine umber of rows for hookupMatrix. Don't include the last row of inputMatrix
 	rowNum = rowNum + inputMatrix[row][1];
 	}
 	// Determine number of columns for hookupMatrix
@@ -83,16 +97,16 @@
 	// Initialixze hookupMatrix with complex zeros
 	hookupMatrix = dimMatrix(rowNum, colNum, new Complex(0, 0)); // this works, it matches the dimentions of the B matrix
 	// Populate hookupMatrix with Nport spars
-	for(var lineCount = 0; lineCount < inputMatrix.length - 3; lineCount++) {
-		for(var row = 0; row < inputMatrix[lineCount][1]; row++) {
-			for(var col = 0; col < inputMatrix[lineCount][1]; col++) {
+	for(lineCount = 0; lineCount < inputMatrix.length - 3; lineCount += 1) {
+		for(row = 0; row < inputMatrix[lineCount][1]; row += 1) {
+			for(col = 0; col < inputMatrix[lineCount][1]; col += 1) {
 			hookupMatrix[row + index][col + index] = inputMatrix[lineCount][0][row][col].neg();
 			}
 		}
 		index = index + inputMatrix[lineCount][1];
 	}
 	// Populate hookupMatrix with complex ones for the interconnect matrix
-	for(var count = 0; count < inputMatrix[5].length; count += 2) {
+	for(count = 0; count < inputMatrix[5].length; count += 2) {
 		row = inputMatrix[5][count] - 1;
 		col = inputMatrix[5][count + 1] - 1;
 		hookupMatrix[row][col] = new Complex(1, 0);
@@ -102,19 +116,14 @@
 	hookupMatrix[rowNum - 2][colNum - 1] = new Complex(1,0);
 	// Return the hookupMatrix such that "gaussFwdBkEliminationCmplx(hookupMatrix)" returns
 	return hookupMatrix;
-	//return hookupMatrix[2][2].mag();
-	//return inputMatrix[0][0][0][0].mag();
 	}
-	
-	//document.write("<br>");
-	//document.write(hookup(C) + "<br>");
-	document.write("<br>");
+
 	printRealPartComplexMatrix(hookup (C)); // Run this to show hookup(C) is the correct matrix
 	
 	var OutMatrixD = gaussFwdBkEliminationCmplx(hookup (C));
 	document.write(OutMatrixD[6][8].mag() + " s11 = 0.014208507670850776 " + "<br>"); //s11 = 0.014208507670850776 or -36.9 dB
-	document.write(OutMatrixD[7][8].mag() + " s21 = 0.8058751743375173:" + "<br>"); //s21 = 0.8058751743375173   or -1.87 dB
-      
+	document.write(OutMatrixD[7][8].mag() + " s21 = 0.8058751743375173" + "<br>"); //s21 = 0.8058751743375173   or -1.87 dB
+*/      
     </script>
-  </body>
+	</body>
 </html>
