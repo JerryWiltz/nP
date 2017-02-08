@@ -54,8 +54,6 @@
 	var output = new Nport();
 	output.inOutOnePort();
 	
-
-			
 	var inputMatrix = [
 	["R10", "shuntRspars", 0 ,430, 1, 2],
 	["R20", "seriesRspars", 0  , 10, 3, 4],
@@ -65,17 +63,26 @@
 	[8, 1, 2, 3, 4, 5, 6, 7]
 	]; // [hookup pairs: 8-1, 1-8; 2-3, 3-2; 4-5, 5-4; 6-7, 7-6  each of these gets a "one" in the matrix
 	
-	switch(inputMatrix[0][1]) {
-		case "shuntRspars":
-			inputMatrix[0][2] = new Nport();
-			inputMatrix[0][2].shuntRspars(inputMatrix[0][3]);
-			document.write(inputMatrix[0][2].spars[0][0].getR());
-		break;
-    // add the default keyword here
+	// Add the Nports to the input Matrix in column 2
+	
+	for(var row = 0; row < inputMatrix.length - 3; row += 1) {
+		var type = inputMatrix[row][1];
+		inputMatrix[row][2] = new Nport();	
+		function initializeNport (type) {	
+			var myNport = {
+				"shuntRspars": function () {return inputMatrix[row][2].shuntRspars(inputMatrix[row][3])},
+				"seriesRspars": function () {return inputMatrix[row][2].seriesRspars(inputMatrix[row][3])},
+				// Add all the other zillions of constructors here...
+			};
+		myNport[type]();
+		}
+		initializeNport (type);
 	}
 	
-	
 	document.write("<br>");
+	document.write(inputMatrix[0][2].spars[0][0].getR());
+	document.write("<br>");
+	document.write(inputMatrix[0][2].spars[1][0].getR());
 
 	
 /*	
