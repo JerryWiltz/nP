@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Module Pattern</title>
+</head>
+<body>
+<table>
+	<tr><th>Enter Number</th></tr>
+	<tr><td>Number:</td>
+		<td><input id="input"></td></tr>
+	<tr><td>Click to Design:</td>
+		<td><button id="design">Design</button></td></tr>
+	<tr><td>2x:</td>
+		<td><span id="output"></span></td></tr>
+	<tr><td>Click Test:</td>
+		<td><button id="test">Test</button></td></tr>
+	<tr><td>Result:</td>
+		<td><span id="result"></span></td></tr>	
+</table>
+<script type="text/javascript">
+"use strict";
+var myModule = (function () {
+var inputElement = document.getElementById('input');
+var designButtonElement = document.getElementById('design');
+var outputElement = document.getElementById('output');
+var testButtonElement = document.getElementById('test');
+var resultElement = document.getElementById('result');
+
+var doDesign = function doDesign () {
+var input = parseFloat(inputElement.value);
+outputElement.innerHTML = 2 * input;
+}
+designButtonElement.addEventListener('click', doDesign);
+
+var doTest = function doTest () {
+resultElement.innerHTML = outputElement.innerHTML/2;
+}
+testButtonElement.addEventListener('click', doTest);
+})();
+
+</script>
+
+</body>
+</html>
