@@ -4,31 +4,52 @@
 
 // Outer function to compute the low pass chebyshev filter prototype
 // From book, Matthaei, Young, and Jones (MYJ)
-var myChevLowPass = (function () {
+var LowPass = (function () {
 	"use strict";
 	// Private variables and functions
 	// Get all the Element Objects
-	var maxPassFreqElement = document.getElementById("maxPassFreq");
-	var minRejFreqElement = document.getElementById("minRejFreq");
-	var passbandRippleElement = document.getElementById("passbandRipple");
-	var rejLevelElement = document.getElementById("rejLevel");	
-	var designButtonElement = document.getElementById("design");	
-	var wElement = document.getElementById("w");
-	var nElement = document.getElementById("n");
-	var filterComponentsElemement = document.getElementById("filterComponents");
+	var maxPassFreqElement = function () {return document.getElementById("maxPassFreq");}
+	var minRejFreqElement = function () {return document.getElementById("minRejFreq");}
+	var passbandRippleElement = function () {return document.getElementById("passbandRipple");}
+	var rejLevelElement = function () {return document.getElementById("rejLevel");}	
+	var designButtonElement = function () {return document.getElementById("design");}	
+	var wElement = function () { return document.getElementById("w");}
+	var nElement = function () {return document.getElementById("n");}
+	var filterComponentsElemement = function () {return document.getElementById("filterComponents");}
+	var testButtonElement = function () {return document.getElementById("test");}
 	
-	var Table = [];	// this is the output table
-	var test; // test output variable
+	// Define all the variables
+	var Table =[];
+	function inputTable() {return Table;}	// This is the analysis input table
 	
+	return {
+	maxPassFreqElement : maxPassFreqElement,
+	minRejFreqElement : minRejFreqElement,
+	passbandRippleElement : passbandRippleElement,
+	rejLevelElement : rejLevelElement,	
+	designButtonElement : designButtonElement,	
+	wElement : wElement,
+	nElement : nElement,
+	filterComponentsElemement : filterComponentsElemement,
+	testButtonElement : testButtonElement,
+	
+	inputTable : inputTable
+	}
+}());
+
+	//var maxPassFreq = parseFloat(LowPass.maxPassFreqElement().value);
+	//LowPass.wElement().innerHTML = maxPassFreq.toFixed(2);
+	//console.log(parseFloat(LowPass.maxPassFreqElement().value.toString()  ));
+
+LowPass.ChevDesign = (function () {	
 	// Define the "click" function
 	var doDesign = function  () {
-		var maxPassFreq = parseFloat(maxPassFreqElement.value);
-		var minRejFreq = parseFloat(minRejFreqElement.value);
-		var passbandRipple = parseFloat(passbandRippleElement.value);
-		var rejLevel = parseFloat(rejLevelElement.value);
+		var maxPassFreq = parseFloat(LowPass.maxPassFreqElement().value);
+		var minRejFreq = parseFloat(LowPass.minRejFreqElement().value);
+		var passbandRipple = parseFloat(LowPass.passbandRippleElement().value);
+		var rejLevel = parseFloat(LowPass.rejLevelElement().value);
 		
 		var row = 0; // For the for-loops
-
 	
 		var lcLumpedComponentTextout = ""; // The text variable for the innerHTML below
      
@@ -94,28 +115,21 @@ var myChevLowPass = (function () {
 			return lowPassTable;
 		} // end of gk()
 
-    Table = gk();	
+    LowPass.inputTable() = gk();	
 		
 	//Fill in the output fields
-	wElement.innerHTML = normalizedBandwidth().toFixed(2);
-	nElement.innerHTML = numberSections().toFixed(0);
-  
+	LowPass.wElement().innerHTML = normalizedBandwidth().toFixed(2);
+	LowPass.nElement().innerHTML = numberSections().toFixed(0);
+/* 
     // Print a subset of the Table that is a list values of parallel C and series L components
-    for(row = 1; row < Table.length -1; row++) {
-		lcLumpedComponentTextout += Table[row][3].toString() + "<br>"; // Adds line break between each component
-		filterComponentsElemement.innerHTML = lcLumpedComponentTextout;
+    for(row = 1; row < LowPass.inputTable().length -1; row++) {
+		lcLumpedComponentTextout += LowPass.inputTable()[row][3].toString() + "<br>"; // Adds line break between each component
+		LowPass.filterComponentsElemement().innerHTML = lcLumpedComponentTextout;
 	}
-	
-	test = "Jerry";
-
+*/
 	} // end of "click" function, doDesign()
 	
-	// Here is the listener
-	designButtonElement.addEventListener("click", doDesign);
-	function tableOut () {return test;}
-	return {
-		tableOut : tableOut
-	}
+	// Listening for the "Design" button click event ...
+	LowPass.designButtonElement().addEventListener("click", doDesign);
 }());
 
-console.log(myChevLowPass.tableOut());

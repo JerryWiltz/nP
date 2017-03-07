@@ -19,24 +19,38 @@
 </table>
 <script type="text/javascript">
 "use strict";
-var myModule = (function () {
-var inputElement = document.getElementById('input');
-var designButtonElement = document.getElementById('design');
-var outputElement = document.getElementById('output');
-var testButtonElement = document.getElementById('test');
-var resultElement = document.getElementById('result');
+var myModule = function () {
+// Private variables and functions
+var inputElement = document.getElementById("input");
+var designButtonElement = document.getElementById("design");
+var outputElement = document.getElementById("output");
+var testButtonElement = document.getElementById("test");
+var resultElement = document.getElementById("result");
+var addNumber = 0;
 
 var doDesign = function doDesign () {
 var input = parseFloat(inputElement.value);
 outputElement.innerHTML = 2 * input;
 }
-designButtonElement.addEventListener('click', doDesign);
+designButtonElement.addEventListener("click", doDesign);
 
 var doTest = function doTest () {
-resultElement.innerHTML = outputElement.innerHTML/2;
+resultElement.innerHTML = addNumber + outputElement.innerHTML/2;
 }
-testButtonElement.addEventListener('click', doTest);
-})();
+testButtonElement.addEventListener("click", doTest);
+
+var setAddNumber = function (x) { 
+return addNumber = x;
+}
+// Public interface
+return {
+setAddNumber : setAddNumber
+}
+
+}();
+
+myModule.setAddNumber(2);
+
 
 </script>
 
