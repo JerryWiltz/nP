@@ -1,13 +1,65 @@
 // This is a script to compute the low pass chebyshev filter prototype
 // It is taken from Matthaei, Young, and Jones (MYJ)
-// By Jerry Wiltz July 21, 2106 
+// By Jerry Wiltz July 21, 2016 
 
 // Outer function to compute the low pass chebyshev filter prototype
 // From book, Matthaei, Young, and Jones (MYJ)
+
+
+var a = 2;
+	function Complex (x, y) {
+	this.r = x;
+	this.i = y;
+	}
+	var cmplx = new Complex(-2.1234e-1, -34);
+	Complex.prototype.getR = function () {return this.x;}
+	
+	var thatArray = [[1, "a", 3],
+				   [4, cmplx, 6],
+				   [7,  , 9]];
+
+				   
+function typeHtml(type) {
+return (type instanceof Complex) ? type.r.toExponential(2) + " i" + type.i.toExponential(2) : 
+(typeof type==="number" ? type.toExponential(2) : (typeof type==="undefined" ? "UNDF" :type));
+}				   
+
+var showTable = function (myArray) {
+	// get rid of the top stuff
+	//var firstTable = document.getElementById("firstTable"); // Child
+	//firstTable.parentNode.removeChild(firstTable);          // use the parentNode property
+
+	// prepare to put the new table in
+	var target = document.getElementById("body");
+	var div = document.createElement("div");
+	target.appendChild(div);
+	
+	function showTable () {
+		var row = 0;
+		var col = 0;
+		var html = "";
+		html = "<table><tbody>";
+
+		for (row = 0; row < myArray.length; row++) {
+			html +="<tr>";
+			for (col = 0; col < myArray[0].length; col++) {
+			html += "<td style='border-style: solid; border-width: 1px' width='150px'>" + typeHtml(myArray[row][col]);
+				html += "</td>";
+			}
+			html +="</tr>";
+		}
+		
+		html += "</tbody></table>"
+		return html
+	}
+	div.innerHTML = showTable(myArray);
+};
+
+
 var LowPass = (function () {
 	"use strict";
 	// Private variables and functions
-	// Get all the Element Objects
+	// Define Element Objects
 	var maxPassFreqElement = function () {return document.getElementById("maxPassFreq");}
 	var minRejFreqElement = function () {return document.getElementById("minRejFreq");}
 	var passbandRippleElement = function () {return document.getElementById("passbandRipple");}
@@ -18,10 +70,11 @@ var LowPass = (function () {
 	var filterComponentsElemement = function () {return document.getElementById("filterComponents");}
 	var testButtonElement = function () {return document.getElementById("test");}
 	
-	// Define all the variables
-	var Table =[];
-	function inputTable() {return Table;}	// This is the analysis input table
-	
+	// Define Table Variable
+	var Table =["jerry"];
+	function getTable() {return Table;}	// This is the analysis input table
+	function setTable(inputTable) {Table = inputTable;}	// This is the analysis input table	
+		
 	return {
 	maxPassFreqElement : maxPassFreqElement,
 	minRejFreqElement : minRejFreqElement,
@@ -33,21 +86,21 @@ var LowPass = (function () {
 	filterComponentsElemement : filterComponentsElemement,
 	testButtonElement : testButtonElement,
 	
-	inputTable : inputTable
+	getTable : getTable,
+	setTable : setTable
 	}
 }());
 
-	//var maxPassFreq = parseFloat(LowPass.maxPassFreqElement().value);
-	//LowPass.wElement().innerHTML = maxPassFreq.toFixed(2);
-	//console.log(parseFloat(LowPass.maxPassFreqElement().value.toString()  ));
-
 LowPass.ChevDesign = (function () {	
+	"use strict";
 	// Define the "click" function
 	var doDesign = function  () {
 		var maxPassFreq = parseFloat(LowPass.maxPassFreqElement().value);
 		var minRejFreq = parseFloat(LowPass.minRejFreqElement().value);
 		var passbandRipple = parseFloat(LowPass.passbandRippleElement().value);
 		var rejLevel = parseFloat(LowPass.rejLevelElement().value);
+		
+		var Table = [];
 		
 		var row = 0; // For the for-loops
 	
@@ -115,21 +168,33 @@ LowPass.ChevDesign = (function () {
 			return lowPassTable;
 		} // end of gk()
 
-    LowPass.inputTable() = gk();	
+		Table = gk();	
 		
-	//Fill in the output fields
-	LowPass.wElement().innerHTML = normalizedBandwidth().toFixed(2);
-	LowPass.nElement().innerHTML = numberSections().toFixed(0);
-/* 
-    // Print a subset of the Table that is a list values of parallel C and series L components
-    for(row = 1; row < LowPass.inputTable().length -1; row++) {
-		lcLumpedComponentTextout += LowPass.inputTable()[row][3].toString() + "<br>"; // Adds line break between each component
-		LowPass.filterComponentsElemement().innerHTML = lcLumpedComponentTextout;
-	}
-*/
-	} // end of "click" function, doDesign()
+		//Fill in the output fields
+		LowPass.wElement().innerHTML = normalizedBandwidth().toFixed(2);
+		LowPass.nElement().innerHTML = numberSections().toFixed(0);
+ 
+		// Print a subset of the Table that is a list values of parallel C and series L components
+		for(row = 1; row < Table.length -1; row++) {
+			lcLumpedComponentTextout += Table[row][3].toString() + "<br>"; // Adds line break between each component
+			LowPass.filterComponentsElemement().innerHTML = lcLumpedComponentTextout;
+		}
+
+		LowPass.setTable(Table);
+		//showTable( LowPass.getTable());
+	} // end of doDesign()
 	
 	// Listening for the "Design" button click event ...
 	LowPass.designButtonElement().addEventListener("click", doDesign);
+	
 }());
+
+LowPass.Test = (function() {
+	"use strict";
+	var doTest = function () {
+		showTable( LowPass.getTable());
+	}
+	LowPass.testButtonElement().addEventListener("click",doTest);
+}());
+
 

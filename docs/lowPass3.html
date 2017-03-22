@@ -4,10 +4,11 @@
   <title>Low Pass Filter 2</title>
 	
   </head>
-  <body>
-<table>
+  <body id="body">
+<div id="firstDiv">
+<table id="firstTable">
   <tr><th>Enter Low Pass Data</th>
-    <td></td>
+    <td rowspan=28></td>
     <th>Future area for frequency reponse plot</th></tr>
   <tr><td>Max Pass Freq (GHz):</td>
     <td><input id="maxPassFreq" value="0.2"></td>
@@ -30,6 +31,7 @@
  <tr><td>Click to Test:</td>
       <td><button id="test">Test</button></td></tr>
 </table>
+</div>
 	<script type="text/javascript" src="js/lowPass3.js"></script>
   </body>
 </html>
