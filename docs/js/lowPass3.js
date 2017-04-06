@@ -4,59 +4,8 @@
 
 // Outer function to compute the low pass chebyshev filter prototype
 // From book, Matthaei, Young, and Jones (MYJ)
-
-
-var a = 2;
-	function Complex (x, y) {
-	this.r = x;
-	this.i = y;
-	}
-	var cmplx = new Complex(-2.1234e-1, -34);
-	Complex.prototype.getR = function () {return this.x;}
-	
-	var thatArray = [[1, "a", 3],
-				   [4, cmplx, 6],
-				   [7,  , 9]];
-
-				   
-function typeHtml(type) {
-return (type instanceof Complex) ? type.r.toExponential(2) + " i" + type.i.toExponential(2) : 
-(typeof type==="number" ? type.toExponential(2) : (typeof type==="undefined" ? "UNDF" :type));
-}				   
-
-var showTable = function (myArray) {
-	// get rid of the top stuff
-	//var firstTable = document.getElementById("firstTable"); // Child
-	//firstTable.parentNode.removeChild(firstTable);          // use the parentNode property
-
-	// prepare to put the new table in
-	var target = document.getElementById("body");
-	var div = document.createElement("div");
-	target.appendChild(div);
-	
-	function showTable () {
-		var row = 0;
-		var col = 0;
-		var html = "";
-		html = "<table><tbody>";
-
-		for (row = 0; row < myArray.length; row++) {
-			html +="<tr>";
-			for (col = 0; col < myArray[0].length; col++) {
-			html += "<td style='border-style: solid; border-width: 1px' width='150px'>" + typeHtml(myArray[row][col]);
-				html += "</td>";
-			}
-			html +="</tr>";
-		}
-		
-		html += "</tbody></table>"
-		return html
-	}
-	div.innerHTML = showTable(myArray);
-};
-
-
-var LowPass = (function () {
+			   
+var LowPass = (function LowPass() {
 	"use strict";
 	// Private variables and functions
 	// Define Element Objects
@@ -69,6 +18,7 @@ var LowPass = (function () {
 	var nElement = function () {return document.getElementById("n");}
 	var filterComponentsElemement = function () {return document.getElementById("filterComponents");}
 	var testButtonElement = function () {return document.getElementById("test");}
+	
 	
 	// Define Table Variable
 	var Table =["jerry"];
@@ -91,15 +41,15 @@ var LowPass = (function () {
 	}
 }());
 
-LowPass.ChevDesign = (function () {	
+(function ChevDesign(ROOT) {	
 	"use strict";
 	// Define the "click" function
-	var doDesign = function  () {
-		var maxPassFreq = parseFloat(LowPass.maxPassFreqElement().value);
-		var minRejFreq = parseFloat(LowPass.minRejFreqElement().value);
-		var passbandRipple = parseFloat(LowPass.passbandRippleElement().value);
-		var rejLevel = parseFloat(LowPass.rejLevelElement().value);
-		
+	function  doDesign () {
+		var maxPassFreq = parseFloat(ROOT.maxPassFreqElement().value);
+		var minRejFreq = parseFloat(ROOT.minRejFreqElement().value);
+		var passbandRipple = parseFloat(ROOT.passbandRippleElement().value);
+		var rejLevel = parseFloat(ROOT.rejLevelElement().value);
+
 		var Table = [];
 		
 		var row = 0; // For the for-loops
@@ -171,30 +121,71 @@ LowPass.ChevDesign = (function () {
 		Table = gk();	
 		
 		//Fill in the output fields
-		LowPass.wElement().innerHTML = normalizedBandwidth().toFixed(2);
-		LowPass.nElement().innerHTML = numberSections().toFixed(0);
+		ROOT.wElement().innerHTML = normalizedBandwidth().toFixed(2);
+		ROOT.nElement().innerHTML = numberSections().toFixed(0);
  
 		// Print a subset of the Table that is a list values of parallel C and series L components
 		for(row = 1; row < Table.length -1; row++) {
 			lcLumpedComponentTextout += Table[row][3].toString() + "<br>"; // Adds line break between each component
-			LowPass.filterComponentsElemement().innerHTML = lcLumpedComponentTextout;
+			ROOT.filterComponentsElemement().innerHTML = lcLumpedComponentTextout;
 		}
 
-		LowPass.setTable(Table);
-		//showTable( LowPass.getTable());
+		ROOT.setTable(Table);
+		//showTable( getTable());
 	} // end of doDesign()
 	
 	// Listening for the "Design" button click event ...
-	LowPass.designButtonElement().addEventListener("click", doDesign);
+	ROOT.designButtonElement().addEventListener("click", doDesign);
 	
-}());
+}(LowPass));
 
-LowPass.Test = (function() {
+var Test = (function(ROOT) {
 	"use strict";
 	var doTest = function () {
-		showTable( LowPass.getTable());
+		showTable(ROOT.getTable());
+	}	
+	ROOT.testButtonElement().addEventListener("click",doTest);
+}(LowPass));
+
+function showTable(myArray) {
+	"use strict";
+	// get rid of the top stuff
+	//var firstTable = document.getElementById("firstTable"); // Child
+	//firstTable.parentNode.removeChild(firstTable);          // use the parentNode property
+
+	// prepare to put the new table in
+	var target = document.getElementById("body");
+	var div = document.createElement("div");
+	target.appendChild(div);
+	
+	function  createTable () {
+		var row = 0;
+		var col = 0;
+		var html = "";
+		
+		function typeHtml(type) {
+			if (typeof Complex != 'undefined') {	
+				return (type instanceof Complex) ? type.r.toExponential(2) + // filter out complex, express real part
+				(type.i.toExponential(2)> 0  ?  " + i" + type.i.toExponential(2) : " - i" + (-type.i).toExponential(2)) : // express imaginary, "i" with no "+/-" after
+				(typeof type==="number" ? type.toExponential(2) : (typeof type==="undefined" ? "UNDF" :type)); // filter out number
+			} else {
+				return (typeof type==="number" ? type.toExponential(2) : (typeof type==="undefined" ? "UNDF" :type));
+			}	
+		}
+					
+		html = "<table><tbody>";
+			for (row = 0; row < myArray.length; row++) {
+				html +="<tr>";
+				for (col = 0; col < myArray[0].length; col++) {
+				html += "<td style='border-style: solid; border-width: 1px' width='150px'>" + typeHtml(myArray[row][col]);
+					html += "</td>";
+				}
+				html +="</tr>";
+			}	
+		html += "</tbody></table>";
+		return html;
 	}
-	LowPass.testButtonElement().addEventListener("click",doTest);
-}());
+	div.innerHTML = createTable(myArray);
+};
 
 
