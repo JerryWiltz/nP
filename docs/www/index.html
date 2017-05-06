@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <title>Low Pass Filter 3</title>
+	
+  </head>
+  <body id="body">
+<div id="firstDiv">
+<table id="firstTable">
+  <tr><th>Enter Low Pass Data</th>
+    <td rowspan=28></td>
+    <th>Future area for frequency reponse plot</th></tr>
+  <tr><td>Max Pass Freq (GHz):</td>
+    <td><input id="maxPassFreq" value="0.2"></td>
+    <td rowspan=8>
+      <canvas id="graph" width="500" height="250">Put this in a canvas</canvas></td></tr>
+  <tr><td>Min Rej Freq (GHz):</td>
+      <td><input id="minRejFreq" value="1.5"></td></tr>
+  <tr><td>Passband Ripple (dB):</td>
+      <td><input id="passbandRipple" value="0.1"></td></tr>
+  <tr><td>Rej Level(dB):</td>
+      <td><input id="rejLevel" value="30"></td></tr>
+  <tr><td>Click to Calculate:</td>
+      <td><button id="design">Design</button></td></tr>
+  <tr><td>w/w1:</td>
+      <td><span class="output" id="w"></span></td></tr>
+  <tr><td>Number of Sections (n):</td>
+      <td><span class="output" id="n"></span></td></tr>
+  <tr><td>Filter Elements:</td>
+      <td><span class="output" id="filterComponents"></span></td></tr>
+ <tr><td>Click to Test:</td>
+      <td><button id="test">Test</button></td></tr>
+</table>
+</div>
+	<script data-main="js/app.js" src="js/require.js"></script>
+  </body>
+</html>

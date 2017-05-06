@@ -1,11 +1,9 @@
-// This is a script to compute the low pass chebyshev filter prototype
-// It is taken from Matthaei, Young, and Jones (MYJ)
-// By Jerry Wiltz July 21, 2016 
+// lowpass4
 
-// Outer function to compute the low pass chebyshev filter prototype
-// From book, Matthaei, Young, and Jones (MYJ)
-			   
-var LowPass = (function LowPass() {
+define([], function (){
+"use strict";
+	
+	var LowPass = (function LowPass() {
 	"use strict";
 	// Private variables and functions
 	// Define Element Objects
@@ -189,4 +187,4 @@ function showTable(myArray) {
 	div.innerHTML = createTable(myArray);
 };
 
-
+});
