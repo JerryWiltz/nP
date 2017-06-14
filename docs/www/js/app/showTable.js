@@ -27,7 +27,7 @@ function showTable(myArray) {
 				'undefined' : function () { return 'UNDEF';}, // empty array cells
 				'boolean' : function () { return type;},
 				'number' :  function () { return type.toExponential(2);}, // numbers
-				'object' : 	function () { return type.x.toExponential(2) + (type.y.toExponential(2)> 0  ?  " + i" + type.y.toExponential(2) : " - i" + (-type.y).toExponential(2)) ;}, // Complex numbers
+				'object' : 	function () { return type.x.toExponential(2) + (type.y.toExponential(2)> 0  ?  " + i" + type.y.toExponential(2) : " - i" + (-type.y).toExponential(2)) ;}, // complex numbers
 				'string' :  function () { return type;} // strings
 			};
 			return out[typeof type](); // immediate invocation of returned functions

@@ -25,7 +25,7 @@ requirejs([
 'app/lowpassDesign',
 'app/lowpassTest',
 'app/Complex',
-//'app/Nport',
+'app/Nport',
 //'app/matrix'
 ], function() {
 	//alert('I loaded'); // This happens last!! All the other things happen first!
