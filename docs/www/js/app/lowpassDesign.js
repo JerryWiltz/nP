@@ -36,7 +36,7 @@ return function lowpassDesign(ROOT) {
 			lowPassTable = Array(1 + 1 + numberSections() + 1);  // Corresponds with g0 + gk + g(k+1)
 
 			for(i = 0; i < lowPassTable.length; i++) {
-			lowPassTable[i] = new Array(4); // Each row has 4 columns: ak, bk, gk, and R,C,L's
+			lowPassTable[i] = Array(4); // Each row has 4 columns: ak, bk, gk, and R,C,L's
 			}
 			
 			lowPassTable[0][0] = 'ak'; lowPassTable[0][1] = 'bk'; lowPassTable[0][2] = 'gk'; lowPassTable[0][3] = 'R,C,L';

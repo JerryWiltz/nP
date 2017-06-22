@@ -4,31 +4,30 @@ define(function(){
 "use strict";
 	//var c1 = complex(2, -3) and var c1 = complex(5, 8)
 	var complex = function complex (real, imaginary) {
-	  // https://www.youtube.com/watch?v=5rwuKH-zdos
 		//Private variables
 		var x = real,
-			y = imaginary;
+			y = imaginary,
 		
 		// Public functions  
-		var getR = function getR() {return x;};	  
-		var getI = function getI() {return y;}; 
-		var setR = function setR(R) {x = R;};
-		var setI = function setI(I) {y = I;};	
-		var print = function print() {console.log(x + " " + y);};	
-		var add = function add(c2) {return complex(x + c2.getR(), y + c2.getI());};
-		var sub = function sub(c2) {return complex(x - c2.getR(), y - c2.getI());};
-		var mul = function mul(c2) {return new complex(x * c2.getR() - y * c2.getI(), x * c2.getI() + y * c2.getR());};
-		var div = function div (c2) {return new complex((x * c2.getR() + y * c2.getI())/(c2.getR() * c2.getR() + c2.getI() * c2.getI()), (c2.getR() * y - x * c2.getI())/(c2.getR() * c2.getR() + c2.getI() * c2.getI()));};
-		var inv = function inv() {return new complex((1 * x + 0 * y)/(x * x + y * y), (x * 0 - 1 * y)/(x * x + y * y));};
-		var neg = function neg() {return new complex(-x, -y);};
-		var mag = function mag() {return Math.sqrt(x * x + y * y);};
-		var ang = function ang() {return Math.atan2(y, x) * (180/Math.PI);};
+			getR = function getR() {return x;},	  
+			getI = function getI() {return y;}, 
+			setR = function setR(R) {x = R;},
+			setI = function setI(I) {y = I;},	
+			print = function print() {console.log(x + " " + y);},	
+			add = function add(c2) {return complex(x + c2.x, y + c2.y);}, // returning complex allows method chaining :)
+			sub = function sub(c2) {return complex(x - c2.x, y - c2.y);},
+			mul = function mul(c2) {return complex(x * c2.x - y * c2.y, x * c2.y + y * c2.x);},
+			div = function div (c2) {return complex((x * c2.x + y * c2.y)/(c2.x * c2.x + c2.y * c2.y), (c2.x * y - x * c2.y)/(c2.x * c2.x + c2.y * c2.y));},
+			inv = function inv() {return complex((1 * x + 0 * y)/(x * x + y * y), (x * 0 - 1 * y)/(x * x + y * y));},
+			neg = function neg() {return complex(-x, -y);},
+			mag = function mag() {return Math.sqrt(x * x + y * y);},
+			ang = function ang() {return Math.atan2(y, x) * (180/Math.PI);};
 		 
 		return {
 		// The object data (what shows in JSON.stringify(c1) for example) 
 			name : 'complex',
-			x : getR(),
-			y : getI(),
+			x : x,
+			y : y,
 			
 		// The ojbect methods  
 			getR  : getR,	  
@@ -45,7 +44,6 @@ define(function(){
 			mag   :  mag,
 			ang   :  ang
 		};
-	  
 	};
 return complex;	
 });

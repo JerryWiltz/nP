@@ -5,29 +5,23 @@ define(['app/lowpassSetup', 'app/complex', 'app/nport'], function (lowpassSetup,
 	return function lowpassTest(ROOT) {
 	"use strict";
 		var doTest = function doTest() {		
+	
+		console.log('Method using cas to determine the spars');
+		var r1 = nport('parallelRLCinSeries', 430, false, false, 2e9);
+		var r2 = nport('seriesRLCinSeries', 10, false, false, 2e9);
+		var r3 = nport('parallelRLCinSeries', 430, false, false, 2e9);
+		var r4 = r1.cas(r2).cas(r3); // Here is the cas method ...
+		r4.printNportSpars();
 		
-		//var r1 = nport('seriesRLCinSeries', 292.4, 5e-9, 1e-12, 1e9 );			//292.4, 5e-9, 1e-12, 1e9 ); 75, 'none', 'none', 2e9
-		//var r2 = nport('seriesRLCinSeries', 292.4, 5e-9, 1e-12, 1e9 );			//292.4, 5e-9, 1e-12, 1e9 );
-		//var r3 = nport('seriesRLCinSeries', 292.4, 5e-9, 1e-12, 1e9 );		//17.6, 5e-9, 1e-12, 1e9 
-		//var r4 = nport('seriesRLCinSeries', 292.4, 5e-9, 1e-12, 1e9 );
+		console.log(' ');
 		
-
-		//var r5 = r1.parallel(r2);
-		//var r6 = r3.parallel(r4);
-
-		//var r7 = r5.cas(r6);
-
-		//console.log('292.4, 5e-9, 1e-12, 1e9');
-		//r1.printNportSpars();
-		//console.log('4 by 292.4, 5e-9, 1e-12, 1e9  in array = 292.4, 5e-9, 1e-12, 1e9 ');
-		//r7.printNportSpars();
+		console.log('Method using nodal to determine the spars');
+		var r5 = nport('nodal', [[r1, 1, 2],
+								 [r2, 2, 3],
+								 [r3, 3, 4],
+								 [[1,2], 1, 4]] );
+		r5.printNportSpars();
 		
-		var r8 = nport('parallelRLCinSeries', 75, 'none', 'none', 2e9);	
-		r8.printNportSpars();
-		var r9 = nport('nodal', r8);
-		r9.printNportSpars();
-		//var r10 = r9.clone();
-		//r10.printNportSpars();
 		}	
 		ROOT.testButtonElement().addEventListener("click",doTest);
 

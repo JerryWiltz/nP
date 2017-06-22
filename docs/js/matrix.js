@@ -43,6 +43,7 @@ function gaussFwdBkElimination(Matrix) { //this works
 
 function gaussFwdBkEliminationCmplx(Matrix) { // this works 12/9/16
   var A = Matrix;
+  var a = new Complex(0,0);
   var numRows = A.length;
   var numCols = A[0].length;
 // Complex variable forward Elimination routine
@@ -51,18 +52,23 @@ function gaussFwdBkEliminationCmplx(Matrix) { // this works 12/9/16
         a = A[row][constRow].div(A[constRow][constRow]).neg();
           for(var col = constRow; col < numCols; col++) { // this sweeps across the columns
             A[row][col] = A[row][col].add(   a.mul(A[constRow][col]));
+            a.x += a.x;
+			
         }
       }
-    }     
-// Complex back substitution routine      
+    }
+	console.log(a.x);
+// Complex back substitution routine
+/*      
   for(var row = numRows -1; row > -1; row--) {
     //var accum = 0;
     var accum = new Complex(0,0);
       for(var col = numRows -1; col > row; col--) { 
         accum = accum.add(  A[row][col].mul( A[col][numCols -1]));
       }
-    A[row][numCols -1] =  (new Complex(1,0)).div(A[row][row]).mul( A[row][numCols -1].sub (accum));          
+    A[row][numCols -1] =  (    new Complex(1,0)      ).div(A[row][row]).mul( A[row][numCols -1].sub (accum));          
   }
+ */
   return A;
 }      
     

@@ -13,8 +13,8 @@ requirejs.config({
         lowpassInput: 'app/lowpassSetup',
 		lowpassDesign: 'app/lowpassDesign',
 		lowpassTest: 'app/lowpassTest',
-		Complex: 'app/Complex',
-		Nport: 'app/Nport',
+		complex: 'app/complex',
+		nport: 'app/nport',
 		matrix: 'app/matrix'
     }
 	
@@ -24,8 +24,8 @@ requirejs([
 'app/lowpassSetup',
 'app/lowpassDesign',
 'app/lowpassTest',
-'app/Complex',
-'app/Nport',
+'app/complex',
+'app/nport',
 //'app/matrix'
 ], function() {
 	//alert('I loaded'); // This happens last!! All the other things happen first!

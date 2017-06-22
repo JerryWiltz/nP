@@ -7,8 +7,9 @@
 		<script type="text/javascript" src="js/Complex.js"></script>
 		<script type="text/javascript" src="js/Nport.js"></script>
 		<script type="text/javascript" src="js/matrix.js"></script>
+		<script  type="text/javascript" src="js/showTable.js"></script>
 	</head>
-	<body>
+	<body id="body">
 	<script type="text/javascript">
 	document.write("MCAP: inputMatrix -> analysisMatrix -> outputMatrix " + "<br>");
       
@@ -27,7 +28,7 @@
 
 	one = new Complex(1,0);
 	zero = new Complex(0,0);
-
+	
 	//                    0                  1                  2                  3                  4                  5     6     7      8 
 	var A =[[R1.spars[0][0].neg(), R1.spars[0][1].neg(),                 zero,                 zero,                 zero,                 zero, zero,  one, zero], //0
 			[R1.spars[1][0].neg(), R1.spars[1][1].neg(),                  one,                 zero,                 zero,                 zero, zero, zero, zero], //1
@@ -38,9 +39,10 @@
 			[                zero,                 zero,                 zero,                 zero,                 zero,                  one, zero, zero,  one], //6  [6][8] is S11  
 			[                 one,                 zero,                 zero,                 zero,                 zero,                 zero, zero, zero, zero]];//7  [7][8] is S21
 	
-	printRealPartComplexMatrix(A); // Run this to show correct matrix	
-	
+	//printRealPartComplexMatrix(A); // Run this to show correct matrix	
+	showTable(A);
 	var OutMatrixB = gaussFwdBkEliminationCmplx(A);
+	showTable(OutMatrixB);
 	document.write(OutMatrixB[6][8].mag() + " s11 = 0.014208507670850776 " + "<br>"); //s11 = 0.014208507670850776 or -36.9 dB
 	document.write(OutMatrixB[7][8].mag() + " s21 = 0.8058751743375173" + "<br>"); //s21 = 0.8058751743375173   or -1.87 dB
 	
