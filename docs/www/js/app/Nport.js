@@ -2,13 +2,13 @@
 // This is going to be a big-ass file
 // Continued from 11/2016 to now, 6/2017
 
-define(['app/complex'], function (complex){
+define(['app/complex', 'app/matrix'], function (complex, matrix){
 "use strict";
 	var nport = function nport(...theArgs) {
 	//e.g. var RLC1 = nport('RCL', 'series', 75, 5e-9, 1e-9, 2e9 );	
 
 		var myArgs = theArgs,
-			spars = [],// The nport s-parameters
+			spars = [],             // The nport s-parameters
 			zpars = [],
 			ypars = [],
 			Zo = complex(50,0),   	// Default is 50 Ohms
@@ -17,6 +17,7 @@ define(['app/complex'], function (complex){
 			two = complex(2,0);
 
 	// Section 2: Begin the private component sparameter calculation section 
+		//series RLC
 		var seriesRLCinSeries = function seriesRLCinSeries() {	// if myArgs[1] is false, then R = 0; // F is Hz
 			var R = myArgs[1] || 0, L = myArgs[2] || 0, C = myArgs[3] || Infinity, F = myArgs[4] || 1,
 				Z = complex(R, + 2*Math.PI*L*F  -1/(2*Math.PI*C*F)  ),				  
@@ -27,7 +28,8 @@ define(['app/complex'], function (complex){
 			spars = [[s11, s12],
 					 [s21, s22]];
 			};
-
+			
+		//parallel RLC
 		var parallelRLCinSeries = function parallelRLCinSeries() {	
 			var R = myArgs[1] || 0, L = myArgs[2] || 0, C = myArgs[3] || Infinity, F = myArgs[4] || 1,
 				Z = complex(R, + 2*Math.PI*L*F  -1/(2*Math.PI*C*F)  ), Y = Z.inv(),
@@ -38,97 +40,84 @@ define(['app/complex'], function (complex){
 			spars = [[s11, s12],
 					 [s21, s22]];
 			};
-
+			
+		//sparsSingle ... takes a line of spars for a single frequency, (does not take a table of spars with more than one frequency)
 		var sparsSingle = function sparsSingle () {
 			var mySpars = myArgs[1]
 			spars = mySpars;
 			};
-
-		var nodal = function nodal() { // well, here we go, this is the BIG ONE!!
-			var allMyNports = myArgs[1];  // this moves all the nports into the nodal function
-			var row = 0, col = 0;
-			var analysisTableRows = 0;
-			var analysisTableCols = 0;
-			var analysisRow = []
-			var analysisTable = [];
 			
-			for (row = 0; row < allMyNports.length - 1; row++) { // Determine the dimensions of the analysis table
-				analysisTableRows += allMyNports[row][col].size;
-				//console.log(col);
+		//nodal ... this one takes nPorts and cascades nodally, this is the BIG ONE!!
+		var nodal = function nodal() { // this moves all the nports into the nodal function
+			var nPortInputsMatrix = myArgs[1], row = 0, col = 0, offset = 0, nPortCount = 0, outputPortCount = 0,
+				expandednPortInputsMatrix = [],
+				connectionScatteringMatrixRows = 0, connectionScatteringMatrixCols = 0, connectionScatteringMatrix = [];
+			
+			//get dimensions for BOTH the expanded input matrix and the connection scattering matrix
+			for (row = 0; row < nPortInputsMatrix.length; row++) { //get the size off all the spars
+				connectionScatteringMatrixRows += nPortInputsMatrix[row].length - 1; // -1 for don't count the nPort object, just include the node list items
+				connectionScatteringMatrixCols = connectionScatteringMatrixRows;
 			};
-			analysisTableRows += allMyNports[row][col].length;   // row dimension
-			analysisTableCols = 1 + analysisTableRows;			 // col dimension
-
-			for (row = 0; row < analysisTableRows; row++) { // Form the analysis table and load with complex 0's
-					analysisRow = [];
-					for (col = 0; col < analysisTableCols; col++) {
-						analysisRow[col] = complex(0, 0);
-					};
-					analysisTable[row] = analysisRow;
-			};		
-
-			// put r1.spars().neg() into analysis table   ....  what is the pattern?
-			for (row = 0; row < 2; row++) {
-				for(col = 0; col < 2; col++) {
-					analysisTable[row][col] = allMyNports[0][0].getSpars()[row][col].neg();
+			
+			// build the expanded input matrix
+			expandednPortInputsMatrix = matrix.dimension(connectionScatteringMatrixRows, connectionScatteringMatrixCols, 0 );//fill expanded input matrix with 0's
+			for (row = 0; row < connectionScatteringMatrixRows; row++) {//put the b's here in the first column 
+				expandednPortInputsMatrix[row][col] = row + 1;
+			};
+			for( nPortCount = 0, offset = 0; nPortCount < nPortInputsMatrix.length; nPortCount++) {//put the nodes here in the second colum
+				for( col = 0; col < nPortInputsMatrix[nPortCount].length -1; col++) {
+					//console.log('nPortInputsMatrix[nPortCount][col +1 ] = ' + nPortInputsMatrix[nPortCount][col + 1]);
+					expandednPortInputsMatrix[offset][1] = nPortInputsMatrix[nPortCount][col + 1];
+					offset++;
 				};
 			};
-			// put r2 into analysis table
-			for (row = 0 + 2; row < 2 + 2; row++) {
-				for(col = 0 + 2; col < 2 + 2; col++) {
-					analysisTable[row][col] = allMyNports[0 + 1][0].getSpars()[row - 2][col - 2].neg();
+			for (row = 0, col = 0; row < connectionScatteringMatrixRows; row++) {
+				expandednPortInputsMatrix[row][2] = row;
+			}
+			/*
+			expandednPortInputsMatrix[0][1] = nPortInputsMatrix[0][1];
+			
+			expandednPortInputsMatrix[0][1] = nPortInputsMatrix[0][1];
+			expandednPortInputsMatrix[1][1] = nPortInputsMatrix[0][2];
+			expandednPortInputsMatrix[2][1] = nPortInputsMatrix[1][1];
+			expandednPortInputsMatrix[3][1] = nPortInputsMatrix[1][2];
+			expandednPortInputsMatrix[4][1] = nPortInputsMatrix[2][1];
+			expandednPortInputsMatrix[5][1] = nPortInputsMatrix[2][2];
+			*/
+			
+			showTable(expandednPortInputsMatrix);
+			
+			connectionScatteringMatrix = matrix.dimension(connectionScatteringMatrixRows, connectionScatteringMatrixCols, complex(0,0) );//fill connection scattering matrix with complex 0's
+			
+			showTable(connectionScatteringMatrix);
+			
+			//fill the connection scattering matrix with interconnection informaton which are complex 1's
+			/*
+			connectionScatteringMatrix[1][2] = connectionScatteringMatrix[2][1] = complex(1, 0);
+			connectionScatteringMatrix[4][3] = connectionScatteringMatrix[3][4] = complex(1, 0);
+			connectionScatteringMatrix[7][5] = connectionScatteringMatrix[5][7] = complex(1, 0);
+			connectionScatteringMatrix[6][0] = connectionScatteringMatrix[0][6] = complex(1, 0);
+			*/	
+			//fill the connection scattering matrix with the negative of the spars of all the nPorts
+			//this puts in the submatrices of the nPorts along the diagonal of the connection scattering matrix
+			//each subsequent submatrix is [row][col] offset as shown below
+			/*
+			for(nPortCount = 0, offset = 0; nPortCount < nPortInputsMatrix.length - 1; nPortCount++) {
+				for (row = 0 + offset; row < nPortInputsMatrix[nPortCount].length - 1 + offset; row++) { //[0].sparsSize
+					for(col = 0 + offset ; col < nPortInputsMatrix[nPortCount].length - 1 + offset; col++) {  //[0].sparsSize
+						connectionScatteringMatrix[row][col] = nPortInputsMatrix[nPortCount][0].getSpars()[row - offset][col - offset].neg();
+					};
 				};
-			};				
-			// put r3 into analysis table
-			for (row = 0 + 2 + 2; row < 2 + 2 + 2 ; row++) {
-				for(col = 0 + 2 + 2; col < 2 + 2 + 2; col++) {
-					analysisTable[row][col] = allMyNports[0 + 1 + 1][0].getSpars()[row - 2 - 2][col - 2 - 2].neg();
-				};
+				offset += nPortInputsMatrix[nPortCount][0].sparsSize;
 			};
-
-			analysisTable[1][2] = analysisTable[2][1] = complex(1, 0); // put hookup configuration into the analysis table
-			analysisTable[3][4] = analysisTable[4][3] = complex(1, 0);
-			analysisTable[6][5] = analysisTable[5][6] = complex(1, 0);
-			analysisTable[7][0] = analysisTable[0][7] = complex(1, 0);
-			analysisTable[6][8] = complex(1, 0);				   	   // put exitation source location into the table (this is the input side)
+			*/
+			//showTable(connectionScatteringMatrix);
+			//var outSpars = matrix.invertCmplx(connectionScatteringMatrix); //this does the magic!
 			
-			//console.log(JSON.stringify(analysisTable[0][0]));
+			//var	s11 = outSpars[6][6], s21 = outSpars[7][6], s12 = outSpars[6][7], s22 = outSpars[7][7];
+			//spars = [[s11, s12], [s21, s22]];
 
-			//showTable(analysisTable);
-			
-			function gaussFwdBkEliminationCmplx(Matrix) { // this works 12/9/16
-				var A = Matrix, a = complex(0,0), numRows = A.length, numCols = A[0].length, constRow = 0,
-					row = 0, col = 0, accum = complex(0,0);
-					
-				// Complex variable forward Elimination routine
-				for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
-					for(row = constRow+1; row < numRows; row++) { // this row moves down
-						a = A[row][constRow].div(A[constRow][constRow]).neg();
-						for(col = constRow; col < numCols; col++) { // this sweeps across the columns
-							A[row][col] = A[row][col].add(   a.mul(A[constRow][col]));
-						};
-					};
-				};
-				
-				// Complex back substitution routine
-				for(row = numRows -1; row > -1; row--) {
-					for(col = numRows -1; col > row; col--) { 
-						accum = accum.add(  A[row][col].mul( A[col][numCols -1]));
-					};
-					A[row][numCols -1] =  (complex(1,0)).div(A[row][row]).mul( A[row][numCols -1].sub (accum));          
-				};
-				return A;
-			}; // end gaussFwdBkEliminationCmplx			
-					
-			var outSpars = gaussFwdBkEliminationCmplx(analysisTable),
-				s11 = outSpars[6][8],
-				s21 = outSpars[7][8],
-				s12 = s21,
-				s22 = s11;
-			spars = [[s11, s12],
-					 [s21, s22]];
-
-		};
+		};  //end of nodal
 
 		// Section 3: This calls all the 'constructor-type' functions in Section 2, there are or will be lots of them!!					
 		var typeNport =	function typeNport(nportName) {							
@@ -268,8 +257,12 @@ define(['app/complex'], function (complex){
 		
 			// the various print methods
 		var printNportSpars = function () {
-			console.log(spars[0][0].mag() + " " + spars[0][0].ang());
-			console.log(spars[0][1].mag() + " " + spars[0][1].ang());
+			//console.log('mag and ang')
+			//console.log(spars[0][0].mag() + " " + spars[0][0].ang());
+			//console.log(spars[0][1].mag() + " " + spars[0][1].ang());
+			console.log('real and imagine')
+			console.log(spars[0][0].x + " " + spars[0][0].y);
+			console.log(spars[0][1].x + " " + spars[0][1].y);
 		};
 
 		var printNportZpars = function () {
@@ -283,17 +276,17 @@ define(['app/complex'], function (complex){
 		};
 
 		var printNportdB = function () {
-			console.log(20*Math.log(spars[0][0].mag())/Math.log(10) + " " + spars[0][0].ang());
-			console.log(20*Math.log(spars[0][1].mag())/Math.log(10) + " " + spars[0][1].ang());
-			console.log(20*Math.log(spars[1][0].mag())/Math.log(10) + " " + spars[1][0].ang());
-			console.log(20*Math.log(spars[1][1].mag())/Math.log(10) + " " + spars[1][1].ang());
+			//console.log(20*Math.log(spars[0][0].mag())/Math.log(10) + " " + spars[0][0].ang());
+			console.log(20*Math.log(spars[0][1].mag())/Math.log(10));// + " " + spars[0][1].ang());
+			//console.log(20*Math.log(spars[1][0].mag())/Math.log(10) + " " + spars[1][0].ang());
+			//console.log(20*Math.log(spars[1][1].mag())/Math.log(10) + " " + spars[1][1].ang());
 		};
 
 		// Section 5: This is the Object that is returned
 		return {
 			// The object data (what shows in JSON.stringify(c1) for example) 
 			name : 'nport',
-			size : spars.length,
+			sparsSize : spars.length,
 			
 			// The ojbect methods
 			getSpars : getSpars, // getters
@@ -339,12 +332,12 @@ define(['app/complex'], function (complex){
 				};
 
 			var myMatrix = 
-			[[allMyNports[0].getSpars()[0][0].neg(), allMyNports[0].getSpars()[0][1].neg(), complex(0,0), complex(0,0), complex(0,0), complex(0,0), complex(0,0), complex(1,0), complex(0,0)],  
-			 [allMyNports[0].getSpars()[1][0].neg(), allMyNports[0].getSpars()[1][1].neg(), complex(1,0), complex(0,0), complex(0,0), complex(0,0), complex(0,0), complex(0,0), complex(0,0)],
-			 [complex(0,0), complex(1,0), allMyNports[1].getSpars()[0][0].neg(), allMyNports[1].getSpars()[0][1].neg(), complex(0,0), complex(0,0), complex(0,0), complex(0,0), complex(0,0)],
-			 [complex(0,0), complex(0,0), allMyNports[1].getSpars()[1][0].neg(), allMyNports[1].getSpars()[1][1].neg(), complex(1,0), complex(0,0), complex(0,0), complex(0,0), complex(0,0)],
-			 [complex(0,0), complex(0,0), complex(0,0), complex(1,0), allMyNports[2].getSpars()[0][0].neg(), allMyNports[2].getSpars()[0][1].neg(), complex(0,0), complex(0,0), complex(0,0)],
-			 [complex(0,0), complex(0,0), complex(0,0), complex(0,0), allMyNports[2].getSpars()[1][0].neg(), allMyNports[2].getSpars()[1][1].neg(), complex(1,0), complex(0,0), complex(0,0)],
+			[[nPortInputsMatrix[0].getSpars()[0][0].neg(), nPortInputsMatrix[0].getSpars()[0][1].neg(), complex(0,0), complex(0,0), complex(0,0), complex(0,0), complex(0,0), complex(1,0), complex(0,0)],  
+			 [nPortInputsMatrix[0].getSpars()[1][0].neg(), nPortInputsMatrix[0].getSpars()[1][1].neg(), complex(1,0), complex(0,0), complex(0,0), complex(0,0), complex(0,0), complex(0,0), complex(0,0)],
+			 [complex(0,0), complex(1,0), nPortInputsMatrix[1].getSpars()[0][0].neg(), nPortInputsMatrix[1].getSpars()[0][1].neg(), complex(0,0), complex(0,0), complex(0,0), complex(0,0), complex(0,0)],
+			 [complex(0,0), complex(0,0), nPortInputsMatrix[1].getSpars()[1][0].neg(), nPortInputsMatrix[1].getSpars()[1][1].neg(), complex(1,0), complex(0,0), complex(0,0), complex(0,0), complex(0,0)],
+			 [complex(0,0), complex(0,0), complex(0,0), complex(1,0), nPortInputsMatrix[2].getSpars()[0][0].neg(), nPortInputsMatrix[2].getSpars()[0][1].neg(), complex(0,0), complex(0,0), complex(0,0)],
+			 [complex(0,0), complex(0,0), complex(0,0), complex(0,0), nPortInputsMatrix[2].getSpars()[1][0].neg(), nPortInputsMatrix[2].getSpars()[1][1].neg(), complex(1,0), complex(0,0), complex(0,0)],
 			 [complex(0,0), complex(0,0), complex(0,0), complex(0,0), complex(0,0), complex(1,0), complex(0,0), complex(0,0), complex(1,0)],
 			 [complex(1,0), complex(0,0), complex(0,0), complex(0,0), complex(0,0), complex(0,0), complex(0,0), complex(0,0), complex(0,0)]]
 
