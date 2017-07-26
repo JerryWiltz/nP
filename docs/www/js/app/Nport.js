@@ -48,10 +48,15 @@ define(['app/complex', 'app/matrix'], function (complex, matrix){
 			};
 			
 		//nodal ... this one takes nPorts and cascades nodally, this is the BIG ONE!!
-		var nodal = function nodal() { // this moves all the nports into the nodal function
-			var nPortInputsMatrix = myArgs[1], row = 0, col = 0, offset = 0, nPortCount = 0, outputPortCount = 0,
-				expandednPortInputsMatrix = [],
-				connectionScatteringMatrixRows = 0, connectionScatteringMatrixCols = 0, connectionScatteringMatrix = [];
+		var nodal = function nodal() {           //this moves all the nports into the nodal function
+			var nPortInputsMatrix = myArgs[1],   //the matrix containing the nPorts with their nodes
+				expandednPortInputsMatrix = [],  //the matrix that has b's, nodes, and a's in 3 columns
+				connectionScatteringMatrix = [], //the matrix that must be solved, having negative spars and connections
+				resultMatrix = [],               //the matrix containing the resulting final spars
+				outSpars = [],                   //the lower right corner of resultMatrix with spars that are put into the spars array
+				row = 0, col = 0, offset = 0, nPortCount = 0,
+				connectionScatteringMatrixRows = 0, connectionScatteringMatrixCols = 0, connectionScatteringMatrixRowCount = 0,
+				outSparsRowsCols = 0;
 			
 			//get dimensions for BOTH the expanded input matrix and the connection scattering matrix
 			for (row = 0; row < nPortInputsMatrix.length; row++) { //get the size off all the spars
@@ -59,73 +64,87 @@ define(['app/complex', 'app/matrix'], function (complex, matrix){
 				connectionScatteringMatrixCols = connectionScatteringMatrixRows;
 			};
 			
-			// build the expanded input matrix
+			// build and populate the expanded input matrix
 			expandednPortInputsMatrix = matrix.dimension(connectionScatteringMatrixRows, connectionScatteringMatrixCols, 0 );//fill expanded input matrix with 0's
 			for (row = 0; row < connectionScatteringMatrixRows; row++) {//put the b's here in the first column 
 				expandednPortInputsMatrix[row][col] = row + 1;
-			};
+			};  //showTable(expandednPortInputsMatrix);	
 			for( nPortCount = 0, offset = 0; nPortCount < nPortInputsMatrix.length; nPortCount++) {//put the nodes here in the second colum
 				for( col = 0; col < nPortInputsMatrix[nPortCount].length -1; col++) {
-					//console.log('nPortInputsMatrix[nPortCount][col +1 ] = ' + nPortInputsMatrix[nPortCount][col + 1]);
 					expandednPortInputsMatrix[offset][1] = nPortInputsMatrix[nPortCount][col + 1];
 					offset++;
 				};
-			};
-			for (row = 0, col = 0; row < connectionScatteringMatrixRows; row++) {
-				expandednPortInputsMatrix[row][2] = row;
-			}
-			/*
-			expandednPortInputsMatrix[0][1] = nPortInputsMatrix[0][1];
+			};  //showTable(expandednPortInputsMatrix);
+			for (connectionScatteringMatrixRowCount = 0; connectionScatteringMatrixRowCount < connectionScatteringMatrixRows; connectionScatteringMatrixRowCount++) {
+				for (row = 0; row < connectionScatteringMatrixRows; row++) {
+					//the if statement makes sure the pivot row is not counted
+					if ( !(connectionScatteringMatrixRowCount === row) && (expandednPortInputsMatrix[connectionScatteringMatrixRowCount][1] === expandednPortInputsMatrix[row][1])   ) {
+						expandednPortInputsMatrix[row][2] = expandednPortInputsMatrix[connectionScatteringMatrixRowCount][0]; //put the a's in the 3rd column
+					};
+				};
+			};  //showTable(expandednPortInputsMatrix);
 			
-			expandednPortInputsMatrix[0][1] = nPortInputsMatrix[0][1];
-			expandednPortInputsMatrix[1][1] = nPortInputsMatrix[0][2];
-			expandednPortInputsMatrix[2][1] = nPortInputsMatrix[1][1];
-			expandednPortInputsMatrix[3][1] = nPortInputsMatrix[1][2];
-			expandednPortInputsMatrix[4][1] = nPortInputsMatrix[2][1];
-			expandednPortInputsMatrix[5][1] = nPortInputsMatrix[2][2];
-			*/
+			//build and populate the connection scattering matrix
+			connectionScatteringMatrix = matrix.dimension(connectionScatteringMatrixRows, connectionScatteringMatrixCols, complex(0, 0) );//fill connection scattering matrix with complex 0's
+			for (connectionScatteringMatrixRowCount = 0; connectionScatteringMatrixRowCount < connectionScatteringMatrixRows; connectionScatteringMatrixRowCount++) {
+				connectionScatteringMatrix[ expandednPortInputsMatrix[connectionScatteringMatrixRowCount][0] - 1 ]
+				                          [ expandednPortInputsMatrix[connectionScatteringMatrixRowCount][2] - 1 ] = complex(1, 0); //put in one's to form the connections
+			}; //showTable(connectionScatteringMatrix);
 			
-			showTable(expandednPortInputsMatrix);
-			
-			connectionScatteringMatrix = matrix.dimension(connectionScatteringMatrixRows, connectionScatteringMatrixCols, complex(0,0) );//fill connection scattering matrix with complex 0's
-			
-			showTable(connectionScatteringMatrix);
-			
-			//fill the connection scattering matrix with interconnection informaton which are complex 1's
-			/*
-			connectionScatteringMatrix[1][2] = connectionScatteringMatrix[2][1] = complex(1, 0);
-			connectionScatteringMatrix[4][3] = connectionScatteringMatrix[3][4] = complex(1, 0);
-			connectionScatteringMatrix[7][5] = connectionScatteringMatrix[5][7] = complex(1, 0);
-			connectionScatteringMatrix[6][0] = connectionScatteringMatrix[0][6] = complex(1, 0);
-			*/	
 			//fill the connection scattering matrix with the negative of the spars of all the nPorts
 			//this puts in the submatrices of the nPorts along the diagonal of the connection scattering matrix
 			//each subsequent submatrix is [row][col] offset as shown below
-			/*
 			for(nPortCount = 0, offset = 0; nPortCount < nPortInputsMatrix.length - 1; nPortCount++) {
 				for (row = 0 + offset; row < nPortInputsMatrix[nPortCount].length - 1 + offset; row++) { //[0].sparsSize
 					for(col = 0 + offset ; col < nPortInputsMatrix[nPortCount].length - 1 + offset; col++) {  //[0].sparsSize
+						//console.log(row + ' ' + col);
 						connectionScatteringMatrix[row][col] = nPortInputsMatrix[nPortCount][0].getSpars()[row - offset][col - offset].neg();
 					};
 				};
 				offset += nPortInputsMatrix[nPortCount][0].sparsSize;
-			};
-			*/
-			//showTable(connectionScatteringMatrix);
-			//var outSpars = matrix.invertCmplx(connectionScatteringMatrix); //this does the magic!
+			}; //showTable(connectionScatteringMatrix);
 			
-			//var	s11 = outSpars[6][6], s21 = outSpars[7][6], s12 = outSpars[6][7], s22 = outSpars[7][7];
-			//spars = [[s11, s12], [s21, s22]];
-
+			resultMatrix = matrix.invertCmplx(connectionScatteringMatrix); //this does the magic!
+			//showTable(resultMatrix);
+			//create the outSpars matrix
+			outSparsRowsCols = nPortInputsMatrix[nPortInputsMatrix.length-1].length-1
+			outSpars = matrix.dimension(outSparsRowsCols, outSparsRowsCols, complex(0,0) )			
+			for (row = 0; row < outSparsRowsCols; row++) {
+				for (col = 0; col < outSparsRowsCols; col++) {
+					outSpars[row][col] = resultMatrix[connectionScatteringMatrixRows - outSparsRowsCols + row]
+					                                 [connectionScatteringMatrixRows - outSparsRowsCols + col]; //resultMatrix[row][col];
+				};
+			};
+		
+			spars = outSpars;
+			//showTable(spars);
+			
 		};  //end of nodal
-
+		
+		//wireTee
+		var wireTee = function wireTee() {	
+			spars = [[complex(-3.33e-1,0), complex(6.67e-1,0) , complex(6.67e-1,0)],
+			         [complex(6.67e-1,0) , complex(-3.33e-1,0), complex(6.67e-1,0)],
+				     [complex(6.67e-1,0) , complex(6.67e-1,0) , complex(-3.33e-1,0)]];
+			}; //end of wireTee
+		
+		//wireCross
+		var wireCross = function wireCross() {	
+			spars = [[complex(-5.001e-1,0), complex(5.001e-1,0) , complex(5.001e-1,0) , complex(5.001e-1,0)],
+					 [complex(5.001e-1,0) , complex(-5.001e-1,0), complex(5.001e-1,0) , complex(5.001e-1,0)],
+					 [complex(5.001e-1,0) , complex(5.001e-1,0) , complex(-5.001e-1,0), complex(5.001e-1,0)],
+					 [complex(5.001e-1,0) , complex(5.001e-1,0) , complex(5.001e-1,0) , complex(-5.001e-1,0)]];	
+			}; //end of wireCress		
+			
 		// Section 3: This calls all the 'constructor-type' functions in Section 2, there are or will be lots of them!!					
 		var typeNport =	function typeNport(nportName) {							
 			var out = {
 				'seriesRLCinSeries' :  function () {return seriesRLCinSeries();},		//nport(seriesRLCinSeries, R, L, C, F)
 				'parallelRLCinSeries' : function () {return parallelRLCinSeries();},	//nport(parallelRLCinSeries, R, L, C, F)	
 				'sparsSingle' : function () {return sparsSingle();}, 					// nport('spar', spar)
-				'nodal' : function () {return nodal();}, 
+				'nodal' : function () {return nodal();},
+				'wireTee' : function () {return wireTee();},
+				'wireCross' : function () {return wireCross();},
 			};
 		return out[nportName]();
 		};
@@ -276,10 +295,11 @@ define(['app/complex', 'app/matrix'], function (complex, matrix){
 		};
 
 		var printNportdB = function () {
-			//console.log(20*Math.log(spars[0][0].mag())/Math.log(10) + " " + spars[0][0].ang());
-			console.log(20*Math.log(spars[0][1].mag())/Math.log(10));// + " " + spars[0][1].ang());
-			//console.log(20*Math.log(spars[1][0].mag())/Math.log(10) + " " + spars[1][0].ang());
-			//console.log(20*Math.log(spars[1][1].mag())/Math.log(10) + " " + spars[1][1].ang());
+			//console.log(20*Math.log(spars[0][0].mag())/Math.log(10) + " at " + spars[0][0].ang());
+			//console.log(20*Math.log(spars[0][1].mag())/Math.log(10) + " at " + spars[0][1].ang());
+			console.log( (20*Math.log(spars[1][0].mag())/Math.log(10)).toPrecision(3) + 'dB'); // at " + spars[1][0].ang().toPrecision(3));
+			//console.log(spars[1][0].mag().toPrecision(3) + " at " + spars[1][0].ang().toPrecision(3));
+			//console.log(20*Math.log(spars[1][1].mag())/Math.log(10) + " at " + spars[1][1].ang());
 		};
 
 		// Section 5: This is the Object that is returned

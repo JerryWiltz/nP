@@ -10,9 +10,9 @@ requirejs.config({
     //the paths config could be for a directory.
 	
     paths: {
-        lowpassInput: 'app/lowpassSetup',
-		lowpassDesign: 'app/lowpassDesign',
-		lowpassTest: 'app/lowpassTest',
+        storage: 'app/storage',
+		lowpassDesign: 'app/lowPassDesign',
+		lowpassTest: 'app/lowPassTest',
 		complex: 'app/complex',
 		nport: 'app/nport',
 		matrix: 'app/matrix'
@@ -21,12 +21,12 @@ requirejs.config({
 });
 
 requirejs([
-'app/lowpassSetup',
-'app/lowpassDesign',
-'app/lowpassTest',
+'app/storage',
+'app/lowPassDesign',
+'app/lowPassTest',
 'app/complex',
 'app/nport',
-//'app/matrix'
+'app/matrix'
 ], function() {
 	//alert('I loaded'); // This happens last!! All the other things happen first!
 });

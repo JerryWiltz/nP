@@ -6,7 +6,7 @@ define(['app/complex'], function(complex){
 		
 		//seeMe
 		seeMe : function() {
-			console.log('I am here');
+			console.log('I am here in matrix');
 		},
 		
 		//dimension
@@ -141,8 +141,8 @@ define(['app/complex'], function(complex){
 			tempRow = matrix[pivotNum];
 			matrix[pivotNum] = matrix[swapRow];
 			matrix[swapRow] = tempRow;
-		showTable([['jerry']]);
-			showTable(matrix);
+		//showTable([['jerry']]);
+			//showTable(matrix);
 		},		
 
 		//swapRows for maximizing the upper triangle pivot numbers
@@ -304,8 +304,7 @@ define(['app/complex'], function(complex){
 			//add diagonal 1's to appened array, A
 			for(row = 0; row < numRows; row++) {
 				A[row][row + numRows] = complex(1, 0);
-			};
-			//showTable(A);
+			}; //showTable(A);			
 			// Real variable forward lower Elimination routine  
 			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
 			//matrix.swapRowsLCmplx(A, constRow);
@@ -316,7 +315,7 @@ define(['app/complex'], function(complex){
 						A[row][col] = A[row][col].add(a.mul(A[constRow][col]));
 					};
 				};
-			};
+			}; //showTable(A)
 			// Real variable forward unity diagonal routine
 			
 			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
