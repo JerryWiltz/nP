@@ -3,15 +3,6 @@
 	<head>
 		<title>Low Pass Filter with real requirejs modules</title>
 	
-
-		
-    <style>
-      circle {
-        fill: none;
-        stroke-width: 2px;
-      }
-    </style>
-	
 	<!-- script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.10.0/d3.min.js"></script -->
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
 	
@@ -34,52 +25,60 @@
 					<td id='plotArea' rowspan='24'>
 					
 		<!--this is where the svg base plots will be-->
-<!--"http://localhost:3000"  https://rawgit.com/JerryWiltz/MCAP/master/docs/www/data.csv https://rawgit.com/JerryWiltz/MCAP/master/docs/www/iris.csv  -->
+<!--"http://localhost:3000" 
+ https://rawgit.com/JerryWiltz/MCAP/master/docs/www/data.csv https://rawgit.com/JerryWiltz/MCAP/master/docs/www/iris.csv  
+ https://rawgit.com/JerryWiltz/MCAP/master/docs/www/countries_population_GDP.csv  -->
     <script>
 
-      var outerWidth = 300;
+      var outerWidth  = 300;
       var outerHeight = 250;
-      var rMin = 5; // "r" stands for radius
+
+      var marginLeft   = 30;
+      var marginTop    = 30;
+      var marginRight  = 30;
+      var marginBottom = 30;
+
+      var innerWidth  = outerWidth  - marginLeft - marginRight;
+      var innerHeight = outerHeight - marginTop  - marginBottom;
+      var rMin = 0; // "r" stands for radius
       var rMax = 20;
-      var xColumn = "sepal_length";
-      var yColumn = "petal_length";
-      var rColumn = "sepal_width";
-      var colorColumn = "species";
+      var xColumn = "population";
+      var yColumn = "gdp";
+      var rColumn = "population";
 
       var svg = d3.select("#plotArea").append("svg")
-        .attr("width", outerWidth)
+        .attr("width",  outerWidth)
         .attr("height", outerHeight);
 
-      var xScale = d3.scale.linear().range([0, outerWidth]);
-      var yScale = d3.scale.linear().range([outerHeight, 0]);
-      var rScale = d3.scale.linear().range([rMin, rMax]);
-      var colorScale = d3.scale.category10();
+      var g = svg.append("g")
+        .attr("transform", "translate(" + marginLeft + "," + marginTop + ")");
+
+      var xScale = d3.scale.log().range([0, innerWidth]);
+      var yScale = d3.scale.log().range([innerHeight, 0]);
+      var rScale = d3.scale.sqrt().range([rMin, rMax]);
 
       function render(data){
-        xScale.domain(d3.extent(data, function (d){ return d[xColumn]; }));
-        yScale.domain(d3.extent(data, function (d){ return d[yColumn]; }));
-        rScale.domain(d3.extent(data, function (d){ return d[rColumn]; }));
 
-        var circles = svg.selectAll("circle").data(data);
+        xScale.domain( d3.extent(data, function (d){ return d[xColumn]; }));
+        yScale.domain( d3.extent(data, function (d){ return d[yColumn]; }));
+        rScale.domain([0, d3.max(data, function (d){ return d[rColumn]; })]);
+
+        var circles = g.selectAll("circle").data(data);
         circles.enter().append("circle");
         circles
-          .attr("cx",      function (d){ return     xScale(d[xColumn]);     })
-          .attr("cy",      function (d){ return     yScale(d[yColumn]);     })
-          .attr("r",       function (d){ return     rScale(d[rColumn]);     })
-          .attr("stroke",  function (d){ return colorScale(d[colorColumn]); });
-
+          .attr("cx", function (d){ return xScale(d[xColumn]); })
+          .attr("cy", function (d){ return yScale(d[yColumn]); })
+          .attr("r",  function (d){ return rScale(d[rColumn]); });
         circles.exit().remove();
       }
 
       function type(d){
-        d.sepal_length = +d.sepal_length;
-        d.sepal_width  = +d.sepal_width;
-        d.petal_length = +d.petal_length;
-        d.petal_width  = +d.petal_width;
+        d.population = +d.population;
+        d.gdp        = +d.gdp;
         return d;
       }
 
-      d3.csv("https://rawgit.com/JerryWiltz/MCAP/master/docs/www/iris.csv", type, render);
+      d3.csv("https://rawgit.com/JerryWiltz/MCAP/master/docs/www/countries_population_GDP.csv", type, render);
 
     </script>
 				
