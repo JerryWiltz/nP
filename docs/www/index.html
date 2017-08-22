@@ -5,15 +5,13 @@
 	
 
 		
-		<style>
-			body {display: block; margin: 8px;}
-			.gridRect { fill:white; stroke:black; stroke-width:01px; fill-opacity:0; stroke-opacity:1}
-			.gridLine { stroke:rgb(0,255,0); stroke-width:1}
-      .my-circle {
-        fill: gray;
+    <style>
+      circle {
+        fill: none;
+        stroke-width: 2px;
       }
-
-		</style>
+    </style>
+	
 	<!-- script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.10.0/d3.min.js"></script -->
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
 	
@@ -33,41 +31,55 @@
 				<!-- Row 2: 3 column row: td, td, td -->
 				<tr><td>Max Pass Freq:</td>
 					<td><input id="maxPassFreq" value=".2"></td>
-					<td id='plotArea' rowspan='16'>
+					<td id='plotArea' rowspan='24'>
 					
 		<!--this is where the svg base plots will be-->
-<!--"http://localhost:3000"  https://rawgit.com/JerryWiltz/MCAP/master/docs/www/data.csv -->
+<!--"http://localhost:3000"  https://rawgit.com/JerryWiltz/MCAP/master/docs/www/data.csv https://rawgit.com/JerryWiltz/MCAP/master/docs/www/iris.csv  -->
     <script>
 
+      var outerWidth = 300;
+      var outerHeight = 250;
+      var rMin = 5; // "r" stands for radius
+      var rMax = 20;
+      var xColumn = "sepal_length";
+      var yColumn = "petal_length";
+      var rColumn = "sepal_width";
+      var colorColumn = "species";
+
       var svg = d3.select("#plotArea").append("svg")
-        .attr("width",  250)
-        .attr("height", 250);
+        .attr("width", outerWidth)
+        .attr("height", outerHeight);
+
+      var xScale = d3.scale.linear().range([0, outerWidth]);
+      var yScale = d3.scale.linear().range([outerHeight, 0]);
+      var rScale = d3.scale.linear().range([rMin, rMax]);
+      var colorScale = d3.scale.category10();
 
       function render(data){
+        xScale.domain(d3.extent(data, function (d){ return d[xColumn]; }));
+        yScale.domain(d3.extent(data, function (d){ return d[yColumn]; }));
+        rScale.domain(d3.extent(data, function (d){ return d[rColumn]; }));
 
-        // Bind data
         var circles = svg.selectAll("circle").data(data);
-        
-        // Enter
-        circles.enter().append("circle")
-          .attr("r", 10);
-
-        // Update
+        circles.enter().append("circle");
         circles
-          .attr("cx", function (d){ return d.x; })
-          .attr("cy", function (d){ return d.y; });
+          .attr("cx",      function (d){ return     xScale(d[xColumn]);     })
+          .attr("cy",      function (d){ return     yScale(d[yColumn]);     })
+          .attr("r",       function (d){ return     rScale(d[rColumn]);     })
+          .attr("stroke",  function (d){ return colorScale(d[colorColumn]); });
 
-        // Exit
         circles.exit().remove();
       }
 
       function type(d){
-        d.x = +d.x;
-        d.y = +d.y;
+        d.sepal_length = +d.sepal_length;
+        d.sepal_width  = +d.sepal_width;
+        d.petal_length = +d.petal_length;
+        d.petal_width  = +d.petal_width;
         return d;
       }
 
-      d3.csv("https://rawgit.com/JerryWiltz/MCAP/master/docs/www/data.csv", type, render);
+      d3.csv("https://rawgit.com/JerryWiltz/MCAP/master/docs/www/iris.csv", type, render);
 
     </script>
 				
