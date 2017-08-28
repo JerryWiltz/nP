@@ -6,62 +6,80 @@
 	<!-- script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.10.0/d3.min.js"></script -->
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
 	
+    <style>
+
+      .plot {
+        background: #434144;
+      }
+
+      circle {
+        fill: rgba(255, 255, 255, 0.2);
+      }
+
+    </style>
+	
 	</head>
 	<body id="body">
 	
 
 	
 		<div id="firstDiv">
-			<table id="firstTable" style="width:740px">
+			<table id="firstTable" style="width:880px">
 			
 				<!-- Row 1: 3 column row: th, th, th-->
 				<tr><th style="width:180px">Description</th>
 					<th style="width:180px">Data and Buttons</th>
-					<th style="width:360px">Output Plots</th></tr>
+					<th style="width:520px">Output Plots</th></tr>
 					
 				<!-- Row 2: 3 column row: td, td, td -->
 				<tr><td>Max Pass Freq:</td>
 					<td><input id="maxPassFreq" value=".2"></td>
-					<td id='plotArea' rowspan='24'>
+					<td id='plotArea' class='plot' rowspan='34'>
 					
 		<!--this is where the svg base plots will be-->
-<!--"http://localhost:3000" 
- https://rawgit.com/JerryWiltz/MCAP/master/docs/www/data.csv https://rawgit.com/JerryWiltz/MCAP/master/docs/www/iris.csv  
- https://rawgit.com/JerryWiltz/MCAP/master/docs/www/countries_population_GDP.csv  -->
+<!--
+http://localhost:3000
+https://rawgit.com/JerryWiltz/MCAP/master/docs/www/data.csv https://rawgit.com/JerryWiltz/MCAP/master/docs/www/iris.csv
+https://rawgit.com/JerryWiltz/MCAP/master/docs/www/countries_population_GDP.csv
+https://rawgit.com/curran/data/gh-pages/geonames/cities100000.csv
+slide 97
+ -->
     <script>
 
-      var outerWidth  = 300;
+      var outerWidth  = 500;
       var outerHeight = 250;
+      var margin = { left: -50, top: 0, right: -50, bottom: 0 };
 
-      var marginLeft   = 30;
-      var marginTop    = 30;
-      var marginRight  = 30;
-      var marginBottom = 30;
-
-      var innerWidth  = outerWidth  - marginLeft - marginRight;
-      var innerHeight = outerHeight - marginTop  - marginBottom;
-      var rMin = 0; // "r" stands for radius
-      var rMax = 20;
-      var xColumn = "population";
-      var yColumn = "gdp";
+      var xColumn = "longitude";
+      var yColumn = "latitude";
       var rColumn = "population";
+      var peoplePerPixel = 100000;
+
+      var innerWidth  = outerWidth  - margin.left - margin.right;
+      var innerHeight = outerHeight - margin.top  - margin.bottom;
 
       var svg = d3.select("#plotArea").append("svg")
         .attr("width",  outerWidth)
         .attr("height", outerHeight);
 
       var g = svg.append("g")
-        .attr("transform", "translate(" + marginLeft + "," + marginTop + ")");
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-      var xScale = d3.scale.log().range([0, innerWidth]);
-      var yScale = d3.scale.log().range([innerHeight, 0]);
-      var rScale = d3.scale.sqrt().range([rMin, rMax]);
+      var xScale = d3.scale.linear().range([0, innerWidth]);
+      var yScale = d3.scale.linear().range([innerHeight, 0]);
+      var rScale = d3.scale.sqrt();
 
       function render(data){
 
         xScale.domain( d3.extent(data, function (d){ return d[xColumn]; }));
         yScale.domain( d3.extent(data, function (d){ return d[yColumn]; }));
         rScale.domain([0, d3.max(data, function (d){ return d[rColumn]; })]);
+
+        // Compute the size of the biggest circle as a function of peoplePerPixel.
+        var peopleMax = rScale.domain()[1];
+        var rMin = 0;
+        var rMax = Math.sqrt(peopleMax / (peoplePerPixel * Math.PI));
+        rScale.range([rMin, rMax]);
 
         var circles = g.selectAll("circle").data(data);
         circles.enter().append("circle");
@@ -73,12 +91,13 @@
       }
 
       function type(d){
+        d.latitude   = +d.latitude;
+        d.longitude  = +d.longitude;
         d.population = +d.population;
-        d.gdp        = +d.gdp;
         return d;
       }
 
-      d3.csv("https://rawgit.com/JerryWiltz/MCAP/master/docs/www/countries_population_GDP.csv", type, render);
+      d3.csv("https://rawgit.com/curran/data/gh-pages/geonames/cities100000.csv", type, render);
 
     </script>
 				
