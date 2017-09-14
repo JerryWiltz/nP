@@ -1,84 +1,158 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width">
-  <title>Jerry's D3</title>
-      <style>
-      path {
+  <meta charset='utf-8'>
+  <meta name='viewport' content='width=device-width'>
+  <title>index3Balls.html</title>
+    <!--  
+    <style>
+
+      .chart-line {
         fill: none;
         stroke: blue;
         stroke-width: 1px;
       }
-	  circle {
-	    fill: blue;
-	  }
+    
+      .axis text {
+        font-size: 8pt;
+      }
+      .axis ,.label {
+        font-size: 20pt;
+      }
+
+      .axis path, .axis line {
+        fill: none;
+        stroke: #000000;
+        shape-rendering: crispEdges;
+      }
+
     </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.10.0/d3.min.js"></script>
-  <script src="file:///C:/Users/Jerry/Desktop/MCAP/docs/www/js/app/showTable.js"></script>
+	-->
+  
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/d3/4.10.0/d3.min.js'></script>
+      <link href='http://fonts.googleapis.com/css?family=Poiret+One' rel='stylesheet' type='text/css'>
+  <script src='file:///C:/Users/Jerry/Desktop/MCAP/docs/www/js/app/showTable.js'></script>
 </head>
-<body id="body">
-<svg width="250" height="150"></svg>
+<body id='body'>
+<svg></svg>
 
 <script>
+
 //get the data
-var myFilter = [["Freq", "InsertionLoss"],
-				[40, 20],
-				[80, 22],
-				[120, 80],
-				[160, 100],
-				[200, 120]];
+var multiplier = 1;
 
-showTable(myFilter);				
-//turn data to csv
-var csvCreate = function csvCreate(myFilter) {
-	var row = 1, col = 0, csv = "";
-	
-	csv = myFilter[0][0] + "," + myFilter[0][1] + "\n";
-	for (row = 1; row < myFilter.length; row++) {
-		csv += myFilter[row][col].toString() + "," + myFilter[row][col+1] + "\n";
-		}
-		col++;
-	return csv;
-}
-var myCSV = csvCreate(myFilter);
+var myFilter = [['Freq', 'InsertionLoss'],
+				[40  * multiplier, 20  * multiplier],
+				[80  * multiplier, 22  * multiplier],
+				[120 * multiplier, 80  * multiplier],
+				[160 * multiplier, 100 * multiplier],
+				[200 * multiplier, 120 * multiplier]];
+				
+//function to turn data into tsv
+var tsv = '';
+myFilter.forEach( (element) => {
+    tsv += element.join('\t') + '\n';
+}); 
 		
-//turn csv data into d3 data
-var data = d3.csvParse(myCSV);
+//turn tsv data into d3 data
+var data = d3.tsvParse(tsv);
 
-//mutate data from string to float		
-data.forEach(function (d){string2Float(d);});
-		
-function string2Float(d){
+//change data type from string to float		
+data.forEach( (d) => {
 	d.Freq = +d.Freq;
 	d.InsertionLoss = +d.InsertionLoss;
-	return d;
-}
+});
 
-//create the canvas
-var canvas = d3.select("svg");
+//create the svg
+var outerWidth = 500;
+var outerHeight = 250;
 
+var margin = { left: 70, top: 20, right: 70, bottom: 60 };
+
+var innerWidth  = outerWidth  - margin.left - margin.right;
+var innerHeight = outerHeight - margin.top  - margin.bottom;
+
+var xAxisLabelText = "Frequency, GHz";
+var xAxisLabelOffset = 48;
+
+var yAxisLabelText = "RTN Loss, dB";
+var yAxisLabelOffset = 40;
+
+var svg = d3.select('svg')
+.attr('width',  outerWidth)
+.attr('height', outerHeight);
+
+var rect = svg.append('rect')
+.attr("width", outerWidth)
+.attr("height", outerHeight)
+.attr('fill', 'none')
+.attr('stroke', 'black')
+.attr('stroke-width', '1px');
+
+
+//scale the data
+var xScale = d3.scaleLinear();
+var yScale = d3.scaleLinear();
+
+xScale.rangeRound([0, innerWidth]);
+yScale.rangeRound([0, innerHeight]);
+
+xScale.domain( d3.extent(data, function (d){ return d['Freq']; }));
+yScale.domain( d3.extent(data, function (d){ return d['InsertionLoss']; }));
+
+//append the plot area inside the svg
+var g = svg.append('g')
+.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+										
+//append the x and y axis to plot area
+g.append('g')
+//.attr("class", "x axis")
+.attr('transform', 'translate(0,' + innerHeight + ')')
+.call(d3.axisBottom(xScale))
+.append('text')
+//.style("text-anchor", "middle")
+.attr("transform", "translate(" + (innerWidth / 2) + "," + xAxisLabelOffset + ")")
+//.attr("class", "label")
+.text(xAxisLabelText);
+
+
+g.append('g')
+//.attr("class", "y axis")
+.call(d3.axisLeft(yScale))
+.append('text')
+//.style("text-anchor", "middle")
+.attr("transform", "translate(-" + yAxisLabelOffset + "," + (innerHeight / 2) + ") rotate(-90)")
+//.attr("class", "label")
+.text(yAxisLabelText); 
+
+/*	
 //create the circles and bind the data to them
-var circle = canvas.selectAll("circle").data(data);
+var circle = g.selectAll('circle').data(data);
 
-//render the circles
-circle.enter().append("circle")
-    .attr("cx", function(data) {return data.Freq;} )
-	.attr("cy", function(data) {return data.InsertionLoss;} )
-    .attr("r", 3);
+//draw the circles
+circle.enter().append('circle')
+    .attr('cx', function(data) { return xScale(data['Freq']); } )
+	.attr('cy', function(data) { return yScale(data['InsertionLoss']); } )
+    .attr('r', 3)
+	.attr('fill', 'blue');
 
 //create a path element
-var path = canvas.append("path");
+var path = g.append('path');
 
 //create the line attribute for the path
 var line = d3.line(data)
-	.x(function(data) {return data.Freq;})
-	.y(function(data) {return data.InsertionLoss;})
-	.curve(d3.curveCatmullRom.alpha(1));
+	.x(function(data) { return xScale(data['Freq']); })
+	.y(function(data) { return yScale(data['InsertionLoss']); })
+	//.curve(d3.curveCatmullRom.alpha(.4));
 
 //draw the path
-path.attr("d", line(data));
-		  
+path.attr('d', line(data))
+	.attr('fill', 'none')
+	.attr('stroke', 'blue')
+	.attr('stroke-width', '1px');
+
+*/	
 </script>
 
 	

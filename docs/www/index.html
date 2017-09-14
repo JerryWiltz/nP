@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>Low Pass Filter with real requirejs modules</title>
+		<title>index.html</title>
 	
 	<!-- script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.10.0/d3.min.js"></script -->
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
@@ -50,7 +50,8 @@
 		<!--this is where the svg base plots will be-->
 <!--
 http://localhost:3000
-https://rawgit.com/JerryWiltz/MCAP/master/docs/www/data.csv https://rawgit.com/JerryWiltz/MCAP/master/docs/www/iris.csv
+https://rawgit.com/JerryWiltz/MCAP/master/docs/www/data.csv
+https://rawgit.com/JerryWiltz/MCAP/master/docs/www/iris.csv
 https://rawgit.com/JerryWiltz/MCAP/master/docs/www/countries_population_GDP.csv
 https://rawgit.com/curran/data/gh-pages/geonames/cities100000.csv
 https://rawgit.com/JerryWiltz/MCAP/master/docs/www/week_temperature_sf.csv
@@ -77,6 +78,13 @@ slide 97
       var svg = d3.select("#plotArea").append("svg")
         .attr("width", outerWidth)
         .attr("height", outerHeight);
+	  var rect = svg.append('rect')
+        .attr("width", outerWidth)
+        .attr("height", outerHeight)
+		.attr('fill', 'none')
+		.attr('stroke', 'black')
+		.attr('stroke-width', '1px');
+
       var g = svg.append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
       var path = g.append("path")
@@ -88,6 +96,7 @@ slide 97
       var xAxisLabel = xAxisG.append("text")
         .style("text-anchor", "middle")
         .attr("transform", "translate(" + (innerWidth / 2) + "," + xAxisLabelOffset + ")")
+
         .attr("class", "label")
         .text(xAxisLabelText);
 
@@ -98,7 +107,7 @@ slide 97
         .attr("transform", "translate(-" + yAxisLabelOffset + "," + (innerHeight / 2) + ") rotate(-90)")
         .attr("class", "label")
         .text(yAxisLabelText);
-
+/*
       var xScale = d3.time.scale().range([0, innerWidth]);
       var yScale = d3.scale.linear().range([innerHeight, 0]);
 
@@ -131,7 +140,7 @@ slide 97
       }
 
       d3.csv("https://rawgit.com/JerryWiltz/MCAP/master/docs/www/week_temperature_sf.csv", type, render);
-
+*/
     </script>
 				
 					</td></tr>
