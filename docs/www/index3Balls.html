@@ -4,7 +4,7 @@
   <meta charset='utf-8'>
   <meta name='viewport' content='width=device-width'>
   <title>index3Balls.html</title>
-    <!--  
+      
     <style>
 
       .chart-line {
@@ -14,10 +14,10 @@
       }
     
       .axis text {
-        font-size: 8pt;
+        font-size: 10pt;
       }
-      .axis ,.label {
-        font-size: 20pt;
+      .axis .label {
+        font-size: 16pt;
       }
 
       .axis path, .axis line {
@@ -27,7 +27,7 @@
       }
 
     </style>
-	-->
+	
   
   <script src='https://cdnjs.cloudflare.com/ajax/libs/d3/4.10.0/d3.min.js'></script>
       <link href='http://fonts.googleapis.com/css?family=Poiret+One' rel='stylesheet' type='text/css'>
@@ -67,7 +67,7 @@ data.forEach( (d) => {
 var outerWidth = 500;
 var outerHeight = 250;
 
-var margin = { left: 70, top: 20, right: 70, bottom: 60 };
+var margin = { left: 70, top: 10, right: 20, bottom: 60 };
 
 var innerWidth  = outerWidth  - margin.left - margin.right;
 var innerHeight = outerHeight - margin.top  - margin.bottom;
@@ -107,26 +107,28 @@ var g = svg.append('g')
 										
 //append the x and y axis to plot area
 g.append('g')
-//.attr("class", "x axis")
+.attr("class", "x axis")
 .attr('transform', 'translate(0,' + innerHeight + ')')
-.call(d3.axisBottom(xScale))
+.call(d3.axisBottom(xScale).tickSize(6))
 .append('text')
-//.style("text-anchor", "middle")
+.attr("fill", "#000")
+.style("text-anchor", "middle")
 .attr("transform", "translate(" + (innerWidth / 2) + "," + xAxisLabelOffset + ")")
-//.attr("class", "label")
+.attr("class", "label")
 .text(xAxisLabelText);
 
 
 g.append('g')
-//.attr("class", "y axis")
+.attr("class", "y axis")
 .call(d3.axisLeft(yScale))
 .append('text')
-//.style("text-anchor", "middle")
+.attr("fill", "#000")
+.style("text-anchor", "middle")
 .attr("transform", "translate(-" + yAxisLabelOffset + "," + (innerHeight / 2) + ") rotate(-90)")
-//.attr("class", "label")
+.attr("class", "label")
 .text(yAxisLabelText); 
 
-/*	
+	
 //create the circles and bind the data to them
 var circle = g.selectAll('circle').data(data);
 
@@ -144,7 +146,7 @@ var path = g.append('path');
 var line = d3.line(data)
 	.x(function(data) { return xScale(data['Freq']); })
 	.y(function(data) { return yScale(data['InsertionLoss']); })
-	//.curve(d3.curveCatmullRom.alpha(.4));
+	.curve(d3.curveCatmullRom.alpha(.4));
 
 //draw the path
 path.attr('d', line(data))
@@ -152,7 +154,7 @@ path.attr('d', line(data))
 	.attr('stroke', 'blue')
 	.attr('stroke-width', '1px');
 
-*/	
+	
 </script>
 
 	
