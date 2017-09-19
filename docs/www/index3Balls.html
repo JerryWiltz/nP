@@ -7,12 +7,6 @@
       
     <style>
 
-      .chart-line {
-        fill: none;
-        stroke: blue;
-        stroke-width: 1px;
-      }
-    
       .axis text {
         font-size: 10pt;
       }
@@ -20,11 +14,10 @@
         font-size: 16pt;
       }
 
-      .axis path, .axis line {
-        fill: none;
-        stroke: #000000;
-        shape-rendering: crispEdges;
-      }
+	  .grid .tick line{
+	  stroke: gray;
+	  stroke-dasharray: 3, 3;
+	  }
 
     </style>
 	
@@ -72,23 +65,23 @@ var margin = { left: 70, top: 10, right: 20, bottom: 60 };
 var innerWidth  = outerWidth  - margin.left - margin.right;
 var innerHeight = outerHeight - margin.top  - margin.bottom;
 
-var xAxisLabelText = "Frequency, GHz";
-var xAxisLabelOffset = 48;
+var xAxisTitle = "Frequency, GHz";
+var xAxisTitleOffset = 48;
 
-var yAxisLabelText = "RTN Loss, dB";
-var yAxisLabelOffset = 40;
+var yAxisTitle = "RTN Loss, dB";
+var yAxisTitleOffset = 40;
 
 var svg = d3.select('svg')
 .attr('width',  outerWidth)
 .attr('height', outerHeight);
 
+//create rect around svg
 var rect = svg.append('rect')
 .attr("width", outerWidth)
 .attr("height", outerHeight)
 .attr('fill', 'none')
 .attr('stroke', 'black')
 .attr('stroke-width', '1px');
-
 
 //scale the data
 var xScale = d3.scaleLinear();
@@ -105,28 +98,38 @@ var g = svg.append('g')
 .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
 										
-//append the x and y axis to plot area
-g.append('g')
+//append the x axis and x grid to g
+var xAxis = g.append('g')
 .attr("class", "x axis")
 .attr('transform', 'translate(0,' + innerHeight + ')')
-.call(d3.axisBottom(xScale).tickSize(6))
+.call(d3.axisBottom(xScale))
 .append('text')
 .attr("fill", "#000")
 .style("text-anchor", "middle")
-.attr("transform", "translate(" + (innerWidth / 2) + "," + xAxisLabelOffset + ")")
+.attr("transform", "translate(" + (innerWidth / 2) + "," + xAxisTitleOffset + ")")
 .attr("class", "label")
-.text(xAxisLabelText);
+.text(xAxisTitle);
+
+var xGrid = g.append('g')
+.attr("class", "grid")
+.attr('transform', 'translate(0,' + innerHeight + ')')
+.call(d3.axisBottom(xScale).tickSize(-innerHeight).tickFormat(""));
 
 
+//append the y axis and y grid to g
 g.append('g')
 .attr("class", "y axis")
 .call(d3.axisLeft(yScale))
 .append('text')
 .attr("fill", "#000")
 .style("text-anchor", "middle")
-.attr("transform", "translate(-" + yAxisLabelOffset + "," + (innerHeight / 2) + ") rotate(-90)")
+.attr("transform", "translate(-" + yAxisTitleOffset + "," + (innerHeight / 2) + ") rotate(-90)")
 .attr("class", "label")
-.text(yAxisLabelText); 
+.text(yAxisTitle);
+
+g.append('g')
+.attr("class", "grid")
+.call(d3.axisLeft(yScale).tickSize(-innerWidth).tickFormat("")) 
 
 	
 //create the circles and bind the data to them

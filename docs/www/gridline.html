@@ -9,7 +9,7 @@
 }
 
 .grid line {
-  stroke: lightgrey;
+  stroke: blue;
   stroke-opacity: 0.7;
   shape-rendering: crispEdges;
 }
@@ -38,10 +38,11 @@ var x = d3.scaleTime().range([0, width]);
 var y = d3.scaleLinear().range([height, 0]);
 
 // define the line
+/*
 var valueline = d3.line()
     .x(function(d) { return x(d.date); })
     .y(function(d) { return y(d.close); });
-
+*/
 // append the svg obgect to the body of the page
 // appends a 'group' element to 'svg'
 // moves the 'group' element to the top left margin
@@ -61,11 +62,11 @@ function make_x_gridlines() {
 // gridlines in y axis function
 function make_y_gridlines() {		
     return d3.axisLeft(y)
-        .ticks(5)
+        .ticks(10)
 }
-
+/*
 // Get the data
-d3.csv("data.csv", function(error, data) {
+d3.csv("https://rawgit.com/JerryWiltz/MCAP/master/docs/www/gridline.cvs", function(error, data) {
   if (error) throw error;
 
   // format the data
@@ -77,7 +78,7 @@ d3.csv("data.csv", function(error, data) {
   // Scale the range of the data
   x.domain(d3.extent(data, function(d) { return d.date; }));
   y.domain([0, d3.max(data, function(d) { return d.close; })]);
-
+*/
   // add the X gridlines
   svg.append("g")			
       .attr("class", "grid")
@@ -94,13 +95,13 @@ d3.csv("data.csv", function(error, data) {
           .tickSize(-width)
           .tickFormat("")
       )
-
+/*
   // add the valueline path.
   svg.append("path")
       .data([data])
       .attr("class", "line")
       .attr("d", valueline);
-
+*/
   // add the X Axis
   svg.append("g")
       .attr("transform", "translate(0," + height + ")")
@@ -109,8 +110,8 @@ d3.csv("data.csv", function(error, data) {
   // add the Y Axis
   svg.append("g")
       .call(d3.axisLeft(y));
-
+/*
 });
-
+*/
 </script>
 </body>
