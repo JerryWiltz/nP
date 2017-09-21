@@ -7,23 +7,10 @@
       
     <style>
 
-      .axis text {
-        font-size: 10pt;
-      }
-      .axis .label {
-        font-size: 16pt;
-      }
-
-	  .grid .tick line{
-	  stroke: gray;
-	  stroke-dasharray: 3, 3;
-	  }
-
     </style>
 	
-  
+ 
   <script src='https://cdnjs.cloudflare.com/ajax/libs/d3/4.10.0/d3.min.js'></script>
-      <link href='http://fonts.googleapis.com/css?family=Poiret+One' rel='stylesheet' type='text/css'>
   <script src='file:///C:/Users/Jerry/Desktop/MCAP/docs/www/js/app/showTable.js'></script>
 </head>
 <body id='body'>
@@ -34,12 +21,19 @@
 //get the data
 var multiplier = 1;
 
-var myFilter = [['Freq', 'InsertionLoss'],
+var myFilter1 = [['Freq', 'InsertionLoss'],
 				[40  * multiplier, 20  * multiplier],
 				[80  * multiplier, 22  * multiplier],
 				[120 * multiplier, 80  * multiplier],
 				[160 * multiplier, 100 * multiplier],
 				[200 * multiplier, 120 * multiplier]];
+				
+var myFilter = [['Freq', 'InsertionLoss', 'ReturnLoss'],
+				[40  * multiplier, 20  * multiplier, 20  * multiplier],
+				[80  * multiplier, 22  * multiplier, 30  * multiplier],
+				[120 * multiplier, 80  * multiplier, 90  * multiplier],
+				[160 * multiplier, 100 * multiplier, 110 * multiplier],
+				[200 * multiplier, 120 * multiplier, 120 * multiplier]];
 				
 //function to turn data into tsv
 var tsv = '';
@@ -98,40 +92,50 @@ var g = svg.append('g')
 .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
 										
-//append the x axis and x grid to g
-var xAxis = g.append('g')
-.attr("class", "x axis")
+//append the x axis onto g
+g.append('g')
+.attr('class', 'xAxis')
+.style('font-size', '12')
 .attr('transform', 'translate(0,' + innerHeight + ')')
 .call(d3.axisBottom(xScale))
 .append('text')
 .attr("fill", "#000")
 .style("text-anchor", "middle")
 .attr("transform", "translate(" + (innerWidth / 2) + "," + xAxisTitleOffset + ")")
-.attr("class", "label")
+.style('font-size', '20')
 .text(xAxisTitle);
 
-var xGrid = g.append('g')
-.attr("class", "grid")
+//append the x axix grid onto g
+g.append('g')
+.attr("class", "xGrid")
 .attr('transform', 'translate(0,' + innerHeight + ')')
 .call(d3.axisBottom(xScale).tickSize(-innerHeight).tickFormat(""));
+d3.select('g').select('g.xGrid').selectAll('g').select('line')
+	.attr('stroke', 'gray').attr('stroke-dasharray', '3, 3');
 
 
-//append the y axis and y grid to g
+//append the y axis onto g
 g.append('g')
-.attr("class", "y axis")
+.attr('class', 'yAxis')
+.style('font-size', '12')
 .call(d3.axisLeft(yScale))
 .append('text')
 .attr("fill", "#000")
 .style("text-anchor", "middle")
 .attr("transform", "translate(-" + yAxisTitleOffset + "," + (innerHeight / 2) + ") rotate(-90)")
-.attr("class", "label")
+.style('font-size', '20')
 .text(yAxisTitle);
 
+//append the x axis grid onto g
 g.append('g')
-.attr("class", "grid")
-.call(d3.axisLeft(yScale).tickSize(-innerWidth).tickFormat("")) 
-
+.attr("class", "yGrid")
+.call(d3.axisLeft(yScale).tickSize(-innerWidth).tickFormat("")); 
+d3.select('g').select('g.yGrid').selectAll('g').select('line')
+	.attr('stroke', 'gray').attr('stroke-dasharray', '3, 3');
 	
+//create the function to draw 2 lines
+
+(function plot() {	
 //create the circles and bind the data to them
 var circle = g.selectAll('circle').data(data);
 
@@ -148,7 +152,7 @@ var path = g.append('path');
 //create the line attribute for the path
 var line = d3.line(data)
 	.x(function(data) { return xScale(data['Freq']); })
-	.y(function(data) { return yScale(data['InsertionLoss']); })
+	.y(function(data) { return yScale(data['ReturnLoss']); })
 	.curve(d3.curveCatmullRom.alpha(.4));
 
 //draw the path
@@ -156,7 +160,7 @@ path.attr('d', line(data))
 	.attr('fill', 'none')
 	.attr('stroke', 'blue')
 	.attr('stroke-width', '1px');
-
+}) ();
 	
 </script>
 
