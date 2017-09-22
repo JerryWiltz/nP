@@ -43,7 +43,7 @@ myFilter.forEach( (element) => {
 		
 //turn tsv data into d3 data
 var data = d3.tsvParse(tsv);
-
+console.log(data);
 //change data type from string to float		
 data.forEach( (d) => {
 	d.Freq = +d.Freq;

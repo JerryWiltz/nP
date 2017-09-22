@@ -1,35 +1,55 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width">
-  <title>JS Bin</title>
-</head>
-<body>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.2.3/d3.min.js"></script>
+<meta charset="utf-8">
+<style>
 
-<div id="Ford"></div>
-<div id="Jarrah"></div>
-<div id="Kwon"></div>
-<div id="Locke"></div>
-<div id="Reyes"></div>
-<div id="Shephard"></div>
-  
-  <script>
-var data = [
-  {name: "Locke", number: 4},
-  {name: "Reyes", number: 8},
-  {name: "Ford", number: 15},
-  {name: "Jarrah", number: 16},
-  {name: "Shephard", number: 31},
-  {name: "Kwon", number: 34}
-];
+/*.axis--x path {
+display: none;
+}*/
 
-d3.selectAll("div")
-  .data(data, function(d) { return d ? d.name : this.id; })
-    .text(function(d) { return 'jerry ' + d.number; });
-	
- </script>
- 
-</body>
-</html>
+.line {
+fill: none;
+stroke: steelblue;
+stroke-width: 1.5px;
+}
+
+</style>
+<svg width="600" height="300"></svg>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script>
+var svg = d3.select("svg"),
+margin = {top: 20, right: 80, bottom: 30, left: 50},
+width = svg.attr("width") - margin.left - margin.right, height = svg.attr("height") - margin.top - margin.bottom,
+g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+var parseTime = d3.timeParse("%Y%m%d");
+
+var x = d3.scaleTime().range([0, width]), y = d3.scaleLinear().range([height, 0]); 
+
+var line = d3.line().curve(d3.curveBasis).x(function(d) { return x(d.date); }).y(function(d) { return y(d.temperature); });
+		d3.tsv("https://rawgit.com/JerryWiltz/MCAP/master/docs/www/cityData.tsv", type, function(data) {
+		var cities = data.columns.slice(1).map(function(id) { //3 iterations
+			return {
+			//id    : id,
+			values: data.map(function(d) { //3 * 366 iterations
+				return {date: d.date , temperature: d[id]};
+				})
+			};
+		});
+			console.log(data);
+			console.log(cities); //.slice(0): date,New York,San Francisco,Austin .slice(1): New York,San Francisco,Austin .slice(2): San Francisco,Austin .slice(3): Austin
+		x.domain(d3.extent(data, function(d) { return d.date; }));
+
+		y.domain([
+		d3.min(cities, function(c) { return d3.min(c.values, function(d) { return d.temperature; }); }), //19.2
+		d3.max(cities, function(c) { return d3.max(c.values, function(d) { return d.temperature; }); })  //43.6
+		]);
+
+		var city = g.selectAll(".city").data(cities).enter();//.append("g").attr("class", "city");
+
+		city.append("path").attr("class", "line").attr("d", function(d) { return line(d.values); });
+		}); //end of d3.tsv
+function type(d) {
+d.date = parseTime(d.date);
+return d;
+}
+</script>
