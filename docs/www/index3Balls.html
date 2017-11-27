@@ -4,70 +4,60 @@
   <meta charset='utf-8'>
   <meta name='viewport' content='width=device-width'>
   <title>index3Balls.html</title>
-      
-    <style>
-
-    </style>
-	
- 
   <script src='https://cdnjs.cloudflare.com/ajax/libs/d3/4.10.0/d3.min.js'></script>
   <script src='file:///C:/Users/Jerry/Desktop/MCAP/docs/www/js/app/showTable.js'></script>
 </head>
-<body id='body'>
-<svg></svg>
-
-<script>
-
+<body id='body'><script>
+var count = 0;
 //get the data
 var multiplier = 1;
-
-var myFilter1 = [['Freq', 'InsertionLoss'],
-				[40  * multiplier, 20  * multiplier],
-				[80  * multiplier, 22  * multiplier],
-				[120 * multiplier, 80  * multiplier],
-				[160 * multiplier, 100 * multiplier],
-				[200 * multiplier, 120 * multiplier]];
 				
 var myFilter = [['Freq', 'InsertionLoss', 'ReturnLoss'],
-				[40  * multiplier, 20  * multiplier, 20  * multiplier],
+				[40  * multiplier, 20  * multiplier, 22  * multiplier],
 				[80  * multiplier, 22  * multiplier, 30  * multiplier],
 				[120 * multiplier, 80  * multiplier, 90  * multiplier],
-				[160 * multiplier, 100 * multiplier, 110 * multiplier],
-				[200 * multiplier, 120 * multiplier, 120 * multiplier]];
+				[160 * multiplier, 100 * multiplier, 105 * multiplier],
+				[200 * multiplier, 120 * multiplier, 130 * multiplier]];
 				
 //function to turn data into tsv
 var tsv = '';
 myFilter.forEach( (element) => {
     tsv += element.join('\t') + '\n';
-}); 
-		
-//turn tsv data into d3 data
+});
+  
+//use d3 to turn tsv data into d3 data
 var data = d3.tsvParse(tsv);
-console.log(data);
+
 //change data type from string to float		
 data.forEach( (d) => {
 	d.Freq = +d.Freq;
 	d.InsertionLoss = +d.InsertionLoss;
+	d.ReturnLoss = +d.ReturnLoss;
+});
+
+//change the data to dBs
+var dBs = data.columns.slice(1).map(function(id) { //2 iterations
+	return {
+		id    : id, // id = "InsertionLoss" and "ReturnLoss"
+		values: data.map(function(d) { //10 iterations
+			return {Freq: d.Freq , dB: d[id]};
+			})
+	};
 });
 
 //create the svg
 var outerWidth = 500;
 var outerHeight = 250;
-
 var margin = { left: 70, top: 10, right: 20, bottom: 60 };
-
 var innerWidth  = outerWidth  - margin.left - margin.right;
 var innerHeight = outerHeight - margin.top  - margin.bottom;
-
 var xAxisTitle = "Frequency, GHz";
 var xAxisTitleOffset = 48;
-
 var yAxisTitle = "RTN Loss, dB";
 var yAxisTitleOffset = 40;
-
-var svg = d3.select('svg')
-.attr('width',  outerWidth)
-.attr('height', outerHeight);
+var svg = d3.select('body').append('svg')
+	.attr('width',  outerWidth)
+	.attr('height', outerHeight);
 
 //create rect around svg
 var rect = svg.append('rect')
@@ -78,92 +68,93 @@ var rect = svg.append('rect')
 .attr('stroke-width', '1px');
 
 //scale the data
-var xScale = d3.scaleLinear();
-var yScale = d3.scaleLinear();
-
-xScale.rangeRound([0, innerWidth]);
-yScale.rangeRound([0, innerHeight]);
+var xScale = d3.scaleLinear().rangeRound([0, innerWidth]);
+var yScale = d3.scaleLinear().rangeRound([0, innerHeight]);
 
 xScale.domain( d3.extent(data, function (d){ return d['Freq']; }));
-yScale.domain( d3.extent(data, function (d){ return d['InsertionLoss']; }));
+//yScale.domain( d3.extent(data, function (d){ return d['InsertionLoss']; }));
+
+yScale.domain([
+d3.min(dBs, function(c) { return d3.min(c.values, function(d) { return d['dB']; }); }),
+d3.max(dBs, function(c) { return d3.max(c.values, function(d) { return d['dB']; }); })
+]);
 
 //append the plot area inside the svg
 var g = svg.append('g')
-.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-
+	.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 										
 //append the x axis onto g
 g.append('g')
-.attr('class', 'xAxis')
-.style('font-size', '12')
-.attr('transform', 'translate(0,' + innerHeight + ')')
-.call(d3.axisBottom(xScale))
-.append('text')
-.attr("fill", "#000")
-.style("text-anchor", "middle")
-.attr("transform", "translate(" + (innerWidth / 2) + "," + xAxisTitleOffset + ")")
-.style('font-size', '20')
-.text(xAxisTitle);
+	.attr('class', 'xAxis')
+	.style('font-size', '12')
+	.attr('transform', 'translate(0,' + innerHeight + ')')
+	.call(d3.axisBottom(xScale))
+	.append('text')
+	.attr("fill", "#000")
+	.style("text-anchor", "middle")
+	.attr("transform", "translate(" + (innerWidth / 2) + "," + xAxisTitleOffset + ")")
+	.style('font-size', '20')
+	.text(xAxisTitle);
 
 //append the x axix grid onto g
 g.append('g')
-.attr("class", "xGrid")
-.attr('transform', 'translate(0,' + innerHeight + ')')
-.call(d3.axisBottom(xScale).tickSize(-innerHeight).tickFormat(""));
+	.attr("class", "xGrid")
+	.attr('transform', 'translate(0,' + innerHeight + ')')
+	.call(d3.axisBottom(xScale).tickSize(-innerHeight).tickFormat(""));
 d3.select('g').select('g.xGrid').selectAll('g').select('line')
 	.attr('stroke', 'gray').attr('stroke-dasharray', '3, 3');
-
-
+	
 //append the y axis onto g
 g.append('g')
-.attr('class', 'yAxis')
-.style('font-size', '12')
-.call(d3.axisLeft(yScale))
-.append('text')
-.attr("fill", "#000")
-.style("text-anchor", "middle")
-.attr("transform", "translate(-" + yAxisTitleOffset + "," + (innerHeight / 2) + ") rotate(-90)")
-.style('font-size', '20')
-.text(yAxisTitle);
+	.attr('class', 'yAxis')
+	.style('font-size', '12')
+	.call(d3.axisLeft(yScale))
+	.append('text')
+	.attr("fill", "#000")
+	.style("text-anchor", "middle")
+	.attr("transform", "translate(-" + yAxisTitleOffset + "," + (innerHeight / 2) + ") rotate(-90)")
+	.style('font-size', '20')
+	.text(yAxisTitle);
 
 //append the x axis grid onto g
 g.append('g')
-.attr("class", "yGrid")
-.call(d3.axisLeft(yScale).tickSize(-innerWidth).tickFormat("")); 
+	.attr("class", "yGrid")
+	.call(d3.axisLeft(yScale).tickSize(-innerWidth).tickFormat("")); 
 d3.select('g').select('g.yGrid').selectAll('g').select('line')
 	.attr('stroke', 'gray').attr('stroke-dasharray', '3, 3');
 	
-//create the function to draw 2 lines
+//create the function to draw 2 lines and 2 circles
+(function plot() {
 
-(function plot() {	
-//create the circles and bind the data to them
-var circle = g.selectAll('circle').data(data);
-
-//draw the circles
-circle.enter().append('circle')
-    .attr('cx', function(data) { return xScale(data['Freq']); } )
-	.attr('cy', function(data) { return yScale(data['InsertionLoss']); } )
-    .attr('r', 3)
+// define line-dot as "dB"
+var dB = g.selectAll()
+	.data(dBs)
+	.enter().append("g")
+	.attr("class", "dB");
+	
+// draw circles
+dB.selectAll("circle")
+	.data(function(d){return d.values})
+	.enter()
+	.append("circle")
+	.attr("r", 3)
+	.attr("cx", function(d) { return xScale(d.Freq); })
+	.attr("cy", function(d) { return yScale(d.dB); })
 	.attr('fill', 'blue');
-
-//create a path element
-var path = g.append('path');
-
+	
 //create the line attribute for the path
-var line = d3.line(data)
-	.x(function(data) { return xScale(data['Freq']); })
-	.y(function(data) { return yScale(data['ReturnLoss']); })
+var line = d3.line()
+	.x(function(d) { return xScale(d['Freq']); })
+	.y(function(d) { return yScale(d['dB']); })
 	.curve(d3.curveCatmullRom.alpha(.4));
 
-//draw the path
-path.attr('d', line(data))
-	.attr('fill', 'none')
-	.attr('stroke', 'blue')
+//create a path element
+var lineData = g.selectAll().data(dBs).enter();
+lineData.append("path")
+	.attr("class", "line")
+	.attr("d", function(d) {  return line(d.values);})
+	.attr('fill', 'none').attr('stroke', 'blue')
 	.attr('stroke-width', '1px');
-}) ();
-	
-</script>
 
-	
-</body>
-</html>
+}) ();	
+</script></body></html>
