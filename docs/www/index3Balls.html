@@ -3,22 +3,24 @@
 <head>
   <meta charset='utf-8'>
   <meta name='viewport' content='width=device-width'>
-  <title>index3Balls.html</title>
-  <script src='https://cdnjs.cloudflare.com/ajax/libs/d3/4.10.0/d3.min.js'></script>
-  <script src='file:///C:/Users/Jerry/Desktop/MCAP/docs/www/js/app/showTable.js'></script>
+  <title>dB vs Freq Plot</title>
+
 </head>
-<body id='body'><script>
-var count = 0;
+<body>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/d3/4.10.0/d3.min.js'></script>
+  <script>
+
 //get the data
-var multiplier = 1;
-				
-var myFilter = [['Freq', 'InsertionLoss', 'ReturnLoss'],
-				[40  * multiplier, 20  * multiplier, 22  * multiplier],
-				[80  * multiplier, 22  * multiplier, 30  * multiplier],
-				[120 * multiplier, 80  * multiplier, 90  * multiplier],
-				[160 * multiplier, 100 * multiplier, 105 * multiplier],
-				[200 * multiplier, 120 * multiplier, 130 * multiplier]];
-				
+var myFilter = [['Freq', 'InsertionLoss', 'ReturnLoss', 'NoiseFigure'],
+				[ 40,  20,  22, 50],
+				[ 80,  22,  30, 55],
+				[120,  80,  90, 60],
+				[160, 100, 105, 65],
+				[200, 120, 130, 70]];
+
+//var color = d3.schemeCategory10;
+var color = d3.schemeCategory10;
+			
 //function to turn data into tsv
 var tsv = '';
 myFilter.forEach( (element) => {
@@ -28,19 +30,22 @@ myFilter.forEach( (element) => {
 //use d3 to turn tsv data into d3 data
 var data = d3.tsvParse(tsv);
 
+//use d3 columns to find
+var zIndex = data.columns.slice(1)
+
 //change data type from string to float		
 data.forEach( (d) => {
 	d.Freq = +d.Freq;
 	d.InsertionLoss = +d.InsertionLoss;
 	d.ReturnLoss = +d.ReturnLoss;
 });
-
+  
 //change the data to dBs
-var dBs = data.columns.slice(1).map(function(id) { //2 iterations
+var dBs = data.columns.slice(1).map(function(name) { //2 iterations
 	return {
-		id    : id, // id = "InsertionLoss" and "ReturnLoss"
+		name    : name, // name = "InsertionLoss" and "ReturnLoss"
 		values: data.map(function(d) { //10 iterations
-			return {Freq: d.Freq , dB: d[id]};
+			return {Freq: d.Freq , dB: d[name], z: name};
 			})
 	};
 });
@@ -56,8 +61,8 @@ var xAxisTitleOffset = 48;
 var yAxisTitle = "RTN Loss, dB";
 var yAxisTitleOffset = 40;
 var svg = d3.select('body').append('svg')
-	.attr('width',  outerWidth)
-	.attr('height', outerHeight);
+    .attr('width', outerWidth)
+	.attr('height', outerHeight)
 
 //create rect around svg
 var rect = svg.append('rect')
@@ -72,7 +77,6 @@ var xScale = d3.scaleLinear().rangeRound([0, innerWidth]);
 var yScale = d3.scaleLinear().rangeRound([0, innerHeight]);
 
 xScale.domain( d3.extent(data, function (d){ return d['Freq']; }));
-//yScale.domain( d3.extent(data, function (d){ return d['InsertionLoss']; }));
 
 yScale.domain([
 d3.min(dBs, function(c) { return d3.min(c.values, function(d) { return d['dB']; }); }),
@@ -81,7 +85,8 @@ d3.max(dBs, function(c) { return d3.max(c.values, function(d) { return d['dB']; 
 
 //append the plot area inside the svg
 var g = svg.append('g')
-	.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+	.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
+	.attr('class', 'plotArea');
 										
 //append the x axis onto g
 g.append('g')
@@ -123,38 +128,35 @@ g.append('g')
 d3.select('g').select('g.yGrid').selectAll('g').select('line')
 	.attr('stroke', 'gray').attr('stroke-dasharray', '3, 3');
 	
-//create the function to draw 2 lines and 2 circles
-(function plot() {
-
 // define line-dot as "dB"
-var dB = g.selectAll()
+var dB = svg.selectAll()
 	.data(dBs)
 	.enter().append("g")
-	.attr("class", "dB");
-	
-// draw circles
-dB.selectAll("circle")
-	.data(function(d){return d.values})
-	.enter()
-	.append("circle")
-	.attr("r", 3)
-	.attr("cx", function(d) { return xScale(d.Freq); })
-	.attr("cy", function(d) { return yScale(d.dB); })
-	.attr('fill', 'blue');
-	
+	.attr("class", "dB")
+	.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
 //create the line attribute for the path
 var line = d3.line()
 	.x(function(d) { return xScale(d['Freq']); })
 	.y(function(d) { return yScale(d['dB']); })
 	.curve(d3.curveCatmullRom.alpha(.4));
 
-//create a path element
-var lineData = g.selectAll().data(dBs).enter();
-lineData.append("path")
+//create a path element and draw the path
+dB.append("path")
 	.attr("class", "line")
 	.attr("d", function(d) {  return line(d.values);})
 	.attr('fill', 'none').attr('stroke', 'blue')
-	.attr('stroke-width', '1px');
-
-}) ();	
+	.attr('stroke-width', '2px')
+	.style("stroke", function(d, i) { return color[i]; });
+	
+//create the circle elements and draw the dots
+dB.selectAll("circle")
+	.data(function(d){  return d.values})
+	.enter()
+	.append("circle")
+	.attr("r", 3)
+	.attr("cx", function(d) { return xScale(d.Freq); })
+	.attr("cy", function(d) { return yScale(d.dB); })
+	.style("fill", function(d) { return color[zIndex.indexOf(d.z)]; });
+	
 </script></body></html>
