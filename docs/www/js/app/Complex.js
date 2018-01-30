@@ -1,5 +1,6 @@
 // complex.js
 // By Jerry Wiltz on 6/5/2017
+
 define(function(){
 "use strict";
 	//var c1 = complex(2, -3) and var c1 = complex(5, 8)
@@ -21,8 +22,9 @@ define(function(){
 			inv = function inv() {return complex((1 * x + 0 * y)/(x * x + y * y), (x * 0 - 1 * y)/(x * x + y * y));},
 			neg = function neg() {return complex(-x, -y);},
 			mag = function mag() {return Math.sqrt(x * x + y * y);},
-			ang = function ang() {return Math.atan2(y, x) * (180/Math.PI);};
-		 
+			ang = function ang() {return Math.atan2(y, x) * (180/Math.PI);},
+			magDB10 = function magDB10 () {return 10 * Math.log(   Math.sqrt(x * x + y * y) )/2.302585092994046   },
+			magDB20 = function magDB20 () {return 20 * Math.log(   Math.sqrt(x * x + y * y) )/2.302585092994046   };
 		return {
 		// The object data (what shows in JSON.stringify(c1) for example) 
 			name : 'complex',
@@ -42,7 +44,9 @@ define(function(){
 			inv   : inv,
 			neg   :  neg,
 			mag   :  mag,
-			ang   :  ang
+			ang   :  ang,
+			magDB10 : magDB10,
+			magDB20 : magDB20
 		};
 	};
 return complex;	

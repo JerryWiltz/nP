@@ -1,4 +1,4 @@
-// lowPassDesign
+// lowPassDesign.js
 
 define(['app/storage'], function (storage){
 "use strict";
@@ -11,7 +11,7 @@ define(['app/storage'], function (storage){
 				passbandRipple = parseFloat(document.getElementById('passbandRipple').value),
 				rejLevel = parseFloat(document.getElementById('rejLevel').value),
 				
-				frequencyUnits = document.getElementById('frequencyUnits').value,
+				frequencyUnits = parseFloat(document.getElementById('frequencyUnits').value),
 				
 				lowPassTable = [], // Table generated
 
@@ -93,7 +93,7 @@ define(['app/storage'], function (storage){
 				document.getElementById('filterComponents').innerHTML = lcLumpedComponentTextout;
 			};
 			storage.lowPassTable = lowPassTable; //store the lowPassTable so lowpassTest can use it
-			
+			//console.log('lowPassDesign complete');
 		}; // end of doDesign()
 		
 	// Listening for the "Design" button click event ...

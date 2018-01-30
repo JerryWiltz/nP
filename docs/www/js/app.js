@@ -15,7 +15,8 @@ requirejs.config({
 		lowpassTest: 'app/lowPassTest',
 		complex: 'app/complex',
 		nport: 'app/nport',
-		matrix: 'app/matrix'
+		matrix: 'app/matrix',
+		scatterPlot: 'app/scatterPlot'
     }
 	
 });
@@ -26,7 +27,8 @@ requirejs([
 'app/lowPassTest',
 'app/complex',
 'app/nport',
-'app/matrix'
+'app/matrix',
+'app/scatterPlot'
 ], function() {
 	//alert('I loaded'); // This happens last!! All the other things happen first!
 });
