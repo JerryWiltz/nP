@@ -1,6 +1,6 @@
 // matrix.js
-
-define(['app/complex'], function(complex){
+define([], function(){
+//define(['app/complex'], function(complex){
 "use strict";
 	var matrix = {
 		

@@ -31,6 +31,6 @@ requirejs([
 'app/matrix',
 'app/d3',
 'app/scatterPlot'
-], function() {
-	//alert('I loaded'); // This happens last!! All the other things happen first!
+], function(storage, lowPassDesign, lowPassTest, complex, nport, matrix, d3, scatterPlot) {
+	alert('I loaded'); // This happens last!! All the other things happen first!
 });
