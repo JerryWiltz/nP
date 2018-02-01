@@ -16,6 +16,7 @@ requirejs.config({
 		complex: 'app/complex',
 		nport: 'app/nport',
 		matrix: 'app/matrix',
+		d3: 'app/d3',
 		scatterPlot: 'app/scatterPlot'
     }
 	
@@ -28,6 +29,7 @@ requirejs([
 'app/complex',
 'app/nport',
 'app/matrix',
+'app/d3',
 'app/scatterPlot'
 ], function() {
 	//alert('I loaded'); // This happens last!! All the other things happen first!

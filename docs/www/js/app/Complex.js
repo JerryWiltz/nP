@@ -1,7 +1,7 @@
 // complex.js
 // By Jerry Wiltz on 6/5/2017
-
-define(function(){
+define([],function (){
+//define(function(){
 "use strict";
 	//var c1 = complex(2, -3) and var c1 = complex(5, 8)
 	var complex = function complex (real, imaginary) {
