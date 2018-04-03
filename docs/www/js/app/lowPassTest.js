@@ -62,13 +62,13 @@ define(['app/storage', 'app/complex', 'app/nport', 'app/matrix', 'app/scatterPlo
 			
 			// add plotting code here ... it will need freqSparTable
 			var myFilt = [
-               ['Freq', 'Insertion Loss', 'Return Loss', 'Noise Figure'],
+               //['Freq', 'Insertion Loss', 'Return Loss', 'Noise Figure'],
                [ 40,  20,  30, 50],
                [ 80,  22,  40, 55],
                [120,  80,  90, 60],
                [160, 100, 105, 65],
                [200, 120, 130, 70]];
-               
+            //var myFilt = [1, 2] 
 			//input object
 			var myFilterInputObject = {
 			  //inputTable : myFilt,
@@ -78,6 +78,10 @@ define(['app/storage', 'app/complex', 'app/nport', 'app/matrix', 'app/scatterPlo
 			  xMin : 0, xMax : 10, yMin : -100, yMax : 0,
 			  xAxisTitle : 'Frequency, GHz', yAxisTitle : 'dB'
 			}
+			//console.log(sizeof.sizeof(  [complex(1,2),complex(1,2),complex(1,2),complex(1,2)]  ));
+			//console.log(sizeof.sizeof(  [new complexProto(1,2) ,new complexProto(1,2),new complexProto(1,2),new complexProto(1,2)] ));
+			console.log(complex(1,2));
+			console.log(new complexProto(1,2));
 			scatterPlot(myFilterInputObject);
 			//console.log('lowPassTest complete');
 		}; // end of doTest

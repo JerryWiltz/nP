@@ -14,7 +14,7 @@ define(function(){
 			getI = function getI() {return y;}, 
 			setR = function setR(R) {x = R;},
 			setI = function setI(I) {y = I;},	
-			print = function print() {console.log(x + " " + y);},	
+			print = function print() {console.log(x + " " + y);},
 			add = function add(c2) {return complex(x + c2.x, y + c2.y);}, // returning complex allows method chaining :)
 			sub = function sub(c2) {return complex(x - c2.x, y - c2.y);},
 			mul = function mul(c2) {return complex(x * c2.x - y * c2.y, x * c2.y + y * c2.x);},
@@ -36,7 +36,7 @@ define(function(){
 			getI  : getI,
 			setR  : setR,
 			setI  : setI,
-			print : print,	
+			print : print,
 			add   : add,
 			sub   : sub,
 			mul   : mul,
