@@ -1,0 +1,11 @@
+{
+	"name": "nP",
+	"version": "1.0.0",
+	"main": "./index.js",
+	"scripts": {
+		"build": "rollup -c"
+	},
+	"devDependencies": {
+		"rollup": "^0.57.1"
+	}
+}
