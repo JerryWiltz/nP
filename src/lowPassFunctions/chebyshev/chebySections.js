@@ -1,4 +1,4 @@
-//computes the number sections in a chebyshev filter
+// Computes the number sections in a chebyshev filter
 export default function chebySections (maxPass = .2, minRej = 1.5, ripple = 0.1, rejection = 30) {
 	/*
 	ak	    bk	    gk	    R,C,L      Fc= 0.2 GHz, Frej=1.5GHz, Ripple=0.1, Rej=30, n=3

@@ -1,3 +1,4 @@
+// A quick and easy complex arithmetic object
 function Complex() {}
 
 Complex.prototype = complex.prototype = {
