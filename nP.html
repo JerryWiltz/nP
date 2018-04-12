@@ -9,12 +9,25 @@
 <script src="dist/nP.js"></script>
 <!--script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.2.3/d3.min.js"></script-->
 <script>
-var c1 = nP.complex(1,2);
+/*var c1 = nP.complex(1,2);
 var c2 = nP.complex(3,4);
 var c3 = c1.add(c2);
 console.log(c3);
-console.log(nP.chebySections() );
-console.log(nP.chebyGen() );
+var c4 = nP.complex(10,11)
+var c5 = c4.sub(c1)
+console.log(c5)
+console.log(nP.chebyLowPassN())
+console.log(nP.chebyLowPassG())
+console.log(nP.chebyLowPassLC())*/
+
+var c1 = nP.seL(5e-9,2e9);
+console.log(c1.getspars()[0][0].mag())
+console.log(c1.getspars()[0][1].mag())
+console.log(c1);
+//var r1 = nP.seR(75);
+//console.log(r1);
+//console.log(r2.cas(r2))
+//r1.cas();
 </script>
 </body>
 </html
