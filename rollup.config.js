@@ -1,14 +1,14 @@
 const definition = require("./package.json");
-const dependencies = Object.keys(definition.dependencies || {});
+//const dependencies = Object.keys(definition.dependencies || {});
 
 export default {
   input: "index",
-  external: dependencies,
+  //external: dependencies,
   output: {
     extend: true,
     file: `dist/${definition.name}.js`,
     format: "umd",
-    globals: dependencies.reduce((p, v) => (p[v] = "nP", p), {}),
+    //globals: dependencies.reduce((p, v) => (p[v] = "nP", p), {}),
     name: "nP"
   }
 };
