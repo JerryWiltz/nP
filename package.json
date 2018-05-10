@@ -6,6 +6,10 @@
 		"build": "rollup -c"
 	},
 	"devDependencies": {
-		"rollup": "^0.57.1"
+		"rollup": "^0.57.1",
+		"rollup-plugin-node-resolve": "^3.3.0"
+	},
+	"dependencies": {
+		"d3": "^5.1.0"
 	}
 }

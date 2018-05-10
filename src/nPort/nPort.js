@@ -3,6 +3,8 @@ function NPort() {}; // base class for nPort objects
 
 NPort.prototype = {
 	constructor: NPort,
+	setglobals: function (globals) { this.globals = globals; },
+	getglobals: function () {return this.globals;},
 	setspars: function (sparsArray) { this.spars = sparsArray; },
 	getspars: function () { return this.spars; },
 	cas: function cas (n2) { // cascade two 2-ports along with method chaining since it returns an NPort
@@ -22,6 +24,7 @@ NPort.prototype = {
 		};
 		var casOut = new NPort();
 		casOut.setspars(sparsArray);
+		casOut.setglobals(this.globals);
 		return casOut;
 	}
 };

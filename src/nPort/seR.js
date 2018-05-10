@@ -1,9 +1,10 @@
 import complex from "../maths/complex";
 import NPort from "./nPort";
 
-function seR(R = 75, frequencyList = [2e9]) { // series resistor nPort object
+function seR(R = 75, globals) { // series resistor nPort object
 	var seR = new NPort;
-	var Zo = complex(50,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+	var frequencyList = globals.fList, Ro = globals.Ro;
+	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(R, 0);
 		s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
@@ -12,7 +13,8 @@ function seR(R = 75, frequencyList = [2e9]) { // series resistor nPort object
 		s22 = s11;
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}	
-	seR.setspars(sparsArray);			
+	seR.setspars(sparsArray);
+	seR.setglobals(globals);
 	return seR;
 };
 	
