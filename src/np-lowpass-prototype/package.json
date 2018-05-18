@@ -1,0 +1,16 @@
+{
+  "name": "np-lowpass-prototype",
+  "version": "1.0.0",
+  "description": "Lowpass filter prototype package for nPort",
+  "main": "index.js",
+  "scripts": {
+    "build": "rollup -c"
+  },
+  "keywords": [
+    "lowpass",
+    "filter"
+  ],
+  "author": "Jerry Wiltz",
+  "license": "MIT",
+  "devDependencies": {}
+}

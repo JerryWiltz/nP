@@ -1,7 +1,7 @@
 export default {
   input: 'index.js',
   output: {
-    file: './dist/nP.js',
+    file: 'nP.js',
     format: 'umd',
     name: 'nP'
   }

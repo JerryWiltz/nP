@@ -1,0 +1,41 @@
+<!--DOCTYPE html-->
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>nP</title>
+</head>
+<body>
+<svg id="canvas" width="500" height="300"></svg>
+<script src="https://d3js.org/d3.v5.min.js"></script>
+<script src="./dist/nP.js"></script>
+
+<script>
+
+console.log('Show complex(1,2)')
+var c1 = nP.complex(1,2);
+console.log(c1);
+
+console.log('Create gk from n and ripple')
+var gk = nP.chebyLPgk;
+console.log(gk());
+
+console.log('Create Ls as Cs from the gk')
+var LC = nP.chebyLPLCs;
+console.log(LC());
+
+console.log('Compute the number of sections in a filter')
+var N = nP.chebyLPNsec;
+console.log(N());
+
+console.log('Show global');
+var g = nP.global;
+console.log(g);
+
+console.log('Show 75 Ohm series resistor')
+var r1 = nP.seR();
+console.log(r1);
+
+</script>
+</body>
+</html
