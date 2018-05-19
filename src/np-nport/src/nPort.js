@@ -1,5 +1,4 @@
 import {complex} from '../../np-math/src/complex';
-//import {global}  from './global';
 
 export function nPort() {}; // base class for nPort objects
 

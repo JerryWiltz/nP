@@ -34,8 +34,6 @@
 	  return complex;
 	}
 
-	//import {global}  from './global';
-
 	function nPort() {}
 	nPort.prototype = {
 		constructor: nPort,
@@ -64,8 +62,6 @@
 		}
 	};
 
-	// global variables will go here
-
 	var global = {
 		fList:	[2e9],
 		Ro:		50,
@@ -89,7 +85,26 @@
 		return seR;
 	}
 
+	function paR(R = 75) { // parallel resistor nPort object
+		var paR = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = complex(R, 0);
+			Y[freqCount] = Z[freqCount].inv();
+			s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
+			s21 = (two.mul(Yo)).div(Y[freqCount].add(Yo.add(Yo)));  
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		paR.setspars(sparsArray);
+		paR.setglobal(global);	
+		return paR;
+	}
+
 	exports.seR = seR;
+	exports.paR = paR;
 
 	Object.defineProperty(exports, '__esModule', { value: true });
 

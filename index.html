@@ -30,11 +30,16 @@ console.log(N());
 
 console.log('Show global');
 var g = nP.global;
+g.fList = g.fGen(2e9, 10e9, 5);
 console.log(g);
 
 console.log('Show 75 Ohm series resistor')
 var r1 = nP.seR();
 console.log(r1);
+
+console.log('Show 75 Ohn parallel resistor');
+var r2 = nP.paR();
+console.log(r2);
 
 </script>
 </body>
