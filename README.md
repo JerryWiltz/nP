@@ -1,2 +1,2 @@
-# MCAP
-A microwave computer analysis program
+# nP
+nPort a Microwave Circuit Analysis Program
