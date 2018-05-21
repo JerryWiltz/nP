@@ -1,2 +1,2 @@
 # nP
-nPort a Microwave Circuit Analysis Program
+nP is short for nPort, a Microwave Circuit Analysis Program
