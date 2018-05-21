@@ -3,12 +3,12 @@ import resolve from 'rollup-plugin-node-resolve';
 export default {
   input: 'index.js',
   output: {
-    file: './dist/nP.js',
+    file: 'nP.js',  
     format: 'umd',
     name: 'nP',
-	  globals: 'd3'
+globals: 'd3'
   },
-	plugins: [
-		resolve()
-	]
+  plugins:[
+    resolve()
+  ]
 }

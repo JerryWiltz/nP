@@ -1,25 +1,6 @@
-import a from '../d3/d3';
+import * as d3 from 'd3'
 
-export default function testLineChart () {
-
-var myFilt = [
-   ['Freq', 'Insertion Loss', 'Return Loss', 'Noise Figure', 'IP3'],
-   [ 80,  22,  40, 55],
-   [120,  80,  90, 60],
-   [160, 100, 105, 65],
-   [200, 120, 130, 70]
-   ];
-
-var myLineChart = {
-  inputTable : myFilt,
-  canvasId : '#canvas',
-  xMin : 0, xMax : 10, yMin : -100, yMax : 0,
-  xAxisTitle : 'Frequency, GHz', yAxisTitle : 'dB'
-}
-
-var lineChartInputObject = myLineChart;
-
-function lineChart (lineChartInputObject) {
+export function  lineChart (lineChartInputObject) {
 	var inputTable = lineChartInputObject.inputTable;
 	var canvasID = lineChartInputObject.canvasId;
 	var xMin = lineChartInputObject.xMin, xMax = lineChartInputObject.xMax, yMin = lineChartInputObject.yMin, yMax = lineChartInputObject.yMax;
@@ -167,6 +148,4 @@ function lineChart (lineChartInputObject) {
 		.style("font", "10px sans-serif")
 		.text(function(d) { return d.yName; });
 		})//end each
-	};
-	lineChart(myLineChart);
 };

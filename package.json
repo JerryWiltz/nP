@@ -1,10 +1,28 @@
 {
-	"name": "nP",
-	"version": "1.0.0",
-	"main": "./index.js",
-	"scripts": {
-		"build": "rollup -c"
-	},
-	"devDependencies": {},
-	"dependencies": {}
+  "name": "np",
+  "version": "1.0.0",
+  "main": "./index.js",
+  "scripts": {
+    "build": "rollup -c"
+  },
+  "devDependencies": {
+    "d3": "^5.4.0",
+    "rollup-plugin-node-resolve": "^3.3.0"
+  },
+  "dependencies": {},
+  "description": "A microwave computer analysis program",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JerryWiltz/nP.git"
+  },
+  "keywords": [
+    "Microwave",
+    "Analysis"
+  ],
+  "author": "Jerry Wiltz",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/JerryWiltz/nP/issues"
+  },
+  "homepage": "https://github.com/JerryWiltz/nP#readme"
 }

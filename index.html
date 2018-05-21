@@ -12,6 +12,25 @@
 
 <script>
 
+var myFilt = [
+   ['Freq', 'Insertion Loss', 'Return Loss', 'Noise Figure', 'IP3'],
+   [ 80,  22,  40, 55, 60],
+   [120,  80,  90, 60, 65],
+   [160, 100, 105, 65, 70],
+   [200, 120, 130, 70, 75]
+   ];
+
+var myLineChart = {
+  inputTable : myFilt,
+  canvasId : '#canvas',
+  xMin : 0, xMax : 10, yMin : -100, yMax : 0,
+  xAxisTitle : 'Frequency, GHz', yAxisTitle : 'dB'
+}
+
+var lineChartInputObject = myLineChart;
+
+nP.lineChart(lineChartInputObject);
+
 console.log('Show complex(1,2)')
 var c1 = nP.complex(1,2);
 console.log(c1);
@@ -39,7 +58,7 @@ console.log(r1);
 
 console.log('Show 75 Ohn parallel resistor');
 var r2 = nP.paR();
-console.log(r2);
+console.log(r2.getspars());
 
 </script>
 </body>
