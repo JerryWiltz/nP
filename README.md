@@ -1,2 +1,2 @@
-# MCAP
-A microwave computer analysis program
+# nP
+nP is short for nPort, a Microwave Circuit Analysis Program
