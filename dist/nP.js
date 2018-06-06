@@ -6,32 +6,32 @@
 
 	function Complex() {}
 
-		Complex.prototype = {
-			constructor: Complex,
-			set: function(real, imaginary) { this.x = real; this.y = imaginary; return this },
-			getR: function () {return this.x;},	  
-			getI: function () {return this.y;}, 
-			setR: function (R) {this.x = R;},
-			setI: function (I) {this.y = I;},	
-			print: function() {console.log(this.x + " " + this.y);},
-			add: function (c2) {return complex(this.x + c2.x, this.y + c2.y);},
-			sub: function (c2) {return complex(this.x - c2.x, this.y - c2.y);},
-			mul: function (c2) {return complex(this.x * c2.x -this.y * c2.y, this.x * c2.y + this.y * c2.x);},		
-			div: function (c2) {return complex(
-				(this.x * c2.x + this.y * c2.y)/(c2.x * c2.x + c2.y * c2.y),
-				(c2.x * this.y - this.x * c2.y)/(c2.x * c2.x + c2.y * c2.y));},	
-			inv: function () {return complex((1 * this.x + 0 * this.y)/(this.x * this.x + this.y * this.y), (this.x * 0 - 1 * this.y)/(this.x * this.x + this.y * this.y));},	
-			neg: function () {return complex(-this.x, -this.y);},
-			mag: function () {return Math.sqrt(this.x * this.x + this.y * this.y);},
-			ang: function () {return Math.atan2(this.y, this.x) * (180/Math.PI);},
-			magDB10: function () {return 10 * Math.log(   Math.sqrt(this.x * this.x + this.y * this.y) )/2.302585092994046   },
-			magDB20: function () {return 20 * Math.log(   Math.sqrt(this.x * this.x + this.y * this.y) )/2.302585092994046   },
+	Complex.prototype = {
+		constructor: Complex,
+		set: function(real, imaginary) { this.x = real; this.y = imaginary; return this },
+		getR: function () {return this.x;},	  
+		getI: function () {return this.y;}, 
+		setR: function (R) {this.x = R;},
+		setI: function (I) {this.y = I;},	
+		print: function() {console.log(this.x + " " + this.y);},
+		add: function (c2) {return complex(this.x + c2.x, this.y + c2.y);},
+		sub: function (c2) {return complex(this.x - c2.x, this.y - c2.y);},
+		mul: function (c2) {return complex(this.x * c2.x -this.y * c2.y, this.x * c2.y + this.y * c2.x);},		
+		div: function (c2) {return complex(
+			(this.x * c2.x + this.y * c2.y)/(c2.x * c2.x + c2.y * c2.y),
+			(c2.x * this.y - this.x * c2.y)/(c2.x * c2.x + c2.y * c2.y));},	
+		inv: function () {return complex((1 * this.x + 0 * this.y)/(this.x * this.x + this.y * this.y), (this.x * 0 - 1 * this.y)/(this.x * this.x + this.y * this.y));},	
+		neg: function () {return complex(-this.x, -this.y);},
+		mag: function () {return Math.sqrt(this.x * this.x + this.y * this.y);},
+		ang: function () {return Math.atan2(this.y, this.x) * (180/Math.PI);},
+		magDB10: function () {return 10 * Math.log(   Math.sqrt(this.x * this.x + this.y * this.y) )/2.302585092994046   },
+		magDB20: function () {return 20 * Math.log(   Math.sqrt(this.x * this.x + this.y * this.y) )/2.302585092994046   },
 	};
 
 	function complex(real, imaginary) {
-	  var complex = new Complex ;
-	  complex.set(real, imaginary);
-	  return complex;
+		var complex = new Complex ;
+		complex.set(real, imaginary);
+		return complex;
 	}
 
 	// Generates an array of chebyshev values based on number of section and ripple
@@ -39,44 +39,44 @@
 		var	chebyLPgkin = new Array(1 + 1 + n + 1),  // Table title row, go row, gk's (n rows), and g(k+1)
 			chebyLPgkout = [],
 			i = 0, row = 0;
-				
+
 		// The function, gk() Fills in the variable table above called "chebyLPgkin" to hold ak, bk, and gk's based on the n
-		for(i = 0; i < chebyLPgkin.length; i++) {chebyLPgkin[i] = new Array(4); }	
+		for(i = 0; i < chebyLPgkin.length; i++) {chebyLPgkin[i] = new Array(4); }
 		// Table for complete display of values
 		chebyLPgkin[0][0] = 'ak'; chebyLPgkin[0][1] = 'bk'; chebyLPgkin[0][2] = 'gk'; chebyLPgkin[0][3] = 'R,C,L';
 
 		function coth(x) {return (Math.exp(x) + Math.exp(-x))/(Math.exp(x) - Math.exp(-x));}	function B() {return Math.log(coth(ripple/17.37));}	function sinh(x) {return (Math.exp(x) - Math.exp(-x))/2;}	function G() {return sinh(B()/(2 * n));} // Compute G() on page 99 of MYJ
-		
+
 		chebyLPgkin[1][2] = 1; // Initialize the lowPassFilter array for g0=1;
-		
-		for(row = 2; row < chebyLPgkin.length -1; row++) { chebyLPgkin[row][0] = Math.sin(((2*(row -1) -1) * Math.PI)/(2 * n)); }	
+
+		for(row = 2; row < chebyLPgkin.length -1; row++) { chebyLPgkin[row][0] = Math.sin(((2*(row -1) -1) * Math.PI)/(2 * n)); }
 		for(row = 2; row < chebyLPgkin.length -1; row++) { // Populate the bk column on page 99 of MYJ
 			chebyLPgkin[row][1] = Math.pow(G(),2) + Math.pow(Math.sin(  (row-1) * Math.PI/n),2);    
-		}	
+		}
 		chebyLPgkin[2][2] = 2*chebyLPgkin[2][0]/G(); // Populate the first q1 in the cell
-		
+
 		for(row = 3; row < chebyLPgkin.length -1; row++) { // Populate the gk column from g2 onward to gk
 			chebyLPgkin[row][2] = (4 * chebyLPgkin[row-1][0] * chebyLPgkin[row][0])/(chebyLPgkin[row-1][1] * chebyLPgkin[row-1][2]);    
-		}	
+		}
 		chebyLPgkin[ n+2][2] = (n % 2 === 0 ) ? Math.pow(coth(B()/4),2) : 1 ; // Populate the last g(k+1) in the cell
-		
+
 		// Populate chebyLPgkout
-		for(row = 1; row < chebyLPgkin.length; row++) { chebyLPgkout[row - 1] = chebyLPgkin[row][2]; }	
+		for(row = 1; row < chebyLPgkin.length; row++) { chebyLPgkout[row - 1] = chebyLPgkin[row][2]; }
 		return chebyLPgkout;
 	}
 
 	// Generates an array of parallel Capacitors and series Inductors based on chebyshev values
 	function chebyLPLCs ( cheby = [1, 1.0315851425078764, 1.1474003299537219, 1.0315851425078761, 1], maxPassFrequency = 0.2e9, zo = 50) { 
 		var	chebyLPLCsout = new Array(cheby.length),
-		i = 0;
-		
+			i = 0;
+
 		chebyLPLCsout[0] = cheby[0] * zo; // Populate the first resistor in the array
-		
+
 		for(i = 1; i < cheby.length -1; i++) { // Populate the C's and L's
 			chebyLPLCsout[i] = ( (i) % 2 === 0 ) ? cheby[i] * zo * (1/(2*Math.PI)) * (1/(maxPassFrequency )) : cheby[i] * 1/zo * (1/(2*Math.PI)) * (1/(maxPassFrequency));
-		}	
+		}
 		chebyLPLCsout[cheby.length-1] = cheby[cheby.length-1] * zo; // Populate the last resistor in the array
-		
+
 		return chebyLPLCsout;
 	}
 
@@ -91,83 +91,20 @@
 	}
 
 	var global = {
-		fList:	[2e9],
-		Ro:		50,
+		fList:	[2e9, 4e9],
+		Ro:	50,
 		Temp:	293,
 		fGen: function fGen (fStart, fStop, points) {
-	  		var out = [];
-	  		var fStep = (fStop-fStart)/(points-1);
-	  		var fMax = fStart;
-	 		var i = 0; 
-			  for (i = 0; i < points; i++, fMax += fStep ) {
-	   			 out.push(fMax);
-	 		 }
-	  		return out;
+			var out = [];
+			var fStep = (fStop-fStart)/(points-1);
+			var fMax = fStart;
+			var i = 0; 
+			for (i = 0; i < points; i++, fMax += fStep ) {
+				out.push(fMax);
+			}
+			return out;
 		},
 	};
-
-	function nPort() {}
-	nPort.prototype = {
-		constructor: nPort,
-		setglobal: function (global) { this.global = global; },
-		getglobal: function () {return this.global;},
-		setspars: function (sparsArray) { this.spars = sparsArray; },
-		getspars: function () { return this.spars; },
-		cas: function cas (n2) { // cascade two 2-ports along with method chaining since it returns an nPort
-			var freqCount = 0, one = complex(1,0),
-				sparsA = this.getspars(),
-				sparsB = n2.getspars(),
-				s11, s12, s21, s22, s11a, s12a, s21a, s22a, s11b, s12b, s21b, s22b, sparsArray = [];
-			for (freqCount = 0; freqCount < this.spars.length; freqCount++) {
-				s11a = sparsA[freqCount][1]; s12a = sparsA[freqCount][2]; s21a = sparsA[freqCount][3]; s22a = sparsA[freqCount][4];			
-				s11b = sparsB[freqCount][1]; s12b = sparsB[freqCount][2]; s21b = sparsB[freqCount][3]; s22b = sparsB[freqCount][4];
-				
-				s11 = s11a.add (( s12a.mul(s11b).mul(s21a) ).div( (one.sub( s22a.mul(s11b) ) ) ) );
-				s12 =           ( s12a.mul(s12b)           ).div( (one.sub( s22a.mul(s11b) ) ) )  ;
-				s22 = s22b.add (( s21b.mul(s22a).mul(s12b) ).div( (one.sub( s22a.mul(s11b) ) ) ) );
-				s21 =           ( s21a.mul(s21b)           ).div( (one.sub( s22a.mul(s11b) ) ) )  ;
-				sparsArray[freqCount] =	[this.spars[freqCount][0],s11, s12, s21, s22];
-			}		var casOut = new nPort();
-			casOut.setspars(sparsArray);
-			casOut.setglobal(this.global);
-			return casOut;
-		}
-	};
-
-	function seR(R = 75) { // series resistor nPort object
-		var seR = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
-		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
-		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
-			Z[freqCount] = complex(R, 0);
-			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
-			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
-			s12 = s21;
-			s22 = s11;
-			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
-		}	
-		seR.setspars(sparsArray);
-		seR.setglobal(global);
-		return seR;
-	}
-
-	function paR(R = 75) { // parallel resistor nPort object
-		var paR = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
-		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
-		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
-			Z[freqCount] = complex(R, 0);
-			Y[freqCount] = Z[freqCount].inv();
-			s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
-			s21 = (two.mul(Yo)).div(Y[freqCount].add(Yo.add(Yo)));  
-			s12 = s21;
-			s22 = s11;
-			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
-		}
-		paR.setspars(sparsArray);
-		paR.setglobal(global);	
-		return paR;
-	}
 
 	function ascending(a, b) {
 	  return a < b ? -1 : a > b ? 1 : a >= b ? 0 : NaN;
@@ -4401,15 +4338,15 @@
 	  };
 	}
 
-	function bimap(domain, range, deinterpolate, reinterpolate) {
-	  var d0 = domain[0], d1 = domain[1], r0 = range[0], r1 = range[1];
+	function bimap(domain, range$$1, deinterpolate, reinterpolate) {
+	  var d0 = domain[0], d1 = domain[1], r0 = range$$1[0], r1 = range$$1[1];
 	  if (d1 < d0) d0 = deinterpolate(d1, d0), r0 = reinterpolate(r1, r0);
 	  else d0 = deinterpolate(d0, d1), r0 = reinterpolate(r0, r1);
 	  return function(x) { return r0(d0(x)); };
 	}
 
-	function polymap(domain, range, deinterpolate, reinterpolate) {
-	  var j = Math.min(domain.length, range.length) - 1,
+	function polymap(domain, range$$1, deinterpolate, reinterpolate) {
+	  var j = Math.min(domain.length, range$$1.length) - 1,
 	      d = new Array(j),
 	      r = new Array(j),
 	      i = -1;
@@ -4417,12 +4354,12 @@
 	  // Reverse descending domains.
 	  if (domain[j] < domain[0]) {
 	    domain = domain.slice().reverse();
-	    range = range.slice().reverse();
+	    range$$1 = range$$1.slice().reverse();
 	  }
 
 	  while (++i < j) {
 	    d[i] = deinterpolate(domain[i], domain[i + 1]);
-	    r[i] = reinterpolate(range[i], range[i + 1]);
+	    r[i] = reinterpolate(range$$1[i], range$$1[i + 1]);
 	  }
 
 	  return function(x) {
@@ -4443,7 +4380,7 @@
 	// reinterpolate(a, b)(t) takes a parameter t in [0,1] and returns the corresponding domain value x in [a,b].
 	function continuous(deinterpolate, reinterpolate) {
 	  var domain = unit,
-	      range = unit,
+	      range$$1 = unit,
 	      interpolate$$1 = interpolateValue,
 	      clamp = false,
 	      piecewise$$1,
@@ -4451,17 +4388,17 @@
 	      input;
 
 	  function rescale() {
-	    piecewise$$1 = Math.min(domain.length, range.length) > 2 ? polymap : bimap;
+	    piecewise$$1 = Math.min(domain.length, range$$1.length) > 2 ? polymap : bimap;
 	    output = input = null;
 	    return scale;
 	  }
 
 	  function scale(x) {
-	    return (output || (output = piecewise$$1(domain, range, clamp ? deinterpolateClamp(deinterpolate) : deinterpolate, interpolate$$1)))(+x);
+	    return (output || (output = piecewise$$1(domain, range$$1, clamp ? deinterpolateClamp(deinterpolate) : deinterpolate, interpolate$$1)))(+x);
 	  }
 
 	  scale.invert = function(y) {
-	    return (input || (input = piecewise$$1(range, domain, deinterpolateLinear, clamp ? reinterpolateClamp(reinterpolate) : reinterpolate)))(+y);
+	    return (input || (input = piecewise$$1(range$$1, domain, deinterpolateLinear, clamp ? reinterpolateClamp(reinterpolate) : reinterpolate)))(+y);
 	  };
 
 	  scale.domain = function(_) {
@@ -4469,11 +4406,11 @@
 	  };
 
 	  scale.range = function(_) {
-	    return arguments.length ? (range = slice$5.call(_), rescale()) : range.slice();
+	    return arguments.length ? (range$$1 = slice$5.call(_), rescale()) : range$$1.slice();
 	  };
 
 	  scale.rangeRound = function(_) {
-	    return range = slice$5.call(_), interpolate$$1 = interpolateRound, rescale();
+	    return range$$1 = slice$5.call(_), interpolate$$1 = interpolateRound, rescale();
 	  };
 
 	  scale.clamp = function(_) {
@@ -6130,43 +6067,43 @@
 		inputTable.forEach( (element) => {
 			tsv += element.join('\t') + '\n';
 		});
-		  
+
 		//use d3 to turn tsv data into d3 data
 		var data = tsvParse(tsv);
 
 		//change data type from string to float, for arbitrary sized/named table
 		data.forEach( d => {
-		  for (k = 0; k < data.columns.length; k++){
-			  d[data.columns[k]] = +d[data.columns[k]];
-			  }	});
+			for (k = 0; k < data.columns.length; k++){
+				d[data.columns[k]] = +d[data.columns[k]];
+			}	});
 
 		//change the data to nestedData
 		var nestedData = data.columns.slice(1).map(function(yName) {// this will return an array of objects
-		  return {
-			yName: yName,                       // this is the rf dB plot
-			yValues: data.map(function(d) {     // this will return an inner Array of objects
-			return {xValue: d[data.columns[0]], // this is the rf frequency
-					yValue: d[yName]};          // this is the dB value
-			})
-		  };
+			return {
+				yName: yName,                       // this is the rf dB plot
+				yValues: data.map(function(d) {     // this will return an inner Array of objects
+					return {xValue: d[data.columns[0]], // this is the rf frequency
+						yValue: d[yName]};          // this is the dB value
+				})
+			};
 		});
 
 		var xExtent = (function () {//creates a one dimensional array
-		  var temp = [];
-		  for (k = 0; k < data.length; k++) {
-			temp.push(nestedData[0].yValues[k].xValue);
-		  }
-		  return temp;
+			var temp = [];
+			for (k = 0; k < data.length; k++) {
+				temp.push(nestedData[0].yValues[k].xValue);
+			}
+			return temp;
 		})();
 
 		var yExtent = (function () {//creates a one dimensional array
-		  var temp = [];
-		  for (k = 0; k < nestedData.length; k++){
-			for (p = 0; p < data.length; p++) {
-			  temp.push(nestedData[k].yValues[p].yValue);
+			var temp = [];
+			for (k = 0; k < nestedData.length; k++){
+				for (p = 0; p < data.length; p++) {
+					temp.push(nestedData[k].yValues[p].yValue);
+				}
 			}
-		  }
-		  return temp;
+			return temp;
 		})();
 
 		//set up the plot area
@@ -6182,14 +6119,14 @@
 		var y = linear$2().domain(extent(yExtent)).range([innerHeight, 0]);
 
 		var svg$$1 = select(canvasID).append("svg")
-		.attr("width", outerWidth)
-		.attr("height", outerHeight);
+			.attr("width", outerWidth)
+			.attr("height", outerHeight);
 		var rect = svg$$1.append('rect')
-		.attr("width", outerWidth)
-		.attr("height", outerHeight)
-		.attr('fill', 'none')
-		.attr('stroke', 'black')
-		.attr('stroke-width', '1px');
+			.attr("width", outerWidth)
+			.attr("height", outerHeight)
+			.attr('fill', 'none')
+			.attr('stroke', 'black')
+			.attr('stroke-width', '1px');
 
 		var xAxisTitle = lineChartInputObject.xAxisTitle;
 		var xAxisTitleOffset = 48;
@@ -6197,75 +6134,141 @@
 		var yAxisTitleOffset = 40;
 
 		var g = svg$$1.append("g")
-		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+			.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 		//append the x axis onto g
 		g.append('g')
-		  .attr('class', 'xAxis')
-		  .style('font-size', '12')
-		  .attr('transform', 'translate(0,' + innerHeight + ')')
-		  .call(axisBottom(x))
-		  .append('text')
-		  .attr("fill", "#000")
-		  .style("text-anchor", "middle")
-		  .attr("transform", "translate(" + (innerWidth / 2) + "," + xAxisTitleOffset + ")")
-		  .style('font-size', '20')
-		  .text(xAxisTitle);
+			.attr('class', 'xAxis')
+			.style('font-size', '12')
+			.attr('transform', 'translate(0,' + innerHeight + ')')
+			.call(axisBottom(x))
+			.append('text')
+			.attr("fill", "#000")
+			.style("text-anchor", "middle")
+			.attr("transform", "translate(" + (innerWidth / 2) + "," + xAxisTitleOffset + ")")
+			.style('font-size', '20')
+			.text(xAxisTitle);
 		//append the x axis grid onto g
 		g.append('g')
-		  .attr("class", "xGrid")
-		  .attr('transform', 'translate(0,' + innerHeight + ')')
-		  .call(axisBottom(x).tickSize(-innerHeight).tickFormat(""));
+			.attr("class", "xGrid")
+			.attr('transform', 'translate(0,' + innerHeight + ')')
+			.call(axisBottom(x).tickSize(-innerHeight).tickFormat(""));
 		select('g').select('g.xGrid').selectAll('g').select('line')
-		  .attr('stroke', 'gray').attr('stroke-dasharray', '3, 3');	  
+			.attr('stroke', 'gray').attr('stroke-dasharray', '3, 3');	  
 		//append the y axis onto g
 		g.append('g')
-		  .attr('class', 'yAxis')
-		  .style('font-size', '12')
-		  .call(axisLeft(y))
-		  .append('text')
-		  .attr("fill", "#000")
-		  .style("text-anchor", "middle")
-		  .attr("transform", "translate(-" + yAxisTitleOffset + "," + (innerHeight / 2) + ") rotate(-90)")
-		  .style('font-size', '20')
-		  .text(yAxisTitle);
+			.attr('class', 'yAxis')
+			.style('font-size', '12')
+			.call(axisLeft(y))
+			.append('text')
+			.attr("fill", "#000")
+			.style("text-anchor", "middle")
+			.attr("transform", "translate(-" + yAxisTitleOffset + "," + (innerHeight / 2) + ") rotate(-90)")
+			.style('font-size', '20')
+			.text(yAxisTitle);
 		//append the x axis grid onto g
 		g.append('g')
-		  .attr("class", "yGrid")
-		  .call(axisLeft(y).tickSize(-innerWidth).tickFormat(""));
+			.attr("class", "yGrid")
+			.call(axisLeft(y).tickSize(-innerWidth).tickFormat(""));
 		select('g').select('g.yGrid').selectAll('g').select('line')
-		  .attr('stroke', 'gray').attr('stroke-dasharray', '3, 3');
+			.attr('stroke', 'gray').attr('stroke-dasharray', '3, 3');
 
 		function plotColor (label) {return category10[data.columns.slice(1).indexOf(label)];}
 		var plotGroups = g.selectAll('g.newPlot')
-		.data(nestedData)
-		.enter()
-		.append('g')
-		.attr('class', 'newPlot')
-		.each( function (d) {
-			select(this).selectAll('circle')
-			.data(d => d.yValues)
+			.data(nestedData)
 			.enter()
-			.append('circle')
-			.attr('cx', d => x(d.xValue))
-			.attr('cy', d => y(d.yValue))
-			.attr('r', 2)
-			.style("stroke", plotColor(d.yName)).style('fill', plotColor(d.yName)).style('stroke-width','2');
-			
-			var line$$1 = line()
-			.x(d => x(d.xValue))
-			.y(d => y(d.yValue));
-			
-			select(this).append("path")
-			.attr('d', d => line$$1(d.yValues))
-			.style("stroke", plotColor(d.yName)).style('fill', 'none');
-			
-			select(this).append("text")
-			.attr("transform", function(d) { return "translate(" + x(d.yValues[d.yValues.length-2].xValue) + "," + y(d.yValues[d.yValues.length-2].yValue)  + ")"; })
-			.attr("x", 3)
-			.attr("dy", "0.35em")
-			.style("font", "10px sans-serif")
-			.text(function(d) { return d.yName; });
+			.append('g')
+			.attr('class', 'newPlot')
+			.each( function (d) {
+				select(this).selectAll('circle')
+					.data(d => d.yValues)
+					.enter()
+					.append('circle')
+					.attr('cx', d => x(d.xValue))
+					.attr('cy', d => y(d.yValue))
+					.attr('r', 2)
+					.style("stroke", plotColor(d.yName)).style('fill', plotColor(d.yName)).style('stroke-width','2');
+
+				var line$$1 = line()
+					.x(d => x(d.xValue))
+					.y(d => y(d.yValue));
+
+				select(this).append("path")
+					.attr('d', d => line$$1(d.yValues))
+					.style("stroke", plotColor(d.yName)).style('fill', 'none');
+
+				select(this).append("text")
+					.attr("transform", function(d) { return "translate(" + x(d.yValues[d.yValues.length-2].xValue) + "," + y(d.yValues[d.yValues.length-2].yValue)  + ")"; })
+					.attr("x", 3)
+					.attr("dy", "0.35em")
+					.style("font", "10px sans-serif")
+					.text(function(d) { return d.yName; });
 			});//end each
+	}
+
+	function nPort() {}
+	nPort.prototype = {
+		constructor: nPort,
+		setglobal: function (global) { this.global = global; },
+		getglobal: function () {return this.global;},
+		setspars: function (sparsArray) { this.spars = sparsArray; },
+		getspars: function () { return this.spars; },
+		cas: function cas (n2) { // cascade two 2-ports along with method chaining since it returns an nPort
+			var freqCount = 0, one = complex(1,0),
+				sparsA = this.getspars(),
+				sparsB = n2.getspars(),
+				s11, s12, s21, s22, s11a, s12a, s21a, s22a, s11b, s12b, s21b, s22b, sparsArray = [];
+			for (freqCount = 0; freqCount < this.spars.length; freqCount++) {
+				s11a = sparsA[freqCount][1]; s12a = sparsA[freqCount][2]; s21a = sparsA[freqCount][3]; s22a = sparsA[freqCount][4];			
+				s11b = sparsB[freqCount][1]; s12b = sparsB[freqCount][2]; s21b = sparsB[freqCount][3]; s22b = sparsB[freqCount][4];
+
+				s11 = s11a.add (( s12a.mul(s11b).mul(s21a) ).div( (one.sub( s22a.mul(s11b) ) ) ) );
+				s12 =           ( s12a.mul(s12b)           ).div( (one.sub( s22a.mul(s11b) ) ) )  ;
+				s22 = s22b.add (( s21b.mul(s22a).mul(s12b) ).div( (one.sub( s22a.mul(s11b) ) ) ) );
+				s21 =           ( s21a.mul(s21b)           ).div( (one.sub( s22a.mul(s11b) ) ) )  ;
+				sparsArray[freqCount] =	[this.spars[freqCount][0],s11, s12, s21, s22];
+			}		var casOut = new nPort();
+			casOut.setspars(sparsArray);
+			casOut.setglobal(this.global);
+			return casOut;
+		},
+		out : function out (selectedOut) {
+			var out = this.getspars();
+			console.log(out);}
+	};
+
+	function seR(R = 75) { // series resistor nPort object
+		var seR = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = complex(R, 0);
+			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
+			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}	
+		seR.setspars(sparsArray);
+		seR.setglobal(global);
+		return seR;
+	}
+
+	function paR(R = 75) { // parallel resistor nPort object
+		var paR = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = complex(R, 0);
+			Y[freqCount] = Z[freqCount].inv();
+			s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
+			s21 = (two.mul(Yo)).div(Y[freqCount].add(Yo.add(Yo)));  
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		paR.setspars(sparsArray);
+		paR.setglobal(global);	
+		return paR;
 	}
 
 	// main entry point
@@ -6275,9 +6278,9 @@
 	exports.chebyLPLCs = chebyLPLCs;
 	exports.chebyLPNsec = chebyLPNsec;
 	exports.global = global;
+	exports.lineChart = lineChart;
 	exports.seR = seR;
 	exports.paR = paR;
-	exports.lineChart = lineChart;
 
 	Object.defineProperty(exports, '__esModule', { value: true });
 

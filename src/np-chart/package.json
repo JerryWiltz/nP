@@ -1,19 +1,19 @@
 {
-  "name": "np-chart",
-  "version": "1.0.0",
-  "description": "Chart package for nPort",
-  "main": "index.js",
-  "scripts": {
-    "build": "rollup -c"
-  },
-  "keywords": [
-    "chart",
-    "plot"
-  ],
-  "author": "Jerry Wiltz",
-  "license": "MIT",
-  "devDependencies": {
-    "d3": "^5.4.0",
-    "rollup-plugin-node-resolve": "^3.3.0"
-  }
+	"name": "np-chart",
+	"version": "1.0.0",
+	"description": "Chart package for nPort",
+	"main": "index.js",
+	"scripts": {
+		"build": "rollup -c"
+	},
+	"keywords": [
+		"chart",
+		"plot"
+	],
+	"author": "Jerry Wiltz",
+	"license": "MIT",
+	"devDependencies": {
+		"d3": "^5.4.0",
+		"rollup-plugin-node-resolve": "^3.3.0"
+	}
 }

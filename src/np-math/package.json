@@ -1,16 +1,16 @@
 {
-  "name": "np-math",
-  "version": "1.0.0",
-  "description": "Math package for nPort",
-  "main": "index.js",
-  "scripts": {
-    "build": "rollup -c"
-  },
-  "keywords": [
-    "complex",
-    "matrix"
-  ],
-  "author": "Jerry Wiltz",
-  "license": "MIT",
-  "devDependencies": {}
+	"name": "np-math",
+	"version": "1.0.0",
+	"description": "Math package for nPort",
+	"main": "index.js",
+	"scripts": {
+		"build": "rollup -c"
+	},
+	"keywords": [
+		"complex",
+		"matrix"
+	],
+	"author": "Jerry Wiltz",
+	"license": "MIT",
+	"devDependencies": {}
 }

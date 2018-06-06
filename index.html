@@ -1,30 +1,29 @@
 <!--DOCTYPE html-->
 <html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width">
-  <title>nP</title>
-</head>
-<body>
-<svg id="canvas" width="500" height="300"></svg>
-<script src="https://d3js.org/d3.v5.min.js"></script>
-<script src="./dist/nP.js"></script>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>nP</title>
+	</head>
+	<body>
+		<svg id="canvas" width="500" height="300"></svg>
+		<script src="./dist/nP.js"></script>
 
-<script>
+		<script>
 
 var myFilt = [
-   ['Freq', 'Insertion Loss', 'Return Loss', 'Noise Figure', 'IP3'],
-   [ 80,  22,  40, 55, 60],
-   [120,  80,  90, 60, 65],
-   [160, 100, 105, 65, 70],
-   [200, 120, 130, 70, 75]
-   ];
+	['Freq', 'Insertion Loss', 'Return Loss', 'Noise Figure', 'IP3'],
+	[ 80,  22,  40, 55, 60],
+	[120,  80,  90, 60, 65],
+	[160, 100, 105, 65, 70],
+	[200, 120, 130, 70, 75]
+];
 
 var myLineChart = {
-  inputTable : myFilt,
-  canvasId : '#canvas',
-  xMin : 0, xMax : 10, yMin : -100, yMax : 0,
-  xAxisTitle : 'Frequency, GHz', yAxisTitle : 'dB'
+	inputTable : myFilt,
+	canvasId : '#canvas',
+	xMin : 0, xMax : 10, yMin : -100, yMax : 0,
+	xAxisTitle : 'Frequency, GHz', yAxisTitle : 'dB'
 }
 
 var lineChartInputObject = myLineChart;
@@ -60,6 +59,6 @@ console.log('Show 75 Ohn parallel resistor');
 var r2 = nP.paR();
 console.log(r2.getspars());
 
-</script>
-</body>
+		</script>
+	</body>
 </html

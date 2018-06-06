@@ -1,14 +1,14 @@
 import resolve from 'rollup-plugin-node-resolve';
 
 export default {
-  input: 'index.js',
-  output: {
-    file: 'nP.js',  
-    format: 'umd',
-    name: 'nP',
-globals: 'd3'
-  },
-  plugins:[
-    resolve()
-  ]
+	input: 'index.js',
+	output: {
+		file: 'nP.js',  
+		format: 'umd',
+		name: 'nP',
+		globals: 'd3'
+	},
+	plugins:[
+		resolve()
+	]
 }

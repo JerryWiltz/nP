@@ -1,13 +1,13 @@
 {
-  "name": "np-port",
-  "version": "1.0.0",
-  "main": "./index.js",
-  "scripts": {
-    "build": "rollup -c"
-  },
-  "devDependencies": {},
-  "dependencies": {},
-  "description": "A microwave computer analysis program",
-  "author": "Jerry Wiltz",
-  "license": "MIT"
+	"name": "np-port",
+	"version": "1.0.0",
+	"main": "./index.js",
+	"scripts": {
+		"build": "rollup -c"
+	},
+	"devDependencies": {},
+	"dependencies": {},
+	"description": "A microwave computer analysis program",
+	"author": "Jerry Wiltz",
+	"license": "MIT"
 }

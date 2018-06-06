@@ -6,32 +6,32 @@
 
 	function Complex() {}
 
-		Complex.prototype = {
-			constructor: Complex,
-			set: function(real, imaginary) { this.x = real; this.y = imaginary; return this },
-			getR: function () {return this.x;},	  
-			getI: function () {return this.y;}, 
-			setR: function (R) {this.x = R;},
-			setI: function (I) {this.y = I;},	
-			print: function() {console.log(this.x + " " + this.y);},
-			add: function (c2) {return complex(this.x + c2.x, this.y + c2.y);},
-			sub: function (c2) {return complex(this.x - c2.x, this.y - c2.y);},
-			mul: function (c2) {return complex(this.x * c2.x -this.y * c2.y, this.x * c2.y + this.y * c2.x);},		
-			div: function (c2) {return complex(
-				(this.x * c2.x + this.y * c2.y)/(c2.x * c2.x + c2.y * c2.y),
-				(c2.x * this.y - this.x * c2.y)/(c2.x * c2.x + c2.y * c2.y));},	
-			inv: function () {return complex((1 * this.x + 0 * this.y)/(this.x * this.x + this.y * this.y), (this.x * 0 - 1 * this.y)/(this.x * this.x + this.y * this.y));},	
-			neg: function () {return complex(-this.x, -this.y);},
-			mag: function () {return Math.sqrt(this.x * this.x + this.y * this.y);},
-			ang: function () {return Math.atan2(this.y, this.x) * (180/Math.PI);},
-			magDB10: function () {return 10 * Math.log(   Math.sqrt(this.x * this.x + this.y * this.y) )/2.302585092994046   },
-			magDB20: function () {return 20 * Math.log(   Math.sqrt(this.x * this.x + this.y * this.y) )/2.302585092994046   },
+	Complex.prototype = {
+		constructor: Complex,
+		set: function(real, imaginary) { this.x = real; this.y = imaginary; return this },
+		getR: function () {return this.x;},	  
+		getI: function () {return this.y;}, 
+		setR: function (R) {this.x = R;},
+		setI: function (I) {this.y = I;},	
+		print: function() {console.log(this.x + " " + this.y);},
+		add: function (c2) {return complex(this.x + c2.x, this.y + c2.y);},
+		sub: function (c2) {return complex(this.x - c2.x, this.y - c2.y);},
+		mul: function (c2) {return complex(this.x * c2.x -this.y * c2.y, this.x * c2.y + this.y * c2.x);},		
+		div: function (c2) {return complex(
+			(this.x * c2.x + this.y * c2.y)/(c2.x * c2.x + c2.y * c2.y),
+			(c2.x * this.y - this.x * c2.y)/(c2.x * c2.x + c2.y * c2.y));},	
+		inv: function () {return complex((1 * this.x + 0 * this.y)/(this.x * this.x + this.y * this.y), (this.x * 0 - 1 * this.y)/(this.x * this.x + this.y * this.y));},	
+		neg: function () {return complex(-this.x, -this.y);},
+		mag: function () {return Math.sqrt(this.x * this.x + this.y * this.y);},
+		ang: function () {return Math.atan2(this.y, this.x) * (180/Math.PI);},
+		magDB10: function () {return 10 * Math.log(   Math.sqrt(this.x * this.x + this.y * this.y) )/2.302585092994046   },
+		magDB20: function () {return 20 * Math.log(   Math.sqrt(this.x * this.x + this.y * this.y) )/2.302585092994046   },
 	};
 
 	function complex(real, imaginary) {
-	  var complex = new Complex ;
-	  complex.set(real, imaginary);
-	  return complex;
+		var complex = new Complex ;
+		complex.set(real, imaginary);
+		return complex;
 	}
 
 	function nPort() {}
@@ -49,7 +49,7 @@
 			for (freqCount = 0; freqCount < this.spars.length; freqCount++) {
 				s11a = sparsA[freqCount][1]; s12a = sparsA[freqCount][2]; s21a = sparsA[freqCount][3]; s22a = sparsA[freqCount][4];			
 				s11b = sparsB[freqCount][1]; s12b = sparsB[freqCount][2]; s21b = sparsB[freqCount][3]; s22b = sparsB[freqCount][4];
-				
+
 				s11 = s11a.add (( s12a.mul(s11b).mul(s21a) ).div( (one.sub( s22a.mul(s11b) ) ) ) );
 				s12 =           ( s12a.mul(s12b)           ).div( (one.sub( s22a.mul(s11b) ) ) )  ;
 				s22 = s22b.add (( s21b.mul(s22a).mul(s12b) ).div( (one.sub( s22a.mul(s11b) ) ) ) );
@@ -59,13 +59,33 @@
 			casOut.setspars(sparsArray);
 			casOut.setglobal(this.global);
 			return casOut;
-		}
+		},
+		out : function out (selectedOut) { // 's11' at the moment
+			// s11mag, s11dB, s11ang or three different ones
+			var spars = this.getspars();
+
+			var copy = spars.map(function (element,index,spars) {
+				var inner = [element[0]];
+				inner.push(element[3].mag());
+				return inner;});
+			console.log(copy);
+		},
 	};
 
 	var global = {
-		fList:	[2e9],
-		Ro:		50,
+		fList:	[2e9, 4e9],
+		Ro:	50,
 		Temp:	293,
+		fGen: function fGen (fStart, fStop, points) {
+			var out = [];
+			var fStep = (fStop-fStart)/(points-1);
+			var fMax = fStart;
+			var i = 0; 
+			for (i = 0; i < points; i++, fMax += fStep ) {
+				out.push(fMax);
+			}
+			return out;
+		},
 	};
 
 	function seR(R = 75) { // series resistor nPort object

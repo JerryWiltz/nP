@@ -16,7 +16,7 @@ nPort.prototype = {
 		for (freqCount = 0; freqCount < this.spars.length; freqCount++) {
 			s11a = sparsA[freqCount][1]; s12a = sparsA[freqCount][2]; s21a = sparsA[freqCount][3]; s22a = sparsA[freqCount][4];			
 			s11b = sparsB[freqCount][1]; s12b = sparsB[freqCount][2]; s21b = sparsB[freqCount][3]; s22b = sparsB[freqCount][4];
-			
+
 			s11 = s11a.add (( s12a.mul(s11b).mul(s21a) ).div( (one.sub( s22a.mul(s11b) ) ) ) );
 			s12 =           ( s12a.mul(s12b)           ).div( (one.sub( s22a.mul(s11b) ) ) )  ;
 			s22 = s22b.add (( s21b.mul(s22a).mul(s12b) ).div( (one.sub( s22a.mul(s11b) ) ) ) );
@@ -27,5 +27,15 @@ nPort.prototype = {
 		casOut.setspars(sparsArray);
 		casOut.setglobal(this.global);
 		return casOut;
-	}
-};
+	},
+	out : function out (selectedOut) { // 's11' at the moment
+		// s11mag, s11dB, s11ang or three different ones
+		var spars = this.getspars();
+
+		var copy = spars.map(function (element,index,spars) {
+			var inner = [element[0]];
+			inner.push(element[3].mag())
+			return inner;});
+		console.log(copy)
+	},
+}
