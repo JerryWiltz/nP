@@ -18,8 +18,8 @@ Complex.prototype = {
 	neg: function () {return complex(-this.x, -this.y);},
 	mag: function () {return Math.sqrt(this.x * this.x + this.y * this.y);},
 	ang: function () {return Math.atan2(this.y, this.x) * (180/Math.PI);},
-	magDB10: function () {return 10 * Math.log(   Math.sqrt(this.x * this.x + this.y * this.y) )/2.302585092994046   },
-	magDB20: function () {return 20 * Math.log(   Math.sqrt(this.x * this.x + this.y * this.y) )/2.302585092994046   },
+	mag10dB: function () {return 10 * Math.log(   Math.sqrt(this.x * this.x + this.y * this.y) )/2.302585092994046   },
+	mag20dB: function () {return 20 * Math.log(   Math.sqrt(this.x * this.x + this.y * this.y) )/2.302585092994046   },
 };
 
 export function complex(real, imaginary) {

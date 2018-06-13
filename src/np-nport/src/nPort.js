@@ -28,14 +28,24 @@ nPort.prototype = {
 		casOut.setglobal(this.global);
 		return casOut;
 	},
-	out : function out (selectedOut) { // 's11' at the moment
-		// s11mag, s11dB, s11ang or three different ones
+	out : function out (...sparsArguments) {
 		var spars = this.getspars();
-
+		var n = Math.sqrt(spars[0].length - 1); 
 		var copy = spars.map(function (element,index,spars) {
 			var inner = [element[0]];
-			inner.push(element[3].mag())
-			return inner;});
-		console.log(copy)
+			sparsArguments.forEach(function (sparsArgument,index1,array) {
+				var row = parseInt(sparsArgument.match(/\d/g)[0]);
+				var col = parseInt(sparsArgument.match(/\d/g)[1]);
+				var sparIndex = (row - 1) * n + col;
+				var sparsTo = sparsArgument.match(/dB|mag|ang/).toString();
+				if(sparsTo === 'mag') {inner.push(element[sparIndex].mag());};
+				if(sparsTo === 'dB')  {inner.push(element[sparIndex].mag20dB());};
+				if(sparsTo === 'ang') {inner.push(element[sparIndex].ang());}
+			})  // end of forEach
+			return inner;
+		}); // end of map
+		sparsArguments.unshift('Freq');
+		copy.unshift(sparsArguments);
+		return copy;
 	},
-}
+};

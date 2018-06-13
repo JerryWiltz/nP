@@ -24,8 +24,8 @@
 		neg: function () {return complex(-this.x, -this.y);},
 		mag: function () {return Math.sqrt(this.x * this.x + this.y * this.y);},
 		ang: function () {return Math.atan2(this.y, this.x) * (180/Math.PI);},
-		magDB10: function () {return 10 * Math.log(   Math.sqrt(this.x * this.x + this.y * this.y) )/2.302585092994046   },
-		magDB20: function () {return 20 * Math.log(   Math.sqrt(this.x * this.x + this.y * this.y) )/2.302585092994046   },
+		mag10dB: function () {return 10 * Math.log(   Math.sqrt(this.x * this.x + this.y * this.y) )/2.302585092994046   },
+		mag20dB: function () {return 20 * Math.log(   Math.sqrt(this.x * this.x + this.y * this.y) )/2.302585092994046   },
 	};
 
 	function complex(real, imaginary) {
@@ -6231,9 +6231,24 @@
 			casOut.setglobal(this.global);
 			return casOut;
 		},
-		out : function out (selectedOut) {
-			var out = this.getspars();
-			console.log(out);}
+		out : function out (...sparsArguments) {
+			var spars = this.getspars();
+			var n = Math.sqrt(spars[0].length - 1); 
+			var copy = spars.map(function (element,index,spars) {
+				var inner = [element[0]];
+				sparsArguments.forEach(function (sparsArgument,index1,array) {
+					var row = parseInt(sparsArgument.match(/\d/g)[0]);
+					var col = parseInt(sparsArgument.match(/\d/g)[1]);
+					var sparIndex = (row - 1) * n + col;
+					var sparsTo = sparsArgument.match(/dB|mag|ang/).toString();
+					if(sparsTo === 'mag') {inner.push(element[sparIndex].mag());}				if(sparsTo === 'dB')  {inner.push(element[sparIndex].mag20dB());}				if(sparsTo === 'ang') {inner.push(element[sparIndex].ang());}
+				});  // end of forEach
+				return inner;
+			}); // end of map
+			sparsArguments.unshift('Freq');
+			copy.unshift(sparsArguments);
+			return copy;
+		},
 	};
 
 	function seR(R = 75) { // series resistor nPort object
