@@ -4338,15 +4338,15 @@
 	  };
 	}
 
-	function bimap(domain, range$$1, deinterpolate, reinterpolate) {
-	  var d0 = domain[0], d1 = domain[1], r0 = range$$1[0], r1 = range$$1[1];
+	function bimap(domain, range, deinterpolate, reinterpolate) {
+	  var d0 = domain[0], d1 = domain[1], r0 = range[0], r1 = range[1];
 	  if (d1 < d0) d0 = deinterpolate(d1, d0), r0 = reinterpolate(r1, r0);
 	  else d0 = deinterpolate(d0, d1), r0 = reinterpolate(r0, r1);
 	  return function(x) { return r0(d0(x)); };
 	}
 
-	function polymap(domain, range$$1, deinterpolate, reinterpolate) {
-	  var j = Math.min(domain.length, range$$1.length) - 1,
+	function polymap(domain, range, deinterpolate, reinterpolate) {
+	  var j = Math.min(domain.length, range.length) - 1,
 	      d = new Array(j),
 	      r = new Array(j),
 	      i = -1;
@@ -4354,12 +4354,12 @@
 	  // Reverse descending domains.
 	  if (domain[j] < domain[0]) {
 	    domain = domain.slice().reverse();
-	    range$$1 = range$$1.slice().reverse();
+	    range = range.slice().reverse();
 	  }
 
 	  while (++i < j) {
 	    d[i] = deinterpolate(domain[i], domain[i + 1]);
-	    r[i] = reinterpolate(range$$1[i], range$$1[i + 1]);
+	    r[i] = reinterpolate(range[i], range[i + 1]);
 	  }
 
 	  return function(x) {
@@ -4380,7 +4380,7 @@
 	// reinterpolate(a, b)(t) takes a parameter t in [0,1] and returns the corresponding domain value x in [a,b].
 	function continuous(deinterpolate, reinterpolate) {
 	  var domain = unit,
-	      range$$1 = unit,
+	      range = unit,
 	      interpolate$$1 = interpolateValue,
 	      clamp = false,
 	      piecewise$$1,
@@ -4388,17 +4388,17 @@
 	      input;
 
 	  function rescale() {
-	    piecewise$$1 = Math.min(domain.length, range$$1.length) > 2 ? polymap : bimap;
+	    piecewise$$1 = Math.min(domain.length, range.length) > 2 ? polymap : bimap;
 	    output = input = null;
 	    return scale;
 	  }
 
 	  function scale(x) {
-	    return (output || (output = piecewise$$1(domain, range$$1, clamp ? deinterpolateClamp(deinterpolate) : deinterpolate, interpolate$$1)))(+x);
+	    return (output || (output = piecewise$$1(domain, range, clamp ? deinterpolateClamp(deinterpolate) : deinterpolate, interpolate$$1)))(+x);
 	  }
 
 	  scale.invert = function(y) {
-	    return (input || (input = piecewise$$1(range$$1, domain, deinterpolateLinear, clamp ? reinterpolateClamp(reinterpolate) : reinterpolate)))(+y);
+	    return (input || (input = piecewise$$1(range, domain, deinterpolateLinear, clamp ? reinterpolateClamp(reinterpolate) : reinterpolate)))(+y);
 	  };
 
 	  scale.domain = function(_) {
@@ -4406,11 +4406,11 @@
 	  };
 
 	  scale.range = function(_) {
-	    return arguments.length ? (range$$1 = slice$5.call(_), rescale()) : range$$1.slice();
+	    return arguments.length ? (range = slice$5.call(_), rescale()) : range.slice();
 	  };
 
 	  scale.rangeRound = function(_) {
-	    return range$$1 = slice$5.call(_), interpolate$$1 = interpolateRound, rescale();
+	    return range = slice$5.call(_), interpolate$$1 = interpolateRound, rescale();
 	  };
 
 	  scale.clamp = function(_) {
@@ -6057,14 +6057,37 @@
 	  bezierCurveTo: function(x1, y1, x2, y2, x, y) { this._context.bezierCurveTo(y1, x1, y2, x2, y, x); }
 	};
 
-	function  lineChart (lineChartInputObject) {
-		var inputTable = lineChartInputObject.inputTable;
-		var canvasID = lineChartInputObject.canvasId;
-		var xMin = lineChartInputObject.xMin, xMax = lineChartInputObject.xMax, yMin = lineChartInputObject.yMin, yMax = lineChartInputObject.yMax;
+	function  lineChart (lineChartInputObject = {}) {
+
+		var inputTable = lineChartInputObject.inputTable ||  [
+			['Freq', 'Insertion Loss', 'Return Loss', 'Noise Figure', 'IP3'],
+			[ 8 * 1e9,  22,  40, 55, 60],
+			[12 * 1e9,  80,  90, 60, 65],
+			[16 * 1e9, 100, 105, 65, 70],
+			[20 * 1e9, 120, 130, 70, 75]
+		];
+		var freqUnits = lineChartInputObject.freqUnits || 'GHz';
+		var canvasID = lineChartInputObject.canvasId || '#canvas' ;
+		var xMin = lineChartInputObject.xMin || 0; 
+		var xMax = lineChartInputObject.xMax || 10;
+		var yMin = lineChartInputObject.yMin || -100;
+		var yMax = lineChartInputObject.yMax || 0;
+		var xAxisTitle = lineChartInputObject.xAxisTitle || 'Frequency, GHz';
+		var yAxisTitle = lineChartInputObject.yAxisTitle || 'dB';
+		var xAxisTitleOffset = lineChartInputObject.xAxisTitleOffset || 48;
+		var yAxisTitleOffset = lineChartInputObject.yAxisTitleOffset || 40;
+
 		var k = 0;
 		var p = 0;
+
+		var divisor = 1;
+		if (freqUnits === 'Hz') {divisor = 1;}	if (freqUnits === 'KHz') {divisor = 1e3;}	if (freqUnits === 'MHz') {divisor = 1e6;}	if (freqUnits === 'GHz') {divisor = 1e9;}	var inputTableFrequencyAdjusted = [];
+		inputTableFrequencyAdjusted = inputTable;
+		for (k = 1; k < inputTable.length; k++) {
+			inputTableFrequencyAdjusted[k][0] = inputTable[k][0]/divisor;
+		}
 		var tsv = '';
-		inputTable.forEach( (element) => {
+		inputTableFrequencyAdjusted.forEach( (element) => {
 			tsv += element.join('\t') + '\n';
 		});
 
@@ -6128,9 +6151,9 @@
 			.attr('stroke', 'black')
 			.attr('stroke-width', '1px');
 
-		var xAxisTitle = lineChartInputObject.xAxisTitle;
+		//var xAxisTitle = lineChartInputObject.xAxisTitle;
 		var xAxisTitleOffset = 48;
-		var yAxisTitle = lineChartInputObject.yAxisTitle;
+		//var yAxisTitle = lineChartInputObject.yAxisTitle;
 		var yAxisTitleOffset = 40;
 
 		var g = svg$$1.append("g")

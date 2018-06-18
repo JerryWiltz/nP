@@ -1,13 +1,41 @@
 import * as d3 from 'd3'
 
-export function  lineChart (lineChartInputObject) {
-	var inputTable = lineChartInputObject.inputTable;
-	var canvasID = lineChartInputObject.canvasId;
-	var xMin = lineChartInputObject.xMin, xMax = lineChartInputObject.xMax, yMin = lineChartInputObject.yMin, yMax = lineChartInputObject.yMax;
+export function  lineChart (lineChartInputObject = {}) {
+
+	var inputTable = lineChartInputObject.inputTable ||  [
+		['Freq', 'Insertion Loss', 'Return Loss', 'Noise Figure', 'IP3'],
+		[ 8 * 1e9,  22,  40, 55, 60],
+		[12 * 1e9,  80,  90, 60, 65],
+		[16 * 1e9, 100, 105, 65, 70],
+		[20 * 1e9, 120, 130, 70, 75]
+	];
+	var freqUnits = lineChartInputObject.freqUnits || 'GHz';
+	var canvasID = lineChartInputObject.canvasId || '#canvas' ;
+	var xMin = lineChartInputObject.xMin || 0; 
+	var xMax = lineChartInputObject.xMax || 10;
+	var yMin = lineChartInputObject.yMin || -100;
+	var yMax = lineChartInputObject.yMax || 0;
+	var xAxisTitle = lineChartInputObject.xAxisTitle || 'Frequency, GHz';
+	var yAxisTitle = lineChartInputObject.yAxisTitle || 'dB';
+	var xAxisTitleOffset = lineChartInputObject.xAxisTitleOffset || 48;
+	var yAxisTitleOffset = lineChartInputObject.yAxisTitleOffset || 40;
+
 	var k = 0;
 	var p = 0;
+
+	var divisor = 1;
+	if (freqUnits === 'Hz') {divisor = 1;};
+	if (freqUnits === 'KHz') {divisor = 1e3;};
+	if (freqUnits === 'MHz') {divisor = 1e6;};
+	if (freqUnits === 'GHz') {divisor = 1e9;};
+	var inputTableFrequencyAdjusted = [];
+	inputTableFrequencyAdjusted = inputTable;
+	for (k = 1; k < inputTable.length; k++) {
+		inputTableFrequencyAdjusted[k][0] = inputTable[k][0]/divisor
+	};
+
 	var tsv = '';
-	inputTable.forEach( (element) => {
+	inputTableFrequencyAdjusted.forEach( (element) => {
 		tsv += element.join('\t') + '\n';
 	});
 
@@ -72,9 +100,9 @@ export function  lineChart (lineChartInputObject) {
 		.attr('stroke', 'black')
 		.attr('stroke-width', '1px');
 
-	var xAxisTitle = lineChartInputObject.xAxisTitle;
+	//var xAxisTitle = lineChartInputObject.xAxisTitle;
 	var xAxisTitleOffset = 48;
-	var yAxisTitle = lineChartInputObject.yAxisTitle;
+	//var yAxisTitle = lineChartInputObject.yAxisTitle;
 	var yAxisTitleOffset = 40;
 
 	var g = svg.append("g")

@@ -10,24 +10,13 @@
 <svg id="canvas" width="500" height="300"></svg>
 <script src="nP.js"></script>
 <script>
-var myFilt = [
-	['Freq', 'Insertion Loss', 'Return Loss', 'Noise Figure', 'IP3'],
-	[ 80,  22,  40, 55, 60],
-	[120,  80,  90, 60, 65],
-	[160, 100, 105, 65, 70],
-	[200, 120, 130, 70, 75]
-];
 
 var myLineChart = {
-	inputTable : myFilt,
-	canvasId : '#canvas',
-	xMin : 0, xMax : 10, yMin : -100, yMax : 0,
-	xAxisTitle : 'Frequency, GHz', yAxisTitle : 'dB'
+	freqUnits : 'GHz',
+	xAxisTitle : 'Frequency, GHz'
 }
 
-var lineChartInputObject = myLineChart;
-
-nP.lineChart(lineChartInputObject);
+nP.lineChart(myLineChart);
 
 </script>
 	</body>

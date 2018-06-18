@@ -11,14 +11,6 @@
 
 		<script>
 
-var myFilt = [
-	['Freq', 'Insertion Loss', 'Return Loss', 'Noise Figure', 'IP3'],
-	[ 80,  22,  40, 55, 60],
-	[120,  80,  90, 60, 65],
-	[160, 100, 105, 65, 70],
-	[200, 120, 130, 70, 75]
-];
-
 
 console.log('Show complex(1,2)')
 var c1 = nP.complex(1,2);
@@ -50,16 +42,8 @@ var r2 = nP.paR();
 console.log(r2.getspars());
 console.log(r2.out('s11dB', 's21dB'));
 var myFilt1 = r2.out('s11dB','s21dB');
-var myLineChart = {
-	inputTable : myFilt1,
-	canvasId : '#canvas',
-	xMin : 0, xMax : 10, yMin : -100, yMax : 0,
-	xAxisTitle : 'Frequency, GHz', yAxisTitle : 'dB'
-}
 
-var lineChartInputObject = myLineChart;
-
-nP.lineChart(lineChartInputObject);
+nP.lineChart();
 		</script>
 	</body>
 </html
