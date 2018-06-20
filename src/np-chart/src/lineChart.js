@@ -1,6 +1,5 @@
 import * as d3 from 'd3'
-
-export function  lineChart (lineChartInputObject = {}) {
+export	function  lineChart (lineChartInputObject = {}) {
 
 	var inputTable = lineChartInputObject.inputTable ||  [
 		['Freq', 'Insertion Loss', 'Return Loss', 'Noise Figure', 'IP3'],
@@ -9,12 +8,9 @@ export function  lineChart (lineChartInputObject = {}) {
 		[16 * 1e9, 100, 105, 65, 70],
 		[20 * 1e9, 120, 130, 70, 75]
 	];
+
 	var freqUnits = lineChartInputObject.freqUnits || 'GHz';
-	var canvasID = lineChartInputObject.canvasId || '#canvas' ;
-	var xMin = lineChartInputObject.xMin || 0; 
-	var xMax = lineChartInputObject.xMax || 10;
-	var yMin = lineChartInputObject.yMin || -100;
-	var yMax = lineChartInputObject.yMax || 0;
+	var canvasID = lineChartInputObject.canvasID || '#canvas' ;
 	var xAxisTitle = lineChartInputObject.xAxisTitle || 'Frequency, GHz';
 	var yAxisTitle = lineChartInputObject.yAxisTitle || 'dB';
 	var xAxisTitleOffset = lineChartInputObject.xAxisTitleOffset || 48;
@@ -90,7 +86,7 @@ export function  lineChart (lineChartInputObject = {}) {
 	var x = d3.scaleLinear().domain(d3.extent(xExtent)).range([0, innerWidth]);
 	var y = d3.scaleLinear().domain(d3.extent(yExtent)).range([innerHeight, 0]);
 
-	var svg = d3.select(canvasID).append("svg")
+	var svg = d3.select(canvasID)
 		.attr("width", outerWidth)
 		.attr("height", outerHeight);
 	var rect = svg.append('rect')
@@ -99,11 +95,6 @@ export function  lineChart (lineChartInputObject = {}) {
 		.attr('fill', 'none')
 		.attr('stroke', 'black')
 		.attr('stroke-width', '1px');
-
-	//var xAxisTitle = lineChartInputObject.xAxisTitle;
-	var xAxisTitleOffset = 48;
-	//var yAxisTitle = lineChartInputObject.yAxisTitle;
-	var yAxisTitleOffset = 40;
 
 	var g = svg.append("g")
 		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
@@ -118,14 +109,12 @@ export function  lineChart (lineChartInputObject = {}) {
 		.style("text-anchor", "middle")
 		.attr("transform", "translate(" + (innerWidth / 2) + "," + xAxisTitleOffset + ")")
 		.style('font-size', '20')
-		.text(xAxisTitle);
+		.text(xAxisTitle);						
 	//append the x axis grid onto g
 	g.append('g')
 		.attr("class", "xGrid")
 		.attr('transform', 'translate(0,' + innerHeight + ')')
-		.call(d3.axisBottom(x).tickSize(-innerHeight).tickFormat(""));
-	d3.select('g').select('g.xGrid').selectAll('g').select('line')
-		.attr('stroke', 'gray').attr('stroke-dasharray', '3, 3');	  
+		.call(d3.axisBottom(x).tickSize(-innerHeight).tickFormat("")).attr('stroke', 'gray').attr('stroke-dasharray', '3, 3');	  
 	//append the y axis onto g
 	g.append('g')
 		.attr('class', 'yAxis')
@@ -136,13 +125,11 @@ export function  lineChart (lineChartInputObject = {}) {
 		.style("text-anchor", "middle")
 		.attr("transform", "translate(-" + yAxisTitleOffset + "," + (innerHeight / 2) + ") rotate(-90)")
 		.style('font-size', '20')
-		.text(yAxisTitle);
-	//append the x axis grid onto g
+		.text(yAxisTitle);						
+	//append the y axis grid onto g
 	g.append('g')
 		.attr("class", "yGrid")
-		.call(d3.axisLeft(y).tickSize(-innerWidth).tickFormat(""));
-	d3.select('g').select('g.yGrid').selectAll('g').select('line')
-		.attr('stroke', 'gray').attr('stroke-dasharray', '3, 3');
+		.call(d3.axisLeft(y).tickSize(-innerWidth).tickFormat("")).attr('stroke', 'gray').attr('stroke-dasharray', '3, 3');
 
 	function plotColor (label) {return d3.schemeCategory10[data.columns.slice(1).indexOf(label)];};
 
@@ -175,5 +162,6 @@ export function  lineChart (lineChartInputObject = {}) {
 				.attr("dy", "0.35em")
 				.style("font", "10px sans-serif")
 				.text(function(d) { return d.yName; });
-		})//end each
+		})//end each 
+
 };

@@ -5964,12 +5964,9 @@
   		[16 * 1e9, 100, 105, 65, 70],
   		[20 * 1e9, 120, 130, 70, 75]
   	];
+
   	var freqUnits = lineChartInputObject.freqUnits || 'GHz';
-  	var canvasID = lineChartInputObject.canvasId || '#canvas' ;
-  	var xMin = lineChartInputObject.xMin || 0; 
-  	var xMax = lineChartInputObject.xMax || 10;
-  	var yMin = lineChartInputObject.yMin || -100;
-  	var yMax = lineChartInputObject.yMax || 0;
+  	var canvasID = lineChartInputObject.canvasID || '#canvas' ;
   	var xAxisTitle = lineChartInputObject.xAxisTitle || 'Frequency, GHz';
   	var yAxisTitle = lineChartInputObject.yAxisTitle || 'dB';
   	var xAxisTitleOffset = lineChartInputObject.xAxisTitleOffset || 48;
@@ -6039,7 +6036,7 @@
   	var x = linear$2().domain(extent(xExtent)).range([0, innerWidth]);
   	var y = linear$2().domain(extent(yExtent)).range([innerHeight, 0]);
 
-  	var svg$$1 = select(canvasID).append("svg")
+  	var svg$$1 = select(canvasID)
   		.attr("width", outerWidth)
   		.attr("height", outerHeight);
   	var rect = svg$$1.append('rect')
@@ -6048,11 +6045,6 @@
   		.attr('fill', 'none')
   		.attr('stroke', 'black')
   		.attr('stroke-width', '1px');
-
-  	//var xAxisTitle = lineChartInputObject.xAxisTitle;
-  	var xAxisTitleOffset = 48;
-  	//var yAxisTitle = lineChartInputObject.yAxisTitle;
-  	var yAxisTitleOffset = 40;
 
   	var g = svg$$1.append("g")
   		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
@@ -6067,14 +6059,12 @@
   		.style("text-anchor", "middle")
   		.attr("transform", "translate(" + (innerWidth / 2) + "," + xAxisTitleOffset + ")")
   		.style('font-size', '20')
-  		.text(xAxisTitle);
+  		.text(xAxisTitle);						
   	//append the x axis grid onto g
   	g.append('g')
   		.attr("class", "xGrid")
   		.attr('transform', 'translate(0,' + innerHeight + ')')
-  		.call(axisBottom(x).tickSize(-innerHeight).tickFormat(""));
-  	select('g').select('g.xGrid').selectAll('g').select('line')
-  		.attr('stroke', 'gray').attr('stroke-dasharray', '3, 3');	  
+  		.call(axisBottom(x).tickSize(-innerHeight).tickFormat("")).attr('stroke', 'gray').attr('stroke-dasharray', '3, 3');	  
   	//append the y axis onto g
   	g.append('g')
   		.attr('class', 'yAxis')
@@ -6085,13 +6075,11 @@
   		.style("text-anchor", "middle")
   		.attr("transform", "translate(-" + yAxisTitleOffset + "," + (innerHeight / 2) + ") rotate(-90)")
   		.style('font-size', '20')
-  		.text(yAxisTitle);
-  	//append the x axis grid onto g
+  		.text(yAxisTitle);						
+  	//append the y axis grid onto g
   	g.append('g')
   		.attr("class", "yGrid")
-  		.call(axisLeft(y).tickSize(-innerWidth).tickFormat(""));
-  	select('g').select('g.yGrid').selectAll('g').select('line')
-  		.attr('stroke', 'gray').attr('stroke-dasharray', '3, 3');
+  		.call(axisLeft(y).tickSize(-innerWidth).tickFormat("")).attr('stroke', 'gray').attr('stroke-dasharray', '3, 3');
 
   	function plotColor (label) {return category10[data.columns.slice(1).indexOf(label)];}
   	var plotGroups = g.selectAll('g.newPlot')
@@ -6123,7 +6111,8 @@
   				.attr("dy", "0.35em")
   				.style("font", "10px sans-serif")
   				.text(function(d) { return d.yName; });
-  		});//end each
+  		});//end each 
+
   }
 
   exports.lineChart = lineChart;

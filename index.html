@@ -6,7 +6,12 @@
 		<title>nP</title>
 	</head>
 	<body>
-		<svg id="canvas" width="500" height="300"></svg>
+		<div style="display: inline-block">
+			<svg id="canvas" width="500" height="300"></svg>
+		</div>
+		<div style="display: inline-block">
+			<svg id="canvas2" width="500" height="300"></svg>
+		</div>
 		<script src="./dist/nP.js"></script>
 
 		<script>
@@ -44,6 +49,11 @@ console.log(r2.out('s11dB', 's21dB'));
 var myFilt1 = r2.out('s11dB','s21dB');
 
 nP.lineChart();
+
+var my2nd = {canvasID: '#canvas2',
+	inputTable: myFilt1,
+}
+nP.lineChart(my2nd)
 		</script>
 	</body>
 </html
