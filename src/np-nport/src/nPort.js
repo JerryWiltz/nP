@@ -21,7 +21,8 @@ nPort.prototype = {
 			s12 =           ( s12a.mul(s12b)           ).div( (one.sub( s22a.mul(s11b) ) ) )  ;
 			s22 = s22b.add (( s21b.mul(s22a).mul(s12b) ).div( (one.sub( s22a.mul(s11b) ) ) ) );
 			s21 =           ( s21a.mul(s21b)           ).div( (one.sub( s22a.mul(s11b) ) ) )  ;
-			sparsArray[freqCount] =	[this.spars[freqCount][0],s11, s12, s21, s22];
+			//sparsArray[freqCount] =	[this.spars[freqCount][0],s11, s12, s21, s22];
+			sparsArray[freqCount] =	[sparsA[freqCount][0],s11, s12, s21, s22];
 		};
 		var casOut = new nPort();
 		casOut.setspars(sparsArray);

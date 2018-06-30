@@ -81,7 +81,7 @@
 	};
 
 	var global = {
-		fList:	[2e9, 4e9],
+		fList:	[2e9, 4e9, 6e9, 8e9],
 		Ro:	50,
 		Temp:	293,
 		fGen: function fGen (fStart, fStop, points) {
@@ -131,8 +131,56 @@
 		return paR;
 	}
 
+	function seL(L = 5e-9) { // series inductor nPort object
+		var seL = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount]);	
+			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
+			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}	seL.setspars(sparsArray);
+		seL.setglobal(global);	
+		return seL;
+	}
+
+	function paC(C = 1e-12) { // parallel capacitor nPort object   
+		var paC = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = complex(0, 1/(2*Math.PI*C*frequencyList[freqCount]));
+			Y[freqCount] = Z[freqCount].inv();
+			s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
+			s21 = (two.mul(Yo)).div(Y[freqCount].add(Yo.add(Yo)));  
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		paC.setspars(sparsArray);
+		paC.setglobal(global);				
+		return paC;
+	}
+
+	function lpfGen( filt =[50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50]) {
+		var i = 0;
+		var filtTable = [];
+		filt.pop();
+		filt.shift();
+		for (i = 0; i < filt.length; i++) {
+			if (i % 2 === 0) {filtTable[i] = paC(filt[i]);}		if (i % 2 === 1) {filtTable[i] = seL(filt[i]);}	}	for (i = 0; i < filt.length - 1; i++) {
+			filtTable[i+1] = filtTable[i].cas(filtTable[i+1]);
+		}	return filtTable[ filtTable.length-1 ];
+	}
+
 	exports.seR = seR;
 	exports.paR = paR;
+	exports.seL = seL;
+	exports.paC = paC;
+	exports.lpfGen = lpfGen;
 
 	Object.defineProperty(exports, '__esModule', { value: true });
 

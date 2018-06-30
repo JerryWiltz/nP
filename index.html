@@ -15,44 +15,52 @@
 		<script src="./dist/nP.js"></script>
 
 		<script>
-
-
-console.log('Show complex(1,2)')
-var c1 = nP.complex(1,2);
-console.log(c1);
-
-console.log('Create gk from n and ripple')
-var gk = nP.chebyLPgk;
-console.log(gk());
-
-console.log('Create Ls as Cs from the gk')
-var LC = nP.chebyLPLCs;
-console.log(LC());
-
-console.log('Compute the number of sections in a filter')
-var N = nP.chebyLPNsec;
-console.log(N());
-
 console.log('Show global');
 var g = nP.global;
-g.fList = g.fGen(2e9, 10e9, 5);
+//g.fList = [2e9, 4e9, 6e9, 8e9, 10e9];	
+g.fList = g.fGen(50e6, 10e9, 50);
 console.log(g);
 
-console.log('Show 75 Ohm series resistor')
-var r1 = nP.seR();
-console.log(r1);
+var ca1 = nP.paC(.2e-12);
+var ca2 = nP.paC(.7e-12);
+var ca3 = nP.paC(.1e-12);
+var ca4 = ca1.cas(ca2).cas(ca3);
+console.log(ca4.out('s11mag', 's11ang'));
 
-console.log('Show 75 Ohn parallel resistor');
-var r2 = nP.paR();
-console.log(r2.getspars());
-console.log(r2.out('s11dB', 's21dB'));
-var myFilt1 = r2.out('s11dB','s21dB');
+var la1 = nP.seL(2e-9);
+var la2 = nP.seL(2.5e-9);
+var la3 = nP.seL(.5e-9);
+var la4 = la1.cas(la2).cas(la3);
+console.log(la4.out('s11mag', 's11ang'));
 
-nP.lineChart();
 
-var my2nd = {canvasID: '#canvas2',
+
+var c1 = nP.paC(3.1716836788279897e-12);
+var l1 = nP.seL(9.566513256241392e-9);
+var c2 = nP.paC(5.6621309381827996e-12);
+var l2 = nP.seL(1.0721164178932893e-8);
+var c3 = nP.paC(5.8499784682761105e-12);
+var l3 = nP.seL(1.0721164178932898e-8);
+var c4 = nP.paC(5.662130938182797e-12);
+var l4 = nP.seL(9.566513256241397e-9);
+var c5 = nP.paC(3.171683678827988e-12);
+var filt1 = c1.cas(l1).cas(c2).cas(l2).cas(c3).cas(l3).cas(c4).cas(l4).cas(c5);
+var myFilt1 = filt1.out('s11dB', 's21dB');
+var my1st = {
+	inputTable: myFilt1
+};
+nP.lineChart(my1st);
+
+
+var n = nP.chebyLPNsec(1.2, 1.5, 0.1, 30);
+var gk = nP.chebyLPgk(9, 0.1);
+var LP = nP.chebyLPLCs(gk, 1.2e9);
+var myFilt1 = nP.lpfGen(LP).out('s11dB', 's21dB');
+var my2nd = {
+	canvasID: '#canvas2',
 	inputTable: myFilt1,
-}
+	freqUnits: 'GHz'
+};
 nP.lineChart(my2nd)
 		</script>
 	</body>
