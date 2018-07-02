@@ -11,7 +11,7 @@ export	function  lineChart (lineChartInputObject = {}) {
 
 	var freqUnits = lineChartInputObject.freqUnits || 'GHz';
 	var canvasID = lineChartInputObject.canvasID || '#canvas' ;
-	var xAxisTitle = lineChartInputObject.xAxisTitle || 'Frequency, GHz';
+	var xAxisTitle = lineChartInputObject.xAxisTitle || 'Frequency';
 	var yAxisTitle = lineChartInputObject.yAxisTitle || 'dB';
 	var xAxisTitleOffset = lineChartInputObject.xAxisTitleOffset || 48;
 	var yAxisTitleOffset = lineChartInputObject.yAxisTitleOffset || 40;
@@ -88,7 +88,8 @@ export	function  lineChart (lineChartInputObject = {}) {
 
 	var svg = d3.select(canvasID)
 		.attr("width", outerWidth)
-		.attr("height", outerHeight);
+		.attr("height", outerHeight)
+		.attr("class", 'lineChart');
 	var rect = svg.append('rect')
 		.attr("width", outerWidth)
 		.attr("height", outerHeight)

@@ -15,7 +15,8 @@
 				<!-- Row 2: 3 column row: td, td, td -->
 				<tr><td>Max Pass Freq:</td>
 					<td><input id="maxPassFreq" value="1.2"></td>
-					<td id='canvas' rowspan='34'><!--this is where the svg base plots will be-->
+					<td rowspan='34' style='vertical-align:top'><svg id="canvas" width="500" height="300">
+						</svg><!--this is where the svg base plots will be-->
 					</td></tr>
 
 					<!-- Rows 3 through 14: 2 column rows td, td -->
@@ -23,12 +24,11 @@
 						<td><input id="minRejFreq" value="1.5"></td></tr>
 					<tr><td>Frequecy Units</td>
 						<td>
-							<select id="frequencyUnits">
-								<option value="1">Hz</option>
-								<option value="1000">KHz</option>
-								<option value="1e6">MHz</option>
-								<option value="1e9" selected>GHz</option>
-								<option value="1e12">THz</option>
+							<select id="MultiplierOut">
+								<option value="Hz">Hz</option>
+								<option value="KHz">KHz</option>
+								<option value="MHz">MHz</option>
+								<option value="GHz" selected>GHz</option>
 							</select>
 						</td></tr>
 						<tr><td>Passband Ripple (dB):</td>
@@ -50,8 +50,8 @@
 							<td><input id="startFreq" value="0.05"></td></tr>
 						<tr><td>Stop Freq.:</td>
 							<td><input id="stopFreq" value="10"></td></tr>
-						<tr><td>Step Freq.:</td>
-							<td><input id="stepFreq" value=".2"></td></tr>
+						<tr><td>Data Points.:</td>
+							<td><input id="dataPoints" value="50"></td></tr>
 						<tr><td>Click to Test:</td>
 							<td>
 
@@ -62,9 +62,72 @@
 		</div>
 		<script src="../dist/nP.js"></script>
 		<script>
-			// design here
-			// test here
-			console.log('Hello World');
+var LPout = [];
+var MultiplierOut = 1;
+
+var doDesign = function doDesign () {
+	var maxPassFreq = parseFloat(document.getElementById('maxPassFreq').value),
+	minRejFreq = parseFloat(document.getElementById('minRejFreq').value),
+	passbandRipple = parseFloat(document.getElementById('passbandRipple').value),
+	rejLevel = parseFloat(document.getElementById('rejLevel').value),
+	freqUnits = document.getElementById('MultiplierOut').value,
+	i = 0,
+	filterElements = "",
+	w = minRejFreq/maxPassFreq,
+	n = nP.chebyLPNsec(maxPassFreq, minRejFreq, passbandRipple, rejLevel),
+	gk = nP.chebyLPgk(n, passbandRipple),
+	LP = {},
+	multiplier = 1;
+
+	// Get the frequency units
+	if (freqUnits === 'Hz') {multiplier = 1;};
+	if (freqUnits === 'KHz') {multiplier = 1e3;};
+	if (freqUnits === 'MHz') {multiplier = 1e6;};
+	if (freqUnits === 'GHz') {multiplier = 1e9;};	
+
+	// Fill in the bandwidth and number of sections
+	document.getElementById('w').innerHTML = w.toFixed(2);
+	document.getElementById('n').innerHTML = n.toFixed(0);
+
+	// Fill in the parallel C and series L components
+	LP = nP.chebyLPLCs(gk, maxPassFreq * multiplier);
+	for(i = 0; i < LP.length; i++) {
+		// Adds line break between each component, note the use of &nbsp to put spaces in HTML
+		filterElements += LP[i].toExponential(3) + "<br>";
+		document.getElementById('filterComponents').innerHTML = filterElements;
+	};
+	LPout = LP;
+	MultiplierOut = multiplier;
+};
+
+document.getElementById('design').addEventListener('click', doDesign);
+
+var doTest = function doTest() {
+
+	var startFreq = parseFloat(document.getElementById('startFreq').value),
+	stopFreq = parseFloat(document.getElementById('stopFreq').value),
+	dataPoints = parseFloat(document.getElementById('dataPoints').value),
+	g = {},
+	myfilt = {},
+	inputObject = {};
+	
+	// Generate frequency list
+	g = nP.global;
+	g.fList = g.fGen(startFreq * MultiplierOut, stopFreq * MultiplierOut, dataPoints);
+
+	// Calculate the frequency response
+	myFilt = nP.lpfGen(LPout).out('s11dB', 's21dB'),
+	inputObject = { inputTable: myFilt,
+			 freqUnits: document.getElementById('MultiplierOut').value };
+
+	// Plot the frequency response
+	nP.lineChart(inputObject);
+
+
+}; // end of doTest
+
+document.getElementById('test').addEventListener('click',doTest);
+
 		</script>
 	</body>
 </html>
