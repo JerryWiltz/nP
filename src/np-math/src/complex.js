@@ -8,13 +8,17 @@ Complex.prototype = {
 	setR: function (R) {this.x = R;},
 	setI: function (I) {this.y = I;},	
 	print: function() {console.log(this.x + " " + this.y);},
+
 	add: function (c2) {return complex(this.x + c2.x, this.y + c2.y);},
+	
 	sub: function (c2) {return complex(this.x - c2.x, this.y - c2.y);},
 	mul: function (c2) {return complex(this.x * c2.x -this.y * c2.y, this.x * c2.y + this.y * c2.x);},		
 	div: function (c2) {return complex(
 		(this.x * c2.x + this.y * c2.y)/(c2.x * c2.x + c2.y * c2.y),
 		(c2.x * this.y - this.x * c2.y)/(c2.x * c2.x + c2.y * c2.y));},	
-	inv: function () {return complex((1 * this.x + 0 * this.y)/(this.x * this.x + this.y * this.y), (this.x * 0 - 1 * this.y)/(this.x * this.x + this.y * this.y));},	
+	inv: function () {return complex(
+		(1 * this.x + 0 * this.y)/(this.x * this.x + this.y * this.y),
+		(this.x * 0 - 1 * this.y)/(this.x * this.x + this.y * this.y));},	
 	neg: function () {return complex(-this.x, -this.y);},
 	mag: function () {return Math.sqrt(this.x * this.x + this.y * this.y);},
 	ang: function () {return Math.atan2(this.y, this.x) * (180/Math.PI);},

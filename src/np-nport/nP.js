@@ -54,7 +54,8 @@
 				s12 =           ( s12a.mul(s12b)           ).div( (one.sub( s22a.mul(s11b) ) ) )  ;
 				s22 = s22b.add (( s21b.mul(s22a).mul(s12b) ).div( (one.sub( s22a.mul(s11b) ) ) ) );
 				s21 =           ( s21a.mul(s21b)           ).div( (one.sub( s22a.mul(s11b) ) ) )  ;
-				sparsArray[freqCount] =	[this.spars[freqCount][0],s11, s12, s21, s22];
+				//sparsArray[freqCount] =	[this.spars[freqCount][0],s11, s12, s21, s22];
+				sparsArray[freqCount] =	[sparsA[freqCount][0],s11, s12, s21, s22];
 			}		var casOut = new nPort();
 			casOut.setspars(sparsArray);
 			casOut.setglobal(this.global);
@@ -152,7 +153,7 @@
 		var frequencyList = global.fList, Ro = global.Ro;
 		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
-			Z[freqCount] = complex(0, 1/(2*Math.PI*C*frequencyList[freqCount]));
+			Z[freqCount] = complex(0, -1/(2*Math.PI*C*frequencyList[freqCount]));
 			Y[freqCount] = Z[freqCount].inv();
 			s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
 			s21 = (two.mul(Yo)).div(Y[freqCount].add(Yo.add(Yo)));  
@@ -176,11 +177,398 @@
 		}	return filtTable[ filtTable.length-1 ];
 	}
 
+	function cascade( ... nPorts) {
+		var i = 0;
+		var nPortsTable = nPorts;
+		for (i = 0; i < nPortsTable.length - 1; i++) {
+			nPortsTable[i+1] = nPortsTable[i].cas(nPortsTable[i+1]);
+		}	return nPortsTable[ nPortsTable.length-1 ];
+	}
+
+	function Matrix () {}
+
+	function dim(rows, cols, initial) {
+		var row = 0, col = 0, a = [], A = [];
+		for (row = 0; row < rows; row++) {
+			a = [];
+			for (col = 0; col < cols; col++) {
+				a[col] = initial;
+			}		A[row] = a;
+		}	return A;	
+	}
+	Matrix.prototype = {
+		set : function (mat) {return mat ? this.m = mat : this.m = [0];},
+		dimension : function (tableRow, tableCol, initial) {
+			return matrix(this.m = dim(tableRow, tableCol, initial));
+		},
+
+		//duplicate
+		duplicate : function duplicate() {
+			var row, col,
+			A = this.m,
+			B = dim(A.length, A[0].length, 0);
+			for (row = 0; row < A.length; row++) {
+				for (col = 0; col < A[0].length; col++) {
+					B[row][col] = A[row][col];
+				}		}		return matrix(B);	
+		},
+
+
+
+		//addition for real numbers
+		add : function add (matrixB) { //this works
+			var A = this.m,
+			B = matrixB.m,
+			C = dim(A.length, A[0].length, 0),
+			numRows = A.length,
+			numCols = A[0].length,
+			row = 0, col = 0;
+			for(row = 0; row < numRows; row++) {
+				for(col = 0; col < numCols; col++) {
+					C[row][col] = A[row][col] + B[row][col];
+				}		}		return matrix(C);
+		},
+
+		//addition for complex numbers
+		addCplx : function addCplx (matrixB) { //this works
+			var A = this.m,
+			B = matrixB.m,
+			C = dim(A.length, A[0].length, complex(0,0)),
+			numRows = A.length,
+			numCols = A[0].length,
+			row = 0, col = 0;
+			for(row = 0; row < numRows; row++) {
+				for(col = 0; col < numCols; col++) {
+					C[row][col] = A[row][col].add(B[row][col]);
+				}		}		return matrix(C);
+		},
+
+	//subtraction for real numbers
+		sub : function sub (matrixB) { //this works
+			var A = this.m,
+			B = matrixB.m,
+			matrixC = dim(A.length, A[0].length, 0),
+			numRows = A.length,
+			numCols = A[0].length,
+			row = 0, col = 0;
+			for(row = 0; row < numRows; row++) {
+				for(col = 0; col < numCols; col++) {
+					C[row][col] = A[row][col] - B[row][col];
+				}		}		return matrix(C);
+		},
+
+	//subtraction for complex numbers
+		subCplx : function subCplx (matrixB) { //this works
+			var A = this.m,
+			B = matrixB.m,
+			C = dim(A.length, A[0].length, complex(0,0)),
+			numRows = A.length,
+			numCols = A[0].length,
+			row = 0, col = 0;
+			for(row = 0; row < numRows; row++) {
+				for(col = 0; col < numCols; col++) {
+					C[row][col] = A[row][col].sub(B[row][col]);
+				}		}		return matrix(C);
+		},
+
+	//multiplication for real numbers
+		mul : function mul (matrixB) { //this works  n = matrixB[0].length
+			var A = this.m,
+			B = matrixB.m,
+			C = dim(A.length, B[0].length,0),
+			numRows = A[0].length,
+			numCols = B.length,
+			row = 0, col = 0, n = 0;			
+			for(row = 0; row < A.length; row++) {
+				for(col = 0; col < B[0].length; col++) {
+					for(n = 0; n < B.length; n++) {
+						C[row][col] += A[row][n] * B[n][col];
+					}			}		}		return matrix(C);
+		},
+
+	//multiplication for complex numbers
+		mulCplx : function mulCplx (matrixB) { //this works  n = matrixB[0].length
+			var A = this.m,
+			B = matrixB.m,
+			C = dim(A.length, B[0].length, complex(0,0)),
+			numRows = A[0].length,
+			numCols = B.length,
+			row = 0, col = 0, n = 0;			
+			for(row = 0; row < A.length; row++) {
+				for(col = 0; col < B[0].length; col++) {
+					for(n = 0; n < B.length; n++) {
+						C[row][col] = C[row][col].add(A[row][n].mul(B[n][col]));
+					}			}		}		return matrix(C);
+		},
+	};
+
+	/*	
+	//swapRowsL for maximizing the lower triangle pivot numbers
+		swapRowsL : function swapRowsL(matrix, pivotNum) {
+			var rowNum = matrix.length, rowCol = matrix[0].length,
+				newMax = matrix[pivotNum][pivotNum], tempRow = pivotNum , swapRow = pivotNum,
+				row = 0;
+			for(row = pivotNum + 1; row < rowNum; row++) {
+				if(newMax < matrix[row][pivotNum]) {
+					newMax = matrix[row][pivotNum];
+					swapRow = row;
+				};
+			};
+			tempRow = matrix[pivotNum];
+			matrix[pivotNum] = matrix[swapRow];
+			matrix[swapRow] = tempRow;
+		},
+
+
+	//swapRowsLCplx for the lower triangle pivot numbers
+		swapRowsLCplx : function swapRowsLCplx(matrix, pivotNum) {
+			var rowNum = matrix.length, rowCol = matrix[0].length,
+				newMax = matrix[pivotNum][pivotNum].mag(), tempRow = pivotNum , swapRow = pivotNum,
+				row = 0;
+			for(row = pivotNum + 1; row < rowNum; row++) {
+				if(newMax < matrix[row][pivotNum].mag()) {
+					newMax = matrix[row][pivotNum].mag();
+					swapRow = row;
+				};
+			};
+			tempRow = matrix[pivotNum];
+			matrix[pivotNum] = matrix[swapRow];
+			matrix[swapRow] = tempRow;
+	//showTable([['jerry']]);
+	//showTable(matrix);
+		},		
+
+	//swapRows for maximizing the upper triangle pivot numbers
+		swapRowsU : function swapRows(matrix, pivotNum) {
+			var rowNum = matrix.length, rowCol = matrix[0].length,
+				newMax = matrix[pivotNum][pivotNum], tempRow = pivotNum , swapRow = pivotNum,
+				row = 0;
+			for(row = pivotNum - 1; row > 0; row--) {
+				if(newMax < matrix[row][pivotNum]) {
+					newMax = matrix[row][pivotNum];
+					swapRow = row;
+				};
+			};
+			tempRow = matrix[pivotNum];
+			matrix[pivotNum] = matrix[swapRow];
+			matrix[swapRow] = tempRow;
+		},
+
+	//swapRows for maximizing the upper triangle pivot numbers
+		swapRowsUCplx : function swapRowsCplx(matrix, pivotNum) {
+			var rowNum = matrix.length, rowCol = matrix[0].length,
+				newMax = matrix[pivotNum][pivotNum].mag(), tempRow = pivotNum , swapRow = pivotNum,
+				row = 0;
+			for(row = pivotNum - 1; row > 0; row--) {
+				if(newMax < matrix[row][pivotNum].mag()) {
+					newMax = matrix[row][pivotNum].mag();
+					swapRow = row;
+				};
+			};
+			tempRow = matrix[pivotNum];
+			matrix[pivotNum] = matrix[swapRow];
+			matrix[swapRow] = tempRow;
+		},		
+
+	//gaussFwdBkElimination for real numbers
+		solve : function solve(Matrix) { //this works
+			var A = Matrix, a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
+				row = 0, col = 0, accum = 0, B = [];
+	// Real variable forward Elimination routine  
+			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
+				for(row = constRow+1; row < numRows; row++) { // this row moves down
+					a = -A[row][constRow]/A[constRow][constRow]; // this computes "a"
+					for(col = 0; col < numCols; col++) { // this sweeps across the columns
+						A[row][col] = A[row][col] + a*A[constRow][col];
+					};
+				};
+			};     
+	// Real back substitution routine
+			for(row = numRows -1; row > -1; row--) {
+				accum = 0;
+				for(col = numRows -1; col > row; col--) {
+					accum = accum + A[row][col]*A[col][numCols -1];
+				}
+				A[row][numCols -1] = (1/A[row][row]) * (A[row][numCols -1] - accum);
+			}
+	//get the right column of Matrix, A
+			B = matrix.dimension(numRows, 1, 0);
+			for(row = 0; row < numRows; row++) {				
+				B[row][0] = A[row][numRows];				
+			};			
+			return B;
+		},
+
+	//gaussFwdBkEliminationCplx for complex numbers
+		solveCplx : function solveCplx(Matrix) { // this works 12/9/16 and now on 6/24/17
+			var A = Matrix, a = complex(0, 0), numRows = A.length, numCols = A[0].length, constRow = 0,
+				row = 0, col = 0, accum = complex(0, 0), B = [];
+
+	// Complex variable forward Elimination routine
+			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
+				for(row = constRow+1; row < numRows; row++) { // this row moves down
+					a = A[row][constRow].div(A[constRow][constRow]).neg();
+					for(col = 0; col < numCols; col++) { // this sweeps across the columns
+						A[row][col] = A[row][col].add(a.mul(A[constRow][col]));
+					};
+				};
+			};			
+	// Complex back substitution routine
+			for(row = numRows -1; row > -1; row--) {
+				for(col = numRows -1; col > row; col--) { 
+					accum = accum.add(  A[row][col].mul( A[col][numCols -1]));
+				};
+				A[row][numCols -1] =  (complex(1, 0)).div(A[row][row]).mul( A[row][numCols -1].sub (accum));          
+			};
+	//get the right column of Matrix, A
+			B = matrix.dimension(numRows, 1, complex(0, 0));
+			for(row = 0; row < numRows; row++) {				
+				B[row][0] = A[row][numRows];				
+			};			
+			return B;
+		},
+
+	//gaussJordenElimination (use for matrix inversion with real numbers)
+		invert : function invert(Matrix) { //this works
+			var A = Matrix, a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
+				row = 0, col = 0, count = 0, B = [];
+	//append a 0 Matrix to Matrix, A
+			for(row = 0; row < numRows; row++) {
+				for(col = numRows; col < 2*numRows; col++) {
+					A[row][col] = 0;
+				};
+			};
+	//update numCols since Matrix, A is now wider;
+			numCols = A[0].length
+	//add diagonal 1's to appened array, A
+			for(row = 0; row < numRows; row++) {
+				A[row][row + numRows] = 1;
+			};			
+	// Real variable forward lower Elimination routine  
+			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
+				for(row = constRow+1; row < numRows; row++) { // this row moves down
+					a = -A[row][constRow]/A[constRow][constRow]; // this computes "a"
+					for(col = 0; col < numCols; col++) { // this sweeps across the columns
+						A[row][col] = A[row][col] + a*A[constRow][col];
+					};
+				};
+			};     
+	// Real variable forward unity diagonal routine  
+			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
+				a = 1/A[constRow][constRow];
+				for(row = constRow; row < numRows; row++) { // this row moves down
+					for(col = 0; col < numCols; col++) { // this sweeps across the columns
+						A[row][col] = a*A[row][col];
+					};
+				};
+			};
+	// Real variable forward upper Elimination routine
+			for(constRow = numRows - 1; constRow > 0 ; constRow--) { // 2 , 1, 0 this row stays the same			
+				for(row = 0; row < constRow; row++) { // 0, 1  this row moves down
+					a = -A[row][constRow]/A[constRow][constRow]				
+					for(col = 0; col < numCols; col++) { // this sweeps across the columns	
+						A[row][col] = A[row][col] + a*A[constRow][col];
+					};	
+				};	
+			};
+	//get the right half of Matrix, A
+			B = matrix.dimension(numRows, numRows, 0);
+			for(row = 0; row < numRows; row++) {
+				for(col = 0; col < numRows; col++) {
+					B[row][col] = A[row][col + numRows];
+				};				
+			};			
+			return B;
+		},
+
+	//gaussJordenEliminationCplx (use for matrix inversion for complex numbers)
+		invertCplx : function invertCplx(Matrix) { //this works
+			var A = Matrix, a = complex(0, 0), numRows = A.length, numCols = A[0].length, constRow = 0,
+				row = 0, col = 0, B = [], count = 0;
+			var countAConstRow = 0, countARow = 0, countACol = 0, countBConstRow1 = 0, countBRow = 0, countBCol = 0;
+	//append a 0 Matrix to Matrix, A
+			for(row = 0; row < numRows; row++) {
+				for(col = numRows; col < 2*numRows; col++) {
+					A[row][col] = complex(0, 0);
+				};
+			};
+	//update numCols since Matrix, A is now wider;
+			numCols = A[0].length
+	//add diagonal 1's to appened array, A
+			for(row = 0; row < numRows; row++) {
+				A[row][row + numRows] = complex(1, 0);
+			}; //showTable(A);			
+	// Real variable forward lower Elimination routine  
+			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
+	//matrix.swapRowsLCplx(A, constRow);
+				for(row = constRow + 1; row < numRows; row++) { // this row moves down
+					a = A[row][constRow].div(A[constRow][constRow]).neg();
+	//console.log(a);
+					for(col = 0; col < numCols; col++) { // this sweeps across the columns
+						A[row][col] = A[row][col].add(a.mul(A[constRow][col]));
+					};
+				};
+			}; //showTable(A)
+	// Real variable forward unity diagonal routine
+
+			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
+				a = A[constRow][constRow].inv();
+				for(row = constRow; row < numRows; row++) { // this row moves down
+					for(col = 0; col < numCols; col++) { // this sweeps across the columns
+						A[row][col] = a.mul(A[row][col]);
+					};
+				};
+			};
+
+	// Real variable forward upper Elimination routine
+			for(constRow = numRows - 1; constRow > 0 ; constRow--) { // 2 , 1, 0 this row stays the same
+	//countBconstRow++;
+	//matrix.swapRowsUCplx(A, constRow);
+				for(row = 0; row < constRow; row++) { // 0, 1  this row moves down
+
+					a = A[row][constRow].div(A[constRow][constRow]).neg();				
+					for(col = 0; col < numCols; col++) { // this sweeps across the columns
+	//countBCol++;
+						A[row][col] = A[row][col].add(a.mul(A[constRow][col]));						
+					};
+				};	
+			};
+
+	//showTable(A);
+	//get the right half of Matrix, A
+			B = matrix.dimension(numRows, numRows, complex(0, 0));
+			for(row = 0; row < numRows; row++) {
+				for(col = 0; col < numRows; col++) {
+					B[row][col] = A[row][col + numRows];
+				};				
+			};			
+			return B;
+		},						
+	};	
+	return matrix;
+	});
+	*/
+
+
+	function matrix(mat) {
+		var matrix = new Matrix;
+		matrix.set(mat);
+		return matrix;
+	}
+
+	function nodal(nPorts) {
+		var a = matrix();
+		a.dimension(2,2, nPorts);
+		return a;
+	}
+
 	exports.seR = seR;
 	exports.paR = paR;
 	exports.seL = seL;
 	exports.paC = paC;
 	exports.lpfGen = lpfGen;
+	exports.cascade = cascade;
+	exports.nodal = nodal;
 
 	Object.defineProperty(exports, '__esModule', { value: true });
 

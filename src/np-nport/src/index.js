@@ -4,3 +4,4 @@ export {seL} from './lumpedRLC/seL';
 export {paC} from './lumpedRLC/paC';
 export {lpfGen} from './lumpedRLC/lpfGen';
 export {cascade} from './combining/cascade';
+export {nodal} from './combining/nodal';
