@@ -4,11 +4,37 @@
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width">
 		<title>np-math</title>
+
+		<style>
+p {
+	font-family: Courier New;
+}
+		</style>
 	</head>
 	<body>
 		<h3>Matrix Arithmetic Example</h3>
-<script src="../dist/nP.js"></script>
-<script>
+		<p>
+		</br>
+		var a = [</br>
+		[3,5,2],</br>
+		[0,8,2],</br>
+		[6,2,8]</br>
+		];</br>
+		</br>
+		var b = nP.matrix(a).invert().mul(nP.matrix([[8],[-7],[26]]));</br>
+		</br>
+		var c = [</br>
+		[nP.complex(3,0), nP.complex(5,0), nP.complex(2,0)],</br>
+		[nP.complex(0,0), nP.complex(8,0), nP.complex(2,0)],</br>
+		[nP.complex(6,0), nP.complex(2,0), nP.complex(8,0)]</br>
+		];</br>
+		</br>
+		var d = nP.matrix(c).invertCplx().mulCplx(nP.matrix([[nP.complex(8,0)],[nP.complex(-7,0)],[nP.complex(26,0)]]));</br>
+		</br>
+		var e = nP.matrix([[1]]);</br>
+		var f = e.add(e).add(e).add(e);</br>
+		<script src="../dist/nP.js"></script>
+		<script>
 
 var a1 = [
 	[3,5,2,8],
@@ -49,6 +75,6 @@ console.log('add');
 console.log(f);
 
 
-</script>
+		</script>
 	</body>
 </html>
