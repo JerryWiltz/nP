@@ -3,7 +3,7 @@ import {complex} from './complex';
 
 function Matrix () {}
 
-function dim(rows, cols, initial) {
+export function dim(rows, cols, initial) {
 	var row = 0, col = 0, a = [], A = [];
 	for (row = 0; row < rows; row++) {
 		a = [];

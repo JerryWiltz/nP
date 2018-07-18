@@ -1,2 +1,2 @@
 export {complex} from './src/complex';
-export {matrix} from './src/matrix';
+export *  from './src/matrix';

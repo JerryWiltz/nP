@@ -14,13 +14,17 @@
 		setR: function (R) {this.x = R;},
 		setI: function (I) {this.y = I;},	
 		print: function() {console.log(this.x + " " + this.y);},
+
 		add: function (c2) {return complex(this.x + c2.x, this.y + c2.y);},
+		
 		sub: function (c2) {return complex(this.x - c2.x, this.y - c2.y);},
 		mul: function (c2) {return complex(this.x * c2.x -this.y * c2.y, this.x * c2.y + this.y * c2.x);},		
 		div: function (c2) {return complex(
 			(this.x * c2.x + this.y * c2.y)/(c2.x * c2.x + c2.y * c2.y),
 			(c2.x * this.y - this.x * c2.y)/(c2.x * c2.x + c2.y * c2.y));},	
-		inv: function () {return complex((1 * this.x + 0 * this.y)/(this.x * this.x + this.y * this.y), (this.x * 0 - 1 * this.y)/(this.x * this.x + this.y * this.y));},	
+		inv: function () {return complex(
+			(1 * this.x + 0 * this.y)/(this.x * this.x + this.y * this.y),
+			(this.x * 0 - 1 * this.y)/(this.x * this.x + this.y * this.y));},	
 		neg: function () {return complex(-this.x, -this.y);},
 		mag: function () {return Math.sqrt(this.x * this.x + this.y * this.y);},
 		ang: function () {return Math.atan2(this.y, this.x) * (180/Math.PI);},
@@ -196,89 +200,83 @@
 			}		A[row] = a;
 		}	return A;	
 	}
+	function dup(copied) {
+		var row, col,
+			B = dim(copied.length, copied[0].length, 0);
+		for (row = 0; row < copied.length; row++) {
+			for (col = 0; col < copied[0].length; col++) {
+				B[row][col] = copied[row][col];
+			}	}	return B;	
+	}
 	Matrix.prototype = {
-		set : function (mat) {return mat ? this.m = mat : this.m = [0];},
+		set : function (mat) {this.m = mat; return this;}, //mat ? this.m = mat : this.m = [0]; return this},
 		dimension : function (tableRow, tableCol, initial) {
-			return matrix(this.m = dim(tableRow, tableCol, initial));
+			return matrix(dim(tableRow, tableCol, initial));
 		},
 
-		//duplicate
-		duplicate : function duplicate() {
-			var row, col,
-			A = this.m,
-			B = dim(A.length, A[0].length, 0);
-			for (row = 0; row < A.length; row++) {
-				for (col = 0; col < A[0].length; col++) {
-					B[row][col] = A[row][col];
-				}		}		return matrix(B);	
+		duplicate : function duplicate(matrixA) {
+			return matrix(dup(matrixA.m));	
 		},
 
-
-
-		//addition for real numbers
-		add : function add (matrixB) { //this works
+		add : function add (matrixB) {
 			var A = this.m,
-			B = matrixB.m,
-			C = dim(A.length, A[0].length, 0),
-			numRows = A.length,
-			numCols = A[0].length,
-			row = 0, col = 0;
+				B = matrixB.m,
+				C = dim(A.length, A[0].length, 0),
+				numRows = A.length,
+				numCols = A[0].length,
+				row = 0, col = 0;
 			for(row = 0; row < numRows; row++) {
 				for(col = 0; col < numCols; col++) {
 					C[row][col] = A[row][col] + B[row][col];
 				}		}		return matrix(C);
 		},
 
-		//addition for complex numbers
-		addCplx : function addCplx (matrixB) { //this works
+		addCplx : function addCplx (matrixB) {
 			var A = this.m,
-			B = matrixB.m,
-			C = dim(A.length, A[0].length, complex(0,0)),
-			numRows = A.length,
-			numCols = A[0].length,
-			row = 0, col = 0;
+				B = matrixB.m,
+				C = dim(A.length, A[0].length, complex(0,0)),
+				numRows = A.length,
+				numCols = A[0].length,
+				row = 0, col = 0;
 			for(row = 0; row < numRows; row++) {
 				for(col = 0; col < numCols; col++) {
 					C[row][col] = A[row][col].add(B[row][col]);
 				}		}		return matrix(C);
 		},
 
-	//subtraction for real numbers
-		sub : function sub (matrixB) { //this works
+		sub : function sub (matrixB) {
 			var A = this.m,
-			B = matrixB.m,
-			matrixC = dim(A.length, A[0].length, 0),
-			numRows = A.length,
-			numCols = A[0].length,
-			row = 0, col = 0;
+				B = matrixB.m,
+				matrixC = dim(A.length, A[0].length, 0),
+				numRows = A.length,
+				numCols = A[0].length,
+				row = 0, col = 0;
 			for(row = 0; row < numRows; row++) {
 				for(col = 0; col < numCols; col++) {
 					C[row][col] = A[row][col] - B[row][col];
 				}		}		return matrix(C);
 		},
 
-	//subtraction for complex numbers
-		subCplx : function subCplx (matrixB) { //this works
+		subCplx : function subCplx (matrixB) {
 			var A = this.m,
-			B = matrixB.m,
-			C = dim(A.length, A[0].length, complex(0,0)),
-			numRows = A.length,
-			numCols = A[0].length,
-			row = 0, col = 0;
+				B = matrixB.m,
+				C = dim(A.length, A[0].length, complex(0,0)),
+				numRows = A.length,
+				numCols = A[0].length,
+				row = 0, col = 0;
 			for(row = 0; row < numRows; row++) {
 				for(col = 0; col < numCols; col++) {
 					C[row][col] = A[row][col].sub(B[row][col]);
 				}		}		return matrix(C);
 		},
 
-	//multiplication for real numbers
-		mul : function mul (matrixB) { //this works  n = matrixB[0].length
+		mul : function mul (matrixB) {
 			var A = this.m,
-			B = matrixB.m,
-			C = dim(A.length, B[0].length,0),
-			numRows = A[0].length,
-			numCols = B.length,
-			row = 0, col = 0, n = 0;			
+				B = matrixB.m,
+				C = dim(A.length, B[0].length,0),
+				numRows = A[0].length,
+				numCols = B.length,
+				row = 0, col = 0, n = 0;			
 			for(row = 0; row < A.length; row++) {
 				for(col = 0; col < B[0].length; col++) {
 					for(n = 0; n < B.length; n++) {
@@ -286,24 +284,22 @@
 					}			}		}		return matrix(C);
 		},
 
-	//multiplication for complex numbers
-		mulCplx : function mulCplx (matrixB) { //this works  n = matrixB[0].length
+		mulCplx : function mulCplx (matrixB) {
 			var A = this.m,
-			B = matrixB.m,
-			C = dim(A.length, B[0].length, complex(0,0)),
-			numRows = A[0].length,
-			numCols = B.length,
-			row = 0, col = 0, n = 0;			
+				B = matrixB.m,
+				C = dim(A.length, B[0].length, complex(0,0)),
+				numRows = A[0].length,
+				numCols = B.length,
+				row = 0, col = 0, n = 0;			
 			for(row = 0; row < A.length; row++) {
 				for(col = 0; col < B[0].length; col++) {
 					for(n = 0; n < B.length; n++) {
 						C[row][col] = C[row][col].add(A[row][n].mul(B[n][col]));
 					}			}		}		return matrix(C);
 		},
-	};
 
-	/*	
-	//swapRowsL for maximizing the lower triangle pivot numbers
+		/*	
+		//swapRowsL for maximizing the lower triangle pivot numbers
 		swapRowsL : function swapRowsL(matrix, pivotNum) {
 			var rowNum = matrix.length, rowCol = matrix[0].length,
 				newMax = matrix[pivotNum][pivotNum], tempRow = pivotNum , swapRow = pivotNum,
@@ -320,7 +316,7 @@
 		},
 
 
-	//swapRowsLCplx for the lower triangle pivot numbers
+		//swapRowsLCplx for the lower triangle pivot numbers
 		swapRowsLCplx : function swapRowsLCplx(matrix, pivotNum) {
 			var rowNum = matrix.length, rowCol = matrix[0].length,
 				newMax = matrix[pivotNum][pivotNum].mag(), tempRow = pivotNum , swapRow = pivotNum,
@@ -334,11 +330,11 @@
 			tempRow = matrix[pivotNum];
 			matrix[pivotNum] = matrix[swapRow];
 			matrix[swapRow] = tempRow;
-	//showTable([['jerry']]);
-	//showTable(matrix);
+		//showTable([['jerry']]);
+		//showTable(matrix);
 		},		
 
-	//swapRows for maximizing the upper triangle pivot numbers
+		//swapRows for maximizing the upper triangle pivot numbers
 		swapRowsU : function swapRows(matrix, pivotNum) {
 			var rowNum = matrix.length, rowCol = matrix[0].length,
 				newMax = matrix[pivotNum][pivotNum], tempRow = pivotNum , swapRow = pivotNum,
@@ -354,7 +350,7 @@
 			matrix[swapRow] = tempRow;
 		},
 
-	//swapRows for maximizing the upper triangle pivot numbers
+		//swapRows for maximizing the upper triangle pivot numbers
 		swapRowsUCplx : function swapRowsCplx(matrix, pivotNum) {
 			var rowNum = matrix.length, rowCol = matrix[0].length,
 				newMax = matrix[pivotNum][pivotNum].mag(), tempRow = pivotNum , swapRow = pivotNum,
@@ -369,185 +365,142 @@
 			matrix[pivotNum] = matrix[swapRow];
 			matrix[swapRow] = tempRow;
 		},		
+		*/
 
-	//gaussFwdBkElimination for real numbers
-		solve : function solve(Matrix) { //this works
-			var A = Matrix, a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
-				row = 0, col = 0, accum = 0, B = [];
-	// Real variable forward Elimination routine  
-			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
+		solveGaussFB : function solveGaussFB() { //this works
+			var A = this.m,
+				a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
+				row = 0, col = 0, accum = 0;
+
+			for(constRow = 0; constRow < numRows; constRow++) { // FORWARD ELIMINAION - this row stays the same
 				for(row = constRow+1; row < numRows; row++) { // this row moves down
 					a = -A[row][constRow]/A[constRow][constRow]; // this computes "a"
 					for(col = 0; col < numCols; col++) { // this sweeps across the columns
 						A[row][col] = A[row][col] + a*A[constRow][col];
-					};
-				};
-			};     
-	// Real back substitution routine
-			for(row = numRows -1; row > -1; row--) {
+					}			}		}
+			for(row = numRows -1; row > -1; row--) { // BACK SUBSTITUTION
 				accum = 0;
 				for(col = numRows -1; col > row; col--) {
 					accum = accum + A[row][col]*A[col][numCols -1];
 				}
 				A[row][numCols -1] = (1/A[row][row]) * (A[row][numCols -1] - accum);
 			}
-	//get the right column of Matrix, A
-			B = matrix.dimension(numRows, 1, 0);
-			for(row = 0; row < numRows; row++) {				
-				B[row][0] = A[row][numRows];				
-			};			
-			return B;
+
+			for(row = 0; row < numRows; row++) { // get to the right column of A				
+				for ( col = 0; col < numCols -1; col++) {
+					A[row].shift();
+				}		}		return matrix(A);
 		},
 
-	//gaussFwdBkEliminationCplx for complex numbers
-		solveCplx : function solveCplx(Matrix) { // this works 12/9/16 and now on 6/24/17
-			var A = Matrix, a = complex(0, 0), numRows = A.length, numCols = A[0].length, constRow = 0,
-				row = 0, col = 0, accum = complex(0, 0), B = [];
 
-	// Complex variable forward Elimination routine
-			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
+		solveGaussFBCplx : function solveGaussFBCplx() { // this works 12/9/16 and now on 6/24/17
+			var A = this.m,
+				a = complex(0, 0), numRows = A.length, numCols = A[0].length, constRow = 0,
+				row = 0, col = 0, accum = complex(0, 0);
+
+			for(constRow = 0; constRow < numRows; constRow++) { // FORWARD ELIMINATION - this row stays the same
 				for(row = constRow+1; row < numRows; row++) { // this row moves down
 					a = A[row][constRow].div(A[constRow][constRow]).neg();
 					for(col = 0; col < numCols; col++) { // this sweeps across the columns
 						A[row][col] = A[row][col].add(a.mul(A[constRow][col]));
-					};
-				};
-			};			
-	// Complex back substitution routine
-			for(row = numRows -1; row > -1; row--) {
+					}			}		}
+			for(row = numRows -1; row > -1; row--) { // BACK SUBSTITUTION
+				accum = complex(0,0);
 				for(col = numRows -1; col > row; col--) { 
 					accum = accum.add(  A[row][col].mul( A[col][numCols -1]));
-				};
-				A[row][numCols -1] =  (complex(1, 0)).div(A[row][row]).mul( A[row][numCols -1].sub (accum));          
-			};
-	//get the right column of Matrix, A
-			B = matrix.dimension(numRows, 1, complex(0, 0));
-			for(row = 0; row < numRows; row++) {				
-				B[row][0] = A[row][numRows];				
-			};			
-			return B;
+				}			A[row][numCols -1] =  (complex(1, 0)).div(A[row][row]).mul( A[row][numCols -1].sub(accum));          
+			}
+			for(row = 0; row < numRows; row++) { // get to the right column of A				
+				for ( col = 0; col < numCols -1; col++) {
+					A[row].shift();
+				}		}		return matrix(A);
 		},
 
-	//gaussJordenElimination (use for matrix inversion with real numbers)
-		invert : function invert(Matrix) { //this works
-			var A = Matrix, a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
-				row = 0, col = 0, count = 0, B = [];
-	//append a 0 Matrix to Matrix, A
+
+		//gaussJordenElimination (use for matrix inversion with real numbers) ---------------------------------------------------------------------------------------------
+		invert : function invert() { //this works
+			var A = this.m, a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
+				row = 0, col = 0;
+			//append a 0 Matrix to Matrix, A
 			for(row = 0; row < numRows; row++) {
 				for(col = numRows; col < 2*numRows; col++) {
 					A[row][col] = 0;
-				};
-			};
-	//update numCols since Matrix, A is now wider;
-			numCols = A[0].length
-	//add diagonal 1's to appened array, A
+				}		}		//update numCols since Matrix, A is now wider;
+			numCols = A[0].length;
+			//add diagonal 1's to append array, A
 			for(row = 0; row < numRows; row++) {
 				A[row][row + numRows] = 1;
-			};			
-	// Real variable forward lower Elimination routine  
+			}		// Real variable forward lower Elimination routine  
 			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
 				for(row = constRow+1; row < numRows; row++) { // this row moves down
 					a = -A[row][constRow]/A[constRow][constRow]; // this computes "a"
 					for(col = 0; col < numCols; col++) { // this sweeps across the columns
 						A[row][col] = A[row][col] + a*A[constRow][col];
-					};
-				};
-			};     
-	// Real variable forward unity diagonal routine  
+					}			}		}		// Real variable forward unity diagonal routine  
 			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
 				a = 1/A[constRow][constRow];
 				for(row = constRow; row < numRows; row++) { // this row moves down
 					for(col = 0; col < numCols; col++) { // this sweeps across the columns
 						A[row][col] = a*A[row][col];
-					};
-				};
-			};
-	// Real variable forward upper Elimination routine
+					}			}		}		// Real variable forward upper Elimination routine
 			for(constRow = numRows - 1; constRow > 0 ; constRow--) { // 2 , 1, 0 this row stays the same			
 				for(row = 0; row < constRow; row++) { // 0, 1  this row moves down
-					a = -A[row][constRow]/A[constRow][constRow]				
+					a = -A[row][constRow]/A[constRow][constRow];				
 					for(col = 0; col < numCols; col++) { // this sweeps across the columns	
 						A[row][col] = A[row][col] + a*A[constRow][col];
-					};	
-				};	
-			};
-	//get the right half of Matrix, A
-			B = matrix.dimension(numRows, numRows, 0);
-			for(row = 0; row < numRows; row++) {
-				for(col = 0; col < numRows; col++) {
-					B[row][col] = A[row][col + numRows];
-				};				
-			};			
-			return B;
+					}			}		}		for(row = 0; row < numRows; row++) { // get to the right column of A				
+				for ( col = 0; col < numCols/2; col++) {
+					A[row].shift();
+				}		}		return matrix(A);
 		},
 
-	//gaussJordenEliminationCplx (use for matrix inversion for complex numbers)
-		invertCplx : function invertCplx(Matrix) { //this works
-			var A = Matrix, a = complex(0, 0), numRows = A.length, numCols = A[0].length, constRow = 0,
-				row = 0, col = 0, B = [], count = 0;
-			var countAConstRow = 0, countARow = 0, countACol = 0, countBConstRow1 = 0, countBRow = 0, countBCol = 0;
-	//append a 0 Matrix to Matrix, A
+		//gaussJordenEliminationCplx (use for matrix inversion for complex numbers) -------------------------------------------------------------------------------------------------------
+		invertCplx : function invertCplx() { //this works
+			var A = this.m,
+				a = complex(0, 0), numRows = A.length, numCols = A[0].length, constRow = 0,
+				row = 0, col = 0;
+			//append a 0 Matrix to Matrix, A
 			for(row = 0; row < numRows; row++) {
 				for(col = numRows; col < 2*numRows; col++) {
 					A[row][col] = complex(0, 0);
-				};
-			};
-	//update numCols since Matrix, A is now wider;
-			numCols = A[0].length
-	//add diagonal 1's to appened array, A
+				}		}		//update numCols since Matrix, A is now wider;
+			numCols = A[0].length;
+			//add diagonal 1's to appened array, A
 			for(row = 0; row < numRows; row++) {
 				A[row][row + numRows] = complex(1, 0);
-			}; //showTable(A);			
-	// Real variable forward lower Elimination routine  
+			}		// Real variable forward lower Elimination routine  
 			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
-	//matrix.swapRowsLCplx(A, constRow);
+				//matrix.swapRowsLCplx(A, constRow);
 				for(row = constRow + 1; row < numRows; row++) { // this row moves down
 					a = A[row][constRow].div(A[constRow][constRow]).neg();
-	//console.log(a);
+					//console.log(a);
 					for(col = 0; col < numCols; col++) { // this sweeps across the columns
 						A[row][col] = A[row][col].add(a.mul(A[constRow][col]));
-					};
-				};
-			}; //showTable(A)
-	// Real variable forward unity diagonal routine
+					}			}		}		// Real variable forward unity diagonal routine
 
 			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
 				a = A[constRow][constRow].inv();
 				for(row = constRow; row < numRows; row++) { // this row moves down
 					for(col = 0; col < numCols; col++) { // this sweeps across the columns
 						A[row][col] = a.mul(A[row][col]);
-					};
-				};
-			};
-
-	// Real variable forward upper Elimination routine
+					}			}		}
+			// Real variable forward upper Elimination routine
 			for(constRow = numRows - 1; constRow > 0 ; constRow--) { // 2 , 1, 0 this row stays the same
-	//countBconstRow++;
-	//matrix.swapRowsUCplx(A, constRow);
+				//countBconstRow++;
+				//matrix.swapRowsUCplx(A, constRow);
 				for(row = 0; row < constRow; row++) { // 0, 1  this row moves down
 
 					a = A[row][constRow].div(A[constRow][constRow]).neg();				
 					for(col = 0; col < numCols; col++) { // this sweeps across the columns
-	//countBCol++;
+						//countBCol++;
 						A[row][col] = A[row][col].add(a.mul(A[constRow][col]));						
-					};
-				};	
-			};
-
-	//showTable(A);
-	//get the right half of Matrix, A
-			B = matrix.dimension(numRows, numRows, complex(0, 0));
-			for(row = 0; row < numRows; row++) {
-				for(col = 0; col < numRows; col++) {
-					B[row][col] = A[row][col + numRows];
-				};				
-			};			
-			return B;
+					}			}		}
+			for(row = 0; row < numRows; row++) { // get to the right column of A				
+				for ( col = 0; col < numCols/2; col++) {
+					A[row].shift();
+				}		}		return matrix(A);
 		},						
-	};	
-	return matrix;
-	});
-	*/
+	};
 
 
 	function matrix(mat) {
@@ -556,11 +509,111 @@
 		return matrix;
 	}
 
-	function nodal(nPorts) {
-		var a = matrix();
-		a.dimension(2,2, nPorts);
-		return a;
-	}
+	function nodal( ... nPortsAndNodes) { //nPortsAndNodes = [[nPort1, n1, n2 ...], [nPort2, n1, n2 ...], ... ['out', n1, nn2, ...] ]
+		var i = 0;
+		var spars = function () { // creates spars table with frequencies only [ [freq1], [freq2], ... [freqN] ]
+			var sparsLength = nPortsAndNodes[0][0].global.fList.length; // use the first nPort for global data
+			var sparsArray = dim(sparsLength,1,1);
+			for (i = 0; i< sparsLength; i++) {
+				sparsArray[i][0] = nPortsAndNodes[0][0].global.fList[i];
+			}
+			return sparsArray;
+		}();
+		var numOfFreqs = nPortsAndNodes[0][0].spars.length; //determine the number of iterations based on number of frequencies
+		var numOfnPorts = nPortsAndNodes.length;
+		var rowCol = function (nPortsAndNodes) { //determine the number of rows and columns
+			var size = 0;
+			for (i = 0; i < numOfnPorts - 1; i++) { 
+				size += Math.sqrt(nPortsAndNodes[i][0].spars[0].length -1);
+			}
+			return size + nPortsAndNodes[numOfnPorts-1].length - 1;
+		}(nPortsAndNodes);	
+		var zeroArray = function () { return dim(rowCol, rowCol, complex(0,0)); }();
+		var abcArray = function () { return dim(rowCol, 1, complex(0,0)); }();
+		var aMatrix = matrix(abcArray);
+		var bMatrix = matrix(abcArray);
+		var cMatrix = matrix(abcArray);
+		var gammaMatrix = matrix(zeroArray);
+		var nodalOut = new nPort();
+		for ( i = 0; i < numOfnPorts -1; i++) {
+		}	nodalOut.setspars(spars);
+		nodalOut.setglobal(nPortsAndNodes[0][0].global); // use the first nPort for global data
+		return nodalOut;
+	}/*
+	//nodal ... this one takes nPorts and cascades nodally, this is the BIG ONE!!
+			var nodal = function nodal() {           //this moves all the nports into the nodal function
+				var nPortInputsMatrix = myArgs[1],   //the matrix containing the nPorts with their nodes
+					expandednPortInputsMatrix = [],  //the matrix that has b's, nodes, and a's in 3 columns
+					connectionScatteringMatrix = [], //the matrix that must be solved, having negative spars and connections
+					resultMatrix = [],               //the matrix containing the resulting final spars
+					outSpars = [],                   //the lower right corner of resultMatrix with spars that are put into the spars array
+					row = 0, col = 0, offset = 0, nPortCount = 0,
+					connectionScatteringMatrixRows = 0, connectionScatteringMatrixCols = 0, connectionScatteringMatrixRowCount = 0,
+					outSparsRowsCols = 0;
+
+	//get dimensions for BOTH the expanded input matrix and the connection scattering matrix
+				for (row = 0; row < nPortInputsMatrix.length; row++) { //get the size off all the spars
+					connectionScatteringMatrixRows += nPortInputsMatrix[row].length - 1; // -1 for don't count the nPort object, just include the node list items
+					connectionScatteringMatrixCols = connectionScatteringMatrixRows;
+				};
+
+	// build and populate the expanded input matrix
+				expandednPortInputsMatrix = matrix.dimension(connectionScatteringMatrixRows, connectionScatteringMatrixCols, 0 );//fill expanded input matrix with 0's
+				for (row = 0; row < connectionScatteringMatrixRows; row++) {//put the b's here in the first column 
+					expandednPortInputsMatrix[row][col] = row + 1;
+				};  //showTable(expandednPortInputsMatrix);	
+				for( nPortCount = 0, offset = 0; nPortCount < nPortInputsMatrix.length; nPortCount++) {//put the nodes here in the second colum
+					for( col = 0; col < nPortInputsMatrix[nPortCount].length -1; col++) {
+						expandednPortInputsMatrix[offset][1] = nPortInputsMatrix[nPortCount][col + 1];
+						offset++;
+					};
+				};  //showTable(expandednPortInputsMatrix);
+				for (connectionScatteringMatrixRowCount = 0; connectionScatteringMatrixRowCount < connectionScatteringMatrixRows; connectionScatteringMatrixRowCount++) {
+					for (row = 0; row < connectionScatteringMatrixRows; row++) {
+	//the if statement makes sure the pivot row is not counted
+						if ( !(connectionScatteringMatrixRowCount === row) && (expandednPortInputsMatrix[connectionScatteringMatrixRowCount][1] === expandednPortInputsMatrix[row][1])   ) {
+							expandednPortInputsMatrix[row][2] = expandednPortInputsMatrix[connectionScatteringMatrixRowCount][0]; //put the a's in the 3rd column
+						};
+					};
+				};  //showTable(expandednPortInputsMatrix);
+
+	//build and populate the connection scattering matrix
+				connectionScatteringMatrix = matrix.dimension(connectionScatteringMatrixRows, connectionScatteringMatrixCols, complex(0, 0) );//fill connection scattering matrix with complex 0's
+				for (connectionScatteringMatrixRowCount = 0; connectionScatteringMatrixRowCount < connectionScatteringMatrixRows; connectionScatteringMatrixRowCount++) {
+					connectionScatteringMatrix[ expandednPortInputsMatrix[connectionScatteringMatrixRowCount][0] - 1 ]
+								  [ expandednPortInputsMatrix[connectionScatteringMatrixRowCount][2] - 1 ] = complex(1, 0); //put in one's to form the connections
+				}; //showTable(connectionScatteringMatrix);
+
+	//fill the connection scattering matrix with the negative of the spars of all the nPorts
+	//this puts in the submatrices of the nPorts along the diagonal of the connection scattering matrix
+	//each subsequent submatrix is [row][col] offset as shown below
+				for(nPortCount = 0, offset = 0; nPortCount < nPortInputsMatrix.length - 1; nPortCount++) {
+					for (row = 0 + offset; row < nPortInputsMatrix[nPortCount].length - 1 + offset; row++) { //[0].sparsSize
+						for(col = 0 + offset ; col < nPortInputsMatrix[nPortCount].length - 1 + offset; col++) {  //[0].sparsSize
+	//console.log(row + ' ' + col);
+							connectionScatteringMatrix[row][col] = nPortInputsMatrix[nPortCount][0].getSpars()[row - offset][col - offset].neg();
+						};
+					};
+					offset += nPortInputsMatrix[nPortCount][0].sparsSize;
+				}; //showTable(connectionScatteringMatrix);
+
+				resultMatrix = matrix.invertCmplx(connectionScatteringMatrix); //this does the magic!
+	//showTable(resultMatrix);
+	//create the outSpars matrix
+				outSparsRowsCols = nPortInputsMatrix[nPortInputsMatrix.length-1].length-1
+				outSpars = matrix.dimension(outSparsRowsCols, outSparsRowsCols, complex(0,0) )			
+				for (row = 0; row < outSparsRowsCols; row++) {
+					for (col = 0; col < outSparsRowsCols; col++) {
+						outSpars[row][col] = resultMatrix[connectionScatteringMatrixRows - outSparsRowsCols + row]
+										 [connectionScatteringMatrixRows - outSparsRowsCols + col]; //resultMatrix[row][col];
+					};
+				};
+
+				spars = outSpars;
+	//showTable(spars);
+
+			};  //end of nodal
+	*/
 
 	exports.seR = seR;
 	exports.paR = paR;

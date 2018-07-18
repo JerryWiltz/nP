@@ -359,6 +359,7 @@
 	}
 
 	exports.complex = complex;
+	exports.dim = dim;
 	exports.matrix = matrix;
 
 	Object.defineProperty(exports, '__esModule', { value: true });
