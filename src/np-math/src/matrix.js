@@ -15,7 +15,7 @@ export function dim(rows, cols, initial) {
 	return A;	
 };
 
-function dup(copied) {
+export function dup(copied) {
 	var row, col,
 		B = dim(copied.length, copied[0].length, 0);
 	for (row = 0; row < copied.length; row++) {
