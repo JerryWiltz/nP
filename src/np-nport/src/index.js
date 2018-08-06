@@ -6,3 +6,4 @@ export {wireTee} from './lumpedRLC/wireTee';
 export {lpfGen} from './lumpedRLC/lpfGen';
 export {cascade} from './combining/cascade';
 export {nodal} from './combining/nodal';
+export {tlin} from './tlin/tlin';
