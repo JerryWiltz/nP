@@ -48,6 +48,13 @@ var f = e.add(e).add(e).add(e);
 console.log('add');
 console.log(f);
 
+console.log('This is the sinh(z) and cosh(z) section')
+var tlin = nP.complex(3,-5123);
+var c = tlin.coshCplx();
+var s = tlin.sinhCplx();
+var one = c.mul(c).sub(s.mul(s));
+console.log(one.mag());
+
 
 </script>
 	</body>

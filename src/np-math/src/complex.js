@@ -24,6 +24,8 @@ Complex.prototype = {
 	ang: function () {return Math.atan2(this.y, this.x) * (180/Math.PI);},
 	mag10dB: function () {return 10 * Math.log(   Math.sqrt(this.x * this.x + this.y * this.y) )/2.302585092994046   },
 	mag20dB: function () {return 20 * Math.log(   Math.sqrt(this.x * this.x + this.y * this.y) )/2.302585092994046   },
+	sinhCplx: function () {return complex(Math.cosh(this.x)*Math.cos(this.y), Math.sinh(this.x)*Math.sin(this.y));},
+	coshCplx: function () {return complex(Math.sinh(this.x)*Math.cos(this.y), Math.cosh(this.x)*Math.sin(this.y));}
 };
 
 export function complex(real, imaginary) {
