@@ -30,8 +30,8 @@
 		ang: function () {return Math.atan2(this.y, this.x) * (180/Math.PI);},
 		mag10dB: function () {return 10 * Math.log(   Math.sqrt(this.x * this.x + this.y * this.y) )/2.302585092994046   },
 		mag20dB: function () {return 20 * Math.log(   Math.sqrt(this.x * this.x + this.y * this.y) )/2.302585092994046   },
-		sinhCplx: function () {return complex(Math.cosh(this.x)*Math.cos(this.y), Math.sinh(this.x)*Math.sin(this.y));},
-		coshCplx: function () {return complex(Math.sinh(this.x)*Math.cos(this.y), Math.cosh(this.x)*Math.sin(this.y));}
+		sinhCplx: function () {return complex(Math.sinh(this.x)*Math.cos(this.y), Math.cosh(this.x)*Math.sin(this.y));},
+		coshCplx: function () {return complex(Math.cosh(this.x)*Math.cos(this.y), Math.sinh(this.x)*Math.sin(this.y));}
 	};
 
 	function complex(real, imaginary) {
@@ -172,13 +172,24 @@
 		return paC;
 	}
 
+	function lpfGen( filt =[50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50]) {
+		var i = 0;
+		var filtTable = [];
+		filt.pop();
+		filt.shift();
+		for (i = 0; i < filt.length; i++) {
+			if (i % 2 === 0) {filtTable[i] = paC(filt[i]);}		if (i % 2 === 1) {filtTable[i] = seL(filt[i]);}	}	for (i = 0; i < filt.length - 1; i++) {
+			filtTable[i+1] = filtTable[i].cas(filtTable[i+1]);
+		}	return filtTable[ filtTable.length-1 ];
+	}
+
 	function wireTee() { // series resistor nPort object
 		var wireTee = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
 		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
-			s11 = complex(-3.3333333333e-1,0);
-			s12 = complex(6.6666666667e-1,0);
+			s11 = complex(-1/3,0);
+			s12 = complex(2/3,0);
 			s13 = s12;
 			s21 = s12;
 			s22 = s11;
@@ -193,15 +204,25 @@
 		return wireTee;
 	}
 
-	function lpfGen( filt =[50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50]) {
-		var i = 0;
-		var filtTable = [];
-		filt.pop();
-		filt.shift();
-		for (i = 0; i < filt.length; i++) {
-			if (i % 2 === 0) {filtTable[i] = paC(filt[i]);}		if (i % 2 === 1) {filtTable[i] = seL(filt[i]);}	}	for (i = 0; i < filt.length - 1; i++) {
-			filtTable[i+1] = filtTable[i].cas(filtTable[i+1]);
-		}	return filtTable[ filtTable.length-1 ];
+	function seriesTee() { // series resistor nPort object
+		var seriesTee = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			s11 = complex(1/3,0);
+			s12 = complex(0.00001,0.000001);//complex(2/3,0);
+			s13 = s11; //s12;
+			s21 = s12;
+			s22 = s11;
+			s23 = s12;
+			s31 = s11; //s12;
+			s32 = s12;
+			s33 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s21, s22, s23, s31, s32, s33];
+		}	
+		seriesTee.setspars(sparsArray);
+		seriesTee.setglobal(global);
+		return seriesTee;
 	}
 
 	function cascade( ... nPorts) {
@@ -210,6 +231,19 @@
 		for (i = 0; i < nPortsTable.length - 1; i++) {
 			nPortsTable[i+1] = nPortsTable[i].cas(nPortsTable[i+1]);
 		}	return nPortsTable[ nPortsTable.length-1 ];
+	}
+
+	function openPort() { // open one port nPort object
+		var openPort = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, s11, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			s11 = complex(1,0);
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11];
+		}	
+		openPort.setspars(sparsArray);
+		openPort.setglobal(global);
+		return openPort;
 	}
 
 	function Matrix () {}
@@ -594,23 +628,52 @@
 		return nodalOut;
 	}
 
-	function tlin(Ztlin = 60, Length = 0.5) { // series inductor nPort object
+	function termPort() { // open one port nPort object
+		var termPort = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, s11, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			s11 = complex(0,0);
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11];
+		}	
+		termPort.setspars(sparsArray);
+		termPort.setglobal(global);
+		return termPort;
+	}
+
+	function shortPort() { // open one port nPort object
+		var shortPort = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, s11, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			s11 = complex(-1,0);
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11];
+		}	
+		shortPort.setspars(sparsArray);
+		shortPort.setglobal(global);
+		return shortPort;
+	}
+
+	function tlin(Ztlin = 60, Length = 0.5 * 0.0254) { // series inductor nPort object
 		var tlin = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
 		var Zo = complex(Ro,0), Yo = Zo.inv(), one = complex(1,0), two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
-		var A = {}, B = {}, C = {}, D = {}, Ds = {}, E = {}, p = {}, r = {};
+		var A = {}, B = {}, C = {}, Ds = {}, alpha = 0, beta = 0, gamma = {};
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			Z = complex(Ztlin, 0);
-			A = two.mul(Z).mul(Zo);
-			B = Z.mul(Z).sub(Zo.mul(Zo));
-			C = Z.mul(Z).add(Zo.mul(Zo));
-			D = complex(0, Length/(2*3.14)/(11.78496e9/frequencyList[freqCount]));
-			Ds = A.mul(D.coshCplx()).add(B.mul(D.sinhCplx()));
-			r = Z.sub(Zo).div(Z.add(Zo));
-			E = 2*Math.PI*frequencyList[freqCount]*Length/11.78496e9;
-			p = complex( Math.cos(E), -Math.sin(E));
-			s11 = r.mul(one.sub(p.mul(p))).div( one.sub(r.mul(r).mul(p.mul(p))) ); 
-			s12 = p.mul(one.sub(r.mul(r))).div( one.sub(r.mul(r).mul(p.mul(p))) ); 
+		
+			A = Z.mul(Z).sub(Zo.mul(Zo));
+			B = Z.mul(Z).add(Zo.mul(Zo));
+			C = two.mul(Z).mul(Zo);
+			
+			alpha = 0;
+			beta = 2*Math.PI*frequencyList[freqCount]/2.997925e8;
+			gamma = complex(alpha * Length, beta * Length);
+
+			Ds = C.mul(gamma.coshCplx()).add(B.mul(gamma.sinhCplx()));
+
+			s11 = A.mul(gamma.sinhCplx()).div(Ds);
+			s12 = C.div(Ds);	
 			s21 = s12;
 			s22 = s11;
 			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
@@ -623,10 +686,14 @@
 	exports.paR = paR;
 	exports.seL = seL;
 	exports.paC = paC;
-	exports.wireTee = wireTee;
 	exports.lpfGen = lpfGen;
+	exports.wireTee = wireTee;
+	exports.seriesTee = seriesTee;
 	exports.cascade = cascade;
+	exports.openPort = openPort;
 	exports.nodal = nodal;
+	exports.termPort = termPort;
+	exports.shortPort = shortPort;
 	exports.tlin = tlin;
 
 	Object.defineProperty(exports, '__esModule', { value: true });

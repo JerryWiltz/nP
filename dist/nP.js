@@ -30,6 +30,8 @@
 		ang: function () {return Math.atan2(this.y, this.x) * (180/Math.PI);},
 		mag10dB: function () {return 10 * Math.log(   Math.sqrt(this.x * this.x + this.y * this.y) )/2.302585092994046   },
 		mag20dB: function () {return 20 * Math.log(   Math.sqrt(this.x * this.x + this.y * this.y) )/2.302585092994046   },
+		sinhCplx: function () {return complex(Math.sinh(this.x)*Math.cos(this.y), Math.cosh(this.x)*Math.sin(this.y));},
+		coshCplx: function () {return complex(Math.cosh(this.x)*Math.cos(this.y), Math.sinh(this.x)*Math.sin(this.y));}
 	};
 
 	function complex(real, imaginary) {
@@ -2309,7 +2311,7 @@
 	      c = new Array(nb),
 	      i;
 
-	  for (i = 0; i < na; ++i) x[i] = interpolateValue(a[i], b[i]);
+	  for (i = 0; i < na; ++i) x[i] = value(a[i], b[i]);
 	  for (; i < nb; ++i) c[i] = b[i];
 
 	  return function(t) {
@@ -2341,7 +2343,7 @@
 
 	  for (k in b) {
 	    if (k in a) {
-	      i[k] = interpolateValue(a[k], b[k]);
+	      i[k] = value(a[k], b[k]);
 	    } else {
 	      c[k] = b[k];
 	    }
@@ -2416,7 +2418,7 @@
 	        });
 	}
 
-	function interpolateValue(a, b) {
+	function value(a, b) {
 	  var t = typeof b, c;
 	  return b == null || t === "boolean" ? constant$3(b)
 	      : (t === "number" ? interpolateNumber
@@ -3000,12 +3002,12 @@
 	  };
 	}
 
-	function attrFunction$1(name, interpolate$$1, value) {
+	function attrFunction$1(name, interpolate$$1, value$$1) {
 	  var value00,
 	      value10,
 	      interpolate0;
 	  return function() {
-	    var value0, value1 = value(this);
+	    var value0, value1 = value$$1(this);
 	    if (value1 == null) return void this.removeAttribute(name);
 	    value0 = this.getAttribute(name);
 	    return value0 === value1 ? null
@@ -3014,12 +3016,12 @@
 	  };
 	}
 
-	function attrFunctionNS$1(fullname, interpolate$$1, value) {
+	function attrFunctionNS$1(fullname, interpolate$$1, value$$1) {
 	  var value00,
 	      value10,
 	      interpolate0;
 	  return function() {
-	    var value0, value1 = value(this);
+	    var value0, value1 = value$$1(this);
 	    if (value1 == null) return void this.removeAttributeNS(fullname.space, fullname.local);
 	    value0 = this.getAttributeNS(fullname.space, fullname.local);
 	    return value0 === value1 ? null
@@ -3028,12 +3030,12 @@
 	  };
 	}
 
-	function transition_attr(name, value) {
+	function transition_attr(name, value$$1) {
 	  var fullname = namespace(name), i = fullname === "transform" ? interpolateTransformSvg : interpolate;
-	  return this.attrTween(name, typeof value === "function"
-	      ? (fullname.local ? attrFunctionNS$1 : attrFunction$1)(fullname, i, tweenValue(this, "attr." + name, value))
-	      : value == null ? (fullname.local ? attrRemoveNS$1 : attrRemove$1)(fullname)
-	      : (fullname.local ? attrConstantNS$1 : attrConstant$1)(fullname, i, value + ""));
+	  return this.attrTween(name, typeof value$$1 === "function"
+	      ? (fullname.local ? attrFunctionNS$1 : attrFunction$1)(fullname, i, tweenValue(this, "attr." + name, value$$1))
+	      : value$$1 == null ? (fullname.local ? attrRemoveNS$1 : attrRemove$1)(fullname)
+	      : (fullname.local ? attrConstantNS$1 : attrConstant$1)(fullname, i, value$$1 + ""));
 	}
 
 	function attrTweenNS(fullname, value) {
@@ -3279,13 +3281,13 @@
 	  };
 	}
 
-	function styleFunction$1(name, interpolate$$1, value) {
+	function styleFunction$1(name, interpolate$$1, value$$1) {
 	  var value00,
 	      value10,
 	      interpolate0;
 	  return function() {
 	    var value0 = styleValue(this, name),
-	        value1 = value(this);
+	        value1 = value$$1(this);
 	    if (value1 == null) value1 = (this.style.removeProperty(name), styleValue(this, name));
 	    return value0 === value1 ? null
 	        : value0 === value00 && value1 === value10 ? interpolate0
@@ -3293,14 +3295,14 @@
 	  };
 	}
 
-	function transition_style(name, value, priority) {
+	function transition_style(name, value$$1, priority) {
 	  var i = (name += "") === "transform" ? interpolateTransformCss : interpolate;
-	  return value == null ? this
+	  return value$$1 == null ? this
 	          .styleTween(name, styleRemove$1(name, i))
 	          .on("end.style." + name, styleRemoveEnd(name))
-	      : this.styleTween(name, typeof value === "function"
-	          ? styleFunction$1(name, i, tweenValue(this, "style." + name, value))
-	          : styleConstant$1(name, i, value + ""), priority);
+	      : this.styleTween(name, typeof value$$1 === "function"
+	          ? styleFunction$1(name, i, tweenValue(this, "style." + name, value$$1))
+	          : styleConstant$1(name, i, value$$1 + ""), priority);
 	}
 
 	function styleTween(name, value, priority) {
@@ -3736,7 +3738,7 @@
 	  return columns;
 	}
 
-	function dsv(delimiter) {
+	function dsvFormat(delimiter) {
 	  var reFormat = new RegExp("[\"" + delimiter + "\n\r]"),
 	      DELIMITER = delimiter.charCodeAt(0);
 
@@ -3829,9 +3831,9 @@
 	  };
 	}
 
-	var csv = dsv(",");
+	var csv = dsvFormat(",");
 
-	var tsv = dsv("\t");
+	var tsv = dsvFormat("\t");
 
 	var tsvParse = tsv.parse;
 
@@ -4662,15 +4664,15 @@
 	  };
 	}
 
-	function bimap(domain, range, deinterpolate, reinterpolate) {
-	  var d0 = domain[0], d1 = domain[1], r0 = range[0], r1 = range[1];
+	function bimap(domain, range$$1, deinterpolate, reinterpolate) {
+	  var d0 = domain[0], d1 = domain[1], r0 = range$$1[0], r1 = range$$1[1];
 	  if (d1 < d0) d0 = deinterpolate(d1, d0), r0 = reinterpolate(r1, r0);
 	  else d0 = deinterpolate(d0, d1), r0 = reinterpolate(r0, r1);
 	  return function(x) { return r0(d0(x)); };
 	}
 
-	function polymap(domain, range, deinterpolate, reinterpolate) {
-	  var j = Math.min(domain.length, range.length) - 1,
+	function polymap(domain, range$$1, deinterpolate, reinterpolate) {
+	  var j = Math.min(domain.length, range$$1.length) - 1,
 	      d = new Array(j),
 	      r = new Array(j),
 	      i = -1;
@@ -4678,12 +4680,12 @@
 	  // Reverse descending domains.
 	  if (domain[j] < domain[0]) {
 	    domain = domain.slice().reverse();
-	    range = range.slice().reverse();
+	    range$$1 = range$$1.slice().reverse();
 	  }
 
 	  while (++i < j) {
 	    d[i] = deinterpolate(domain[i], domain[i + 1]);
-	    r[i] = reinterpolate(range[i], range[i + 1]);
+	    r[i] = reinterpolate(range$$1[i], range$$1[i + 1]);
 	  }
 
 	  return function(x) {
@@ -4704,25 +4706,25 @@
 	// reinterpolate(a, b)(t) takes a parameter t in [0,1] and returns the corresponding domain value x in [a,b].
 	function continuous(deinterpolate, reinterpolate) {
 	  var domain = unit,
-	      range = unit,
-	      interpolate$$1 = interpolateValue,
+	      range$$1 = unit,
+	      interpolate$$1 = value,
 	      clamp = false,
 	      piecewise$$1,
 	      output,
 	      input;
 
 	  function rescale() {
-	    piecewise$$1 = Math.min(domain.length, range.length) > 2 ? polymap : bimap;
+	    piecewise$$1 = Math.min(domain.length, range$$1.length) > 2 ? polymap : bimap;
 	    output = input = null;
 	    return scale;
 	  }
 
 	  function scale(x) {
-	    return (output || (output = piecewise$$1(domain, range, clamp ? deinterpolateClamp(deinterpolate) : deinterpolate, interpolate$$1)))(+x);
+	    return (output || (output = piecewise$$1(domain, range$$1, clamp ? deinterpolateClamp(deinterpolate) : deinterpolate, interpolate$$1)))(+x);
 	  }
 
 	  scale.invert = function(y) {
-	    return (input || (input = piecewise$$1(range, domain, deinterpolateLinear, clamp ? reinterpolateClamp(reinterpolate) : reinterpolate)))(+y);
+	    return (input || (input = piecewise$$1(range$$1, domain, deinterpolateLinear, clamp ? reinterpolateClamp(reinterpolate) : reinterpolate)))(+y);
 	  };
 
 	  scale.domain = function(_) {
@@ -4730,11 +4732,11 @@
 	  };
 
 	  scale.range = function(_) {
-	    return arguments.length ? (range = slice$5.call(_), rescale()) : range.slice();
+	    return arguments.length ? (range$$1 = slice$5.call(_), rescale()) : range$$1.slice();
 	  };
 
 	  scale.rangeRound = function(_) {
-	    return range = slice$5.call(_), interpolate$$1 = interpolateRound, rescale();
+	    return range$$1 = slice$5.call(_), interpolate$$1 = interpolateRound, rescale();
 	  };
 
 	  scale.clamp = function(_) {
@@ -6658,13 +6660,24 @@
 		return paC;
 	}
 
+	function lpfGen( filt =[50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50]) {
+		var i = 0;
+		var filtTable = [];
+		filt.pop();
+		filt.shift();
+		for (i = 0; i < filt.length; i++) {
+			if (i % 2 === 0) {filtTable[i] = paC(filt[i]);}		if (i % 2 === 1) {filtTable[i] = seL(filt[i]);}	}	for (i = 0; i < filt.length - 1; i++) {
+			filtTable[i+1] = filtTable[i].cas(filtTable[i+1]);
+		}	return filtTable[ filtTable.length-1 ];
+	}
+
 	function wireTee() { // series resistor nPort object
 		var wireTee = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
 		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
-			s11 = complex(-3.3333333333e-1,0);
-			s12 = complex(6.6666666667e-1,0);
+			s11 = complex(-1/3,0);
+			s12 = complex(2/3,0);
 			s13 = s12;
 			s21 = s12;
 			s22 = s11;
@@ -6679,15 +6692,25 @@
 		return wireTee;
 	}
 
-	function lpfGen( filt =[50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50]) {
-		var i = 0;
-		var filtTable = [];
-		filt.pop();
-		filt.shift();
-		for (i = 0; i < filt.length; i++) {
-			if (i % 2 === 0) {filtTable[i] = paC(filt[i]);}		if (i % 2 === 1) {filtTable[i] = seL(filt[i]);}	}	for (i = 0; i < filt.length - 1; i++) {
-			filtTable[i+1] = filtTable[i].cas(filtTable[i+1]);
-		}	return filtTable[ filtTable.length-1 ];
+	function seriesTee() { // series resistor nPort object
+		var seriesTee = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			s11 = complex(1/3,0);
+			s12 = complex(0.00001,0.000001);//complex(2/3,0);
+			s13 = s11; //s12;
+			s21 = s12;
+			s22 = s11;
+			s23 = s12;
+			s31 = s11; //s12;
+			s32 = s12;
+			s33 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s21, s22, s23, s31, s32, s33];
+		}	
+		seriesTee.setspars(sparsArray);
+		seriesTee.setglobal(global);
+		return seriesTee;
 	}
 
 	function cascade( ... nPorts) {
@@ -6696,6 +6719,19 @@
 		for (i = 0; i < nPortsTable.length - 1; i++) {
 			nPortsTable[i+1] = nPortsTable[i].cas(nPortsTable[i+1]);
 		}	return nPortsTable[ nPortsTable.length-1 ];
+	}
+
+	function openPort() { // open one port nPort object
+		var openPort = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, s11, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			s11 = complex(1,0);
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11];
+		}	
+		openPort.setspars(sparsArray);
+		openPort.setglobal(global);
+		return openPort;
 	}
 
 	function nodal( ... nPortsAndNodes) { //nPortsAndNodes = [[nPort1, n1, n2 ...], [nPort2, n1, n2 ...], ... ['out', n1, nn2, ...] ]
@@ -6760,6 +6796,60 @@
 		return nodalOut;
 	}
 
+	function termPort() { // open one port nPort object
+		var termPort = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, s11, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			s11 = complex(0,0);
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11];
+		}	
+		termPort.setspars(sparsArray);
+		termPort.setglobal(global);
+		return termPort;
+	}
+
+	function shortPort() { // open one port nPort object
+		var shortPort = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, s11, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			s11 = complex(-1,0);
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11];
+		}	
+		shortPort.setspars(sparsArray);
+		shortPort.setglobal(global);
+		return shortPort;
+	}
+
+	function tlin(Ztlin = 60, Length = 0.5 * 0.0254) { // series inductor nPort object
+		var tlin = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), one = complex(1,0), two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		var A = {}, B = {}, C = {}, Ds = {}, alpha = 0, beta = 0, gamma = {};
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z = complex(Ztlin, 0);
+		
+			A = Z.mul(Z).sub(Zo.mul(Zo));
+			B = Z.mul(Z).add(Zo.mul(Zo));
+			C = two.mul(Z).mul(Zo);
+			
+			alpha = 0;
+			beta = 2*Math.PI*frequencyList[freqCount]/2.997925e8;
+			gamma = complex(alpha * Length, beta * Length);
+
+			Ds = C.mul(gamma.coshCplx()).add(B.mul(gamma.sinhCplx()));
+
+			s11 = A.mul(gamma.sinhCplx()).div(Ds);
+			s12 = C.div(Ds);	
+			s21 = s12;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}	tlin.setspars(sparsArray);
+		tlin.setglobal(global);	
+		return tlin;
+	}
+
 	// main entry point
 
 	exports.complex = complex;
@@ -6775,10 +6865,15 @@
 	exports.paR = paR;
 	exports.seL = seL;
 	exports.paC = paC;
-	exports.wireTee = wireTee;
 	exports.lpfGen = lpfGen;
+	exports.wireTee = wireTee;
+	exports.seriesTee = seriesTee;
 	exports.cascade = cascade;
+	exports.openPort = openPort;
 	exports.nodal = nodal;
+	exports.termPort = termPort;
+	exports.shortPort = shortPort;
+	exports.tlin = tlin;
 
 	Object.defineProperty(exports, '__esModule', { value: true });
 
