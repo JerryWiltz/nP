@@ -1,0 +1,43 @@
+<!--DOCTYPE html-->
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>6 GHz Wilkenson Power Divider</title>
+	</head>
+	<body>
+		<div style="display: inline-block">
+			<svg id="canvas" width="500" height="300"></svg>
+		</div>
+		<script src="../dist/nP.js"></script>
+
+		<script>
+var g = nP.global;
+//g.fList = [2e9, 4e9, 6e9, 8e9, 10e9];
+g.fList = g.fGen(.5e9,5.5e9,101);
+
+var threeWay = nP.wireTee();
+var tl = nP.tlin(70.7, 0.98 * 0.0254 * 1.3);
+var tll = nP.tlin(70.7, 2.49 * 0.0254 * 1.3);
+
+var pwr = nP.nodal([threeWay, 1,12,2],
+		[tl,2,3],
+		[threeWay,4,3,5],
+		[tl,5,6],
+		[threeWay,7,6,8],
+		[tl,8,9,],
+		[threeWay,10,9,11],
+		[tll,11,12],
+		['out',1,4,10,7]);
+var plot = pwr.out('s12dB','s13dB','s14dB');
+
+var inputObject = { inputTable: plot };
+
+// Plot the frequency response
+nP.lineChart(inputObject);
+
+
+
+		</script>
+	</body>
+</html
