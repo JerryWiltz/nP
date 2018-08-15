@@ -3,22 +3,63 @@ nP is short for nPort, a Microwave Circuit Analysis Program
 
 ## Installing
 
-If you use NPM, `npm install nPort`. Otherwise, download the [latest release](https://github.com/JerryWiltz/nP/blob/master/dist/nP.js). A `nP` global is exported:
+Download the [latest release](https://github.com/JerryWiltz/nP/blob/master/dist/nP.js). A `nP` global is exported:
 
-## nP.complex
+To test the installation and check that it works, set up the following:
 
 ```html
 <script src="https://github.com/JerryWiltz/nP/blob/master/dist/nP.js"></script>
 <script>
-var c1 = nP.complex(2,3);    // this is c1 = 2 + i3
-							 // note: Keyword "new" is not required
-var c2 = nP.complex(5,-7);
-var c3 = c1.add(c2).mul(c1); // method chaining
+var g = nP.global;
+g.fList = [2e9]; // Frequencies are in Hz, and are always in arrays
+var r1 = nP.seR(75);    // The "new" keyword is not used. r1 is a two port series resistor
+console.log(r1.getspars()); // (4) [Array(5), Array(5), Array(5), Array(5)]
+console.log(r1.getspars()[0][1].mag() ) // The magnitude of s11 is 0.42857142857142855
 </script>
 ```
+
+## nP.global
+Before you can do anything, you must specify the frequency range. This is done through an object called global. <b>Important, this not referring to any Javascript global variable.</b> Rather this object exposes it members to other nP objects. To make things easier, there are default values:
+
+	fList:	[2e9, 4e9, 6e9, 8e9] in Hz
+	Ro:	50 in Ohms
+	Temp:	293 in degrees Kelvin
+	
+
+These may all be overwritten as desired. Most likely fList values will change the most,jj
+
+nP.<b>global</b> [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-global/src/global.js "Source")
+
+An Object that contains (so far) Frequency, Zo, and Temperature values. There is also a member function that generates frequencies, always in Hz, in the form of fStart, fStop, and the number of points.
+
+nP.<b>fGen</b>(<i>fStart, fStop, points</i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-global/src/global.js "Source")
+
+Returns an array of frequencies, here is how to set that up.
+
+```html
+var g = nP.global;
+g.fList = g.fGen(.5e9,5.5e9,101); // 101 points from 500 MHz to 5.5 GHz
+```
+
+## nP.nPort
+## Lumped Elements
+
+
+## nP.complex
+nPort provides a basic complex arithmetic class object
+
 nP.<b>complex</b>(<i>x, y</i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/complex.js "Source")
 
-Initializes and returns a <b>Complex</b> object containing the property names <b>x</b> and <b>iy</b>. 
+Initializes and returns a <b>Complex</b> object containing the property names <b>x</b> and <b>iy</b>. Here is a script you could use. 
+
+```html
+<script src="https://github.com/JerryWiltz/nP/blob/master/dist/nP.js"></script>
+<script>
+var c1 = nP.complex(2,3);    // The "new" keyword is not used. c1 = 2 + i3
+var c2 = nP.complex(5,-7);
+var c3 = c1.add(c2).mul(c1); // many of the complex class methods can be chained
+</script>
+```
 
 nP.<b>set</b>(<i>real, imaginary</i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/complex.js "Source")
 
@@ -112,7 +153,9 @@ Method that returns the complex hyperbolic sine of a complex number and returns 
 
 ```html
 <script>
+var C = nP.complex(1,2), gamma = nP.complex(3,4), B = nP.complex(5,6),
 Ds = C.mul(gamma.coshCplx()).add(B.mul(gamma.sinhCplx()));
+console.log(Ds) // Complex {x: 21.557232562315377, y: -98.12775767092192}
 </script>
 ```
 nP.<b>coshCplx</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/complex.js "Source")
