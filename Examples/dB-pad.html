@@ -6,7 +6,7 @@
 	<body id="body">
 		<div>
 			<h3>Resistor Atenuator with no parasitics</h3>
-			<svg id="canvas" width="500" height="300"></svg>
+			<svg id="canvas1" width="500" height="300"></svg>
 		</div>
 		<div>
 			<h3>Resistive Atenuator with parasitics</h3>
@@ -30,7 +30,7 @@ var c2 = nP.paC(0.15e-12);
 // the no parasitics case
 var pad = nP.cascade(r1, r2, r3);
 var table = pad.out('s11dB', 's21dB');
-var inputObject = { inputTable: table };
+var inputObject = { inputTable: table, canvasID: '#canvas1' };
 nP.lineChart(inputObject);
 
 // the parasitics case

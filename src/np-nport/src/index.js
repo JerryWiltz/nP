@@ -1,13 +1,19 @@
-export {seR} from './lumpedRLC/seR';
-export {paR} from './lumpedRLC/paR';
-export {seL} from './lumpedRLC/seL';
-export {paC} from './lumpedRLC/paC';
-export {lpfGen} from './lumpedRLC/lpfGen';
-export {wireTee} from './lumpedRLC/wireTee';
-export {seriesTee} from './lumpedRLC/seriesTee';
-export {cascade} from './combining/cascade';
-export {openPort} from './lumpedRLC/openPort';
+export {seR} from './rlc/seR';
+export {paR} from './rlc/paR';
+export {seL} from './rlc/seL';
+export {paC} from './rlc/paC';
+export {lpfGen} from './rlc/lpfGen';
+
+export {Tee} from './connections/Tee';
+export {seriesTee} from './connections/seriesTee';
+
 export {nodal} from './combining/nodal';
-export {termPort} from './lumpedRLC/termPort';
-export {shortPort} from './lumpedRLC/shortPort';
+export {cascade} from './combining/cascade';
+
+export {Open} from './openShortLoad/Open';
+export {Short} from './openShortLoad/Short';
+export {Load} from './openShortLoad/Load';
+
 export {tlin} from './tlin/tlin';
+
+export {mtee} from './mlin/mtee';

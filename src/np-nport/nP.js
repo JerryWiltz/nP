@@ -172,7 +172,7 @@
 		return paC;
 	}
 
-	function lpfGen( filt =[50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50]) {
+	function lpfGen( filt =[50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50]) { // returns a table of spars for a low Pass Filter
 		var i = 0;
 		var filtTable = [];
 		filt.pop();
@@ -183,13 +183,13 @@
 		}	return filtTable[ filtTable.length-1 ];
 	}
 
-	function wireTee() { // series resistor nPort object
-		var wireTee = new nPort;
+	function Tee() { // a 3port dummy connection
+		var Tee = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
 		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
-			s11 = complex(-1/3,0);
-			s12 = complex(2/3,0);
+			s11 = complex(1e-7 + -1/3,0);
+			s12 = complex(1e-7 + 2/3,0);
 			s13 = s12;
 			s21 = s12;
 			s22 = s11;
@@ -199,47 +199,26 @@
 			s33 = s11;
 			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s21, s22, s23, s31, s32, s33];
 		}	
-		wireTee.setspars(sparsArray);
-		wireTee.setglobal(global);
-		return wireTee;
+		Tee.setspars(sparsArray);
+		Tee.setglobal(global);
+		return Tee;
 	}
 
 	function seriesTee() { // series resistor nPort object
 		var seriesTee = new nPort;
+		var e = 1e-7;
 		var frequencyList = global.fList, Ro = global.Ro;
 		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
-
-			s11 = complex(1/3,0); s12 = complex(2/3,0); s13 = complex(-1,0);
-			s21 = complex(2/3,0); s22 = complex(1/3,0); s23 = complex(-1,0);
-			s31 = complex(-1,0)  ; s32 = complex(-1,0) ; s33 = complex(0,0);
+			s11 = complex(e + 1/3,0); s12 = complex(e + 2/3,0); s13 = complex(e +-2/3,0);
+			s21 = complex(e + 2/3,0); s22 = complex(e + 1/3,0); s23 = complex(e + 2/3,0);
+			s31 = complex(e +-2/3,0); s32 = complex(e + 2/3,0); s33 = complex(e + 1/3,0);
 
 			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s21, s22, s23, s31, s32, s33];
 		}	
 		seriesTee.setspars(sparsArray);
 		seriesTee.setglobal(global);
 		return seriesTee;
-	}
-
-	function cascade( ... nPorts) {
-		var i = 0;
-		var nPortsTable = nPorts;
-		for (i = 0; i < nPortsTable.length - 1; i++) {
-			nPortsTable[i+1] = nPortsTable[i].cas(nPortsTable[i+1]);
-		}	return nPortsTable[ nPortsTable.length-1 ];
-	}
-
-	function openPort() { // open one port nPort object
-		var openPort = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
-		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, s11, sparsArray = [];
-		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
-			s11 = complex(1,0);
-			sparsArray[freqCount] =	[frequencyList[freqCount],s11];
-		}	
-		openPort.setspars(sparsArray);
-		openPort.setglobal(global);
-		return openPort;
 	}
 
 	function Matrix () {}
@@ -624,33 +603,54 @@
 		return nodalOut;
 	}
 
-	function termPort() { // open one port nPort object
-		var termPort = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
-		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, s11, sparsArray = [];
-		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
-			s11 = complex(0,0);
-			sparsArray[freqCount] =	[frequencyList[freqCount],s11];
-		}	
-		termPort.setspars(sparsArray);
-		termPort.setglobal(global);
-		return termPort;
+	function cascade( ... nPorts) {
+		var i = 0;
+		var nPortsTable = nPorts;
+		for (i = 0; i < nPortsTable.length - 1; i++) {
+			nPortsTable[i+1] = nPortsTable[i].cas(nPortsTable[i+1]);
+		}	return nPortsTable[ nPortsTable.length-1 ];
 	}
 
-	function shortPort() { // open one port nPort object
-		var shortPort = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
-		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, s11, sparsArray = [];
+	function Open() { // one port, open
+		var Open = new nPort;
+		var frequencyList = global.fList;
+		var freqCount = 0, s11, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			s11 = complex(1,0);
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11];
+		}	
+		Open.setspars(sparsArray);
+		Open.setglobal(global);
+		return Open;
+	}
+
+	function Short() { //  one port, Short
+		var Short = new nPort;
+		var frequencyList = global.fList;
+		var freqCount = 0, s11, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			s11 = complex(-1,0);
 			sparsArray[freqCount] =	[frequencyList[freqCount],s11];
 		}	
-		shortPort.setspars(sparsArray);
-		shortPort.setglobal(global);
-		return shortPort;
+		Short.setspars(sparsArray);
+		Short.setglobal(global);
+		return Short;
 	}
 
-	function tlin(Ztlin = 60, Length = 0.5 * 0.0254) { // series inductor nPort object
+	function Load() { // one port, load
+		var Load = new nPort;
+		var frequencyList = global.fList;
+		var freqCount = 0, s11, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			s11 = complex(0,0);
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11];
+		}	
+		Load.setspars(sparsArray);
+		Load.setglobal(global);
+		return Load;
+	}
+
+	function tlin(Ztlin = 60, Length = 0.5 * 0.0254) { // sparameters of a physical transmission line
 		var tlin = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
 		var Zo = complex(Ro,0), Yo = Zo.inv(), one = complex(1,0), two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
@@ -678,19 +678,56 @@
 		return tlin;
 	}
 
+	function mtee(w1 = 0.186*0.0254, w2 = 0.334*0.0254, er = 2.55, h = 0.125*0.0254) { // series resistor nPort object
+		var mtee = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [];
+
+		//microstrip calcs
+		var eta = 120*Math.PI;
+		var ere = (er+1)/2 + ( (er-1)/2 * 1/Math.sqrt(1+10*h/w1) );
+		var zo  = function () {
+			if (w1/h < 1) {
+				return eta/((2*Math.PI)*Math.sqrt(ere)) * Math.log(8*h/w1 + 0.25*w1/h)
+			}
+			else {
+				return eta/Math.sqrt(ere) * 1/(w1/h + 1.393 + 0.667 * Math.log(w1/h + 1.444));
+			}
+		}();
+		var Ct = (100/Math.tanh(0.0072 * zo) + 0.64 * zo - 261)*w1*1e-12;
+		
+		
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			s11 = complex(-1/3,0);
+			s12 = complex(2/3,0);
+			s13 = s12;
+			s21 = s12;
+			s22 = s11;
+			s23 = s12;
+			s31 = s12;
+			s32 = s12;
+			s33 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s21, s22, s23, s31, s32, s33];
+		}	
+		mtee.setspars(sparsArray);
+		mtee.setglobal(global);
+		return Ct;
+	}
+
 	exports.seR = seR;
 	exports.paR = paR;
 	exports.seL = seL;
 	exports.paC = paC;
 	exports.lpfGen = lpfGen;
-	exports.wireTee = wireTee;
+	exports.Tee = Tee;
 	exports.seriesTee = seriesTee;
-	exports.cascade = cascade;
-	exports.openPort = openPort;
 	exports.nodal = nodal;
-	exports.termPort = termPort;
-	exports.shortPort = shortPort;
+	exports.cascade = cascade;
+	exports.Open = Open;
+	exports.Short = Short;
+	exports.Load = Load;
 	exports.tlin = tlin;
+	exports.mtee = mtee;
 
 	Object.defineProperty(exports, '__esModule', { value: true });
 

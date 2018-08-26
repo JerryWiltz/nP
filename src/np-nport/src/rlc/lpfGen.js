@@ -1,7 +1,7 @@
 import {seL} from './seL';
 import {paC} from './paC';
 
-export function lpfGen( filt =[50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50]) {
+export function lpfGen( filt =[50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50]) { // returns a table of spars for a low Pass Filter
 	var i = 0;
 	var filtTable = [];
 	filt.pop();

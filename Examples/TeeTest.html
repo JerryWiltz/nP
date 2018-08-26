@@ -13,22 +13,16 @@
 
 		<script>
 var g = nP.global;
-//g.fList = [2e9, 4e9, 6e9, 8e9, 10e9];
-g.fList = g.fGen(2e9,22e9,201);
+g.fList = g.fGen(2e9,22e9,1);
 
 var threeWay = nP.Tee();
-var tl = nP.tlin(70.7, 0.49 * 0.0254);
-var r = nP.seR(100);
+var res = nP.seR(150);
+var ind = nP.seR(150);
 
-var pwr = nP.nodal([threeWay, 1,2,3],[tl,3,5],[tl,2,4],[threeWay,9,7,5],[threeWay,8,4,6],[r,8,9],['out',1,7,6]);
-var plot = pwr.out('s11dB','s21dB','s23dB');
-
-var inputObject = { inputTable: plot };
-
-// Plot the frequency response
-nP.lineChart(inputObject);
-
-
+var total = nP.nodal([threeWay,1,2,3],[res,2,4],[ind,3,5],[threeWay,6,5,4],['out',1,6]);
+//var ld = nP.Short();
+//var total = nP.nodal([threeWay,1,2,3],[ld,2],['out',1,3]);
+console.log(total.out('s11mag', 's21mag'));
 
 		</script>
 	</body>

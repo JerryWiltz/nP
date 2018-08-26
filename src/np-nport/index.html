@@ -11,14 +11,17 @@
 		<script src="nP.js"></script>
 
 		<script>
-
-var r = nP.seR(1);
-var t = nP.shortPort();
-var st = nP.seriesTee();
-
-var m = nP.nodal( [st,1,2,3], [t,3], [r,2,4], ['out',1,4] );
-
-console.log(m.out('s11mag', 's11ang', 's12mag', 's12ang'));
+	var seriesTee = nP.seriesTee();
+	var Short = nP.Short();
+	var Open  = nP.Open();
+	var Load  = nP.Load();
+	var r75   = nP.paR(75);
+	var thru = nP.nodal([seriesTee,1,2,3],[r75,3,4],[Open,4],['out',1,2]).out('s11mag', 's21mag', 's21ang', 's12mag', 's12ang');
+	console.log(thru);
+		
+		
+		
+		
 		</script>
 	</body>
 </html;

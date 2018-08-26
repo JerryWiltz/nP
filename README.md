@@ -8,23 +8,22 @@ Download the [latest release](https://github.com/JerryWiltz/nP/blob/master/dist/
 To test the installation and check that it works, set up the following:
 
 ```html
-<script src="https://github.com/JerryWiltz/nP/blob/master/dist/nP.js"></script>
+<script src="./nP.js"></script>
 <script>
 var g = nP.global;
 g.fList = [2e9]; // Frequencies are in Hz, and are always in arrays
-var r1 = nP.seR(75);    // The "new" keyword is not used. r1 is a two port series resistor
-console.log(r1.getspars()); // (4) [Array(5), Array(5), Array(5), Array(5)]
-console.log(r1.getspars()[0][1].mag() ) // The magnitude of s11 is 0.42857142857142855
+var r1 = nP.seR(75).out('s11mag', 's21mag');    // r1 has the magnitude of s11 and s21 of a series resistor
+console.log(r1) // s11 = 0.42857142857142855; s21 is 0.5714285714285714
 </script>
 ```
 
 ## nP.global
-Before you can do anything, you must specify the frequency range. This is done through an object called global. <b>Important, this not referring to any Javascript global variable.</b> Rather this object exposes it members to other nP objects. To make things easier, there are default values:
-
-	fList:	[2e9, 4e9, 6e9, 8e9] in Hz
-	Ro:	50 in Ohms
-	Temp:	293 in degrees Kelvin
-	
+Before you can do anything, you must specify the frequency range. This is done through an object called global. <b>Important, this not referring to any Javascript global variable.</b> Rather this object exposes its members to other nP objects. To make things easier, there are <b>default</b> values:
+```html
+fList:	[2e9, 4e9, 6e9, 8e9] //in Hz
+Ro:	50 //in Ohms
+Temp:	293 //in degrees Kelvin
+```	l
 
 These may all be overwritten as desired. Most likely fList values will change the most,jj
 
@@ -41,9 +40,37 @@ var g = nP.global;
 g.fList = g.fGen(.5e9,5.5e9,101); // 101 points from 500 MHz to 5.5 GHz
 ```
 
-## nP.nPort
-## Lumped Elements
+## 1 Port Open, Short, Load
 
+nP.<b>Open</b>(<i> R </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/lumpedRLC/openPort.js "Source")
+
+Returns the s paramater of a one port Open
+
+nP.<b>Short</b>(<i> R </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/lumpedRLC/shortPort.js "Source")
+
+Returns the s parameter of a one port Short
+
+nP.<b>Load</b>(<i> R </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/lumpedRLC/loadPort.js "Source")
+
+Returns the s parameter of a one port Load
+
+## 2 Port Lumped Elements
+
+nP.<b>seR</b>(<i> R </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/lumpedRLC/seR.js "Source")
+
+Returns the s parameters of a series resistor. If no argument, the default value is 75 Ohms.
+
+nP.<b>paR</b>(<i> R </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/lumpedRLC/paR.js "Source")
+
+Returns the s parameters of a series resistor. If no argument, the default value is 75 Ohms.
+
+nP.<b>seL</b>(<i> L </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/lumpedRLC/seL.js "Source")
+
+Returns the s parameters of a series inductor. If no argument, the default value is 5e-9 Henries.
+
+nP.<b>paC</b>(<i> C </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/lumpedRLC/seC.js "Source")
+
+Returns the s parameters of a parallel capacitor. If no argument, the default value is 1e-12 Farads.
 
 ## nP.complex
 nPort provides a basic complex arithmetic class object
@@ -53,7 +80,6 @@ nP.<b>complex</b>(<i>x, y</i>) [<>](https://github.com/JerryWiltz/nP/blob/master
 Initializes and returns a <b>Complex</b> object containing the property names <b>x</b> and <b>iy</b>. Here is a script you could use. 
 
 ```html
-<script src="https://github.com/JerryWiltz/nP/blob/master/dist/nP.js"></script>
 <script>
 var c1 = nP.complex(2,3);    // The "new" keyword is not used. c1 = 2 + i3
 var c2 = nP.complex(5,-7);
