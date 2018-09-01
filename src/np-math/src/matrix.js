@@ -130,74 +130,6 @@ Matrix.prototype = {
 		return matrix(C);
 	},
 
-	/*	
-	//swapRowsL for maximizing the lower triangle pivot numbers
-	swapRowsL : function swapRowsL(matrix, pivotNum) {
-		var rowNum = matrix.length, rowCol = matrix[0].length,
-			newMax = matrix[pivotNum][pivotNum], tempRow = pivotNum , swapRow = pivotNum,
-			row = 0;
-		for(row = pivotNum + 1; row < rowNum; row++) {
-			if(newMax < matrix[row][pivotNum]) {
-				newMax = matrix[row][pivotNum];
-				swapRow = row;
-			};
-		};
-		tempRow = matrix[pivotNum];
-		matrix[pivotNum] = matrix[swapRow];
-		matrix[swapRow] = tempRow;
-	},
-
-
-	//swapRowsLCplx for the lower triangle pivot numbers
-	swapRowsLCplx : function swapRowsLCplx(matrix, pivotNum) {
-		var rowNum = matrix.length, rowCol = matrix[0].length,
-			newMax = matrix[pivotNum][pivotNum].mag(), tempRow = pivotNum , swapRow = pivotNum,
-			row = 0;
-		for(row = pivotNum + 1; row < rowNum; row++) {
-			if(newMax < matrix[row][pivotNum].mag()) {
-				newMax = matrix[row][pivotNum].mag();
-				swapRow = row;
-			};
-		};
-		tempRow = matrix[pivotNum];
-		matrix[pivotNum] = matrix[swapRow];
-		matrix[swapRow] = tempRow;
-	//showTable([['jerry']]);
-	//showTable(matrix);
-	},		
-
-	//swapRows for maximizing the upper triangle pivot numbers
-	swapRowsU : function swapRows(matrix, pivotNum) {
-		var rowNum = matrix.length, rowCol = matrix[0].length,
-			newMax = matrix[pivotNum][pivotNum], tempRow = pivotNum , swapRow = pivotNum,
-			row = 0;
-		for(row = pivotNum - 1; row > 0; row--) {
-			if(newMax < matrix[row][pivotNum]) {
-				newMax = matrix[row][pivotNum];
-				swapRow = row;
-			};
-		};
-		tempRow = matrix[pivotNum];
-		matrix[pivotNum] = matrix[swapRow];
-		matrix[swapRow] = tempRow;
-	},
-
-	//swapRows for maximizing the upper triangle pivot numbers
-	swapRowsUCplx : function swapRowsCplx(matrix, pivotNum) {
-		var rowNum = matrix.length, rowCol = matrix[0].length,
-			newMax = matrix[pivotNum][pivotNum].mag(), tempRow = pivotNum , swapRow = pivotNum,
-			row = 0;
-		for(row = pivotNum - 1; row > 0; row--) {
-			if(newMax < matrix[row][pivotNum].mag()) {
-				newMax = matrix[row][pivotNum].mag();
-				swapRow = row;
-			};
-		};
-		tempRow = matrix[pivotNum];
-		matrix[pivotNum] = matrix[swapRow];
-		matrix[swapRow] = tempRow;
-	},		
-	*/
 
 	solveGaussFB : function solveGaussFB() { //this works
 		var A = this.m,
@@ -261,7 +193,6 @@ Matrix.prototype = {
 	},
 
 
-	//gaussJordenElimination (use for matrix inversion with real numbers) ---------------------------------------------------------------------------------------------
 	invert : function invert() { //this works
 		var A = this.m, B = [],
 			a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
@@ -313,7 +244,6 @@ Matrix.prototype = {
 		return matrix(A);
 	},
 
-	//gaussJordenEliminationCplx (use for matrix inversion for complex numbers) -------------------------------------------------------------------------------------------------------
 	invertCplx : function invertCplx() { //this works
 		var A = this.m,
 			a = complex(0, 0), numRows = A.length, numCols = A[0].length, constRow = 0,

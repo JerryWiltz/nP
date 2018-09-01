@@ -149,74 +149,6 @@
 					}			}		}		return matrix(C);
 		},
 
-		/*	
-		//swapRowsL for maximizing the lower triangle pivot numbers
-		swapRowsL : function swapRowsL(matrix, pivotNum) {
-			var rowNum = matrix.length, rowCol = matrix[0].length,
-				newMax = matrix[pivotNum][pivotNum], tempRow = pivotNum , swapRow = pivotNum,
-				row = 0;
-			for(row = pivotNum + 1; row < rowNum; row++) {
-				if(newMax < matrix[row][pivotNum]) {
-					newMax = matrix[row][pivotNum];
-					swapRow = row;
-				};
-			};
-			tempRow = matrix[pivotNum];
-			matrix[pivotNum] = matrix[swapRow];
-			matrix[swapRow] = tempRow;
-		},
-
-
-		//swapRowsLCplx for the lower triangle pivot numbers
-		swapRowsLCplx : function swapRowsLCplx(matrix, pivotNum) {
-			var rowNum = matrix.length, rowCol = matrix[0].length,
-				newMax = matrix[pivotNum][pivotNum].mag(), tempRow = pivotNum , swapRow = pivotNum,
-				row = 0;
-			for(row = pivotNum + 1; row < rowNum; row++) {
-				if(newMax < matrix[row][pivotNum].mag()) {
-					newMax = matrix[row][pivotNum].mag();
-					swapRow = row;
-				};
-			};
-			tempRow = matrix[pivotNum];
-			matrix[pivotNum] = matrix[swapRow];
-			matrix[swapRow] = tempRow;
-		//showTable([['jerry']]);
-		//showTable(matrix);
-		},		
-
-		//swapRows for maximizing the upper triangle pivot numbers
-		swapRowsU : function swapRows(matrix, pivotNum) {
-			var rowNum = matrix.length, rowCol = matrix[0].length,
-				newMax = matrix[pivotNum][pivotNum], tempRow = pivotNum , swapRow = pivotNum,
-				row = 0;
-			for(row = pivotNum - 1; row > 0; row--) {
-				if(newMax < matrix[row][pivotNum]) {
-					newMax = matrix[row][pivotNum];
-					swapRow = row;
-				};
-			};
-			tempRow = matrix[pivotNum];
-			matrix[pivotNum] = matrix[swapRow];
-			matrix[swapRow] = tempRow;
-		},
-
-		//swapRows for maximizing the upper triangle pivot numbers
-		swapRowsUCplx : function swapRowsCplx(matrix, pivotNum) {
-			var rowNum = matrix.length, rowCol = matrix[0].length,
-				newMax = matrix[pivotNum][pivotNum].mag(), tempRow = pivotNum , swapRow = pivotNum,
-				row = 0;
-			for(row = pivotNum - 1; row > 0; row--) {
-				if(newMax < matrix[row][pivotNum].mag()) {
-					newMax = matrix[row][pivotNum].mag();
-					swapRow = row;
-				};
-			};
-			tempRow = matrix[pivotNum];
-			matrix[pivotNum] = matrix[swapRow];
-			matrix[swapRow] = tempRow;
-		},		
-		*/
 
 		solveGaussFB : function solveGaussFB() { //this works
 			var A = this.m,
@@ -268,7 +200,6 @@
 		},
 
 
-		//gaussJordenElimination (use for matrix inversion with real numbers) ---------------------------------------------------------------------------------------------
 		invert : function invert() { //this works
 			var A = this.m, a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
 				row = 0, col = 0;
@@ -305,7 +236,6 @@
 				}		}		return matrix(A);
 		},
 
-		//gaussJordenEliminationCplx (use for matrix inversion for complex numbers) -------------------------------------------------------------------------------------------------------
 		invertCplx : function invertCplx() { //this works
 			var A = this.m,
 				a = complex(0, 0), numRows = A.length, numCols = A[0].length, constRow = 0,
@@ -2311,7 +2241,7 @@
 	      c = new Array(nb),
 	      i;
 
-	  for (i = 0; i < na; ++i) x[i] = interpolateValue(a[i], b[i]);
+	  for (i = 0; i < na; ++i) x[i] = value(a[i], b[i]);
 	  for (; i < nb; ++i) c[i] = b[i];
 
 	  return function(t) {
@@ -2343,7 +2273,7 @@
 
 	  for (k in b) {
 	    if (k in a) {
-	      i[k] = interpolateValue(a[k], b[k]);
+	      i[k] = value(a[k], b[k]);
 	    } else {
 	      c[k] = b[k];
 	    }
@@ -2418,7 +2348,7 @@
 	        });
 	}
 
-	function interpolateValue(a, b) {
+	function value(a, b) {
 	  var t = typeof b, c;
 	  return b == null || t === "boolean" ? constant$3(b)
 	      : (t === "number" ? interpolateNumber
@@ -3002,12 +2932,12 @@
 	  };
 	}
 
-	function attrFunction$1(name, interpolate$$1, value) {
+	function attrFunction$1(name, interpolate$$1, value$$1) {
 	  var value00,
 	      value10,
 	      interpolate0;
 	  return function() {
-	    var value0, value1 = value(this);
+	    var value0, value1 = value$$1(this);
 	    if (value1 == null) return void this.removeAttribute(name);
 	    value0 = this.getAttribute(name);
 	    return value0 === value1 ? null
@@ -3016,12 +2946,12 @@
 	  };
 	}
 
-	function attrFunctionNS$1(fullname, interpolate$$1, value) {
+	function attrFunctionNS$1(fullname, interpolate$$1, value$$1) {
 	  var value00,
 	      value10,
 	      interpolate0;
 	  return function() {
-	    var value0, value1 = value(this);
+	    var value0, value1 = value$$1(this);
 	    if (value1 == null) return void this.removeAttributeNS(fullname.space, fullname.local);
 	    value0 = this.getAttributeNS(fullname.space, fullname.local);
 	    return value0 === value1 ? null
@@ -3030,12 +2960,12 @@
 	  };
 	}
 
-	function transition_attr(name, value) {
+	function transition_attr(name, value$$1) {
 	  var fullname = namespace(name), i = fullname === "transform" ? interpolateTransformSvg : interpolate;
-	  return this.attrTween(name, typeof value === "function"
-	      ? (fullname.local ? attrFunctionNS$1 : attrFunction$1)(fullname, i, tweenValue(this, "attr." + name, value))
-	      : value == null ? (fullname.local ? attrRemoveNS$1 : attrRemove$1)(fullname)
-	      : (fullname.local ? attrConstantNS$1 : attrConstant$1)(fullname, i, value + ""));
+	  return this.attrTween(name, typeof value$$1 === "function"
+	      ? (fullname.local ? attrFunctionNS$1 : attrFunction$1)(fullname, i, tweenValue(this, "attr." + name, value$$1))
+	      : value$$1 == null ? (fullname.local ? attrRemoveNS$1 : attrRemove$1)(fullname)
+	      : (fullname.local ? attrConstantNS$1 : attrConstant$1)(fullname, i, value$$1 + ""));
 	}
 
 	function attrTweenNS(fullname, value) {
@@ -3281,13 +3211,13 @@
 	  };
 	}
 
-	function styleFunction$1(name, interpolate$$1, value) {
+	function styleFunction$1(name, interpolate$$1, value$$1) {
 	  var value00,
 	      value10,
 	      interpolate0;
 	  return function() {
 	    var value0 = styleValue(this, name),
-	        value1 = value(this);
+	        value1 = value$$1(this);
 	    if (value1 == null) value1 = (this.style.removeProperty(name), styleValue(this, name));
 	    return value0 === value1 ? null
 	        : value0 === value00 && value1 === value10 ? interpolate0
@@ -3295,14 +3225,14 @@
 	  };
 	}
 
-	function transition_style(name, value, priority) {
+	function transition_style(name, value$$1, priority) {
 	  var i = (name += "") === "transform" ? interpolateTransformCss : interpolate;
-	  return value == null ? this
+	  return value$$1 == null ? this
 	          .styleTween(name, styleRemove$1(name, i))
 	          .on("end.style." + name, styleRemoveEnd(name))
-	      : this.styleTween(name, typeof value === "function"
-	          ? styleFunction$1(name, i, tweenValue(this, "style." + name, value))
-	          : styleConstant$1(name, i, value + ""), priority);
+	      : this.styleTween(name, typeof value$$1 === "function"
+	          ? styleFunction$1(name, i, tweenValue(this, "style." + name, value$$1))
+	          : styleConstant$1(name, i, value$$1 + ""), priority);
 	}
 
 	function styleTween(name, value, priority) {
@@ -4707,7 +4637,7 @@
 	function continuous(deinterpolate, reinterpolate) {
 	  var domain = unit,
 	      range = unit,
-	      interpolate$$1 = interpolateValue,
+	      interpolate$$1 = value,
 	      clamp = false,
 	      piecewise$$1,
 	      output,
@@ -6671,7 +6601,7 @@
 		}	return filtTable[ filtTable.length-1 ];
 	}
 
-	function Tee() { // series resistor nPort object
+	function Tee() { // a 3port dummy connection
 		var Tee = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
 		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [];
@@ -6694,13 +6624,13 @@
 
 	function seriesTee() { // series resistor nPort object
 		var seriesTee = new nPort;
+		var e = 1e-7;
 		var frequencyList = global.fList, Ro = global.Ro;
 		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
-
-			s11 = complex(1/3,0); s12 = complex(2/3,0); s13 = complex(-1,0);
-			s21 = complex(2/3,0); s22 = complex(1/3,0); s23 = complex(-1,0);
-			s31 = complex(-1,0)  ; s32 = complex(-1,0) ; s33 = complex(0,0);
+			s11 = complex(e + 1/3,0); s12 = complex(e + 2/3,0); s13 = complex(e +-2/3,0);
+			s21 = complex(e + 2/3,0); s22 = complex(e + 1/3,0); s23 = complex(e + 2/3,0);
+			s31 = complex(e +-2/3,0); s32 = complex(e + 2/3,0); s33 = complex(e + 1/3,0);
 
 			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s21, s22, s23, s31, s32, s33];
 		}	
