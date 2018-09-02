@@ -154,6 +154,40 @@
 		return seL;
 	}
 
+	function paL(L = 5e-9) { // parallel capacitor nPort object   
+		var paL = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount]);
+			Y[freqCount] = Z[freqCount].inv();
+			s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
+			s21 = (two.mul(Yo)).div(Y[freqCount].add(Yo.add(Yo)));  
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		paL.setspars(sparsArray);
+		paL.setglobal(global);				
+		return paL;
+	}
+
+	function seC(C = 1e-12) { // series inductor nPort object
+		var seC = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = complex(0, -1/(2*Math.PI*C*frequencyList[freqCount]));	
+			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
+			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}	seC.setspars(sparsArray);
+		seC.setglobal(global);	
+		return seC;
+	}
+
 	function paC(C = 1e-12) { // parallel capacitor nPort object   
 		var paC = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
@@ -170,6 +204,74 @@
 		paC.setspars(sparsArray);
 		paC.setglobal(global);				
 		return paC;
+	}
+
+	function seSeRL(R = 75, L = 5e-9) { // series inductor nPort object
+		var seSeRL = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = complex(R, 2*Math.PI*L*frequencyList[freqCount]);	
+			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
+			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}	seSeRL.setspars(sparsArray);
+		seSeRL.setglobal(global);	
+		return seSeRL;
+	}
+
+	function paSeRL(R = 75, L = 5e-9) { // parallel capacitor nPort object   
+		var paSeRL = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = complex(R, 2*Math.PI*L*frequencyList[freqCount]);
+			Y[freqCount] = Z[freqCount].inv();
+			s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
+			s21 = (two.mul(Yo)).div(Y[freqCount].add(Yo.add(Yo)));  
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		paSeRL.setspars(sparsArray);
+		paSeRL.setglobal(global);				
+		return paSeRL;
+	}
+
+	function seSeRC(R = 75, C = 1e-12) { // series inductor nPort object
+		var seSeRC = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = complex(R, -1/(2*Math.PI*C*frequencyList[freqCount]));	
+			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
+			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}	seSeRC.setspars(sparsArray);
+		seSeRC.setglobal(global);	
+		return seSeRC;
+	}
+
+	function paSeRC(R = 75, C = 1e-12) { // parallel capaSeRCitor nPort object   
+		var paSeRC = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = complex(R, -1/(2*Math.PI*C*frequencyList[freqCount]));
+			Y[freqCount] = Z[freqCount].inv();
+			s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
+			s21 = (two.mul(Yo)).div(Y[freqCount].add(Yo.add(Yo)));  
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		paSeRC.setspars(sparsArray);
+		paSeRC.setglobal(global);				
+		return paSeRC;
 	}
 
 	function lpfGen( filt =[50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50]) { // returns a table of spars for a low Pass Filter
@@ -330,74 +432,6 @@
 					}			}		}		return matrix(C);
 		},
 
-		/*	
-		//swapRowsL for maximizing the lower triangle pivot numbers
-		swapRowsL : function swapRowsL(matrix, pivotNum) {
-			var rowNum = matrix.length, rowCol = matrix[0].length,
-				newMax = matrix[pivotNum][pivotNum], tempRow = pivotNum , swapRow = pivotNum,
-				row = 0;
-			for(row = pivotNum + 1; row < rowNum; row++) {
-				if(newMax < matrix[row][pivotNum]) {
-					newMax = matrix[row][pivotNum];
-					swapRow = row;
-				};
-			};
-			tempRow = matrix[pivotNum];
-			matrix[pivotNum] = matrix[swapRow];
-			matrix[swapRow] = tempRow;
-		},
-
-
-		//swapRowsLCplx for the lower triangle pivot numbers
-		swapRowsLCplx : function swapRowsLCplx(matrix, pivotNum) {
-			var rowNum = matrix.length, rowCol = matrix[0].length,
-				newMax = matrix[pivotNum][pivotNum].mag(), tempRow = pivotNum , swapRow = pivotNum,
-				row = 0;
-			for(row = pivotNum + 1; row < rowNum; row++) {
-				if(newMax < matrix[row][pivotNum].mag()) {
-					newMax = matrix[row][pivotNum].mag();
-					swapRow = row;
-				};
-			};
-			tempRow = matrix[pivotNum];
-			matrix[pivotNum] = matrix[swapRow];
-			matrix[swapRow] = tempRow;
-		//showTable([['jerry']]);
-		//showTable(matrix);
-		},		
-
-		//swapRows for maximizing the upper triangle pivot numbers
-		swapRowsU : function swapRows(matrix, pivotNum) {
-			var rowNum = matrix.length, rowCol = matrix[0].length,
-				newMax = matrix[pivotNum][pivotNum], tempRow = pivotNum , swapRow = pivotNum,
-				row = 0;
-			for(row = pivotNum - 1; row > 0; row--) {
-				if(newMax < matrix[row][pivotNum]) {
-					newMax = matrix[row][pivotNum];
-					swapRow = row;
-				};
-			};
-			tempRow = matrix[pivotNum];
-			matrix[pivotNum] = matrix[swapRow];
-			matrix[swapRow] = tempRow;
-		},
-
-		//swapRows for maximizing the upper triangle pivot numbers
-		swapRowsUCplx : function swapRowsCplx(matrix, pivotNum) {
-			var rowNum = matrix.length, rowCol = matrix[0].length,
-				newMax = matrix[pivotNum][pivotNum].mag(), tempRow = pivotNum , swapRow = pivotNum,
-				row = 0;
-			for(row = pivotNum - 1; row > 0; row--) {
-				if(newMax < matrix[row][pivotNum].mag()) {
-					newMax = matrix[row][pivotNum].mag();
-					swapRow = row;
-				};
-			};
-			tempRow = matrix[pivotNum];
-			matrix[pivotNum] = matrix[swapRow];
-			matrix[swapRow] = tempRow;
-		},		
-		*/
 
 		solveGaussFB : function solveGaussFB() { //this works
 			var A = this.m,
@@ -449,7 +483,6 @@
 		},
 
 
-		//gaussJordenElimination (use for matrix inversion with real numbers) ---------------------------------------------------------------------------------------------
 		invert : function invert() { //this works
 			var A = this.m, a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
 				row = 0, col = 0;
@@ -486,7 +519,6 @@
 				}		}		return matrix(A);
 		},
 
-		//gaussJordenEliminationCplx (use for matrix inversion for complex numbers) -------------------------------------------------------------------------------------------------------
 		invertCplx : function invertCplx() { //this works
 			var A = this.m,
 				a = complex(0, 0), numRows = A.length, numCols = A[0].length, constRow = 0,
@@ -717,7 +749,13 @@
 	exports.seR = seR;
 	exports.paR = paR;
 	exports.seL = seL;
+	exports.paL = paL;
+	exports.seC = seC;
 	exports.paC = paC;
+	exports.seSeRL = seSeRL;
+	exports.paSeRL = paSeRL;
+	exports.seSeRC = seSeRC;
+	exports.paSeRC = paSeRC;
 	exports.lpfGen = lpfGen;
 	exports.Tee = Tee;
 	exports.seriesTee = seriesTee;

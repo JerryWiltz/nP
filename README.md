@@ -1,13 +1,17 @@
-# nP
-nP is short for <b>nPort</b>: A Microwave Circuit Analysis Program
+# nP: n-number of RF Ports
 
-## Installing
+**nP** is short for <b>nPort</b>: A Microwave Circuit Analysis Program
 
-To check, let's show a nPort "Hello, World! example.
+**nP** (or **nP.js**) is a JavaScript library for analyzing microwave circuits and systems . nP helps you analyze and visualize the operation of various multiport elements.
 
-* Create a new folder named "Hello, World!"
+## Installing 
+
+Verify nP is installed with the "Hello, nPort!" example.
+
+* Create a new folder named "Hello, nPort!"
 * Download the [latest release](https://github.com/JerryWiltz/nP/blob/master/dist/nP.js) and put that in the folder. The name should be nP.js 
-* Create an index.html file as shown below and put that in the folder as well.
+* Copy and paste the file below named index.html
+* View index.html in a browser to see <b>"Hello, nPort!"</b>
 
 ```html
 <!DOCTYPE html>
@@ -15,25 +19,21 @@ To check, let's show a nPort "Hello, World! example.
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width">
-		<title>An nPort "Hello, World!" Example</title>
+		<title>Hello, nPort!</title>
 	</head>
 	<body>
+		<h1 ID='hello'></h1>
 		<script src="./nP.js"></script>
 		<script>
 
-var g = nP.global;
-g.fList = [2e9]; // Frequencies are in Hz, and are always in an array
-var r1 = nP.seR(75).out('s11mag', 's21mag');    // r1 has the magnitude of s11 and s21 of a series resistor
-console.log(r1) // s11 = 0.42857142857142855; s21 is 0.5714285714285714
+var msg = nP.helloNport();
+var element = document.getElementById('hello');
+element.innerHTML = msg;
 
 		</script>
 	</body>
 </html>
 ```
-
-Open up the console panel and verify that
-* s11 = 0.4285714285714285
-* s21 = 0.5714285714285714
 
 ## API Reference
 
@@ -47,9 +47,9 @@ Open up the console panel and verify that
 Before you can do anything, you must specify a single frequency or a frequency range. This is done through an object called global. <b>Important, this not referring to any Javascript global variable.</b> Rather this object exposes its members to other nP objects. To make things easier, there are <b>default</b> values:
 
 ```html
-fList:	[2e9, 4e9, 6e9, 8e9] //in Hz and is always in an array
-Ro:	50 //in Ohms
-Temp:	293 //in degrees Kelvin
+fList:	[2e9, 4e9, 6e9, 8e9]   //in Hz and is always in an array
+Ro:	50                        //in Ohms
+Temp:	293                     //in degrees Kelvin
 ```
 
 These may all be overwritten as desired.
@@ -58,7 +58,7 @@ nP.<b>global</b> [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-global
 
 An Object that contains the Frequency, Zo, and Temperature values. There is also a member function that generates frequencies, always in Hz, in the form of fStart, fStop, and the number of points.
 
-nP.<b>fGen</b>(<i>fStart, fStop, points</i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-global/src/global.js "Source")
+nP.<b>fGen</b>(<i> fStart, fStop, points </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-global/src/global.js "Source")
 
 Returns an array of frequencies, here is how to set that up.
 
@@ -77,8 +77,6 @@ g.fList = g.fGen(.5e9,5.5e9,101); // 101 points from 500 MHz to 5.5 GHz
 <b>nPort</b> [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/nPort.js "Source") nPort is the Parent Object, nPort objects are Children of nPort, so they inherit the members and methods of nPort. An nPort may have 9 ports maximum but most of nPorts will have 2 ports. For example, a simple 2 way power divider is a 3 port however, a switched filter bank could have 1 input and 8 outputs.
 
 ### nPort Members
-
-Here are the member values of nPort, there are 2 as of this version.
 
 nPort.<b>global</b> [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-global/src/global.js "Source") global contains the frequency list, the Zo, and the Temperature
 
@@ -114,7 +112,10 @@ nPort1.<b>cas</b> (<i> nPort2 </i>)[<>](https://github.com/JerryWiltz/nP/blob/ma
 
 nPort.<b>out</b> (<i> 'sij|mag|dB|ang|', ' ... ' </i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/nPort.js "Source") Creates a table specified by the 'sij|mag|dB|ang', ' ... ' Argument
 
-For example, say that r1 is the nPort for 75 ohm resistor in series, the magnitude of s11 is r1.out('s11mag')
+```html
+//if r1 is the nPort for 75 ohm resistor in series, the magnitude of s11 is
+r1.out('s11mag')
+```
 
 ### Open-Short-Load
 
@@ -128,13 +129,25 @@ nP.<b>Load</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/
 
 These are 2 ports containing resistors, capacitors, inductors, and transformers.
 
-nP.<b>seR</b>(<i> R = 75 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/seR.js "Source") Creates and returns a new nPort Object. If no argument, the default value is 75 Ohms.
+nP.<b>seR</b>(<i> R = 75 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/seR.js "Source") Series resistor. Creates and returns a new nPort Object. If no argument, the default value is 75 Ohms.
 
-nP.<b>paR</b>(<i> R = 75 </i>) [<>](hhttps://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/paR.js "Source") Creates and returns a new nPort Object. If no argument, the default value is 75 Ohms.
+nP.<b>paR</b>(<i> R = 75 </i>) [<>](hhttps://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/paR.js "Source") Parallel resistor. Creates and returns a new nPort Object. If no argument, the default value is 75 Ohms.
 
-nP.<b>seL</b>(<i> L = 5e-9 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/seL.js "Source") Creates and returns a new nPort Object. If no argument, the default value is 5e-9 Henries.
+nP.<b>seL</b>(<i> L = 5e-9 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/seL.js "Source") Series Inductor. Creates and returns a new nPort Object. If no argument, the default value is 5e-9 Henries.
 
-nP.<b>paC</b>(<i> C = 1e-12 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/paC.js "Source") Creates and returns a new nPort Object. If no argument, the default value is 1e-12 Farads.
+nP.<b>paL</b>(<i> L = 5e-9 </i>) [<>](https://github.com/JerrhhyWiltz/nP/blob/master/src/np-nport/src/rlc/seL.js "Source") Parallel Inductor. Creates and returns a new nPort Object. If no argument, the default value is 5e-9 Henries.
+
+nP.<b>seC</b>(<i> C = 1e-12 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/seC.js "Source") Series Capacitor. Creates and returns a new nPort Object. If no argument, the default value is 1e-12 Farads.
+
+nP.<b>paC</b>(<i> C = 1e-12 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/paC.js "Source") Parallel capacitor. Creates and returns a new nPort Object. If no argument, the default value is 1e-12 Farads.
+
+nP.<b>seSeRL</b>(<i> R = 75, L = 5e-9 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/seR.js "Source") A series, series resistor-capacitor. Creates and returns a new nPort Object. If no arguments, the default values are 75 Ohms and 5e-9 Henries.
+
+nP.<b>paSeRL</b>(<i> R = 75, L = 5e-9 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/seR.js "Source") A parallel, series resistor-capacitor. Creates and returns a new nPort Object. If no arguments, the default values are 75 Ohms and 5e-9 Henries.
+
+nP.<b>seSeRC</b>(<i> R = 75, C = 1e-12 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/seR.js "Source") A series, series resistor-capacitor. Creates and returns a new nPort Object. If no arguments, the default values are 75 Ohms and 1e-12 Farads.
+
+nP.<b>paSeRC</b>(<i> R = 75, C = 1e-12 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/seR.js "Source") A parallel, series resistor-capacitor. Creates and returns a new nPort Object. If no arguments, the default values are 75 Ohms and 1e-12 Farads.
 
 nP.<b>lpfGen</b>(<i> filt = [50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50] </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/lpfGen.js "Source") Creates and returns a new nPort Object. The argument is an array of scaled low pass filter parameters generated by an nPort function such as chebyLPLCs. If no argument, the default value is [50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50].
 
@@ -165,7 +178,7 @@ var powerDivider = pwr.out('s11dB','s21dB','s23dB');
 
 nP.<b>seriesTee</b>(<i> </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/connections/seriesTee.js "Source") Creates a new nPort Object and returns the s parameters of a 3-Port series Tee connector. No argument required. Ports 1 and 2 are input and outputs. Port 3 is the series port.
 
-## np-lowpass-prototype
+## nP-lowpass-prototype
 
 This section has chebychev low pass filter synthesis functions
 
@@ -173,7 +186,7 @@ nP.<b>chebyLPNsec</b>(<i> passFreq = .2, rejFreq = 1.5, ripple = 0.1, rejection 
 
 nP.<b>chebyLPgk</b>(<i> n = 3, ripple = 0.1 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-lowpass-prototype/src/chebyLPgk.js "Source") A function that computes and returns an array of the gk values in a Chebychev Low Pass filter prototype given the number of sections and ripple. The default values are shown in the function argument.
 
-nP.<b>chebyLPLCs</b>(<i> cheby = [1, 1.0315851425078764, 1.1474003299537219, 1.0315851425078761, 1] </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-lowpass-prototype/src/chebyLPgk.js "Source") A function that computes and returns an array of the C-L-C ... values in a Chebychev Low Pass filter prototype given an array of the gk values. The default values are shown in the function argument.
+nP.<b>chebyLPLCs</b>(<i> cheby = [1, 1.0315851425078764, 1.1474003299537219, 1.0315851425078761, 1], maxPassFrequency = 0.2e9, zo = 50) </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-lowpass-prototype/src/chebyLPLCs.js "Source") A function that computes and returns an array of the C-L-C ... values in a Chebychev Low Pass filter prototype given an array of the gk values. The default values are shown in the function argument.
 
 ## nP-math
 
