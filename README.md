@@ -351,17 +351,83 @@ m.<b>invertCplx</b>(<i> </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/
 
 ## nP-chart
 
-These are chart and plotting routines based on d3. Note, <b>downloading d3 is not required</b>. The d3 code to form the charts is inside nPort code.
+These are charting routines based on d3. <b>Note, downloading d3 is not required</b>. d3 is inside nPort.
 
-nP.<b>linePlot</b>(<i> lineChartInputObject = {} </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-chart/src/lineChart.js) A function that draws a rectangular chart or plot in a specified svg element via the element ID. The default element ID is "canvas". <b>You must specify an ID, width, and height attributes</b>, such as:
+nP.<b>lineChart</b>(<i> lineChartInputObject = {} </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-chart/src/lineChart.js) A function that draws a rectangular chart or plot in a specified svg element via the element ID. The default element ID is "canvas". <b>You must specify an ID, width, and height attributes</b>, such as:
 
 ```html
 <svg id="canvas" width="500" height="300"></svg>
 ````
 
-If no argument linePlot, wlll display a default plot inside the svg. This is good for setting up your page, but you no data. LinelinePlot takes an object argument named "lineChartInputObject".
+If no argument linePlot, wlll display a default plot inside the svg. This is good for setting up your page, but you no data. Here is an HTML example for the default lineChart().
 
-Here is the format of the LineChart Object, it has key-value pairs in the following order:
+```html
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>Default lineChart()</title>
+	</head>
+	<body>
+		<svg id="canvas" width="500" height="300"></svg>jj
+		<script src="./nP.js"></script>
+		<script>
+
+nP.lineChart();  // Default 
+
+		</script>
+	</body>
+</html>
+````
+
+LinelinePlot takes an object argument named "lineChartInputObject" and is used in the example below.
+
+```HTML
+<!--DOCTYPE html-->
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>lineChart() Applied</title>
+	</head>
+	<body>
+			<svg id="canvas1" width="500" height="300"></svg>
+		<script src="../dist/nP.js"></script>
+
+		<script>
+// Set up the frequency range
+var g = nP.global;	
+g.fList = g.fGen(50e6, 10e9, 50);
+
+// A 9 section low pass filter
+var c1 = nP.paC(3.1716836788279897e-12);
+var l1 = nP.seL(9.566513256241392e-9);
+var c2 = nP.paC(5.6621309381827996e-12);
+var l2 = nP.seL(1.0721164178932893e-8);
+var c3 = nP.paC(5.8499784682761105e-12);
+var l3 = nP.seL(1.0721164178932898e-8);
+var c4 = nP.paC(5.662130938182797e-12);
+var l4 = nP.seL(9.566513256241397e-9);
+var c5 = nP.paC(3.171683678827988e-12);
+var filter = c1.cas(l1).cas(c2).cas(l2).cas(c3).cas(l3).cas(c4).cas(l4).cas(c5).out('s11dB', 's21dB');
+
+// Create the lineChartInputObject
+var lineChartInputObject = {
+	canvasID: '#canvas1',
+	inputTable: filter
+};
+
+// Pass the lineChartInputObject to lineChart
+nP.lineChart(lineChartInputObject);
+
+
+		</script>
+	</body>
+</html
+```
+
+Here is full the format of the LineChart Object, it has key-value pairs in the following order:
 
 ```html
 lineChartInputObject = {
