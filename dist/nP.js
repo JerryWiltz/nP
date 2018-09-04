@@ -362,6 +362,10 @@
 		},
 	};
 
+	function helloNport() {
+		return "Hello, nPort!";
+	}
+
 	function ascending(a, b) {
 	  return a < b ? -1 : a > b ? 1 : a >= b ? 0 : NaN;
 	}
@@ -2241,7 +2245,7 @@
 	      c = new Array(nb),
 	      i;
 
-	  for (i = 0; i < na; ++i) x[i] = value(a[i], b[i]);
+	  for (i = 0; i < na; ++i) x[i] = interpolateValue(a[i], b[i]);
 	  for (; i < nb; ++i) c[i] = b[i];
 
 	  return function(t) {
@@ -2273,7 +2277,7 @@
 
 	  for (k in b) {
 	    if (k in a) {
-	      i[k] = value(a[k], b[k]);
+	      i[k] = interpolateValue(a[k], b[k]);
 	    } else {
 	      c[k] = b[k];
 	    }
@@ -2348,7 +2352,7 @@
 	        });
 	}
 
-	function value(a, b) {
+	function interpolateValue(a, b) {
 	  var t = typeof b, c;
 	  return b == null || t === "boolean" ? constant$3(b)
 	      : (t === "number" ? interpolateNumber
@@ -2932,12 +2936,12 @@
 	  };
 	}
 
-	function attrFunction$1(name, interpolate$$1, value$$1) {
+	function attrFunction$1(name, interpolate$$1, value) {
 	  var value00,
 	      value10,
 	      interpolate0;
 	  return function() {
-	    var value0, value1 = value$$1(this);
+	    var value0, value1 = value(this);
 	    if (value1 == null) return void this.removeAttribute(name);
 	    value0 = this.getAttribute(name);
 	    return value0 === value1 ? null
@@ -2946,12 +2950,12 @@
 	  };
 	}
 
-	function attrFunctionNS$1(fullname, interpolate$$1, value$$1) {
+	function attrFunctionNS$1(fullname, interpolate$$1, value) {
 	  var value00,
 	      value10,
 	      interpolate0;
 	  return function() {
-	    var value0, value1 = value$$1(this);
+	    var value0, value1 = value(this);
 	    if (value1 == null) return void this.removeAttributeNS(fullname.space, fullname.local);
 	    value0 = this.getAttributeNS(fullname.space, fullname.local);
 	    return value0 === value1 ? null
@@ -2960,12 +2964,12 @@
 	  };
 	}
 
-	function transition_attr(name, value$$1) {
+	function transition_attr(name, value) {
 	  var fullname = namespace(name), i = fullname === "transform" ? interpolateTransformSvg : interpolate;
-	  return this.attrTween(name, typeof value$$1 === "function"
-	      ? (fullname.local ? attrFunctionNS$1 : attrFunction$1)(fullname, i, tweenValue(this, "attr." + name, value$$1))
-	      : value$$1 == null ? (fullname.local ? attrRemoveNS$1 : attrRemove$1)(fullname)
-	      : (fullname.local ? attrConstantNS$1 : attrConstant$1)(fullname, i, value$$1 + ""));
+	  return this.attrTween(name, typeof value === "function"
+	      ? (fullname.local ? attrFunctionNS$1 : attrFunction$1)(fullname, i, tweenValue(this, "attr." + name, value))
+	      : value == null ? (fullname.local ? attrRemoveNS$1 : attrRemove$1)(fullname)
+	      : (fullname.local ? attrConstantNS$1 : attrConstant$1)(fullname, i, value + ""));
 	}
 
 	function attrTweenNS(fullname, value) {
@@ -3211,13 +3215,13 @@
 	  };
 	}
 
-	function styleFunction$1(name, interpolate$$1, value$$1) {
+	function styleFunction$1(name, interpolate$$1, value) {
 	  var value00,
 	      value10,
 	      interpolate0;
 	  return function() {
 	    var value0 = styleValue(this, name),
-	        value1 = value$$1(this);
+	        value1 = value(this);
 	    if (value1 == null) value1 = (this.style.removeProperty(name), styleValue(this, name));
 	    return value0 === value1 ? null
 	        : value0 === value00 && value1 === value10 ? interpolate0
@@ -3225,14 +3229,14 @@
 	  };
 	}
 
-	function transition_style(name, value$$1, priority) {
+	function transition_style(name, value, priority) {
 	  var i = (name += "") === "transform" ? interpolateTransformCss : interpolate;
-	  return value$$1 == null ? this
+	  return value == null ? this
 	          .styleTween(name, styleRemove$1(name, i))
 	          .on("end.style." + name, styleRemoveEnd(name))
-	      : this.styleTween(name, typeof value$$1 === "function"
-	          ? styleFunction$1(name, i, tweenValue(this, "style." + name, value$$1))
-	          : styleConstant$1(name, i, value$$1 + ""), priority);
+	      : this.styleTween(name, typeof value === "function"
+	          ? styleFunction$1(name, i, tweenValue(this, "style." + name, value))
+	          : styleConstant$1(name, i, value + ""), priority);
 	}
 
 	function styleTween(name, value, priority) {
@@ -4637,7 +4641,7 @@
 	function continuous(deinterpolate, reinterpolate) {
 	  var domain = unit,
 	      range = unit,
-	      interpolate$$1 = value,
+	      interpolate$$1 = interpolateValue,
 	      clamp = false,
 	      piecewise$$1,
 	      output,
@@ -6572,6 +6576,40 @@
 		return seL;
 	}
 
+	function paL(L = 5e-9) { // parallel capacitor nPort object   
+		var paL = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount]);
+			Y[freqCount] = Z[freqCount].inv();
+			s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
+			s21 = (two.mul(Yo)).div(Y[freqCount].add(Yo.add(Yo)));  
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		paL.setspars(sparsArray);
+		paL.setglobal(global);				
+		return paL;
+	}
+
+	function seC(C = 1e-12) { // series inductor nPort object
+		var seC = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = complex(0, -1/(2*Math.PI*C*frequencyList[freqCount]));	
+			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
+			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}	seC.setspars(sparsArray);
+		seC.setglobal(global);	
+		return seC;
+	}
+
 	function paC(C = 1e-12) { // parallel capacitor nPort object   
 		var paC = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
@@ -6588,6 +6626,282 @@
 		paC.setspars(sparsArray);
 		paC.setglobal(global);				
 		return paC;
+	}
+
+	function seSeRL(R = 75, L = 5e-9) { // series inductor nPort object
+		var seSeRL = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = complex(R, 2*Math.PI*L*frequencyList[freqCount]);	
+			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
+			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}	seSeRL.setspars(sparsArray);
+		seSeRL.setglobal(global);	
+		return seSeRL;
+	}
+
+	function paSeRL(R = 75, L = 5e-9) { // parallel capacitor nPort object   
+		var paSeRL = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = complex(R, 2*Math.PI*L*frequencyList[freqCount]);
+			Y[freqCount] = Z[freqCount].inv();
+			s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
+			s21 = (two.mul(Yo)).div(Y[freqCount].add(Yo.add(Yo)));  
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		paSeRL.setspars(sparsArray);
+		paSeRL.setglobal(global);				
+		return paSeRL;
+	}
+
+	function seSeRC(R = 75, C = 1e-12) { // series inductor nPort object
+		var seSeRC = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = complex(R, -1/(2*Math.PI*C*frequencyList[freqCount]));	
+			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
+			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}	seSeRC.setspars(sparsArray);
+		seSeRC.setglobal(global);	
+		return seSeRC;
+	}
+
+	function paSeRC(R = 75, C = 1e-12) { // parallel capaSeRCitor nPort object   
+		var paSeRC = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = complex(R, -1/(2*Math.PI*C*frequencyList[freqCount]));
+			Y[freqCount] = Z[freqCount].inv();
+			s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
+			s21 = (two.mul(Yo)).div(Y[freqCount].add(Yo.add(Yo)));  
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		paSeRC.setspars(sparsArray);
+		paSeRC.setglobal(global);				
+		return paSeRC;
+	}
+
+	function seSeLC(L = 5e-9, C = 1e-12) { // series inductor nPort object
+		var seSeLC = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount] -1/(2*Math.PI*C*frequencyList[freqCount]));	
+			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
+			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}	seSeLC.setspars(sparsArray);
+		seSeLC.setglobal(global);	
+		return seSeLC;
+	}
+
+	function paSeLC(L = 5e-9, C = 1e-12) { // parallel capacitor nPort object   
+		var paSeLC = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount] -1/(2*Math.PI*C*frequencyList[freqCount]));
+			Y[freqCount] = Z[freqCount].inv();
+			s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
+			s21 = (two.mul(Yo)).div(Y[freqCount].add(Yo.add(Yo)));  
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		paSeLC.setspars(sparsArray);
+		paSeLC.setglobal(global);				
+		return paSeLC;
+	}
+
+	function seSeRLC(R = 75, L = 5e-9, C = 1e-12) { // series inductor nPort object
+		var seSeRLC = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = complex(R, 2*Math.PI*L*frequencyList[freqCount] -1/(2*Math.PI*C*frequencyList[freqCount]));	
+			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
+			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}	seSeRLC.setspars(sparsArray);
+		seSeRLC.setglobal(global);	
+		return seSeRLC;
+	}
+
+	function paSeRLC(R = 75, L = 5e-9, C = 1e-12) { // parallel capacitor nPort object   
+		var paSeRLC = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = complex(R, 2*Math.PI*L*frequencyList[freqCount] -1/(2*Math.PI*C*frequencyList[freqCount]));
+			Y[freqCount] = Z[freqCount].inv();
+			s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
+			s21 = (two.mul(Yo)).div(Y[freqCount].add(Yo.add(Yo)));  
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		paSeRLC.setspars(sparsArray);
+		paSeRLC.setglobal(global);				
+		return paSeRLC;
+	}
+
+	function paPaRL(R = 75, L = 5e-9) { // parallel capacitor nPort object   
+		var paPaRL = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = (  (complex(R,0).inv()).add(complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv())  ).inv();
+			Y[freqCount] = Z[freqCount].inv();
+			s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
+			s21 = (two.mul(Yo)).div(Y[freqCount].add(Yo.add(Yo)));  
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		paPaRL.setspars(sparsArray);
+		paPaRL.setglobal(global);				
+		return paPaRL;
+	}
+
+	function sePaRL(R = 75, L = 5e-9) { // parallel capacitor nPort object   
+		var sePaRL = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = (  (complex(R,0).inv()).add(complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv())  ).inv();
+			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
+			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		sePaRL.setspars(sparsArray);
+		sePaRL.setglobal(global);				
+		return sePaRL;
+	}
+
+	function paPaRC(R = 75, C = 1e-12) { // parallel capacitor nPort object   
+		var paPaRC = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = (  (complex(R,0).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
+			Y[freqCount] = Z[freqCount].inv();
+			s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
+			s21 = (two.mul(Yo)).div(Y[freqCount].add(Yo.add(Yo)));  
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		paPaRC.setspars(sparsArray);
+		paPaRC.setglobal(global);				
+		return paPaRC;
+	}
+
+	function sePaRC(R = 75, C = 1e-12) { // parallel capacitor nPort object   
+		var sePaRC = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = (  (complex(R,0).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
+			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
+			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		sePaRC.setspars(sparsArray);
+		sePaRC.setglobal(global);				
+		return sePaRC;
+	}
+
+	function paPaLC(L = 5e-9, C = 1e-12) { // parallel capacitor nPort object   
+		var paPaLC = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = (  (complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
+			Y[freqCount] = Z[freqCount].inv();
+			s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
+			s21 = (two.mul(Yo)).div(Y[freqCount].add(Yo.add(Yo)));  
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		paPaLC.setspars(sparsArray);
+		paPaLC.setglobal(global);				
+		return paPaLC;
+	}
+
+	function sePaLC(L = 5e-9, C = 1e-12) { // parallel capacitor nPort object   
+		var sePaLC = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = (  (complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
+			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
+			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		sePaLC.setspars(sparsArray);
+		sePaLC.setglobal(global);				
+		return sePaLC;
+	}
+
+	function paPaRLC(R = 75, L = 5e-9, C = 1e-12) { // parallel capacitor nPort object   
+		var paPaRLC = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = ( (complex(R,0).inv()).add (complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
+			Y[freqCount] = Z[freqCount].inv();
+			s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
+			s21 = (two.mul(Yo)).div(Y[freqCount].add(Yo.add(Yo)));  
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		paPaRLC.setspars(sparsArray);
+		paPaRLC.setglobal(global);				
+		return paPaRLC;
+	}
+
+	function sePaRLC(R = 75, L = 5e-9, C = 1e-12) { // parallel capacitor nPort object   
+		var sePaRLC = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = ( (complex(R,0).inv()).add (complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
+			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
+			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		sePaRLC.setspars(sparsArray);
+		sePaRLC.setglobal(global);				
+		return sePaRLC;
 	}
 
 	function lpfGen( filt =[50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50]) { // returns a table of spars for a low Pass Filter
@@ -6822,11 +7136,30 @@
 	exports.chebyLPLCs = chebyLPLCs;
 	exports.chebyLPNsec = chebyLPNsec;
 	exports.global = global;
+	exports.helloNport = helloNport;
 	exports.lineChart = lineChart;
 	exports.seR = seR;
 	exports.paR = paR;
 	exports.seL = seL;
+	exports.paL = paL;
+	exports.seC = seC;
 	exports.paC = paC;
+	exports.seSeRL = seSeRL;
+	exports.paSeRL = paSeRL;
+	exports.seSeRC = seSeRC;
+	exports.paSeRC = paSeRC;
+	exports.seSeLC = seSeLC;
+	exports.paSeLC = paSeLC;
+	exports.seSeRLC = seSeRLC;
+	exports.paSeRLC = paSeRLC;
+	exports.paPaRL = paPaRL;
+	exports.sePaRL = sePaRL;
+	exports.paPaRC = paPaRC;
+	exports.sePaRC = sePaRC;
+	exports.paPaLC = paPaLC;
+	exports.sePaLC = sePaLC;
+	exports.paPaRLC = paPaRLC;
+	exports.sePaRLC = sePaRLC;
 	exports.lpfGen = lpfGen;
 	exports.Tee = Tee;
 	exports.seriesTee = seriesTee;
