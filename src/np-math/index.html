@@ -10,52 +10,35 @@
 <script src="nP.js"></script>
 <script>
 
-var a1 = [
-	[3,5,2,8],
-	[0,8,2,-7],
-	[6,2,8,26]
-];
-var a = [
-	[3,5,2],
-	[0,8,2],
-	[6,2,8]
-];
+/*
+0.1944	0.0556	-0.1944
+-0.9444	0.4444	-0.0556
+0.8333	-0.3333	0.1667
+*/
 
-var b = nP.matrix(a).invert().mul(nP.matrix([[8],[-7],[26]]));
-//var m = b.invert();
-//var n = m.mul( bb );
-console.log('invert');
-console.log(b);
+var a = nP.matrix(
+		[
+		[2,2,3],
+		[4,7,7],
+		[-2,4,5]
+		]
+		);
 
-var c1 = [
-	[nP.complex(3,0), nP.complex(5,0), nP.complex(2,0), nP.complex(8,0)],
-	[nP.complex(0,0), nP.complex(8,0), nP.complex(2,0), nP.complex(-7,0)],
-	[nP.complex(6,0), nP.complex(2,0), nP.complex(8,0), nP.complex(26,0)]
-];
+var c = nP.matrix(
+		[
+		[nP.complex(2,0), nP.complex(2,0), nP.complex(3,0)],
+		[nP.complex(4,0), nP.complex(7,0), nP.complex(7,0)],
+		[nP.complex(-2,0), nP.complex(4,0), nP.complex(5,0)]
+		]
+		);
 
-var c = [
-	[nP.complex(3,0), nP.complex(5,0), nP.complex(2,0)],
-	[nP.complex(0,0), nP.complex(8,0), nP.complex(2,0)],
-	[nP.complex(6,0), nP.complex(2,0), nP.complex(8,0)]
-];
-
-var d = nP.matrix(c).invertCplx().mulCplx(nP.matrix([[nP.complex(8,0)],[nP.complex(-7,0)],[nP.complex(26,0)]]));
-console.log('invertCplx');
-console.log(d);
-
-var e = nP.matrix([[1]]);
-var f = e.add(e).add(e).add(e);
-console.log('add');
-console.log(f);
-
-console.log('This is the sinh(z) and cosh(z) section')
-var tlin = nP.complex(3,-5123);
-var c = tlin.coshCplx();
-var s = tlin.sinhCplx();
-var one = c.mul(c).sub(s.mul(s));
-console.log(one.mag());
-
-
+var b = a.invert();
+console.log(a.m);
+console.log(b.m);
+console.log(nP.pivotSort(a.m,1));
+		
+//console.log(c.invertCplx());
+//console.log(a.m);
 </script>
 	</body>
 </html>

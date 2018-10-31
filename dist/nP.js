@@ -59,6 +59,19 @@
 				B[row][col] = copied[row][col];
 			}	}	return B;	
 	}
+	//swapRowsL for maximizing the lower triangle pivot numbers
+	function pivotSort(matrix, pivotNum) {
+		var rowNum = matrix.length, rowCol = matrix[0].length, row = 0;
+		for(row = pivotNum + 1; row < rowNum; row++) {
+			if(newMax < matrix[row][pivotNum]) {
+				newMax = matrix[row][pivotNum];
+				swapRow = row;
+			}	}	tempRow = matrix[pivotNum];
+		matrix[pivotNum] = matrix[swapRow];
+		matrix[swapRow] = tempRow;
+	}
+
+
 	Matrix.prototype = {
 		set : function (mat) {this.m = mat; return this;}, //mat ? this.m = mat : this.m = [0]; return this},
 		dimension : function (tableRow, tableCol, initial) {
@@ -151,7 +164,7 @@
 
 
 		solveGaussFB : function solveGaussFB() { //this works
-			var A = this.m,
+			var A = dup(this.m),
 				a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
 				row = 0, col = 0, accum = 0;
 
@@ -201,7 +214,8 @@
 
 
 		invert : function invert() { //this works
-			var A = this.m, a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
+			var A = dup(this.m),
+				a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
 				row = 0, col = 0;
 			//append a 0 Matrix to Matrix, A
 			for(row = 0; row < numRows; row++) {
@@ -237,43 +251,41 @@
 		},
 
 		invertCplx : function invertCplx() { //this works
-			var A = this.m,
+			var A = dup(this.m),
 				a = complex(0, 0), numRows = A.length, numCols = A[0].length, constRow = 0,
 				row = 0, col = 0;
 			//append a 0 Matrix to Matrix, A
 			for(row = 0; row < numRows; row++) {
 				for(col = numRows; col < 2*numRows; col++) {
 					A[row][col] = complex(0, 0);
-				}		}		//update numCols since Matrix, A is now wider;
+				}		}
+			//update numCols since Matrix, A is now wider;
 			numCols = A[0].length;
+
 			//add diagonal 1's to appened array, A
 			for(row = 0; row < numRows; row++) {
 				A[row][row + numRows] = complex(1, 0);
-			}		// Real variable forward lower Elimination routine  
+			}
+			// Real variable forward lower Elimination routine  
 			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
-				//matrix.swapRowsLCplx(A, constRow);
+
 				for(row = constRow + 1; row < numRows; row++) { // this row moves down
 					a = A[row][constRow].div(A[constRow][constRow]).neg();
-					//console.log(a);
 					for(col = 0; col < numCols; col++) { // this sweeps across the columns
 						A[row][col] = A[row][col].add(a.mul(A[constRow][col]));
-					}			}		}		// Real variable forward unity diagonal routine
-
+					}			}		}
+			// Real variable forward unity diagonal routine
 			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
-				a = A[constRow][constRow].inv();
+				a = A[constRow][constRow].inv(); 
 				for(row = constRow; row < numRows; row++) { // this row moves down
 					for(col = 0; col < numCols; col++) { // this sweeps across the columns
 						A[row][col] = a.mul(A[row][col]);
 					}			}		}
 			// Real variable forward upper Elimination routine
 			for(constRow = numRows - 1; constRow > 0 ; constRow--) { // 2 , 1, 0 this row stays the same
-				//countBconstRow++;
-				//matrix.swapRowsUCplx(A, constRow);
 				for(row = 0; row < constRow; row++) { // 0, 1  this row moves down
-
-					a = A[row][constRow].div(A[constRow][constRow]).neg();				
+					a = A[row][constRow].div(A[constRow][constRow]).neg();
 					for(col = 0; col < numCols; col++) { // this sweeps across the columns
-						//countBCol++;
 						A[row][col] = A[row][col].add(a.mul(A[constRow][col]));						
 					}			}		}
 			for(row = 0; row < numRows; row++) { // get to the right column of A				
@@ -347,7 +359,7 @@
 	}
 
 	var global = {
-		fList:	[2e9, 4e9, 6e9, 8e9],
+		fList:	[2e9],//[2e9, 4e9, 6e9, 8e9],
 		Ro:	50,
 		Temp:	293,
 		fGen: function fGen (fStart, fStop, points) {
@@ -362,9 +374,7 @@
 		},
 	};
 
-	function helloNport() {
-		return "Hello, nPort!";
-	}
+	//export {helloNport} from './src/helloNport';
 
 	function ascending(a, b) {
 	  return a < b ? -1 : a > b ? 1 : a >= b ? 0 : NaN;
@@ -2245,7 +2255,7 @@
 	      c = new Array(nb),
 	      i;
 
-	  for (i = 0; i < na; ++i) x[i] = interpolateValue(a[i], b[i]);
+	  for (i = 0; i < na; ++i) x[i] = value(a[i], b[i]);
 	  for (; i < nb; ++i) c[i] = b[i];
 
 	  return function(t) {
@@ -2277,7 +2287,7 @@
 
 	  for (k in b) {
 	    if (k in a) {
-	      i[k] = interpolateValue(a[k], b[k]);
+	      i[k] = value(a[k], b[k]);
 	    } else {
 	      c[k] = b[k];
 	    }
@@ -2352,7 +2362,7 @@
 	        });
 	}
 
-	function interpolateValue(a, b) {
+	function value(a, b) {
 	  var t = typeof b, c;
 	  return b == null || t === "boolean" ? constant$3(b)
 	      : (t === "number" ? interpolateNumber
@@ -2936,12 +2946,12 @@
 	  };
 	}
 
-	function attrFunction$1(name, interpolate$$1, value) {
+	function attrFunction$1(name, interpolate$$1, value$$1) {
 	  var value00,
 	      value10,
 	      interpolate0;
 	  return function() {
-	    var value0, value1 = value(this);
+	    var value0, value1 = value$$1(this);
 	    if (value1 == null) return void this.removeAttribute(name);
 	    value0 = this.getAttribute(name);
 	    return value0 === value1 ? null
@@ -2950,12 +2960,12 @@
 	  };
 	}
 
-	function attrFunctionNS$1(fullname, interpolate$$1, value) {
+	function attrFunctionNS$1(fullname, interpolate$$1, value$$1) {
 	  var value00,
 	      value10,
 	      interpolate0;
 	  return function() {
-	    var value0, value1 = value(this);
+	    var value0, value1 = value$$1(this);
 	    if (value1 == null) return void this.removeAttributeNS(fullname.space, fullname.local);
 	    value0 = this.getAttributeNS(fullname.space, fullname.local);
 	    return value0 === value1 ? null
@@ -2964,12 +2974,12 @@
 	  };
 	}
 
-	function transition_attr(name, value) {
+	function transition_attr(name, value$$1) {
 	  var fullname = namespace(name), i = fullname === "transform" ? interpolateTransformSvg : interpolate;
-	  return this.attrTween(name, typeof value === "function"
-	      ? (fullname.local ? attrFunctionNS$1 : attrFunction$1)(fullname, i, tweenValue(this, "attr." + name, value))
-	      : value == null ? (fullname.local ? attrRemoveNS$1 : attrRemove$1)(fullname)
-	      : (fullname.local ? attrConstantNS$1 : attrConstant$1)(fullname, i, value + ""));
+	  return this.attrTween(name, typeof value$$1 === "function"
+	      ? (fullname.local ? attrFunctionNS$1 : attrFunction$1)(fullname, i, tweenValue(this, "attr." + name, value$$1))
+	      : value$$1 == null ? (fullname.local ? attrRemoveNS$1 : attrRemove$1)(fullname)
+	      : (fullname.local ? attrConstantNS$1 : attrConstant$1)(fullname, i, value$$1 + ""));
 	}
 
 	function attrTweenNS(fullname, value) {
@@ -3215,13 +3225,13 @@
 	  };
 	}
 
-	function styleFunction$1(name, interpolate$$1, value) {
+	function styleFunction$1(name, interpolate$$1, value$$1) {
 	  var value00,
 	      value10,
 	      interpolate0;
 	  return function() {
 	    var value0 = styleValue(this, name),
-	        value1 = value(this);
+	        value1 = value$$1(this);
 	    if (value1 == null) value1 = (this.style.removeProperty(name), styleValue(this, name));
 	    return value0 === value1 ? null
 	        : value0 === value00 && value1 === value10 ? interpolate0
@@ -3229,14 +3239,14 @@
 	  };
 	}
 
-	function transition_style(name, value, priority) {
+	function transition_style(name, value$$1, priority) {
 	  var i = (name += "") === "transform" ? interpolateTransformCss : interpolate;
-	  return value == null ? this
+	  return value$$1 == null ? this
 	          .styleTween(name, styleRemove$1(name, i))
 	          .on("end.style." + name, styleRemoveEnd(name))
-	      : this.styleTween(name, typeof value === "function"
-	          ? styleFunction$1(name, i, tweenValue(this, "style." + name, value))
-	          : styleConstant$1(name, i, value + ""), priority);
+	      : this.styleTween(name, typeof value$$1 === "function"
+	          ? styleFunction$1(name, i, tweenValue(this, "style." + name, value$$1))
+	          : styleConstant$1(name, i, value$$1 + ""), priority);
 	}
 
 	function styleTween(name, value, priority) {
@@ -4598,15 +4608,15 @@
 	  };
 	}
 
-	function bimap(domain, range, deinterpolate, reinterpolate) {
-	  var d0 = domain[0], d1 = domain[1], r0 = range[0], r1 = range[1];
+	function bimap(domain, range$$1, deinterpolate, reinterpolate) {
+	  var d0 = domain[0], d1 = domain[1], r0 = range$$1[0], r1 = range$$1[1];
 	  if (d1 < d0) d0 = deinterpolate(d1, d0), r0 = reinterpolate(r1, r0);
 	  else d0 = deinterpolate(d0, d1), r0 = reinterpolate(r0, r1);
 	  return function(x) { return r0(d0(x)); };
 	}
 
-	function polymap(domain, range, deinterpolate, reinterpolate) {
-	  var j = Math.min(domain.length, range.length) - 1,
+	function polymap(domain, range$$1, deinterpolate, reinterpolate) {
+	  var j = Math.min(domain.length, range$$1.length) - 1,
 	      d = new Array(j),
 	      r = new Array(j),
 	      i = -1;
@@ -4614,12 +4624,12 @@
 	  // Reverse descending domains.
 	  if (domain[j] < domain[0]) {
 	    domain = domain.slice().reverse();
-	    range = range.slice().reverse();
+	    range$$1 = range$$1.slice().reverse();
 	  }
 
 	  while (++i < j) {
 	    d[i] = deinterpolate(domain[i], domain[i + 1]);
-	    r[i] = reinterpolate(range[i], range[i + 1]);
+	    r[i] = reinterpolate(range$$1[i], range$$1[i + 1]);
 	  }
 
 	  return function(x) {
@@ -4640,25 +4650,25 @@
 	// reinterpolate(a, b)(t) takes a parameter t in [0,1] and returns the corresponding domain value x in [a,b].
 	function continuous(deinterpolate, reinterpolate) {
 	  var domain = unit,
-	      range = unit,
-	      interpolate$$1 = interpolateValue,
+	      range$$1 = unit,
+	      interpolate$$1 = value,
 	      clamp = false,
 	      piecewise$$1,
 	      output,
 	      input;
 
 	  function rescale() {
-	    piecewise$$1 = Math.min(domain.length, range.length) > 2 ? polymap : bimap;
+	    piecewise$$1 = Math.min(domain.length, range$$1.length) > 2 ? polymap : bimap;
 	    output = input = null;
 	    return scale;
 	  }
 
 	  function scale(x) {
-	    return (output || (output = piecewise$$1(domain, range, clamp ? deinterpolateClamp(deinterpolate) : deinterpolate, interpolate$$1)))(+x);
+	    return (output || (output = piecewise$$1(domain, range$$1, clamp ? deinterpolateClamp(deinterpolate) : deinterpolate, interpolate$$1)))(+x);
 	  }
 
 	  scale.invert = function(y) {
-	    return (input || (input = piecewise$$1(range, domain, deinterpolateLinear, clamp ? reinterpolateClamp(reinterpolate) : reinterpolate)))(+y);
+	    return (input || (input = piecewise$$1(range$$1, domain, deinterpolateLinear, clamp ? reinterpolateClamp(reinterpolate) : reinterpolate)))(+y);
 	  };
 
 	  scale.domain = function(_) {
@@ -4666,11 +4676,11 @@
 	  };
 
 	  scale.range = function(_) {
-	    return arguments.length ? (range = slice$5.call(_), rescale()) : range.slice();
+	    return arguments.length ? (range$$1 = slice$5.call(_), rescale()) : range$$1.slice();
 	  };
 
 	  scale.rangeRound = function(_) {
-	    return range = slice$5.call(_), interpolate$$1 = interpolateRound, rescale();
+	    return range$$1 = slice$5.call(_), interpolate$$1 = interpolateRound, rescale();
 	  };
 
 	  scale.clamp = function(_) {
@@ -6514,8 +6524,9 @@
 					var row = parseInt(sparsArgument.match(/\d/g)[0]);
 					var col = parseInt(sparsArgument.match(/\d/g)[1]);
 					var sparIndex = (row - 1) * n + col;
-					var sparsTo = sparsArgument.match(/dB|mag|ang/).toString();
-					if(sparsTo === 'mag') {inner.push(element[sparIndex].mag());}				if(sparsTo === 'dB')  {inner.push(element[sparIndex].mag20dB());}				if(sparsTo === 'ang') {inner.push(element[sparIndex].ang());}
+					var sparsTo = sparsArgument.match(/dB|mag|ang|Re|Im/).toString();
+					if(sparsTo === 'mag') {inner.push(element[sparIndex].mag());}				if(sparsTo === 'dB')  {inner.push(element[sparIndex].mag20dB());}				if(sparsTo === 'ang') {inner.push(element[sparIndex].ang());}				if(sparsTo === 'Re')  {inner.push(element[sparIndex].getR());}
+					if(sparsTo === 'Im')  {inner.push(element[sparIndex].getI());}
 				});  // end of forEach
 				return inner;
 			}); // end of map
@@ -6627,6 +6638,50 @@
 		paC.setglobal(global);				
 		return paC;
 	}
+
+	function trf(N = 0.5) { // parallel resistor nPort object
+		var trf = new nPort;
+		var e = 1e-7;
+		var frequencyList = global.fList;
+		var freqCount = 0, s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			s11 = complex((N**2-1)/(N**2+1),0+e);
+			s12 = complex(2*N/(N**2+1),0+e);  
+			s21 = complex(2*N/(N**2+1),0+e);  
+			s22 = complex((1-N**2)/(N**2+1),0+e);
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		trf.setspars(sparsArray);
+		trf.setglobal(global);	
+		return trf;
+	}
+
+	function trf4Port(N = 0.5) { // parallel resistor nPort object
+		var trf4Port = new nPort;
+		var frequencyList = global.fList;
+		var freqCount = 0, sparsArray = [];
+		var s11, s12, s13, s14,
+			s21, s22, s23, s24,
+			s31, s32, s33, s34,
+			s41, s42, s43, s44;
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			s11 = s24 = s33 = s42 = complex((N**2)/(N**2+1),0);
+			s14 = s23 = s32 = s41 = complex(-N/(N**2+1),0);  
+			s12 = s21 = s34 = s43 = complex(N/(N**2+1),0);  
+			s13 = s22 = s31 = s44 = complex((1)/(N**2+1),0);
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44];
+		}
+		trf4Port.setspars(sparsArray);
+		trf4Port.setglobal(global);	
+		return trf4Port;
+	}
+	/*                Note: N2 = N**2 N = 0.5, N2 = 0.25
+
+	S11 = S24 = S33 = S42 = N2 / (1 + N2)  //  0.25/1.25 = 0.2
+	S14 = S23 = S32 = S41 = -N / (1 + N2)  //  -0.5/1.25 = -0.4
+	S12 = S21 = S34 = S43 =  N / (1 + N2)  //   0.5/1.25 = 0.4
+	S13 = S22 = S31 = S44 =  1 / (1 + N2)  //     1/1.25 = 0.8
+	*/
 
 	function seSeRL(R = 75, L = 5e-9) { // series inductor nPort object
 		var seSeRL = new nPort;
@@ -7131,12 +7186,12 @@
 	exports.complex = complex;
 	exports.dim = dim;
 	exports.dup = dup;
+	exports.pivotSort = pivotSort;
 	exports.matrix = matrix;
 	exports.chebyLPgk = chebyLPgk;
 	exports.chebyLPLCs = chebyLPLCs;
 	exports.chebyLPNsec = chebyLPNsec;
 	exports.global = global;
-	exports.helloNport = helloNport;
 	exports.lineChart = lineChart;
 	exports.seR = seR;
 	exports.paR = paR;
@@ -7144,6 +7199,8 @@
 	exports.paL = paL;
 	exports.seC = seC;
 	exports.paC = paC;
+	exports.trf = trf;
+	exports.trf4Port = trf4Port;
 	exports.seSeRL = seSeRL;
 	exports.paSeRL = paSeRL;
 	exports.seSeRC = seSeRC;

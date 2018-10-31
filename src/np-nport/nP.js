@@ -76,8 +76,9 @@
 					var row = parseInt(sparsArgument.match(/\d/g)[0]);
 					var col = parseInt(sparsArgument.match(/\d/g)[1]);
 					var sparIndex = (row - 1) * n + col;
-					var sparsTo = sparsArgument.match(/dB|mag|ang/).toString();
-					if(sparsTo === 'mag') {inner.push(element[sparIndex].mag());}				if(sparsTo === 'dB')  {inner.push(element[sparIndex].mag20dB());}				if(sparsTo === 'ang') {inner.push(element[sparIndex].ang());}
+					var sparsTo = sparsArgument.match(/dB|mag|ang|Re|Im/).toString();
+					if(sparsTo === 'mag') {inner.push(element[sparIndex].mag());}				if(sparsTo === 'dB')  {inner.push(element[sparIndex].mag20dB());}				if(sparsTo === 'ang') {inner.push(element[sparIndex].ang());}				if(sparsTo === 'Re')  {inner.push(element[sparIndex].getR());}
+					if(sparsTo === 'Im')  {inner.push(element[sparIndex].getI());}
 				});  // end of forEach
 				return inner;
 			}); // end of map
@@ -88,7 +89,7 @@
 	};
 
 	var global = {
-		fList:	[2e9, 4e9, 6e9, 8e9],
+		fList:	[2e9],//[2e9, 4e9, 6e9, 8e9],
 		Ro:	50,
 		Temp:	293,
 		fGen: function fGen (fStart, fStop, points) {
@@ -205,6 +206,50 @@
 		paC.setglobal(global);				
 		return paC;
 	}
+
+	function trf(N = 0.5) { // parallel resistor nPort object
+		var trf = new nPort;
+		var e = 1e-7;
+		var frequencyList = global.fList;
+		var freqCount = 0, s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			s11 = complex((N**2-1)/(N**2+1),0+e);
+			s12 = complex(2*N/(N**2+1),0+e);  
+			s21 = complex(2*N/(N**2+1),0+e);  
+			s22 = complex((1-N**2)/(N**2+1),0+e);
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		trf.setspars(sparsArray);
+		trf.setglobal(global);	
+		return trf;
+	}
+
+	function trf4Port(N = 0.5) { // parallel resistor nPort object
+		var trf4Port = new nPort;
+		var frequencyList = global.fList;
+		var freqCount = 0, sparsArray = [];
+		var s11, s12, s13, s14,
+			s21, s22, s23, s24,
+			s31, s32, s33, s34,
+			s41, s42, s43, s44;
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			s11 = s24 = s33 = s42 = complex((N**2)/(N**2+1),0);
+			s14 = s23 = s32 = s41 = complex(-N/(N**2+1),0);  
+			s12 = s21 = s34 = s43 = complex(N/(N**2+1),0);  
+			s13 = s22 = s31 = s44 = complex((1)/(N**2+1),0);
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44];
+		}
+		trf4Port.setspars(sparsArray);
+		trf4Port.setglobal(global);	
+		return trf4Port;
+	}
+	/*                Note: N2 = N**2 N = 0.5, N2 = 0.25
+
+	S11 = S24 = S33 = S42 = N2 / (1 + N2)  //  0.25/1.25 = 0.2
+	S14 = S23 = S32 = S41 = -N / (1 + N2)  //  -0.5/1.25 = -0.4
+	S12 = S21 = S34 = S43 =  N / (1 + N2)  //   0.5/1.25 = 0.4
+	S13 = S22 = S31 = S44 =  1 / (1 + N2)  //     1/1.25 = 0.8
+	*/
 
 	function seSeRL(R = 75, L = 5e-9) { // series inductor nPort object
 		var seSeRL = new nPort;
@@ -735,42 +780,52 @@
 			for(row = 0; row < numRows; row++) {
 				for(col = numRows; col < 2*numRows; col++) {
 					A[row][col] = complex(0, 0);
-				}		}		//update numCols since Matrix, A is now wider;
+				}		}	
+			//update numCols since Matrix, A is now wider;
 			numCols = A[0].length;
+			
 			//add diagonal 1's to appened array, A
 			for(row = 0; row < numRows; row++) {
 				A[row][row + numRows] = complex(1, 0);
-			}		// Real variable forward lower Elimination routine  
+			}
+			// Real variable forward lower Elimination routine  
 			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
-				//matrix.swapRowsLCplx(A, constRow);
+				
 				for(row = constRow + 1; row < numRows; row++) { // this row moves down
 					a = A[row][constRow].div(A[constRow][constRow]).neg();
-					//console.log(a);
-					for(col = 0; col < numCols; col++) { // this sweeps across the columns
+		console.log(a.getR(), A[row][constRow].getR(), A[constRow][constRow].getR());				for(col = 0; col < numCols; col++) { // this sweeps across the columns
 						A[row][col] = A[row][col].add(a.mul(A[constRow][col]));
-					}			}		}		// Real variable forward unity diagonal routine
-
+					}			}		}/*
+			// Real variable forward unity diagonal routine
 			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
-				a = A[constRow][constRow].inv();
+				a = A[constRow][constRow].inv(); 
+		console.log(a.getR());
 				for(row = constRow; row < numRows; row++) { // this row moves down
 					for(col = 0; col < numCols; col++) { // this sweeps across the columns
 						A[row][col] = a.mul(A[row][col]);
-					}			}		}
+					};
+				};
+			};
+
 			// Real variable forward upper Elimination routine
 			for(constRow = numRows - 1; constRow > 0 ; constRow--) { // 2 , 1, 0 this row stays the same
-				//countBconstRow++;
-				//matrix.swapRowsUCplx(A, constRow);
+				
 				for(row = 0; row < constRow; row++) { // 0, 1  this row moves down
 
-					a = A[row][constRow].div(A[constRow][constRow]).neg();				
+					a = A[row][constRow].div(A[constRow][constRow]).neg();
+		console.log(a.getR());				
 					for(col = 0; col < numCols; col++) { // this sweeps across the columns
-						//countBCol++;
 						A[row][col] = A[row][col].add(a.mul(A[constRow][col]));						
-					}			}		}
+					};
+				};	
+			};
+
 			for(row = 0; row < numRows; row++) { // get to the right column of A				
 				for ( col = 0; col < numCols/2; col++) {
 					A[row].shift();
-				}		}		return matrix(A);
+				};				
+			};*/
+			return matrix(A);
 		},						
 	};
 
@@ -960,6 +1015,8 @@
 	exports.paL = paL;
 	exports.seC = seC;
 	exports.paC = paC;
+	exports.trf = trf;
+	exports.trf4Port = trf4Port;
 	exports.seSeRL = seSeRL;
 	exports.paSeRL = paSeRL;
 	exports.seSeRC = seSeRC;

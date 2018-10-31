@@ -38,10 +38,12 @@ nPort.prototype = {
 				var row = parseInt(sparsArgument.match(/\d/g)[0]);
 				var col = parseInt(sparsArgument.match(/\d/g)[1]);
 				var sparIndex = (row - 1) * n + col;
-				var sparsTo = sparsArgument.match(/dB|mag|ang/).toString();
+				var sparsTo = sparsArgument.match(/dB|mag|ang|Re|Im/).toString();
 				if(sparsTo === 'mag') {inner.push(element[sparIndex].mag());};
 				if(sparsTo === 'dB')  {inner.push(element[sparIndex].mag20dB());};
-				if(sparsTo === 'ang') {inner.push(element[sparIndex].ang());}
+				if(sparsTo === 'ang') {inner.push(element[sparIndex].ang());};
+				if(sparsTo === 'Re')  {inner.push(element[sparIndex].getR());}
+				if(sparsTo === 'Im')  {inner.push(element[sparIndex].getI());}
 			})  // end of forEach
 			return inner;
 		}); // end of map

@@ -26,6 +26,22 @@ export function dup(copied) {
 	return B;	
 };
 
+//swapRowsL for maximizing the lower triangle pivot numbers
+export function pivotSort(matrix, pivotNum) {
+	var rowNum = matrix.length, rowCol = matrix[0].length, row = 0, col = 0;
+	for(row = pivotNum + 1; row < rowNum; row++) {
+		if(newMax < matrix[row][pivotNum]) {
+			newMax = matrix[row][pivotNum];
+			swapRow = row;
+		};
+	};
+	tempRow = matrix[pivotNum];
+	matrix[pivotNum] = matrix[swapRow];
+	matrix[swapRow] = tempRow;
+};
+
+
+
 Matrix.prototype = {
 	set : function (mat) {this.m = mat; return this;}, //mat ? this.m = mat : this.m = [0]; return this},
 	dimension : function (tableRow, tableCol, initial) {
@@ -132,7 +148,7 @@ Matrix.prototype = {
 
 
 	solveGaussFB : function solveGaussFB() { //this works
-		var A = this.m,
+		var A = dup(this.m),
 			a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
 			row = 0, col = 0, accum = 0, B = [];
 
@@ -194,9 +210,9 @@ Matrix.prototype = {
 
 
 	invert : function invert() { //this works
-		var A = this.m, B = [],
+		var A = dup(this.m),
 			a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
-			row = 0, col = 0, count = 0, B = [];
+			row = 0, col = 0, count = 0;
 		//append a 0 Matrix to Matrix, A
 		for(row = 0; row < numRows; row++) {
 			for(col = numRows; col < 2*numRows; col++) {
@@ -245,7 +261,7 @@ Matrix.prototype = {
 	},
 
 	invertCplx : function invertCplx() { //this works
-		var A = this.m,
+		var A = dup(this.m),
 			a = complex(0, 0), numRows = A.length, numCols = A[0].length, constRow = 0,
 			row = 0, col = 0, B = [], count = 0;
 		var countAConstRow = 0, countARow = 0, countACol = 0, countBConstRow1 = 0, countBRow = 0, countBCol = 0;
@@ -255,27 +271,29 @@ Matrix.prototype = {
 				A[row][col] = complex(0, 0);
 			};
 		};
+
 		//update numCols since Matrix, A is now wider;
 		numCols = A[0].length
+
 		//add diagonal 1's to appened array, A
 		for(row = 0; row < numRows; row++) {
 			A[row][row + numRows] = complex(1, 0);
-		}; //showTable(A);			
+		};
+
 		// Real variable forward lower Elimination routine  
 		for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
-			//matrix.swapRowsLCplx(A, constRow);
+
 			for(row = constRow + 1; row < numRows; row++) { // this row moves down
 				a = A[row][constRow].div(A[constRow][constRow]).neg();
-				//console.log(a);
 				for(col = 0; col < numCols; col++) { // this sweeps across the columns
 					A[row][col] = A[row][col].add(a.mul(A[constRow][col]));
 				};
 			};
-		}; //showTable(A)
-		// Real variable forward unity diagonal routine
+		};
 
+		// Real variable forward unity diagonal routine
 		for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
-			a = A[constRow][constRow].inv();
+			a = A[constRow][constRow].inv(); 
 			for(row = constRow; row < numRows; row++) { // this row moves down
 				for(col = 0; col < numCols; col++) { // this sweeps across the columns
 					A[row][col] = a.mul(A[row][col]);
@@ -285,13 +303,9 @@ Matrix.prototype = {
 
 		// Real variable forward upper Elimination routine
 		for(constRow = numRows - 1; constRow > 0 ; constRow--) { // 2 , 1, 0 this row stays the same
-			//countBconstRow++;
-			//matrix.swapRowsUCplx(A, constRow);
 			for(row = 0; row < constRow; row++) { // 0, 1  this row moves down
-
-				a = A[row][constRow].div(A[constRow][constRow]).neg();				
+				a = A[row][constRow].div(A[constRow][constRow]).neg();
 				for(col = 0; col < numCols; col++) { // this sweeps across the columns
-					//countBCol++;
 					A[row][col] = A[row][col].add(a.mul(A[constRow][col]));						
 				};
 			};	

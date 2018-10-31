@@ -59,6 +59,19 @@
 				B[row][col] = copied[row][col];
 			}	}	return B;	
 	}
+	//swapRowsL for maximizing the lower triangle pivot numbers
+	function pivotSort(matrix, pivotNum) {
+		var rowNum = matrix.length, rowCol = matrix[0].length, row = 0;
+		for(row = pivotNum + 1; row < rowNum; row++) {
+			if(newMax < matrix[row][pivotNum]) {
+				newMax = matrix[row][pivotNum];
+				swapRow = row;
+			}	}	tempRow = matrix[pivotNum];
+		matrix[pivotNum] = matrix[swapRow];
+		matrix[swapRow] = tempRow;
+	}
+
+
 	Matrix.prototype = {
 		set : function (mat) {this.m = mat; return this;}, //mat ? this.m = mat : this.m = [0]; return this},
 		dimension : function (tableRow, tableCol, initial) {
@@ -149,77 +162,9 @@
 					}			}		}		return matrix(C);
 		},
 
-		/*	
-		//swapRowsL for maximizing the lower triangle pivot numbers
-		swapRowsL : function swapRowsL(matrix, pivotNum) {
-			var rowNum = matrix.length, rowCol = matrix[0].length,
-				newMax = matrix[pivotNum][pivotNum], tempRow = pivotNum , swapRow = pivotNum,
-				row = 0;
-			for(row = pivotNum + 1; row < rowNum; row++) {
-				if(newMax < matrix[row][pivotNum]) {
-					newMax = matrix[row][pivotNum];
-					swapRow = row;
-				};
-			};
-			tempRow = matrix[pivotNum];
-			matrix[pivotNum] = matrix[swapRow];
-			matrix[swapRow] = tempRow;
-		},
-
-
-		//swapRowsLCplx for the lower triangle pivot numbers
-		swapRowsLCplx : function swapRowsLCplx(matrix, pivotNum) {
-			var rowNum = matrix.length, rowCol = matrix[0].length,
-				newMax = matrix[pivotNum][pivotNum].mag(), tempRow = pivotNum , swapRow = pivotNum,
-				row = 0;
-			for(row = pivotNum + 1; row < rowNum; row++) {
-				if(newMax < matrix[row][pivotNum].mag()) {
-					newMax = matrix[row][pivotNum].mag();
-					swapRow = row;
-				};
-			};
-			tempRow = matrix[pivotNum];
-			matrix[pivotNum] = matrix[swapRow];
-			matrix[swapRow] = tempRow;
-		//showTable([['jerry']]);
-		//showTable(matrix);
-		},		
-
-		//swapRows for maximizing the upper triangle pivot numbers
-		swapRowsU : function swapRows(matrix, pivotNum) {
-			var rowNum = matrix.length, rowCol = matrix[0].length,
-				newMax = matrix[pivotNum][pivotNum], tempRow = pivotNum , swapRow = pivotNum,
-				row = 0;
-			for(row = pivotNum - 1; row > 0; row--) {
-				if(newMax < matrix[row][pivotNum]) {
-					newMax = matrix[row][pivotNum];
-					swapRow = row;
-				};
-			};
-			tempRow = matrix[pivotNum];
-			matrix[pivotNum] = matrix[swapRow];
-			matrix[swapRow] = tempRow;
-		},
-
-		//swapRows for maximizing the upper triangle pivot numbers
-		swapRowsUCplx : function swapRowsCplx(matrix, pivotNum) {
-			var rowNum = matrix.length, rowCol = matrix[0].length,
-				newMax = matrix[pivotNum][pivotNum].mag(), tempRow = pivotNum , swapRow = pivotNum,
-				row = 0;
-			for(row = pivotNum - 1; row > 0; row--) {
-				if(newMax < matrix[row][pivotNum].mag()) {
-					newMax = matrix[row][pivotNum].mag();
-					swapRow = row;
-				};
-			};
-			tempRow = matrix[pivotNum];
-			matrix[pivotNum] = matrix[swapRow];
-			matrix[swapRow] = tempRow;
-		},		
-		*/
 
 		solveGaussFB : function solveGaussFB() { //this works
-			var A = this.m,
+			var A = dup(this.m),
 				a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
 				row = 0, col = 0, accum = 0;
 
@@ -268,9 +213,9 @@
 		},
 
 
-		//gaussJordenElimination (use for matrix inversion with real numbers) ---------------------------------------------------------------------------------------------
 		invert : function invert() { //this works
-			var A = this.m, a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
+			var A = dup(this.m),
+				a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
 				row = 0, col = 0;
 			//append a 0 Matrix to Matrix, A
 			for(row = 0; row < numRows; row++) {
@@ -305,45 +250,42 @@
 				}		}		return matrix(A);
 		},
 
-		//gaussJordenEliminationCplx (use for matrix inversion for complex numbers) -------------------------------------------------------------------------------------------------------
 		invertCplx : function invertCplx() { //this works
-			var A = this.m,
+			var A = dup(this.m),
 				a = complex(0, 0), numRows = A.length, numCols = A[0].length, constRow = 0,
 				row = 0, col = 0;
 			//append a 0 Matrix to Matrix, A
 			for(row = 0; row < numRows; row++) {
 				for(col = numRows; col < 2*numRows; col++) {
 					A[row][col] = complex(0, 0);
-				}		}		//update numCols since Matrix, A is now wider;
+				}		}
+			//update numCols since Matrix, A is now wider;
 			numCols = A[0].length;
+
 			//add diagonal 1's to appened array, A
 			for(row = 0; row < numRows; row++) {
 				A[row][row + numRows] = complex(1, 0);
-			}		// Real variable forward lower Elimination routine  
+			}
+			// Real variable forward lower Elimination routine  
 			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
-				//matrix.swapRowsLCplx(A, constRow);
+
 				for(row = constRow + 1; row < numRows; row++) { // this row moves down
 					a = A[row][constRow].div(A[constRow][constRow]).neg();
-					//console.log(a);
 					for(col = 0; col < numCols; col++) { // this sweeps across the columns
 						A[row][col] = A[row][col].add(a.mul(A[constRow][col]));
-					}			}		}		// Real variable forward unity diagonal routine
-
+					}			}		}
+			// Real variable forward unity diagonal routine
 			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
-				a = A[constRow][constRow].inv();
+				a = A[constRow][constRow].inv(); 
 				for(row = constRow; row < numRows; row++) { // this row moves down
 					for(col = 0; col < numCols; col++) { // this sweeps across the columns
 						A[row][col] = a.mul(A[row][col]);
 					}			}		}
 			// Real variable forward upper Elimination routine
 			for(constRow = numRows - 1; constRow > 0 ; constRow--) { // 2 , 1, 0 this row stays the same
-				//countBconstRow++;
-				//matrix.swapRowsUCplx(A, constRow);
 				for(row = 0; row < constRow; row++) { // 0, 1  this row moves down
-
-					a = A[row][constRow].div(A[constRow][constRow]).neg();				
+					a = A[row][constRow].div(A[constRow][constRow]).neg();
 					for(col = 0; col < numCols; col++) { // this sweeps across the columns
-						//countBCol++;
 						A[row][col] = A[row][col].add(a.mul(A[constRow][col]));						
 					}			}		}
 			for(row = 0; row < numRows; row++) { // get to the right column of A				
@@ -363,6 +305,7 @@
 	exports.complex = complex;
 	exports.dim = dim;
 	exports.dup = dup;
+	exports.pivotSort = pivotSort;
 	exports.matrix = matrix;
 
 	Object.defineProperty(exports, '__esModule', { value: true });

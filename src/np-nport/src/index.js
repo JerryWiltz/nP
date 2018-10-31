@@ -4,6 +4,10 @@ export {seL} from './rlc/seL';
 export {paL} from './rlc/paL';
 export {seC} from './rlc/seC';
 export {paC} from './rlc/paC';
+
+export {trf} from './rlc/trf';
+export {trf4Port} from './rlc/trf4Port';
+
 export {seSeRL} from './rlc/seSeRL';
 export {paSeRL} from './rlc/paSeRL';
 export {seSeRC} from './rlc/seSeRC';

@@ -11,10 +11,20 @@
 		<script src="nP.js"></script>
 
 		<script>
-var l = nP.sePaRLC().out('s11mag','s11ang','s12mag','s12ang');
+
+var t = nP.trf4Port();
+//var t = nP.seR( );
+console.log(t.out('s11Re', 's11Im', 's21Re', 's21Im'));
+
+
+//var f = nP.nodal([t,1,2],['out',1,2]);
+var f = nP.nodal([t,1,2,3,4],['out',1,2,3,4]);
+
+var l = f.out('s11Re')[1];
 console.log(l);
+
 
 
 		</script>
 	</body>
-</html;
+</html>;
