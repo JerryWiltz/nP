@@ -595,6 +595,74 @@
 				B[row][col] = copied[row][col];
 			}	}	return B;	
 	}
+	//pivotSort for maximizing the lower triangle pivot numbers
+	function pivotSort(array, pivot) {
+
+		function maxKey (array, pivot) {
+			var key = 0, i = 0;
+			var current = 0, maximum = 0;
+			for (i = pivot; i < array.length; i++) {
+				current = Math.abs(array[i][pivot]);
+				if (current > maximum){
+					maximum = current;
+					key = i; // will be row
+				}
+			}
+			return key;
+		}
+
+		function swapNumbers (array, key, pivot) {
+			// if Key === 0 do nothing
+			// if key does not === 0, swap it with key = 0
+
+			var temp0 = array[pivot];
+			var temp1 = array[key];
+
+			if ( key === pivot ) ;
+			else {
+				array[pivot] = temp1;
+				array[key] = temp0;  
+			}
+
+		}
+		swapNumbers (array, maxKey(array, pivot), pivot);
+
+	}
+	//pivotSortCplx for maximizing the lower triangle pivot numbers
+	function pivotSortCplx(array, pivot) {
+
+		function maxKey (array, pivot) {
+			var key = 0, i = 0;
+			var current = 0, maximum = 0;
+			for (i = pivot; i < array.length; i++) {
+				current = array[i][pivot].mag();
+				if (current > maximum){
+					maximum = current;
+					key = i; // will be row
+				}
+			}
+			return key;
+		}
+
+		function swapNumbers (array, key, pivot) {
+			// if Key === 0 do nothing
+			// if key does not === 0, swap it with key = 0
+
+			var temp0 = array[pivot];
+			var temp1 = array[key];
+
+			if ( key === pivot ) ;
+			else {
+				array[pivot] = temp1;
+				array[key] = temp0;  
+			}
+
+		}
+		swapNumbers (array, maxKey(array, pivot), pivot);
+
+	}
+
+
 	Matrix.prototype = {
 		set : function (mat) {this.m = mat; return this;}, //mat ? this.m = mat : this.m = [0]; return this},
 		dimension : function (tableRow, tableCol, initial) {
@@ -687,7 +755,7 @@
 
 
 		solveGaussFB : function solveGaussFB() { //this works
-			var A = this.m,
+			var A = dup(this.m),
 				a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
 				row = 0, col = 0, accum = 0;
 
@@ -737,7 +805,8 @@
 
 
 		invert : function invert() { //this works
-			var A = this.m, a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
+			var A = dup(this.m),
+				a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
 				row = 0, col = 0;
 			//append a 0 Matrix to Matrix, A
 			for(row = 0; row < numRows; row++) {
@@ -750,6 +819,7 @@
 				A[row][row + numRows] = 1;
 			}		// Real variable forward lower Elimination routine  
 			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
+				pivotSort(A, constRow);
 				for(row = constRow+1; row < numRows; row++) { // this row moves down
 					a = -A[row][constRow]/A[constRow][constRow]; // this computes "a"
 					for(col = 0; col < numCols; col++) { // this sweeps across the columns
@@ -773,59 +843,47 @@
 		},
 
 		invertCplx : function invertCplx() { //this works
-			var A = this.m,
+			var A = dup(this.m),
 				a = complex(0, 0), numRows = A.length, numCols = A[0].length, constRow = 0,
 				row = 0, col = 0;
 			//append a 0 Matrix to Matrix, A
 			for(row = 0; row < numRows; row++) {
 				for(col = numRows; col < 2*numRows; col++) {
 					A[row][col] = complex(0, 0);
-				}		}	
+				}		}
 			//update numCols since Matrix, A is now wider;
 			numCols = A[0].length;
-			
+
 			//add diagonal 1's to appened array, A
 			for(row = 0; row < numRows; row++) {
 				A[row][row + numRows] = complex(1, 0);
 			}
 			// Real variable forward lower Elimination routine  
 			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
-				
+				pivotSortCplx(A, constRow);
 				for(row = constRow + 1; row < numRows; row++) { // this row moves down
 					a = A[row][constRow].div(A[constRow][constRow]).neg();
-		console.log(a.getR(), A[row][constRow].getR(), A[constRow][constRow].getR());				for(col = 0; col < numCols; col++) { // this sweeps across the columns
+					for(col = 0; col < numCols; col++) { // this sweeps across the columns
 						A[row][col] = A[row][col].add(a.mul(A[constRow][col]));
-					}			}		}/*
+					}			}		}
 			// Real variable forward unity diagonal routine
 			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
 				a = A[constRow][constRow].inv(); 
-		console.log(a.getR());
 				for(row = constRow; row < numRows; row++) { // this row moves down
 					for(col = 0; col < numCols; col++) { // this sweeps across the columns
 						A[row][col] = a.mul(A[row][col]);
-					};
-				};
-			};
-
+					}			}		}
 			// Real variable forward upper Elimination routine
 			for(constRow = numRows - 1; constRow > 0 ; constRow--) { // 2 , 1, 0 this row stays the same
-				
 				for(row = 0; row < constRow; row++) { // 0, 1  this row moves down
-
 					a = A[row][constRow].div(A[constRow][constRow]).neg();
-		console.log(a.getR());				
 					for(col = 0; col < numCols; col++) { // this sweeps across the columns
 						A[row][col] = A[row][col].add(a.mul(A[constRow][col]));						
-					};
-				};	
-			};
-
+					}			}		}
 			for(row = 0; row < numRows; row++) { // get to the right column of A				
 				for ( col = 0; col < numCols/2; col++) {
 					A[row].shift();
-				};				
-			};*/
-			return matrix(A);
+				}		}		return matrix(A);
 		},						
 	};
 

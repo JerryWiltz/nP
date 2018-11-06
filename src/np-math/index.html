@@ -16,11 +16,24 @@
 0.8333	-0.3333	0.1667
 */
 
-var a = nP.matrix(
+var a1 = nP.matrix(
 		[
 		[2,2,3],
 		[4,7,7],
 		[-2,4,5]
+		]
+		);
+
+var a = nP.matrix(
+		[
+		[-0.2,-0.4,-0.8, 0.4,1,0,0,0],
+		[-0.4,-0.8, 0.4,-0.2,0,1,0,0],
+		[-0.8, 0.4,-0.2,-0.4,0,0,1,0],
+		[ 0.4,-0.2,-0.4,-0.8,0,0,0,1],
+		[   1,   0,   0,   0,0,0,0,0],
+		[   0,   1,   0,   0,0,0,0,0],
+		[   0,   0,   1,   0,0,0,0,0],
+		[   0,   0,   0,   1,0,0,0,0],
 		]
 		);
 
@@ -33,9 +46,11 @@ var c = nP.matrix(
 		);
 
 var b = a.invert();
-console.log(a.m);
 console.log(b.m);
-console.log(nP.pivotSort(a.m,1));
+//console.log(b.m);
+//nP.pivotSort(a.m,1);
+
+//console.log(a.m);
 		
 //console.log(c.invertCplx());
 //console.log(a.m);

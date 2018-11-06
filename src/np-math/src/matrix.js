@@ -26,18 +26,72 @@ export function dup(copied) {
 	return B;	
 };
 
-//swapRowsL for maximizing the lower triangle pivot numbers
-export function pivotSort(matrix, pivotNum) {
-	var rowNum = matrix.length, rowCol = matrix[0].length, row = 0, col = 0;
-	for(row = pivotNum + 1; row < rowNum; row++) {
-		if(newMax < matrix[row][pivotNum]) {
-			newMax = matrix[row][pivotNum];
-			swapRow = row;
-		};
-	};
-	tempRow = matrix[pivotNum];
-	matrix[pivotNum] = matrix[swapRow];
-	matrix[swapRow] = tempRow;
+//pivotSort for maximizing the lower triangle pivot numbers
+function pivotSort(array, pivot) {
+
+	function maxKey (array, pivot) {
+		var key = 0, i = 0;
+		var current = 0, maximum = 0;
+		for (i = pivot; i < array.length; i++) {
+			current = Math.abs(array[i][pivot]);
+			if (current > maximum){
+				maximum = current;
+				key = i; // will be row
+			}
+		}
+		return key;
+	}
+
+	function swapNumbers (array, key, pivot) {
+		// if Key === 0 do nothing
+		// if key does not === 0, swap it with key = 0
+
+		var temp0 = array[pivot];
+		var temp1 = array[key];
+
+		if ( key === pivot ) {}
+		else {
+			array[pivot] = temp1;
+			array[key] = temp0;  
+		}
+
+	}
+	swapNumbers (array, maxKey(array, pivot), pivot);
+
+};
+
+//pivotSortCplx for maximizing the lower triangle pivot numbers
+function pivotSortCplx(array, pivot) {
+
+	function maxKey (array, pivot) {
+		var key = 0, i = 0;
+		var current = 0, maximum = 0;
+		for (i = pivot; i < array.length; i++) {
+			current = array[i][pivot].mag();
+			if (current > maximum){
+				maximum = current;
+				key = i; // will be row
+			}
+		}
+		return key;
+	}
+
+	function swapNumbers (array, key, pivot) {
+		// if Key === 0 do nothing
+		// if key does not === 0, swap it with key = 0
+
+		var temp0 = array[pivot];
+		var temp1 = array[key];
+
+		if ( key === pivot ) {}
+		else {
+			array[pivot] = temp1;
+			array[key] = temp0;  
+		}
+
+	}
+	swapNumbers (array, maxKey(array, pivot), pivot);
+
 };
 
 
@@ -227,6 +281,7 @@ Matrix.prototype = {
 		};			
 		// Real variable forward lower Elimination routine  
 		for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
+			pivotSort(A, constRow);
 			for(row = constRow+1; row < numRows; row++) { // this row moves down
 				a = -A[row][constRow]/A[constRow][constRow]; // this computes "a"
 				for(col = 0; col < numCols; col++) { // this sweeps across the columns
@@ -282,7 +337,7 @@ Matrix.prototype = {
 
 		// Real variable forward lower Elimination routine  
 		for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
-
+			pivotSortCplx(A, constRow);
 			for(row = constRow + 1; row < numRows; row++) { // this row moves down
 				a = A[row][constRow].div(A[constRow][constRow]).neg();
 				for(col = 0; col < numCols; col++) { // this sweeps across the columns
