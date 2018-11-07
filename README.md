@@ -6,11 +6,12 @@
 
 ## Installing 
 
-Verify nP is installed with the "Hello, nPort!" example.
+You should verify that nP was installed correctly by using the "Hello, nPort!" example below.
 
 * Create a new folder named "Hello, nPort!"
 * Download the [latest release](https://github.com/JerryWiltz/nP/blob/master/dist/nP.js) and put that in the folder. The name should be nP.js 
 * Copy and paste the file below named index.html
+* Launch your browser with index.html
 * View index.html in a browser to see <b>"Hello, nPort!"</b>
 
 ```html
@@ -199,7 +200,7 @@ Connections are 3-Port and n-Port "dummy" components. Using these connections en
 nP.<b>Tee</b>(<i> </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/connections/Tee.js "Source") Creates a new nPort Object and returns the s parameters of a 3-Port Tee connector. No argument required. Below is the code for a power divider 
 
 ```html
-<script src="./nP.js"></script>
+
 <script>
 
 //Here is a simple Wilkenson Power Divider
@@ -213,6 +214,8 @@ var r = nP.seR(100);
 // Note the array of components and node numbers right below
 var pwr = nP.nodal([threeWay, 1,2,3],[tl,3,5],[tl,2,4],[threeWay,9,7,5],[threeWay,8,4,6],[r,8,9],['out',1,7,6]);
 var powerDivider = pwr.out('s11dB','s21dB','s23dB');
+
+console.log(powerDivider);
 
 </script>
 ```
@@ -238,12 +241,14 @@ nPort provides a basic complex arithmetic class object
 nP.<b>complex</b>(<i>x, y</i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/complex.js "Source") Initializes and returns a <b>Complex</b> object containing the property names <b>x</b> and <b>iy</b>. Here is a script you could use. 
 
 ```html
-<script src="./nP.js"></script>
+
 <script>
 
 var c  = nP.complex(1,2);    // The "new" keyword is not used. c1 = 1 + i2
 var c1 = nP.complex(2,3);
 var c2 = nP.complex(5,-7);
+
+console.log(c); // 
 
 </script>
 ```
@@ -253,7 +258,7 @@ c.<b>set</b>(<i>real, imaginary</i>) [<>](https://github.com/JerryWiltz/nP/blob/
 c.<b>getR</b>(<i> </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/complex.js "Source") Method that gets the real part of a complex number.
 
 ```html
-<script src="./nP.js"></script>
+
 <script>
 
 console.log(c.getR( )); // 2
@@ -266,7 +271,7 @@ c.<b>getI</b>(<i> </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np
 c.<b>setR</b>(<i> real </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/complex.js "Source") Method that sets the real part of a complex number.
 
 ```html
-<script src="./nP.js"></script>
+
 <script>
 
 c.setR(42);
@@ -282,7 +287,7 @@ c.<b>print</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/
 c.<b>add</b>(<i> c2 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/complex.js "Source") Method that adds two complex numbers, c1 and c2, and returns a Complex object. c1 is implied by the 'dot' that calls the method. Method chaining capable.
 
 ```html
-<script src="./nP.js"></script>
+
 <script>
 
 var c3 = c1.add(c1).add(c2); // method chaining 
@@ -312,7 +317,7 @@ c.<b>mag20dB</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/sr
 c.<b>sinhCplx</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/complex.js "Source") Method that returns the complex hyperbolic sine of a complex number and returns a Complex object. This method is key for transmission line equations. Method Chaining capable.
 
 ```html
-<script src="./nP.js"></script>
+
 <script>
 
 var C = nP.complex(1,2), gamma = nP.complex(3,4), B = nP.complex(5,6),
@@ -330,7 +335,7 @@ nPort provides a basic matrix arithmetic class object. <b>Complex number matrice
 nP.<b>matrix</b>(<i>x, y</i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Initializes and returns a <b>Complex</b> object containing the property names <b>x</b> and <b>iy</b>. Here is an example script. 
 
 ```html
-<script src="./nP.js"></script>
+
 <script>
 
 // Note see method chaining of matrices in action
@@ -412,7 +417,7 @@ If no argument linePlot, wlll display a default plot inside the svg. This is goo
 	</head>
 	<body>
 		<svg id="canvas" width="500" height="300"></svg>jj
-		<script src="./nP.js"></script>
+		<script src="nP.js"></script>
 		<script>
 
 nP.lineChart();  // Default 
@@ -434,7 +439,7 @@ LinelinePlot takes an object argument named "lineChartInputObject" and is used i
 	</head>
 	<body>
 			<svg id="canvas1" width="500" height="300"></svg>
-		<script src="../dist/nP.js"></script>
+		<script src="nP.js"></script>
 
 		<script>
 // Set up the frequency range

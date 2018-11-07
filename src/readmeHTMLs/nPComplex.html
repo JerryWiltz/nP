@@ -3,17 +3,18 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width">
-		<title>Hello, nPort!</title>
+		<title>nP.Complex()</title>
 	</head>
 	<body>
-		<h1 ID='hello'></h1>
 		<script src="../../dist/nP.js"></script>
+
 		<script>
 
-var msg = nP.helloNport();
-var element = document.getElementById('hello');
-element.innerHTML = msg;
+var c  = nP.complex(1,2);    // The "new" keyword is not used. c1 = 1 + i2
+var c1 = nP.complex(2,3);
+var c2 = nP.complex(5,-7);
 
+console.log(c); // Complex {x: 1, y: 2}
 		</script>
 	</body>
 </html>

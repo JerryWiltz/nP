@@ -97,7 +97,7 @@ function pivotSortCplx(array, pivot) {
 
 
 Matrix.prototype = {
-	set : function (mat) {this.m = mat; return this;}, //mat ? this.m = mat : this.m = [0]; return this},
+	set : function (mat) {this.m = mat; return this;},
 	dimension : function (tableRow, tableCol, initial) {
 		return matrix(dim(tableRow, tableCol, initial));
 	},
@@ -207,6 +207,7 @@ Matrix.prototype = {
 			row = 0, col = 0, accum = 0, B = [];
 
 		for(constRow = 0; constRow < numRows; constRow++) { // FORWARD ELIMINAION - this row stays the same
+			pivotSort(A, constRow);
 			for(row = constRow+1; row < numRows; row++) { // this row moves down
 				a = -A[row][constRow]/A[constRow][constRow]; // this computes "a"
 				for(col = 0; col < numCols; col++) { // this sweeps across the columns
@@ -233,11 +234,12 @@ Matrix.prototype = {
 
 
 	solveGaussFBCplx : function solveGaussFBCplx() { // this works 12/9/16 and now on 6/24/17
-		var A = this.m,
+		var A = dup(this.m),
 			a = complex(0, 0), numRows = A.length, numCols = A[0].length, constRow = 0,
 			row = 0, col = 0, accum = complex(0, 0), B = [];
 
 		for(constRow = 0; constRow < numRows; constRow++) { // FORWARD ELIMINATION - this row stays the same
+			pivotSortCplx(A, constRow);
 			for(row = constRow+1; row < numRows; row++) { // this row moves down
 				a = A[row][constRow].div(A[constRow][constRow]).neg();
 				for(col = 0; col < numCols; col++) { // this sweeps across the columns

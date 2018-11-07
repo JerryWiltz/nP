@@ -59,21 +59,76 @@
 				B[row][col] = copied[row][col];
 			}	}	return B;	
 	}
-	//swapRowsL for maximizing the lower triangle pivot numbers
-	function pivotSort(matrix, pivotNum) {
-		var rowNum = matrix.length, rowCol = matrix[0].length, row = 0;
-		for(row = pivotNum + 1; row < rowNum; row++) {
-			if(newMax < matrix[row][pivotNum]) {
-				newMax = matrix[row][pivotNum];
-				swapRow = row;
-			}	}	tempRow = matrix[pivotNum];
-		matrix[pivotNum] = matrix[swapRow];
-		matrix[swapRow] = tempRow;
+	//pivotSort for maximizing the lower triangle pivot numbers
+	function pivotSort(array, pivot) {
+
+		function maxKey (array, pivot) {
+			var key = 0, i = 0;
+			var current = 0, maximum = 0;
+			for (i = pivot; i < array.length; i++) {
+				current = Math.abs(array[i][pivot]);
+				if (current > maximum){
+					maximum = current;
+					key = i; // will be row
+				}
+			}
+			return key;
+		}
+
+		function swapNumbers (array, key, pivot) {
+			// if Key === 0 do nothing
+			// if key does not === 0, swap it with key = 0
+
+			var temp0 = array[pivot];
+			var temp1 = array[key];
+
+			if ( key === pivot ) ;
+			else {
+				array[pivot] = temp1;
+				array[key] = temp0;  
+			}
+
+		}
+		swapNumbers (array, maxKey(array, pivot), pivot);
+
+	}
+	//pivotSortCplx for maximizing the lower triangle pivot numbers
+	function pivotSortCplx(array, pivot) {
+
+		function maxKey (array, pivot) {
+			var key = 0, i = 0;
+			var current = 0, maximum = 0;
+			for (i = pivot; i < array.length; i++) {
+				current = array[i][pivot].mag();
+				if (current > maximum){
+					maximum = current;
+					key = i; // will be row
+				}
+			}
+			return key;
+		}
+
+		function swapNumbers (array, key, pivot) {
+			// if Key === 0 do nothing
+			// if key does not === 0, swap it with key = 0
+
+			var temp0 = array[pivot];
+			var temp1 = array[key];
+
+			if ( key === pivot ) ;
+			else {
+				array[pivot] = temp1;
+				array[key] = temp0;  
+			}
+
+		}
+		swapNumbers (array, maxKey(array, pivot), pivot);
+
 	}
 
 
 	Matrix.prototype = {
-		set : function (mat) {this.m = mat; return this;}, //mat ? this.m = mat : this.m = [0]; return this},
+		set : function (mat) {this.m = mat; return this;},
 		dimension : function (tableRow, tableCol, initial) {
 			return matrix(dim(tableRow, tableCol, initial));
 		},
@@ -169,6 +224,7 @@
 				row = 0, col = 0, accum = 0;
 
 			for(constRow = 0; constRow < numRows; constRow++) { // FORWARD ELIMINAION - this row stays the same
+				pivotSort(A, constRow);
 				for(row = constRow+1; row < numRows; row++) { // this row moves down
 					a = -A[row][constRow]/A[constRow][constRow]; // this computes "a"
 					for(col = 0; col < numCols; col++) { // this sweeps across the columns
@@ -190,11 +246,12 @@
 
 
 		solveGaussFBCplx : function solveGaussFBCplx() { // this works 12/9/16 and now on 6/24/17
-			var A = this.m,
+			var A = dup(this.m),
 				a = complex(0, 0), numRows = A.length, numCols = A[0].length, constRow = 0,
 				row = 0, col = 0, accum = complex(0, 0);
 
 			for(constRow = 0; constRow < numRows; constRow++) { // FORWARD ELIMINATION - this row stays the same
+				pivotSortCplx(A, constRow);
 				for(row = constRow+1; row < numRows; row++) { // this row moves down
 					a = A[row][constRow].div(A[constRow][constRow]).neg();
 					for(col = 0; col < numCols; col++) { // this sweeps across the columns
@@ -228,6 +285,7 @@
 				A[row][row + numRows] = 1;
 			}		// Real variable forward lower Elimination routine  
 			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
+				pivotSort(A, constRow);
 				for(row = constRow+1; row < numRows; row++) { // this row moves down
 					a = -A[row][constRow]/A[constRow][constRow]; // this computes "a"
 					for(col = 0; col < numCols; col++) { // this sweeps across the columns
@@ -268,7 +326,7 @@
 			}
 			// Real variable forward lower Elimination routine  
 			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
-
+				pivotSortCplx(A, constRow);
 				for(row = constRow + 1; row < numRows; row++) { // this row moves down
 					a = A[row][constRow].div(A[constRow][constRow]).neg();
 					for(col = 0; col < numCols; col++) { // this sweeps across the columns
@@ -2255,7 +2313,7 @@
 	      c = new Array(nb),
 	      i;
 
-	  for (i = 0; i < na; ++i) x[i] = value(a[i], b[i]);
+	  for (i = 0; i < na; ++i) x[i] = interpolateValue(a[i], b[i]);
 	  for (; i < nb; ++i) c[i] = b[i];
 
 	  return function(t) {
@@ -2287,7 +2345,7 @@
 
 	  for (k in b) {
 	    if (k in a) {
-	      i[k] = value(a[k], b[k]);
+	      i[k] = interpolateValue(a[k], b[k]);
 	    } else {
 	      c[k] = b[k];
 	    }
@@ -2362,7 +2420,7 @@
 	        });
 	}
 
-	function value(a, b) {
+	function interpolateValue(a, b) {
 	  var t = typeof b, c;
 	  return b == null || t === "boolean" ? constant$3(b)
 	      : (t === "number" ? interpolateNumber
@@ -2946,12 +3004,12 @@
 	  };
 	}
 
-	function attrFunction$1(name, interpolate$$1, value$$1) {
+	function attrFunction$1(name, interpolate$$1, value) {
 	  var value00,
 	      value10,
 	      interpolate0;
 	  return function() {
-	    var value0, value1 = value$$1(this);
+	    var value0, value1 = value(this);
 	    if (value1 == null) return void this.removeAttribute(name);
 	    value0 = this.getAttribute(name);
 	    return value0 === value1 ? null
@@ -2960,12 +3018,12 @@
 	  };
 	}
 
-	function attrFunctionNS$1(fullname, interpolate$$1, value$$1) {
+	function attrFunctionNS$1(fullname, interpolate$$1, value) {
 	  var value00,
 	      value10,
 	      interpolate0;
 	  return function() {
-	    var value0, value1 = value$$1(this);
+	    var value0, value1 = value(this);
 	    if (value1 == null) return void this.removeAttributeNS(fullname.space, fullname.local);
 	    value0 = this.getAttributeNS(fullname.space, fullname.local);
 	    return value0 === value1 ? null
@@ -2974,12 +3032,12 @@
 	  };
 	}
 
-	function transition_attr(name, value$$1) {
+	function transition_attr(name, value) {
 	  var fullname = namespace(name), i = fullname === "transform" ? interpolateTransformSvg : interpolate;
-	  return this.attrTween(name, typeof value$$1 === "function"
-	      ? (fullname.local ? attrFunctionNS$1 : attrFunction$1)(fullname, i, tweenValue(this, "attr." + name, value$$1))
-	      : value$$1 == null ? (fullname.local ? attrRemoveNS$1 : attrRemove$1)(fullname)
-	      : (fullname.local ? attrConstantNS$1 : attrConstant$1)(fullname, i, value$$1 + ""));
+	  return this.attrTween(name, typeof value === "function"
+	      ? (fullname.local ? attrFunctionNS$1 : attrFunction$1)(fullname, i, tweenValue(this, "attr." + name, value))
+	      : value == null ? (fullname.local ? attrRemoveNS$1 : attrRemove$1)(fullname)
+	      : (fullname.local ? attrConstantNS$1 : attrConstant$1)(fullname, i, value + ""));
 	}
 
 	function attrTweenNS(fullname, value) {
@@ -3225,13 +3283,13 @@
 	  };
 	}
 
-	function styleFunction$1(name, interpolate$$1, value$$1) {
+	function styleFunction$1(name, interpolate$$1, value) {
 	  var value00,
 	      value10,
 	      interpolate0;
 	  return function() {
 	    var value0 = styleValue(this, name),
-	        value1 = value$$1(this);
+	        value1 = value(this);
 	    if (value1 == null) value1 = (this.style.removeProperty(name), styleValue(this, name));
 	    return value0 === value1 ? null
 	        : value0 === value00 && value1 === value10 ? interpolate0
@@ -3239,14 +3297,14 @@
 	  };
 	}
 
-	function transition_style(name, value$$1, priority) {
+	function transition_style(name, value, priority) {
 	  var i = (name += "") === "transform" ? interpolateTransformCss : interpolate;
-	  return value$$1 == null ? this
+	  return value == null ? this
 	          .styleTween(name, styleRemove$1(name, i))
 	          .on("end.style." + name, styleRemoveEnd(name))
-	      : this.styleTween(name, typeof value$$1 === "function"
-	          ? styleFunction$1(name, i, tweenValue(this, "style." + name, value$$1))
-	          : styleConstant$1(name, i, value$$1 + ""), priority);
+	      : this.styleTween(name, typeof value === "function"
+	          ? styleFunction$1(name, i, tweenValue(this, "style." + name, value))
+	          : styleConstant$1(name, i, value + ""), priority);
 	}
 
 	function styleTween(name, value, priority) {
@@ -4651,7 +4709,7 @@
 	function continuous(deinterpolate, reinterpolate) {
 	  var domain = unit,
 	      range$$1 = unit,
-	      interpolate$$1 = value,
+	      interpolate$$1 = interpolateValue,
 	      clamp = false,
 	      piecewise$$1,
 	      output,
@@ -7181,12 +7239,15 @@
 		return Ct;
 	}
 
+	function helloNport() {
+	return 'Hello, Nport!';
+	}
+
 	// main entry point
 
 	exports.complex = complex;
 	exports.dim = dim;
 	exports.dup = dup;
-	exports.pivotSort = pivotSort;
 	exports.matrix = matrix;
 	exports.chebyLPgk = chebyLPgk;
 	exports.chebyLPLCs = chebyLPLCs;
@@ -7227,6 +7288,7 @@
 	exports.Load = Load;
 	exports.tlin = tlin;
 	exports.mtee = mtee;
+	exports.helloNport = helloNport;
 
 	Object.defineProperty(exports, '__esModule', { value: true });
 

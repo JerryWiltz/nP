@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>nP.Tee()</title>
+	</head>
+	<body>
+		<script src="../../dist/nP.js"></script>
+
+		<script>
+
+//Here is a simple Wilkenson Power Divider
+var g = nP.global;
+g.fList = g.fGen(2e9,22e9,201); // 2 GHz to 22 GHz with 201 points
+
+var threeWay = nP.Tee();
+var tl = nP.tlin(70.7, 0.49 * 0.0254); 
+var r = nP.seR(100);
+
+// Note the array of components and node numbers right below
+var pwr = nP.nodal([threeWay, 1,2,3],[tl,3,5],[tl,2,4],[threeWay,9,7,5],[threeWay,8,4,6],[r,8,9],['out',1,7,6]);
+var powerDivider = pwr.out('s11dB','s21dB','s23dB');
+
+console.log(powerDivider);
+
+		</script>
+	</body>
+</html>
