@@ -1,0 +1,31 @@
+<!--DOCTYPE html-->
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>cas cascade and nodal</title>
+	</head>
+	<body>
+		<script src="../dist/nP.js"></script>
+
+		<script>
+
+console.log('establish baseline using seSeRLC()');
+var seSeRLC = nP.seSeRLC().out('s11mag','s11ang','s21mag','s21ang');
+console.log(seSeRLC);
+
+console.log('cas example');
+var imp = nP.seSeRLC(75/5,5e-9/5,1e-12*5);
+var cas = imp.cas(imp).cas(imp).cas(imp).cas(imp).out('s11mag','s11ang','s21mag','s21ang');
+console.log(cas);
+
+console.log('cascade example');
+var cascade = nP.cascade(imp,imp,imp,imp,imp).out('s11mag','s11ang','s21mag','s21ang');
+console.log(cascade);
+
+console.log('nodal example')
+var nodal = nP.nodal([imp,1,2],[imp,2,3],[imp,3,4],[imp,4,5],[imp,5,6],['out',1,6]).out('s11mag','s11ang','s21mag','s21ang');
+console.log(nodal);
+		</script>
+	</body>
+</html

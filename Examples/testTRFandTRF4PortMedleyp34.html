@@ -1,0 +1,25 @@
+<!--DOCTYPE html-->
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>TRF and TRF4Port Transformers</title>
+	</head>
+	<body>
+
+		<script src="../dist/nP.js"></script>
+
+		<script>
+console.log('two port transformer, trf()');
+var trf = nP.trf().out('s11mag','s11ang','s21mag','s21ang');
+console.log(trf);
+
+console.log('four port transformer, trf4Port()');
+var t = nP.trf4Port()
+var short = nP.Short();
+var trf4Port = nP.nodal([t,1,2,3,4],[short,3],[short,4],['out',1,2]).out('s11mag','s11ang','s21mag','s21ang');
+console.log(trf4Port);
+
+		</script>
+	</body>
+</html;
