@@ -133,7 +133,7 @@ nP.<b>lpfGen</b>(<i> filt = [50, 1.641818746502858e-11, 4.565360855435164e-8, 1.
 
 The example below shows three ways of doing the same thing, as filt1 = filt2 = filt3 = filt4.
 <br>filt1 is defined by the **cas** method</br>
-<br>filtt is defined by the **cascade** function</br>
+<br>filt2 is defined by the **cascade** function</br>
 <br>filt3 is defined by the **nodal** function</br>
 <br>filt4 is defined by the **lpfGen** function
 

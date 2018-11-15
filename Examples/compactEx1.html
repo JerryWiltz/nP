@@ -1,0 +1,53 @@
+<!--DOCTYPE html-->
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>Compact softare Example 1 p27</title>
+	</head>
+	<body>
+		<div style="display: inline-block">
+			<svg id="canvas1" width="500" height="300"></svg>
+		</div>
+		<div style="display: inline-block">
+			<svg id="canvas2" width="500" height="300"></svg>
+		</div>
+		<div style="display: inline-block">
+			<svg id="canvas3" width="500" height="300"></svg>
+		</div>
+		<script src="../dist/nP.js"></script>
+
+		<script>
+
+// set up the frequency
+var g = nP.global;	
+//g.fList = g.fGen(100e6,1000e6, 500);
+g.fList = [100e6,400e6,700e6,1000e6];
+
+// set up the high pass
+var c1 = nP.seC(3.05e-12);
+var rl1 = nP.paSeRL(0.6,56.4e-9);
+var c2 = nP.seC(23.55e-12);
+var hp = c1.cas(rl1).cas(c2);
+
+// set up the low pass
+var rl2 = nP.seSeRL(0.3,32.4e-9);
+var c3 = nP.paC(7.15e-12);
+var rl3 = nP.seSeRL(0.1,33.5e-9);
+var lp = rl2.cas(c3).cas(rl3);
+
+// set up the diplexer
+var tee = nP.Tee();
+var filt = nP.nodal([tee,1,2,3],[hp,2,4],[lp,3,5],['out',1,4,5]).out('s11dB','s21dB','s31dB');
+
+// set up plot
+var plot = {
+	canvasID: '#canvas1',
+	inputTable: filt,
+	freqUnits: 'GHz'
+};
+nP.lineChart(plot);
+
+		</script>
+	</body>
+</html

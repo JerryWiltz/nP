@@ -3,13 +3,15 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width">
-		<title>spars of lumped rlc elements</title>
+		<title>22 rlc elements</title>
 	</head>
 	<body>
 
 		<script src="../dist/nP.js"></script>
 
 		<script>
+//from Medley page 26-30
+//uses default values for frequency and components
 console.log('series resistor, seR()');
 var seR = nP.seR().out('s11mag','s11ang','s21mag','s21ang');
 console.log(seR);
