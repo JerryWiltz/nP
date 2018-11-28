@@ -99,7 +99,7 @@
 			var key = 0, i = 0;
 			var current = 0, maximum = 0;
 			for (i = pivot; i < array.length; i++) {
-				current = array[i][pivot].max();
+				current = array[i][pivot].mag();
 				if (current > maximum){
 					maximum = current;
 					key = i; // will be row
@@ -125,10 +125,63 @@
 		swapNumbers (array, maxKey(array, pivot), pivot);
 
 	}
+	// showMatrix
+	function showMatrix(myArray) {	
 
+		var target = document.getElementsByTagName("body")[0],
+			div = document.createElement("div");
 
+		target.appendChild(div);
+
+		function createTable () {
+			var row = 0, col = 0, html = "";
+
+			html = "<table><tbody>"; // fill in the table
+			for (row = 0; row < myArray.length; row++) {
+				html +="<tr>";
+				for (col = 0; col < myArray[0].length; col++) {
+					html += "<td style='border-style: solid; border-width: 1px' width='150px'>" + myArray[row][col];
+					html += "</td>";
+				}			html +="</tr>";
+			}		html += "</tbody></table>"; // finish the table
+
+			return html; // return the table
+
+		}
+		div.innerHTML = createTable();
+
+	}
+	// showMatrixCplx
+	function showMatrixCplx(myArray) {	
+
+		var target = document.getElementsByTagName("body")[0],
+			div = document.createElement("div");
+
+		target.appendChild(div);
+
+		function CplxToCell(complexNumber) {
+			return complexNumber.x.toExponential(2) + (complexNumber.y.toExponential(2)> 0 ? " + i" + complexNumber.y.toExponential(2) : " - i" + (-complexNumber.y).toExponential(2));
+		}
+		function createTable () {
+			var row = 0, col = 0, html = "";
+
+			html = "<table><tbody>"; // fill in the table
+			for (row = 0; row < myArray.length; row++) {
+				html +="<tr>";
+				for (col = 0; col < myArray[0].length; col++) {
+					html += "<td style='border-style: solid; border-width: 1px' width='150px'>" + CplxToCell(myArray[row][col]);
+					html += "</td>";
+				}			html +="</tr>";
+			}		html += "</tbody></table>"; // finish the table
+
+			return html; // return the table
+
+		}
+		div.innerHTML = createTable();
+
+	}
 	Matrix.prototype = {
-		set : function (mat) {this.m = mat; return this;}, //mat ? this.m = mat : this.m = [0]; return this},
+		set : function (mat) {this.m = mat; return this;},
 		dimension : function (tableRow, tableCol, initial) {
 			return matrix(dim(tableRow, tableCol, initial));
 		},
@@ -224,6 +277,7 @@
 				row = 0, col = 0, accum = 0;
 
 			for(constRow = 0; constRow < numRows; constRow++) { // FORWARD ELIMINAION - this row stays the same
+				pivotSort(A, constRow);
 				for(row = constRow+1; row < numRows; row++) { // this row moves down
 					a = -A[row][constRow]/A[constRow][constRow]; // this computes "a"
 					for(col = 0; col < numCols; col++) { // this sweeps across the columns
@@ -245,11 +299,12 @@
 
 
 		solveGaussFBCplx : function solveGaussFBCplx() { // this works 12/9/16 and now on 6/24/17
-			var A = this.m,
+			var A = dup(this.m),
 				a = complex(0, 0), numRows = A.length, numCols = A[0].length, constRow = 0,
 				row = 0, col = 0, accum = complex(0, 0);
 
 			for(constRow = 0; constRow < numRows; constRow++) { // FORWARD ELIMINATION - this row stays the same
+				pivotSortCplx(A, constRow);
 				for(row = constRow+1; row < numRows; row++) { // this row moves down
 					a = A[row][constRow].div(A[constRow][constRow]).neg();
 					for(col = 0; col < numCols; col++) { // this sweeps across the columns
@@ -324,7 +379,7 @@
 			}
 			// Real variable forward lower Elimination routine  
 			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
-	pivotSortCplx(array, constRow);
+				pivotSortCplx(A, constRow);
 				for(row = constRow + 1; row < numRows; row++) { // this row moves down
 					a = A[row][constRow].div(A[constRow][constRow]).neg();
 					for(col = 0; col < numCols; col++) { // this sweeps across the columns
@@ -361,6 +416,8 @@
 	exports.complex = complex;
 	exports.dim = dim;
 	exports.dup = dup;
+	exports.showMatrix = showMatrix;
+	exports.showMatrixCplx = showMatrixCplx;
 	exports.matrix = matrix;
 
 	Object.defineProperty(exports, '__esModule', { value: true });

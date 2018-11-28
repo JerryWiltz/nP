@@ -125,8 +125,77 @@
 		swapNumbers (array, maxKey(array, pivot), pivot);
 
 	}
+	// showMatrix
+	function showMatrix(myArray) {	
 
+		var target = document.getElementsByTagName("body")[0],
+			div = document.createElement("div");
 
+		target.appendChild(div);
+
+		function createTable () {
+			var row = 0, col = 0, html = "";
+
+			html = "<table><tbody>"; // fill in the table
+			for (row = 0; row < myArray.length; row++) {
+				html +="<tr>";
+				for (col = 0; col < myArray[0].length; col++) {
+					html += "<td style='border-style: solid; border-width: 1px' width='150px'>" + myArray[row][col];
+					html += "</td>";
+				}			html +="</tr>";
+			}		html += "</tbody></table>"; // finish the table
+
+			return html; // return the table
+
+		}
+		div.innerHTML = createTable();
+
+	}
+	// showMatrixCplx
+	function showMatrixCplx(myArray) {	
+
+		var target = document.getElementsByTagName("body")[0],
+			div = document.createElement("div");
+
+		target.appendChild(div);
+
+		function CplxToCell(complexNumber) {
+			return complexNumber.x.toExponential(2) + (complexNumber.y.toExponential(2)> 0 ? " + i" + complexNumber.y.toExponential(2) : " - i" + (-complexNumber.y).toExponential(2));
+		}
+		function createTable () {
+			var row = 0, col = 0, html = "";
+
+			html = "<table><tbody>"; // fill in the table
+			for (row = 0; row < myArray.length; row++) {
+				html +="<tr>";
+				for (col = 0; col < myArray[0].length; col++) {
+					html += "<td style='border-style: solid; border-width: 1px' width='150px'>" + CplxToCell(myArray[row][col]);
+					html += "</td>";
+				}			html +="</tr>";
+			}		html += "</tbody></table>"; // finish the table
+
+			return html; // return the table
+
+		}
+		div.innerHTML = createTable();
+
+	}
+	// showBreakText
+	function showBreakText(text) {
+		var target = document.getElementsByTagName("body")[0],
+			div = document.createElement("div");
+
+		target.appendChild(div);
+		div.innerHTML = text;
+	}
+	// showCountNum
+	function showCountNum(num) {
+		var target = document.getElementsByTagName("body")[0],
+			div = document.createElement("div");
+
+		target.appendChild(div);
+		div.innerHTML = num.toString();
+	}
 	Matrix.prototype = {
 		set : function (mat) {this.m = mat; return this;},
 		dimension : function (tableRow, tableCol, initial) {
@@ -324,6 +393,7 @@
 			for(row = 0; row < numRows; row++) {
 				A[row][row + numRows] = complex(1, 0);
 			}
+
 			// Real variable forward lower Elimination routine  
 			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
 				pivotSortCplx(A, constRow);
@@ -2313,7 +2383,7 @@
 	      c = new Array(nb),
 	      i;
 
-	  for (i = 0; i < na; ++i) x[i] = interpolateValue(a[i], b[i]);
+	  for (i = 0; i < na; ++i) x[i] = value(a[i], b[i]);
 	  for (; i < nb; ++i) c[i] = b[i];
 
 	  return function(t) {
@@ -2345,7 +2415,7 @@
 
 	  for (k in b) {
 	    if (k in a) {
-	      i[k] = interpolateValue(a[k], b[k]);
+	      i[k] = value(a[k], b[k]);
 	    } else {
 	      c[k] = b[k];
 	    }
@@ -2420,7 +2490,7 @@
 	        });
 	}
 
-	function interpolateValue(a, b) {
+	function value(a, b) {
 	  var t = typeof b, c;
 	  return b == null || t === "boolean" ? constant$3(b)
 	      : (t === "number" ? interpolateNumber
@@ -3004,12 +3074,12 @@
 	  };
 	}
 
-	function attrFunction$1(name, interpolate$$1, value) {
+	function attrFunction$1(name, interpolate$$1, value$$1) {
 	  var value00,
 	      value10,
 	      interpolate0;
 	  return function() {
-	    var value0, value1 = value(this);
+	    var value0, value1 = value$$1(this);
 	    if (value1 == null) return void this.removeAttribute(name);
 	    value0 = this.getAttribute(name);
 	    return value0 === value1 ? null
@@ -3018,12 +3088,12 @@
 	  };
 	}
 
-	function attrFunctionNS$1(fullname, interpolate$$1, value) {
+	function attrFunctionNS$1(fullname, interpolate$$1, value$$1) {
 	  var value00,
 	      value10,
 	      interpolate0;
 	  return function() {
-	    var value0, value1 = value(this);
+	    var value0, value1 = value$$1(this);
 	    if (value1 == null) return void this.removeAttributeNS(fullname.space, fullname.local);
 	    value0 = this.getAttributeNS(fullname.space, fullname.local);
 	    return value0 === value1 ? null
@@ -3032,12 +3102,12 @@
 	  };
 	}
 
-	function transition_attr(name, value) {
+	function transition_attr(name, value$$1) {
 	  var fullname = namespace(name), i = fullname === "transform" ? interpolateTransformSvg : interpolate;
-	  return this.attrTween(name, typeof value === "function"
-	      ? (fullname.local ? attrFunctionNS$1 : attrFunction$1)(fullname, i, tweenValue(this, "attr." + name, value))
-	      : value == null ? (fullname.local ? attrRemoveNS$1 : attrRemove$1)(fullname)
-	      : (fullname.local ? attrConstantNS$1 : attrConstant$1)(fullname, i, value + ""));
+	  return this.attrTween(name, typeof value$$1 === "function"
+	      ? (fullname.local ? attrFunctionNS$1 : attrFunction$1)(fullname, i, tweenValue(this, "attr." + name, value$$1))
+	      : value$$1 == null ? (fullname.local ? attrRemoveNS$1 : attrRemove$1)(fullname)
+	      : (fullname.local ? attrConstantNS$1 : attrConstant$1)(fullname, i, value$$1 + ""));
 	}
 
 	function attrTweenNS(fullname, value) {
@@ -3283,13 +3353,13 @@
 	  };
 	}
 
-	function styleFunction$1(name, interpolate$$1, value) {
+	function styleFunction$1(name, interpolate$$1, value$$1) {
 	  var value00,
 	      value10,
 	      interpolate0;
 	  return function() {
 	    var value0 = styleValue(this, name),
-	        value1 = value(this);
+	        value1 = value$$1(this);
 	    if (value1 == null) value1 = (this.style.removeProperty(name), styleValue(this, name));
 	    return value0 === value1 ? null
 	        : value0 === value00 && value1 === value10 ? interpolate0
@@ -3297,14 +3367,14 @@
 	  };
 	}
 
-	function transition_style(name, value, priority) {
+	function transition_style(name, value$$1, priority) {
 	  var i = (name += "") === "transform" ? interpolateTransformCss : interpolate;
-	  return value == null ? this
+	  return value$$1 == null ? this
 	          .styleTween(name, styleRemove$1(name, i))
 	          .on("end.style." + name, styleRemoveEnd(name))
-	      : this.styleTween(name, typeof value === "function"
-	          ? styleFunction$1(name, i, tweenValue(this, "style." + name, value))
-	          : styleConstant$1(name, i, value + ""), priority);
+	      : this.styleTween(name, typeof value$$1 === "function"
+	          ? styleFunction$1(name, i, tweenValue(this, "style." + name, value$$1))
+	          : styleConstant$1(name, i, value$$1 + ""), priority);
 	}
 
 	function styleTween(name, value, priority) {
@@ -4709,7 +4779,7 @@
 	function continuous(deinterpolate, reinterpolate) {
 	  var domain = unit,
 	      range$$1 = unit,
-	      interpolate$$1 = interpolateValue,
+	      interpolate$$1 = value,
 	      clamp = false,
 	      piecewise$$1,
 	      output,
@@ -7175,7 +7245,7 @@
 		return Load;
 	}
 
-	function tlin(Ztlin = 60, Length = 0.5 * 0.0254) { // sparameters of a physical transmission line
+	function tlin(Ztlin = 60, Length = 0.5 * 0.0254) { // Z is in ohms and Length is in meters, sparameters of a physical transmission line
 		var tlin = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
 		var Zo = complex(Ro,0), Yo = Zo.inv(), one = complex(1,0), two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
@@ -7201,6 +7271,67 @@
 		}	tlin.setspars(sparsArray);
 		tlin.setglobal(global);	
 		return tlin;
+	}
+
+	function tclin(Zoetclin = 100, Zootclin = 30, Length = 1.47 * 0.0254) { // 1.4732 is the quarter wavelength at 2GHz, (1.3412 at 2.2 GHz)
+		var ctlin = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), one = complex(1,0), two = complex(2,0), freqCount = 0, Zoe = [], Zoo = [];
+		var s11oe, s12oe, s21oe, s22oe;
+		var s11oo, s12oo, s21oo, s22oo;
+		var s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44;
+		var sparsArray = [];
+		var Aoe = {}, Boe = {}, Coe = {}, Dsoe = {};
+		var Aoo = {}, Boo = {}, Coo = {}, Dsoo = {};
+		var alpha = 0, beta = 0, gamma = {};
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			// alpha beta gamma section
+			alpha = 0;
+			beta = 2*Math.PI*frequencyList[freqCount]/2.997925e8;
+			gamma = complex(alpha * Length, beta * Length);
+
+			// Zoe section
+			Zoe = complex(Zoetclin, 0);
+
+			Aoe = Zoe.mul(Zoe).sub(Zo.mul(Zo));
+			Boe = Zoe.mul(Zoe).add(Zo.mul(Zo));
+			Coe = two.mul(Zoe).mul(Zo);
+
+			Dsoe = Coe.mul(gamma.coshCplx()).add(Boe.mul(gamma.sinhCplx()));
+
+			s11oe = Aoe.mul(gamma.sinhCplx()).div(Dsoe);
+			s12oe = Coe.div(Dsoe);	
+			s21oe = s12oe;
+			s22oe = s11oe; 
+			// Zoo section
+			Zoo = complex(Zootclin, 0);
+
+			Aoo = Zoo.mul(Zoo).sub(Zo.mul(Zo));
+			Boo = Zoo.mul(Zoo).add(Zo.mul(Zo));
+			Coo = two.mul(Zoo).mul(Zo);
+
+			Dsoo = Coo.mul(gamma.coshCplx()).add(Boo.mul(gamma.sinhCplx()));
+
+			s11oo = Aoo.mul(gamma.sinhCplx()).div(Dsoo);
+			s12oo = Coo.div(Dsoo);	
+			s21oo = s12oo;
+			s22oo = s11oo;
+	 
+
+			// put the 4 port together per Gupta page 331
+			s44 = s11 = (s11oe.add(s11oo)).mul(complex(0.5,0));
+			s33 = s22 = (s22oe.add(s22oo)).mul(complex(0.5,0));
+			s34 = s21 = (s21oe.add(s21oo)).mul(complex(0.5,0));
+			s43 = s12 = (s12oe.add(s12oo)).mul(complex(0.5,0));
+			s13 = s42 = (s12oe.sub(s12oo)).mul(complex(0.5,0));
+			s31 = s24 = (s21oe.sub(s21oo)).mul(complex(0.5,0));
+			s14 = s41 = (s11oe.sub(s11oo)).mul(complex(0.5,0));
+			s23 = s32 = (s22oe.sub(s22oo)).mul(complex(0.5,0));
+
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44];
+		}	ctlin.setspars(sparsArray);
+		ctlin.setglobal(global);	
+		return ctlin;
 	}
 
 	function mtee(w1 = 0.186*0.0254, w2 = 0.334*0.0254, er = 2.55, h = 0.125*0.0254) { // series resistor nPort object
@@ -7248,6 +7379,10 @@
 	exports.complex = complex;
 	exports.dim = dim;
 	exports.dup = dup;
+	exports.showMatrix = showMatrix;
+	exports.showMatrixCplx = showMatrixCplx;
+	exports.showBreakText = showBreakText;
+	exports.showCountNum = showCountNum;
 	exports.matrix = matrix;
 	exports.chebyLPgk = chebyLPgk;
 	exports.chebyLPLCs = chebyLPLCs;
@@ -7287,6 +7422,7 @@
 	exports.Short = Short;
 	exports.Load = Load;
 	exports.tlin = tlin;
+	exports.tclin = tclin;
 	exports.mtee = mtee;
 	exports.helloNport = helloNport;
 

@@ -36,6 +36,7 @@ export {Open} from './openShortLoad/Open';
 export {Short} from './openShortLoad/Short';
 export {Load} from './openShortLoad/Load';
 
-export {tlin} from './tlin/tlin';
+export {tlin} from  './tlin/tlin';
+export {tclin} from './tlin/tclin';
 
 export {mtee} from './mlin/mtee';

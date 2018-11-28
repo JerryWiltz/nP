@@ -1,0 +1,46 @@
+<!--DOCTYPE html-->
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>Branchline www.microwaves101</title>
+	</head>
+	<body>
+		<div style="display: inline-block">
+			<svg id="canvas1" width="500" height="300"></svg>
+		</div>
+		<script src="../dist/nP.js"></script>
+
+		<script>
+
+
+// set up the frequency from https://www.microwaves101.com/encyclopedias/branchline-couplers
+// this is for a quarter wave at 10GHz
+var g = nP.global;	
+g.fList = g.fGen(5000e6,15000e6,20);
+//g.fList = [15000e6];
+
+// set up components
+var tee = nP.Tee();
+var z50 = nP.tlin(50,0.295*0.0254);
+var z35 = nP.tlin(35.35,0.295*0.0254);
+var z50half = nP.tlin(50.0,0.295*0.0254/2);
+var open = nP.Open();
+var short = nP.Short();
+
+// set up the branchline coupler
+var tee = nP.Tee();
+var branch = nP.nodal([tee,5,1,2],[z35,2,3],[tee,6,3,4],[z50,5,7],[z50,6,8],[tee,7,10,9],[z35,10,11],[tee,8,12,11],['out',1,4,12,9]);
+var branchOut = branch.out('s21dB','s31dB');
+
+// set up plot
+var plot = {
+	canvasID: '#canvas1',
+	inputTable: branchOut,
+	freqUnits: 'GHz'
+};
+nP.lineChart(plot);
+
+		</script>
+	</body>
+</html

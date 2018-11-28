@@ -12,14 +12,27 @@
 
 		<script>
 
-var t = nP.trf4Port();
-console.log(t.out('s11Re', 's11Im', 's21Re', 's21Im'));
+var C = 7;
+var c = Math.pow(10,-C/20);
+var zoe = 50*Math.sqrt((1+c)/(1-c));
+//console.log(zoe);
+var zoo = 50*Math.sqrt(((1-c)/(1+c)));
+//console.log(zoo);
 
 
-var f = nP.nodal([t,1,2,3,4],['out',1,2,3,4]);
+var tclin = nP.tclin(100,30,1.34 * 0.0254);//.out('s21dB','s21ang','s41dB','s31dB');
+//var tclin = nP.tclin(zoe,zoo,1.47 * 0.0254);//.out('s21dB','s21ang','s41dB','s31dB');
 
-var l = f.out('s11Re')[1];
-console.log(l);
+var short = nP.Short();
+var load = nP.Load();
+var res = nP.seR(1);
+
+var q = nP.nodal([tclin,1,2,3,4],['out',1,2,3,4]).out('s41Re','s41Im','s14Re','s14Im');
+//var r = nP.nodal([tclin,1,2,3,4],[short,2],[short,3],['out',1,4]).out('s21Re','s21Im','s12Re','s12Im');
+var r = nP.nodal([tclin,1,2,3,4],[short,4],[short,2],['out',1,3]).out('s11mag','s11ang','s22mag','s22ang');
+
+console.log(q);
+console.log(r);
 
 
 

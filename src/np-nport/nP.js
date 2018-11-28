@@ -661,10 +661,8 @@
 		swapNumbers (array, maxKey(array, pivot), pivot);
 
 	}
-
-
 	Matrix.prototype = {
-		set : function (mat) {this.m = mat; return this;}, //mat ? this.m = mat : this.m = [0]; return this},
+		set : function (mat) {this.m = mat; return this;},
 		dimension : function (tableRow, tableCol, initial) {
 			return matrix(dim(tableRow, tableCol, initial));
 		},
@@ -760,6 +758,7 @@
 				row = 0, col = 0, accum = 0;
 
 			for(constRow = 0; constRow < numRows; constRow++) { // FORWARD ELIMINAION - this row stays the same
+				pivotSort(A, constRow);
 				for(row = constRow+1; row < numRows; row++) { // this row moves down
 					a = -A[row][constRow]/A[constRow][constRow]; // this computes "a"
 					for(col = 0; col < numCols; col++) { // this sweeps across the columns
@@ -781,11 +780,12 @@
 
 
 		solveGaussFBCplx : function solveGaussFBCplx() { // this works 12/9/16 and now on 6/24/17
-			var A = this.m,
+			var A = dup(this.m),
 				a = complex(0, 0), numRows = A.length, numCols = A[0].length, constRow = 0,
 				row = 0, col = 0, accum = complex(0, 0);
 
 			for(constRow = 0; constRow < numRows; constRow++) { // FORWARD ELIMINATION - this row stays the same
+				pivotSortCplx(A, constRow);
 				for(row = constRow+1; row < numRows; row++) { // this row moves down
 					a = A[row][constRow].div(A[constRow][constRow]).neg();
 					for(col = 0; col < numCols; col++) { // this sweeps across the columns
@@ -858,6 +858,7 @@
 			for(row = 0; row < numRows; row++) {
 				A[row][row + numRows] = complex(1, 0);
 			}
+
 			// Real variable forward lower Elimination routine  
 			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
 				pivotSortCplx(A, constRow);
@@ -1003,7 +1004,7 @@
 		return Load;
 	}
 
-	function tlin(Ztlin = 60, Length = 0.5 * 0.0254) { // sparameters of a physical transmission line
+	function tlin(Ztlin = 60, Length = 0.5 * 0.0254) { // Z is in ohms and Length is in meters, sparameters of a physical transmission line
 		var tlin = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
 		var Zo = complex(Ro,0), Yo = Zo.inv(), one = complex(1,0), two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
@@ -1029,6 +1030,67 @@
 		}	tlin.setspars(sparsArray);
 		tlin.setglobal(global);	
 		return tlin;
+	}
+
+	function tclin(Zoetclin = 100, Zootclin = 30, Length = 1.47 * 0.0254) { // 1.4732 is the quarter wavelength at 2GHz, (1.3412 at 2.2 GHz)
+		var ctlin = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), one = complex(1,0), two = complex(2,0), freqCount = 0, Zoe = [], Zoo = [];
+		var s11oe, s12oe, s21oe, s22oe;
+		var s11oo, s12oo, s21oo, s22oo;
+		var s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44;
+		var sparsArray = [];
+		var Aoe = {}, Boe = {}, Coe = {}, Dsoe = {};
+		var Aoo = {}, Boo = {}, Coo = {}, Dsoo = {};
+		var alpha = 0, beta = 0, gamma = {};
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			// alpha beta gamma section
+			alpha = 0;
+			beta = 2*Math.PI*frequencyList[freqCount]/2.997925e8;
+			gamma = complex(alpha * Length, beta * Length);
+
+			// Zoe section
+			Zoe = complex(Zoetclin, 0);
+
+			Aoe = Zoe.mul(Zoe).sub(Zo.mul(Zo));
+			Boe = Zoe.mul(Zoe).add(Zo.mul(Zo));
+			Coe = two.mul(Zoe).mul(Zo);
+
+			Dsoe = Coe.mul(gamma.coshCplx()).add(Boe.mul(gamma.sinhCplx()));
+
+			s11oe = Aoe.mul(gamma.sinhCplx()).div(Dsoe);
+			s12oe = Coe.div(Dsoe);	
+			s21oe = s12oe;
+			s22oe = s11oe; 
+			// Zoo section
+			Zoo = complex(Zootclin, 0);
+
+			Aoo = Zoo.mul(Zoo).sub(Zo.mul(Zo));
+			Boo = Zoo.mul(Zoo).add(Zo.mul(Zo));
+			Coo = two.mul(Zoo).mul(Zo);
+
+			Dsoo = Coo.mul(gamma.coshCplx()).add(Boo.mul(gamma.sinhCplx()));
+
+			s11oo = Aoo.mul(gamma.sinhCplx()).div(Dsoo);
+			s12oo = Coo.div(Dsoo);	
+			s21oo = s12oo;
+			s22oo = s11oo;
+	 
+
+			// put the 4 port together per Gupta page 331
+			s44 = s11 = (s11oe.add(s11oo)).mul(complex(0.5,0));
+			s33 = s22 = (s22oe.add(s22oo)).mul(complex(0.5,0));
+			s34 = s21 = (s21oe.add(s21oo)).mul(complex(0.5,0));
+			s43 = s12 = (s12oe.add(s12oo)).mul(complex(0.5,0));
+			s13 = s42 = (s12oe.sub(s12oo)).mul(complex(0.5,0));
+			s31 = s24 = (s21oe.sub(s21oo)).mul(complex(0.5,0));
+			s14 = s41 = (s11oe.sub(s11oo)).mul(complex(0.5,0));
+			s23 = s32 = (s22oe.sub(s22oo)).mul(complex(0.5,0));
+
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44];
+		}	ctlin.setspars(sparsArray);
+		ctlin.setglobal(global);	
+		return ctlin;
 	}
 
 	function mtee(w1 = 0.186*0.0254, w2 = 0.334*0.0254, er = 2.55, h = 0.125*0.0254) { // series resistor nPort object
@@ -1100,6 +1162,7 @@
 	exports.Short = Short;
 	exports.Load = Load;
 	exports.tlin = tlin;
+	exports.tclin = tclin;
 	exports.mtee = mtee;
 
 	Object.defineProperty(exports, '__esModule', { value: true });
