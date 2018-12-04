@@ -2383,7 +2383,7 @@
 	      c = new Array(nb),
 	      i;
 
-	  for (i = 0; i < na; ++i) x[i] = value(a[i], b[i]);
+	  for (i = 0; i < na; ++i) x[i] = interpolateValue(a[i], b[i]);
 	  for (; i < nb; ++i) c[i] = b[i];
 
 	  return function(t) {
@@ -2415,7 +2415,7 @@
 
 	  for (k in b) {
 	    if (k in a) {
-	      i[k] = value(a[k], b[k]);
+	      i[k] = interpolateValue(a[k], b[k]);
 	    } else {
 	      c[k] = b[k];
 	    }
@@ -2490,7 +2490,7 @@
 	        });
 	}
 
-	function value(a, b) {
+	function interpolateValue(a, b) {
 	  var t = typeof b, c;
 	  return b == null || t === "boolean" ? constant$3(b)
 	      : (t === "number" ? interpolateNumber
@@ -3074,12 +3074,12 @@
 	  };
 	}
 
-	function attrFunction$1(name, interpolate$$1, value$$1) {
+	function attrFunction$1(name, interpolate$$1, value) {
 	  var value00,
 	      value10,
 	      interpolate0;
 	  return function() {
-	    var value0, value1 = value$$1(this);
+	    var value0, value1 = value(this);
 	    if (value1 == null) return void this.removeAttribute(name);
 	    value0 = this.getAttribute(name);
 	    return value0 === value1 ? null
@@ -3088,12 +3088,12 @@
 	  };
 	}
 
-	function attrFunctionNS$1(fullname, interpolate$$1, value$$1) {
+	function attrFunctionNS$1(fullname, interpolate$$1, value) {
 	  var value00,
 	      value10,
 	      interpolate0;
 	  return function() {
-	    var value0, value1 = value$$1(this);
+	    var value0, value1 = value(this);
 	    if (value1 == null) return void this.removeAttributeNS(fullname.space, fullname.local);
 	    value0 = this.getAttributeNS(fullname.space, fullname.local);
 	    return value0 === value1 ? null
@@ -3102,12 +3102,12 @@
 	  };
 	}
 
-	function transition_attr(name, value$$1) {
+	function transition_attr(name, value) {
 	  var fullname = namespace(name), i = fullname === "transform" ? interpolateTransformSvg : interpolate;
-	  return this.attrTween(name, typeof value$$1 === "function"
-	      ? (fullname.local ? attrFunctionNS$1 : attrFunction$1)(fullname, i, tweenValue(this, "attr." + name, value$$1))
-	      : value$$1 == null ? (fullname.local ? attrRemoveNS$1 : attrRemove$1)(fullname)
-	      : (fullname.local ? attrConstantNS$1 : attrConstant$1)(fullname, i, value$$1 + ""));
+	  return this.attrTween(name, typeof value === "function"
+	      ? (fullname.local ? attrFunctionNS$1 : attrFunction$1)(fullname, i, tweenValue(this, "attr." + name, value))
+	      : value == null ? (fullname.local ? attrRemoveNS$1 : attrRemove$1)(fullname)
+	      : (fullname.local ? attrConstantNS$1 : attrConstant$1)(fullname, i, value + ""));
 	}
 
 	function attrTweenNS(fullname, value) {
@@ -3353,13 +3353,13 @@
 	  };
 	}
 
-	function styleFunction$1(name, interpolate$$1, value$$1) {
+	function styleFunction$1(name, interpolate$$1, value) {
 	  var value00,
 	      value10,
 	      interpolate0;
 	  return function() {
 	    var value0 = styleValue(this, name),
-	        value1 = value$$1(this);
+	        value1 = value(this);
 	    if (value1 == null) value1 = (this.style.removeProperty(name), styleValue(this, name));
 	    return value0 === value1 ? null
 	        : value0 === value00 && value1 === value10 ? interpolate0
@@ -3367,14 +3367,14 @@
 	  };
 	}
 
-	function transition_style(name, value$$1, priority) {
+	function transition_style(name, value, priority) {
 	  var i = (name += "") === "transform" ? interpolateTransformCss : interpolate;
-	  return value$$1 == null ? this
+	  return value == null ? this
 	          .styleTween(name, styleRemove$1(name, i))
 	          .on("end.style." + name, styleRemoveEnd(name))
-	      : this.styleTween(name, typeof value$$1 === "function"
-	          ? styleFunction$1(name, i, tweenValue(this, "style." + name, value$$1))
-	          : styleConstant$1(name, i, value$$1 + ""), priority);
+	      : this.styleTween(name, typeof value === "function"
+	          ? styleFunction$1(name, i, tweenValue(this, "style." + name, value))
+	          : styleConstant$1(name, i, value + ""), priority);
 	}
 
 	function styleTween(name, value, priority) {
@@ -4736,15 +4736,15 @@
 	  };
 	}
 
-	function bimap(domain, range$$1, deinterpolate, reinterpolate) {
-	  var d0 = domain[0], d1 = domain[1], r0 = range$$1[0], r1 = range$$1[1];
+	function bimap(domain, range, deinterpolate, reinterpolate) {
+	  var d0 = domain[0], d1 = domain[1], r0 = range[0], r1 = range[1];
 	  if (d1 < d0) d0 = deinterpolate(d1, d0), r0 = reinterpolate(r1, r0);
 	  else d0 = deinterpolate(d0, d1), r0 = reinterpolate(r0, r1);
 	  return function(x) { return r0(d0(x)); };
 	}
 
-	function polymap(domain, range$$1, deinterpolate, reinterpolate) {
-	  var j = Math.min(domain.length, range$$1.length) - 1,
+	function polymap(domain, range, deinterpolate, reinterpolate) {
+	  var j = Math.min(domain.length, range.length) - 1,
 	      d = new Array(j),
 	      r = new Array(j),
 	      i = -1;
@@ -4752,12 +4752,12 @@
 	  // Reverse descending domains.
 	  if (domain[j] < domain[0]) {
 	    domain = domain.slice().reverse();
-	    range$$1 = range$$1.slice().reverse();
+	    range = range.slice().reverse();
 	  }
 
 	  while (++i < j) {
 	    d[i] = deinterpolate(domain[i], domain[i + 1]);
-	    r[i] = reinterpolate(range$$1[i], range$$1[i + 1]);
+	    r[i] = reinterpolate(range[i], range[i + 1]);
 	  }
 
 	  return function(x) {
@@ -4778,25 +4778,25 @@
 	// reinterpolate(a, b)(t) takes a parameter t in [0,1] and returns the corresponding domain value x in [a,b].
 	function continuous(deinterpolate, reinterpolate) {
 	  var domain = unit,
-	      range$$1 = unit,
-	      interpolate$$1 = value,
+	      range = unit,
+	      interpolate$$1 = interpolateValue,
 	      clamp = false,
 	      piecewise$$1,
 	      output,
 	      input;
 
 	  function rescale() {
-	    piecewise$$1 = Math.min(domain.length, range$$1.length) > 2 ? polymap : bimap;
+	    piecewise$$1 = Math.min(domain.length, range.length) > 2 ? polymap : bimap;
 	    output = input = null;
 	    return scale;
 	  }
 
 	  function scale(x) {
-	    return (output || (output = piecewise$$1(domain, range$$1, clamp ? deinterpolateClamp(deinterpolate) : deinterpolate, interpolate$$1)))(+x);
+	    return (output || (output = piecewise$$1(domain, range, clamp ? deinterpolateClamp(deinterpolate) : deinterpolate, interpolate$$1)))(+x);
 	  }
 
 	  scale.invert = function(y) {
-	    return (input || (input = piecewise$$1(range$$1, domain, deinterpolateLinear, clamp ? reinterpolateClamp(reinterpolate) : reinterpolate)))(+y);
+	    return (input || (input = piecewise$$1(range, domain, deinterpolateLinear, clamp ? reinterpolateClamp(reinterpolate) : reinterpolate)))(+y);
 	  };
 
 	  scale.domain = function(_) {
@@ -4804,11 +4804,11 @@
 	  };
 
 	  scale.range = function(_) {
-	    return arguments.length ? (range$$1 = slice$5.call(_), rescale()) : range$$1.slice();
+	    return arguments.length ? (range = slice$5.call(_), rescale()) : range.slice();
 	  };
 
 	  scale.rangeRound = function(_) {
-	    return range$$1 = slice$5.call(_), interpolate$$1 = interpolateRound, rescale();
+	    return range = slice$5.call(_), interpolate$$1 = interpolateRound, rescale();
 	  };
 
 	  scale.clamp = function(_) {
@@ -7245,26 +7245,26 @@
 		return Load;
 	}
 
-	function tlin(Ztlin = 60, Length = 0.5 * 0.0254) { // Z is in ohms and Length is in meters, sparameters of a physical transmission line
+	function tlin(Z = 60, Length = 0.5 * 0.0254) { // Z is in ohms and Length is in meters, sparameters of a physical transmission line
 		var tlin = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
-		var Zo = complex(Ro,0), Yo = Zo.inv(), one = complex(1,0), two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
-		var A = {}, B = {}, C = {}, Ds = {}, alpha = 0, beta = 0, gamma = {};
+		var Zo = complex(Ro,0), Yo = Zo.inv(), one = complex(1,0), two = complex(2,0), freqCount = 0, Ztlin = [], s11, s12, s21, s22, sparsArray = [];
+		var Atlin = {}, Btlin = {}, Ctlin = {}, Ds = {}, alpha = 0, beta = 0, gamma = {};
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
-			Z = complex(Ztlin, 0);
+			Ztlin = complex(Z, 0);
 		
-			A = Z.mul(Z).sub(Zo.mul(Zo));
-			B = Z.mul(Z).add(Zo.mul(Zo));
-			C = two.mul(Z).mul(Zo);
+			Atlin = Ztlin.mul(Ztlin).sub(Zo.mul(Zo));
+			Btlin = Ztlin.mul(Ztlin).add(Zo.mul(Zo));
+			Ctlin = two.mul(Ztlin).mul(Zo);
 			
 			alpha = 0;
 			beta = 2*Math.PI*frequencyList[freqCount]/2.997925e8;
 			gamma = complex(alpha * Length, beta * Length);
 
-			Ds = C.mul(gamma.coshCplx()).add(B.mul(gamma.sinhCplx()));
+			Ds = Ctlin.mul(gamma.coshCplx()).add(Btlin.mul(gamma.sinhCplx()));
 
-			s11 = A.mul(gamma.sinhCplx()).div(Ds);
-			s12 = C.div(Ds);	
+			s11 = Atlin.mul(gamma.sinhCplx()).div(Ds);
+			s12 = Ctlin.div(Ds);	
 			s21 = s12;
 			s22 = s11;
 			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
@@ -7273,10 +7273,10 @@
 		return tlin;
 	}
 
-	function tclin(Zoetclin = 100, Zootclin = 30, Length = 1.47 * 0.0254) { // 1.4732 is the quarter wavelength at 2GHz, (1.3412 at 2.2 GHz)
+	function tclin(Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254) { // 1.4732 is the quarter wavelength at 2GHz, (1.3412 at 2.2 GHz)
 		var ctlin = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
-		var Zo = complex(Ro,0), Yo = Zo.inv(), one = complex(1,0), two = complex(2,0), freqCount = 0, Zoe = [], Zoo = [];
+		var Zo = complex(Ro,0), Yo = Zo.inv(), one = complex(1,0), two = complex(2,0), freqCount = 0, Zoetclin = [], Zootclin = [];
 		var s11oe, s12oe, s21oe, s22oe;
 		var s11oo, s12oo, s21oo, s22oo;
 		var s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44;
@@ -7291,11 +7291,11 @@
 			gamma = complex(alpha * Length, beta * Length);
 
 			// Zoe section
-			Zoe = complex(Zoetclin, 0);
+			Zoetclin = complex(Zoe, 0);
 
-			Aoe = Zoe.mul(Zoe).sub(Zo.mul(Zo));
-			Boe = Zoe.mul(Zoe).add(Zo.mul(Zo));
-			Coe = two.mul(Zoe).mul(Zo);
+			Aoe = Zoetclin.mul(Zoetclin).sub(Zo.mul(Zo));
+			Boe = Zoetclin.mul(Zoetclin).add(Zo.mul(Zo));
+			Coe = two.mul(Zoetclin).mul(Zo);
 
 			Dsoe = Coe.mul(gamma.coshCplx()).add(Boe.mul(gamma.sinhCplx()));
 
@@ -7304,11 +7304,11 @@
 			s21oe = s12oe;
 			s22oe = s11oe; 
 			// Zoo section
-			Zoo = complex(Zootclin, 0);
+			Zootclin = complex(Zoo, 0);
 
-			Aoo = Zoo.mul(Zoo).sub(Zo.mul(Zo));
-			Boo = Zoo.mul(Zoo).add(Zo.mul(Zo));
-			Coo = two.mul(Zoo).mul(Zo);
+			Aoo = Zootclin.mul(Zootclin).sub(Zo.mul(Zo));
+			Boo = Zootclin.mul(Zootclin).add(Zo.mul(Zo));
+			Coo = two.mul(Zootclin).mul(Zo);
 
 			Dsoo = Coo.mul(gamma.coshCplx()).add(Boo.mul(gamma.sinhCplx()));
 
@@ -7332,6 +7332,67 @@
 		}	ctlin.setspars(sparsArray);
 		ctlin.setglobal(global);	
 		return ctlin;
+	}
+
+	function mlin(Width = 0.98e-3, Height = 1.02e-3, Length = 0.5 * 0.025, Thickness = 0.0000125 * 0.054, er = 10, rho = 0, tand = 0.000) {
+		var mlin = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0), o = Zo.inv(), one = complex(1,0), two = complex(2,0), freqCount = 0, s11, s12, s21, s22, sparsArray = [];
+		var Atlin = {}, Btlin = {}, Ctlin = {}, Zmlin = {}, Ds = {}, alpha = 0, beta = 0, gamma = {};
+
+		var pi = Math.PI;
+		var f = 12e9;
+		var delWOverH = Width/Height <= 1/(2*pi) ? (1.25/pi)*(Thickness/Height)*(1+Math.log(4*pi*WidtHeight/Thickness)) : (1.25/pi)*(Thickness/Height)*(1+Math.log(2*Height/Thickness));
+		var weOverH = Width/Height + delWOverH;
+		var Q = ((er-1)/4.6)*(Thickness/Height)*(1/Math.sqrt(Width/Height));
+		var Fwh = 1/Math.sqrt(1+10*Width/Height);
+		var ere = ((er+1)/2)+((er-1)/2)*Fwh-Q;
+		var Z = Width/Height <= 1.0 ? (60/Math.sqrt(ere))*Math.log(8/weOverH+0.25*weOverH) : (376.7/Math.sqrt(ere))*(1/(weOverH+1.393+0.667*Math.log(weOverH+1.444 )));
+
+		// compute dispersive ZoT ----- INTERLUDE per Gupta page 64, I need stripline version of Zo from pages 57 and 28 with b = 2h
+		var b = 2*Height, x = Thickness/b, m = 2*(1/(1 + (2/3)*(x/(1-x))));
+		var delW = (x/(pi*(1-x)))*(1-0.5*Math.log( (x/(2-x))**2 + (0.0796 * x/(Width/b + 1.1*x))**m )) * (b-Thickness);
+		var wPrime = Width + delW;
+		var ZoT = 2 * (1/Math.sqrt(er)) * 30 * Math.log( 1 + (4/pi) * (b-Thickness)/wPrime * ( 8/pi * (b-Thickness)/wPrime + Math.sqrt( (8/pi * (b-Thickness)/wPrime)**2 + 6.27)));
+		// back to microstrip now that I have ZoT
+		var hMils = Height * 1000/0.0254;
+		var fpGHz = 15.66 * Z/hMils; // fGHz = f/1e9;
+		var G = Math.sqrt( (Z-5)/60 ) + 0.004*Z;
+		var Zf = 0;
+		var eref = 0;
+
+		// compute conductor and dielectric losses
+		var B = Width/Height >= 1/(2*pi) ? Height : 2*pi*Width;
+		var Rs = Math.sqrt(pi*f*4*pi*1e-7*rho*1.72e-8);
+		var A = 1 + 1/weOverH * ( 1 + 1/pi * Math.log(2 * B/Thickness));
+		var Ac = Width/Height <= 1.0 ? 1.38*A*(Rs/(Height*Z))*(32-weOverH)**2/(32+weOverH)**2 : 6.1e-5*A*(Rs*Z*ere/Height)*(weOverH+(0.667*weOverH)/(weOverH+1.44));
+		var Ad = 27.3*er/(er-1)*(ere-1)/Math.sqrt(ere)*tand/0.05;
+
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+
+			Zf = ZoT - (ZoT-Z)/(1+G*(  (frequencyList[freqCount]/1e9) /fpGHz)**2);
+			eref = er - (er-ere)/(1+G*(  (frequencyList[freqCount]/1e9)   /fpGHz)**2);
+
+			Zmlin = complex(Zf, 0);
+
+			Atlin = Zmlin.mul(Zmlin).sub(Zo.mul(Zo));
+			Btlin = Zmlin.mul(Zmlin).add(Zo.mul(Zo));
+			Ctlin = two.mul(Zmlin).mul(Zo);
+
+			alpha = (Ac + Ad)/8.68588;
+			beta = Math.sqrt(eref)*2*Math.PI*frequencyList[freqCount]/2.997925e8;
+			gamma = complex(alpha * Length, beta * Length);
+
+			Ds = Ctlin.mul(gamma.coshCplx()).add(Btlin.mul(gamma.sinhCplx()));
+
+			s11 = Atlin.mul(gamma.sinhCplx()).div(Ds);
+			s12 = Ctlin.div(Ds);	
+			s21 = s12;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}	mlin.setspars(sparsArray);
+		mlin.setglobal(global);	
+		return mlin;
 	}
 
 	function mtee(w1 = 0.186*0.0254, w2 = 0.334*0.0254, er = 2.55, h = 0.125*0.0254) { // series resistor nPort object
@@ -7423,6 +7484,7 @@
 	exports.Load = Load;
 	exports.tlin = tlin;
 	exports.tclin = tclin;
+	exports.mlin = mlin;
 	exports.mtee = mtee;
 	exports.helloNport = helloNport;
 

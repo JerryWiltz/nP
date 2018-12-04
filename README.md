@@ -251,9 +251,39 @@ nP.<b>sePaRLC</b>(<i> R = 75, L = 5e-9, C = 1e-12 </i>) [<>](https://github.com/
 
 Ideal Transmission lines
 
-nP.<b>tlin</b>(<i> Ztlin = 60, Length = 0.5 * 0.0254 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/tlin/tlin.js "Source") An ideal two port transmission line. The tlin is lossless and the dielectric constant is 1.0 . Ztlin is the characteristic impedance in Ohms, and Length is the physical length in meters. Creates and returns a new nPort Object. If no arguments, the default values are 60 Ohms, 0.5 * 0.0254 Meters.
+nP.<b>tlin</b>(<i> Z = 60, Length = 0.5 * 0.0254 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/tlin/tlin.js "Source") An ideal two port transmission line. The tlin is lossless and the dielectric constant is 1.0 . Z is the characteristic impedance in Ohms, and Length is the physical length in meters. Creates and returns a new nPort Object. If no arguments, the default values are 60 Ohms, 0.5 * 0.0254 Meters.
 
-nP.<b>tclin</b>(<i> Zoetclin = 100, Zootclin = 30, Length = 1.47 * 0.0254 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/tlin/tclin.js "Source") An ideal four port coupled transmission line. The ports are numbered clockwise. Port 1 is the upper left, Port 2 is the upper right, Port 3 is the lower right, and Port 4 is the lower left. When the input is at Port 1, the through port is Port 2, the coupled port is Port 4, and the isolated port is Port 3. The tclin is lossless and the dielectric constant is 1.0 . Zoetclin is the even mode characteristic impedance in Ohms, Zootclin is the odd mode characteristic impedance in Ohms, and Length is the physical length in meters. Creates and returns a new nPort Object. If no arguments, the default values are 100 Ohms, 30 Ohms, and 1.341 * 0.0254 Meters. Note: 1.341 * 0.0254 is the 1/4 wavelength at 2.2GHz
+nP.<b>tclin</b>(<i> Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/tlin/tclin.js "Source") An ideal four port coupled transmission line. The ports are numbered clockwise. Port 1 is the upper left, Port 2 is the upper right, Port 3 is the lower right, and Port 4 is the lower left. When the input is at Port 1, the through port is Port 2, the coupled port is Port 4, and the isolated port is Port 3. The tclin is lossless and the dielectric constant is 1.0 . Zoe is the even mode characteristic impedance in Ohms, Zoo is the odd mode characteristic impedance in Ohms, and Length is the physical length in meters. Creates and returns a new nPort Object. If no arguments, the default values are 100 Ohms, 30 Ohms, and 1.341 * 0.0254 Meters. Note: 1.341 * 0.0254 is the 1/4 wavelength at 2.2GHz. Here below is a coupled bandpass filter example.
+
+```html
+// set up the frequency
+var g = nP.global;	
+g.fList = g.fGen(2000e6,10000e6,100);
+
+// set up the coupled sections. 1/4 wavelength at 6.0GHz
+var tclin1 = nP.tclin(79.667,37.834,0.491 * 0.0254);
+var tclin2 = nP.tclin(60.866,42.505,0.491 * 0.0254);
+var tclin3 = nP.tclin(79.667,37.834,0.491 * 0.0254);
+
+// set up the open
+var open = nP.Open();
+
+// set up the filter
+var filt = nP.nodal([tclin1,1,2,3,4],[tclin2,3,5,6,7],[tclin3,6,8,9,10],[open,2],[open,4],[open,5],[open,7],[open,8],[open,10],['out',1,9]);
+var filtOut = filt.out('s21dB','s11dB');
+
+// set up plot
+var plot = {
+	canvasID: '#canvas1',
+	inputTable: filtOut,
+	freqUnits: 'GHz'
+};
+nP.lineChart(plot);
+```
+
+Microstrip Transmission lines
+
+nP.<b>mlin</b>(<i> Width = 0.98e-3, Height = 1.02e-3, Length = 0.5 * 0.025, Thickness = 0.0000125 * 0.054, er = 10, rho = 0, tand = 0.000 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/mlin/mlin.js "Source") A microstrip two port transmission line. Width is the strip width in meters, Height is the substrate height in meters. Length is the length in meters. er is the relative dielectric constant. rho is the loss relative to copper. tand is the dielecric loss tangent. Dispersion is factored in, Skin effect is not.
 
 ### Connections
 
@@ -457,7 +487,17 @@ m.<b>invert</b>(<i> </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/
 
 m.<b>invertCplx</b>(<i> </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that inverts a complex matrix and returns a matrix object. Method chaining capable.
 
-m.<b>showMatrix</b>(<i>myArray</i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that creates and appends a HTML div element and renders a table showing the matrix elements. This might be useful, like console.log is for troubleshooting problems.
+m.<b>showMatrix</b>(<i>myArray</i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that creates and appends a HTML div element and renders a table showing the matrix elements. This might be useful, like console.log is, for troubleshooting problems.
+
+```html
+// using showMatrix with a Matrix Object
+var myMatrix = nP.matrix([[2],[3]]);
+nP.showMatrix(myMatrix.m);
+
+// using showMatrix with an array argument
+var myArray = [[2],[3]];
+nP.showMatrix(myArray);
+```
 
 m.<b>showMatrixCplx</b>(<i>myComplexArray </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that creates and appends a HTML div element and renders a table showing the matrix elements. This might be useful, like console.log is, for troubleshooting problems.
 

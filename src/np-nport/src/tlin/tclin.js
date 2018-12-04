@@ -2,10 +2,10 @@ import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
 
-export function tclin(Zoetclin = 100, Zootclin = 30, Length = 1.47 * 0.0254) { // 1.4732 is the quarter wavelength at 2GHz, (1.3412 at 2.2 GHz)
+export function tclin(Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254) { // 1.4732 is the quarter wavelength at 2GHz, (1.3412 at 2.2 GHz)
 	var ctlin = new nPort;
 	var frequencyList = global.fList, Ro = global.Ro;
-	var Zo = complex(Ro,0), Yo = Zo.inv(), one = complex(1,0), two = complex(2,0), freqCount = 0, Zoe = [], Zoo = [], Y = [];
+	var Zo = complex(Ro,0), Yo = Zo.inv(), one = complex(1,0), two = complex(2,0), freqCount = 0, Zoetclin = [], Zootclin = [], Y = [];
 	var s11oe, s12oe, s21oe, s22oe;
 	var s11oo, s12oo, s21oo, s22oo;
 	var s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44;
@@ -20,11 +20,11 @@ export function tclin(Zoetclin = 100, Zootclin = 30, Length = 1.47 * 0.0254) { /
 		gamma = complex(alpha * Length, beta * Length);
 
 		// Zoe section
-		Zoe = complex(Zoetclin, 0);
+		Zoetclin = complex(Zoe, 0);
 
-		Aoe = Zoe.mul(Zoe).sub(Zo.mul(Zo));
-		Boe = Zoe.mul(Zoe).add(Zo.mul(Zo));
-		Coe = two.mul(Zoe).mul(Zo);
+		Aoe = Zoetclin.mul(Zoetclin).sub(Zo.mul(Zo));
+		Boe = Zoetclin.mul(Zoetclin).add(Zo.mul(Zo));
+		Coe = two.mul(Zoetclin).mul(Zo);
 
 		Dsoe = Coe.mul(gamma.coshCplx()).add(Boe.mul(gamma.sinhCplx()));
 
@@ -33,11 +33,11 @@ export function tclin(Zoetclin = 100, Zootclin = 30, Length = 1.47 * 0.0254) { /
 		s21oe = s12oe;
 		s22oe = s11oe; 
 		// Zoo section
-		Zoo = complex(Zootclin, 0);
+		Zootclin = complex(Zoo, 0);
 
-		Aoo = Zoo.mul(Zoo).sub(Zo.mul(Zo));
-		Boo = Zoo.mul(Zoo).add(Zo.mul(Zo));
-		Coo = two.mul(Zoo).mul(Zo);
+		Aoo = Zootclin.mul(Zootclin).sub(Zo.mul(Zo));
+		Boo = Zootclin.mul(Zootclin).add(Zo.mul(Zo));
+		Coo = two.mul(Zootclin).mul(Zo);
 
 		Dsoo = Coo.mul(gamma.coshCplx()).add(Boo.mul(gamma.sinhCplx()));
 
