@@ -40,5 +40,6 @@ export {tlin} from  './tlin/tlin';
 export {tclin} from './tlin/tclin';
 
 export {mlin} from './mlin/mlin';
+export {mclin} from './mlin/mclin';
 export {mtee} from './mlin/mtee';
 

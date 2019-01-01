@@ -2,7 +2,7 @@ import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
 
-export function mlin(Width = 0.98e-3, Height = 1.02e-3, Length = 0.5 * 0.025, Thickness = 0.0000125 * 0.054, er = 10, rho = 0, tand = 0.000) {
+export function mlin(Width = 0.023 * 0.0254, Height = 0.025 * 0.0254, Length = 0.5 * 0.025, Thickness = 0.00 * 0.0254, er = 10, rho = 0, tand = 0.000) {
 	var mlin = new nPort;
 	var frequencyList = global.fList, Ro = global.Ro;
 	var Zo = complex(Ro,0), o = Zo.inv(), one = complex(1,0), two = complex(2,0), freqCount = 0, ZZ = [], s11, s12, s21, s22, sparsArray = [];
@@ -11,7 +11,7 @@ export function mlin(Width = 0.98e-3, Height = 1.02e-3, Length = 0.5 * 0.025, Th
 	var pi = Math.PI;
 	var f = 12e9;
 	var wOverH = Width/Height;
-	var delWOverH = Width/Height <= 1/(2*pi) ? (1.25/pi)*(Thickness/Height)*(1+Math.log(4*pi*WidtHeight/Thickness)) : (1.25/pi)*(Thickness/Height)*(1+Math.log(2*Height/Thickness));
+	var delWOverH = Thickness > 0.0 ? ( wOverH <= 1/(2*pi) ? (1.25/pi)*(Thickness/Height)*(1+Math.log(4*pi*Width/Thickness)) : (1.25/pi)*(Thickness/Height)*(1+Math.log(2*Height/Thickness)) ) : 0.0;
 	var weOverH = Width/Height + delWOverH;
 	var Q = ((er-1)/4.6)*(Thickness/Height)*(1/Math.sqrt(Width/Height));
 	var Fwh = 1/Math.sqrt(1+10*Width/Height);

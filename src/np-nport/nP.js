@@ -1004,26 +1004,26 @@
 		return Load;
 	}
 
-	function tlin(Ztlin = 60, Length = 0.5 * 0.0254) { // Z is in ohms and Length is in meters, sparameters of a physical transmission line
+	function tlin(Z = 60, Length = 0.5 * 0.0254) { // Z is in ohms and Length is in meters, sparameters of a physical transmission line
 		var tlin = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
-		var Zo = complex(Ro,0), Yo = Zo.inv(), one = complex(1,0), two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
-		var A = {}, B = {}, C = {}, Ds = {}, alpha = 0, beta = 0, gamma = {};
+		var Zo = complex(Ro,0), Yo = Zo.inv(), one = complex(1,0), two = complex(2,0), freqCount = 0, Ztlin = [], s11, s12, s21, s22, sparsArray = [];
+		var Atlin = {}, Btlin = {}, Ctlin = {}, Ds = {}, alpha = 0, beta = 0, gamma = {};
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
-			Z = complex(Ztlin, 0);
+			Ztlin = complex(Z, 0);
 		
-			A = Z.mul(Z).sub(Zo.mul(Zo));
-			B = Z.mul(Z).add(Zo.mul(Zo));
-			C = two.mul(Z).mul(Zo);
+			Atlin = Ztlin.mul(Ztlin).sub(Zo.mul(Zo));
+			Btlin = Ztlin.mul(Ztlin).add(Zo.mul(Zo));
+			Ctlin = two.mul(Ztlin).mul(Zo);
 			
 			alpha = 0;
 			beta = 2*Math.PI*frequencyList[freqCount]/2.997925e8;
 			gamma = complex(alpha * Length, beta * Length);
 
-			Ds = C.mul(gamma.coshCplx()).add(B.mul(gamma.sinhCplx()));
+			Ds = Ctlin.mul(gamma.coshCplx()).add(Btlin.mul(gamma.sinhCplx()));
 
-			s11 = A.mul(gamma.sinhCplx()).div(Ds);
-			s12 = C.div(Ds);	
+			s11 = Atlin.mul(gamma.sinhCplx()).div(Ds);
+			s12 = Ctlin.div(Ds);	
 			s21 = s12;
 			s22 = s11;
 			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
@@ -1032,10 +1032,10 @@
 		return tlin;
 	}
 
-	function tclin(Zoetclin = 100, Zootclin = 30, Length = 1.47 * 0.0254) { // 1.4732 is the quarter wavelength at 2GHz, (1.3412 at 2.2 GHz)
+	function tclin(Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254) { // 1.4732 is the quarter wavelength at 2GHz, (1.3412 at 2.2 GHz)
 		var ctlin = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
-		var Zo = complex(Ro,0), Yo = Zo.inv(), one = complex(1,0), two = complex(2,0), freqCount = 0, Zoe = [], Zoo = [];
+		var Zo = complex(Ro,0), Yo = Zo.inv(), one = complex(1,0), two = complex(2,0), freqCount = 0, Zoetclin = [], Zootclin = [];
 		var s11oe, s12oe, s21oe, s22oe;
 		var s11oo, s12oo, s21oo, s22oo;
 		var s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44;
@@ -1050,11 +1050,11 @@
 			gamma = complex(alpha * Length, beta * Length);
 
 			// Zoe section
-			Zoe = complex(Zoetclin, 0);
+			Zoetclin = complex(Zoe, 0);
 
-			Aoe = Zoe.mul(Zoe).sub(Zo.mul(Zo));
-			Boe = Zoe.mul(Zoe).add(Zo.mul(Zo));
-			Coe = two.mul(Zoe).mul(Zo);
+			Aoe = Zoetclin.mul(Zoetclin).sub(Zo.mul(Zo));
+			Boe = Zoetclin.mul(Zoetclin).add(Zo.mul(Zo));
+			Coe = two.mul(Zoetclin).mul(Zo);
 
 			Dsoe = Coe.mul(gamma.coshCplx()).add(Boe.mul(gamma.sinhCplx()));
 
@@ -1063,11 +1063,11 @@
 			s21oe = s12oe;
 			s22oe = s11oe; 
 			// Zoo section
-			Zoo = complex(Zootclin, 0);
+			Zootclin = complex(Zoo, 0);
 
-			Aoo = Zoo.mul(Zoo).sub(Zo.mul(Zo));
-			Boo = Zoo.mul(Zoo).add(Zo.mul(Zo));
-			Coo = two.mul(Zoo).mul(Zo);
+			Aoo = Zootclin.mul(Zootclin).sub(Zo.mul(Zo));
+			Boo = Zootclin.mul(Zootclin).add(Zo.mul(Zo));
+			Coo = two.mul(Zootclin).mul(Zo);
 
 			Dsoo = Coo.mul(gamma.coshCplx()).add(Boo.mul(gamma.sinhCplx()));
 
@@ -1093,55 +1093,54 @@
 		return ctlin;
 	}
 
-	function mlin(w = 0.98e-3, h = 1.02e-3, l = 0.5 * 0.025, t = 0.0000125 * 0.054, er = 10, rho = 0, tand = 0.000) {
+	function mlin(Width = 0.98e-3, Height = 1.02e-3, Length = 0.5 * 0.025, Thickness = 0.0000125 * 0.054, er = 10, rho = 0, tand = 0.000) {
 		var mlin = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
 		var Zo = complex(Ro,0), o = Zo.inv(), one = complex(1,0), two = complex(2,0), freqCount = 0, s11, s12, s21, s22, sparsArray = [];
 		var Atlin = {}, Btlin = {}, Ctlin = {}, Zmlin = {}, Ds = {}, alpha = 0, beta = 0, gamma = {};
 
-	var pi = Math.PI;
-	var f = 12e9;
-	var delWOverH = w/h <= 1/(2*pi) ? (1.25/pi)*(t/h)*(1+Math.log(4*pi*w/t)) : (1.25/pi)*(t/h)*(1+Math.log(2*h/t));
-	var weOverH = w/h + delWOverH;
-	var Q = ((er-1)/4.6)*(t/h)*(1/Math.sqrt(w/h));
-	var Fwh = 1/Math.sqrt(1+10*w/h);
-	var ere = ((er+1)/2)+((er-1)/2)*Fwh-Q;
-	var Z = w/h <= 1.0 ? (60/Math.sqrt(ere))*Math.log(8/weOverH+0.25*weOverH) : (376.7/Math.sqrt(ere))*(1/(weOverH+1.393+0.667*Math.log(weOverH+1.444 )));
+		var pi = Math.PI;
+		var f = 12e9;
+		var delWOverH = Width/Height <= 1/(2*pi) ? (1.25/pi)*(Thickness/Height)*(1+Math.log(4*pi*Width/Thickness)) : (1.25/pi)*(Thickness/Height)*(1+Math.log(2*Height/Thickness));
+		var weOverH = Width/Height + delWOverH;
+		var Q = ((er-1)/4.6)*(Thickness/Height)*(1/Math.sqrt(Width/Height));
+		var Fwh = 1/Math.sqrt(1+10*Width/Height);
+		var ere = ((er+1)/2)+((er-1)/2)*Fwh-Q;
+		var Z = Width/Height <= 1.0 ? (60/Math.sqrt(ere))*Math.log(8/weOverH+0.25*weOverH) : (376.7/Math.sqrt(ere))*(1/(weOverH+1.393+0.667*Math.log(weOverH+1.444 )));
 
-	// compute dispersive ZoT
-	// INTERLUDE per Gupta page 64, I need stripline version of Zo from pages 57 and 28 with b = 2h
-	var b = 2*h, x = t/b, m = 2*(1/(1 + (2/3)*(x/(1-x))));
-	var delW = (x/(pi*(1-x)))*(1-0.5*Math.log( (x/(2-x))**2 + (0.0796 * x/(w/b + 1.1*x))**m )) * (b-t);
-	var wPrime = w + delW;
-	var ZoT = 2 * (1/Math.sqrt(er)) * 30 * Math.log( 1 + (4/pi) * (b-t)/wPrime * ( 8/pi * (b-t)/wPrime + Math.sqrt( (8/pi * (b-t)/wPrime)**2 + 6.27)));
-	// back to microstrip now that I have ZoT
-	var hMils = h * 1000/0.0254;
-	var fpGHz = 15.66 * Z/hMils; // fGHz = f/1e9;
-	var G = Math.sqrt( (Z-5)/60 ) + 0.004*Z;
-	var Zf = 0;
-	var eref = 0; //er - (er-ere)/(1+G*(fGHz/fpGHz)**2);
+		// compute dispersive ZoT ----- INTERLUDE per Gupta page 64, I need stripline version of Zo from pages 57 and 28 with b = 2h
+		var b = 2*Height, x = Thickness/b, m = 2*(1/(1 + (2/3)*(x/(1-x))));
+		var delW = (x/(pi*(1-x)))*(1-0.5*Math.log( (x/(2-x))**2 + (0.0796 * x/(Width/b + 1.1*x))**m )) * (b-Thickness);
+		var wPrime = Width + delW;
+		var ZoT = 2 * (1/Math.sqrt(er)) * 30 * Math.log( 1 + (4/pi) * (b-Thickness)/wPrime * ( 8/pi * (b-Thickness)/wPrime + Math.sqrt( (8/pi * (b-Thickness)/wPrime)**2 + 6.27)));
+		// back to microstrip now that I have ZoT
+		var hMils = Height * 1000/0.0254;
+		var fpGHz = 15.66 * Z/hMils; // fGHz = f/1e9;
+		var G = Math.sqrt( (Z-5)/60 ) + 0.004*Z;
+		var Zf = 0;
+		var eref = 0;
 
-	// compute conductor and dielectric losses
-	var B = w/h >= 1/(2*pi) ? h : 2*pi*w;
-	var Rs = Math.sqrt(pi*f*4*pi*1e-7*rho*1.72e-8);
-	var A = 1 + 1/weOverH * ( 1 + 1/pi * Math.log(2 * B/t));
-	var Ac = w/h <= 1.0 ? 1.38*A*(Rs/(h*Z))*(32-weOverH)**2/(32+weOverH)**2 : 6.1e-5*A*(Rs*Z*ere/h)*(weOverH+(0.667*weOverH)/(weOverH+1.44));
-	var Ad = 27.3*er/(er-1)*(ere-1)/Math.sqrt(ere)*tand/0.05;
+		// compute conductor and dielectric losses
+		var B = Width/Height >= 1/(2*pi) ? Height : 2*pi*Width;
+		var Rs = Math.sqrt(pi*f*4*pi*1e-7*rho*1.72e-8);
+		var A = 1 + 1/weOverH * ( 1 + 1/pi * Math.log(2 * B/Thickness));
+		var Ac = Width/Height <= 1.0 ? 1.38*A*(Rs/(Height*Z))*(32-weOverH)**2/(32+weOverH)**2 : 6.1e-5*A*(Rs*Z*ere/Height)*(weOverH+(0.667*weOverH)/(weOverH+1.44));
+		var Ad = 27.3*er/(er-1)*(ere-1)/Math.sqrt(ere)*tand/0.05;
 
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
-				
+
 			Zf = ZoT - (ZoT-Z)/(1+G*(  (frequencyList[freqCount]/1e9) /fpGHz)**2);
 			eref = er - (er-ere)/(1+G*(  (frequencyList[freqCount]/1e9)   /fpGHz)**2);
-			
+
 			Zmlin = complex(Zf, 0);
-		
+
 			Atlin = Zmlin.mul(Zmlin).sub(Zo.mul(Zo));
 			Btlin = Zmlin.mul(Zmlin).add(Zo.mul(Zo));
 			Ctlin = two.mul(Zmlin).mul(Zo);
-			
+
 			alpha = (Ac + Ad)/8.68588;
-			beta = 2*Math.PI*frequencyList[freqCount]/2.997925e8;
-			gamma = complex(alpha * l/Math.sqrt(eref), beta * l/Math.sqrt(eref) );
+			beta = Math.sqrt(eref)*2*Math.PI*frequencyList[freqCount]/2.997925e8;
+			gamma = complex(alpha * Length, beta * Length);
 
 			Ds = Ctlin.mul(gamma.coshCplx()).add(Btlin.mul(gamma.sinhCplx()));
 
@@ -1153,6 +1152,99 @@
 		}	mlin.setspars(sparsArray);
 		mlin.setglobal(global);	
 		return mlin;
+	}
+
+	function mclin(Width = 10 * 0.0254, Space = 63 * 0.0254, Height = 63 * 0.254, Thickness = 0.0012 * 0.0254, Length = 1.47 * 0.0254, er = 4, rho = 1, tand = 0.001 ) { // 1.4732 is the quarter wavelength at 2GHz, (1.3412 at 2.2 GHz)
+		var Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), one = complex(1,0), two = complex(2,0);
+
+		// come up with Zo and eref of a microstrip line for a given Width/Height
+		var pi = Math.PI;
+		var delWOverH = Width/Height <= 1/(2*pi) ? (1.25/pi)*(Thickness/Height)*(1+Math.log(4*pi*Width/Thickness)) : (1.25/pi)*(Thickness/Height)*(1+Math.log(2*Height/Thickness));
+		var weOverH = Width/Height + delWOverH;
+		var Q = ((er-1)/4.6)*(Thickness/Height)*(1/Math.sqrt(Width/Height));
+		var Fwh = 1/Math.sqrt(1+10*Width/Height);
+		var ere = ((er+1)/2)+((er-1)/2)*Fwh-Q;
+		var ZoER = Width/Height <= 1.0 ? (60/Math.sqrt(ere))*Math.log(8/weOverH+0.25*weOverH) : (376.7/Math.sqrt(ere))*(1/(weOverH+1.393+0.667*Math.log(weOverH+1.444 )));
+		console.log(ZoER);
+
+		// come up with Zo and ere of a microstrip line for given Width/Height with er = 1, ie air.
+		var ZoAIR = Width/Height <= 1.0 ? (60/Math.sqrt(1))*Math.log(8/weOverH+0.25*weOverH) : (376.7/Math.sqrt(1))*(1/(weOverH+1.393+0.667*Math.log(weOverH+1.444 )));
+		console.log(ZoAIR);
+
+		// come up with even and odd mode capacitances with er = ER
+		var CpER = 8.854187817e-12 * er * Width/Height;
+		var CpAIR = 8.854187817e-12 * 1 * Width/Height;
+		var CfER = 0.5 * Math.sqrt(ere)/(2.992925e8*ZoER) - CpER;
+		var CfAIR = 0.5 * Math.sqrt(1)/(2.992925e8*ZoAIR) - CpAIR;
+		var Acaps = Math.exp( -0.1 * Math.exp(2.33 - 2.53 * Width/Height));
+		var CfPrimeER = CfER/(1 + Acaps * (Height/Space) * Math.tanh(10 * Space/Height )) * Math.sqrt(er/ere);
+		var CfPrimeAIR = CfAIR/(1 + Acaps * (Height/Space) * Math.tanh(10 * Space/Height )) * Math.sqrt(1/1);
+		var k = (Space/Height)/( (Space/Height) + 2 * Width/Height);
+		var kPrime = Math.sqrt(1-k**2);
+		var CgAIR = 8.8541817e-12 * k <= 0.7 ? 1/( (1/pi) * Math.log( 2 * ( 1 + Math.sqrt(kPrime))/( 1 - Math.sqrt(kPrime)))) : (1/pi) * Math.log( 2 * ( 1 + Math.sqrt(k))/( 1 - Math.sqrt(k)));
+		var CgER = (8.8541817e-12*er/pi) * Math.log( Math.cosh( pi*Space/(4 * Height))) + 0.65 * CfER * ( (0.02/(Space/Height)) * Math.sqrt(er) + 1.0 - (1/er**2));
+		var CoeER = CpER + CfER + CfPrimeER;
+		var CoeAIR = CpAIR + CfAIR + CfPrimeAIR;
+		var CooER = CpER + CfER + CgAIR + CgER;
+
+		// come up with even and odd mode impedances and effective dielectric constants
+		var Zoe = 2.992925e8 * Math.sqrt(CoeER * CoeAIR);
+		var Zoo = 2.992925e8 * Math.sqrt(CooER * CoeAIR);
+		console.log(Zoe);
+		console.log(Zoo);
+
+		
+		/*	
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		// alpha beta gamma section
+			alpha = 0;
+			beta = 2*Math.PI*frequencyList[freqCount]/2.997925e8;
+			gamma = complex(alpha * Length, beta * Length);
+
+		// Zoe section
+			Zoemclin = complex(Zoe, 0);
+
+			Aoe = Zoemclin.mul(Zoemclin).sub(Zo.mul(Zo));
+			Boe = Zoemclin.mul(Zoemclin).add(Zo.mul(Zo));
+			Coe = two.mul(Zoemclin).mul(Zo);
+
+			Dsoe = Coe.mul(gamma.coshCplx()).add(Boe.mul(gamma.sinhCplx()));
+
+			s11oe = Aoe.mul(gamma.sinhCplx()).div(Dsoe);
+			s12oe = Coe.div(Dsoe);	
+			s21oe = s12oe;
+			s22oe = s11oe; 
+		// Zoo section
+			Zoomclin = complex(Zoo, 0);
+
+			Aoo = Zoomclin.mul(Zoomclin).sub(Zo.mul(Zo));
+			Boo = Zoomclin.mul(Zoomclin).add(Zo.mul(Zo));
+			Coo = two.mul(Zoomclin).mul(Zo);
+
+			Dsoo = Coo.mul(gamma.coshCplx()).add(Boo.mul(gamma.sinhCplx()));
+
+			s11oo = Aoo.mul(gamma.sinhCplx()).div(Dsoo);
+			s12oo = Coo.div(Dsoo);	
+			s21oo = s12oo;
+			s22oo = s11oo;
+
+
+		// put the 4 port together per Gupta page 331
+			s44 = s11 = (s11oe.add(s11oo)).mul(complex(0.5,0));
+			s33 = s22 = (s22oe.add(s22oo)).mul(complex(0.5,0));
+			s34 = s21 = (s21oe.add(s21oo)).mul(complex(0.5,0));
+			s43 = s12 = (s12oe.add(s12oo)).mul(complex(0.5,0));
+			s13 = s42 = (s12oe.sub(s12oo)).mul(complex(0.5,0));
+			s31 = s24 = (s21oe.sub(s21oo)).mul(complex(0.5,0));
+			s14 = s41 = (s11oe.sub(s11oo)).mul(complex(0.5,0));
+			s23 = s32 = (s22oe.sub(s22oo)).mul(complex(0.5,0));
+
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44];
+		};
+		ctlin.setspars(sparsArray);
+		ctlin.setglobal(global);	
+		return ctlin;*/
 	}
 
 	function mtee(w1 = 0.186*0.0254, w2 = 0.334*0.0254, er = 2.55, h = 0.125*0.0254) { // series resistor nPort object
@@ -1226,6 +1318,7 @@
 	exports.tlin = tlin;
 	exports.tclin = tclin;
 	exports.mlin = mlin;
+	exports.mclin = mclin;
 	exports.mtee = mtee;
 
 	Object.defineProperty(exports, '__esModule', { value: true });
