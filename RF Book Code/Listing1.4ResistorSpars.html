@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Listing 1.4 Resistor s-parameters</title>
+	</head>
+	<body>
+		<script src="nP.js"></script>
+		<script>
+
+// define the frequency
+g = nP.global;
+g.fList = [0]; // g.fList is an array of frequencies. In this case at DC, the frequncy is 0 Hz.
+
+// 75 Ohm resistor in series
+var R1 = nP.seR(75);
+var R1Out = R1.out('s11mag','s11ang','s21mag','s21ang');
+console.log('The s-parameters of a 75 Ohm resistor in series at DC (f = 0 Hz) ...');
+console.log(R1Out[0]); // Table data name
+console.log(R1Out[1]); // Table data
+
+// 75 Ohm resistor in parallel
+var R2 = nP.paR(75);
+var R2Out = R2.out('s11mag','s11ang','s21mag','s21ang');
+console.log('The s-parameters of a 75 Ohm resistor in parallel at DC (f = 0 Hz) ...');
+console.log(R2Out[0]); // Table data name
+console.log(R2Out[1]); // Table data
+
+		</script>
+	</body>
+</html>

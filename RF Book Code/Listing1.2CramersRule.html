@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Listing 1-2 Cramers Rule</title>
+	</head>
+	<body>
+		<script>
+
+// define the resistors
+var Rsource = 50, R1 = 292.4, R2 = 17.6, R3 = 292.4, Rload = 50;
+
+// define the denominator, D which is the determinant of the resistor matrix using the 3x3 short cut method
+var D = +(Rsource+R1)*(R1+R2+R3)*(R3+Rload) +0 +0 -0 -(-R1)*(-R1)*(Rsource+R1) -(R3+Rload)*(-R1)*(R1);
+
+//find I1D, the numberator, I1D which is the determinant of the modified resistor matrix
+var I1D = +(1)*(R1+R2+R3)*(R3+Rload) +0 +0 -0 -(-R3)*(-R3)*(1) -0;
+var I1 = I1D/D;
+
+var I2D = +0 +0 +0 -0 -0 -(R3+Rload)*(-R1)*(1);
+var I2 = I2D/D;
+
+var I3D = +0 + 0 +(1)*(-R1)*(-R3) -0 -0 -0;
+var I3 = I3D/D;
+
+// find V1 = R1*(I1-I2)
+var V1 = R1*(I1 - I2);
+
+// find V2 = R3*(I2-I3)
+var V2 = R3*(I2 - I3);
+
+// find the attenuation by 20 * log10 (V2/V1)
+var attn = 20*Math.log10(V2/V1);
+console.log('The attenuation is ...');
+console.log(attn + ' dB');
+
+		</script>
+	</body>
+</html>
