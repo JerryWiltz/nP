@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">	
+		<title>Listing 2-2 Complex Numbers</title>
+	</head>
+	<body>
+		<script>
+
+// s-pars of 75Ohm resistor
+// create complex functions
+
+var add = function add (c1, c2){
+  return {
+    x: c1.x + c2.x,
+    y: c2.y + c2.y
+  };
+};
+var sub = function sub (c1, c2){
+  return {
+    x: c1.x - c2.x,
+    y: c2.y - c2.y
+  };
+};
+var mul = function mul (c1, c2){
+  return {
+    x: c1.x * c2.x -c1.y * c2.y,
+    y: c1.x * c2.y + c1.y * c2.x
+  };
+};
+var div = function div (c1, c2){
+  return {
+    x: (c1.x * c2.x + c1.y * c2.y)/(c2.x * c2.x + c2.y * c2.y),
+    y: (c2.x * c1.y - c1.x * c2.y)/(c2.x * c2.x + c2.y * c2.y)
+  };
+};
+var mag = function mag (c) {
+	return Math.sqrt(c.x**2+c.y**2);
+};
+var ang = function ang (c) {
+	return Math.atan2(c.x,c.y)
+}
+var R1 = {x: 75, y: 0};
+var V = {x: 1, y: 0};
+var Rsource = {x: 50, y: 0};
+var Rload = {x: 50, y: 0};
+
+
+</script
+	</body>
+</html>

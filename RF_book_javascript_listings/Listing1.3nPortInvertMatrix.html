@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
 	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
 		<title>Listing 1.3 nPort Matrix Invert</title>
 	</head>
 	<body>
@@ -8,7 +10,9 @@
 		<script>
 
 // define the resistors
-var Rsource = 50, R1 = 292.4, R2 = 17.6, R3 = 292.4, Rload = 50;
+var Rsource = 50;
+var R1 = 292.4, R2 = 17.6, R3 = 292.4;
+var Rload = 50;
 
 // define the resistor matrix
 var r = nP.matrix( [
@@ -28,16 +32,12 @@ var v = nP.matrix( [
 // find the inverse of the resistor matrix
 var rInvert = r.invert();
 
-// find the current matrix by multiplying rInvert by the voltage matrix
+// find the current matrix by multiplying
 var i = rInvert.mul(v);
 
-// find V1 = R1*(I1-I2)
 var V1 = R1*(i.m[0] - i.m[1]);
-
-// find V2 = R3*(I2-I3)
 var V2 = R3*(i.m[1] - i.m[2]);
 
-// find the attenuation by 20 * log10 (V2/V1)
 var attn = 20*Math.log10(V2/V1);
 console.log('The attenuation is ...');
 console.log(attn + ' dB');

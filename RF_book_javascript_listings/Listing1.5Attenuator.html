@@ -9,7 +9,7 @@
 
 // define the frequency
 g = nP.global;
-g.fList = [0]; // g.fList is an array of frequencies. In this case at DC, the frequncy is 0 Hz.
+g.fList = [0];
 
 // define the resistors
 var R1 = nP.paR(292.4);
@@ -21,7 +21,7 @@ var attn = nP.cascade(R1,R2,R3);
 var attnOut = attn.out('s21dB');
 
 // output the result to the console
-console.log('The 3 dB attenuator at DC (f = 0 Hz) ...');
+console.log('The 3 dB attenuator ...');
 console.log(attnOut[0]); // Table data name
 console.log(attnOut[1]); // Table data
 

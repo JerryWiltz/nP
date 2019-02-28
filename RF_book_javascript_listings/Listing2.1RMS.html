@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">	
+		<title>Listing 2-1 RMS</title>
+	</head>
+	<body>
+		<script>
+
+// rms calculation - root, mean, square
+
+var vPeak = 170, v = 0, vRMS = 0;
+var pi = Math.PI;
+var n = 0, N = 100;
+for (n; n<N; n++) {
+	v = v + (vPeak*Math.cos(2*pi*(n/N)))**2;
+}
+vRMS = Math.sqrt(v/N);
+console.log('Vrms is ' + vRMS);
+
+</script
+	</body>
+</html>

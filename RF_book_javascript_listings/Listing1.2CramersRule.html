@@ -1,15 +1,19 @@
 <!DOCTYPE html>
 <html>
 	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
 		<title>Listing 1-2 Cramers Rule</title>
 	</head>
 	<body>
 		<script>
 
 // define the resistors
-var Rsource = 50, R1 = 292.4, R2 = 17.6, R3 = 292.4, Rload = 50;
+var Rsource = 50;
+var R1 = 292.4, R2 = 17.6, R3 = 292.4;
+var Rload = 50;
 
-// define a function to compute the determinant for a 3 by 3 matrix
+// function to compute the determinant
 function determinant (a11, a12, a13,
 		a21, a22, a23,
 		a31, a32, a33) {
@@ -22,36 +26,30 @@ function determinant (a11, a12, a13,
 	return out;
 }
 
-
-
-// define the denominator, D which is the determinant of the resistor matrix using the 3x3 short cut method
+// define the denominator, D
 var D = determinant(Rsource+R1,-R1,0,
 		-R1,R1+R2+R3,-R3,
-		0,-R3,R3+Rload)
+		0,-R3,R3+Rload);
 
-//find I1D, I2D, and I3D the numerators per cramers rule which is the determinant of the modified resistor matrix
+// find the numerators, I1D, I2D, I3D
 var I1D = determinant(1,-R1,0,
 		0,R1+R2+R3,-R3,
-		0,-R3,R3+Rload)
-var I1 = I1D/D;
-
+		0,-R3,R3+Rload);
 var I2D = determinant(Rsource+R1,1,0,
 		-R1,0,-R3,
-		0,0,R3+Rload)
-var I2 = I2D/D;
-
+		0,0,R3+Rload);
 var I3D = determinant(Rsource+R1,-R1,1,
 		-R1,R1+R2+R3,0,
-		0,-R3,0)
+		0,-R3,0);
+
+// find the currents, I1, I2, I3
+var I1 = I1D/D;
+var I2 = I2D/D;
 var I3 = I3D/D;
 
-// find V1 = R1*(I1-I2)
 var V1 = R1*(I1 - I2);
-
-// find V2 = R3*(I2-I3)
 var V2 = R3*(I2 - I3);
 
-// find the attenuation by 20 * log10 (V2/V1)
 var attn = 20*Math.log10(V2/V1);
 console.log('The attenuation is ...');
 console.log(attn + ' dB');
