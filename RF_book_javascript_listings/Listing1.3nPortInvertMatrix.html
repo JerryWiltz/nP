@@ -35,8 +35,8 @@ var rInvert = r.invert();
 // find the current matrix by multiplying
 var i = rInvert.mul(v);
 
-var V1 = R1*(i.m[0] - i.m[1]);
-var V2 = R3*(i.m[1] - i.m[2]);
+var V1 = R1*(i.out()[0] - i.out()[1]);
+var V2 = R3*(i.out()[1] - i.out()[2]);
 
 var attn = 20*Math.log10(V2/V1);
 console.log('The attenuation is ...');
@@ -44,4 +44,4 @@ console.log(attn + ' dB');
 
 		</script>
 	</body>
-</html>
+	</htoutl>

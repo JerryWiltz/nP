@@ -109,7 +109,19 @@ nPort.<b>getspars</b> [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-n
 
 nPort1.<b>cas</b> (<i> nPort2 </i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/nPort.js "Source") cascades two 2-ports and creates a new nPort. Method chaining enabled.
 
-nPort.<b>out</b> (<i> 'sij|mag|dB|ang|Re|Im', ' ... ' </i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/nPort.js "Source") Creates a table specified by the Argument
+nPort.<b>out</b> (<i> 'sij|mag|dB|ang|Re|Im', ' ... ' </i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/nPort.js "Source") Creates a plot input compatible with d3 specified by the Argument
+
+* <b>mag</b> will provide sij magnitude
+* <b>ang</b> the angle
+* <b>dB</b> the magnitude in dB
+* <b>Re</b> the real part
+* <b>Im</b> the imaginary part
+
+```html
+// For example, if r1 is the nPort for 75 ohm resistor in series, the magnitude of s11 is
+r1.out('s11mag')
+```
+nPort.<b>outTable</b> (<i> 'sij|mag|dB|ang|Re|Im', ' ... ' </i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/nPort.js "Source") Creates a table specified by the Argument
 
 * <b>mag</b> will provide sij magnitude
 * <b>ang</b> the angle
@@ -486,6 +498,8 @@ m.<b>solveGuassCplx</b>(<i> </i>) [<>](https://github.com/JerryWiltz/nP/blob/mas
 m.<b>invert</b>(<i> </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that inverts a matrix and returns a matrix object. Method chaining capable.
 
 m.<b>invertCplx</b>(<i> </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that inverts a complex matrix and returns a matrix object. Method chaining capable.
+
+m.<b>out</b>(<i></i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that shows the matrix. Useful for viewing matrices in the console.
 
 m.<b>showMatrix</b>(<i>myArray</i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that creates and appends a HTML div element and renders a table showing the matrix elements. This might be useful, like console.log is, for troubleshooting problems.
 

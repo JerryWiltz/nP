@@ -18,12 +18,11 @@ var R3 = nP.paR(292.4);
 
 // cascade them all together
 var attn = nP.cascade(R1,R2,R3);
-var attnOut = attn.out('s21dB');
+var attnOut = attn.outTable('s21dB');
 
 // output the result to the console
 console.log('The 3 dB attenuator ...');
-console.log(attnOut[0]); // Table data name
-console.log(attnOut[1]); // Table data
+console.log(attnOut);
 
 		</script>
 	</body>

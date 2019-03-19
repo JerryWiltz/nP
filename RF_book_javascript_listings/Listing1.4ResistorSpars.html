@@ -13,17 +13,15 @@ g.fList = [0]; // this is DC
 
 // 75 Ohm resistor in series
 var R1 = nP.seR(75);
-var R1Out = R1.out('s11mag','s11ang','s21mag','s21ang');
+var R1Out = R1.outTable('s11mag','s11ang','s21mag','s21ang');
 console.log('75 Ohm resistor in series ...');
-console.log(R1Out[0]); // Table data name
-console.log(R1Out[1]); // Table data
+console.log(R1Out); // Table data
 
 // 75 Ohm resistor in parallel
 var R2 = nP.paR(75);
-var R2Out = R2.out('s11mag','s11ang','s21mag','s21ang');
+var R2Out = R2.outTable('s11mag','s11ang','s21mag','s21ang');
 console.log('75 Ohm resistor in parallel ...');
-console.log(R2Out[0]); // Table data name
-console.log(R2Out[1]); // Table data
+console.log(R2Out); // Table data
 
 		</script>
 	</body>

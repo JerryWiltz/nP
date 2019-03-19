@@ -20,6 +20,7 @@ Complex.prototype = {
 		(1 * this.x + 0 * this.y)/(this.x * this.x + this.y * this.y),
 		(this.x * 0 - 1 * this.y)/(this.x * this.x + this.y * this.y));},	
 	neg: function () {return complex(-this.x, -this.y);},
+	copy: function () {return complex(this.x, this.y);},
 	mag: function () {return Math.sqrt(this.x * this.x + this.y * this.y);},
 	ang: function () {return Math.atan2(this.y, this.x) * (180/Math.PI);},
 	mag10dB: function () {return 10 * Math.log(   Math.sqrt(this.x * this.x + this.y * this.y) )/2.302585092994046   },

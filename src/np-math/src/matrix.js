@@ -176,6 +176,7 @@ export function showCountNum(num) {
 
 Matrix.prototype = {
 	set : function (mat) {this.m = mat; return this;},
+	out : function () {return this.m;},
 	dimension : function (tableRow, tableCol, initial) {
 		return matrix(dim(tableRow, tableCol, initial));
 	},
