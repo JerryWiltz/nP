@@ -7,10 +7,10 @@
 Run this "Hello, nPort!" example below to verify installation.
 
 * Create a new folder named "Hello, nPort!"
-* Download the [latest release](https://github.com/JerryWiltz/nP/blob/master/dist/nP.js) and put that in the folder. The name should be nP.js 
-* Copy and paste the file below named index.html
-* Launch your browser with index.html
-* View index.html in a browser to see <b>"Hello, nPort!"</b>
+* Download nPort from [here](https://github.com/JerryWiltz/nP/blob/master/dist/nP.js) and put it in the folder. The name should be nP.js 
+* Copy and paste the file below and name it "index.html"
+* Launch index.html, it should bring up your browser, I recommend chrome.
+* You should see <b>"Hello, nPort!"</b>
 
 ```html
 <!DOCTYPE html>
@@ -21,13 +21,10 @@ Run this "Hello, nPort!" example below to verify installation.
 		<title>Hello, nPort!</title>
 	</head>
 	<body>
-		<h1 ID='hello'></h1>
 		<script src="./nP.js"></script>
 		<script>
 
-var msg = nP.helloNport();
-var element = document.getElementById('hello');
-element.innerHTML = msg;
+nP.helloNport();
 
 		</script>
 	</body>
@@ -523,13 +520,13 @@ m.<b>showCountNum</b>(<i>number</i>) [<>](https://github.com/JerryWiltz/nP/blob/
 
 These are charting routines based on d3. <b>Note, downloading d3 is not required</b>. d3 is inside nPort.
 
-nP.<b>lineChart</b>(<i> lineChartInputObject = {} </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-chart/src/lineChart.js) A function that draws a rectangular chart or plot in a specified svg element via the element ID. The default element ID is "canvas". <b>You must specify an ID, width, and height attributes</b>, such as:
+nP.<b>lineChart</b>(<i> lineChartInputObject = {} </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-chart/src/lineChart.js) A function that draws a rectangular chart or plot. lineChart() will render the graphics in svg. If you don't provide a svg, linechart() will create one for you. The default element ID is "canvas". If you provide the svg, <b>you must specify an ID, width, and height attributes</b>, such as:
 
 ```html
 <svg id="canvas" width="500" height="300"></svg>
 ````
 
-If no argument linePlot, wlll display a default plot inside the svg. This is good for setting up your page, but you no data. Here is an HTML example for the default lineChart().
+If no argument linePlot, wlll create its own svg and display a default plot. This is good for setting up your page and you can see what it will like. Here is an HTML example for the default lineChart().
 
 ```html
 <!DOCTYPE html>
@@ -540,18 +537,17 @@ If no argument linePlot, wlll display a default plot inside the svg. This is goo
 		<title>Default lineChart()</title>
 	</head>
 	<body>
-		<svg id="canvas" width="500" height="300"></svg>jj
 		<script src="nP.js"></script>
 		<script>
 
-nP.lineChart();  // Default 
+nP.lineChart();  // shows default plot 
 
 		</script>
 	</body>
 </html>
 ````
 
-LinelinePlot takes an object argument named "lineChartInputObject" and is used in the example below.
+linelinePlot() has one argument named "lineChartInputObject" and is used in the example below.
 
 ```HTML
 <!--DOCTYPE html-->
@@ -585,7 +581,7 @@ var filter = c1.cas(l1).cas(c2).cas(l2).cas(c3).cas(l3).cas(c4).cas(l4).cas(c5).
 // Create the lineChartInputObject
 var lineChartInputObject = {
 	canvasID: '#canvas1',
-	inputTable: filter
+	inputTable: [filter]
 };
 
 // Pass the lineChartInputObject to lineChart
@@ -601,24 +597,40 @@ Here is full the format of the LineChart Object, it has key-value pairs in the f
 
 ```html
 lineChartInputObject = {
-inputTable:  inputTable, // nP.out('s21dB', 's11dB') provides the inputTable format
-freqUnits: 'GHz',        // Frequency Units
-canvasID: '#canvas',     // The ID of the target svg with width and height specified
-xAxisTitle: 'Frequency', // Text
-yAxisTitle: 'dB',        // Text
-xAxisTitleOffset: 48,    // in pixels
-yAxisTitleOffset: 40     // in pixels
+lineChartInputObject.inputTable:			// an array [out1, out2 ... outn]
+lineChartInputObject.canvasID,					// a string of an svg id '#canvas'
+lineChartInputObject.metricPrefix:	// a string of a metric prefix
+lineChartInputObject.xAxisTitle:			// a string of the x axis title
+lineChartInputObject.yAxisTitle:			// a string of the y axis title
+lineChartInputObject.xRange:							// an array of [min, max]
+lineChartInputObject.yRange:							// an array of [min, max]
 }
 ```
-
-Here is the format for the inputTable value:
-
+Here are the default values for the lineChartInputObject:
 ```html
-var inputTable = [
-	['Freq', 's21dB', 's11dB'],
-	[ 8 * 1e9,  22,  40],
-	[12 * 1e9,  80,  90],
-	[16 * 1e9, 100, 105],
-	[20 * 1e9, 120, 130]
-];
+lineChartInputObject.inputTable:	[ 
+		[
+			['Freq', 'Insertion Loss', 'Return Loss'],
+			[ 8 * 1e9,  22,  40],
+			[12 * 1e9,  80,  90],
+			[16 * 1e9, 100, 105],
+			[20 * 1e9, 120, 130]
+		],
+
+		[
+			['Freq', 'Noise Figure', 'IP3'],
+			[12 * 1e9,  60, 65],
+			[16 * 1e9,  65, 70],
+			[20 * 1e9,  70, 75]
+		]
+	];
+
+lineChartInputObject.canvasID: '#canvas'
+lineChartInputObject.metricPrefix: 'giga'
+// others are: 'mega', 'kilo', 'none', 'deci', 'milli', 'micro', 'nano', and 'pico'
+// metricPrefix: 'giga' means 10e9 Hz is displayed as 10 on the x axis.
+lineChartInputObject.xAxisTitle: 'Frequency'
+lineChartInputObject.yAxisTitle: 'dB'
+lineChartInputObject.xRange: // default determined from inputTable
+lineChartInputObject.yRange: //default determined from inputTable
 ```
