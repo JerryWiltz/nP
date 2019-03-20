@@ -1,14 +1,16 @@
 <b>nPort</b>: A Microwave Circuit Analysis Program
 
-**nP** is a JavaScript library for analyzing microwave circuits. It helps you analyze and visualize operation of various multiport circuits.
+**nP** is a JavaScript library for analyzing microwave circuits. It helps you learn about analyze and visualize the operation of various multiport circuits.
 
-## Installing 
+**nPort** creates one JavaScript global variable, **nP**.
+
+## Installing and Verifying nPort 
 
 Run this "Hello, nPort!" example below to verify installation.
 
-* Create a new folder named "Hello, nPort!"
-* Download nPort from [here](https://github.com/JerryWiltz/nP/blob/master/dist/nP.js) and put it in the folder. The name should be nP.js 
-* Copy and paste the file below and name it "index.html"
+* Create a new folder named "nPort!"
+* Download nPort by clicking [here](https://raw.githubusercontent.com/JerryWiltz/nP/master/dist/nP.js)", then Save as... "nP.js" ensuring it is in the "nPort" folder. 
+* Copy and paste the file below and name it "index.html" and put it in the "nPort" folder.
 * Launch index.html, it should bring up your browser, I recommend chrome.
 * You should see <b>"Hello, nPort!"</b>
 
@@ -40,7 +42,7 @@ nP.helloNport();
 * [np-chart](#np-chart)
 
 ## nP-global
-Before you can do anything, you must specify a single frequency or a frequency range. This is done through an object called global. <b>Important, this not referring to any Javascript global variable.</b> Rather this object exposes its members to other nP objects. To make things easier, there are <b>default</b> values:
+Before you can do anything, you must specify a single frequency or a frequency range. This is done through the nPort object called nP.global. This object exposes its members to other nP objects. By the way, nPort does arithmetic in basic units such as: **hz, ohm, henry, farad, meter, second, and kelvin**
 
 ```html
 fList:	[2e9, 4e9, 6e9, 8e9]   //in Hz and is always in an array
@@ -518,9 +520,7 @@ m.<b>showCountNum</b>(<i>number</i>) [<>](https://github.com/JerryWiltz/nP/blob/
 
 ## nP-chart
 
-These are charting routines based on d3. <b>Note, downloading d3 is not required</b>. d3 is inside nPort.
-
-nP.<b>lineChart</b>(<i> lineChartInputObject = {} </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-chart/src/lineChart.js) A function that draws a rectangular chart or plot. lineChart() will render the graphics in svg. If you don't provide a svg, linechart() will create one for you. The default element ID is "canvas". If you provide the svg, <b>you must specify an ID, width, and height attributes</b>, such as:
+nP.<b>lineChart</b>(<i> lineChartInputObject = {} </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-chart/src/lineChart.js) A function that draws a rectangular chart or plot. lineChart() will render the graphics in svg. nPort has an internal subset of d3. There is no need to download and include [d3](https://d3js.org/) in your html. If you don't provide a svg, linechart() will create one for you. The default element ID is "canvas". If you provide the svg, <b>you must specify an ID, width, and height attributes</b>, such as:
 
 ```html
 <svg id="canvas" width="500" height="300"></svg>
@@ -597,13 +597,13 @@ Here is full the format of the LineChart Object, it has key-value pairs in the f
 
 ```html
 lineChartInputObject = {
-lineChartInputObject.inputTable:			// an array [out1, out2 ... outn]
-lineChartInputObject.canvasID,					// a string of an svg id '#canvas'
+lineChartInputObject.inputTable:	// an array [out1, out2 ... outn]
+lineChartInputObject.canvasID,		// a string of an svg id '#canvas'
 lineChartInputObject.metricPrefix:	// a string of a metric prefix
-lineChartInputObject.xAxisTitle:			// a string of the x axis title
-lineChartInputObject.yAxisTitle:			// a string of the y axis title
-lineChartInputObject.xRange:							// an array of [min, max]
-lineChartInputObject.yRange:							// an array of [min, max]
+lineChartInputObject.xAxisTitle:	// a string of the x axis title
+lineChartInputObject.yAxisTitle:	// a string of the y axis title
+lineChartInputObject.xRange:		// an array of [min, max]
+lineChartInputObject.yRange:		// an array of [min, max]
 }
 ```
 Here are the default values for the lineChartInputObject:

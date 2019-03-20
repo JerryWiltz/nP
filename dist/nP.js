@@ -26,6 +26,7 @@
 			(1 * this.x + 0 * this.y)/(this.x * this.x + this.y * this.y),
 			(this.x * 0 - 1 * this.y)/(this.x * this.x + this.y * this.y));},	
 		neg: function () {return complex(-this.x, -this.y);},
+		copy: function () {return complex(this.x, this.y);},
 		mag: function () {return Math.sqrt(this.x * this.x + this.y * this.y);},
 		ang: function () {return Math.atan2(this.y, this.x) * (180/Math.PI);},
 		mag10dB: function () {return 10 * Math.log(   Math.sqrt(this.x * this.x + this.y * this.y) )/2.302585092994046   },
@@ -6457,73 +6458,121 @@
 	};
 
 	function  lineChart (lineChartInputObject = {}) {
+		// here is the definition of the lineChartInputObject data structure:
 
-		var inputTable = lineChartInputObject.inputTable ||  [
-			['Freq', 'Insertion Loss', 'Return Loss', 'Noise Figure', 'IP3'],
-			[ 8 * 1e9,  22,  40, 55, 60],
-			[12 * 1e9,  80,  90, 60, 65],
-			[16 * 1e9, 100, 105, 65, 70],
-			[20 * 1e9, 120, 130, 70, 75]
+		// lineChartInputObject.inputTable,	// an array of outs [out1, out2 ... outn]
+		// lineChartInputObject.canvasID,	// a string of an svg id '#canvas'
+		// lineChartInputObject.metricPrefix,	// a string of a metric prefix such as 'giga'
+		// lineChartInputObject.xAxisTitle,	// a string of the x axis title such as 'Frequency'
+		// lineChartInputObject.yAxisTitle,	// a string of the y axis title such as 'dB'
+		// lineChartInputObject.xRange,		// an array of min, max such as [2e9, 12e9]
+		// lineChartInputObject.yRange,		// an array of min, max such as [0, -80]
+
+		// there are default values for all the above.
+		// just use nP.lineChart() and view the Insertion Loss, Return Loss, Noise Figure, and IP3 responce
+
+		// this function has one arguement, lineChartInputObject.
+		// if no arguement, then an internal default version of the lineChartInputObject is used.
+		// if no lineChartImputObject:canvasID, then a svg is created.
+
+		var createSVG = function ( ) {
+			var idAttr = document.createAttribute('id');
+			var widthAttr = document.createAttribute('width');
+			var heightAttr = document.createAttribute('height');
+			var canvasBody = document.getElementsByTagName("body")[0];
+			var canvas = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+			idAttr.value = 'canvas';
+			widthAttr.value = 400;
+			heightAttr.value = 300;
+			canvas.setAttributeNode(idAttr);
+			canvas.setAttributeNode(widthAttr);
+			canvas.setAttributeNode(heightAttr);
+			if(!lineChartInputObject.canvasID) canvasBody.appendChild(canvas);
+		}();
+
+		var inputTable = lineChartInputObject.inputTable || [ 
+			[
+				['Freq', 'Insertion Loss', 'Return Loss'],
+				[ 8 * 1e9,  22,  40],
+				[12 * 1e9,  80,  90],
+				[16 * 1e9, 100, 105],
+				[20 * 1e9, 120, 130]
+			],
+
+			[
+				['Freq', 'Noise Figure', 'IP3'],
+				[12 * 1e9,  60, 65],
+				[16 * 1e9,  65, 70],
+				[20 * 1e9,  70, 75]
+			]
 		];
 
-		var freqUnits = lineChartInputObject.freqUnits || 'GHz';
+		var metricPrefix = lineChartInputObject.metricPrefix || 'giga';
 		var canvasID = lineChartInputObject.canvasID || '#canvas' ;
 		var xAxisTitle = lineChartInputObject.xAxisTitle || 'Frequency';
 		var yAxisTitle = lineChartInputObject.yAxisTitle || 'dB';
-		var xAxisTitleOffset = lineChartInputObject.xAxisTitleOffset || 48;
-		var yAxisTitleOffset = lineChartInputObject.yAxisTitleOffset || 40;
+		var xAxisTitleOffset = 48;
+		var yAxisTitleOffset = 40;
 
-		var k = 0;
-		var p = 0;
+		var pickScale = function (metricPrefix){
+			var out = 0;
+			if (metricPrefix === 'giga') {out = 1e9;}		if (metricPrefix === 'mega') {out = 1e6;}		if (metricPrefix === 'kilo') {out = 1e3;}		if (metricPrefix === 'none') {out = 1;}		if (metricPrefix === 'deci') {out = 1e-1;}		if (metricPrefix === 'centi') {out = 1e-2;}		if (metricPrefix === 'milli') {out = 1e-3;}		if (metricPrefix === 'micro') {out = 1e-6;}		if (metricPrefix === 'nano') {out = 1e-9;}		if (metricPrefix === 'pico') {out = 1e-12;}		return out;
+		};
 
-		var divisor = 1;
-		if (freqUnits === 'Hz') {divisor = 1;}	if (freqUnits === 'KHz') {divisor = 1e3;}	if (freqUnits === 'MHz') {divisor = 1e6;}	if (freqUnits === 'GHz') {divisor = 1e9;}	var inputTableFrequencyAdjusted = [];
-		inputTableFrequencyAdjusted = inputTable;
-		for (k = 1; k < inputTable.length; k++) {
-			inputTableFrequencyAdjusted[k][0] = inputTable[k][0]/divisor;
-		}
-		var tsv = '';
-		inputTableFrequencyAdjusted.forEach( (element) => {
-			tsv += element.join('\t') + '\n';
+		var generateFormattedData = function (inputTable) {
+			var k = 0;
+			var divisor = pickScale(metricPrefix); // default is giga, 1e9
+			var inputTableFrequencyAdjusted = [];
+
+			inputTableFrequencyAdjusted = inputTable;
+
+			for (k = 1; k < inputTable.length; k++) {
+				inputTableFrequencyAdjusted[k][0] = inputTable[k][0]/divisor;
+			}
+			var tsv = '';
+			inputTableFrequencyAdjusted.forEach( (element) => {
+				tsv += element.join('\t') + '\n';
+			});
+			//use d3 to turn tsv data into d3 data
+			var data = tsvParse(tsv);
+
+			//change data type from string to float, for arbitrary sized/named table
+			data.forEach( d => {
+				for (k = 0; k < data.columns.length; k++){
+					d[data.columns[k]] = +d[data.columns[k]];
+				}		});
+
+			//change the data to groupData
+			var groupData = data.columns.slice(1).map(function(yName) {// this will return an array of objects
+				return {
+					yName: yName,                       // this is the rf dB plot
+					yValues: data.map(function(d) {     // this will return an inner Array of objects
+						return {xValue: d[data.columns[0]], // this is the rf frequency
+							yValue: d[yName]};          // this is the dB value
+					})
+				};
+			});
+			return groupData;
+		};
+
+		var formattedData = inputTable.map( function(element) {
+			return generateFormattedData(element);
 		});
 
-		//use d3 to turn tsv data into d3 data
-		var data = tsvParse(tsv);
-
-		//change data type from string to float, for arbitrary sized/named table
-		data.forEach( d => {
-			for (k = 0; k < data.columns.length; k++){
-				d[data.columns[k]] = +d[data.columns[k]];
-			}	});
-
-		//change the data to nestedData
-		var nestedData = data.columns.slice(1).map(function(yName) {// this will return an array of objects
-			return {
-				yName: yName,                       // this is the rf dB plot
-				yValues: data.map(function(d) {     // this will return an inner Array of objects
-					return {xValue: d[data.columns[0]], // this is the rf frequency
-						yValue: d[yName]};          // this is the dB value
-				})
-			};
+		var xSpan = []; // the span of the the x axis
+		formattedData.flat().forEach( function (element) {
+			element.yValues.forEach(function (item) { xSpan.push(item.xValue);});	
 		});
 
-		var xExtent = (function () {//creates a one dimensional array
-			var temp = [];
-			for (k = 0; k < data.length; k++) {
-				temp.push(nestedData[0].yValues[k].xValue);
-			}
-			return temp;
-		})();
+		// checks if xRange is specified, if it is then xSpan is updated with scaled xRange input
+		if(lineChartInputObject.xRange) {xSpan = lineChartInputObject.xRange.map( function (element) { return element/pickScale(metricPrefix);});}
+		var ySpan = []; // the span of the y axis
+		formattedData.flat().forEach( function (element) {
+			element.yValues.forEach(function (item) { ySpan.push(item.yValue);});	
+		});
 
-		var yExtent = (function () {//creates a one dimensional array
-			var temp = [];
-			for (k = 0; k < nestedData.length; k++){
-				for (p = 0; p < data.length; p++) {
-					temp.push(nestedData[k].yValues[p].yValue);
-				}
-			}
-			return temp;
-		})();
+		// checks if yRange is specified, if it is then ySpan is updated with yRange input
+		ySpan = lineChartInputObject.yRange || ySpan;
 
 		//set up the plot area
 		var canvasRect = select(canvasID).node().getBoundingClientRect();
@@ -6534,8 +6583,8 @@
 		var innerWidth  = outerWidth  - margin.left - margin.right;
 		var innerHeight = outerHeight - margin.top  - margin.bottom;
 
-		var x = linear$2().domain(extent(xExtent)).range([0, innerWidth]);
-		var y = linear$2().domain(extent(yExtent)).range([innerHeight, 0]);
+		var x = linear$2().domain(extent(xSpan)).range([0, innerWidth]);
+		var y = linear$2().domain(extent(ySpan)).range([innerHeight, 0]);
 
 		var svg$$1 = select(canvasID)
 			.attr("width", outerWidth)
@@ -6583,38 +6632,48 @@
 			.attr("class", "yGrid")
 			.call(axisLeft(y).tickSize(-innerWidth).tickFormat("")).attr('stroke', 'gray').attr('stroke-dasharray', '3, 3');
 
-		function plotColor (label) {return category10[data.columns.slice(1).indexOf(label)];}
-		var plotGroups = g.selectAll('g.newPlot')
-			.data(nestedData)
-			.enter()
-			.append('g')
-			.attr('class', 'newPlot')
-			.each( function (d) {
-				select(this).selectAll('circle')
-					.data(d => d.yValues)
-					.enter()
-					.append('circle')
-					.attr('cx', d => x(d.xValue))
-					.attr('cy', d => y(d.yValue))
-					.attr('r', 2)
-					.style("stroke", plotColor(d.yName)).style('fill', plotColor(d.yName)).style('stroke-width','2');
+		var colorIndex = 0;
+		formattedData.forEach(function(groupData, groupIndex) { 
 
-				var line$$1 = line()
-					.x(d => x(d.xValue))
-					.y(d => y(d.yValue));
+			function plotColor (label) {return category10[colorIndex];}		// kept, the old. function plotColor (label) {return d3.schemeCategory10[data.columns.slice(1).indexOf(label)];};
 
-				select(this).append("path")
-					.attr('d', d => line$$1(d.yValues))
-					.style("stroke", plotColor(d.yName)).style('fill', 'none');
+			var newPlot = 'newPlot' + groupIndex.toString();	
+			var plotGroups = g.selectAll('g.newPlot')
+				.data(groupData)
+				.enter()
+				.append('g')
+				.attr('class', newPlot) // kept the old. was 'newPlot', need unique class name per trace
+				.each( function (d) {
+					select(this).selectAll('circle')
+						.data(d => d.yValues)
+						.enter()
+						.append('circle')
+						.attr('cx', d => x(d.xValue))
+						.attr('cy', d => y(d.yValue))
+						.attr('r', 2)
+						.style("stroke", plotColor(colorIndex)).style('fill', plotColor(colorIndex)).style('stroke-width','2');
+					// kept the old. .style("stroke", plotColor(d.yName)).style('fill', plotColor(d.yName)).style('stroke-width','2');
 
-				select(this).append("text")
-					.attr("transform", function(d) { return "translate(" + x(d.yValues[d.yValues.length-2].xValue) + "," + y(d.yValues[d.yValues.length-2].yValue)  + ")"; })
-					.attr("x", 3)
-					.attr("dy", "0.35em")
-					.style("font", "10px sans-serif")
-					.text(function(d) { return d.yName; });
-			});//end each 
+					var line$$1 = line()
+						.x(d => x(d.xValue))
+						.y(d => y(d.yValue));
 
+					select(this).append("path")
+						.attr('d', d => line$$1(d.yValues))
+						.style("stroke", plotColor(colorIndex)).style('fill', 'none');
+					//kept the old. .style("stroke", plotColor(d.yName)).style('fill', 'none')
+
+					select(this).append("text")
+						.attr("transform", function(d) { 
+							var textShift = Math.ceil(d.yValues.length/4); // moves the text 3/4 away
+							return "translate(" + x(d.yValues[d.yValues.length-textShift].xValue) + "," + y(d.yValues[d.yValues.length-textShift].yValue)  + ")";})
+						.attr("x", 3)
+						.attr("dy", "0.35em")
+						.style("font", "12px sans-serif")
+						.text(function(d) { return d.yName; });
+					colorIndex++;
+				});//end d3.each() 
+		});// end .forEach()
 	}
 
 	function nPort() {}
@@ -7566,7 +7625,11 @@
 	}
 
 	function helloNport() {
-	return 'Hello, Nport!';
+		var target = document.getElementsByTagName("body")[0],
+			h1 = document.createElement("h1");
+
+		target.appendChild(h1);
+		h1.innerHTML = 'Hello, nPort!';
 	}
 
 	// main entry point
