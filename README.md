@@ -1,18 +1,17 @@
 <b>nPort</b>: A Microwave Circuit Analysis Program
 
-**nP** is a JavaScript library for analyzing microwave circuits. It helps you learn about analyze and visualize the operation of various multiport circuits.
+**nP** is a JavaScript library for analyzing microwave circuits. It helps you learn about, analyze and visualize the operation of various multiport circuits.
 
 **nPort** creates one JavaScript global variable, **nP**.
 
-## Installing and Verifying nPort 
+## Downloading and Verifying nPort 
 
-Run this "Hello, nPort!" example below to verify installation.
+Download, **nPort**, then run the  "Hello, nPort!" example below to verify installation.
 
-* Create a new folder named "nPort!"
-* Download nPort by clicking [here](https://raw.githubusercontent.com/JerryWiltz/nP/master/dist/nP.js)", then Save as... "nP.js" ensuring it is in the "nPort" folder. 
-* Copy and paste the file below and name it "index.html" and put it in the "nPort" folder.
-* Launch index.html, it should bring up your browser, I recommend chrome.
-* You should see <b>"Hello, nPort!"</b>
+* Create a new folder named "nPort"
+* Download nPort by clicking [here](https://raw.githubusercontent.com/JerryWiltz/nP/master/dist/nP.js)", then Save as... "nP.js" and put it in the "nPort" folder. 
+* Create the file below and name it "index.html" and put it in the "nPort" folder.
+* Run "index.html". I recommend Chrome. You should see <b>Hello, nPort!</b>
 
 ```html
 <!DOCTYPE html>
@@ -42,15 +41,7 @@ nP.helloNport();
 * [np-chart](#np-chart)
 
 ## nP-global
-Before you can do anything, you must specify a single frequency or a frequency range. This is done through the nPort object called nP.global. This object exposes its members to other nP objects. By the way, nPort does arithmetic in basic units such as: **hz, ohm, henry, farad, meter, second, and kelvin**
-
-```html
-fList:	[2e9, 4e9, 6e9, 8e9]   //in Hz and is always in an array
-Ro:	50                        //in Ohms
-Temp:	293                     //in degrees Kelvin
-```
-
-These may be overwritten as desired.
+As **nPort** analyses in the frequency domain, it requires at least one frequency point to do anything. **nPort** has a default frequency of 2e9 or 2GHz. Therefore, you must specify either a single frequency or a list of frequencies to give **nPort** the domain it needs. The frequency or frequencies must be in an array. The units must by in Hz. Suppose you require a frequency list with 1001. There is a function, fGen(), that will create long arrays for you.
 
 nP.<b>global</b> [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-global/src/global.js "Source")
 
@@ -58,45 +49,25 @@ The nPort Object that contains the Frequency, Zo, and Temperature values. There 
 
 nP.<b>fGen</b>(<i> fStart, fStop, points </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-global/src/global.js "Source")
 
-Returns an array of frequencies, here is how to set that up.
+Returns an array of frequencies from fStart to fStop. The number of points is limited by memory or execution time. Popular number of points are odd numbers because the center frequency is always produced. So the number of points like 11, 51, 101, 1001, and so on, are good. Here below is an example on how to create a list with 101 points.
 
 ```html
 
-<script>
-
 var g = nP.global;
-g.fList = g.fGen(.5e9,5.5e9,101); // 101 points from 500 MHz to 5.5 GHz
+g.fList = g.fGen(.1e9,10e9,101); // 101 points from 100 MHz to 10 GHz
 
-</script>
+// g.fList = [100000000, 199000000, ..., 5050000000, ..., 10000000000]
+// where 5050000000 is the center frequency
+
 ```
 
 ## nP-nPort
 
-<b>nPort</b> [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/nPort.js "Source") nPort is the Parent Object, nPort objects are Children of nPort, so they inherit the members and methods of nPort. An nPort may have 9 ports maximum but most of nPorts will have 2 ports. For example, a simple 2 way power divider is a 3 port however, a switched filter bank could have 1 input and 8 outputs.
-
-### nPort Members
-
-nPort.<b>global</b> [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-global/src/global.js "Source") global contains the frequency list, the Zo, and the Temperature
-
-nPort.<b>spars</b> [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/seR.js "Source") spars is a table of frequency and corresponding s parameters. There can be up 9 port or a 9 by 9 s parameter matrix for each frequency. Format: A table of frequency and s parameters. As shown below. 
-
-```
-1Port
-Freq1 s11
-Freq2 s11
-
-2Port
-Freq1 s11, s12, s21, s22
-Freq2 s11, s12, s21, s22
-
-3Port
-Freq1 s11, s12, s13, s21, s22, s23, s31, s32, s33 
-Freq2 s11, s12, s13, s21, s22, s23, s31, s32, s33
-
-1 to 9Ports are supported 
-```
+<b>nPort</b> [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/nPort.js "Source") Any RF device input/output or RF system inputs/outputs is an nPort. An nPort may have up to and including 9 ports maximum. However, most of nPorts will have 1, 2, 3, or 4 ports. For example, an RF short is a 1 port device. A simple 2 way power divider is a 3 port device. An ideal RF transformer could have either 2 or 4 ports. At the other extreme, a switched filter bank with 1 input and 8 outputs is a 9 port device. 
 
 ### nPort Methods
+
+nPort methods operate on nPort Objects. All nPort Objects have these methods. nPort.cas() returns a new nPort Object enabling method chaining.
 
 nPort.<b>setglobal</b> (<i> global </i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/nPort.js "Source") sets the global variables of an nPort: fList, Ro, and Temp mentioned above 
 
@@ -117,8 +88,8 @@ nPort.<b>out</b> (<i> 'sij|mag|dB|ang|Re|Im', ' ... ' </i>)[<>](https://github.c
 * <b>Im</b> the imaginary part
 
 ```html
-// For example, if r1 is the nPort for 75 ohm resistor in series, the magnitude of s11 is
 r1.out('s11mag')
+// if r1 is an nPort for a75 ohm resistor, the magnitude of s11 is
 ```
 nPort.<b>outTable</b> (<i> 'sij|mag|dB|ang|Re|Im', ' ... ' </i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/nPort.js "Source") Creates a table specified by the Argument
 
@@ -129,15 +100,20 @@ nPort.<b>outTable</b> (<i> 'sij|mag|dB|ang|Re|Im', ' ... ' </i>)[<>](https://git
 * <b>Im</b> the imaginary part
 
 ```html
-// For example, if r1 is the nPort for 75 ohm resistor in series, the magnitude of s11 is
 r1.out('s11mag')
+// if r1 is an nPort for a75 ohm resistor, the magnitude of s11 is
 ```
 
 ### nPort Functions
 
-nPort.<b>cascade</b> (<i> ... nPorts </i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/combining/cascade.js "Source") cascades a list of comma separated nPorts and returns a new nPort Object. 
+nPort functions are not members of nPort, but they operate on nPort objects. Two general purpose functions are cascade and nodal. 
 
-nPort.<b>nodel</b> (<i>[nPort1,... nodes],[nPort2,...nodes], ... ['out,... nodes]</i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/combining/nodal.js "Source") list of comma separated arrays. Each array begins with the name of the nPort, followed the array numbers. The circuit defined by interconnection nPorts by their nodes. The last array must being with the 'out' name, followed by node numbers. Lastly nP.nodal returns a new nPort Object.
+nPort.<b>cascade</b> (<i> ... nPorts </i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/combining/cascade.js "Source") cascades a list of comma separated nPorts and returns a new nPort Object. nPort.cascade accepts 2-ports only and creates a new 2-port that is the cascade of all the individual 2-ports.
+
+nPort.<b>nodal</b> (<i>[nPort1, node1, node2, ...],[nPort2, node2, node3], ... ['out',  node1, node3]</i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/combining/nodal.js "Source") Enables complex interconnections of nPorts. The argument of nodal is a list of arrays separated by commas. Each array has name of an nPort followed the node numbers separated by commas. The last array is the output. It must have ['out', nodes]. nP.nodal creates a new nPort Object.
+
+(https://github.com/JerryWiltz/nP/blob/master/RF_book/RFbookFigures/fig1-1.png)
+
 
 
 nP.<b>lpfGen</b>(<i> filt = [50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50] </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/lpfGen.js "Source") Creates and returns a new nPort Object. The argument is an array of scaled low pass filter parameters generated by an nPort function such as chebyLPLCs. If no argument, the default value is [50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50].
