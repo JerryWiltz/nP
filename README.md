@@ -112,7 +112,9 @@ nPort.<b>cascade</b> (<i> ... nPorts </i>)[<>](https://github.com/JerryWiltz/nP/
 
 nPort.<b>nodal</b> (<i>[nPort1, node1, node2, ...],[nPort2, node2, node3], ... ['out',  node1, node3]</i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/combining/nodal.js "Source") Enables complex interconnections of nPorts. The argument of nodal is a list of arrays separated by commas. Each array has name of an nPort followed the node numbers separated by commas. The last array is the output. It must have ['out', nodes]. nP.nodal creates a new nPort Object.
 
-(https://github.com/JerryWiltz/nP/blob/master/RF_book/RFbookFigures/fig1-1.png)
+<a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/RF_book/RFbookFigures/fig1-1.png></a>
+
+Added more stuff
 
 
 
