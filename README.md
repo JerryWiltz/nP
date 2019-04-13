@@ -114,7 +114,6 @@ nPort.<b>nodal</b> (<i>[nPort1, node1, node2, ...],[nPort2, node2, node3], ... [
 
 ```html
 <!--DOCTYPE html-->
-<!--DOCTYPE html-->
 <html>
 	<head>
 		<meta charset="utf-8">
@@ -125,6 +124,7 @@ nPort.<b>nodal</b> (<i>[nPort1, node1, node2, ...],[nPort2, node2, node3], ... [
 		<script src="../dist/nP.js"></script>
 
 		<script>
+		
 // set up frequencies
 var g = nP.global;
 g.fList = g.fGen(0e9,12e9,101);
