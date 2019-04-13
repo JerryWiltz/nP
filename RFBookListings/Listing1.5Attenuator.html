@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Listing 1.5 3dB Attenuator</title>
+	</head>
+	<body>
+		<script src="nP.js"></script>
+		<script>
+
+// define the frequency
+g = nP.global;
+g.fList = [0];
+
+// define the resistors
+var R1 = nP.paR(292.4);
+var R2 = nP.seR(17.6);
+var R3 = nP.paR(292.4);
+
+// cascade them all together
+var attn = nP.cascade(R1,R2,R3);
+var attnOut = attn.outTable('s21dB');
+
+// output the result to the console
+console.log('The 3 dB attenuator ...');
+console.log(attnOut);
+
+		</script>
+	</body>
+</html>

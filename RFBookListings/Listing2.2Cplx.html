@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">	
+		<title>Listing 2-2 Complex Numbers</title>
+	</head>
+	<body>
+		<script>
+
+// s-pars of 75Ohm resistor
+// complex number library
+var add = function add (c1, c2){
+	return {
+		x: c1.x + c2.x,
+		y: c2.y + c2.y
+	};
+};
+var sub = function sub (c1, c2){
+	return {
+		x: c1.x - c2.x,
+		y: c2.y - c2.y
+	};
+};
+var mul = function mul (c1, c2){
+	return {
+		x: c1.x * c2.x -c1.y * c2.y,
+		y: c1.x * c2.y + c1.y * c2.x
+	};
+};
+var div = function div (c1, c2){
+	return {
+		x: (c1.x * c2.x + c1.y * c2.y)/(c2.x * c2.x + c2.y * c2.y),
+		y: (c2.x * c1.y - c1.x * c2.y)/(c2.x * c2.x + c2.y * c2.y)
+	};
+};
+var inv = function inv (c){
+	var c1 = {x: 1, y: 0};
+	var c2 = {x: c.x, y: c.y};
+	return {
+		x: (c1.x * c2.x + c1.y * c2.y)/(c2.x * c2.x + c2.y * c2.y),
+		y: (c2.x * c1.y - c1.x * c2.y)/(c2.x * c2.x + c2.y * c2.y)
+	}
+};
+var neg = function copy (c) {
+	return {x: -c.x, y: -c.y}
+};
+var copy = function copy (c) {
+	return {x: c.x, y: c.y}
+};
+var mag = function mag (c) {
+	return Math.sqrt(c.x**2+c.y**2);
+};
+var ang = function ang (c) {
+	return Math.atan2(c.y,c.x) * 180/Math.PI
+};
+
+// define complex variables
+var R1 = {x: 75, y: 0};
+var V = {x: 1, y: 0};
+var Rsource = {x: 50, y: 0};
+var Rload = {x: 50, y: 0};
+var one = {x: 1, y: 0};
+var twoSqrtRsource = {x: 2*Math.sqrt(50), y:0}
+
+var I1 = inv(add(Rsource,inv(add(inv(R1),inv(Rload)))));
+var V1 = sub(one, mul(I1, Rsource)); 
+var V2 = copy(V1);
+var I2 =  neg(div(V2, Rload));
+
+var a1 = div(add(V1, mul(I1, Rsource)), twoSqrtRsource);
+var b1 = div(sub(V1, mul(I1, Rsource)), twoSqrtRsource);
+var b2 = div(sub(V2, mul(I2, Rsource)), twoSqrtRsource);
+
+console.log('The s-pars of a parallel 75 Ohm resistor');
+var s11 = div(b1, a1);
+console.log('Magnitude of s11 is '+ mag(s11));
+console.log('Angle of s11 is '+ ang(s11));
+
+var s21 = div(b2, a1);
+console.log('Magnitude of s21 is ' + mag(s21));
+console.log('Angle of s21 is ' + ang(s21));
+
+
+		</script>
+	</body>
+</html>

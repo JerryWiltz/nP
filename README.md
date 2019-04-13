@@ -79,7 +79,7 @@ nPort.<b>getspars</b> [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-n
 
 nPort1.<b>cas</b> (<i> nPort2 </i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/nPort.js "Source") cascades two 2-ports and creates a new nPort. Method chaining enabled.
 
-nPort.<b>out</b> (<i> 'sij|mag|dB|ang|Re|Im', ' ... ' </i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/nPort.js "Source") Creates a plot input compatible with d3 specified by the Argument
+nPort.<b>out</b> (<i> 'sij|mag|dB|ang|Re|Im', ' ... ' </i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/nPort.js "Source") Creates an output data set that can be plotted with a routine such as nP.lineChart(). Arguments must be in quotes and separated by commas. For example for a filter 2-port named, ```filt1```, to specify an out(), the syntax would be,  ```filt1.out('s11mag','s11dB','s22ang')```.
 
 * <b>mag</b> will provide sij magnitude
 * <b>ang</b> the angle
@@ -89,7 +89,7 @@ nPort.<b>out</b> (<i> 'sij|mag|dB|ang|Re|Im', ' ... ' </i>)[<>](https://github.c
 
 ```html
 r1.out('s11mag')
-// if r1 is an nPort for a75 ohm resistor, the magnitude of s11 is
+// if r1 is an nPort for a 75 ohm resistor, the magnitude of s11 is returned.
 ```
 nPort.<b>outTable</b> (<i> 'sij|mag|dB|ang|Re|Im', ' ... ' </i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/nPort.js "Source") Creates a table specified by the Argument
 
@@ -100,8 +100,8 @@ nPort.<b>outTable</b> (<i> 'sij|mag|dB|ang|Re|Im', ' ... ' </i>)[<>](https://git
 * <b>Im</b> the imaginary part
 
 ```html
-r1.out('s11mag')
-// if r1 is an nPort for a75 ohm resistor, the magnitude of s11 is
+r1.outTable('s11mag')
+// if r1 is an nPort for a 75 ohm resistor, the magnitude of s11 is is returned.
 ```
 
 ### nPort Functions
@@ -110,7 +110,7 @@ nPort functions are not members of nPort, but they operate on nPort objects. Two
 
 nPort.<b>cascade</b> (<i> ... nPorts </i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/combining/cascade.js "Source") cascades a list of comma separated nPorts and returns a new nPort Object. nPort.cascade accepts 2-ports only and creates a new 2-port that is the cascade of all the individual 2-ports.
 
-nPort.<b>nodal</b> (<i>[nPort1, node1, node2, ...],[nPort2, node2, node3], ... ['out',  node1, node3]</i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/combining/nodal.js "Source") Enables complex interconnections of nPorts. The argument of nodal is a list of arrays separated by commas. Each array has name of an nPort followed the node numbers separated by commas. The last array is the output. It must have ['out', nodes]. nP.nodal creates a new nPort Object. Below is an example and a schematic of a 6GHz Wilkinson Power Divider
+nPort.<b>nodal</b> (<i>[nPort1, node1, node2, ...],[nPort2, node2, node3], ... ['out',  node1, node3]</i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/combining/nodal.js "Source") Enables complex interconnections of nPorts. The argument of nodal is a list of arrays separated by commas. Each array has name of an nPort followed the node numbers separated by commas. The last array is the output. It must have ['out', nodes]. nP.nodal creates a new nPort Object. Below is an example html and a schematic of a 6GHz Wilkinson Power Divider. In order to understand how to set up the node order, compare the notation of ports and nodes between the html listing and the schematic. Consider ```...,[tee,9,7,5],...``` in the listing and in the schematic below. Node 9 is connected to the node 1 of the tee. Node 7 is connected to node 2 of the tee. Lastly, node 5 is connected to node 3 of the tee. The final result is a 3-port named, ```wilkinson```. Node 1 of the input is node 1 of ```wilkinson```, Node, 7 of the input is node 2 of ```wilkinson```. And lastly, node 3 of ```wilkinson``` is Node 6 of the input. 
 
 ```html
 <!--DOCTYPE html-->
@@ -160,9 +160,26 @@ The example below shows three ways of doing the same thing, as filt1 = filt2 = f
 
 ```html
 <!--DOCTYPE html-->
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>Low Pass  4 different ways</title>
+	</head>
+	<body>
+		<svg id="canvas1" width="400" height="300"></svg>
+		<svg id="canvas2" width="400" height="300"></svg>
+		<svg id="canvas3" width="400" height="300"></svg>
+		<svg id="canvas4" width="400" height="300"></svg>
+
+		<script src="../dist/nP.js"></script>
 
 		<script>
-// Nine nPorts for a lowpass LC filter
+
+var g = nP.global;	
+g.fList = g.fGen(50e6, 10e9, 50);
+
+// create 9 2-ports. Each 2-port is part of a lowpass LC filter
 var c1 = nP.paC(3.1716836788279897e-12);
 var l1 = nP.seL(9.566513256241392e-9);
 var c2 = nP.paC(5.6621309381827996e-12);
@@ -173,32 +190,35 @@ var c4 = nP.paC(5.662130938182797e-12);
 var l4 = nP.seL(9.566513256241397e-9);
 var c5 = nP.paC(3.171683678827988e-12);
 
-// using nPort method, cas, to produce a single nPort for the entire filter.
+// using nPort method, cas, to produce a single nPort for the entire filter
 var filt1 = c1.cas(l1).cas(c2).cas(l2).cas(c3).cas(l3).cas(c4).cas(l4).cas(c5);
+nP.lineChart({inputTable: [filt1.out('s11dB','s21dB')], canvasID: canvas1});
 
 // using nPort function, cascade, to produce a single nPort for the entire filter.
 var filt2 = nP.cascade (c1,l1,c2,l2,c3,l3,c4,l4,c5);
-};
+nP.lineChart({inputTable: [filt2.out('s11dB','s21dB')], canvasID: canvas2});
 
 // using nPort function, nodal, to produce a single nPort for the entire filter.
 var filt3 = nP.nodal([c1,1,2],[l1,2,3],[c2,3,4],[l2,4,5],[c3,5,6],[l3,6,7],[c4,7,8],[l4,8,9],[c5,9,10],['out',1,10]);
+nP.lineChart({inputTable: [filt3.out('s11dB','s21dB')], canvasID: canvas3});
 
 // using the nPort function, lpfGen, to produce a nPort for the entire filter
+var filt4 = nP.lpfGen([50,
+		3.1716836788279897e-12,
+		9.566513256241392e-9,
+		5.6621309381827996e-12,
+		1.0721164178932893e-8,
+		5.8499784682761105e-12,
+		1.0721164178932898e-8,
+		5.662130938182797e-12,
+		9.566513256241397e-9,
+		3.171683678827988e-12,
+		50]);
+nP.lineChart({inputTable: [filt4.out('s11dB','s21dB')], canvasID: canvas4});
 
-var filt4 = nP.lpf(50,
-				3.1716836788279897e-12,
-				9.566513256241392e-9,
-				5.6621309381827996e-12,
-				1.0721164178932893e-8,
-				5.8499784682761105e-12,
-				1.0721164178932898e-8,
-				5.662130938182797e-12,
-				9.566513256241397e-9,
-				3.171683678827988e-12,
-				50);
 		</script>
 	</body>
-</html
+</html>
 ```
 
 ### Open-Short-Load (Thes are ideal one-ports)

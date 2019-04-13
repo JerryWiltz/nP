@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">	
+		<title>Listing 2-8 nPort Math</title>
+	</head>
+	<body>
+		<script src="nP.js"></script>
+		<script>
+
+// spars library
+var sparsF = function sparsF (f) {
+	var Rsource = nP.complex(50,0);
+	var C1 = nP.complex(0, -1/(2*Math.PI*f*1e-12)); // note minus sign!!!
+	var L1 = nP.complex(0, 2*Math.PI*f*5e-9);
+	var C2 = nP.complex(0, -1/(2*Math.PI*f*1e-12));
+	var Rload = nP.complex(50, 0);
+	var one = nP.complex(1, 0), zero = nP.complex(0, 0);
+
+	// define the impedance matrix
+	var z = nP.matrix( [
+			[Rsource.add(C1), C1.neg()          , zero         ],
+			[C1.neg()       , C1.add(L1).add(C2), C2.neg()     ],
+			[zero           , C2.neg()          , C2.add(Rload)],
+	] );
+
+	// define the voltage generator matrix
+	var v = nP.matrix( [
+			[one],
+			[zero],
+			[zero],
+	] );
+
+	// find the inverse of the resistor matrix
+	var zInvert = z.invertCplx();
+
+	// find the current matrix by multiplying
+	var i = zInvert.mulCplx(v);
+
+	var V1 = C1.mul(i.out()[0][0].sub(i.out()[1][0]));
+	var V2 = C2.mul(i.out()[1][0].sub(i.out()[2][0]));
+
+	// find the currents, voltages, and spars
+	var I1 = i.out()[0][0];
+	var I3 = i.out()[2][0];
+
+
+	var a1numerator = V1.add(I1.mul(Rsource));
+
+	var b1numerator = V1.sub(I1.mul(Rsource));
+	var b2numerator = V2.sub(I3.neg().mul(Rsource));
+
+	var s11 = b1numerator.div(a1numerator);
+	var s21 = b2numerator.div(a1numerator);
+
+	var s11mag = s11.mag();
+	var s11ang = s11.ang();
+	var s21mag = s21.mag();
+	var s21ang = s21.ang();
+
+	var s11dB = 20 * Math.log10(s11mag);
+	var s21dB = 20 * Math.log10(s21mag);
+
+	var out = [f, s11dB, s21dB, s11mag, s11ang, s21mag, s21ang];
+
+	return out; // return an array
+};
+var sparsTable = function sparsTable (fStart, fStop, points) {
+	var out = [];
+	var fStep = (fStop-fStart)/(points-1);
+	var fMax = fStart;
+	var i = 0; 
+	for (i = 0; i < points; i++, fMax += fStep ) {
+		out.push(sparsF(fMax));
+	};
+	return out; // return a table
+};
+var table = sparsTable(0.1e9, 10e9, 501);
+
+// chart library
+var lineChart = function lineChart(table, xRangeArray, yRangeArray) {
+	var canvasBody = document.getElementsByTagName("body")[0];
+	var canvas = document.createElement('canvas');
+	var g = canvas.getContext('2d');
+	var width = 400, height = 300;
+	var xSlope = width/(xRangeArray[1]-xRangeArray[0]);
+	var ySlope = height/(yRangeArray[1]-yRangeArray[0]); 
+	var xPixels = function xPixels(f) {
+		return xSlope*(f-xRangeArray[1]) + width;
+	};
+	var yPixels = function yPixels(dB) {
+		return height - (ySlope*(dB-yRangeArray[1]) + height);
+	};
+	canvas.id     = "CursorLayer";
+	canvas.width  = width;
+	canvas.height = height;
+	canvas.style.zIndex   = 8;
+	canvas.style.position = "absolute";
+	canvas.style.border   = "1px solid";
+	canvasBody.appendChild(canvas);
+	g.beginPath(); // plot s11dB
+	for (var i = 0; i < table.length; i++) {
+		if(i === 0) g.moveTo(xPixels(table[0][0]), yPixels(table[0][1]));
+		g.lineTo(xPixels(table[i][0]), yPixels(table[i][1]));
+	};
+	g.strokeStyle = 'red';
+	g.lineWidth = 5;
+	g.stroke();
+	g.beginPath(); // plot s21dB
+	for (var i = 0; i < table.length; i++) {
+		if(i === 0) g.moveTo(xPixels(table[0][0]), yPixels(table[0][2]));
+		g.lineTo(xPixels(table[i][0]), yPixels(table[i][2]));
+	};
+	g.strokeStyle = 'blue';
+	g.stroke();
+
+};      
+lineChart(table,[0.1e9, 10e9], [-40,0]);
+		</script>
+	</body>
+</html>
