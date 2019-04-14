@@ -1,0 +1,61 @@
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>lineChart</title>
+	</head>
+	<body>
+		<svg id="canvas1" width="400" height="300"></svg>
+		<svg id="canvas2" width="400" height="300"></svg>
+		<script src="nP.js"></script>
+
+		<script>
+
+// Set up the first requency range
+var g = nP.global;	
+g.fList = g.fGen(50e6, 10e9, 51);
+
+// 9 section low pass filter
+var c1 = nP.paC(3.1716836788279897e-12);
+var l1 = nP.seL(9.566513256241392e-9);
+var c2 = nP.paC(5.6621309381827996e-12);
+var l2 = nP.seL(1.0721164178932893e-8);
+var c3 = nP.paC(5.8499784682761105e-12);
+var l3 = nP.seL(1.0721164178932898e-8);
+var c4 = nP.paC(5.662130938182797e-12);
+var l4 = nP.seL(9.566513256241397e-9);
+var c5 = nP.paC(3.171683678827988e-12);
+var filter = c1.cas(l1).cas(c2).cas(l2).cas(c3).cas(l3).cas(c4).cas(l4).cas(c5).out('s11dB', 's21dB');
+
+// create the lineChartInputObject
+var oneCircuit = {
+	canvasID: '#canvas1',
+	inputTable: [filter]
+};
+
+// plot
+nP.lineChart(oneCircuit);
+
+// set up the second frequncy range
+g.fList = g.fGen(4e9, 14e9, 11);
+
+// 3 section attenuator
+var r1 = nP.paR(300);
+var r2 = nP.seR(30);
+var r3 = nP.paR(300);
+var attenuator = r1.cas(r2).cas(r3).out('s11dB','s21dB');
+
+// create the lineChartInputObject for two circuits: the filter and the attenuator
+var twoCircuits = {
+	canvasID: '#canvas2',
+	inputTable: [filter, attenuator],
+	xRange: [0,16e9],
+	yRange: [20,-200]
+};
+
+// plot
+nP.lineChart(twoCircuits);
+
+		</script>
+	</body>
+</html>

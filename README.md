@@ -306,11 +306,23 @@ nP.<b>tlin</b>(<i> Z = 60, Length = 0.5 * 0.0254 </i>) [<>](https://github.com/J
 nP.<b>tclin</b>(<i> Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/tlin/tclin.js "Source") An ideal four port coupled transmission line. The ports are numbered clockwise. Port 1 is the upper left, Port 2 is the upper right, Port 3 is the lower right, and Port 4 is the lower left. When the input is at Port 1, the through port is Port 2, the coupled port is Port 4, and the isolated port is Port 3. The tclin is lossless and the dielectric constant is 1.0 . Zoe is the even mode characteristic impedance in Ohms, Zoo is the odd mode characteristic impedance in Ohms, and Length is the physical length in meters. Creates and returns a new nPort Object. If no arguments, the default values are 100 Ohms, 30 Ohms, and 1.341 * 0.0254 Meters. Note: 1.341 * 0.0254 is the 1/4 wavelength at 2.2GHz. Here below is a coupled bandpass filter example.
 
 ```html
-// set up the frequency
-var g = nP.global;	
-g.fList = g.fGen(2000e6,10000e6,100);
+<!--DOCTYPE html-->
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>Analysis parallel coupled filter</title>
+	</head>
+	<body>
+		<script src="../dist/nP.js"></script>
 
-// set up the coupled sections. 1/4 wavelength at 6.0GHz
+		<script>
+
+// this is for a quarter wave at 6GHz
+var g = nP.global;	
+g.fList = g.fGen(2000e6,10000e6,101);
+
+// set up the couplers
 var tclin1 = nP.tclin(79.667,37.834,0.491 * 0.0254);
 var tclin2 = nP.tclin(60.866,42.505,0.491 * 0.0254);
 var tclin3 = nP.tclin(79.667,37.834,0.491 * 0.0254);
@@ -324,11 +336,13 @@ var filtOut = filt.out('s21dB','s11dB');
 
 // set up plot
 var plot = {
-	canvasID: '#canvas1',
-	inputTable: filtOut,
-	freqUnits: 'GHz'
+	inputTable: [filtOut],
 };
 nP.lineChart(plot);
+
+		</script>
+	</body>
+</html>
 ```
 
 Microstrip Transmission lines
@@ -339,28 +353,7 @@ nP.<b>mlin</b>(<i> Width = 0.98e-3, Height = 1.02e-3, Length = 0.5 * 0.025, Thic
 
 Connections are 3-Port and n-Port "dummy" components. Using these connections enables 2-Port components to be connected together to form more complex circuits such as power dividers.
 
-nP.<b>Tee</b>(<i> </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/connections/Tee.js "Source") Creates a new nPort Object and returns the s parameters of a 3-Port Tee connector. No argument required. Below is the code for a power divider 
-
-```html
-
-<script>
-
-//Here is a simple Wilkenson Power Divider
-var g = nP.global;
-g.fList = g.fGen(2e9,22e9,201); // 2 GHz to 22 GHz with 201 points
-
-var threeWay = nP.Tee();
-var tl = nP.tlin(70.7, 0.49 * 0.0254); 
-var r = nP.seR(100);
-
-// Note the array of components and node numbers right below
-var pwr = nP.nodal([threeWay, 1,2,3],[tl,3,5],[tl,2,4],[threeWay,9,7,5],[threeWay,8,4,6],[r,8,9],['out',1,7,6]);
-var powerDivider = pwr.out('s11dB','s21dB','s23dB');
-
-console.log(powerDivider);
-
-</script>
-```
+nP.<b>Tee</b>(<i> </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/connections/Tee.js "Source") Creates a new nPort Object and returns the s parameters of a 3-Port Tee connector. No argument required. See above wilkinson example
 
 nP.<b>seriesTee</b>(<i> </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/connections/seriesTee.js "Source") Creates a new nPort Object and returns the s parameters of a 3-Port series Tee connector. No argument required. Ports 1 and 2 are input and outputs. Port 3 is the series port.
 
@@ -559,13 +552,11 @@ m.<b>showCountNum</b>(<i>number</i>) [<>](https://github.com/JerryWiltz/nP/blob/
 
 ## nP-chart
 
-nP.<b>lineChart</b>(<i> lineChartInputObject = {} </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-chart/src/lineChart.js) A function that draws a rectangular chart or plot. lineChart() will render the graphics in svg. nPort has an internal subset of d3. There is no need to download and include [d3](https://d3js.org/) in your html. If you don't provide a svg, linechart() will create one for you. The default element ID is "canvas". If you provide the svg, <b>you must specify an ID, width, and height attributes</b>, such as:
+nP.<b>lineChart</b>(<i> lineChartInputObject = {} </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-chart/src/lineChart.js) A function that draws a rectangular chart or plot. lineChart() will render the graphics in svg. nPort has an internal subset of [d3, Data-Driven Documents](https://d3js.org/). There is no need to include d3 in your code. If you don't provide a svg, linechart() will create one for you. The default element ID is "canvas". If you provide the svg, <b>you must specify an ID, width, and height attributes</b>, such as:
 
-```html
-<svg id="canvas" width="500" height="300"></svg>
-````
+```<svg id="myCanvas" width="400" height="300"></svg>```
 
-If no argument linePlot, wlll create its own svg and display a default plot. This is good for setting up your page and you can see what it will like. Here is an HTML example for the default lineChart().
+If you do not give an argument linePlot, it will display a default plot in a default svg that it created. This is good for setting up your page and you can see what it will like. Here is an ```html``` example for the default lineChart().
 
 ```html
 <!DOCTYPE html>
@@ -586,26 +577,27 @@ nP.lineChart();  // shows default plot
 </html>
 ````
 
-linelinePlot() has one argument named "lineChartInputObject" and is used in the example below.
+lineChart(lineChartInputObject = \{ \} ) has one argument named "lineChartInputObject" and is used twice in the example below. There are two svg elements with two corresponding id's. There are two object variables created, oneCircuit and twoCircuits. Notice for twoCircuits, we are using ```filter``` again and are charting a simple ```attenuator``` as well.
 
 ```HTML
-<!--DOCTYPE html-->
 <html>
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width">
-		<title>lineChart() Applied</title>
+		<title>lineChart</title>
 	</head>
 	<body>
-			<svg id="canvas1" width="500" height="300"></svg>
+		<svg id="canvas1" width="400" height="300"></svg>
+		<svg id="canvas2" width="400" height="300"></svg>
 		<script src="nP.js"></script>
 
 		<script>
-// Set up the frequency range
-var g = nP.global;	
-g.fList = g.fGen(50e6, 10e9, 50);
 
-// A 9 section low pass filter
+// Set up the first requency range
+var g = nP.global;	
+g.fList = g.fGen(50e6, 10e9, 51);
+
+// 9 section low pass filter
 var c1 = nP.paC(3.1716836788279897e-12);
 var l1 = nP.seL(9.566513256241392e-9);
 var c2 = nP.paC(5.6621309381827996e-12);
@@ -617,19 +609,38 @@ var l4 = nP.seL(9.566513256241397e-9);
 var c5 = nP.paC(3.171683678827988e-12);
 var filter = c1.cas(l1).cas(c2).cas(l2).cas(c3).cas(l3).cas(c4).cas(l4).cas(c5).out('s11dB', 's21dB');
 
-// Create the lineChartInputObject
-var lineChartInputObject = {
+// create the lineChartInputObject
+var oneCircuit = {
 	canvasID: '#canvas1',
 	inputTable: [filter]
 };
 
-// Pass the lineChartInputObject to lineChart
-nP.lineChart(lineChartInputObject);
+// plot
+nP.lineChart(oneCircuit);
 
+// set up the second frequncy range
+g.fList = g.fGen(4e9, 14e9, 11);
+
+// 3 section attenuator
+var r1 = nP.paR(300);
+var r2 = nP.seR(30);
+var r3 = nP.paR(300);
+var attenuator = r1.cas(r2).cas(r3).out('s11dB','s21dB');
+
+// create the lineChartInputObject for two circuits: the filter and the attenuator
+var twoCircuits = {
+	canvasID: '#canvas2',
+	inputTable: [filter, attenuator],
+	xRange: [0,16e9],
+	yRange: [20,-200]
+};
+
+// plot
+nP.lineChart(twoCircuits);
 
 		</script>
 	</body>
-</html
+</html>
 ```
 
 Here is full the format of the LineChart Object, it has key-value pairs in the following order:
