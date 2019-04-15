@@ -552,7 +552,7 @@ m.<b>showCountNum</b>(<i>number</i>) [<>](https://github.com/JerryWiltz/nP/blob/
 
 ## nP-chart
 
-nP.<b>lineChart</b>(<i> lineChartInputObject = {} </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-chart/src/lineChart.js) A function that draws a rectangular chart or plot. lineChart() will render the graphics in svg. nPort has an internal subset of [d3, Data-Driven Documents](https://d3js.org/). There is no need to include d3 in your code. If you don't provide a svg, linechart() will create one for you. The default element ID is "canvas". If you provide the svg, <b>you must specify an ID, width, and height attributes</b>, such as:
+nP.<b>lineChart</b>(<i> lineChartInputObject = \{ \} </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-chart/src/lineChart.js) A function that draws a rectangular chart or plot. lineChart() will render the graphics in svg. nPort has an internal subset of [d3, Data-Driven Documents](https://d3js.org/). There is no need to include d3 in your code. If you don't provide a svg, linechart() will create one for you. The default element ID is "canvas". If you provide the svg, <b>you must specify an ID, width, and height attributes</b>, such as:
 
 ```<svg id="myCanvas" width="400" height="300"></svg>```
 
@@ -575,9 +575,9 @@ nP.lineChart();  // shows default plot
 		</script>
 	</body>
 </html>
-````
+```
 
-lineChart(lineChartInputObject = \{ \} ) has one argument named "lineChartInputObject" and is used twice in the example below. There are two svg elements with two corresponding id's. There are two object variables created, oneCircuit and twoCircuits. Notice for twoCircuits, we are using ```filter``` again and are charting a simple ```attenuator``` as well.
+In the listing below, lineChart(lineChartInputObject = \{ \} ) has one argument named "lineChartInputObject" and it is used twice. There are two svg elements with two corresponding id's. There are two lineChartInputObject variables created, ```mostlyDefault``` and ```completelySpecified```. If this this ```html``` is run, it will display two lineCharts. One with default setting and the next with completely specified settings. Note the -1 GHz beginning frequency setting on the x axis.
 
 ```HTML
 <html>
@@ -593,11 +593,11 @@ lineChart(lineChartInputObject = \{ \} ) has one argument named "lineChartInputO
 
 		<script>
 
-// Set up the first requency range
+// set up the first frequency range for the low pass filter
 var g = nP.global;	
-g.fList = g.fGen(50e6, 10e9, 51);
+g.fList = g.fGen(50e6, 10e9, 101);
 
-// 9 section low pass filter
+// components for a 9 section low pass filter
 var c1 = nP.paC(3.1716836788279897e-12);
 var l1 = nP.seL(9.566513256241392e-9);
 var c2 = nP.paC(5.6621309381827996e-12);
@@ -607,36 +607,40 @@ var l3 = nP.seL(1.0721164178932898e-8);
 var c4 = nP.paC(5.662130938182797e-12);
 var l4 = nP.seL(9.566513256241397e-9);
 var c5 = nP.paC(3.171683678827988e-12);
-var filter = c1.cas(l1).cas(c2).cas(l2).cas(c3).cas(l3).cas(c4).cas(l4).cas(c5).out('s11dB', 's21dB');
+var filter = nP.cascade(c1,l1,c2,l2,c3,l3,c4,l4,c5).out('s11dB', 's21dB');
 
-// create the lineChartInputObject
-var oneCircuit = {
-	canvasID: '#canvas1',
-	inputTable: [filter]
-};
-
-// plot
-nP.lineChart(oneCircuit);
-
-// set up the second frequncy range
+// set up the second frequncy range for the attenuator
 g.fList = g.fGen(4e9, 14e9, 11);
 
-// 3 section attenuator
-var r1 = nP.paR(300);
-var r2 = nP.seR(30);
-var r3 = nP.paR(300);
-var attenuator = r1.cas(r2).cas(r3).out('s11dB','s21dB');
+// components for a 3 section attenuator with parasitics
+var cparasitic = nP.paC(0.1e-12);
+var r1 = nP.paR(280);
+var r2 = nP.seR(17);
+var r3 = nP.paR(280);
+var attenuator = nP.cascade(cparasitic,r1,r2,r3,cparasitic).out('s11dB','s21dB');
 
-// create the lineChartInputObject for two circuits: the filter and the attenuator
-var twoCircuits = {
-	canvasID: '#canvas2',
-	inputTable: [filter, attenuator],
-	xRange: [0,16e9],
-	yRange: [20,-200]
+// create the lineChartInputObject for the mostly default case
+var mostlyDefault = {
+	canvasID: '#canvas1',
+	inputTable: [filter, attenuator]
 };
 
-// plot
-nP.lineChart(twoCircuits);
+// plot mostly default case
+nP.lineChart(mostlyDefault);
+
+// create the lineChartInputObject for the completely specified case
+var completelySpecified = {
+	canvasID: '#canvas2',
+	inputTable: [filter, attenuator],
+	xRange: [-1e9,6e9],
+	yRange: [20,-50],
+	xAxisTitle: 'Freq, GHz',
+	yAxisTitle: 'LPF & -3dB Attn, dB',
+	metricPrefix: 'giga'
+};
+
+// plot completely specified case
+nP.lineChart(completelySpecified);
 
 		</script>
 	</body>
