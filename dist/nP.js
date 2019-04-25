@@ -6507,6 +6507,10 @@
 			]
 		];
 
+		// lineChart mutates inputTable. if same inputTable is reused by another lineChart, output is distorted.
+		// so we create a duplicate version of the inputTable and leave the original version pristine
+		var inputTableDuplicated = JSON.parse(JSON.stringify(inputTable));
+
 		var metricPrefix = lineChartInputObject.metricPrefix || 'giga';
 		var canvasID = lineChartInputObject.canvasID || '#canvas' ;
 		var xAxisTitle = lineChartInputObject.xAxisTitle || 'Frequency';
@@ -6555,7 +6559,7 @@
 			return groupData;
 		};
 
-		var formattedData = inputTable.map( function(element) {
+		var formattedData = inputTableDuplicated.map( function(element) {
 			return generateFormattedData(element);
 		});
 

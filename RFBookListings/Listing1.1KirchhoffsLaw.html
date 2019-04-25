@@ -8,15 +8,13 @@
 	<body>
 		<script>
 
-// Kirchhoff voltage law
-
-var R = 1, V = 1, I = 0;
-
+var R = 1, V = 1, I, volts;
 I = V/R;
+volts = V - I * R;
 
-console.log('The loop current is ...');
-console.log(I + ' Amp');
+console.log('For a closed loop, the voltages should add to 0');
+console.log(volts + ' Volts');
 
-</script
+		</script>
 	</body>
 </html>

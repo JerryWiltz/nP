@@ -1,15 +1,28 @@
 import resolve from 'rollup-plugin-node-resolve';
 
-export default {
+export default 	{
 	input: 'index.js',
-	output: {
-	//	file: './dist/nP.js',
-	//	file: './RFBookListings/nP.js',
-		file: './ReadmeListings/nP.js',
-		format: 'umd',
-		name: 'nP',
-		globakjljs: 'd3'
-	},
+	output: [
+		{
+			file: './dist/nP.js',
+			format: 'umd',
+			name: 'nP',
+			global: 'd3'
+		},
+		{
+			file: './ReadmeListings/nP.js',
+			format: 'umd',
+			name: 'nP',
+			global: 'd3'
+		},
+		{
+			file: './RFBookListings/nP.js',
+			format: 'umd',
+			name: 'nP',
+			global: 'd3'
+		}
+
+	],
 	plugins: [
 		resolve()
 	]
