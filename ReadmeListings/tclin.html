@@ -27,10 +27,13 @@ var filt = nP.nodal([tclin1,1,2,3,4],[tclin2,3,5,6,7],[tclin3,6,8,9,10],[open,2]
 var filtOut = filt.out('s21dB','s11dB');
 
 // set up plot
-var plot = {
-	inputTable: [filtOut],
-};
+var plot = {inputTable: [filtOut]};
+
+// plot the data
 nP.lineChart(plot);
+
+// put the data in a table
+nP.lineTable(plot);
 
 		</script>
 	</body>

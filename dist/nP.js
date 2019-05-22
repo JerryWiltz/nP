@@ -6458,38 +6458,45 @@
 	};
 
 	function  lineChart (lineChartInputObject = {}) {
+
 		// here is the definition of the lineChartInputObject data structure:
 
-		// lineChartInputObject.inputTable,	// an array of outs [out1, out2 ... outn]
-		// lineChartInputObject.canvasID,	// a string of an svg id '#canvas'
-		// lineChartInputObject.metricPrefix,	// a string of a metric prefix such as 'giga'
-		// lineChartInputObject.xAxisTitle,	// a string of the x axis title such as 'Frequency'
-		// lineChartInputObject.yAxisTitle,	// a string of the y axis title such as 'dB'
-		// lineChartInputObject.xRange,		// an array of min, max such as [2e9, 12e9]
-		// lineChartInputObject.yRange,		// an array of min, max such as [0, -80]
+		// lineChartInputObject.inputTable,	// an array of outs [out1, out2 ... outn]; default is internal inputTable
+		// lineChartInputObject.chartID,	// a string of an svg id 'chart'; default is 'chart1'
+		// lineChartInputObject.metricPrefix,	// a string of a metric prefix such as 'giga'; default is 'giga'
+		// lineChartInputObject.xAxisTitle,	// a string of the x axis title; default is 'Frequency'
+		// lineChartInputObject.yAxisTitle,	// a string of the y axis title; default is 'dB'
+		// lineChartInputObject.xRange,		// an array of min, max such as [2e9, 12e9]; default is autorange based on data
+		// lineChartInputObject.yRange,		// an array of min, max such as [0, -80]; default is autorange based on data
+		// lineChartInputObject.showPoints,	// a string with either 'show' or 'hide', if not specified, default is 'show'
+		// lineChartInputObject.showLables,	// a string with either 'show' or 'hide', if not specified, default is 'show'
 
 		// there are default values for all the above.
 		// just use nP.lineChart() and view the Insertion Loss, Return Loss, Noise Figure, and IP3 responce
 
 		// this function has one arguement, lineChartInputObject.
 		// if no arguement, then an internal default version of the lineChartInputObject is used.
-		// if no lineChartImputObject:canvasID, then a svg is created.
+		// if no lineChartImputObject:chartID, then a svg is created.
+
+		// requierment for unique ID for each chart svg
+		// a sequencial chartID is generated at every lineChart call. if no chartID provided, this one is used.
+		var chartText = 'chart' + (document.getElementsByTagName('svg').length + 1).toString();
 
 		var createSVG = function ( ) {
 			var idAttr = document.createAttribute('id');
 			var widthAttr = document.createAttribute('width');
 			var heightAttr = document.createAttribute('height');
-			var canvasBody = document.getElementsByTagName("body")[0];
-			var canvas = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-			idAttr.value = 'canvas';
+			var chartBody = document.getElementsByTagName("body")[0];
+			var chart = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+			idAttr.value = chartText; // chart1
 			widthAttr.value = 400;
 			heightAttr.value = 300;
-			canvas.setAttributeNode(idAttr);
-			canvas.setAttributeNode(widthAttr);
-			canvas.setAttributeNode(heightAttr);
-			if(!lineChartInputObject.canvasID) canvasBody.appendChild(canvas);
-		}();
+			chart.setAttributeNode(idAttr);
+			chart.setAttributeNode(widthAttr);
+			chart.setAttributeNode(heightAttr);
+			if(!lineChartInputObject.chartID){ chartBody.appendChild(chart);}	}();
 
+		// this is the internal inputTable that has default data if no inputTable data provided
 		var inputTable = lineChartInputObject.inputTable || [ 
 			[
 				['Freq', 'Insertion Loss', 'Return Loss'],
@@ -6508,15 +6515,17 @@
 		];
 
 		// lineChart mutates inputTable. if same inputTable is reused by another lineChart, output is distorted.
-		// so we create a duplicate version of the inputTable and leave the original version pristine
+		// so we create a duplicate version of the inputTable and leave the original version unmutated.
 		var inputTableDuplicated = JSON.parse(JSON.stringify(inputTable));
 
 		var metricPrefix = lineChartInputObject.metricPrefix || 'giga';
-		var canvasID = lineChartInputObject.canvasID || '#canvas' ;
+		var chartID = lineChartInputObject.chartID ? ('#' + lineChartInputObject.chartID) : ('#' + chartText) ; //d3 wants a '#' in front of an id
 		var xAxisTitle = lineChartInputObject.xAxisTitle || 'Frequency';
 		var yAxisTitle = lineChartInputObject.yAxisTitle || 'dB';
 		var xAxisTitleOffset = 48;
 		var yAxisTitleOffset = 40;
+		var showPoints = lineChartInputObject.showPoints === 'hide' ? false : (lineChartInputObject.showPoints === 'show' ? true : true) ;
+		var showLables = lineChartInputObject.showLables === 'hide' ? false : (lineChartInputObject.showLables === 'show' ? true : true) ;
 
 		var pickScale = function (metricPrefix){
 			var out = 0;
@@ -6579,9 +6588,9 @@
 		ySpan = lineChartInputObject.yRange || ySpan;
 
 		//set up the plot area
-		var canvasRect = select(canvasID).node().getBoundingClientRect();
-		var outerWidth = canvasRect.width;
-		var outerHeight = canvasRect.height;
+		var chartRect = select(chartID).node().getBoundingClientRect();
+		var outerWidth = chartRect.width;
+		var outerHeight = chartRect.height;
 		var margin = { left: 70, top: 20, right: 20, bottom: 60 };
 
 		var innerWidth  = outerWidth  - margin.left - margin.right;
@@ -6590,7 +6599,7 @@
 		var x = linear$2().domain(extent(xSpan)).range([0, innerWidth]);
 		var y = linear$2().domain(extent(ySpan)).range([innerHeight, 0]);
 
-		var svg$$1 = select(canvasID)
+		var svg$$1 = select(chartID) // this always runs and it overwrites the chartID specified svg
 			.attr("width", outerWidth)
 			.attr("height", outerHeight)
 			.attr("class", 'lineChart');
@@ -6599,7 +6608,28 @@
 			.attr("height", outerHeight)
 			.attr('fill', 'none')
 			.attr('stroke', 'black')
-			.attr('stroke-width', '1px');
+			.attr('stroke-width', '1px')
+			.attr('id', 'outerRect');
+
+		var buttonRectID = 'buttonRect' + chartID.slice(1); // slice(1) removes '#" from chartID
+		var buttonRect = svg$$1.append('rect') // this sets up the 'To PNG' button
+			.attr('width', '10')
+			.attr('height', '10')
+			.attr('fill', '#99ccff')
+			.attr('stroke', 'blue')
+			.attr('stroke-width', '1px')
+			.attr('id', buttonRectID)
+			.attr('transform', 'translate(' + (outerWidth - 13) + ',' + 3 + ')');
+
+		var buttonTextID = 'buttonText' + chartID.slice(1); // slice(1) removes '#' from chartID
+		var buttonText = svg$$1.append('text')
+			.attr('transform', 'translate(' + (outerWidth - 75) + ',' + 9.5 + ')')
+			.attr("x", 3)
+			.attr("dy",  "0.35em")
+			.attr('id', buttonTextID)
+			.style('visibility', 'hidden')
+			.style("font", "12px sans-serif")
+			.text('To PNG');
 
 		var g = svg$$1.append("g")
 			.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
@@ -6639,45 +6669,229 @@
 		var colorIndex = 0;
 		formattedData.forEach(function(groupData, groupIndex) { 
 
-			function plotColor (label) {return category10[colorIndex];}		// kept, the old. function plotColor (label) {return d3.schemeCategory10[data.columns.slice(1).indexOf(label)];};
-
+			function plotColor (lable) {return category10[colorIndex];}
 			var newPlot = 'newPlot' + groupIndex.toString();	
 			var plotGroups = g.selectAll('g.newPlot')
 				.data(groupData)
 				.enter()
 				.append('g')
-				.attr('class', newPlot) // kept the old. was 'newPlot', need unique class name per trace
+				.attr('class', newPlot)
 				.each( function (d) {
-					select(this).selectAll('circle')
-						.data(d => d.yValues)
-						.enter()
-						.append('circle')
-						.attr('cx', d => x(d.xValue))
-						.attr('cy', d => y(d.yValue))
-						.attr('r', 2)
-						.style("stroke", plotColor(colorIndex)).style('fill', plotColor(colorIndex)).style('stroke-width','2');
-					// kept the old. .style("stroke", plotColor(d.yName)).style('fill', plotColor(d.yName)).style('stroke-width','2');
-
-					var line$$1 = line()
+					if(showPoints === true){
+						select(this).selectAll('circle')
+							.data(d => d.yValues)
+							.enter()
+							.append('circle')
+							.attr('cx', d => x(d.xValue))
+							.attr('cy', d => y(d.yValue))
+							.attr('r', 2)
+							.style("stroke", plotColor(colorIndex)).style('fill', plotColor(colorIndex)).style('stroke-width','2');
+					}				var line$$1 = line()
 						.x(d => x(d.xValue))
 						.y(d => y(d.yValue));
 
 					select(this).append("path")
 						.attr('d', d => line$$1(d.yValues))
 						.style("stroke", plotColor(colorIndex)).style('fill', 'none');
-					//kept the old. .style("stroke", plotColor(d.yName)).style('fill', 'none')
 
-					select(this).append("text")
-						.attr("transform", function(d) { 
-							var textShift = Math.ceil(d.yValues.length/4); // moves the text 3/4 away
-							return "translate(" + x(d.yValues[d.yValues.length-textShift].xValue) + "," + y(d.yValues[d.yValues.length-textShift].yValue)  + ")";})
-						.attr("x", 3)
-						.attr("dy", "0.35em")
-						.style("font", "12px sans-serif")
-						.text(function(d) { return d.yName; });
-					colorIndex++;
+					if (showLables === true) {
+						select(this).append("text")
+							.attr("transform", function(d) { 
+								let textShift = function () { // put start of lable to the right side of chart rectangle
+									let points = d.yValues.length;
+									if (points === 1) {return 1}								if (points === 2) {return 2}								if (points === 3) {return 2}								if (points === 4) {return 2}								if ( (points => 5) && (points <= 10) ) {return Math.ceil(points/4) + 2}								if ( (points => 11) && (points <= 100) ) {return Math.ceil(points/4) + 1}								if (points => 101) {return Math.ceil(points/4)}							}();
+								let shiftDown = function () { // put lable above or below the trace depending on slope
+									let points = d.yValues.length;
+									if (points < 50) {return 10}								if (points => 50) {
+										let low = d.yValues[d.yValues.length-textShift-10].yValue;
+										let high = d.yValues[d.yValues.length-textShift+10].yValue;
+										if(low <= high) {return 10} // put lable below trace, positive slope
+										if(low > high) { return -10} // put lable above trace, negative slope	
+									}
+								}();
+								let shiftRight = 10;
+								return "translate(" + ( x(d.yValues[d.yValues.length-textShift].xValue) + shiftRight ) + "," + ( y(d.yValues[d.yValues.length-textShift].yValue) + shiftDown ) + ")";})
+							.attr("x", 3)
+							.attr("dy", "0.35em")
+							.style("font", "12px sans-serif")
+							.text(function(d) { return d.yName; });
+					}				colorIndex++;
 				});//end d3.each() 
 		});// end .forEach()
+
+		// this section converts svg to png, good for inserting png images of charts in other documents
+		var buttonRect = document.getElementById(buttonRectID);
+		var buttonText = document.getElementById(buttonTextID);
+
+		buttonRect.addEventListener('mouseenter', function () { buttonRect.setAttribute('fill', 'blue'); buttonText.setAttribute('style', 'visibility:visible; font: 12px sans-serif');});
+		buttonRect.addEventListener('mouseleave', function () { buttonRect.setAttribute('fill', '#99ccff'); buttonText.setAttribute('style', 'visibility:hidden; font: 12px sans-serif');});
+		buttonRect.addEventListener("click", function() { toPNG(); });
+
+		var toPNG = function toPNG () {
+			// get rid of the button and text before converting to PNG
+			buttonRect.remove(); buttonText.remove();
+
+			// get the old svg element to be replaced
+			var oldSvg = document.getElementById(chartID.slice(1)); // slice(1) to remove '#' in front of chartID
+
+			// Put the svg into an image tag so that the Canvas element can read it in.
+			var doctype = '<?xml version="1.0" standalone="no"?>'
+				+ '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">';
+
+				// serialize our SVG XML to a string.			
+				var source = (new XMLSerializer()).serializeToString(select(chartID).node());
+
+			// create a file blob of our SVG.
+			var blob$$1 = new Blob([ doctype + source], { type: 'image/svg+xml;charset=utf-8' });
+
+			var url = window.URL.createObjectURL(blob$$1);
+
+			var tempImg = select('body').append('img')
+				.attr('width', outerWidth)
+				.attr('height', outerHeight)
+				.attr('id', 'tempImg')
+				.node();
+
+			tempImg.onload = function(){
+				// Now that the image has loaded, put the image into a canvas element.
+				var canvas = select('body').append('canvas').node();
+				canvas.width = outerWidth;
+				canvas.height = outerHeight;
+				canvas.id = 'tempCanvas';
+				var ctx = canvas.getContext('2d');
+				ctx.drawImage(tempImg, 0, 0);
+				var canvasUrl = canvas.toDataURL("image/png");
+				var newImg = select('body').append('img') 
+					.attr('width', outerWidth)
+					.attr('height', outerHeight)
+					.attr('id', 'newImg')
+					.node();
+
+				newImg.onload = function() {
+					document.getElementById('newImg');
+					oldSvg.parentNode.replaceChild(newImg, oldSvg);
+				};
+				// this is now the base64 encoded version of our PNG! you could optionally 
+				// redirect the user to download the PNG by sending them to the url with 
+				// `window.location.href= canvasUrl`.
+				newImg.src = canvasUrl;
+				canvas.remove();
+
+			};
+			// start loading the image.
+			tempImg.src = url;
+			tempImg.remove();
+
+		};
+	}
+
+	function  lineTable (lineTableInputObject = {}) {
+
+		// here is the definition of the lineTableInputObject data structure:
+
+		// lineTableInputObject.inputTable,	// an array of outs [out1, out2 ... outn]
+		// lineTableInputObject.tableID,	        // a string of an div id
+		// lineTableInputObject.metricPrefix,	// a string of a metric prefix such as 'giga'
+
+		// there are default values for all the above.
+		// just use nP.lineTable() and view the Insertion Loss, Return Loss
+
+		// this function has one arguement, lineTableInputObject.
+		// if no arguement, then an internal default version of the lineTableInputObject is used.
+		// if no lineTableImputObject.tableID, then a div is created.
+
+		// a sequencial tableID is generated at every lineChart call. if no canvasID provided, this one is used.
+
+		var tableText = 'table' + (document.getElementsByTagName('div').length + 1).toString();
+
+		var createDIV = function ( ) {
+			var idAttr = document.createAttribute('id');
+			var table = document.createElement('div');
+			var tableBody = document.getElementsByTagName("body")[0];
+
+			idAttr.value = tableText; // the div
+			table.setAttributeNode(idAttr);
+			if(!lineTableInputObject.tableID){tableBody.appendChild(table);}	}();
+
+		var inputTable = lineTableInputObject.inputTable || [ 
+			[
+				['Freq', 'Insertion Loss', 'Return Loss'],
+				[ 8 * 1e9,  22,  40],
+				[12 * 1e9,  80,  90],
+				[16 * 1e9, 100, 105],
+				[20 * 1e9, 120, 130]
+			],
+
+			[
+				['Freq', 'Noise Figure', 'IP3'],
+				[12 * 1e9,  60, 65],
+				[16 * 1e9,  65, 70],
+				[20 * 1e9,  70, 75]
+			]
+		];
+
+		// lineTable mutates inputTable. if same inputTable is reused by another lineTable, output is distorted.
+		// so we create a duplicate version of the inputTable and leave the original version pristine
+		var inputTableDuplicated = JSON.parse(JSON.stringify(inputTable));
+
+		var metricPrefix = lineTableInputObject.metricPrefix || 'giga';
+		var tableID = lineTableInputObject.tableID || tableText;
+
+		var pickScale = function (metricPrefix){
+			var out = 0;
+			if (metricPrefix === 'tera') {out = 1e12;}		if (metricPrefix === 'giga') {out = 1e9;}		if (metricPrefix === 'mega') {out = 1e6;}		if (metricPrefix === 'kilo') {out = 1e3;}		if (metricPrefix === 'one') {out = 1;}		if (metricPrefix === 'deci') {out = 1e-1;}		if (metricPrefix === 'centi') {out = 1e-2;}		if (metricPrefix === 'milli') {out = 1e-3;}		if (metricPrefix === 'micro') {out = 1e-6;}		if (metricPrefix === 'nano') {out = 1e-9;}		if (metricPrefix === 'pico') {out = 1e-12;}		return out;
+		};
+
+		var pickUnits = function (metricPrefix){
+			var out = 0;
+			if (metricPrefix === 'tera') {out = 'THz';}		if (metricPrefix === 'giga') {out = 'GHz';}		if (metricPrefix === 'mega') {out = 'MHz';}		if (metricPrefix === 'kilo') {out = 'KHz';}		if (metricPrefix === 'one') {out = 'Hz';}		if (metricPrefix === 'deci') {out = 'DeciHz';}		if (metricPrefix === 'centi') {out = 'CentiHz';}		if (metricPrefix === 'milli') {out = 'MilliHz';}		if (metricPrefix === 'micro') {out = 'MicroHz';}		if (metricPrefix === 'nano') {out = 'nanoHz';}		if (metricPrefix === 'pico') {out = 'PicoHz';}		return out;
+		};
+
+		// frequency number in column 0 is scaled by the metric prefix
+		var scaleFreq = function scaleFreq (array) {
+			var row = 0;
+			array[0][0] = array[0][0] + ', ' + pickUnits(metricPrefix); 
+			for (row = 1; row< array.length; row ++) {
+				array[row][0] = array[row][0]/pickScale(metricPrefix);
+			}
+		};
+
+		// inputTableDuplicated is mutated in this forEach !!! scale all the frequencies in all the tables
+		inputTableDuplicated.forEach(function (element) {
+			scaleFreq(element);
+		});
+
+
+		// showTable
+		function showTable(myArray) {	
+
+			var target = document.getElementById(tableID),
+				div = document.createElement("div");
+
+			target.appendChild(div);
+
+			function createTable () {
+				var row = 0, col = 0, html = "";
+
+				html = "<table><tbody>"; // fill in the table
+				for (row = 0; row < myArray.length; row++) {
+					html +="<tr>";
+					for (col = 0; col < myArray[0].length; col++) {
+						html += "<td style='border-style: solid; border-width: 1px' width='150px'>" + myArray[row][col];
+						html += "</td>";
+					}				html +="</tr>";
+				}			html += "</tbody></table>"; // finish the table
+
+				return html; // return the table
+
+			}
+			div.innerHTML = createTable();
+
+		}
+		// calls showTable for each individual table
+		inputTableDuplicated.forEach(function (element) {
+			showTable(element);
+		});
 	}
 
 	function nPort() {}
@@ -7651,6 +7865,7 @@
 	exports.chebyLPNsec = chebyLPNsec;
 	exports.global = global;
 	exports.lineChart = lineChart;
+	exports.lineTable = lineTable;
 	exports.seR = seR;
 	exports.paR = paR;
 	exports.seL = seL;

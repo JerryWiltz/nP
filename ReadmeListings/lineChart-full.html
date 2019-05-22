@@ -2,16 +2,16 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width">
-		<title>lineChart</title>
+		<title>lineChart non default</title>
 	</head>
 	<body>
-		<svg id="canvas1" width="400" height="300"></svg>
-		<svg id="canvas2" width="400" height="300"></svg>
+		<svg id="chart1" width="400" height="300"></svg>
+		<svg id="chart2" width="400" height="300"></svg>
 		<script src="nP.js"></script>
 
 		<script>
 
-// set up the first requency range for the low pass filter
+// set up the first frequency range for the low pass filter
 var g = nP.global;	
 g.fList = g.fGen(50e6, 10e9, 101);
 
@@ -27,38 +27,30 @@ var l4 = nP.seL(9.566513256241397e-9);
 var c5 = nP.paC(3.171683678827988e-12);
 var filter = nP.cascade(c1,l1,c2,l2,c3,l3,c4,l4,c5).out('s11dB', 's21dB');
 
-// set up the second frequncy range for the attenuator
-g.fList = g.fGen(4e9, 14e9, 11);
-
-// components for a 3 section attenuator with parasitics
-var cparasitic = nP.paC(0.1e-12);
-var r1 = nP.paR(280);
-var r2 = nP.seR(17);
-var r3 = nP.paR(280);
-var attenuator = nP.cascade(cparasitic,r1,r2,r3,cparasitic).out('s11dB','s21dB');
-
-// create the lineChartInputObject for the mostly default case
-var mostlyDefault = {
-	canvasID: '#canvas1',
-	inputTable: [filter, attenuator]
+// create the lineChartInputObject with minimal inputs
+var minimalInputs = {
+	inputTable: [filter],
+	chartID: 'chart1'
 };
+	
+// plot minimal inputs case
+nP.lineChart(minimalInputs);
 
-// plot mostly default case
-nP.lineChart(mostlyDefault);
-
-// create the lineChartInputObject for the completely specified case
-var completelySpecified = {
-	canvasID: '#canvas2',
-	inputTable: [filter, attenuator],
-	xRange: [-1e9,6e9],
-	yRange: [20,-50],
+// create the lineChartInputObject for all inputs
+var allInputs = {
+	inputTable: [filter],
+	chartID: 'chart2',
+	metricPrefix: 'giga',
 	xAxisTitle: 'Input Frequency, GHz',
 	yAxisTitle: 'LPF & -3dB Attn, dB',
-	metricPrefix: 'giga'
+	xRange: [-1e9,6e9],
+	yRange: [20,-50],
+	showPoints: 'hide',
+	showLables: 'hide'
 };
 
 // plot completely specified case
-nP.lineChart(completelySpecified);
+nP.lineChart(allInputs);
 
 		</script>
 	</body>

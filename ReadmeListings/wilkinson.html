@@ -11,7 +11,7 @@
 		<script>
 // set up frequencies
 var g = nP.global;
-g.fList = g.fGen(0e9,12e9,101);
+g.fList = g.fGen(0e9,12e9,51);
 
 // define components
 var tee = nP.Tee();
@@ -22,10 +22,13 @@ var r100 = nP.seR(100);
 var wilkinson = nP.nodal([tee, 1,2,3],[t70,3,5],[t70,2,4],[tee,9,7,5],[tee,8,4,6],[r100,8,9],['out',1,7,6]);
 
 // compute a table of s-pars to plot
-var plot = wilkinson.out('s11dB','s21dB','s23dB');
+var plot = wilkinson.out('s21dB','s23dB');
 
 // plot the frequency response
-nP.lineChart({inputTable: [plot]});
+nP.lineChart({inputTable: [plot], yRange: [-60, 0]});
+
+// show the data in a table
+nP.lineTable({inputTable: [plot]});
 
 		</script>
 	</body>

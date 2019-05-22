@@ -14,15 +14,15 @@ var R1 = 292.4, R2 = 17.6, R3 = 292.4;
 var Rload = 50;
 
 // function to compute the determinant
-function determinant (a11, a12, a13,
-		a21, a22, a23,
-		a31, a32, a33) {
-	var out = a11*a22*a33
-		+a12*a23*a31
-		+a13*a21*a32
-		-a31*a22*a13
-		-a32*a23*a11
-		-a33*a21*a12;
+function determinant (R11, R12, R13,
+		R21, R22, R23,
+		R31, R32, R33) {
+	var out = R11*R22*R33
+		+R12*R23*R31
+		+R13*R21*R32
+		-R31*R22*R13
+		-R32*R23*R11
+		-R33*R21*R12;
 	return out;
 }
 
@@ -47,8 +47,8 @@ var I1 = I1D/D;
 var I2 = I2D/D;
 var I3 = I3D/D;
 
-var V1 = R1*(I1 - I2);
-var V2 = R3*(I2 - I3);
+var V1 = R1*I1 - R1*I2;
+var V2 = R3*I2 - R3*I3;
 
 var attn = 20*Math.log10(V2/V1);
 console.log('The attenuation is ...');
