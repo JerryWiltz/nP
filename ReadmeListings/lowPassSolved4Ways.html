@@ -29,20 +29,20 @@ var c4 = nP.paC(5.662130938182797e-12);
 var l4 = nP.seL(9.566513256241397e-9);
 var c5 = nP.paC(3.171683678827988e-12);
 
-// using nPort method, cas, to produce a single nPort for the entire filter
-var filt1 = c1.cas(l1).cas(c2).cas(l2).cas(c3).cas(l3).cas(c4).cas(l4).cas(c5);
-nP.lineChart({inputTable: [filt1.out('s11dB','s21dB')], chartID: 'chart1'});
+// using 'cas' to define filter1
+var filter1 = c1.cas(l1).cas(c2).cas(l2).cas(c3).cas(l3).cas(c4).cas(l4).cas(c5);
+nP.lineChart({inputTable: [filter1.out('s11dB','s21dB')], chartID: 'chart1'});
 
-// using nPort function, cascade, to produce a single nPort for the entire filter.
-var filt2 = nP.cascade (c1,l1,c2,l2,c3,l3,c4,l4,c5);
-nP.lineChart({inputTable: [filt2.out('s11dB','s21dB')], chartID: 'chart2'});
+// using 'cascade' to define filter2
+var filter2 = nP.cascade (c1,l1,c2,l2,c3,l3,c4,l4,c5);
+nP.lineChart({inputTable: [filter2.out('s11dB','s21dB')], chartID: 'chart2'});
 
-// using nPort function, nodal, to produce a single nPort for the entire filter.
-var filt3 = nP.nodal([c1,1,2],[l1,2,3],[c2,3,4],[l2,4,5],[c3,5,6],[l3,6,7],[c4,7,8],[l4,8,9],[c5,9,10],['out',1,10]);
-nP.lineChart({inputTable: [filt3.out('s11dB','s21dB')], chartID: 'chart3'});
+// using 'nodal' to define filter3
+var filter3 = nP.nodal([c1,1,2],[l1,2,3],[c2,3,4],[l2,4,5],[c3,5,6],[l3,6,7],[c4,7,8],[l4,8,9],[c5,9,10],['out',1,10]);
+nP.lineChart({inputTable: [filter3.out('s11dB','s21dB')], chartID: 'chart3'});
 
-// using the nPort function, lpfGen, to produce a nPort for the entire filter
-var filt4 = nP.lpfGen([50,
+// using 'lpfGen' to define filter4
+var filter4 = nP.lpfGen([50,
 		3.1716836788279897e-12,
 		9.566513256241392e-9,
 		5.6621309381827996e-12,
@@ -53,7 +53,7 @@ var filt4 = nP.lpfGen([50,
 		9.566513256241397e-9,
 		3.171683678827988e-12,
 		50]);
-nP.lineChart({inputTable: [filt4.out('s11dB','s21dB')], chartID: 'chart4'});
+nP.lineChart({inputTable: [filter4.out('s11dB','s21dB')], chartID: 'chart4'});
 
 		</script>
 	</body>

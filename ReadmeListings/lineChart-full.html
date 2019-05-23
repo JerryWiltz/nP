@@ -2,18 +2,17 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width">
-		<title>lineChart non default</title>
+		<title>lineChart full lineChartInputObject</title>
 	</head>
 	<body>
-		<svg id="chart1" width="400" height="300"></svg>
-		<svg id="chart2" width="400" height="300"></svg>
+		<svg id="chart1" width="600" height="400"></svg>
 		<script src="nP.js"></script>
 
 		<script>
 
 // set up the first frequency range for the low pass filter
 var g = nP.global;	
-g.fList = g.fGen(50e6, 10e9, 101);
+g.fList = g.fGen(50e6, 6e9, 101);
 
 // components for a 9 section low pass filter
 var c1 = nP.paC(3.1716836788279897e-12);
@@ -25,32 +24,25 @@ var l3 = nP.seL(1.0721164178932898e-8);
 var c4 = nP.paC(5.662130938182797e-12);
 var l4 = nP.seL(9.566513256241397e-9);
 var c5 = nP.paC(3.171683678827988e-12);
-var filter = nP.cascade(c1,l1,c2,l2,c3,l3,c4,l4,c5).out('s11dB', 's21dB');
-
-// create the lineChartInputObject with minimal inputs
-var minimalInputs = {
-	inputTable: [filter],
-	chartID: 'chart1'
-};
-	
-// plot minimal inputs case
-nP.lineChart(minimalInputs);
+var filter = nP.cascade(c1,l1,c2,l2,c3,l3,c4,l4,c5);
+var filterOut = filter.out('s11dB', 's21dB');
 
 // create the lineChartInputObject for all inputs
-var allInputs = {
-	inputTable: [filter],
-	chartID: 'chart2',
+var fullInputObject = {
+	inputTable: [filterOut],
+	chartID: 'chart1',
 	metricPrefix: 'giga',
+	titleTitle: 'Response of a 9 Section Lowpass LC filter',
 	xAxisTitle: 'Input Frequency, GHz',
-	yAxisTitle: 'LPF & -3dB Attn, dB',
-	xRange: [-1e9,6e9],
-	yRange: [20,-50],
+	yAxisTitle: 's11 and and s21, dB',
+	xRange: [0,6e9],
+	yRange: [0,-160],
 	showPoints: 'hide',
-	showLables: 'hide'
+	showLables: 'show'
 };
 
-// plot completely specified case
-nP.lineChart(allInputs);
+// plot the filter response
+nP.lineChart(fullInputObject);
 
 		</script>
 	</body>

@@ -192,20 +192,20 @@ var c4 = nP.paC(5.662130938182797e-12);
 var l4 = nP.seL(9.566513256241397e-9);
 var c5 = nP.paC(3.171683678827988e-12);
 
-// using nPort method, cas, to produce a single nPort for the entire filter
-var filt1 = c1.cas(l1).cas(c2).cas(l2).cas(c3).cas(l3).cas(c4).cas(l4).cas(c5);
-nP.lineChart({inputTable: [filt1.out('s11dB','s21dB')], chartID: 'chart1'});
+// using 'cas' to define filter1
+var filter1 = c1.cas(l1).cas(c2).cas(l2).cas(c3).cas(l3).cas(c4).cas(l4).cas(c5);
+nP.lineChart({inputTable: [filter1.out('s11dB','s21dB')], chartID: 'chart1'});
 
-// using nPort function, cascade, to produce a single nPort for the entire filter.
-var filt2 = nP.cascade (c1,l1,c2,l2,c3,l3,c4,l4,c5);
-nP.lineChart({inputTable: [filt2.out('s11dB','s21dB')], chartID: 'chart2'});
+// using 'cascade' to define filter2
+var filter2 = nP.cascade (c1,l1,c2,l2,c3,l3,c4,l4,c5);
+nP.lineChart({inputTable: [filter2.out('s11dB','s21dB')], chartID: 'chart2'});
 
-// using nPort function, nodal, to produce a single nPort for the entire filter.
-var filt3 = nP.nodal([c1,1,2],[l1,2,3],[c2,3,4],[l2,4,5],[c3,5,6],[l3,6,7],[c4,7,8],[l4,8,9],[c5,9,10],['out',1,10]);
-nP.lineChart({inputTable: [filt3.out('s11dB','s21dB')], chartID: 'chart3'});
+// using 'nodal' to define filter3
+var filter3 = nP.nodal([c1,1,2],[l1,2,3],[c2,3,4],[l2,4,5],[c3,5,6],[l3,6,7],[c4,7,8],[l4,8,9],[c5,9,10],['out',1,10]);
+nP.lineChart({inputTable: [filter3.out('s11dB','s21dB')], chartID: 'chart3'});
 
-// using the nPort function, lpfGen, to produce a nPort for the entire filter
-var filt4 = nP.lpfGen([50,
+// using 'lpfGen' to define filter4
+var filter4 = nP.lpfGen([50,
 		3.1716836788279897e-12,
 		9.566513256241392e-9,
 		5.6621309381827996e-12,
@@ -216,7 +216,7 @@ var filt4 = nP.lpfGen([50,
 		9.566513256241397e-9,
 		3.171683678827988e-12,
 		50]);
-nP.lineChart({inputTable: [filt4.out('s11dB','s21dB')], chartID: 'chart4'});
+nP.lineChart({inputTable: [filter4.out('s11dB','s21dB')], chartID: 'chart4'});
 
 		</script>
 	</body>
@@ -557,13 +557,14 @@ m.<b>showCountNum</b>(<i>number</i>) [<>](https://github.com/JerryWiltz/nP/blob/
 
 ## nP-chart
 
-nP.<b>lineChart</b>(<i> lineChartInputObject = \{ \} </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-chart/src/lineChart.js) is a function that draws a chart in a webpage. It uses an svg tag element. It is based on [d3, Data-Driven Documents](https://d3js.org/). If you don't provide your own svg element or element, linechart() will create it you. If you do provide one or more svg elements, <b>you must specify a unique ID, width, and height attributes for each svg you create</b>, such as:
+nP.<b>lineChart</b>(<i> lineChartInputObject = \{ \} </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-chart/src/lineChart.js) is a function that draws a chart in a html page. It is based on [d3, Data-Driven Documents](https://d3js.org/). If you don't provide your own svg element, linechart() will create it for you. If you provide svg elements, <b>you must specify a unique ID, width, and height attributes for each svg you create</b>, such as:
 
 ```<svg id="myChart" width="400" height="300"></svg>```
 
-If you do not provide a ```lineChartInputObject``` argument, lineChart() will display the default plot. This is good for setting up your page so you can see how it looks.
+If you do not provide a ```lineChartInputObject``` argument, lineChart() will display its default plot that is good for setting up your html page so you can see how it looks.
 
-Here is an ```html``` example for the default lineChart() plotting.
+Here is the default lineChart(), the svg it generates has 400 width and 300 height. <b>You can turn it into a PNG</b> for a Copy-Paste into another document or a Save-As file. To turn into PNG
+click on the light blue square at the upper right corner of the chart. The PNG replaces the svg. On the screen, move the cursor over any part of the image and copy and paste or save as, as usual. 
 
 ```html
 <!DOCTYPE html>
@@ -577,44 +578,45 @@ Here is an ```html``` example for the default lineChart() plotting.
 		<script src="nP.js"></script>
 		<script>
 
-nP.lineChart();  // shows default plot 
+nP.lineChart();
 
 		</script>
 	</body>
 </html>
 ```
 
-Here is the lineChartInputObject detail
-``` html
-.inputTable,   default is internal, specify an array [out1, out2 ... outn] otherwise
-.chartID,      default is 'chart1', specify any string otherwise
-.metricPrefix, default is 'giga', specify any metric prefix otherwise
-.xAxisTitle,   default is 'Frequency', specify any string otherwise
-.yAxisTitle,   default is 'dB', specify any string otherwise
-.xRange,       default is an autorange, specify an array like [2e9, 12e9] otherwise
-.yRange,       default is an autorange, specify an array like [0, -80] otherwise
-.showPoints,   default is 'show', specify 'hide' otherwise
-.showLables,   default is 'show', specify 'hide' otherwise
+Here is the definition of the lineChartInputObject. Each of these has default setting.
 ```
-In the listing below, there are two svg elements with corresponding id's. lineChart() is called twice to plot two charts. The lineChartInputObject for the first chart is ```mostlyDefault``` and the second is ```completelySpecified```. This ```html``` displays two lineCharts, one with mostly default settings and the other with completely specified settings. Note for the completely specified plot, the x axis starts with a negative frequency of  -1 GHz.
+lineChartInputObject.inputTable, is [out1, out2 ... outn]; default is internal inputTable
+lineChartInputObject.chartID, string of an svg id; default is 'chart1'
+lineChartInputObject.metricPrefix, string of a metric prefix ; default is 'giga'
+lineChartInputObject.titleTitle, string of the chart title; default is ''
+lineChartInputObject.xAxisTitle, string of the x axis title; default is 'Frequency'
+lineChartInputObject.yAxisTitle, string of the y axis title; default is 'dB'
+lineChartInputObject.xRange, array of min, max [2e9, 12e9]; default is autorange 
+lineChartInputObject.yRange, array of min, max  [0, -80]; default is autorange
+lineChartInputObject.showPoints, string 'show' or 'hide'; default is 'show'
+lineChartInputObject.showLables, string 'show' or 'hide', default is 'show'
+```
+	
+Here is an example of a fully defined lineChartInputObject. This is a 9 section Low Pass LC filter. As you can see, all of the possible inputs are specified.
 
-```HTML
+```html
 <html>
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width">
-		<title>lineChart non default</title>
+		<title>lineChart full lineChartInputObject</title>
 	</head>
 	<body>
-		<svg id="chart1" width="400" height="300"></svg>
-		<svg id="chart2" width="400" height="300"></svg>
+		<svg id="chart1" width="600" height="400"></svg>
 		<script src="nP.js"></script>
 
 		<script>
 
 // set up the first frequency range for the low pass filter
 var g = nP.global;	
-g.fList = g.fGen(50e6, 10e9, 101);
+g.fList = g.fGen(50e6, 6e9, 101);
 
 // components for a 9 section low pass filter
 var c1 = nP.paC(3.1716836788279897e-12);
@@ -626,38 +628,30 @@ var l3 = nP.seL(1.0721164178932898e-8);
 var c4 = nP.paC(5.662130938182797e-12);
 var l4 = nP.seL(9.566513256241397e-9);
 var c5 = nP.paC(3.171683678827988e-12);
-var filter = nP.cascade(c1,l1,c2,l2,c3,l3,c4,l4,c5).out('s11dB', 's21dB');
-
-// create the lineChartInputObject with minimal inputs
-var minimalInputs = {
-	inputTable: [filter],
-	chartID: 'chart1'
-};
-	
-// plot minimal inputs case
-nP.lineChart(minimalInputs);
+var filter = nP.cascade(c1,l1,c2,l2,c3,l3,c4,l4,c5);
+var filterOut = filter.out('s11dB', 's21dB');
 
 // create the lineChartInputObject for all inputs
-var allInputs = {
-	inputTable: [filter],
-	chartID: 'chart2',
+var fullInputObject = {
+	inputTable: [filterOut],
+	chartID: 'chart1',
 	metricPrefix: 'giga',
+	titleTitle: 'Response of a 9 Section Lowpass LC filter',
 	xAxisTitle: 'Input Frequency, GHz',
-	yAxisTitle: 'LPF & -3dB Attn, dB',
-	xRange: [-1e9,6e9],
-	yRange: [20,-50],
+	yAxisTitle: 's11 and and s21, dB',
+	xRange: [0,6e9],
+	yRange: [0,-160],
 	showPoints: 'hide',
-	showLables: 'hide'
+	showLables: 'show'
 };
 
-// plot completely specified case
-nP.lineChart(allInputs);
+// plot the filter response
+nP.lineChart(fullInputObject);
 
 		</script>
 	</body>
 </html>
 ```
-
 
 nP.<b>lineTable</b>(<i> lineTableInputObject = \{ \} </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-chart/src/lineTable.js) A function that produces a table of data. <b>The table can selected, copied, and pasted into other places such as spreadsheets.</b> Most of the documentation and interface is similar to lineChart( ) above. lineTable() uses div elements rather than svg. If you don't provide a div element or elements, lineTable() will create them, for you. The default element ID is "table1". If you provide the div, <b>you must specify a unique ID attribute for every div you need</b>, such as:
 
