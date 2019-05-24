@@ -165,7 +165,9 @@ export	function  lineChart (lineChartInputObject = {}) {
 	var svg = d3.select(chartID) // this always runs and it overwrites the chartID specified svg
 		.attr("width", outerWidth)
 		.attr("height", outerHeight)
-		.attr("class", 'lineChart');
+		.attr("class", 'lineChart')
+		.style('background-color', '#ffffff');
+
 	var rect = svg.append('rect')
 		.attr("width", outerWidth)
 		.attr("height", outerHeight)
