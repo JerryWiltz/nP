@@ -10,13 +10,13 @@ export default 	{
 			global: 'd3'
 		},
 		{
-			file: './ReadmeListings/nP.js',
+			file: 'README/ReadmeListings/nP.js',
 			format: 'umd',
 			name: 'nP',
 			global: 'd3'
 		},
 		{
-			file: './RFBookListings/nP.js',
+			file: 'RFBook/RFBookListings/nP.js',
 			format: 'umd',
 			name: 'nP',
 			global: 'd3'

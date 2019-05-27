@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Low Pass Filter with LC</title>
+	</head>
+	<body>
+		<svg id="chart1" width="600" height="400"></svg>
+		<script src="https://cdn.jsdelivr.net/gh/JerryWiltz/nP@latest/dist/nP.js"></script>	
+		<script>
+
+// generate frequency list
+g = nP.global;
+g.fList = g.fGen(50e6, 6e9, 101);
+
+// specify the filter requirements
+var minRejFreq = 1.5e9;
+var maxPassFreq = 1.0e9;
+var passBandRipple = 0.01;
+var rejLevel = 35;
+
+// find the normalized frequency, w
+var w = minRejFreq/maxPassFreq;
+
+// find the number of sections, n, using nP
+var n = nP.chebyLPNsec(maxPassFreq, minRejFreq, passBandRipple, rejLevel);
+
+// determine the lowpass fitler prototype elements, gks, using nP
+var gk = nP.chebyLPgk(n, passBandRipple);
+
+// find the parallel C and series L components using nP
+var LCcomponents = nP.chebyLPLCs(gk, maxPassFreq);
+
+// compute the s-parameters per frequency point of the filter given the LC components
+var myFilt = nP.lpfGen(LCcomponents);
+
+// produce the output
+var LPF = myFilt.out('s11dB', 's21dB');
+
+// set up the lineChartInputObject
+var fullInputObject = {
+	inputTable: [LPF],
+	chartID: 'chart1',
+	metricPrefix: 'giga',
+	titleTitle: 'Response of a 1 GHz 9 Section Lowpass LC filter',
+	xAxisTitle: 'Input Frequency, GHz',
+	yAxisTitle: 's11 and and s21, dB',
+	xRange: [0,6e9],
+	yRange: [0,-160],
+	showPoints: 'hide',
+	showLables: 'show'
+};
+
+// plot the filter response
+nP.lineChart(fullInputObject);
+
+// show the LC components
+var LC = document.createElement('div');
+LC.innerHTML = 'Starts with a parallel capacitor, then with a series inductor, and so on ...' + '<br>';
+LCcomponents.forEach(function (element) {
+	LC.innerHTML = LC.innerHTML + element.toString() + '<br>';
+});
+document.body.appendChild(LC);
+
+		</script>
+	</body>
+</html>
