@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>3dB Attenuator with and without Parasitics</title>
+	</head>
+	<body>
+		<svg id="chart1" width="600" height="400"></svg>
+		<script src="https://cdn.jsdelivr.net/gh/JerryWiltz/nP@latest/dist/nP.js"></script>	
+		<script>
+
+// generate frequency list
+g = nP.global;
+g.fList = g.fGen(50e6, 6e9, 101);
+
+// define the 3 dB attenuator
+var R1 = nP.paR(292);
+var R2 = nP.seR(18);
+var R3 = nP.paR(292);
+var Attenuator = R1.cas(R2).cas(R3);
+
+// define the output of an ideal attenuator and add to the plot in lineChart below
+var AttenuatorOut = Attenuator.out('s21dB');
+
+// add the parasitic capacitances
+var cParasitic = nP.paC(0.5e-12);
+
+// add the parasitics to the input and outputs sides of the Attenuator
+var AttenuatorWithParasitics = cParasitic.cas(Attenuator).cas(cParasitic);
+
+// define the output with the effect of the parasitics
+var AttenuatorWithParasiticsOut = AttenuatorWithParasitics.out('s21dB');
+
+// set up the lineChartInputObject, notice there are two input tables for two plots
+var fullInputObject = {
+	inputTable: [AttenuatorOut, AttenuatorWithParasiticsOut],
+	chartID: 'chart1',
+	metricPrefix: 'giga',
+	titleTitle: 'Comparison of 3dB Attenuator with and without 0.5 pF parasitic capacitance',
+	xAxisTitle: 'Input Frequency, GHz',
+	yAxisTitle: 's21, dB',
+	xRange: [0,6e9],
+	yRange: [0,-6],
+	showPoints: 'hide',
+	showLables: 'show'
+};
+
+// plot the attenuator responses
+nP.lineChart(fullInputObject);
+
+		</script>
+	</body>
+</html>

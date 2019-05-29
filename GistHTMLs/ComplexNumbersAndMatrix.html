@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">	
+		<title>Complex Numbers and Martices</title>
+	</head>
+	<body>
+		<script src="https://cdn.jsdelivr.net/gh/JerryWiltz/nP@latest/dist/nP.js"></script>
+		<script>
+
+// define log function
+function log (text) {
+	var h4 = document.createElement('h4');
+	h4.innerHTML = text;
+	document.body.appendChild(h4);
+}
+
+
+// define some complex numbers
+var c1 = nP.complex(2,3);
+var c2 = nP.complex(-2,4);
+var c3 = nP.complex(37,-89);
+var c4 = nP.complex(-5,7);
+
+// put them in a 2 by 2 matrix
+var m1 = nP.matrix([
+		[c1, c2],
+		[c3, c4]
+]);
+
+// display m1
+log('The original matrix, m1');
+nP.showMatrixCplx(m1.m);
+
+
+// invert matrix, m1
+log('The inverted matrix, m2');
+var m2 = m1.invertCplx();
+
+// display m2
+nP.showMatrixCplx(m2.m);
+
+// multipliy m1 by m2
+var m3 = m1.mulCplx(m2);
+
+// display m3
+log('The product of m1 and m2, m3');
+nP.showMatrixCplx(m3.m);
+
+// show method chaining
+var m4 = m3.mulCplx(m2).subCplx(m1).addCplx(m1);
+log('The result of method chaining');
+nP.showMatrixCplx(m4.m);
+
+		</script>
+	</body>
+</html>
