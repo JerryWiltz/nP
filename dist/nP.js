@@ -4849,15 +4849,15 @@
 	  };
 	}
 
-	function bimap(domain, range$$1, deinterpolate, reinterpolate) {
-	  var d0 = domain[0], d1 = domain[1], r0 = range$$1[0], r1 = range$$1[1];
+	function bimap(domain, range, deinterpolate, reinterpolate) {
+	  var d0 = domain[0], d1 = domain[1], r0 = range[0], r1 = range[1];
 	  if (d1 < d0) d0 = deinterpolate(d1, d0), r0 = reinterpolate(r1, r0);
 	  else d0 = deinterpolate(d0, d1), r0 = reinterpolate(r0, r1);
 	  return function(x) { return r0(d0(x)); };
 	}
 
-	function polymap(domain, range$$1, deinterpolate, reinterpolate) {
-	  var j = Math.min(domain.length, range$$1.length) - 1,
+	function polymap(domain, range, deinterpolate, reinterpolate) {
+	  var j = Math.min(domain.length, range.length) - 1,
 	      d = new Array(j),
 	      r = new Array(j),
 	      i = -1;
@@ -4865,12 +4865,12 @@
 	  // Reverse descending domains.
 	  if (domain[j] < domain[0]) {
 	    domain = domain.slice().reverse();
-	    range$$1 = range$$1.slice().reverse();
+	    range = range.slice().reverse();
 	  }
 
 	  while (++i < j) {
 	    d[i] = deinterpolate(domain[i], domain[i + 1]);
-	    r[i] = reinterpolate(range$$1[i], range$$1[i + 1]);
+	    r[i] = reinterpolate(range[i], range[i + 1]);
 	  }
 
 	  return function(x) {
@@ -4891,7 +4891,7 @@
 	// reinterpolate(a, b)(t) takes a parameter t in [0,1] and returns the corresponding domain value x in [a,b].
 	function continuous(deinterpolate, reinterpolate) {
 	  var domain = unit,
-	      range$$1 = unit,
+	      range = unit,
 	      interpolate$$1 = interpolateValue,
 	      clamp = false,
 	      piecewise$$1,
@@ -4899,17 +4899,17 @@
 	      input;
 
 	  function rescale() {
-	    piecewise$$1 = Math.min(domain.length, range$$1.length) > 2 ? polymap : bimap;
+	    piecewise$$1 = Math.min(domain.length, range.length) > 2 ? polymap : bimap;
 	    output = input = null;
 	    return scale;
 	  }
 
 	  function scale(x) {
-	    return (output || (output = piecewise$$1(domain, range$$1, clamp ? deinterpolateClamp(deinterpolate) : deinterpolate, interpolate$$1)))(+x);
+	    return (output || (output = piecewise$$1(domain, range, clamp ? deinterpolateClamp(deinterpolate) : deinterpolate, interpolate$$1)))(+x);
 	  }
 
 	  scale.invert = function(y) {
-	    return (input || (input = piecewise$$1(range$$1, domain, deinterpolateLinear, clamp ? reinterpolateClamp(reinterpolate) : reinterpolate)))(+y);
+	    return (input || (input = piecewise$$1(range, domain, deinterpolateLinear, clamp ? reinterpolateClamp(reinterpolate) : reinterpolate)))(+y);
 	  };
 
 	  scale.domain = function(_) {
@@ -4917,11 +4917,11 @@
 	  };
 
 	  scale.range = function(_) {
-	    return arguments.length ? (range$$1 = slice$5.call(_), rescale()) : range$$1.slice();
+	    return arguments.length ? (range = slice$5.call(_), rescale()) : range.slice();
 	  };
 
 	  scale.rangeRound = function(_) {
-	    return range$$1 = slice$5.call(_), interpolate$$1 = interpolateRound, rescale();
+	    return range = slice$5.call(_), interpolate$$1 = interpolateRound, rescale();
 	  };
 
 	  scale.clamp = function(_) {
@@ -6580,17 +6580,27 @@
 		// lineChartInputObject.yAxisTitle,	// a string of the y axis title; default is 'dB'
 		// lineChartInputObject.xRange,		// an array of min, max such as [2e9, 12e9]; default is autorange based on data
 		// lineChartInputObject.yRange,		// an array of min, max such as [0, -80]; default is autorange based on data
-		// lineChartInputObject.showPoints,	// a string with either 'show' or 'hide', if not specified, default is 'show'
+		// lineChartInputObject.showPoints,	// a string with either 'show' or 'hide', if not specified, default is 'hide'
 		// lineChartInputObject.showLables,	// a string with either 'show' or 'hide', if not specified, default is 'show'
+		// lineChartInputObject.traceColor,	// a string with either 'color' or 'gray', if not specified, default is 'color'
 
 		// there are default values for all the above.
-		// just use nP.lineChart() and view the Insertion Loss, Return Loss, Noise Figure, and IP3 responce
+		// just use nP.lineChart() and view Gain and Noise Figure
 
-		// this function has one arguement, lineChartInputObject.
-		// if no arguement, then an internal default version of the lineChartInputObject is used.
-		// if no lineChartImputObject:chartID, then a svg is created.
+		// lineChart has one arguement, lineChartInputObject.
+		// if no arguement, an svg and a default chart is created
 
-		// requierment for unique ID for each chart svg
+		/*
+		 ********************************************************
+		 ********************************************************
+
+		This section sets up the inputs
+
+		 ********************************************************
+		 ********************************************************	
+		 */
+
+		// there is a requierment for unique ID for each chart svg, it is defined by the user in the svg, or created if no svg
 		// a sequencial chartID is generated at every lineChart call. if no chartID provided, this one is used.
 		var chartText = 'chart' + (document.getElementsByTagName('svg').length + 1).toString();
 
@@ -6611,18 +6621,23 @@
 		// this is the internal inputTable that has default data if no inputTable data provided
 		var inputTable = lineChartInputObject.inputTable || [ 
 			[
-				['Freq', 'Insertion Loss', 'Return Loss'],
-				[ 8 * 1e9,  22,  40],
-				[12 * 1e9,  80,  90],
-				[16 * 1e9, 100, 105],
-				[20 * 1e9, 120, 130]
+				['Freq', 'Gain'],
+				[ 8 * 1e9, -30],
+				[10 * 1e9,   8],
+				[12 * 1e9,  12],
+				[14 * 1e9,  11],
+				[16 * 1e9,  11],
+				[18 * 1e9,   9],
+				[20 * 1e9,   7]
 			],
 
 			[
-				['Freq', 'Noise Figure', 'IP3'],
-				[12 * 1e9,  60, 65],
-				[16 * 1e9,  65, 70],
-				[20 * 1e9,  70, 75]
+				['Freq', 'Noise Figure'],
+				[12 * 1e9,    3],
+				[14 * 1e9,  3.5],
+				[16 * 1e9,    4],
+				[18 * 1e9,  4.5],
+				[20 * 1e9,    5]
 			]
 		];
 
@@ -6635,19 +6650,29 @@
 		var titleTitle = lineChartInputObject.titleTitle || '';
 		var titleVisibilty = function () {
 			if (titleTitle===''){return 'hidden'}
-			else {return 'visible'}
-		};
+			else {return 'visible'}	};
 		var xAxisTitle = lineChartInputObject.xAxisTitle || 'Frequency';
 		var yAxisTitle = lineChartInputObject.yAxisTitle || 'dB';
-		var xAxisTitleOffset = 48;
+		var xAxisTitleOffset = 40;
 		var yAxisTitleOffset = 40;
-		var showPoints = lineChartInputObject.showPoints === 'hide' ? false : (lineChartInputObject.showPoints === 'show' ? true : true) ;
-		var showLables = lineChartInputObject.showLables === 'hide' ? false : (lineChartInputObject.showLables === 'show' ? true : true) ;
+		var showPoints = lineChartInputObject.showPoints === 'hide' ? false : (lineChartInputObject.showPoints === 'show' ? true : false);
+		var showLables = lineChartInputObject.showLables === 'hide' ? false : (lineChartInputObject.showLables === 'show' ? true : true);
+		var traceColor = lineChartInputObject.traceColor === 'color' ? false : (lineChartInputObject.traceColor === 'gray' ? true : false);
 
 		var pickScale = function (metricPrefix){
 			var out = 0;
 			if (metricPrefix === 'giga') {out = 1e9;}		if (metricPrefix === 'mega') {out = 1e6;}		if (metricPrefix === 'kilo') {out = 1e3;}		if (metricPrefix === 'none') {out = 1;}		if (metricPrefix === 'deci') {out = 1e-1;}		if (metricPrefix === 'centi') {out = 1e-2;}		if (metricPrefix === 'milli') {out = 1e-3;}		if (metricPrefix === 'micro') {out = 1e-6;}		if (metricPrefix === 'nano') {out = 1e-9;}		if (metricPrefix === 'pico') {out = 1e-12;}		return out;
 		};
+
+		/*
+		 ********************************************************
+		 ********************************************************
+
+		This section formats the data so d3 likes it
+
+		 ********************************************************
+		 ********************************************************	
+		 */
 
 		var generateFormattedData = function (inputTable) {
 			var k = 0;
@@ -6704,6 +6729,16 @@
 		// checks if yRange is specified, if it is then ySpan is updated with yRange input
 		ySpan = lineChartInputObject.yRange || ySpan;
 
+		/*
+		 ********************************************************
+		 ********************************************************
+
+		This section sets up the plot area
+
+		 ********************************************************
+		 ********************************************************	
+		 */
+
 		//set up the plot area
 		var chartRect = select(chartID).node().getBoundingClientRect();
 		var outerWidth = chartRect.width;
@@ -6729,26 +6764,6 @@
 			.attr('stroke', 'black')
 			.attr('stroke-width', '1px')
 			.attr('id', 'outerRect');
-
-		var buttonRectID = 'buttonRect' + chartID.slice(1); // slice(1) removes '#" from chartID
-		var buttonRect = svg$$1.append('rect') // this sets up the 'To PNG' button
-			.attr('width', '10')
-			.attr('height', '10')
-			.attr('fill', '#99ccff')
-			.attr('stroke', 'blue')
-			.attr('stroke-width', '1px')
-			.attr('id', buttonRectID)
-			.attr('transform', 'translate(' + (outerWidth - 13) + ',' + 3 + ')');
-
-		var buttonTextID = 'buttonText' + chartID.slice(1); // slice(1) removes '#' from chartID
-		var buttonText = svg$$1.append('text')
-			.attr('transform', 'translate(' + (outerWidth - 75) + ',' + 9.5 + ')')
-			.attr("x", 3)
-			.attr("dy",  "0.35em")
-			.attr('id', buttonTextID)
-			.style('visibility', 'hidden')
-			.style("font", "12px sans-serif")
-			.text('To PNG');
 
 		var chartTitle = svg$$1.append('text')
 			.attr('transform', 'translate(' + (2) + ',' + (8) + ')')
@@ -6794,10 +6809,25 @@
 			.attr("class", "yGrid")
 			.call(axisLeft(y).tickSize(-innerWidth).tickFormat("")).attr('stroke', 'gray').attr('stroke-dasharray', '3, 3');
 
+		/*
+		 ********************************************************
+		 ********************************************************
+
+		This section plots the data
+
+		 ********************************************************
+		 ********************************************************	
+		 */
+
 		var colorIndex = 0;
 		formattedData.forEach(function(groupData, groupIndex) { 
 
-			function plotColor (lable) {return category10[colorIndex];}
+			function plotColor (colorIndex) {	
+				var grayScale = ['d4d4d4','646464','c4c4c4','545454','b4b4b4','444444','a4a4a4','343434','949494','242424','848484','141414','747474','040404'][colorIndex];
+				var colorScale = category10[colorIndex];
+				var outScale = traceColor ? grayScale : colorScale;
+				return outScale;
+			}
 			var newPlot = 'newPlot' + groupIndex.toString();	
 			var plotGroups = g.selectAll('g.newPlot')
 				.data(groupData)
@@ -6805,23 +6835,39 @@
 				.append('g')
 				.attr('class', newPlot)
 				.each( function (d) {
-					if(showPoints === true){
-						select(this).selectAll('circle')
+	/*				if(showPoints === true){
+						d3.select(this).selectAll('circle')
 							.data(d => d.yValues)
 							.enter()
 							.append('circle')
+							.attr('class', 'peek')
 							.attr('cx', d => x(d.xValue))
 							.attr('cy', d => y(d.yValue))
 							.attr('r', 2)
 							.style("stroke", plotColor(colorIndex)).style('fill', plotColor(colorIndex)).style('stroke-width','2');
-					}				var line$$1 = line()
+					};i*/
+					var line$$1 = line()
 						.x(d => x(d.xValue))
 						.y(d => y(d.yValue));
 
 					select(this).append("path")
 						.attr('d', d => line$$1(d.yValues))
-						.style("stroke", plotColor(colorIndex)).style('fill', 'none');
+						.style("stroke", plotColor(colorIndex)).style('fill', 'none').style('stroke-width', '2');
 
+		if(showPoints === true){
+						select(this).selectAll('circle')
+							.data(d => d.yValues)
+							.enter()
+							.append('circle')
+							.attr('class', 'peek')
+							.attr('cx', d => x(d.xValue))
+							.attr('cy', d => y(d.yValue))
+							.attr('r', 2)
+							.style("stroke", plotColor(colorIndex)).style('fill', plotColor(colorIndex)).style('stroke-width','2');
+					}
+
+
+					
 					if (showLables === true) {
 						select(this).append("text")
 							.attr("transform", function(d) { 
@@ -6838,7 +6884,7 @@
 									}
 								}();
 								let shiftRight = 10;
-								return "translate(" + ( x(d.yValues[d.yValues.length-textShift].xValue) + shiftRight ) + "," + ( y(d.yValues[d.yValues.length-textShift].yValue) + shiftDown ) + ")";})
+								return "translate(" + (x(d.yValues[d.yValues.length-textShift].xValue) + shiftRight) + "," + (y(d.yValues[d.yValues.length-textShift].yValue) + shiftDown) + ")";})
 							.attr("x", 3)
 							.attr("dy", "0.35em")
 							.style("font", "12px sans-serif")
@@ -6847,17 +6893,81 @@
 				});//end d3.each() 
 		});// end .forEach()
 
-		// this section converts svg to png, good for inserting png images of charts in other documents
-		var buttonRect = document.getElementById(buttonRectID);
-		var buttonText = document.getElementById(buttonTextID);
+		/*
+		 ********************************************************
+		 ********************************************************
 
-		buttonRect.addEventListener('mouseenter', function () { buttonRect.setAttribute('fill', 'blue'); buttonText.setAttribute('style', 'visibility:visible; font: 12px sans-serif');});
-		buttonRect.addEventListener('mouseleave', function () { buttonRect.setAttribute('fill', '#99ccff'); buttonText.setAttribute('style', 'visibility:hidden; font: 12px sans-serif');});
-		buttonRect.addEventListener("click", function() { toPNG(); });
+		This section enables a capability to hover over a point, then see the x and y values the bottom right of the plot
+
+		 ********************************************************
+		 ********************************************************	
+		 */
+
+		// define outside if-then because I want to remove it in the toPNG function
+		let dataTextID = 'dataText' + chartID.slice(1); // slice(1) removes '#' from chartID
+		let dataText = svg$$1.append('text')
+			.attr('transform', 'translate(' + (outerWidth - 155) + ',' + ( outerHeight - 10 ) + ')' )
+			.attr("x", 3)
+			.attr("dy",  "0.35em")
+			.attr('id', dataTextID)
+			.style('visibility', 'visible')
+			.style("font", "11px sans-serif");
+
+		if(showPoints===true){ // example of the data structure of the points: {xValue: 10, yValue: 8}
+			let circleArray = document.getElementsByClassName('peek');
+			let circleArrayEnter = [], circleArrayLeave = [], circleColor = '',  i = 0;
+			for (let element of circleArray) {
+				circleArrayEnter[i] = element.addEventListener('mouseenter', function () {
+					circleColor = element.getAttribute('style','fill'); console.log(circleColor);
+					element.setAttribute('style', 'fill: black'); 
+					element.setAttribute('r', '4'); 
+					console.log(element.getAttribute('r'));
+					dataText.text(xAxisTitle + ' = ' + (element.__data__).xValue.toPrecision(3) + ', ' + yAxisTitle + ' = ' + (element.__data__).yValue.toPrecision(3)  );
+
+				});
+				circleArrayLeave[i] = element.addEventListener('mouseleave', function () {
+				dataText.text("");
+					element.setAttribute('r', '2');
+				       	element.setAttribute('style', circleColor);
+					//console.log(element.getAttribute('style', circleColor.stroke));
+				});
+	i++;
+			}	}
+		/*
+		 ********************************************************
+		 ********************************************************
+
+		This section converts the svg into a png for Save as ...
+
+		 ********************************************************
+		 ********************************************************	
+		 */
+
+		// construct the little square button at the upper right of the plot
+		var buttonRectID = 'buttonRect' + chartID.slice(1); // slice(1) removes '#" from chartID
+		var buttonRect = svg$$1.append('rect') // this sets up the 'To PNG' button
+			.attr('width', '10')
+			.attr('height', '10')
+			.attr('fill', '#d3d3d3')
+			.attr('stroke', '#a9a9a9')
+			.attr('stroke-width', '1px')
+			.attr('id', buttonRectID)
+			.attr('transform', 'translate(' + (outerWidth - 13) + ',' + 3 + ')');
+
+		var buttonTextID = 'buttonText' + chartID.slice(1); // slice(1) removes '#' from chartID
+		var buttonText = svg$$1.append('text')
+			.attr('transform', 'translate(' + (outerWidth - 105) + ',' + 9.5 + ')')
+			.attr("x", 3)
+			.attr("dy",  "0.35em")
+			.attr('id', buttonTextID)
+			.style('visibility', 'visible')
+			.style("font", "11px sans-serif")
+			.text('Change to PNG?');
+
 
 		var toPNG = function toPNG () {
 			// get rid of the button and text before converting to PNG
-			buttonRect.remove(); buttonText.remove();
+			buttonRect.remove(); buttonText.remove(); dataText.remove();
 
 			// get the old svg element to be replaced
 			var oldSvg = document.getElementById(chartID.slice(1)); // slice(1) to remove '#' in front of chartID
@@ -6911,6 +7021,13 @@
 			tempImg.remove();
 
 		};
+		var buttonRect = document.getElementById(buttonRectID);
+		var buttonText = document.getElementById(buttonTextID);
+
+		buttonRect.addEventListener('mouseenter', function () { buttonRect.setAttribute('fill', '#a9a9a9');});
+		buttonRect.addEventListener('mouseleave', function () { buttonRect.setAttribute('fill', '#d3d3d3');});
+		buttonRect.addEventListener("click", function() { toPNG(); });
+
 	}
 
 	function nPort() {}

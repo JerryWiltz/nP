@@ -6,12 +6,12 @@
 		<title>6 GHz Wilkinson Power Divider</title>
 	</head>
 	<body>
-		<script src="../dist/nP.js"></script>
+		<script src="nP.js"></script>
 
 		<script>
 // set up frequencies
 var g = nP.global;
-g.fList = g.fGen(0e9,12e9,51);
+g.fList = g.fGen(0e9,12e9,501);
 
 // define components
 var tee = nP.Tee();
@@ -25,10 +25,10 @@ var wilkinson = nP.nodal([tee, 1,2,3],[t70,3,5],[t70,2,4],[tee,9,7,5],[tee,8,4,6
 var plot = wilkinson.out('s21dB','s23dB');
 
 // plot the frequency response
-nP.lineChart({inputTable: [plot], yRange: [-60, 0]});
+nP.lineChart({inputTable: [plot], yRange: [-60, 0], showPoints: 'show', traceColor: 'gray'});
 
 // show the data in a table
-nP.lineTable({inputTable: [plot]});
+// nP.lineTable({inputTable: [plot]});
 
 		</script>
 	</body>
