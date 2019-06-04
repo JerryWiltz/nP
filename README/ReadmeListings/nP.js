@@ -6835,17 +6835,6 @@
 				.append('g')
 				.attr('class', newPlot)
 				.each( function (d) {
-	/*				if(showPoints === true){
-						d3.select(this).selectAll('circle')
-							.data(d => d.yValues)
-							.enter()
-							.append('circle')
-							.attr('class', 'peek')
-							.attr('cx', d => x(d.xValue))
-							.attr('cy', d => y(d.yValue))
-							.attr('r', 2)
-							.style("stroke", plotColor(colorIndex)).style('fill', plotColor(colorIndex)).style('stroke-width','2');
-					};i*/
 					var line$$1 = line()
 						.x(d => x(d.xValue))
 						.y(d => y(d.yValue));
@@ -6854,22 +6843,20 @@
 						.attr('d', d => line$$1(d.yValues))
 						.style("stroke", plotColor(colorIndex)).style('fill', 'none').style('stroke-width', '2');
 
-		if(showPoints === true){
+					if(showPoints === true){
 						select(this).selectAll('circle')
 							.data(d => d.yValues)
 							.enter()
 							.append('circle')
-							.attr('class', 'peek')
+							.attr('class', 'peek' + chartID.slice(1))
 							.attr('cx', d => x(d.xValue))
 							.attr('cy', d => y(d.yValue))
 							.attr('r', 2)
 							.style("stroke", plotColor(colorIndex)).style('fill', plotColor(colorIndex)).style('stroke-width','2');
 					}
-
-
-					
 					if (showLables === true) {
 						select(this).append("text")
+							.attr('class', 'textLable')
 							.attr("transform", function(d) { 
 								let textShift = function () { // put start of lable to the right side of chart rectangle
 									let points = d.yValues.length;
@@ -6897,7 +6884,8 @@
 		 ********************************************************
 		 ********************************************************
 
-		This section enables a capability to hover over a point, then see the x and y values the bottom right of the plot
+		This section enables a capability to hover over a point, then see the x and y values the bottom right of the plot.
+		You may also click on a point to high light it and show the x and y values and include them in the PNG.
 
 		 ********************************************************
 		 ********************************************************	
@@ -6913,26 +6901,45 @@
 			.style('visibility', 'visible')
 			.style("font", "11px sans-serif");
 
+		// make clicked visible to toPNG
+		var clicked = false;
 		if(showPoints===true){ // example of the data structure of the points: {xValue: 10, yValue: 8}
-			let circleArray = document.getElementsByClassName('peek');
-			let circleArrayEnter = [], circleArrayLeave = [], circleColor = '',  i = 0;
-			for (let element of circleArray) {
-				circleArrayEnter[i] = element.addEventListener('mouseenter', function () {
-					circleColor = element.getAttribute('style','fill'); console.log(circleColor);
-					element.setAttribute('style', 'fill: black'); 
-					element.setAttribute('r', '4'); 
-					console.log(element.getAttribute('r'));
-					dataText.text(xAxisTitle + ' = ' + (element.__data__).xValue.toPrecision(3) + ', ' + yAxisTitle + ' = ' + (element.__data__).yValue.toPrecision(3)  );
+			let circleArray = document.getElementsByClassName('peek' + chartID.slice(1));// console.log(circleArray);
+			let circleArrayEnter = [], circleArrayLeave = [], circleClick = [], circleColor = '', i = 0;
+			let oldIndex = -1;
 
+			for (let element of circleArray) {
+				element.__data__.index = i; // need to number all the circles
+				circleArrayEnter[i] = element.addEventListener('mouseenter', function () {
+					if(clicked===false) {
+						circleColor = element.getAttribute('style','fill');
+						element.setAttribute('style', 'fill: black'); 
+						element.setAttribute('r', '4'); 
+						dataText.text(xAxisTitle + ' = ' + (element.__data__).xValue.toPrecision(3) + ', ' + yAxisTitle + ' = ' + (element.__data__).yValue.toPrecision(3)  );
+					}
 				});
 				circleArrayLeave[i] = element.addEventListener('mouseleave', function () {
-				dataText.text("");
-					element.setAttribute('r', '2');
-				       	element.setAttribute('style', circleColor);
-					//console.log(element.getAttribute('style', circleColor.stroke));
+					if(clicked===false) {
+						dataText.text("");
+						element.setAttribute('r', '2');
+						element.setAttribute('style', circleColor);
+					}
 				});
-	i++;
-			}	}
+				circleClick[i] = element.addEventListener('click', function () {
+					if(oldIndex===-1) {
+						oldIndex = element.__data__.index;
+						clicked = true;
+					} else if (element.__data__.index===oldIndex){
+						dataText.text("");
+						circleArray[oldIndex].setAttribute('r', '2');
+						circleArray[oldIndex].setAttribute('style', circleColor);
+						clicked = false;
+						oldIndex=-1;
+					}	
+				});
+				i++;
+			}
+		}
 		/*
 		 ********************************************************
 		 ********************************************************
@@ -6966,9 +6973,11 @@
 
 
 		var toPNG = function toPNG () {
-			// get rid of the button and text before converting to PNG
-			buttonRect.remove(); buttonText.remove(); dataText.remove();
+			// get rid of the button before converting to PNG
+			buttonRect.remove(); buttonText.remove();
 
+			// get rid of the text if dot is not clicked	
+			if(clicked===false) {dataText.remove();}
 			// get the old svg element to be replaced
 			var oldSvg = document.getElementById(chartID.slice(1)); // slice(1) to remove '#' in front of chartID
 

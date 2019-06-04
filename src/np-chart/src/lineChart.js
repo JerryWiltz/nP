@@ -12,7 +12,6 @@ export	function  lineChart (lineChartInputObject = {}) {
 	// lineChartInputObject.xRange,		// an array of min, max such as [2e9, 12e9]; default is autorange based on data
 	// lineChartInputObject.yRange,		// an array of min, max such as [0, -80]; default is autorange based on data
 	// lineChartInputObject.showPoints,	// a string with either 'show' or 'hide', if not specified, default is 'hide'
-	// lineChartInputObject.pngXYdata,	// a string with either 'show' or 'hide', if not specified, default is 'hide'
 	// lineChartInputObject.showLables,	// a string with either 'show' or 'hide', if not specified, default is 'show'
 	// lineChartInputObject.traceColor,	// a string with either 'color' or 'gray', if not specified, default is 'color'
 
@@ -90,7 +89,6 @@ export	function  lineChart (lineChartInputObject = {}) {
 	var xAxisTitleOffset = 40;
 	var yAxisTitleOffset = 40;
 	var showPoints = lineChartInputObject.showPoints === 'hide' ? false : (lineChartInputObject.showPoints === 'show' ? true : false);
-	var pngXYdata = lineChartInputObject.pngXYdata === 'hide' ? false : (lineChartInputObject.pngXYdata === 'show' ? true : false);
 	var showLables = lineChartInputObject.showLables === 'hide' ? false : (lineChartInputObject.showLables === 'show' ? true : true);
 	var traceColor = lineChartInputObject.traceColor === 'color' ? false : (lineChartInputObject.traceColor === 'gray' ? true : false);
 
@@ -285,17 +283,6 @@ export	function  lineChart (lineChartInputObject = {}) {
 			.append('g')
 			.attr('class', newPlot)
 			.each( function (d) {
-/*				if(showPoints === true){
-					d3.select(this).selectAll('circle')
-						.data(d => d.yValues)
-						.enter()
-						.append('circle')
-						.attr('class', 'peek')
-						.attr('cx', d => x(d.xValue))
-						.attr('cy', d => y(d.yValue))
-						.attr('r', 2)
-						.style("stroke", plotColor(colorIndex)).style('fill', plotColor(colorIndex)).style('stroke-width','2');
-				};i*/
 				var line = d3.line()
 					.x(d => x(d.xValue))
 					.y(d => y(d.yValue));
@@ -304,23 +291,21 @@ export	function  lineChart (lineChartInputObject = {}) {
 					.attr('d', d => line(d.yValues))
 					.style("stroke", plotColor(colorIndex)).style('fill', 'none').style('stroke-width', '2');
 
-	if(showPoints === true){
+				if(showPoints === true){
 					d3.select(this).selectAll('circle')
 						.data(d => d.yValues)
 						.enter()
 						.append('circle')
-						.attr('class', 'peek')
+						.attr('class', 'peek' + chartID.slice(1))
 						.attr('cx', d => x(d.xValue))
 						.attr('cy', d => y(d.yValue))
 						.attr('r', 2)
 						.style("stroke", plotColor(colorIndex)).style('fill', plotColor(colorIndex)).style('stroke-width','2');
 				};
 
-
-
-				
 				if (showLables === true) {
 					d3.select(this).append("text")
+						.attr('class', 'textLable')
 						.attr("transform", function(d) { 
 							let textShift = function () { // put start of lable to the right side of chart rectangle
 								let points = d.yValues.length;
@@ -357,7 +342,8 @@ export	function  lineChart (lineChartInputObject = {}) {
 	 ********************************************************
 	 ********************************************************
 
-	This section enables a capability to hover over a point, then see the x and y values the bottom right of the plot
+	This section enables a capability to hover over a point, then see the x and y values the bottom right of the plot.
+	You may also click on a point to high light it and show the x and y values and include them in the PNG.
 
 	 ********************************************************
 	 ********************************************************	
@@ -373,25 +359,46 @@ export	function  lineChart (lineChartInputObject = {}) {
 		.style('visibility', 'visible')
 		.style("font", "11px sans-serif");
 
+	// make clicked visible to toPNG
+	var clicked = false;
 	if(showPoints===true){ // example of the data structure of the points: {xValue: 10, yValue: 8}
-		let circleArray = document.getElementsByClassName('peek');
-		let circleArrayEnter = [], circleArrayLeave = [], circleColor = '',  i = 0;
-		for (let element of circleArray) {
-			circleArrayEnter[i] = element.addEventListener('mouseenter', function () {
-				circleColor = element.getAttribute('style','fill');
-				element.setAttribute('style', 'fill: black'); 
-				element.setAttribute('r', '4'); 
-				console.log(element.getAttribute('r'));
-				dataText.text(xAxisTitle + ' = ' + (element.__data__).xValue.toPrecision(3) + ', ' + yAxisTitle + ' = ' + (element.__data__).yValue.toPrecision(3)  );
+		let circleArray = document.getElementsByClassName('peek' + chartID.slice(1));// console.log(circleArray);
+		let circleArrayEnter = [], circleArrayLeave = [], circleClick = [], circleColor = '', i = 0;
+		let oldIndex = -1;
 
+		for (let element of circleArray) {
+			element.__data__.index = i; // need to number all the circles
+			circleArrayEnter[i] = element.addEventListener('mouseenter', function () {
+				if(clicked===false) {
+					circleColor = element.getAttribute('style','fill');
+					element.setAttribute('style', 'fill: black'); 
+					element.setAttribute('r', '4'); 
+					dataText.text(xAxisTitle + ' = ' + (element.__data__).xValue.toPrecision(3) + ', ' + yAxisTitle + ' = ' + (element.__data__).yValue.toPrecision(3)  );
+				}
 			});
 			circleArrayLeave[i] = element.addEventListener('mouseleave', function () {
-			dataText.text("");
-				element.setAttribute('r', '2');
-			       	element.setAttribute('style', circleColor);
+				if(clicked===false) {
+					dataText.text("");
+					element.setAttribute('r', '2');
+					element.setAttribute('style', circleColor);
+				}
 			});
-i++;
+			circleClick[i] = element.addEventListener('click', function () {
+				if(oldIndex===-1) {
+					oldIndex = element.__data__.index;
+					clicked = true;
+				} else if (element.__data__.index===oldIndex){
+					dataText.text("");
+					circleArray[oldIndex].setAttribute('r', '2');
+					circleArray[oldIndex].setAttribute('style', circleColor);
+					clicked = false;
+					oldIndex=-1;
+				} else 	{
+				}	
+			});
+			i++;
 		};
+
 	};
 
 	/*
@@ -427,8 +434,11 @@ i++;
 
 
 	var toPNG = function toPNG () {
-		// get rid of the button and text before converting to PNG
-		buttonRect.remove(); buttonText.remove(); dataText.remove();
+		// get rid of the button before converting to PNG
+		buttonRect.remove(); buttonText.remove();
+
+		// get rid of the text if dot is not clicked	
+		if(clicked===false) {dataText.remove();};
 
 		// get the old svg element to be replaced
 		var oldSvg = document.getElementById(chartID.slice(1)); // slice(1) to remove '#' in front of chartID
