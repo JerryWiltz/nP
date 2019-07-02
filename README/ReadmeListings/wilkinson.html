@@ -6,12 +6,13 @@
 		<title>6 GHz Wilkinson Power Divider</title>
 	</head>
 	<body>
+		<svg id='tableSvg' width='10' height='10'></svg>
 		<script src="nP.js"></script>
 
 		<script>
 // set up frequencies
 var g = nP.global;
-g.fList = g.fGen(0e9,12e9,51);
+g.fList = g.fGen(0e9,12e9,21);
 
 // define components
 var tee = nP.Tee();
@@ -24,11 +25,16 @@ var wilkinson = nP.nodal([tee, 1,2,3],[t70,3,5],[t70,2,4],[tee,9,7,5],[tee,8,4,6
 // compute a table of s-pars to plot
 var plot = wilkinson.out('s21dB','s23dB');
 
-// plot the frequency response
-nP.lineChart({inputTable: [plot], yRange: [-60, 0], showPoints: 'show', traceColor: 'gray'});
-
 // show the data in a table
-// nP.lineTable({inputTable: [plot]});
+//nP.lineTable({tableID: 'tableSvg', inputTable: [plot], title: 'Wilkinson Power Divider'});
+//nP.lineTable({headColor: 'gray', tableID: 'tableSvg', title: 'Wilkinson Power Divider'});
+//nP.lineTable({headColor: 'gray', title: 'Noise Figure'});
+//nP.lineTable();
+nP.lineTable();
+
+// plot the frequency response
+//nP.lineChart({ inputTable: [plot], yRange: [-60, 0], showPoints: 'show', traceColor: 'gray'});
+nP.lineChart();
 
 		</script>
 	</body>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang='en'>
+	<head>
+		<meta charset='utf-8'>
+		<title>
+			SVG foreignObject tooltips in D3
+		</title>
+		<script src='http://d3js.org/d3.v3.min.js' charset='utf-8'></script>
+	</head>
+	<body>
+		<script type='text/javascript'>
+var margin = {top: 20, right: 10, bottom: 20, left: 10};
+var width = 500 - margin.left - margin.right;
+var height = 300 - margin.top - margin.bottom;
+var svg = d3.select('body')
+.append('svg')
+.attr({
+	'width': width + margin.left + margin.right,
+	'height': height + margin.top + margin.bottom
+})
+.append('g')
+.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+		var foWidth = 300;
+		var anchor = {'w': width/3, 'h': height/3};
+		var t = 50, k = 15;
+		var tip = {'w': (3/4 * t), 'h': k};
+		var fo = svg.append('foreignObject')
+		.attr({
+			'x': anchor.w - tip.w,
+			'y': anchor.h + tip.h,
+			'width': foWidth,
+			'height': '100',
+		});
+		var div = fo.append('xhtml:div')
+		.append('div');
+		div.append('p')
+		.html('Jerry.');
+		div.append('p')
+		.html('Wiltz.');
+
+		</script>
+	</body>
+</html>

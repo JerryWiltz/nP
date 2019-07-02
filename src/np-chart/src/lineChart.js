@@ -11,7 +11,7 @@ export	function  lineChart (lineChartInputObject = {}) {
 	// lineChartInputObject.yAxisTitle,	// a string of the y axis title; default is 'dB'
 	// lineChartInputObject.xRange,		// an array of min, max such as [2e9, 12e9]; default is autorange based on data
 	// lineChartInputObject.yRange,		// an array of min, max such as [0, -80]; default is autorange based on data
-	// lineChartInputObject.showPoints,	// a string with either 'show' or 'hide', if not specified, default is 'hide'
+	// lineChartInputObject.showPoints,	// a string with either 'show' or 'hide', if not specified, default is 'show'
 	// lineChartInputObject.showLables,	// a string with either 'show' or 'hide', if not specified, default is 'show'
 	// lineChartInputObject.traceColor,	// a string with either 'color' or 'gray', if not specified, default is 'color'
 
@@ -53,24 +53,29 @@ export	function  lineChart (lineChartInputObject = {}) {
 	// this is the internal inputTable that has default data if no inputTable data provided
 	var inputTable = lineChartInputObject.inputTable || [ 
 		[
-			['Freq', 'Gain'],
-			[ 8 * 1e9, -30],
-			[10 * 1e9,   8],
-			[12 * 1e9,  12],
-			[14 * 1e9,  11],
-			[16 * 1e9,  11],
-			[18 * 1e9,   9],
-			[20 * 1e9,   7]
-		],
-
-		[
-			['Freq', 'Noise Figure'],
-			[12 * 1e9,    3],
-			[14 * 1e9,  3.5],
-			[16 * 1e9,    4],
-			[18 * 1e9,  4.5],
-			[20 * 1e9,    5]
-		]
+			['Freq','s21dB','s23dB'],
+			[0,-3.52182,-3.52182],
+			[600000000,-3.51008,-4.19455],
+			[1200000000,-3.47582,-5.72534],
+			[1800000000,-3.42189,-7.46851],
+			[2400000000,-3.35291,-9.21548],
+			[3000000000,-3.27504,-11.01964],
+			[3600000000,-3.19561,-13.04088],
+			[4200000000,-3.12248,-15.53461],
+			[4800000000,-3.06328,-18.99038],
+			[5400000000,-3.02443,-24.83689],
+			[6000000000,-3.01031,-53.90094],
+			[6600000000,-3.02253,-25.46905],
+			[7200000000,-3.05969,-19.30541],
+			[7800000000,-3.11761,-15.74536],
+			[8400000000,-3.18997,-13.20271],
+			[9000000000,-3.26921,-11.15721],
+			[9600000000,-3.34745,-9.34356],
+			[10200000000,-3.41731,-7.596],
+			[10800000000,-3.47251,-5.85015],
+			[11400000000,-3.50832,-4.28704],
+			[12000000000,-3.52176,-3.52571]
+		]	
 	];
 
 	// lineChart mutates inputTable. if same inputTable is reused by another lineChart, output is distorted.
@@ -88,7 +93,7 @@ export	function  lineChart (lineChartInputObject = {}) {
 	var yAxisTitle = lineChartInputObject.yAxisTitle || 'dB';
 	var xAxisTitleOffset = 40;
 	var yAxisTitleOffset = 40;
-	var showPoints = lineChartInputObject.showPoints === 'hide' ? false : (lineChartInputObject.showPoints === 'show' ? true : false);
+	var showPoints = lineChartInputObject.showPoints === 'hide' ? false : (lineChartInputObject.showPoints === 'show' ? true : true);
 	var showLables = lineChartInputObject.showLables === 'hide' ? false : (lineChartInputObject.showLables === 'show' ? true : true);
 	var traceColor = lineChartInputObject.traceColor === 'color' ? false : (lineChartInputObject.traceColor === 'gray' ? true : false);
 
@@ -434,7 +439,7 @@ export	function  lineChart (lineChartInputObject = {}) {
 
 
 	var toPNG = function toPNG () {
-		// get rid of the button before converting to PNG
+		// get rid of the button and the button text before converting to PNG
 		buttonRect.remove(); buttonText.remove();
 
 		// get rid of the text if dot is not clicked	

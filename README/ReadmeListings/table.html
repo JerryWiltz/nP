@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>Table</title>
+	</head>
+	<body>
+		<style>
+		</style>
+		<table style="width:300px; table-layout:fixed; border: 1px solid black;border-collapse: collapse">
+			<tr>
+				<td id='number' style="border: 1px solid black;overflow: hidden"></td>
+				<td style=";border: 1px solid black">Bar</td>
+				<td style=";border: 1px solid black">Bar</td>
+				<td style=";border: 1px solid black">Bar</td>
+			</tr>
+			<tr>
+				<td style="border: 1px solid black;overflow: hidden">Foo</td>
+				<td style="border: 1px solid black">Bar</td>
+			</tr>
+		</table>
+		<script>
+var n = 11*Math.cos(0.01)
+	var td = document.getElementById('number')
+	td.innerHTML = n.toFixed(5);
+		</script>
+	</body>
+</html>
