@@ -1,6 +1,6 @@
 <b>nPort</b>: A Microwave Circuit Analysis Program
 
-**nP** is a JavaScript library for analyzing microwave circuits. It helps you learn about, analyze and visualize the operation of various multiport circuits.
+**nP** is a JavaScript library for analyzing microwave circuits. It helps you learn about, analyze and visualize the operation of various RF multiport circuits.
 
 **nPort** creates one JavaScript global variable, **nP**.
 
@@ -11,7 +11,7 @@ Download, **nPort**, then run the  "Hello, nPort!" example below to verify insta
 * Create a new folder named "nPort"
 * Download nPort by clicking [here](https://raw.githubusercontent.com/JerryWiltz/nP/master/dist/nP.js)", then Save as... "nP.js" and put it in the "nPort" folder. 
 * Create the file below and name it "index.html" and put it in the "nPort" folder.
-* Run "index.html". I recommend Chrome. You should see <b>Hello, nPort!</b>
+* Run "index.html". I recommend Chrome. You should see <b>Hello, nPort!</b> After that, you are ready to go.
 
 ```html
 <!DOCTYPE html>
@@ -79,29 +79,19 @@ nPort.<b>getspars</b> [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-n
 
 nPort1.<b>cas</b> (<i> nPort2 </i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/nPort.js "Source") cascades two 2-ports and creates a new nPort. Method chaining enabled.
 
-nPort.<b>out</b> (<i> 'sij|mag|dB|ang|Re|Im', ' ... ' </i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/nPort.js "Source") Creates an output data set that can be plotted with a routine such as nP.lineChart(). Arguments must be in quotes and separated by commas. For example for a filter 2-port named, ```filt1```, to specify an out(), the syntax would be,  ```filt1.out('s11mag','s11dB','s22ang')```.
+nPort.<b>out</b> (<i> 'sij|mag|dB|ang|Re|Im', ' ... ' </i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/nPort.js "Source") Creates an output data set that can be plotted with nP.lineChart() or can be seen in a table with nP.lineTable(). Arguments must be in quotes and separated by commas. For example for a filter 2-port named, ```filt1```, to specify an out(), the syntax would be,  ```filt1.out('s11mag','s11dB','s22ang')```.
 
-* <b>mag</b> will provide sij magnitude
+* <b>mag</b> the magnitude of a complex number, such as an s-parameter
 * <b>ang</b> the angle
 * <b>dB</b> the magnitude in dB
 * <b>Re</b> the real part
 * <b>Im</b> the imaginary part
+
+Here is an example below.
 
 ```html
 r1.out('s11mag')
 // if r1 is an nPort for a 75 ohm resistor, the magnitude of s11 is returned.
-```
-nPort.<b>outTable</b> (<i> 'sij|mag|dB|ang|Re|Im', ' ... ' </i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/nPort.js "Source") Creates a table specified by the Argument
-
-* <b>mag</b> will provide sij magnitude
-* <b>ang</b> the angle
-* <b>dB</b> the magnitude in dB
-* <b>Re</b> the real part
-* <b>Im</b> the imaginary part
-
-```html
-r1.outTable('s11mag')
-// if r1 is an nPort for a 75 ohm resistor, the magnitude of s11 is is returned.
 ```
 
 ### nPort Functions
@@ -121,36 +111,39 @@ nPort.<b>nodal</b> (<i>[nPort1, node1, node2, ...],[nPort2, node2, node3], ... [
 		<title>6 GHz Wilkinson Power Divider</title>
 	</head>
 	<body>
-		<script src="../dist/nP.js"></script>
+		<svg id='tableSvg' width='10' height='10'></svg>
+		<script src="nP.js"></script>
 
 		<script>
-// set up frequencies
+// set up the frequencies
 var g = nP.global;
 g.fList = g.fGen(0e9,12e9,101);
 
-// define components
+// define the components of the power divider
 var tee = nP.Tee();
 var t70 = nP.tlin(70.7, 0.49 * 0.0254);
 var r100 = nP.seR(100);
 
-// hook up components with nodal, it creates a output 3-port named "wilkinson"
+// hook up the components with nodal, it creates a output 3-port named "wilkinson"
 var wilkinson = nP.nodal([tee, 1,2,3],[t70,3,5],[t70,2,4],[tee,9,7,5],[tee,8,4,6],[r100,8,9],['out',1,7,6]);
 
-// compute a table of s-pars to plot
-var plot = wilkinson.out('s11dB','s21dB','s23dB');
+// create a data set of s-parameters to plot
+var plot = wilkinson.out('s21dB','s23dB');
 
 // plot the frequency response
-nP.lineChart({inputTable: [plot]});
-
-// show the data in a table
-nP.lineTable({inputTable: [plot]});
+nP.lineChart({inputTable: [plot], yRange: [-60, 0], titleTitle: 'Wilkinson Power Divider'});
 
 		</script>
 	</body>
 </html>
 ```
+Here is the schematic.
 
-<a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/nodalSchematic.png></a>
+<a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/wilkinsonSchematic.png></a>
+
+Here is the plot.
+
+<a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/wilkinsonPlot.png></a>
 
 nP.<b>lpfGen</b>(<i> filt = [50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50] </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/lpfGen.js "Source") Creates and returns a new nPort Object. The argument is an array of scaled low pass filter parameters generated by an nPort function such as chebyLPLCs. If no argument, the default value is [50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50].
 
