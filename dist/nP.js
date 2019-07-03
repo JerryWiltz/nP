@@ -3812,7 +3812,7 @@
 	  return columns;
 	}
 
-	function dsv(delimiter) {
+	function dsvFormat(delimiter) {
 	  var reFormat = new RegExp("[\"" + delimiter + "\n\r]"),
 	      DELIMITER = delimiter.charCodeAt(0);
 
@@ -3905,9 +3905,9 @@
 	  };
 	}
 
-	var csv = dsv(",");
+	var csv = dsvFormat(",");
 
-	var tsv = dsv("\t");
+	var tsv = dsvFormat("\t");
 
 	var tsvParse = tsv.parse;
 
@@ -4704,7 +4704,7 @@
 	var array$3 = Array.prototype;
 
 	var map$2 = array$3.map;
-	var slice$5 = array$3.slice;
+	var slice$6 = array$3.slice;
 
 	function constant$10(x) {
 	  return function() {
@@ -4806,11 +4806,11 @@
 	  };
 
 	  scale.range = function(_) {
-	    return arguments.length ? (range = slice$5.call(_), rescale()) : range.slice();
+	    return arguments.length ? (range = slice$6.call(_), rescale()) : range.slice();
 	  };
 
 	  scale.rangeRound = function(_) {
-	    return range = slice$5.call(_), interpolate$$1 = interpolateRound, rescale();
+	    return range = slice$6.call(_), interpolate$$1 = interpolateRound, rescale();
 	  };
 
 	  scale.clamp = function(_) {
@@ -6464,7 +6464,7 @@
 		// lineTableInputObject.inputTable,	// an array of outs [out1, out2 ... outn]; default is internal inputTable
 		// lineTableInputObject.tableID,	// a string of an svg id 'table'; default is 'table1'
 		// lineTableInputObject.metricPrefix,	// a string of a metric prefix such as 'giga'; default is 'giga'
-		// lineTableInputObject.title,		// a string of the chart title; default is blank
+		// lineTableInputObject.tableTitle,		// a string of the chart tableTitle; default is blank
 		// lineTableInputObject.headColor,	// a string with either 'color' or 'gray', if not specified, default is 'color'
 		// lineTableInputObject.tableWH,	// a string with either 'no' or 'yes', if not specified, default is 'no'
 
@@ -6538,9 +6538,9 @@
 
 		var metricPrefix = lineTableInputObject.metricPrefix || 'giga';
 		var tableID = lineTableInputObject.tableID ? ('#' + lineTableInputObject.tableID) : ('#' + tableText) ; //d3 wants a '#' in front of an id
-		var titleTitle = lineTableInputObject.title || '';
+		var tableTitle = lineTableInputObject.tableTitle || '';
 		var titleVisibilty = function () {
-			if (titleTitle===''){return 'hidden'}
+			if (tableTitle===''){return 'hidden'}
 			else {return 'visible'}	};
 		var headColor = lineTableInputObject.headColor === 'color' ? false : (lineTableInputObject.headColor === 'gray' ? true : false);
 		var tableWH = lineTableInputObject.tableWH === 'no' ? false : (lineTableInputObject.tableWH === 'yes' ? true : false);
@@ -6637,7 +6637,7 @@
 			.attr('id', 'tableTitleID')
 			.style('visibility', titleVisibilty)
 			.style("font", "11px sans-serif")
-			.text(titleTitle);
+			.text(tableTitle);
 
 		var foreign = g.append('foreignObject')
 			.attr('id', 'foreign' + tableID.slice(1))
@@ -6833,7 +6833,7 @@
 		// lineChartInputObject.inputTable,	// an array of outs [out1, out2 ... outn]; default is internal inputTable
 		// lineChartInputObject.chartID,	// a string of an svg id 'chart'; default is 'chart1'
 		// lineChartInputObject.metricPrefix,	// a string of a metric prefix such as 'giga'; default is 'giga'
-		// lineChartInputObject.titleTitle,	// a string of the chart title; default is blank
+		// lineChartInputObject.chartTitle,	// a string of the chart title; default is blank
 		// lineChartInputObject.xAxisTitle,	// a string of the x axis title; default is 'Frequency'
 		// lineChartInputObject.yAxisTitle,	// a string of the y axis title; default is 'dB'
 		// lineChartInputObject.xRange,		// an array of min, max such as [2e9, 12e9]; default is autorange based on data
@@ -6910,9 +6910,9 @@
 
 		var metricPrefix = lineChartInputObject.metricPrefix || 'giga';
 		var chartID = lineChartInputObject.chartID ? ('#' + lineChartInputObject.chartID) : ('#' + chartText) ; //d3 wants a '#' in front of an id
-		var titleTitle = lineChartInputObject.titleTitle || '';
+		var chartTitle = lineChartInputObject.chartTitle || '';
 		var titleVisibilty = function () {
-			if (titleTitle===''){return 'hidden'}
+			if (chartTitle===''){return 'hidden'}
 			else {return 'visible'}	};
 		var xAxisTitle = lineChartInputObject.xAxisTitle || 'Frequency';
 		var yAxisTitle = lineChartInputObject.yAxisTitle || 'dB';
@@ -7035,7 +7035,7 @@
 			.attr('id', 'chartTitleID')
 			.style('visibility', titleVisibilty)
 			.style("font", "11px sans-serif")
-			.text(titleTitle);
+			.text(chartTitle);
 
 		var g = svg$$1.append("g")
 			.attr("transform", "translate(" + margin.left + "," + margin.top + ")");

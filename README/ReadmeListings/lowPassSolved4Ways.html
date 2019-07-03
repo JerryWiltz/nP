@@ -11,12 +11,12 @@
 		<svg id="chart3" width="400" height="300"></svg>
 		<svg id="chart4" width="400" height="300"></svg>
 
-		<script src="../dist/nP.js"></script>
+		<script src="nP.js"></script>
 
 		<script>
 
 var g = nP.global;	
-g.fList = g.fGen(50e6, 10e9, 50);
+g.fList = g.fGen(50e6, 3e9, 50);
 
 // create 9 2-ports. Each 2-port is part of a lowpass LC filter
 var c1 = nP.paC(3.1716836788279897e-12);
@@ -31,15 +31,15 @@ var c5 = nP.paC(3.171683678827988e-12);
 
 // using 'cas' to define filter1
 var filter1 = c1.cas(l1).cas(c2).cas(l2).cas(c3).cas(l3).cas(c4).cas(l4).cas(c5);
-nP.lineChart({inputTable: [filter1.out('s11dB','s21dB')], chartID: 'chart1'});
+nP.lineChart({inputTable: [filter1.out('s11dB','s21dB')], chartID: 'chart1', chartTitle:'Solved by nP.cas()'});
 
 // using 'cascade' to define filter2
 var filter2 = nP.cascade (c1,l1,c2,l2,c3,l3,c4,l4,c5);
-nP.lineChart({inputTable: [filter2.out('s11dB','s21dB')], chartID: 'chart2'});
+nP.lineChart({inputTable: [filter2.out('s11dB','s21dB')], chartID: 'chart2', chartTitle:'Solved by nP.cascade()'});
 
 // using 'nodal' to define filter3
 var filter3 = nP.nodal([c1,1,2],[l1,2,3],[c2,3,4],[l2,4,5],[c3,5,6],[l3,6,7],[c4,7,8],[l4,8,9],[c5,9,10],['out',1,10]);
-nP.lineChart({inputTable: [filter3.out('s11dB','s21dB')], chartID: 'chart3'});
+nP.lineChart({inputTable: [filter3.out('s11dB','s21dB')], chartID: 'chart3', chartTitle:'Solved by nP.nodal()'});
 
 // using 'lpfGen' to define filter4
 var filter4 = nP.lpfGen([50,
@@ -53,7 +53,7 @@ var filter4 = nP.lpfGen([50,
 		9.566513256241397e-9,
 		3.171683678827988e-12,
 		50]);
-nP.lineChart({inputTable: [filter4.out('s11dB','s21dB')], chartID: 'chart4'});
+nP.lineChart({inputTable: [filter4.out('s11dB','s21dB')], chartID: 'chart4',chartTitle:'Solved by nP.lpfGen()'});
 
 		</script>
 	</body>

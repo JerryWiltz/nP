@@ -6,13 +6,13 @@
 		<title>Analysis parallel coupled filter</title>
 	</head>
 	<body>
-		<script src="../dist/nP.js"></script>
+		<script src="nP.js"></script>
 
 		<script>
 
 // this is for a quarter wave at 6GHz
 var g = nP.global;	
-g.fList = g.fGen(2000e6,10000e6,101);
+g.fList = g.fGen(4e9,8e9,21);
 
 // set up the couplers
 var tclin1 = nP.tclin(79.667,37.834,0.491 * 0.0254);
@@ -26,14 +26,17 @@ var open = nP.Open();
 var filt = nP.nodal([tclin1,1,2,3,4],[tclin2,3,5,6,7],[tclin3,6,8,9,10],[open,2],[open,4],[open,5],[open,7],[open,8],[open,10],['out',1,9]);
 var filtOut = filt.out('s21dB','s11dB');
 
-// set up plot
-var plot = {inputTable: [filtOut]};
+// set up the plot
+var plot = {chartTitle:'Edge Coupled Filter', inputTable: [filtOut]};
 
 // plot the data
 nP.lineChart(plot);
 
-// put the data in a table
-nP.lineTable(plot);
+// set up the table
+var table = {tableTitle:'Edge Coupled Filter', inputTable: [filtOut]};
+
+// tabulate the data
+nP.lineTable(table);
 
 		</script>
 	</body>

@@ -6,7 +6,7 @@ export	function  lineChart (lineChartInputObject = {}) {
 	// lineChartInputObject.inputTable,	// an array of outs [out1, out2 ... outn]; default is internal inputTable
 	// lineChartInputObject.chartID,	// a string of an svg id 'chart'; default is 'chart1'
 	// lineChartInputObject.metricPrefix,	// a string of a metric prefix such as 'giga'; default is 'giga'
-	// lineChartInputObject.titleTitle,	// a string of the chart title; default is blank
+	// lineChartInputObject.chartTitle,	// a string of the chart title; default is blank
 	// lineChartInputObject.xAxisTitle,	// a string of the x axis title; default is 'Frequency'
 	// lineChartInputObject.yAxisTitle,	// a string of the y axis title; default is 'dB'
 	// lineChartInputObject.xRange,		// an array of min, max such as [2e9, 12e9]; default is autorange based on data
@@ -84,9 +84,9 @@ export	function  lineChart (lineChartInputObject = {}) {
 
 	var metricPrefix = lineChartInputObject.metricPrefix || 'giga';
 	var chartID = lineChartInputObject.chartID ? ('#' + lineChartInputObject.chartID) : ('#' + chartText) ; //d3 wants a '#' in front of an id
-	var titleTitle = lineChartInputObject.titleTitle || '';
+	var chartTitle = lineChartInputObject.chartTitle || '';
 	var titleVisibilty = function () {
-		if (titleTitle===''){return 'hidden'}
+		if (chartTitle===''){return 'hidden'}
 		else {return 'visible'};
 	};
 	var xAxisTitle = lineChartInputObject.xAxisTitle || 'Frequency';
@@ -224,7 +224,7 @@ export	function  lineChart (lineChartInputObject = {}) {
 		.attr('id', 'chartTitleID')
 		.style('visibility', titleVisibilty)
 		.style("font", "11px sans-serif")
-		.text(titleTitle);
+		.text(chartTitle);
 
 	var g = svg.append("g")
 		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");

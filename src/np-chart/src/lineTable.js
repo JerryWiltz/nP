@@ -6,7 +6,7 @@ export	function  lineTable (lineTableInputObject = {}) {
 	// lineTableInputObject.inputTable,	// an array of outs [out1, out2 ... outn]; default is internal inputTable
 	// lineTableInputObject.tableID,	// a string of an svg id 'table'; default is 'table1'
 	// lineTableInputObject.metricPrefix,	// a string of a metric prefix such as 'giga'; default is 'giga'
-	// lineTableInputObject.title,		// a string of the chart title; default is blank
+	// lineTableInputObject.tableTitle,		// a string of the chart tableTitle; default is blank
 	// lineTableInputObject.headColor,	// a string with either 'color' or 'gray', if not specified, default is 'color'
 	// lineTableInputObject.tableWH,	// a string with either 'no' or 'yes', if not specified, default is 'no'
 
@@ -81,9 +81,9 @@ export	function  lineTable (lineTableInputObject = {}) {
 
 	var metricPrefix = lineTableInputObject.metricPrefix || 'giga';
 	var tableID = lineTableInputObject.tableID ? ('#' + lineTableInputObject.tableID) : ('#' + tableText) ; //d3 wants a '#' in front of an id
-	var titleTitle = lineTableInputObject.title || '';
+	var tableTitle = lineTableInputObject.tableTitle || '';
 	var titleVisibilty = function () {
-		if (titleTitle===''){return 'hidden'}
+		if (tableTitle===''){return 'hidden'}
 		else {return 'visible'};
 	};
 	var headColor = lineTableInputObject.headColor === 'color' ? false : (lineTableInputObject.headColor === 'gray' ? true : false);
@@ -204,7 +204,7 @@ export	function  lineTable (lineTableInputObject = {}) {
 		.attr('id', 'tableTitleID')
 		.style('visibility', titleVisibilty)
 		.style("font", "11px sans-serif")
-		.text(titleTitle);
+		.text(tableTitle);
 
 	var foreign = g.append('foreignObject')
 		.attr('id', 'foreign' + tableID.slice(1))
