@@ -3812,7 +3812,7 @@
 	  return columns;
 	}
 
-	function dsvFormat(delimiter) {
+	function dsv(delimiter) {
 	  var reFormat = new RegExp("[\"" + delimiter + "\n\r]"),
 	      DELIMITER = delimiter.charCodeAt(0);
 
@@ -3905,9 +3905,9 @@
 	  };
 	}
 
-	var csv = dsvFormat(",");
+	var csv = dsv(",");
 
-	var tsv = dsvFormat("\t");
+	var tsv = dsv("\t");
 
 	var tsvParse = tsv.parse;
 
@@ -4704,7 +4704,7 @@
 	var array$3 = Array.prototype;
 
 	var map$2 = array$3.map;
-	var slice$6 = array$3.slice;
+	var slice$5 = array$3.slice;
 
 	function constant$10(x) {
 	  return function() {
@@ -4806,11 +4806,11 @@
 	  };
 
 	  scale.range = function(_) {
-	    return arguments.length ? (range = slice$6.call(_), rescale()) : range.slice();
+	    return arguments.length ? (range = slice$5.call(_), rescale()) : range.slice();
 	  };
 
 	  scale.rangeRound = function(_) {
-	    return range = slice$6.call(_), interpolate$$1 = interpolateRound, rescale();
+	    return range = slice$5.call(_), interpolate$$1 = interpolateRound, rescale();
 	  };
 
 	  scale.clamp = function(_) {

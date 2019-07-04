@@ -347,6 +347,8 @@ nP.lineTable(table);
 Here is the schematic and output plots for the low pass filter.
 
 <a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/edgeCoupledFilter.png></a>
+
+
 Microstrip Transmission lines
 
 nP.<b>mlin</b>(<i> Width = 0.98e-3, Height = 1.02e-3, Length = 0.5 * 0.025, Thickness = 0.0000125 * 0.054, er = 10, rho = 0, tand = 0.000 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/mlin/mlin.js "Source") A microstrip two port transmission line. Width is the strip width in meters, Height is the substrate height in meters. Length is the length in meters. er is the relative dielectric constant. rho is the loss relative to copper. tand is the dielecric loss tangent. Dispersion is factored in, Skin effect is not.
@@ -556,23 +558,62 @@ m.<b>showCountNum</b>(<i>number</i>) [<>](https://github.com/JerryWiltz/nP/blob/
 
 nP.<b>lineChart</b>(<i> lineChartInputObject = \{ \} </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-chart/src/lineChart.js) is a function that draws a chart in a html page. It is based on [d3, Data-Driven Documents](https://d3js.org/). If you don't provide your own svg element, linechart() will create it for you. If you provide svg elements, <b>you must specify a unique ID, width, and height attributes for each svg you create</b>, such as:
 
-```<svg id="myChart" width="400" height="300"></svg>```
+```html
+<svg id="myChart" width="400" height="300"></svg>```
+
+
+lineChartInputObject = {
+inputTable : [out1, out2 ... outn],
+// an array of outs, default is an internal inputTable
+
+chartID : 'chart',
+// a string id, default is 'chart1'
+
+metricPrefix : 'giga',
+// a string of a metric prefix ,  default is 'giga'
+// Note the prefixes for the ```metricPrefix
+//'giga', 'mega', 'kilo', 'none', 'deci', 'centi', 'milli', 'micro', 'nano', and 'pico'
+
+chartTitle : '',
+// a string of the chart title; default is blank
+
+xAxisTitle : 'Frequency',
+// a string of the x axis title; default is 'Frequency'
+
+yAxisTitle : 'dB',
+// a string of the y axis title; default is 'dB'
+
+xRange : [min,max],
+// an array of min, max such as [2e9, 12e9]; default is autorange based on data
+
+yRange : [min,max],
+// an array of min, max such as [0, -80]; default is autorange based on data
+
+showPoints : 'show',
+// a string with either 'show' or 'hide', if not specified, default is 'show'
+
+showLables : 'show',
+// a string with either 'show' or 'hide', if not specified, default is 'show'
+
+traceColor: 'color',
+// a string with either 'color' or 'gray', if not specified, default is 'color'
+}
+```
 
 If you do not provide a ```lineChartInputObject``` argument, lineChart() will display its default plot that is good for setting up your html page so you can see how it looks.
 
-Here is the default lineChart(), the svg it generates has 400 width and 300 height. <b>You can turn it into a PNG</b> for a Copy-Paste into another document or a Save-As file. To turn into PNG
-click on the light blue square at the upper right corner of the chart. The PNG replaces the svg. On the screen, move the cursor over any part of the image and copy and paste or save as, as usual. 
+Here is the default lineChart(), it generates an svg element that has 400px in width and 300px in height. When the cursor is moved over a data point, it turns black and the values are shown at the lower right corner of the chart. In this case, the values are 7.2GHz and -19.3dB. If you click on a point, it stays black and shows the values at the bottom. <b>Click it again</b> to make revert to the original color. Next, <b>To convert it into a PNG</b> for a "Save image as ..." to file, click on the square at the upper right corner of the chart, then move the cursor over any part of the image and perform a "Save image as..." to file. 
 
 ```html
-<!DOCTYPE html>
 <html>
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width">
-		<title>Default lineChart()</title>
+		<title>lineChart Default</title>
 	</head>
 	<body>
 		<script src="nP.js"></script>
+
 		<script>
 
 nP.lineChart();
@@ -582,95 +623,63 @@ nP.lineChart();
 </html>
 ```
 
-Here is the definition of the lineChartInputObject. Each of these has default setting.
+Here is the default nP.lineChart output
+
+<a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/lineChartDefault.png></a>
+
+nP.<b>lineTable</b>(<i> lineTableInputObject = \{ \} </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-chart/src/lineTable.js) A function that produces a table of data. <b>You can click and drag across the table</b> to copy and paste to a spreadsheet. Also, you can <b>create an png</b> for table and perform a "Save image as ..." to file the way you can for lineChart. If you don't provide your own svg element, lineTable() will create it for you. If you provide svg elements, <b>you must specify a unique ID, width, and height attributes for each svg you create</b>, such as:
+
+```html
+<svg id="myTable" width="400" height="300"></svg>
+
+lineTableInputObject = {
+inputTable : [out1, out2 ... outn],
+// an array of outs, default is an internal inputTable
+
+tableID : 'chart',
+// a string id, default is 'chart1'
+
+metricPrefix : 'giga',
+// a string of a metric prefix ,  default is 'giga'
+// Note the prefixes for the ```metricPrefix
+//'giga', 'mega', 'kilo', 'none', 'deci', 'centi', 'milli', 'micro', 'nano', and 'pico'
+
+tableTitle : '',
+// a string of the chart title; default is blank
+
+headColor : 'color',
+// a string with either 'color' or 'gray', if not specified, default is 'color'
+
+tableWH : 'no',
+// a string with either 'no' or 'yes'. if set to 'yes', an alert box is shown that has the Width and the Height of the svg containing the table, if not specified, default is 'no'
+}
 ```
-lineChartInputObject.inputTable, is [out1, out2 ... outn]; default is internal inputTable
-lineChartInputObject.chartID, string of an svg id; default is 'chart1'
-lineChartInputObject.metricPrefix, string of a metric prefix ; default is 'giga'
-lineChartInputObject.titleTitle, string of the chart title; default is ''
-lineChartInputObject.xAxisTitle, string of the x axis title; default is 'Frequency'
-lineChartInputObject.yAxisTitle, string of the y axis title; default is 'dB'
-lineChartInputObject.xRange, array of min, max [2e9, 12e9]; default is autorange 
-lineChartInputObject.yRange, array of min, max  [0, -80]; default is autorange
-lineChartInputObject.showPoints, string 'show' or 'hide'; default is 'show'
-lineChartInputObject.showLables, string 'show' or 'hide', default is 'show'
-```
-	
-Here is an example of a fully defined lineChartInputObject. This is a 9 section Low Pass LC filter. As you can see, all of the possible inputs are specified.
+If you do not provide a ```lineTableInputObject``` argument, lineTable() will display its default plot that is good for setting up your html page so you can see how it looks.
+
+Here is the default lineTable(), it generates an svg element that has 350px in width and 503px in height. <b>To convert it into a PNG</b> for a "Save image as ..." to file, click on the square at the upper right corner of the chart, then move the cursor over any part of the image and perform a "Save image as..." to file. 
 
 ```html
 <html>
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width">
-		<title>lineChart full lineChartInputObject</title>
+		<title>lineTable Default</title>
 	</head>
 	<body>
-		<svg id="chart1" width="600" height="400"></svg>
 		<script src="nP.js"></script>
 
 		<script>
 
-// set up the first frequency range for the low pass filter
-var g = nP.global;	
-g.fList = g.fGen(50e6, 6e9, 101);
-
-// components for a 9 section low pass filter
-var c1 = nP.paC(3.1716836788279897e-12);
-var l1 = nP.seL(9.566513256241392e-9);
-var c2 = nP.paC(5.6621309381827996e-12);
-var l2 = nP.seL(1.0721164178932893e-8);
-var c3 = nP.paC(5.8499784682761105e-12);
-var l3 = nP.seL(1.0721164178932898e-8);
-var c4 = nP.paC(5.662130938182797e-12);
-var l4 = nP.seL(9.566513256241397e-9);
-var c5 = nP.paC(3.171683678827988e-12);
-var filter = nP.cascade(c1,l1,c2,l2,c3,l3,c4,l4,c5);
-var filterOut = filter.out('s11dB', 's21dB');
-
-// create the lineChartInputObject for all inputs
-var fullInputObject = {
-	inputTable: [filterOut],
-	chartID: 'chart1',
-	metricPrefix: 'giga',
-	titleTitle: 'Response of a 9 Section Lowpass LC filter',
-	xAxisTitle: 'Input Frequency, GHz',
-	yAxisTitle: 's11 and and s21, dB',
-	xRange: [0,6e9],
-	yRange: [0,-160],
-	showPoints: 'hide',
-	showLables: 'show'
-};
-
-// plot the filter response
-nP.lineChart(fullInputObject);
+nP.lineTable();
 
 		</script>
 	</body>
 </html>
 ```
+Unlike lineChart, where you can set the size in advance, lineTable does not know its size until it is rendered. As colunms and rows are created, the svg is sized appropriately. To find out what the final size is, use the key-value pair, tableWH: 'yes', of the inputTableInputObject.
 
-nP.<b>lineTable</b>(<i> lineTableInputObject = \{ \} </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-chart/src/lineTable.js) A function that produces a table of data. <b>The table can selected, copied, and pasted into other places such as spreadsheets.</b> Most of the documentation and interface is similar to lineChart( ) above. lineTable() uses div elements rather than svg. If you don't provide a div element or elements, lineTable() will create them, for you. The default element ID is "table1". If you provide the div, <b>you must specify a unique ID attribute for every div you need</b>, such as:
+Here is the default nP.lineChart output
 
-```<div id="myTable"></div>```
+<a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/lineTableDefault.png></a>
 
-If you do not provide the ```lineTableInputObject``` argument to lineTable(), it will display a default table in a div it created. This is good for setting up your page so you can see how it looks. Here is an ```html``` example for the default lineTable() output.
 
-```html
-<!DOCTYPE html>
-<html>
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width">
-		<title>Default lineChart()</title>
-	</head>
-	<body>
-		<script src="nP.js"></script>
-		<script>
-
-nP.lineTable();  // produces the default plot 
-
-		</script>
-	</body>
-</html>
-```
