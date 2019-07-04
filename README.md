@@ -308,13 +308,13 @@ nP.<b>tclin</b>(<i> Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254 </i>) [<>](https
 		<title>Analysis parallel coupled filter</title>
 	</head>
 	<body>
-		<script src="../dist/nP.js"></script>
+		<script src="nP.js"></script>
 
 		<script>
 
 // this is for a quarter wave at 6GHz
 var g = nP.global;	
-g.fList = g.fGen(2000e6,10000e6,101);
+g.fList = g.fGen(4e9,8e9,21);
 
 // set up the couplers
 var tclin1 = nP.tclin(79.667,37.834,0.491 * 0.0254);
@@ -328,20 +328,25 @@ var open = nP.Open();
 var filt = nP.nodal([tclin1,1,2,3,4],[tclin2,3,5,6,7],[tclin3,6,8,9,10],[open,2],[open,4],[open,5],[open,7],[open,8],[open,10],['out',1,9]);
 var filtOut = filt.out('s21dB','s11dB');
 
-// set up plot
-var plot = {inputTable: [filtOut]};
+// set up the plot
+var plot = {chartTitle:'Edge Coupled Filter', inputTable: [filtOut]};
 
 // plot the data
 nP.lineChart(plot);
 
-// put the data in a table
-nP.lineTable(plot);
+// set up the table
+var table = {tableTitle:'Edge Coupled Filter', inputTable: [filtOut]};
+
+// tabulate the data
+nP.lineTable(table);
 
 		</script>
 	</body>
 </html>
 ```
+Here is the schematic and output plots for the low pass filter.
 
+<a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/edgeCoupledFilter.png></a>
 Microstrip Transmission lines
 
 nP.<b>mlin</b>(<i> Width = 0.98e-3, Height = 1.02e-3, Length = 0.5 * 0.025, Thickness = 0.0000125 * 0.054, er = 10, rho = 0, tand = 0.000 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/mlin/mlin.js "Source") A microstrip two port transmission line. Width is the strip width in meters, Height is the substrate height in meters. Length is the length in meters. er is the relative dielectric constant. rho is the loss relative to copper. tand is the dielecric loss tangent. Dispersion is factored in, Skin effect is not.
