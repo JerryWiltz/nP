@@ -571,17 +571,17 @@ m.<b>invertCplx</b>(<i> </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/
 
 // real numbers
 nP.log('define and show the 3 by 3 matrix, a');
-var a = [
+var a = nP.matrix([
 	[3,5,2],
 	[0,8,2],
 	[6,2,8]
-];
+]);
 nP.log(a);
 
 nP.log('--------');
 
 nP.log('perform matrix operations with method chaining for matrix, b');
-var b = nP.matrix(a).invert().mul(nP.matrix([[8],[-7],[26]]));
+var b = a.invert().mul(nP.matrix([[8],[-7],[26]]));
 nP.log(b);
 
 nP.log('--------');
@@ -595,17 +595,17 @@ nP.log('--------');
 
 // complex numbers
 nP.log('define and show the 3 by 3 matrix with complex numbers, e');
-var e = [
+var e = nP.matrix([
 	[nP.complex(3,0), nP.complex(5,0), nP.complex(2,0)],
-	[nP.complex(0,0), nP.complex(8,0), nP.complex(2,0)],
-	[nP.complex(6,0), nP.complex(2,0), nP.complex(8,0)]
-];
+	[nP.complex(0,3), nP.complex(8,0), nP.complex(2,0)],
+	[nP.complex(6,0), nP.complex(2,0), nP.complex(8,-1)]
+]);
 nP.log(e);
 
 nP.log('--------');
 
-nP.log('perform operations on matrices with complex numbers with method chaning');
-var f = nP.matrix(e).invertCplx().mulCplx(nP.matrix([[nP.complex(8,0)],[nP.complex(-7,0)],[nP.complex(26,0)]]));
+nP.log('perform operations on matrices with complex numbers with method chaining');
+var f = e.invertCplx().mulCplx(nP.matrix([[nP.complex(8,0)],[nP.complex(-7,0)],[nP.complex(26,0)]]));
 nP.log(f);
 
 		</script>
