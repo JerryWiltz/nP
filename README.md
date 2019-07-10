@@ -194,7 +194,7 @@ The example below shows three ways of doing the same thing, as filt1 = filt2 = f
 <br>filt1 is defined by the **cas** method</br>
 <br>filt2 is defined by the **cascade** function</br>
 <br>filt3 is defined by the **nodal** function</br>
-<br>filt4 is defined by the **lpfGen** function</br>. (see this definition under nP-Lowpass)
+<br>filt4 is defined by the **lpfGen** function</br>
 
 ```html
 <!DOCTYPE html>
