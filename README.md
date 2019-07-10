@@ -45,9 +45,7 @@ nP.log('Hello, nPort!');
 	</body>
 </html>
 ```
-
-
-
+ 
 ## nP-global
 As **nPort** analyses in the frequency domain, it requires at least one frequency point to do anything. **nPort** has a default frequency of 2e9 or 2GHz. Therefore, you must specify either a single frequency or a list of frequencies to give **nPort** the domain it needs. The frequency or frequencies must be in an array. The units must by in Hz. Suppose you require a frequency list with 1001. There is a function, fGen(), that will create long arrays for you.
 
@@ -109,7 +107,7 @@ nPort.<b>out</b> (<i> 'sij|mag|dB|ang|Re|Im', ' ... ' </i>)[<>](https://github.c
 * <b>Re</b> the real part
 * <b>Im</b> the imaginary part
 
-Here is an example below.
+### Here is an example of nP.out() below
 
 ```html
 <!DOCTYPE html>
@@ -132,7 +130,7 @@ var s11 = r1.out('s11mag');
 nP.log('The s-parameter, s11, of a 75 ohm resistor in series');
 nP.log(s11);
 
-nP.log('Same thing useing nP.lineTable')
+nP.log('Same thing using nP.lineTable')
 nP.lineTable({inputTable: [s11]});
 
 		</script>
@@ -144,9 +142,11 @@ nP.lineTable({inputTable: [s11]});
 
 nPort functions are not members of nPort, but they operate on nPort objects. Two general purpose functions are cascade and nodal. 
 
-nPort.<b>cascade</b> (<i> ... nPorts </i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/combining/cascade.js "Source") cascades a list of comma separated nPorts and returns a new nPort Object. nPort.cascade accepts 2-ports only and creates a new 2-port that is the cascade of all the individual 2-ports.
+nP.<b>cascade</b> (<i> ... nPorts </i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/combining/cascade.js "Source") cascades a list of comma separated nPorts and returns a new nPort Object. nPort.cascade accepts 2-ports only and creates a new 2-port that is the cascade of all the individual 2-ports.
 
-nPort.<b>nodal</b> (<i>[nPort1, node1, node2, ...],[nPort2, node2, node3], ... ['out',  node1, node3]</i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/combining/nodal.js "Source") Enables complex interconnections of nPorts. The argument of nodal is a list of arrays separated by commas. Each array has the name of an nPort followed the node numbers separated by commas. The last array is output, it must have the syntax  ['out', nodes]. nP.nodal creates a new nPort Object. The example below shows the html, schematic, and output plot of a 6GHz Wilkinson Power Divider. Follow the details in the schematic to set up nP.node(). Note the notation of ports and nodes between the html listing and the schematic. Check the listing,  ```...,[tee,9,7,5],...``` and in the schematic. Node 9 is connected to the node 1 of the tee. Node 7 is connected to node 2 of the tee. Node 5 is connected to node 3 of the tee. The final result is a 3-port named, ```wilkinson```. Node 1 of the input is node 1 of ```wilkinson```, Node, 7 of the input is node 2 of ```wilkinson```. Node 3 of ```wilkinson``` is node 6 of the input. 
+nP.<b>nodal</b> (<i>[nPort1, node1, node2, ...],[nPort2, node2, node3], ... ['out',  node1, node3]</i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/combining/nodal.js "Source") Enables complex interconnections of nPorts. The argument of nodal is a list of arrays separated by commas. Each array has the name of an nPort followed the node numbers separated by commas. The last array is output, it must have the syntax  ['out', nodes]. nP.nodal creates a new nPort Object. The example below shows the html, schematic, and output plot of a 6GHz Wilkinson Power Divider. Follow the details in the schematic to set up nP.node(). Note the notation of ports and nodes between the html listing and the schematic. Check the listing,  ```...,[tee,9,7,5],...``` and in the schematic. Node 9 is connected to the node 1 of the tee. Node 7 is connected to node 2 of the tee. Node 5 is connected to node 3 of the tee. The final result is a 3-port named, ```wilkinson```. Node 1 of the input is node 1 of ```wilkinson```, Node, 7 of the input is node 2 of ```wilkinson```. Node 3 of ```wilkinson``` is node 6 of the input.
+
+### Example 1 under nPort Functions, a wilkinson power divider
 
 ```html
 <!DOCTYPE html>
@@ -186,13 +186,13 @@ Here is the schematic and output plot for the wilkinson power divider.
 <a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/wilkinson.png></a>
 
 
-
+### Example 2 under nPort Functions, lowpass filter solutions
 
 The example below shows three ways of doing the same thing, as filt1 = filt2 = filt3 = filt4.
 <br>filt1 is defined by the **cas** method</br>
 <br>filt2 is defined by the **cascade** function</br>
 <br>filt3 is defined by the **nodal** function</br>
-<br>filt4 is defined by the **lpfGen** function
+<br>filt4 is defined by the **lpfGen** function</br>. (see this definition under nP-Lowpass)
 
 ```html
 <!DOCTYPE html>
@@ -258,8 +258,6 @@ nP.lineChart({inputTable: [filter4.out('s11dB','s21dB')], chartID: 'chart4',titl
 Here is the schematic and output plots for the low pass filter.
 
 <a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/lpf4ways.png></a>
-
-
 
 ### nP-RLC
 
@@ -344,7 +342,7 @@ nP.<b>chebyLPLCs</b>(<i> cheby = [1, 1.0315851425078764, 1.1474003299537219, 1.0
 nP.<b>lpfGen</b>(<i> filt = [50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50] </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/lpfGen.js "Source") Creates and returns a new nPort Object. The argument is an array of scaled low pass filter parameters generated by an nPort function such as chebyLPLCs. If no argument, the default value is ```[50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50]```.
 
 ## nP-Open-Short-Load
-These are ideal one-ports
+### These are ideal one-ports
 
 nP.<b>Open</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/openShortLoad/Open.js "Source") Creates and returns a new nPort Object of a one port Open. No argument required.
 
@@ -460,6 +458,8 @@ c.<b>sinhCplx</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/s
 
 nP.<b>coshCplx</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/complex.js "Source") Method that returns the complex hyperbolic cosine of a complex number and returns a Complex object. Method chaining capable.
 
+### Here are some examples of complex number arithmetic
+
 ```html
 <!DOCTYPE html>
 <html>
@@ -521,6 +521,38 @@ nPort provides a basic matrix arithmetic class object. <b>Complex number matrice
 
 nP.<b>matrix</b>(<i>x, y</i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Initializes and returns a <b>Complex</b> object containing the property names <b>x</b> and <b>iy</b>. Here is an example script. 
 
+nP.<b>matrix</b>(<i> [ [array row 1], [array row 2], ... [array row n] ] </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") A constructor that is passed a table and returns a matrix object.
+
+nP.<b>dim</b>(<i> rows, cols, initial </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") A function that <b>creates a table</b> (a rows by cols array of arrays in JavaScript) with an initial value such a 0, or 1, or "text", or a complex number nP.complex(1,). Note, dim does not create a matrix object, but it can be the argument that is passed to the matrix constructor.
+
+nP.<b>dup</b>(<i> table </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") A function that creates a new table with duplicate values.
+
+nP.<b>dimension</b>(<i> rows, cols, initial </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") A function that <b>creates a matrix object</b> with rows and cols with an initial value such a 0, or 1, or "text", or a complex number nP.complex(1,). Note, dim does not create a matrix object, but it can be the argument that is passed to the matrix constructor.
+
+<b>duplicate</b>(<i> matrix </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") A function that creates a new matrix with duplicate member values.
+
+m1.<b>add</b>(<i> m2 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that adds two matrices, m1 and m2, and returns a matrix object. m1 is implied by the 'dot' that calls the method. Method chaining capable.
+
+m1.<b>addCplx</b>(<i> m2 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that adds two complex matrices, m1 and m2, and returns a matrix object. m1 is implied by the 'dot' that calls the method. Method chaining capable.
+
+m1.<b>sub</b>(<i> m2 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that adds two matrices, m1 and m2, and returns a matrix object. m1 is implied by the 'dot' that calls the method. Method chaining capable.
+
+m1.<b>subCplx</b>(<i> m2 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that adds two complex matrices, m1 and m2, and returns a matrix object. m1 is implied by the 'dot' that calls the method. Method chaining capable.
+
+m1.<b>mul</b>(<i> m2 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that adds two matrices, m1 and m2, and returns a matrix object. m1 is implied by the 'dot' that calls the method. Method chaining capable.
+
+m1.<b>mulCplx</b>(<i> m2 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that adds two complex matrices, m1 and m2, and returns a matrix object. m1 is implied by the 'dot' that calls the method. Method chaining capable.
+
+m.<b>solveGuass</b>(<i> </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that uses Guassian Elimination and Forward Substitution to solve a matrix and returns a matrix object. Method chaining capable.
+
+m.<b>solveGuassCplx</b>(<i> </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that uses Guassian Elimination and Forward Substitution to solve a complex matrix and returns a matrix object. Method chaining capable.
+
+m.<b>invert</b>(<i> </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that inverts a matrix and returns a matrix object. Method chaining capable.
+
+m.<b>invertCplx</b>(<i> </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that inverts a complex matrix and returns a matrix object. Method chaining capable.
+
+### Here are some examples of Matrix arithmetic
+
 ```html
 <!DOCTYPE html>
 <html>
@@ -576,36 +608,6 @@ nP.log(f);
 	</body>
 </html>
 ```
-
-nP.<b>matrix</b>(<i> [ [array row 1], [array row 2], ... [array row n] ] </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") A constructor that is passed a table and returns a matrix object.
-
-nP.<b>dim</b>(<i> rows, cols, initial </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") A function that <b>creates a table</b> (a rows by cols array of arrays in JavaScript) with an initial value such a 0, or 1, or "text", or a complex number nP.complex(1,). Note, dim does not create a matrix object, but it can be the argument that is passed to the matrix constructor.
-
-nP.<b>dup</b>(<i> table </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") A function that creates a new table with duplicate values.
-
-nP.<b>dimension</b>(<i> rows, cols, initial </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") A function that <b>creates a matrix object</b> with rows and cols with an initial value such a 0, or 1, or "text", or a complex number nP.complex(1,). Note, dim does not create a matrix object, but it can be the argument that is passed to the matrix constructor.
-
-<b>duplicate</b>(<i> matrix </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") A function that creates a new matrix with duplicate member values.
-
-m1.<b>add</b>(<i> m2 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that adds two matrices, m1 and m2, and returns a matrix object. m1 is implied by the 'dot' that calls the method. Method chaining capable.
-
-m1.<b>addCplx</b>(<i> m2 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that adds two complex matrices, m1 and m2, and returns a matrix object. m1 is implied by the 'dot' that calls the method. Method chaining capable.
-
-m1.<b>sub</b>(<i> m2 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that adds two matrices, m1 and m2, and returns a matrix object. m1 is implied by the 'dot' that calls the method. Method chaining capable.
-
-m1.<b>subCplx</b>(<i> m2 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that adds two complex matrices, m1 and m2, and returns a matrix object. m1 is implied by the 'dot' that calls the method. Method chaining capable.
-
-m1.<b>mul</b>(<i> m2 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that adds two matrices, m1 and m2, and returns a matrix object. m1 is implied by the 'dot' that calls the method. Method chaining capable.
-
-m1.<b>mulCplx</b>(<i> m2 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that adds two complex matrices, m1 and m2, and returns a matrix object. m1 is implied by the 'dot' that calls the method. Method chaining capable.
-
-m.<b>solveGuass</b>(<i> </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that uses Guassian Elimination and Forward Substitution to solve a matrix and returns a matrix object. Method chaining capable.
-
-m.<b>solveGuassCplx</b>(<i> </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that uses Guassian Elimination and Forward Substitution to solve a complex matrix and returns a matrix object. Method chaining capable.
-
-m.<b>invert</b>(<i> </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that inverts a matrix and returns a matrix object. Method chaining capable.
-
-m.<b>invertCplx</b>(<i> </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that inverts a complex matrix and returns a matrix object. Method chaining capable.
 
 ## nP-chart
 
@@ -751,5 +753,3 @@ You can pass any function as an input that returns any of the above data types, 
 nP.log(Math.sqrt(2)) // 1.414
 nP.log(nP.complex(1,2)) // 1.000 + j2.000
 nP.log(4<2) // false
-
-
