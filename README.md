@@ -730,6 +730,7 @@ Here is the default nP.lineTable output
 
 <a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/lineTableDefault.png></a>
 
+---
 nP.<b>log</b>(<i> input </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-chart/src/log.js) A function that proforms a <b>console.log</b> function that logs to your web page rather than in the console. It take one parameter called ```input```. It can be <b>helpful in troubleshooting</b> such as easily examining the contents of arrays and matrices containing complex numbers. It can be any of the the following data types:
 ```
 a 'string'
