@@ -3,7 +3,7 @@ import {complex} from './complex';
 
 function Matrix () {}
 
-export function dim(rows, cols, initial) {
+export function dim(rows, cols, initial) { // used by nodal()
 	var row = 0, col = 0, a = [], A = [];
 	for (row = 0; row < rows; row++) {
 		a = [];
@@ -15,9 +15,8 @@ export function dim(rows, cols, initial) {
 	return A;	
 };
 
-export function dup(copied) {
-	var row, col,
-		B = dim(copied.length, copied[0].length, 0);
+export function dup(copied) { // used by nodal()
+	var row, col, B = dim(copied.length, copied[0].length, 0);
 	for (row = 0; row < copied.length; row++) {
 		for (col = 0; col < copied[0].length; col++) {
 			B[row][col] = copied[row][col];
@@ -100,8 +99,8 @@ Matrix.prototype = {
 		return matrix(dim(tableRow, tableCol, initial));
 	},
 
-	duplicate : function duplicate(matrixA) {
-		return matrix(dup(matrixA.m));	
+	copyMatrix : function copyMatrix () {
+		return matrix(dup(this.m));	
 	},
 
 	add : function add (matrixB) {
@@ -254,7 +253,7 @@ Matrix.prototype = {
 			A[row][numCols -1] =  (complex(1, 0)).div(A[row][row]).mul( A[row][numCols -1].sub(accum));          
 		};
 
-		for(row = 0; row < numRows; row++) { // get to the right column of A				
+		for(row = 0; row < numRows; row++) { // get to the rig<!DOCTYPE html>
 			for ( col = 0; col < numCols -1; col++) {
 				A[row].shift();
 			};				
@@ -375,7 +374,6 @@ Matrix.prototype = {
 		return matrix(A);
 	},						
 };
-
 
 export function matrix(mat) {
 	var matrix = new Matrix;
