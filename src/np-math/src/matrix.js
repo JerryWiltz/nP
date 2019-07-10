@@ -94,89 +94,8 @@ function pivotSortCplx(array, pivot) {
 
 };
 
-// showMatrix
-export function showMatrix(myArray) {	
-
-	var target = document.getElementsByTagName("body")[0],
-		div = document.createElement("div");
-
-	target.appendChild(div);
-
-	function createTable () {
-		var row = 0, col = 0, html = "";
-
-		html = "<table><tbody>"; // fill in the table
-		for (row = 0; row < myArray.length; row++) {
-			html +="<tr>";
-			for (col = 0; col < myArray[0].length; col++) {
-				html += "<td style='border-style: solid; border-width: 1px' width='150px'>" + myArray[row][col];
-				html += "</td>";
-			};
-			html +="</tr>";
-		};	
-		html += "</tbody></table>"; // finish the table
-
-		return html; // return the table
-
-	}
-	div.innerHTML = createTable();
-
-};
-
-// showMatrixCplx
-export function showMatrixCplx(myArray) {	
-
-	var target = document.getElementsByTagName("body")[0],
-		div = document.createElement("div");
-
-	target.appendChild(div);
-
-	function CplxToCell(complexNumber) {
-		return complexNumber.x.toExponential(2) + (complexNumber.y.toExponential(2)> 0 ? " + i" + complexNumber.y.toExponential(2) : " - i" + (-complexNumber.y).toExponential(2));
-	};
-
-	function createTable () {
-		var row = 0, col = 0, html = "";
-
-		html = "<table><tbody>"; // fill in the table
-		for (row = 0; row < myArray.length; row++) {
-			html +="<tr>";
-			for (col = 0; col < myArray[0].length; col++) {
-				html += "<td style='border-style: solid; border-width: 1px' width='150px'>" + CplxToCell(myArray[row][col]);
-				html += "</td>";
-			};
-			html +="</tr>";
-		};	
-		html += "</tbody></table>"; // finish the table
-
-		return html; // return the table
-
-	}
-	div.innerHTML = createTable();
-
-};
-
-// showBreakText
-export function showBreakText(text) {
-	var target = document.getElementsByTagName("body")[0],
-		div = document.createElement("div");
-
-	target.appendChild(div);
-	div.innerHTML = text;
-};
-
-// showCountNum
-export function showCountNum(num) {
-	var target = document.getElementsByTagName("body")[0],
-		div = document.createElement("div");
-
-	target.appendChild(div);
-	div.innerHTML = num.toString();
-};
-
 Matrix.prototype = {
 	set : function (mat) {this.m = mat; return this;},
-	out : function () {return this.m;},
 	dimension : function (tableRow, tableCol, initial) {
 		return matrix(dim(tableRow, tableCol, initial));
 	},

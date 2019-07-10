@@ -218,17 +218,17 @@ export	function  lineTable (lineTableInputObject = {}) {
 	function createTable (myArray) {
 		var row = 0, col = 0, textAlign = '', backgroundColor = '';
 		var table = divTable.append('table')
+			.attr('width', function () {return ( myArray[0].length===totalCols ? tableWidth : 25) ;})
 			.style('table-layout', 'fixed')
-			.style('width', function () {return ( myArray[0].length===totalCols ? tableWidth : 25) ;})
 			.style('border-collapse','collapse');
 		for (row = 0; row < myArray.length; row++) {
 			var tr = table.append('tr');
 			for (col = 0; col < myArray[0].length; col++) {
 				var td = tr.append('td')
+					.attr('width',columnWidth)
+					.attr('height',rowHeight-2) // needed to enforce hmlt5 compliance, <!doctype html> must be used for nPort.
 					.style('border-style','solid')
 					.style('border-width','1px')
-					.style('width',columnWidth)
-					.style('height',rowHeight)
 					.style('overflow','hidden')
 					.style('white-space','nowrap')
 					.style('text-align', function() {

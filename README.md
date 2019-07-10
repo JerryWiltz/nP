@@ -1,8 +1,22 @@
-<b>nPort</b>: A Microwave Circuit Analysis Program
+## nPort: A Microwave Circuit Analysis Program
 
 **nP** is a JavaScript library for analyzing microwave circuits. It helps you learn about, analyze and visualize the operation of various RF multiport circuits.
 
 **nPort** creates one JavaScript global variable, **nP**.
+
+## API Reference
+
+* [nP-global](#nP-global)
+* [nP-nport](#nP-nport)
+* [nP-RLC](#nP-RLC)
+* [nP-Transformers](#nP-Transformers)
+* [nP-Lowpass](#nP-Lowpass)
+* [nP-Open-Short-Load](#nP-Open-Short-Load)
+* [nP-Connections](#nP-Connections)
+* [nP-Transmission-Lines](#nP-Transmission-Lines)
+* [nP-Microstrip](#nP-Microstrip)
+* [nP-math](#nP-math)
+* [nP-chart](#nP-chart)
 
 ## Downloading and Verifying nPort 
 
@@ -24,21 +38,15 @@ Download, **nPort**, then run the  "Hello, nPort!" example below to verify insta
 	<body>
 		<script src="./nP.js"></script>
 		<script>
-
-nP.helloNport();
+		
+nP.log('Hello, nPort!');
 
 		</script>
 	</body>
 </html>
 ```
 
-## API Reference
 
-* [np-global](#np-global)
-* [np-nport](#np-nport)
-* [np-lowpass-prototype](#np-lowpass-prototype)
-* [np-math](#np-math)
-* [np-chart](#np-chart)
 
 ## nP-global
 As **nPort** analyses in the frequency domain, it requires at least one frequency point to do anything. **nPort** has a default frequency of 2e9 or 2GHz. Therefore, you must specify either a single frequency or a list of frequencies to give **nPort** the domain it needs. The frequency or frequencies must be in an array. The units must by in Hz. Suppose you require a frequency list with 1001. There is a function, fGen(), that will create long arrays for you.
@@ -52,13 +60,27 @@ nP.<b>fGen</b>(<i> fStart, fStop, points </i>) [<>](https://github.com/JerryWilt
 Returns an array of frequencies from fStart to fStop. The number of points is limited by memory or execution time. Popular number of points are odd numbers because the center frequency is always produced. So the number of points like 11, 51, 101, 1001, and so on, are good. Here below is an example on how to create a list with 101 points.
 
 ```html
-
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>Frequency List</title>
+	</head>
+	<body>
+		<script src="./nP.js"></script>
+		<script>
+		
 var g = nP.global;
-g.fList = g.fGen(.1e9,10e9,101); // 101 points from 100 MHz to 10 GHz
+g.fList = g.fGen(.1e9,10e9,21); // 21 points from 100 MHz to 10 GHz
 
-// g.fList = [100000000, 199000000, ..., 5050000000, ..., 10000000000]
-// where 5050000000 is the center frequency
+nP.log('g.fList is an array, [f1, f2, ... flast].');
+nP.log('nP.log lists arrays downwards since they can be long');
+nP.log(g.fList);
 
+		</script>
+	</body>
+</html>
 ```
 
 ## nP-nPort
@@ -90,8 +112,32 @@ nPort.<b>out</b> (<i> 'sij|mag|dB|ang|Re|Im', ' ... ' </i>)[<>](https://github.c
 Here is an example below.
 
 ```html
-r1.out('s11mag')
-// if r1 is an nPort for a 75 ohm resistor, the magnitude of s11 is returned.
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>nP.out()</title>
+	</head>
+	<body>
+		<script src="./nP.js"></script>
+		<script>
+		
+var g = nP.global;
+g.fList = [2e9, 4e9]; // 1 frequency set to 2GHz
+
+var r1 = nP.seR(75);
+var s11 = r1.out('s11mag');
+
+nP.log('The s-parameter, s11, of a 75 ohm resistor in series');
+nP.log(s11);
+
+nP.log('Same thing useing nP.lineTable')
+nP.lineTable({inputTable: [s11]});
+
+		</script>
+	</body>
+</html>
 ```
 
 ### nPort Functions
@@ -103,16 +149,15 @@ nPort.<b>cascade</b> (<i> ... nPorts </i>)[<>](https://github.com/JerryWiltz/nP/
 nPort.<b>nodal</b> (<i>[nPort1, node1, node2, ...],[nPort2, node2, node3], ... ['out',  node1, node3]</i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/combining/nodal.js "Source") Enables complex interconnections of nPorts. The argument of nodal is a list of arrays separated by commas. Each array has the name of an nPort followed the node numbers separated by commas. The last array is output, it must have the syntax  ['out', nodes]. nP.nodal creates a new nPort Object. The example below shows the html, schematic, and output plot of a 6GHz Wilkinson Power Divider. Follow the details in the schematic to set up nP.node(). Note the notation of ports and nodes between the html listing and the schematic. Check the listing,  ```...,[tee,9,7,5],...``` and in the schematic. Node 9 is connected to the node 1 of the tee. Node 7 is connected to node 2 of the tee. Node 5 is connected to node 3 of the tee. The final result is a 3-port named, ```wilkinson```. Node 1 of the input is node 1 of ```wilkinson```, Node, 7 of the input is node 2 of ```wilkinson```. Node 3 of ```wilkinson``` is node 6 of the input. 
 
 ```html
-<!--DOCTYPE html-->
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width">
-		<title>6 GHz Wilkinson Power Divider</title>
+		<title>Wilkinson</title>
 	</head>
 	<body>
-		<script src="nP.js"></script>
-
+		<script src="./nP.js"></script>
 		<script>
 // set up the frequencies
 var g = nP.global;
@@ -130,7 +175,7 @@ var wilkinson = nP.nodal([tee, 1,2,3],[t70,3,5],[t70,2,4],[tee,9,7,5],[tee,8,4,6
 var plot = wilkinson.out('s21dB','s23dB');
 
 // plot the frequency response
-nP.lineChart({inputTable: [plot], yRange: [-60, 0], titleTitle: 'Wilkinson Power Divider'});
+nP.lineChart({inputTable: [plot], yRange: [-60, 5], chartTitle: 'Wilkinson Power Divider'});
 
 		</script>
 	</body>
@@ -141,7 +186,7 @@ Here is the schematic and output plot for the wilkinson power divider.
 <a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/wilkinson.png></a>
 
 
-nP.<b>lpfGen</b>(<i> filt = [50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50] </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/lpfGen.js "Source") Creates and returns a new nPort Object. The argument is an array of scaled low pass filter parameters generated by an nPort function such as chebyLPLCs. If no argument, the default value is ```[50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50]```.
+
 
 The example below shows three ways of doing the same thing, as filt1 = filt2 = filt3 = filt4.
 <br>filt1 is defined by the **cas** method</br>
@@ -150,12 +195,12 @@ The example below shows three ways of doing the same thing, as filt1 = filt2 = f
 <br>filt4 is defined by the **lpfGen** function
 
 ```html
-<!--DOCTYPE html-->
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width">
-		<title>Low Pass  4 different ways</title>
+		<title>Low Pass solved 4 ways</title>
 	</head>
 	<body>
 		<svg id="chart1" width="400" height="300"></svg>
@@ -164,7 +209,6 @@ The example below shows three ways of doing the same thing, as filt1 = filt2 = f
 		<svg id="chart4" width="400" height="300"></svg>
 
 		<script src="nP.js"></script>
-
 		<script>
 
 var g = nP.global;	
@@ -215,15 +259,9 @@ Here is the schematic and output plots for the low pass filter.
 
 <a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/lpf4ways.png></a>
 
-### Open-Short-Load (Thes are ideal one-ports)
 
-nP.<b>Open</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/openShortLoad/Open.js "Source") Creates and returns a new nPort Object of a one port Open. No argument required.
 
-nP.<b>Short</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/openShortLoad/Short.js "Source") Creates and returns a new nPort Object of a one port Short. No argument required.
-
-nP.<b>Load</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/openShortLoad/Load.js "Source") Creates and returns a new nPort Object of a one port Load. No argument required.
-
-### RLC
+### nP-RLC
 
 These are 2 ports containing resistors, capacitors, inductors, and transformers.
 
@@ -244,13 +282,7 @@ nP.<b>seC</b>(<i> C = 1e-12 </i>) [<>](https://github.com/JerryWiltz/nP/blob/mas
 
 nP.<b>paC</b>(<i> C = 1e-12 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/paC.js "Source") Parallel capacitor. Creates and returns a new nPort Object. If no argument, the default value is 1e-12 Farads.
 
-Ideal Transformers
-
-nP.<b>trf</b>(<i> N = 0.5 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/trf.js "Source") Parallel capacitor. Creates and returns a new nPort Object. If no argument, the default value is turns ratio of N = 0.5 . N is also equal to N = sqrt(Zp/Zs), where Zp is primary impedance and Zs is the secondary impedance.
-
-nP.<b>trf4Port</b>(<i> N = 0.5 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/trf.js "Source") Parallel capacitor. Creates and returns a new nPort Object. If no argument, the default value is turns ratio of N = 0.5 . <b>This is a 4 Port element.</b> The primary ports are 1 and 3 and the secondary ports are 2 and 4. N is also equal to N = sqrt(Zp/Zs), where Zp is primary impedance and Zs is the secondary impedance.
-
-RLC with more than one component
+### RLC's with more than one component
 
 The names may sound cryptic, but here is how to interpret them. The first two letters indicate that the 2-port is either a series or parallel 2-port. The third and forth letters indicate that the components are either in series or in parallel. The remaining letters are reference designators: RL, RC, LC, RLC.
 
@@ -293,23 +325,57 @@ nP.<b>paPaRLC</b>(<i> R = 75, L = 5e-9, C = 1e-12 </i>) [<>](https://github.com/
 
 nP.<b>sePaRLC</b>(<i> R = 75, L = 5e-9, C = 1e-12 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/seR.js "Source") A series, parallel resistor-inductor-capacitor. Creates and returns a new nPort Object. If no arguments, the default values are 75 Ohms, 5e-9 Henries and 1e-12 Farads.
 
-Ideal Transmission lines
+## nP-Transformers
+
+nP.<b>trf</b>(<i> N = 0.5 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/trf.js "Source") Parallel capacitor. Creates and returns a new nPort Object. If no argument, the default value is turns ratio of N = 0.5 . N is also equal to N = sqrt(Zp/Zs), where Zp is primary impedance and Zs is the secondary impedance.
+
+nP.<b>trf4Port</b>(<i> N = 0.5 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/trf.js "Source") Parallel capacitor. Creates and returns a new nPort Object. If no argument, the default value is turns ratio of N = 0.5 . <b>This is a 4 Port element.</b> The primary ports are 1 and 3 and the secondary ports are 2 and 4. N is also equal to N = sqrt(Zp/Zs), where Zp is primary impedance and Zs is the secondary impedance.
+
+## nP-Lowpass
+
+This section has chebychev low pass filter synthesis functions
+
+nP.<b>chebyLPNsec</b>(<i> passFreq = .2, rejFreq = 1.5, ripple = 0.1, rejection = 30 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-lowpass-prototype/src/chebyLPNsec.js "Source") A function that computes and returns the number of sections in a Chebychev Low Pass filter prototype given the pass frequency, the rejection frequency, ripple, and rejection level. The default values are shown in the function argument.
+
+nP.<b>chebyLPgk</b>(<i> n = 3, ripple = 0.1 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-lowpass-prototype/src/chebyLPgk.js "Source") A function that computes and returns an array of the gk values in a Chebychev Low Pass filter prototype given the number of sections and ripple. The default values are shown in the function argument.
+
+nP.<b>chebyLPLCs</b>(<i> cheby = [1, 1.0315851425078764, 1.1474003299537219, 1.0315851425078761, 1], maxPassFrequency = 0.2e9, zo = 50) </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-lowpass-prototype/src/chebyLPLCs.js "Source") A function that computes and returns an array of the C-L-C ... values in a Chebychev Low Pass filter prototype given an array of the gk values. The default values are shown in the function argument.
+
+nP.<b>lpfGen</b>(<i> filt = [50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50] </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/lpfGen.js "Source") Creates and returns a new nPort Object. The argument is an array of scaled low pass filter parameters generated by an nPort function such as chebyLPLCs. If no argument, the default value is ```[50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50]```.
+
+## nP-Open-Short-Load
+These are ideal one-ports
+
+nP.<b>Open</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/openShortLoad/Open.js "Source") Creates and returns a new nPort Object of a one port Open. No argument required.
+
+nP.<b>Short</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/openShortLoad/Short.js "Source") Creates and returns a new nPort Object of a one port Short. No argument required.
+
+nP.<b>Load</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/openShortLoad/Load.js "Source") Creates and returns a new nPort Object of a one port Load. No argument required.
+
+## nP-Connections
+
+Connections are 3-Port and n-Port "dummy" components. Using these connections enables 2-Port components to be connected together to form more complex circuits such as power dividers.
+
+nP.<b>Tee</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/connections/Tee.js "Source") Creates and returns a new nPort Object of 3-port interconnect, a 3 input junction. Valid only with nP.nodal(). See the wilkinson example. No argument required.
+
+nP.<b>SeriesTee</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/connections/seriesTee.js "Source") Creates and returns a new nPort Object of 3-port interconnect. Ports 1 and 2 are input and outputs. Port 3 is the series port. Valid only with nP.nodal(). No argument required.
+
+## nP-Transmission-lines
 
 nP.<b>tlin</b>(<i> Z = 60, Length = 0.5 * 0.0254 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/tlin/tlin.js "Source") An ideal two port transmission line. The tlin is lossless and the dielectric constant is 1.0 . Z is the characteristic impedance in Ohms, and Length is the physical length in meters. Creates and returns a new nPort Object. If no arguments, the default values are 60 Ohms, 0.5 * 0.0254 Meters.
 
 nP.<b>tclin</b>(<i> Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/tlin/tclin.js "Source") An ideal four port coupled transmission line. The ports are numbered clockwise. Port 1 is the upper left, Port 2 is the upper right, Port 3 is the lower right, and Port 4 is the lower left. When the input is at Port 1, the through port is Port 2, the coupled port is Port 4, and the isolated port is Port 3. The tclin is lossless and the dielectric constant is 1.0 . Zoe is the even mode characteristic impedance in Ohms, Zoo is the odd mode characteristic impedance in Ohms, and Length is the physical length in meters. Creates and returns a new nPort Object. If no arguments, the default values are 100 Ohms, 30 Ohms, and 1.341 * 0.0254 Meters. Note: 1.341 * 0.0254 is the 1/4 wavelength at 2.2GHz. Here below is a coupled bandpass filter example.
 
 ```html
-<!--DOCTYPE html-->
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width">
-		<title>Analysis parallel coupled filter</title>
+		<title>Edge coupled filter</title>
 	</head>
 	<body>
 		<script src="nP.js"></script>
-
 		<script>
 
 // this is for a quarter wave at 6GHz
@@ -348,28 +414,9 @@ Here is the schematic and output plots for the low pass filter.
 
 <a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/edgeCoupledFilter.png></a>
 
-
-Microstrip Transmission lines
+## nP-Microstrip
 
 nP.<b>mlin</b>(<i> Width = 0.98e-3, Height = 1.02e-3, Length = 0.5 * 0.025, Thickness = 0.0000125 * 0.054, er = 10, rho = 0, tand = 0.000 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/mlin/mlin.js "Source") A microstrip two port transmission line. Width is the strip width in meters, Height is the substrate height in meters. Length is the length in meters. er is the relative dielectric constant. rho is the loss relative to copper. tand is the dielecric loss tangent. Dispersion is factored in, Skin effect is not.
-
-### Connections
-
-Connections are 3-Port and n-Port "dummy" components. Using these connections enables 2-Port components to be connected together to form more complex circuits such as power dividers.
-
-nP.<b>Tee</b>(<i> </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/connections/Tee.js "Source") Creates a new nPort Object and returns the s parameters of a 3-Port Tee connector. No argument required. See above wilkinson example
-
-nP.<b>seriesTee</b>(<i> </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/connections/seriesTee.js "Source") Creates a new nPort Object and returns the s parameters of a 3-Port series Tee connector. No argument required. Ports 1 and 2 are input and outputs. Port 3 is the series port.
-
-## nP-lowpass-prototype
-
-This section has chebychev low pass filter synthesis functions
-
-nP.<b>chebyLPNsec</b>(<i> passFreq = .2, rejFreq = 1.5, ripple = 0.1, rejection = 30 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-lowpass-prototype/src/chebyLPNsec.js "Source") A function that computes and returns the number of sections in a Chebychev Low Pass filter prototype given the pass frequency, the rejection frequency, ripple, and rejection level. The default values are shown in the function argument.
-
-nP.<b>chebyLPgk</b>(<i> n = 3, ripple = 0.1 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-lowpass-prototype/src/chebyLPgk.js "Source") A function that computes and returns an array of the gk values in a Chebychev Low Pass filter prototype given the number of sections and ripple. The default values are shown in the function argument.
-
-nP.<b>chebyLPLCs</b>(<i> cheby = [1, 1.0315851425078764, 1.1474003299537219, 1.0315851425078761, 1], maxPassFrequency = 0.2e9, zo = 50) </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-lowpass-prototype/src/chebyLPLCs.js "Source") A function that computes and returns an array of the C-L-C ... values in a Chebychev Low Pass filter prototype given an array of the gk values. The default values are shown in the function argument.
 
 ## nP-math
 
@@ -377,64 +424,20 @@ nP.<b>chebyLPLCs</b>(<i> cheby = [1, 1.0315851425078764, 1.1474003299537219, 1.0
 
 nPort provides a basic complex arithmetic class object
 
-nP.<b>complex</b>(<i>x, y</i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/complex.js "Source") Initializes and returns a <b>Complex</b> object containing the property names <b>x</b> and <b>iy</b>. Here is a script you could use. 
-
-```html
-
-<script>
-
-var c  = nP.complex(1,2);    // The "new" keyword is not used. c1 = 1 + i2
-var c1 = nP.complex(2,3);
-var c2 = nP.complex(5,-7);
-
-console.log(c); // 
-
-</script>
-```
+nP.<b>complex</b>(<i>x, y</i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/complex.js "Source") Initializes and returns a <b>Complex</b> object containing the property names <b>x</b> and <b>jy</b>. Here is a script you could use. 
 
 c.<b>set</b>(<i>real, imaginary</i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/complex.js "Source") Method that sets the properties x to real and y to imaginary, it is called by the Complex constructor; set does not method chain.
 
 c.<b>getR</b>(<i> </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/complex.js "Source") Method that gets the real part of a complex number.
 
-```html
-
-<script>
-
-console.log(c.getR( )); // 2
-
-</script>
-```
-
 c.<b>getI</b>(<i> </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/complex.js "Source") Method that gets the imaginary part of a complex number.
 
 c.<b>setR</b>(<i> real </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/complex.js "Source") Method that sets the real part of a complex number.
 
-```html
-
-<script>
-
-c.setR(42);
-console.log(c.getR( )); // 42
-
-</script>
-```
-
 c.<b>setI</b>(<i> imaginary </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/complex.js "Source") Method that sets the imaginary part of a complex number.
-
-c.<b>print</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/complex.js "Source") Method that console.logs out the x and iy properties of a complex number.
 
 c.<b>add</b>(<i> c2 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/complex.js "Source") Method that adds two complex numbers, c1 and c2, and returns a Complex object. c1 is implied by the 'dot' that calls the method. Method chaining capable.
 
-```html
-
-<script>
-
-var c3 = c1.add(c1).add(c2); // method chaining 
-console.log(c3.getR()); // 9
-console.log(c3.getI()); // -1
-
-</script>
-```
 c1.<b>sub</b>(<i> c2 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/complex.js "Source") Method that subtracts two complex numbers, c1 and c2, and returns a Complex object. c1 is implied by the 'dot' that calls the method. Method chaining capable.
 
 c1.<b>mul</b>(<i> c2 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/complex.js "Source") Method that multiplies two complex numbers, c1 and c2, and returns a Complex object. c1 is implied by the 'dot' that calls the method. Method chaining capable.
@@ -455,17 +458,62 @@ c.<b>mag20dB</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/sr
 
 c.<b>sinhCplx</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/complex.js "Source") Method that returns the complex hyperbolic sine of a complex number and returns a Complex object. This method is key for transmission line equations. Method Chaining capable.
 
-```html
-
-<script>
-
-var C = nP.complex(1,2), gamma = nP.complex(3,4), B = nP.complex(5,6),
-Ds = C.mul(gamma.coshCplx()).add(B.mul(gamma.sinhCplx()));
-console.log(Ds) // Complex {x: 21.557232562315377, y: -98.12775767092192}
-
-</script>
-```
 nP.<b>coshCplx</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/complex.js "Source") Method that returns the complex hyperbolic cosine of a complex number and returns a Complex object. Method chaining capable.
+
+```html
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>Complex</title>
+	</head>
+	<body>
+		<script src="./nP.js"></script>
+		<script>
+
+// define some complex numbers
+var c1 = nP.complex(1,2);
+var c2 = nP.complex(2,3);
+var c3 = nP.complex(5,-7);
+
+// use nP.log to show c3
+nP.log('show c3 = nP.complex(5,-7)');
+nP.log(c3); 
+
+nP.log('--------');
+
+// get and show the real part of c2
+nP.log('show the real part of c2');
+var realPartOfc2 = c2.getR();
+nP.log(realPartOfc2);
+
+nP.log('--------');
+
+// in one step, set and show a new imaginary part of c1
+nP.log('change the imaginary part of c1 to 42 in one step');
+nP.log( c1.setI(42).getI() );
+
+nP.log('--------');
+
+// perform multiple operations with method chaining
+nP.log('demo method chaining in one step');
+nP.log( c1.add(c1).sub(c2).mul(c3) ); 
+
+nP.log('--------')
+
+// hyperbolic complex sin and cos functions used for transmission lines
+var C = nP.complex(1,2);
+var gamma = nP.complex(3,4);
+var B = nP.complex(5,6);
+Ds = C.mul(gamma.coshCplx()).add(B.mul(gamma.sinhCplx()));
+nP.log('an example to show that coshCplx and sinhCplx work together');
+nP.log(Ds); // 21.557232562315377 -j98.12775767092192}
+
+		</script>
+	</body>
+</html>
+```
 
 ### nP.matrix
 
@@ -474,43 +522,68 @@ nPort provides a basic matrix arithmetic class object. <b>Complex number matrice
 nP.<b>matrix</b>(<i>x, y</i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Initializes and returns a <b>Complex</b> object containing the property names <b>x</b> and <b>iy</b>. Here is an example script. 
 
 ```html
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>Matrix</title>
+	</head>
+	<body>
+		<script src="./nP.js"></script>
+		<script>
 
-<script>
-
-// Note see method chaining of matrices in action
-
+// real numbers
+nP.log('define and show the 3 by 3 matrix, a');
 var a = [
 	[3,5,2],
 	[0,8,2],
 	[6,2,8]
 ];
+nP.log(a);
 
+nP.log('--------');
+
+nP.log('perform matrix operations with method chaining for matrix, b');
 var b = nP.matrix(a).invert().mul(nP.matrix([[8],[-7],[26]]));
-console.log(b);
+nP.log(b);
 
-var c = [
+nP.log('--------');
+
+nP.log('define matrix c, and d; show matrix d');
+var c = nP.matrix([[1]]);
+var d = c.add(c).add(c).add(c);
+nP.log(d);
+
+nP.log('--------');
+
+// complex numbers
+nP.log('define and show the 3 by 3 matrix with complex numbers, e');
+var e = [
 	[nP.complex(3,0), nP.complex(5,0), nP.complex(2,0)],
 	[nP.complex(0,0), nP.complex(8,0), nP.complex(2,0)],
 	[nP.complex(6,0), nP.complex(2,0), nP.complex(8,0)]
 ];
+nP.log(e);
 
-var d = nP.matrix(c).invertCplx().mulCplx(nP.matrix([[nP.complex(8,0)],[nP.complex(-7,0)],[nP.complex(26,0)]]));
-console.log(d);
+nP.log('--------');
 
-var e = nP.matrix([[1]]);
-var f = e.add(e).add(e).add(e);
-console.log(f);
+nP.log('perform operations on matrices with complex numbers with method chaning');
+var f = nP.matrix(e).invertCplx().mulCplx(nP.matrix([[nP.complex(8,0)],[nP.complex(-7,0)],[nP.complex(26,0)]]));
+nP.log(f);
 
-</script>
+		</script>
+	</body>
+</html>
 ```
 
 nP.<b>matrix</b>(<i> [ [array row 1], [array row 2], ... [array row n] ] </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") A constructor that is passed a table and returns a matrix object.
 
-<b>dim</b>(<i> rows, cols, initial </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") A function that <b>creates a table</b> (a rows by cols array of arrays in JavaScript) with an initial value such a 0, or 1, or "text", or a complex number nP.complex(1,). Note, dim does not create a matrix object, but it can be the argument that is passed to the matrix constructor.
+nP.<b>dim</b>(<i> rows, cols, initial </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") A function that <b>creates a table</b> (a rows by cols array of arrays in JavaScript) with an initial value such a 0, or 1, or "text", or a complex number nP.complex(1,). Note, dim does not create a matrix object, but it can be the argument that is passed to the matrix constructor.
 
-<b>dup</b>(<i> table </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") A function that creates a new table with duplicate values.
+nP.<b>dup</b>(<i> table </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") A function that creates a new table with duplicate values.
 
-<b>dimension</b>(<i> rows, cols, initial </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") A function that <b>creates a matrix object</b> with rows and cols with an initial value such a 0, or 1, or "text", or a complex number nP.complex(1,). Note, dim does not create a matrix object, but it can be the argument that is passed to the matrix constructor.
+nP.<b>dimension</b>(<i> rows, cols, initial </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") A function that <b>creates a matrix object</b> with rows and cols with an initial value such a 0, or 1, or "text", or a complex number nP.complex(1,). Note, dim does not create a matrix object, but it can be the argument that is passed to the matrix constructor.
 
 <b>duplicate</b>(<i> matrix </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") A function that creates a new matrix with duplicate member values.
 
@@ -533,26 +606,6 @@ m.<b>solveGuassCplx</b>(<i> </i>) [<>](https://github.com/JerryWiltz/nP/blob/mas
 m.<b>invert</b>(<i> </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that inverts a matrix and returns a matrix object. Method chaining capable.
 
 m.<b>invertCplx</b>(<i> </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that inverts a complex matrix and returns a matrix object. Method chaining capable.
-
-m.<b>out</b>(<i></i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that shows the matrix. Useful for viewing matrices in the console.
-
-m.<b>showMatrix</b>(<i>myArray</i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that creates and appends a HTML div element and renders a table showing the matrix elements. This might be useful, like console.log is, for troubleshooting problems.
-
-```html
-// using showMatrix with a Matrix Object
-var myMatrix = nP.matrix([[2],[3]]);
-nP.showMatrix(myMatrix.m);
-
-// using showMatrix with an array argument
-var myArray = [[2],[3]];
-nP.showMatrix(myArray);
-```
-
-m.<b>showMatrixCplx</b>(<i>myComplexArray </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that creates and appends a HTML div element and renders a table showing the matrix elements. This might be useful, like console.log is, for troubleshooting problems.
-
-m.<b>showBreakText</b>(<i>text</i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that creates and appends a HTML div element showing the text. This might be useful, like console.log is, for troubleshooting problems and troubleshooting labeling.
-
-m.<b>showCountNum</b>(<i>number</i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") Method that creates and appends a HTML div element showing the number. This might be useful, like console.log is, for troubleshooting problems and troubleshooting labeling.
 
 ## nP-chart
 
@@ -627,6 +680,7 @@ Here is the default nP.lineChart output
 
 <a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/lineChartDefault.png></a>
 
+---
 nP.<b>lineTable</b>(<i> lineTableInputObject = \{ \} </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-chart/src/lineTable.js) A function that produces a table of data. <b>You can click and drag across the table</b> to copy and paste to a spreadsheet. Also, you can <b>create an png</b> for table and perform a "Save image as ..." to file the way you can for lineChart. If you don't provide your own svg element, lineTable() will create it for you. If you provide svg elements, <b>you must specify a unique ID, width, and height attributes for each svg you create</b>, such as:
 
 ```html
@@ -678,8 +732,24 @@ nP.lineTable();
 ```
 Unlike lineChart, where you can set the size in advance, lineTable does not know its size until it is rendered. As colunms and rows are created, the svg is sized appropriately. To find out what the final size is, use the key-value pair, tableWH: 'yes', of the inputTableInputObject.
 
-Here is the default nP.lineChart output
+Here is the default nP.lineTable output
 
 <a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/lineTableDefault.png></a>
+
+nP.<b>log</b>(<i> input </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-chart/src/log.js) A function that proforms a <b>console.log</b> function that logs to your web page rather than in the console. It take one parameter called ```input```. It can be <b>helpful in troubleshooting</b> such as easily examining the contents of arrays and matrices containing complex numbers. It can be any of the the following data types:
+```
+a 'string'
+a number
+a boolean
+an array // logs arrays downward, not across
+a Complex // from nP.complex()
+a Matrix // from nP.matrix()
+an out // from nP.out()
+```
+You can pass any function as an input that returns any of the above data types, for example these are all valid:
+```
+nP.log(Math.sqrt(2)) // 1.414
+nP.log(nP.complex(1,2)) // 1.000 + j2.000
+nP.log(4<2) // false
 
 

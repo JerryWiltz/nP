@@ -1,13 +1,12 @@
-<!--DOCTYPE html-->
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width">
-		<title>6 GHz Wilkinson Power Divider</title>
+		<title>Wilkinson</title>
 	</head>
 	<body>
-		<script src="nP.js"></script>
-
+		<script src="./nP.js"></script>
 		<script>
 // set up the frequencies
 var g = nP.global;
@@ -25,7 +24,7 @@ var wilkinson = nP.nodal([tee, 1,2,3],[t70,3,5],[t70,2,4],[tee,9,7,5],[tee,8,4,6
 var plot = wilkinson.out('s21dB','s23dB');
 
 // plot the frequency response
-nP.lineChart({inputTable: [plot], yRange: [-60, 0], chartTitle: 'Wilkinson Power Divider'});
+nP.lineChart({inputTable: [plot], yRange: [-60, 5], chartTitle: 'Wilkinson Power Divider'});
 
 		</script>
 	</body>

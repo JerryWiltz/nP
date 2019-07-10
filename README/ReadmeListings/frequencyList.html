@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>Frequency List</title>
+	</head>
+	<body>
+		<script src="./nP.js"></script>
+		<script>
+		
+var g = nP.global;
+g.fList = g.fGen(.1e9,10e9,21); // 21 points from 100 MHz to 10 GHz
+
+nP.log('g.fList is an array, [f1, f2, ... flast].');
+nP.log('nP.log lists arrays downwards since they can be long');
+nP.log(g.fList);
+
+		</script>
+	</body>
+</html>
