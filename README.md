@@ -55,7 +55,9 @@ The nPort Object that contains the Frequency, Zo, and Temperature values. There 
 
 nP.<b>fGen</b>(<i> fStart, fStop, points </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-global/src/global.js "Source")
 
-Returns an array of frequencies from fStart to fStop. The number of points is limited by memory or execution time. Popular number of points are odd numbers because the center frequency is always produced. So the number of points like 11, 51, 101, 1001, and so on, are good. Here below is an example on how to create a list with 101 points.
+Returns an array of frequencies from fStart to fStop. The number of points is limited by memory or execution time. Popular number of points are odd numbers because the center frequency is always produced. So the number of points like 11, 51, 101, 1001, and so on, are good. 
+
+### Here below is an example on how to create a list with 101 points.
 
 ```html
 <!DOCTYPE html>
@@ -362,7 +364,9 @@ nP.<b>SeriesTee</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master
 
 nP.<b>tlin</b>(<i> Z = 60, Length = 0.5 * 0.0254 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/tlin/tlin.js "Source") An ideal two port transmission line. The tlin is lossless and the dielectric constant is 1.0 . Z is the characteristic impedance in Ohms, and Length is the physical length in meters. Creates and returns a new nPort Object. If no arguments, the default values are 60 Ohms, 0.5 * 0.0254 Meters.
 
-nP.<b>tclin</b>(<i> Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/tlin/tclin.js "Source") An ideal four port coupled transmission line. The ports are numbered clockwise. Port 1 is the upper left, Port 2 is the upper right, Port 3 is the lower right, and Port 4 is the lower left. When the input is at Port 1, the through port is Port 2, the coupled port is Port 4, and the isolated port is Port 3. The tclin is lossless and the dielectric constant is 1.0 . Zoe is the even mode characteristic impedance in Ohms, Zoo is the odd mode characteristic impedance in Ohms, and Length is the physical length in meters. Creates and returns a new nPort Object. If no arguments, the default values are 100 Ohms, 30 Ohms, and 1.341 * 0.0254 Meters. Note: 1.341 * 0.0254 is the 1/4 wavelength at 2.2GHz. Here below is a coupled bandpass filter example.
+nP.<b>tclin</b>(<i> Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/tlin/tclin.js "Source") An ideal four port coupled transmission line. The ports are numbered clockwise. Port 1 is the upper left, Port 2 is the upper right, Port 3 is the lower right, and Port 4 is the lower left. When the input is at Port 1, the through port is Port 2, the coupled port is Port 4, and the isolated port is Port 3. The tclin is lossless and the dielectric constant is 1.0 . Zoe is the even mode characteristic impedance in Ohms, Zoo is the odd mode characteristic impedance in Ohms, and Length is the physical length in meters. Creates and returns a new nPort Object. If no arguments, the default values are 100 Ohms, 30 Ohms, and 1.341 * 0.0254 Meters. Note: 1.341 * 0.0254 is the 1/4 wavelength at 2.2GHz. 
+
+### Here below is a coupled bandpass filter example.
 
 ```html
 <!DOCTYPE html>
