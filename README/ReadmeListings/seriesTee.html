@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>seriesTee</title>
+	</head>
+	<body>
+		<script src="nP.js"></script>
+		<script>
+
+var g = nP.global;	
+g.fList = [2e9]; // 2GHz
+
+// define the resistors for the attenuator
+var r1 = nP.paR(292.4);
+var r2 = nP.seR(17.6);
+var r3 = nP.paR(292.4);
+
+// using cas to combine the 2-ports
+var attn1 = r1.cas(r2).cas(r3);
+var attn1Out = attn1.out('s21dB','s11dB');
+nP.lineTable({inputTable: [attn1Out], tableTitle:'Solved by nP.cas()'});
+
+// define the seriesTee and open
+var tee = nP.seriesTee();
+var open = nP.Open();
+var r4 = nP.paR(17.6); // note, the 17.6 ohm resistor must be a parallel 2-port!
+
+// use nodal to combine the 2-ports
+var attn2 = nP.nodal([r1,1,2], [tee,2,3,4], [r4,4,5], [open,5], [r3,3,6], ['out',1,6]);
+var attn2Out = attn2.out('s21dB','s11dB');
+nP.lineTable({inputTable: [attn2Out], tableTitle:'seriesTee realization solved with nP.nodal()'});
+
+		</script>
+	</body>
+</html>

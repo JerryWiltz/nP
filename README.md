@@ -253,7 +253,7 @@ nP.lineChart({inputTable: [filter4.out('s11dB','s21dB')], chartID: 'chart4',titl
 	</body>
 </html>
 ```
-Here is the schematic and output plots for the low pass filter.
+### Here is the schematic and output plots for the lowpass filter.
 
 <a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/lpf4ways.png></a>
 
@@ -356,6 +356,12 @@ nP.<b>Tee</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/n
 
 nP.<b>SeriesTee</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/connections/seriesTee.js "Source") Creates and returns a new nPort Object of 3-port interconnect. Ports 1 and 2 are input and outputs. Port 3 is the series port. Valid only with nP.nodal(). No argument required.
 
+### Compare attenuator analysis results with and without nP.seriesTee()
+
+<a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/seriesTeeAnalysis.png></a>
+
+---
+
 ## nP-Transmission-lines
 
 nP.<b>tlin</b>(<i> Z = 60, Length = 0.5 * 0.0254 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/tlin/tlin.js "Source") An ideal two port transmission line. The tlin is lossless and the dielectric constant is 1.0 . Z is the characteristic impedance in Ohms, and Length is the physical length in meters. Creates and returns a new nPort Object. If no arguments, the default values are 60 Ohms, 0.5 * 0.0254 Meters.
@@ -408,7 +414,7 @@ nP.lineTable(table);
 	</body>
 </html>
 ```
-Here is the schematic and output plots for the low pass filter.
+### Here is the schematic and output plots for the edge coupled filter.
 
 <a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/edgeCoupledFilter.png></a>
 
