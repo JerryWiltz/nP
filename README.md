@@ -352,11 +352,55 @@ nP.<b>Load</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/
 
 Connections are 3-Port and n-Port "dummy" components. Using these connections enables 2-Port components to be connected together to form more complex circuits such as power dividers.
 
-nP.<b>Tee</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/connections/Tee.js "Source") Creates and returns a new nPort Object of 3-port interconnect, a 3 input junction. Valid only with nP.nodal(). See the wilkinson example. No argument required.
+nP.<b>Tee</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/connections/Tee.js "Source") Creates and returns a new nPort Object of 3-port interconnect, a 3 input junction. Valid only with nP.nodal(). See the wilkinson example. No argument required, must use nP.nodal().
 
-nP.<b>SeriesTee</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/connections/seriesTee.js "Source") Creates and returns a new nPort Object of 3-port interconnect. Ports 1 and 2 are input and outputs. Port 3 is the series port. Valid only with nP.nodal(). No argument required.
+nP.<b>Tee4</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/connections/Tee4.js "Source") Creates and returns a new nPort Object of 4-port interconnect, a 4 input junction. Valid only with nP.nodal(). No argument required, must use nP.nodal().
+
+nP.<b>Tee5</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/connections/Tee.js "Source") Creates and returns a new nPort Object of 5-port interconnect, a 5 input junction. Valid only with nP.nodal(). No argument required, must use nP.nodal().
+
+nP.<b>SeriesTee</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/connections/seriesTee.js "Source") Creates and returns a new nPort Object of 3-port interconnect. Ports 1 and 2 are input and outputs. Port 3 is the series port. Valid only with nP.nodal(). No argument required, must use nP.nodal().
 
 ### Compare attenuator analysis results with and without nP.seriesTee()
+
+```html
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>seriesTee</title>
+	</head>
+	<body>
+		<script src="./nP.js"></script>
+		<script>
+
+var g = nP.global;	
+g.fList = [2e9]; // 2GHz
+
+// define the resistors for the attenuator
+var r1 = nP.paR(292.4);
+var r2 = nP.seR(17.6);
+var r3 = nP.paR(292.4);
+
+// using cas to combine the 2-ports
+var attn1 = r1.cas(r2).cas(r3);
+var attn1Out = attn1.out('s21dB','s11dB');
+nP.lineTable({inputTable: [attn1Out], tableTitle:'Solved by nP.cas()'});
+
+// define the seriesTee and open
+var tee = nP.seriesTee();
+var open = nP.Open();
+var r4 = nP.paR(17.6); // note, the 17.6 ohm resistor must be a parallel 2-port!
+
+// use nodal to combine the 2-ports
+var attn2 = nP.nodal([r1,1,2], [tee,2,3,4], [r4,4,5], [open,5], [r3,3,6], ['out',1,6]);
+var attn2Out = attn2.out('s21dB','s11dB');
+nP.lineTable({inputTable: [attn2Out], tableTitle:'seriesTee realization solved with nP.nodal()'});
+
+		</script>
+	</body>
+</html>
+```
 
 <a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/seriesTeeAnalysis.png></a>
 

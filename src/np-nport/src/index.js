@@ -27,6 +27,8 @@ export {sePaRLC} from './rlc/sePaRLC';
 export {lpfGen} from './rlc/lpfGen';
 
 export {Tee} from './connections/Tee';
+export {Tee4} from './connections/Tee4';
+export {Tee5} from './connections/Tee5';
 export {seriesTee} from './connections/seriesTee';
 
 export {nodal} from './combining/nodal';
