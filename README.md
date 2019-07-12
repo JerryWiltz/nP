@@ -18,7 +18,7 @@
 * [nP-math](#nP-math)
 * [nP-chart](#nP-chart)
 
-## Downloading and Verifying nPort 
+## How to Download 
 
 Download, **nPort**, then run the  "Hello, nPort!" example below to verify installation.
 
@@ -26,6 +26,8 @@ Download, **nPort**, then run the  "Hello, nPort!" example below to verify insta
 * Download nPort by clicking [here](https://raw.githubusercontent.com/JerryWiltz/nP/master/dist/nP.js)", then Save as... "nP.js" and put it in the "nPort" folder. 
 * Create the file below and name it "index.html" and put it in the "nPort" folder.
 * Run "index.html". I recommend Chrome. You should see <b>Hello, nPort!</b> After that, you are ready to go.
+
+### Here below is an html page for "Hello, nPort!"
 
 ```html
 <!DOCTYPE html>
@@ -45,6 +47,8 @@ nP.log('Hello, nPort!');
 	</body>
 </html>
 ```
+
+---
  
 ## nP-global
 As **nPort** analyses in the frequency domain, it requires at least one frequency point to do anything. **nPort** has a default frequency of 2e9 or 2GHz. Therefore, you must specify either a single frequency or a list of frequencies to give **nPort** the domain it needs. The frequency or frequencies must be in an array. The units must by in Hz. Suppose you require a frequency list with 1001. There is a function, fGen(), that will create long arrays for you.
@@ -57,7 +61,7 @@ nP.<b>fGen</b>(<i> fStart, fStop, points </i>) [<>](https://github.com/JerryWilt
 
 Returns an array of frequencies from fStart to fStop. The number of points is limited by memory or execution time. Popular number of points are odd numbers because the center frequency is always produced. So the number of points like 11, 51, 101, 1001, and so on, are good. 
 
-### Here below is an example on how to create a list with 101 points.
+### Here below is an example on how to create a list with 21 points.
 
 ```html
 <!DOCTYPE html>
@@ -82,6 +86,7 @@ nP.log(g.fList);
 	</body>
 </html>
 ```
+---
 
 ## nP-nPort
 
@@ -144,7 +149,7 @@ nP.<b>cascade</b> (<i> ... nPorts </i>)[<>](https://github.com/JerryWiltz/nP/blo
 
 nP.<b>nodal</b> (<i>[nPort1, node1, node2, ...],[nPort2, node2, node3], ... ['out',  node1, node3]</i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/combining/nodal.js "Source") Enables complex interconnections of nPorts. The argument of nodal is a list of arrays separated by commas. Each array has the name of an nPort followed the node numbers separated by commas. The last array is output, it must have the syntax  ['out', nodes]. nP.nodal creates a new nPort Object. The example below shows the html, schematic, and output plot of a 6GHz Wilkinson Power Divider. Follow the details in the schematic to set up nP.node(). Note the notation of ports and nodes between the html listing and the schematic. Check the listing,  ```...,[tee,9,7,5],...``` and in the schematic. Node 9 is connected to the node 1 of the tee. Node 7 is connected to node 2 of the tee. Node 5 is connected to node 3 of the tee. The final result is a 3-port named, ```wilkinson```. Node 1 of the input is node 1 of ```wilkinson```, Node, 7 of the input is node 2 of ```wilkinson```. Node 3 of ```wilkinson``` is node 6 of the input.
 
-### Example 1 under nPort Functions, a wilkinson power divider
+### An nPort Functions example, a wilkinson power divider
 
 ```html
 <!DOCTYPE html>
@@ -179,12 +184,12 @@ nP.lineChart({inputTable: [plot], yRange: [-60, 5], chartTitle: 'Wilkinson Power
 	</body>
 </html>
 ```
-Here is the schematic and output plot for the wilkinson power divider.
+### Here is the schematic and output plot for a wilkinson power divider.
 
 <a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/wilkinson.png></a>
 
 
-### Example 2 under nPort Functions, lowpass filter solutions
+### An nPort Functions example, a lowpass filter solved 4 ways
 
 The example below shows three ways of doing the same thing, as filt1 = filt2 = filt3 = filt4.
 <br>filt1 is defined by the **cas** method</br>
@@ -257,7 +262,9 @@ nP.lineChart({inputTable: [filter4.out('s11dB','s21dB')], chartID: 'chart4',char
 
 <a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/lpf4ways.png></a>
 
-### nP-RLC
+---
+
+## nP-RLC
 
 These are 2 ports containing resistors, capacitors, inductors, and transformers.
 
@@ -321,11 +328,15 @@ nP.<b>paPaRLC</b>(<i> R = 75, L = 5e-9, C = 1e-12 </i>) [<>](https://github.com/
 
 nP.<b>sePaRLC</b>(<i> R = 75, L = 5e-9, C = 1e-12 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/seR.js "Source") A series, parallel resistor-inductor-capacitor. Creates and returns a new nPort Object. If no arguments, the default values are 75 Ohms, 5e-9 Henries and 1e-12 Farads.
 
+---
+
 ## nP-Transformers
 
 nP.<b>trf</b>(<i> N = 0.5 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/trf.js "Source") Parallel capacitor. Creates and returns a new nPort Object. If no argument, the default value is turns ratio of N = 0.5 . N is also equal to N = sqrt(Zp/Zs), where Zp is primary impedance and Zs is the secondary impedance.
 
 nP.<b>trf4Port</b>(<i> N = 0.5 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/trf.js "Source") Parallel capacitor. Creates and returns a new nPort Object. If no argument, the default value is turns ratio of N = 0.5 . <b>This is a 4 Port element.</b> The primary ports are 1 and 3 and the secondary ports are 2 and 4. N is also equal to N = sqrt(Zp/Zs), where Zp is primary impedance and Zs is the secondary impedance.
+
+---
 
 ## nP-Lowpass
 
@@ -339,6 +350,8 @@ nP.<b>chebyLPLCs</b>(<i> cheby = [1, 1.0315851425078764, 1.1474003299537219, 1.0
 
 nP.<b>lpfGen</b>(<i> filt = [50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50] </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/lpfGen.js "Source") Creates and returns a new nPort Object. The argument is an array of scaled low pass filter parameters generated by an nPort function such as chebyLPLCs. If no argument, the default value is ```[50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50]```.
 
+---
+
 ## nP-Open-Short-Load
 ### These are ideal one-ports
 
@@ -347,6 +360,8 @@ nP.<b>Open</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/
 nP.<b>Short</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/openShortLoad/Short.js "Source") Creates and returns a new nPort Object of a one port Short. No argument required.
 
 nP.<b>Load</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/openShortLoad/Load.js "Source") Creates and returns a new nPort Object of a one port Load. No argument required.
+
+---
 
 ## nP-Connections
 
@@ -462,15 +477,18 @@ nP.lineTable(table);
 
 <a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/edgeCoupledFilter.png></a>
 
+---
+
 ## nP-Microstrip
 
 nP.<b>mlin</b>(<i> Width = 0.98e-3, Height = 1.02e-3, Length = 0.5 * 0.025, Thickness = 0.0000125 * 0.054, er = 10, rho = 0, tand = 0.000 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/mlin/mlin.js "Source") A microstrip two port transmission line. Width is the strip width in meters, Height is the substrate height in meters. Length is the length in meters. er is the relative dielectric constant. rho is the loss relative to copper. tand is the dielecric loss tangent. Dispersion is factored in, Skin effect is not.
 
-## nP-math
+---
 
+## nP-math
 ### nP.complex
 
-nPort provides a basic complex arithmetic class object
+The following complex number library is not needed to use nPort. However, nPort provides a basic complex number class object.
 
 nP.<b>complex</b>(<i>x, y</i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/complex.js "Source") Initializes and returns a <b>Complex</b> object containing the property names <b>x</b> and <b>jy</b>. Here is a script you could use. 
 
@@ -565,7 +583,7 @@ nP.log(Ds); // 21.557232562315377 -j98.12775767092192}
 
 ### nP.matrix
 
-nPort provides a basic matrix arithmetic class object. <b>Complex number matrices</b> are supported. 
+The following matrix library is not needed to use nPort. However, nPort provides a basic matrix arithmetic class object. This class performs matrix addition, subtraction and inversion with <b>real numbers</b> or with <b>complex numbers</b>. Lastly, there are Gaussian elimination methods for matrices with real or complex numbers. 
 
 nP.<b>matrix</b>(<i> [ [array row 1], [array row 2], ... [array row n] ] </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-math/src/matrix.js "Source") A Constructor that is passed a table and returns a matrix object.
 
@@ -650,6 +668,8 @@ nP.log(f);
 	</body>
 </html>
 ```
+
+---
 
 ## nP-chart
 
