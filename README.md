@@ -672,6 +672,7 @@ nP.log(f);
 ---
 
 ## nP-chart
+### nP.lineChart
 
 nP.<b>lineChart</b>(<i> lineChartInputObject = \{ \} </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-chart/src/lineChart.js) is a function that draws a chart in a html page. It is based on [d3, Data-Driven Documents](https://d3js.org/). If you don't provide your own svg element, linechart() will create it for you. If you provide svg elements, <b>you must specify a unique ID, width, and height attributes for each svg you create</b>, such as:
 
@@ -745,7 +746,8 @@ nP.lineChart();
 
 <a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/lineChartDefault.png></a>
 
----
+### nP.lineTable
+
 nP.<b>lineTable</b>(<i> lineTableInputObject = \{ \} </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-chart/src/lineTable.js) A function that produces a table of data. <b>You can click and drag across the table</b> to copy and paste to a spreadsheet. Also, you can <b>create an png</b> for table and perform a "Save image as ..." to file the way you can for lineChart. If you don't provide your own svg element, lineTable() will create it for you. If you provide svg elements, <b>you must specify a unique ID, width, and height attributes for each svg you create</b>, such as:
 
 ```html
@@ -803,7 +805,8 @@ Unlike lineChart, where you can set the size in advance, lineTable does not know
 
 <a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/lineTableDefault.png></a>
 
----
+### nP.log
+
 nP.<b>log</b>(<i> input </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-chart/src/log.js) A function that proforms a <b>console.log</b> function that logs to your web page rather than in the console. It take one parameter called ```input```. It can be <b>helpful in troubleshooting</b> such as easily examining the contents of arrays and matrices containing complex numbers. It can be any of the the following data types:
 ```
 a 'string'
