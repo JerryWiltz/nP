@@ -206,7 +206,7 @@ The example below shows three ways of doing the same thing, as filt1 = filt2 = f
 		<svg id="chart3" width="400" height="300"></svg>
 		<svg id="chart4" width="400" height="300"></svg>
 
-		<script src="nP.js"></script>
+		<script src="./nP.js"></script>
 		<script>
 
 var g = nP.global;	
@@ -225,15 +225,15 @@ var c5 = nP.paC(3.171683678827988e-12);
 
 // using 'cas' to define filter1
 var filter1 = c1.cas(l1).cas(c2).cas(l2).cas(c3).cas(l3).cas(c4).cas(l4).cas(c5);
-nP.lineChart({inputTable: [filter1.out('s11dB','s21dB')], chartID: 'chart1', titleTitle:'Solved by nP.cas()'});
+nP.lineChart({inputTable: [filter1.out('s11dB','s21dB')], chartID: 'chart1', chartTitle:'Solved by nP.cas()'});
 
 // using 'cascade' to define filter2
 var filter2 = nP.cascade (c1,l1,c2,l2,c3,l3,c4,l4,c5);
-nP.lineChart({inputTable: [filter2.out('s11dB','s21dB')], chartID: 'chart2', titleTitle:'Solved by nP.cascade()'});
+nP.lineChart({inputTable: [filter2.out('s11dB','s21dB')], chartID: 'chart2', chartTitle:'Solved by nP.cascade()'});
 
 // using 'nodal' to define filter3
 var filter3 = nP.nodal([c1,1,2],[l1,2,3],[c2,3,4],[l2,4,5],[c3,5,6],[l3,6,7],[c4,7,8],[l4,8,9],[c5,9,10],['out',1,10]);
-nP.lineChart({inputTable: [filter3.out('s11dB','s21dB')], chartID: 'chart3', titleTitle:'Solved by nP.nodal()'});
+nP.lineChart({inputTable: [filter3.out('s11dB','s21dB')], chartID: 'chart3', chartTitle:'Solved by nP.nodal()'});
 
 // using 'lpfGen' to define filter4
 var filter4 = nP.lpfGen([50,
@@ -247,7 +247,7 @@ var filter4 = nP.lpfGen([50,
 		9.566513256241397e-9,
 		3.171683678827988e-12,
 		50]);
-nP.lineChart({inputTable: [filter4.out('s11dB','s21dB')], chartID: 'chart4',titleTitle:'Solved by nP.lpfGen()'});
+nP.lineChart({inputTable: [filter4.out('s11dB','s21dB')], chartID: 'chart4',chartTitle:'Solved by nP.lpfGen()'});
 
 		</script>
 	</body>
@@ -356,7 +356,7 @@ nP.<b>Tee</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/n
 
 nP.<b>Tee4</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/connections/Tee4.js "Source") Creates and returns a new nPort Object of 4-port interconnect, a 4 input junction. Valid only with nP.nodal(). No argument required, must use nP.nodal().
 
-nP.<b>Tee5</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/connections/Tee.js "Source") Creates and returns a new nPort Object of 5-port interconnect, a 5 input junction. Valid only with nP.nodal(). No argument required, must use nP.nodal().
+nP.<b>Tee5</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/connections/Tee5.js "Source") Creates and returns a new nPort Object of 5-port interconnect, a 5 input junction. Valid only with nP.nodal(). No argument required, must use nP.nodal().
 
 nP.<b>SeriesTee</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/connections/seriesTee.js "Source") Creates and returns a new nPort Object of 3-port interconnect. Ports 1 and 2 are input and outputs. Port 3 is the series port. Valid only with nP.nodal(). No argument required, must use nP.nodal().
 
@@ -423,7 +423,7 @@ nP.<b>tclin</b>(<i> Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254 </i>) [<>](https
 		<title>Edge coupled filter</title>
 	</head>
 	<body>
-		<script src="nP.js"></script>
+		<script src="./nP.js"></script>
 		<script>
 
 // this is for a quarter wave at 6GHz
@@ -702,6 +702,7 @@ If you do not provide a ```lineChartInputObject``` argument, lineChart() will di
 Here is the default lineChart(), it generates an svg element that has 400px in width and 300px in height. When the cursor is moved over a data point, it turns black and the values are shown at the lower right corner of the chart. In this case, the values are 7.2GHz and -19.3dB. If you click on a point, it stays black and shows the values at the bottom. <b>Click it again</b> to make revert to the original color. Next, <b>To convert it into a PNG</b> for a "Save image as ..." to file, click on the square at the upper right corner of the chart, then move the cursor over any part of the image and perform a "Save image as..." to file. 
 
 ```html
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta charset="utf-8">
@@ -709,7 +710,7 @@ Here is the default lineChart(), it generates an svg element that has 400px in w
 		<title>lineChart Default</title>
 	</head>
 	<body>
-		<script src="nP.js"></script>
+		<script src="./nP.js"></script>
 
 		<script>
 
@@ -720,7 +721,7 @@ nP.lineChart();
 </html>
 ```
 
-Here is the default nP.lineChart output
+### Here is the default nP.lineChart output
 
 <a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/lineChartDefault.png></a>
 
@@ -757,6 +758,7 @@ If you do not provide a ```lineTableInputObject``` argument, lineTable() will di
 Here is the default lineTable(), it generates an svg element that has 350px in width and 503px in height. <b>To convert it into a PNG</b> for a "Save image as ..." to file, click on the square at the upper right corner of the chart, then move the cursor over any part of the image and perform a "Save image as..." to file. 
 
 ```html
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta charset="utf-8">
@@ -764,7 +766,7 @@ Here is the default lineTable(), it generates an svg element that has 350px in w
 		<title>lineTable Default</title>
 	</head>
 	<body>
-		<script src="nP.js"></script>
+		<script src="./nP.js"></script>
 
 		<script>
 
@@ -773,10 +775,11 @@ nP.lineTable();
 		</script>
 	</body>
 </html>
+
 ```
 Unlike lineChart, where you can set the size in advance, lineTable does not know its size until it is rendered. As colunms and rows are created, the svg is sized appropriately. To find out what the final size is, use the key-value pair, tableWH: 'yes', of the inputTableInputObject.
 
-Here is the default nP.lineTable output
+### Here is the default nP.lineTable output
 
 <a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/lineTableDefault.png></a>
 
