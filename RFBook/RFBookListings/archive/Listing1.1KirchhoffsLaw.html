@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">	
+		<title>Listing 1-1 Kirchhoffs Voltage Law</title>
+	</head>
+	<body>
+		<script src="./nP.js"></script>
+		<script>
+
+var R = 1; // R is 1 ohm
+var V = 1; // V is 1 volt
+var I, volts;
+
+// solve for I and volts
+I = V/R;
+volts = V - I * R;
+
+// use nP.log to show the results
+nP.log("For a closed loop, according to Kirchhoff's law, the voltages should add to 0 Volts below.");
+nP.log(volts);
+
+		</script>
+	</body>
+</html>

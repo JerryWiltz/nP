@@ -4,7 +4,7 @@
 		<title>Listing 1.1 3dB Attenuator</title>
 	</head>
 	<body>
-		<script src="nP.js"></script>
+		<script src="./nP.js"></script>
 		<script>
 
 // define the frequency list, 0Hz = DC
@@ -24,7 +24,8 @@ var attenuatorRow1 = attenuator.out('s11dB','s12dB');
 var attenuatorRow2 = attenuator.out('s21dB','s22dB');
 
 // dispaly the outputs in two tables
-nP.lineTable({inputTable: [attenuatorRow1, attenuatorRow2]});
+nP.log('See the results in the table below');
+nP.lineTable({tableTitle: '3dB Attenuator',inputTable: [attenuatorRow1, attenuatorRow2]});
 
 		</script>
 	</body>

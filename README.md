@@ -18,9 +18,8 @@
 * [nP-math](#nP-math)
 * [nP-chart](#nP-chart)
 
+---
 ## How to Download 
-
-Download, **nPort**, then run the  "Hello, nPort!" example below to verify installation.
 
 * Create a new folder named "nPort"
 * Download nPort by clicking [here](https://raw.githubusercontent.com/JerryWiltz/nP/master/dist/nP.js)", then Save as... "nP.js" and put it in the "nPort" folder. 

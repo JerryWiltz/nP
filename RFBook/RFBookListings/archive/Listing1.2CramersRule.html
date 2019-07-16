@@ -6,6 +6,7 @@
 		<title>Listing 1-2 Cramers Rule</title>
 	</head>
 	<body>
+		<script src="nP.js"></script>
 		<script>
 
 // define the resistors
@@ -51,8 +52,8 @@ var V1 = R1*I1 - R1*I2;
 var V2 = R3*I2 - R3*I3;
 
 var attn = 20*Math.log10(V2/V1);
-console.log('The attenuation is ...');
-console.log(attn + ' dB');
+nP.log('The attenuation is ...');
+nP.log(attn + ' dB');
 
 		</script>
 	</body>
