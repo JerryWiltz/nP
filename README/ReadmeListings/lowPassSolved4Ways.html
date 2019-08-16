@@ -6,6 +6,47 @@
 		<title>Low Pass solved 4 ways</title>
 	</head>
 	<body>
+		<textarea style="width: 100%, height: auto">
+			var g = nP.global;	
+			g.fList = g.fGen(50e6, 3e9, 50);
+
+			// create 9 2-ports. Each 2-port is part of a lowpass LC filter
+			var c1 = nP.paC(3.1716836788279897e-12);
+			var l1 = nP.seL(9.566513256241392e-9);
+			var c2 = nP.paC(5.6621309381827996e-12);
+			var l2 = nP.seL(1.0721164178932893e-8);
+			var c3 = nP.paC(5.8499784682761105e-12);
+			var l3 = nP.seL(1.0721164178932898e-8);
+			var c4 = nP.paC(5.662130938182797e-12);
+			var l4 = nP.seL(9.566513256241397e-9);
+			var c5 = nP.paC(3.171683678827988e-12);
+
+			// using 'cas' to define filter1
+			var filter1 = c1.cas(l1).cas(c2).cas(l2).cas(c3).cas(l3).cas(c4).cas(l4).cas(c5);
+			nP.lineChart({inputTable: [filter1.out('s11dB','s21dB')], chartID: 'chart1', chartTitle:'Solved by nP.cas()'});
+
+			// using 'cascade' to define filter2
+			var filter2 = nP.cascade (c1,l1,c2,l2,c3,l3,c4,l4,c5);
+			nP.lineChart({inputTable: [filter2.out('s11dB','s21dB')], chartID: 'chart2', chartTitle:'Solved by nP.cascade()'});
+
+			// using 'nodal' to define filter3
+			var filter3 = nP.nodal([c1,1,2],[l1,2,3],[c2,3,4],[l2,4,5],[c3,5,6],[l3,6,7],[c4,7,8],[l4,8,9],[c5,9,10],['out',1,10]);
+			nP.lineChart({inputTable: [filter3.out('s11dB','s21dB')], chartID: 'chart3', chartTitle:'Solved by nP.nodal()'});
+
+			// using 'lpfGen' to define filter4
+			var filter4 = nP.lpfGen([50,
+			3.1716836788279897e-12,
+			9.566513256241392e-9,
+			5.6621309381827996e-12,
+			1.0721164178932893e-8,
+			5.8499784682761105e-12,
+			1.0721164178932898e-8,
+			5.662130938182797e-12,
+			9.566513256241397e-9,
+			3.171683678827988e-12,
+			50]);
+			nP.lineChart({inputTable: [filter4.out('s11dB','s21dB')], chartID: 'chart4',chartTitle:'Solved by nP.lpfGen()'});
+		</textarea>
 		<svg id="chart1" width="400" height="300"></svg>
 		<svg id="chart2" width="400" height="300"></svg>
 		<svg id="chart3" width="400" height="300"></svg>

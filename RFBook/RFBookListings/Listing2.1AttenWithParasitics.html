@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Listing 2.1 3dB Attenuator with Parsitics</title>
+	</head>
+	<body>
+		<script src="./nP.js"></script>
+		<script>
+
+// define the frequency list, 0Hz = DC
+var g = nP.global;
+g.fList = g.fGen(1e9,10e9,21);
+
+// define each componet 2-port
+var Cf1 = nP.paC(0.5e-12);
+var R1 = nP.paR(292.4);
+var R2 = nP.seR(17.6);
+var R3 = nP.paR(292.4);
+var Cf2 = nP.paC(0.5e-12);
+
+// cascade them forming the attenuator 2-ports
+var attnIdeal = nP.cascade(R1,R2,R3);
+var attnReal = nP.cascade(Cf1,R1,R2,R3,Cf2);
+
+// specify the outputs
+var s21dBIdeal = attnIdeal.out('s21dB');
+var s21dBReal = attnReal.out('s21dB');
+
+// display the outputs
+var Chart = {
+	inputTable: [s21dBIdeal, s21dBReal],
+	yRange: [0, -10],
+	chartTitle: 'Comparing Ideal versus Real 3dB Attenuators',
+	xAxisTitle: 'Frequency, GHz'
+};
+nP.lineChart(Chart);
+
+		</script>
+	</body>
+</html>

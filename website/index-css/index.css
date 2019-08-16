@@ -1,0 +1,55 @@
+p {
+	margin: 15px;
+	padding: 25px;
+	border: 1px solid gray;
+	width: 40%;
+}
+
+#n, #port {
+	font-size: 48;
+	font-weight: bold;
+}
+
+#n {
+	color: grey;
+	font-style: italic;
+}
+
+a.inTable {
+color: grey;
+text-decoration: none;
+}
+
+a.inTable:link {
+
+}
+
+a.inTable:visited {
+
+}
+
+a.inTable:focus {
+
+}
+
+a.inTable:hover {
+
+}
+
+a.inTable:active {
+
+}
+
+table th {
+	color: white;
+	background-color: DarkSlateGrey;
+}
+
+table tr {
+	background-color: LightGrey;
+}
+
+table th, table td {
+	margin: 10px;
+}
+

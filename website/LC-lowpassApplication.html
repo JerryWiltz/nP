@@ -1,66 +1,86 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>Low Pass Filter with LC</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>LPF Application</title>
+
+		<!-- Add nPort -->
+		<script src="index-js/nP.js"></script>
 	</head>
 	<body id="body">
 		<div id="firstDiv">
 			<table id="firstTable" style="width:880px">
 
-				<!-- Row 1: 3 column row: th, th, th-->
-				<tr><th style="width:180px">Description</th>
+				<tr>
+					<th style="width:180px">Description</th>
 					<th style="width:180px">Data and Buttons</th>
-					<th style="width:520px">Output Plots</th></tr>
-
-				<!-- Row 2: 3 column row: td, td, td -->
-				<tr><td>Max Pass Freq:</td>
+					<th style="width:520px">Output Plots</th>
+				</tr>
+				<tr>
+					<td>Max Pass Freq:</td>
 					<td><input id="maxPassFreq" value="1.2"></td>
-					<td rowspan='34' style='vertical-align:top'><svg id="canvas" width="500" height="300">
-						</svg><!--this is where the svg base plots will be-->
-					</td></tr>
-
-					<!-- Rows 3 through 14: 2 column rows td, td -->
-					<tr><td>Min Rej Freq:</td>
-						<td><input id="minRejFreq" value="1.5"></td></tr>
-					<tr><td>Frequecy Units</td>
-						<td>
-							<select id="MultiplierOut">
-								<option value="Hz">Hz</option>
-								<option value="KHz">KHz</option>
-								<option value="MHz">MHz</option>
-								<option value="GHz" selected>GHz</option>
-							</select>
-						</td></tr>
-						<tr><td>Passband Ripple (dB):</td>
-							<td><input id="passbandRipple" value="0.1"></td></tr>
-						<tr><td>Rej Level (dB):</td>
-							<td><input id="rejLevel" value="30"></td></tr>
-						<tr><td>Click to Calculate:</td>
-							<td>
-
-								<button id="design">Design</button></td></tr>
-
-						<tr><td>w'/w1:</td>
-							<td><span class="output" id="w"></span></td></tr>
-						<tr><td>Number of Sections (n):</td>
-							<td><span class="output" id="n"></span></td></tr>
-						<tr><td>Filter Elements:</td>
-							<td><span class="output" id="filterComponents"></span></td></tr>
-						<tr><td>Start Freq.:</td>
-							<td><input id="startFreq" value="0.05"></td></tr>
-						<tr><td>Stop Freq.:</td>
-							<td><input id="stopFreq" value="1.5"></td></tr>
-						<tr><td>Data Points.:</td>
-							<td><input id="dataPoints" value="50"></td></tr>
-						<tr><td>Click to Test:</td>
-							<td>
-
-								<button id="test">Test</button></td></tr>
+					<td rowspan='34' style='vertical-align:top'><svg id="canvas" width="400" height="300"></svg></td>
+				</tr>
+				<tr>
+					<td>Min Rej Freq:</td>
+					<td><input id="minRejFreq" value="1.5"></td>
+				</tr>
+				<tr>
+					<td>Frequecy Units</td>
+					<td>
+						<select id="MultiplierOut">
+							<option value="Hz">Hz</option>
+							<option value="KHz">KHz</option>
+							<option value="MHz">MHz</option>
+							<option value="GHz" selected>GHz</option>
+						</select>
+					</td>
+				</tr>
+				<tr>
+					<td>Passband Ripple (dB):</td>
+					<td><input id="passbandRipple" value="0.1"></td>
+				</tr>
+				<tr>
+					<td>Rej Level (dB):</td>
+					<td><input id="rejLevel" value="30"></td>
+				</tr>
+				<tr>
+					<td>Click to Calculate:</td>
+					<td><button id="design">Design</button></td>
+				</tr>
+				<tr>
+					<td>w'/w1:</td>
+					<td><span class="output" id="w"></span></td>
+				</tr>
+				<tr>
+					<td>Number of Sections (n):</td>
+					<td><span class="output" id="n"></span></td>
+				</tr>
+				<tr>
+					<td>Filter Elements:</td>
+					<td><span class="output" id="filterComponents"></span></td>
+				</tr>
+				<tr>
+					<td>Start Freq.:</td>
+					<td><input id="startFreq" value="0.05"></td>
+				</tr>
+				<tr>
+					<td>Stop Freq.:</td>
+					<td><input id="stopFreq" value="1.5"></td>
+				</tr>
+				<tr>
+					<td>Data Points.:</td>
+					<td><input id="dataPoints" value="50"></td>
+				</tr>
+				<tr>
+					<td>Click to Test:</td>
+					<td><button id="test">Test</button></td>
+				</tr>
 
 			</table>
 		</div>
 		</div>
-		<script src="../dist/nP.js"></script>
 		<script>
 var LPout = [];
 var MultiplierOut = 1;
@@ -110,15 +130,16 @@ var doTest = function doTest() {
 	g = {},
 	myfilt = {},
 	inputObject = {};
-	
+
 	// Generate frequency list
 	g = nP.global;
 	g.fList = g.fGen(startFreq * MultiplierOut, stopFreq * MultiplierOut, dataPoints);
 
 	// Calculate the frequency response
 	myFilt = nP.lpfGen(LPout).out('s11dB', 's21dB'),
-	inputObject = { inputTable: myFilt,
-			 freqUnits: document.getElementById('MultiplierOut').value };
+	inputObject = { chartID: 'canvas',
+		inputTable: [myFilt],
+		yRange: [5,-50] };
 
 	// Plot the frequency response
 	nP.lineChart(inputObject);

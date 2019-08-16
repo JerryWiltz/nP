@@ -6716,7 +6716,7 @@
 		// define outside if-then because I want to remove it in the toPNG function
 		let dataTextID = 'dataText' + chartID.slice(1); // slice(1) removes '#' from chartID
 		let dataText = svg$$1.append('text')
-			.attr('transform', 'translate(' + (outerWidth - 155) + ',' + ( outerHeight - 10 ) + ')' )
+			.attr('transform', 'translate(' + (outerWidth - 190) + ',' + ( outerHeight - 10 ) + ')' )
 			.attr("x", 3)
 			.attr("dy",  "0.35em")
 			.attr('id', dataTextID)
