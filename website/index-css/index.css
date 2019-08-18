@@ -1,8 +1,23 @@
-p {
+header {
+}
+
+p#topLeft {
 	margin: 15px;
 	padding: 25px;
 	border: 1px solid gray;
-	width: 40%;
+	max-width: 400px;
+	display: inline-block;
+}
+
+ul#topRight {
+	display: inline-block;
+	position: relative;
+	bottom: 25px;
+	left: 250px;
+}
+
+ul#topRight li {
+	display: inline-block;
 }
 
 #n, #port {
@@ -15,9 +30,13 @@ p {
 	font-style: italic;
 }
 
+table {
+	margin: 15px;
+	}
+
 a.inTable {
-color: grey;
-text-decoration: none;
+	color: grey;
+	text-decoration: none;
 }
 
 a.inTable:link {
@@ -51,5 +70,8 @@ table tr {
 
 table th, table td {
 	margin: 10px;
+padding-left: 4px;
+	padding-right: 4px;
+
 }
 
