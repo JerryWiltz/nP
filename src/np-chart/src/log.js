@@ -92,6 +92,10 @@ export function log(input) {
 	var pre = document.createElement('pre');
 	var output = '';
 	var classAttr = document.createAttribute('class');
+
+	// added this for webpage
+	var outputBox = document.getElementsByClassName('outputBox')[0];
+
 	classAttr.value = 'outputSection';
 	pre.setAttributeNode(classAttr);
 	if ( typeof input === 'string'){
@@ -117,5 +121,5 @@ export function log(input) {
 		output = "nP.log can't read this input";
 	};	
 	pre.innerHTML = output;
-	document.body.appendChild(pre);
+	outputBox === undefined ? document.body.appendChild(pre) : outputBox.appendChild(pre);
 }

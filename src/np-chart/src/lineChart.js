@@ -47,7 +47,11 @@ export	function  lineChart (lineChartInputObject = {}) {
 		chart.setAttributeNode(idAttr);
 		chart.setAttributeNode(widthAttr);
 		chart.setAttributeNode(heightAttr);
-		if(!lineChartInputObject.chartID){ chartBody.appendChild(chart)};
+		if(!lineChartInputObject.chartID){
+			// added this for webpage
+			var outputBox = document.getElementsByClassName('outputBox')[0];
+
+			outputBox === undefined ? chartBody.appendChild(chart) : outputBox.appendChild(chart)};
 	}();
 
 	// this is the internal inputTable that has default data if no inputTable data provided

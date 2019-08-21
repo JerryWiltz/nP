@@ -6433,7 +6433,11 @@
 			chart.setAttributeNode(idAttr);
 			chart.setAttributeNode(widthAttr);
 			chart.setAttributeNode(heightAttr);
-			if(!lineChartInputObject.chartID){ chartBody.appendChild(chart);}	}();
+			if(!lineChartInputObject.chartID){
+				// added this for webpage
+				var outputBox = document.getElementsByClassName('outputBox')[0];
+
+				outputBox === undefined ? chartBody.appendChild(chart) : outputBox.appendChild(chart);}	}();
 
 		// this is the internal inputTable that has default data if no inputTable data provided
 		var inputTable = lineChartInputObject.inputTable || [ 
@@ -6946,6 +6950,10 @@
 		var pre = document.createElement('pre');
 		var output = '';
 		var classAttr = document.createAttribute('class');
+
+		// added this for webpage
+		var outputBox = document.getElementsByClassName('outputBox')[0];
+
 		classAttr.value = 'outputSection';
 		pre.setAttributeNode(classAttr);
 		if ( typeof input === 'string'){
@@ -6970,7 +6978,7 @@
 		} else {
 			output = "nP.log can't read this input";
 		}	pre.innerHTML = output;
-		document.body.appendChild(pre);
+		outputBox === undefined ? document.body.appendChild(pre) : outputBox.appendChild(pre);
 	}
 
 	function  lineTable$1 (lineTableInputObject = {}) {
@@ -7017,7 +7025,11 @@
 			table.setAttributeNode(idAttr);
 			table.setAttributeNode(widthAttr);
 			table.setAttributeNode(heightAttr);
-			if(!lineTableInputObject.tableID){ tableBody.appendChild(table);}	}();
+			if(!lineTableInputObject.tableID){
+				// added this for webpage
+				var outputBox = document.getElementsByClassName('outputBox')[0];
+
+				outputBox === undefined ? tableBody.appendChild(table) : outputBox.appendChild(table);}	}();
 
 		// this is the internal inputTable that has default data if no inputTable data provided
 		var inputTable = lineTableInputObject.inputTable || [ 
@@ -7236,107 +7248,107 @@
 		 ********************************************************	
 		 */
 
-	var createPngTable = function createPngTable (myArray, x, y) {
-		var row = 0, col = 0, notLastCellWidth = 0, lastCellWidth = 0, color$$1 = '';
-		for (row = 0; row < myArray.length; row++) {
-			for (col = 0; col < myArray[0].length; col++) {
-				var rect = svg$$1.append('rect')
-					.attr('x', x + (columnWidth + 3) * col)
-					.attr('y', y + (rowHeight + 1) * row)
-					.attr('width', function() {
-						notLastCellWidth = columnWidth + 4;
-						lastCellWidth = notLastCellWidth -1;
-						if(col === myArray[0].length -1) { return lastCellWidth;}					return notLastCellWidth;
-					})
-					.attr('height', rowHeight + 1)
-					.attr('fill', function () {
-						color$$1 = typeof myArray[row][col]==='string' ? (headColor ? '#d4d4d4' : '#add8e6') : 'white';
-						return color$$1;
-					})
-					.attr('stroke', 'black')
-					.attr('stroke-width', '1px');
-				var text$$1 = svg$$1.append('text')
-					.attr('transform', function () {
-						var center = 0;
-						center = typeof myArray[row][col]==='string' ? Math.round(columnWidth/2 - (myArray[row][col].length*columnWidth)/28) : 3;
+		var createPngTable = function createPngTable (myArray, x, y) {
+			var row = 0, col = 0, notLastCellWidth = 0, lastCellWidth = 0, color$$1 = '';
+			for (row = 0; row < myArray.length; row++) {
+				for (col = 0; col < myArray[0].length; col++) {
+					var rect = svg$$1.append('rect')
+						.attr('x', x + (columnWidth + 3) * col)
+						.attr('y', y + (rowHeight + 1) * row)
+						.attr('width', function() {
+							notLastCellWidth = columnWidth + 4;
+							lastCellWidth = notLastCellWidth -1;
+							if(col === myArray[0].length -1) { return lastCellWidth;}						return notLastCellWidth;
+						})
+						.attr('height', rowHeight + 1)
+						.attr('fill', function () {
+							color$$1 = typeof myArray[row][col]==='string' ? (headColor ? '#d4d4d4' : '#add8e6') : 'white';
+							return color$$1;
+						})
+						.attr('stroke', 'black')
+						.attr('stroke-width', '1px');
+					var text$$1 = svg$$1.append('text')
+						.attr('transform', function () {
+							var center = 0;
+							center = typeof myArray[row][col]==='string' ? Math.round(columnWidth/2 - (myArray[row][col].length*columnWidth)/28) : 3;
 
-						return 'translate(' + (x + center + (columnWidth + 3) * col) + ',' + (y + 16 + (rowHeight + 1) * row) + ')'
-					})
-					.style('visibility', 'visible')
-					.text(typeof myArray[row][col]==='string' ? myArray[row][col] : myArray[row][col].toFixed(5));
+							return 'translate(' + (x + center + (columnWidth + 3) * col) + ',' + (y + 16 + (rowHeight + 1) * row) + ')'
+						})
+						.style('visibility', 'visible')
+						.text(typeof myArray[row][col]==='string' ? myArray[row][col] : myArray[row][col].toFixed(5));
 
-			}
-		}};
+				}
+			}	};
 
-	var toPNG = function toPNG () {
-		// remove the foreignObject element and all it's children
-		var foreign = document.getElementById('foreign'+tableID.slice(1)); foreign.remove();
+		var toPNG = function toPNG () {
+			// remove the foreignObject element and all it's children
+			var foreign = document.getElementById('foreign'+tableID.slice(1)); foreign.remove();
 
-		// calls createPngTable for each table, two tables included in the default inputTableOject
-		inputTableDuplicated.forEach(function (element, index) {
-			createPngTable(element, x, y[index]);
-		});
+			// calls createPngTable for each table, two tables included in the default inputTableOject
+			inputTableDuplicated.forEach(function (element, index) {
+				createPngTable(element, x, y[index]);
+			});
 
-		// get rid of the button and the button text before converting to PNG
-		buttonRect.remove(); buttonText.remove();
+			// get rid of the button and the button text before converting to PNG
+			buttonRect.remove(); buttonText.remove();
 
 
-		// get the old svg element to be replaced
-		var oldSvg = document.getElementById(tableID.slice(1)); // slice(1) to remove '#' in front of chartID
+			// get the old svg element to be replaced
+			var oldSvg = document.getElementById(tableID.slice(1)); // slice(1) to remove '#' in front of chartID
 
-		// Put the svg into an image tag so that the Canvas element can read it in.
-		var doctype = '<?xml version="1.0" standalone="no"?>'
-			+ '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">';
+			// Put the svg into an image tag so that the Canvas element can read it in.
+			var doctype = '<?xml version="1.0" standalone="no"?>'
+				+ '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">';
 
-		// serialize our SVG XML to a string.			
-			var source = (new XMLSerializer()).serializeToString(select(tableID).node());
+				// serialize our SVG XML to a string.			
+				var source = (new XMLSerializer()).serializeToString(select(tableID).node());
 
-		// create a file blob of our SVG.
-		var blob$$1 = new Blob([ doctype + source], { type: 'image/svg+xml;charset=utf-8' });
+			// create a file blob of our SVG.
+			var blob$$1 = new Blob([ doctype + source], { type: 'image/svg+xml;charset=utf-8' });
 
-		var url = window.URL.createObjectURL(blob$$1);
-		var tempImg = select('body').append('img')
-			.attr('width', outerWidth)
-			.attr('height', outerHeight)
-			.attr('id', 'tempImg')
-			.node();
-		tempImg.onload = function(){
-		// Now that the image has loaded, put the image into a canvas element.
-			var canvas = select('body').append('canvas').node();
-			canvas.width = outerWidth;
-			canvas.height = outerHeight;
-			canvas.id = 'tempCanvas';
-			var ctx = canvas.getContext('2d');
-			ctx.drawImage(tempImg, 0, 0);
-			var canvasUrl = canvas.toDataURL("image/png");
-			var newImg = select('body').append('img') 
+			var url = window.URL.createObjectURL(blob$$1);
+			var tempImg = select('body').append('img')
 				.attr('width', outerWidth)
 				.attr('height', outerHeight)
-				.attr('id', 'newImg')
+				.attr('id', 'tempImg')
 				.node();
+			tempImg.onload = function(){
+				// Now that the image has loaded, put the image into a canvas element.
+				var canvas = select('body').append('canvas').node();
+				canvas.width = outerWidth;
+				canvas.height = outerHeight;
+				canvas.id = 'tempCanvas';
+				var ctx = canvas.getContext('2d');
+				ctx.drawImage(tempImg, 0, 0);
+				var canvasUrl = canvas.toDataURL("image/png");
+				var newImg = select('body').append('img') 
+					.attr('width', outerWidth)
+					.attr('height', outerHeight)
+					.attr('id', 'newImg')
+					.node();
 
-			newImg.onload = function() {
-				document.getElementById('newImg');
-				oldSvg.parentNode.replaceChild(newImg, oldSvg);
+				newImg.onload = function() {
+					document.getElementById('newImg');
+					oldSvg.parentNode.replaceChild(newImg, oldSvg);
+				};
+				// this is now the base64 encoded versikjon of our NG! you could optionally 
+				// redirect the user to download the PNG by sending them to the url with 
+				// `window.location.href= canvasUrl`.
+				newImg.src = canvasUrl;
+				canvas.remove();
+
 			};
-		// this is now the base64 encoded versikjon of our NG! you could optionally 
-		// redirect the user to download the PNG by sending them to the url with 
-		// `window.location.href= canvasUrl`.
-			newImg.src = canvasUrl;
-			canvas.remove();
+			// start loading the image.
+			tempImg.src = url;
+			tempImg.remove();
 
 		};
-		// start loading the image.
-		tempImg.src = url;
-		tempImg.remove();
+		var buttonRect = document.getElementById(buttonRectID);
+		var buttonText = document.getElementById(buttonTextID);
 
-	};
-	var buttonRect = document.getElementById(buttonRectID);
-	var buttonText = document.getElementById(buttonTextID);
-
-	buttonRect.addEventListener('mouseenter', function () { buttonRect.setAttribute('fill', '#a9a9a9');});
-	buttonRect.addEventListener('mouseleave', function () { buttonRect.setAttribute('fill', '#d3d3d3');});
-	buttonRect.addEventListener("click", function() { toPNG(); });
+		buttonRect.addEventListener('mouseenter', function () { buttonRect.setAttribute('fill', '#a9a9a9');});
+		buttonRect.addEventListener('mouseleave', function () { buttonRect.setAttribute('fill', '#d3d3d3');});
+		buttonRect.addEventListener("click", function() { toPNG(); });
 
 	}
 
