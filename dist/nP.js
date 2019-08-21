@@ -6945,6 +6945,9 @@
 	function log$2(input) {
 		var pre = document.createElement('pre');
 		var output = '';
+		var classAttr = document.createAttribute('class');
+		classAttr.value = 'outputSection';
+		pre.setAttributeNode(classAttr);
 		if ( typeof input === 'string'){
 			output = input;
 		} else if ( typeof input === 'number'){

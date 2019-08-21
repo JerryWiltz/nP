@@ -8,26 +8,7 @@ export default 	{
 			format: 'umd',
 			name: 'nP',
 			global: 'd3'
-		},
-		{
-			file: 'README/ReadmeListings/nP.js',
-			format: 'umd',
-			name: 'nP',
-			global: 'd3'
-		},
-		{
-			file: 'RFBook/RFBookListings/nP.js',
-			format: 'umd',
-			name: 'nP',
-			global: 'd3'
-		},
-		{
-			file: 'website/index-js/nP.js',
-			format: 'umd',
-			name: 'nP',
-			global: 'd3'
 		}
-
 
 	],
 	plugins: [
