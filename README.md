@@ -185,7 +185,7 @@ nP.lineChart({inputTable: [plot], yRange: [-60, 5], chartTitle: 'Wilkinson Power
 ```
 ### Here is the schematic and output plot for a wilkinson power divider.
 
-<a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/wilkinson.png></a>
+<a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/HTMLs/readme-image/wilkinson.png></a>
 
 
 ### An nPort Functions example, a lowpass filter solved 4 ways
@@ -259,7 +259,7 @@ nP.lineChart({inputTable: [filter4.out('s11dB','s21dB')], chartID: 'chart4',char
 ```
 ### Here is the schematic and output plots for the lowpass filter.
 
-<a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/lpf4ways.png></a>
+<a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/HTMLs/readme-image/lpf4ways.png></a>
 
 ---
 
@@ -293,7 +293,7 @@ The names may sound cryptic, but here is how to interpret them. The first two le
 // paSeRL reads, "parallel, resistor inductor in series"
 ```
 
-<a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/seSeRL_paSeRL.png></a>
+<a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/HTMLs/readme-image/seSeRL_paSeRL.png></a>
 
 nP.<b>seSeRL</b>(<i> R = 75, L = 5e-9 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/seR.js "Source") A series, series resistor-inductor. Creates and returns a new nPort Object. If no arguments, the default values are 75 Ohms and 5e-9 Henries.
 
@@ -416,7 +416,7 @@ nP.lineTable({inputTable: [attn2Out], tableTitle:'seriesTee realization solved w
 </html>
 ```
 
-<a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/seriesTeeAnalysis.png></a>
+<a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/HTMLs/readme-image/seriesTeeAnalysis.png></a>
 
 ---
 
@@ -474,7 +474,7 @@ nP.lineTable(table);
 ```
 ### Here is the schematic and output plots for the edge coupled filter.
 
-<a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/edgeCoupledFilter.png></a>
+<a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/HTMLs/readme-image/edgeCoupledFilter.png></a>
 
 ---
 
@@ -743,7 +743,7 @@ nP.lineChart();
 
 ### Here is the default nP.lineChart output
 
-<a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/lineChartDefault.png></a>
+<a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/HTMLs/readme-image/lineChartDefault.png></a>
 
 ### nP.lineTable
 
@@ -798,11 +798,11 @@ nP.lineTable();
 </html>
 
 ```
-Unlike lineChart, where you can set the size in advance, lineTable does not know its size until it is rendered. As colunms and rows are created, the svg is sized appropriately. To find out what the final size is, use the key-value pair, tableWH: 'yes', of the inputTableInputObject.
+Unlike lineChart, where you can set the size in advance, lineTable does not know its size until it is rendered. As columns and rows are created, the svg is sized appropriately. To find out what the final size is, use the key-value pair, tableWH: 'yes', of the inputTableInputObject.
 
 ### Here is the default nP.lineTable output
 
-<a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/README/ReadmeFigures/lineTableDefault.png></a>
+<a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/HTMLs/readme-image/lineTableDefault.png></a>
 
 ### nP.log
 
