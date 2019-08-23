@@ -30,7 +30,7 @@ ul#topRight li {
 	font-style: italic;
 }
 
-table {
+table#indexTable {
 }
 
 a.inTable {
@@ -38,16 +38,16 @@ a.inTable {
 	text-decoration: none;
 }
 
-table th {
+table#indexTable  th {
 	color: white;
 	background-color: DarkSlateGrey;
 }
 
-table tr {
+table#indexTable tr {
 	background-color: LightGrey;
 }
 
-table th, table td {
+table#indexTable th, table#indexTable td {
 	margin: 10px;
 	padding-left: 4px;
 	padding-right: 4px;
@@ -84,8 +84,9 @@ table th, table td {
 .image {
 	grid-row: 3;
 	display: inline-block;
-	width: auto;
-	height: 300px;
+	max-width: 100%;
+	width: calc(100% - 25px);
+	height: auto;
 	left: 25px;
 }
 

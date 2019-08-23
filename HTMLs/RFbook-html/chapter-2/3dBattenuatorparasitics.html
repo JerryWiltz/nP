@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width">
-		<title>Resistors in Series</title>
+		<title>3dB Attenuator with Parasitics</title>
 
 		<!-- Create a simple CodeMirror instance -->
 		<link rel="stylesheet" href="../../codemirror/codemirror.css">
@@ -37,18 +37,28 @@
 			<input class='runButton' type="button" value="Run" onclick="run();" />
 			<p class='outputHeader'>Output Area</p>
 			<textarea id='code' name="code" >
-// define the resistors, in Ohms
-var R1 = 50;
-var R2 = 50;
+var g = nP.global;
+g.fList = g.fGen(.1e9,10e9,21);
 
-// calculate the series resistance, Rs
-var Rs = R1 + R2;
+// define attenuator 2-port, "attenuator"
+var R1 = nP.paR(292.4);
+var R2 = nP.seR(17.6);
+var R3 = nP.paR(292.4);
+var attenuator = nP.cascade(R1,R2,R3);
 
-// show the output
-nP.log("Series Risistance Demonstration");
-nP.log(Rs);
-			</textarea>
-				<img class="image" src="../../RFbook-image/fig1-3.png" alt="Ohm's Law">
+// add the parasitic capacitance Cf1 and Cf2 to define the 2-port, "attenuatorWithParasitics"
+var Cf1 = nP.paC(0.5e-12);
+var Cf2 = nP.paC(0.5e-12);
+var attenuatorWithParasitics = nP.cascade(Cf1,attenuator,Cf2);
+
+// specify the outputs
+var s21dB = attenuator.out('s21dB');
+var s21dBParasitics = attenuatorWithParasitics.out('s21dB')
+
+// compare output plots with nP.lineChart();
+nP.log('Ideal and non-ideal 3dB attenuator demonstration')
+nP.lineChart({inputTable: [s21dB, s21dBParasitics]});			</textarea>
+				<img class="image" src="../../RFbook-image/fig2-1.png" alt="Ohm's Law">
 				<div class='outputBox'><div>
 		</div>
 		<script>

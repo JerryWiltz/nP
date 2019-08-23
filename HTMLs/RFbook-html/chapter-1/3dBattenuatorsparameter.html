@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width">
-		<title>Resistors in Series</title>
+		<title>3dB Attenuator via s-parameters</title>
 
 		<!-- Create a simple CodeMirror instance -->
 		<link rel="stylesheet" href="../../codemirror/codemirror.css">
@@ -37,18 +37,40 @@
 			<input class='runButton' type="button" value="Run" onclick="run();" />
 			<p class='outputHeader'>Output Area</p>
 			<textarea id='code' name="code" >
-// define the resistors, in Ohms
-var R1 = 50;
-var R2 = 50;
+// this is a 3dB attenuator that we will analyze at DC with s-parameters
 
-// calculate the series resistance, Rs
-var Rs = R1 + R2;
+// define the resistance, in Ohms and the input voltage, in volts
+var RSource = 50, R1 = 292.4, R2 = 17.6, R3 = 292.4, RLoad = 50, V = 1;
 
-// show the output
-nP.log("Series Risistance Demonstration");
-nP.log(Rs);
+// find V1 and V2 as before
+Rp1 = 1/(1/R3 + 1/RLoad);
+Rs1= R2 + Rp1;
+Rp2 = 1/(1/R1 + 1/Rs1);
+V1 = V * Rp2/(RLoad + Rp2); // V1 = 0.499
+V2 = V1 * Rp1/(R2 + Rp1);   // V2 = 0.354
+
+// find I1 by finding the voltage across RSource and using Ohm's Law
+var VRSource = V - V1; // Right?
+var I1 = VRSource/RSource;
+
+// find I2 by finding the voltage across RLoad and using Ohm's Law
+var VRLoad = V2;
+var I2 = - VRLoad/RLoad; // Note I2 flows into port 2, so we must switch the sign!!
+
+// find the power waves a1 and b2
+var a1 = (V1 + I1 * 50)/(2 * Math.sqrt(50));
+var b2 = (V2 - I2 * 50)/(2 * Math.sqrt(50));
+
+// find the magnitude of s21
+var s21 = b2/a1;
+
+// find the magnitude of s21 in dB
+var s21dB = 20 * Math.log10(s21);
+
+nP.log('Demonstration of 3dB Attenuator analysis using s-parameters')
+nP.log(s21dB);		
 			</textarea>
-				<img class="image" src="../../RFbook-image/fig1-3.png" alt="Ohm's Law">
+				<img class="image" src="../../RFbook-image/fig1-11.png" alt="Ohm's Law">
 				<div class='outputBox'><div>
 		</div>
 		<script>

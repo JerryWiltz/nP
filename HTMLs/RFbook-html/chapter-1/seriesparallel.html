@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width">
-		<title>Resistors in Series</title>
+		<title>Series and Parallel Circuits</title>
 
 		<!-- Create a simple CodeMirror instance -->
 		<link rel="stylesheet" href="../../codemirror/codemirror.css">
@@ -37,18 +37,25 @@
 			<input class='runButton' type="button" value="Run" onclick="run();" />
 			<p class='outputHeader'>Output Area</p>
 			<textarea id='code' name="code" >
-// define the resistors, in Ohms
-var R1 = 50;
-var R2 = 50;
+// we need to simplify or reduce the circuit to a two resistor voltage divider
 
-// calculate the series resistance, Rs
-var Rs = R1 + R2;
+// define the resistance, in Ohms
+var R1 = 17.6;
+var R2 = 293.4;
+var RLoad = 50;
 
-// show the output
-nP.log("Series Risistance Demonstration");
-nP.log(Rs);
+// find the parallel resistance, Rp
+var Rp = 1/(1/R2 + 1/RLoad)
+nP.log('Here is Rp');
+nP.log(Rp);
+
+// find the voltage, V2 if the input voltage is 0.5 Volts
+// use the voltage divider equation
+V2 = 0.5 * Rp/(R1 + Rp);
+nP.log('Here is V2');
+nP.log(V2);	
 			</textarea>
-				<img class="image" src="../../RFbook-image/fig1-3.png" alt="Ohm's Law">
+				<img class="image" src="../../RFbook-image/fig1-6.png" alt="Ohm's Law">
 				<div class='outputBox'><div>
 		</div>
 		<script>

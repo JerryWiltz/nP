@@ -38,17 +38,17 @@
 			<p class='outputHeader'>Output Area</p>
 			<textarea id='code' name="code" >
 // define the resistors, in Ohms
-var R1 = 50;
-var R2 = 50;
+var R1 = 200;
+var R2 = 200;
 
 // calculate the series resistance, Rs
-var Rs = R1 + R2;
+var Rp = 1/(1/R1 + 1/R2);
 
 // show the output
-nP.log("Series Risistance Demonstration");
-nP.log(Rs);
+nP.log("Parallel Risistance Demonstration");
+nP.log(Rp);
 			</textarea>
-				<img class="image" src="../../RFbook-image/fig1-3.png" alt="Ohm's Law">
+				<img class="image" src="../../RFbook-image/fig1-5.png" alt="Ohm's Law">
 				<div class='outputBox'><div>
 		</div>
 		<script>

@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width">
-		<title>Resistors in Series</title>
+		<title>Ohm's Law</title>
 
 		<!-- Create a simple CodeMirror instance -->
 		<link rel="stylesheet" href="../../codemirror/codemirror.css">
@@ -35,24 +35,28 @@
 		</header>
 		<div id='main'>
 			<input class='runButton' type="button" value="Run" onclick="run();" />
+			<p class='outputHeader'>Output Area</p>
 			<textarea id='code' name="code" >
-// define the voltage, in Volts
-var V = 100;
+// focus on the last voltage divider with V1 = 90 Volts
 
-// for the 90 Volts cases, define the resistance, in Ohms
+// define the resistance, in Ohms
 var R1 = 10;
 var R2 = 90;
 
-// use the voltage divider equation
-// notice the use of parantheses
-var V1 = V * R2/(R1 + R2);
+// Here is the voltage divider equation on one line
+// V1 = V * R2/(R1 + R2)
+// Apply the voltage divider equation
+V1 = 100 * R2/(R1 + R2)
 
-// this is the nPort logging function, nP.log( )
-nP.log('Calulating the output voltage, V1');
+// show the output
+nP.log("Voltage Divider Demonstration");
 nP.log('V1 in Volts');
-nP.log(V1);		
+nP.log(V1);
+
+// plug in different resistor values and verify the 50, and 75 V1 outputs		
 			</textarea>
 				<img class="image" src="../../RFbook-image/fig1-4.png" alt="Ohm's Law">
+				<div class='outputBox'><div>
 		</div>
 		<script>
 myTextarea = document.getElementById('code');

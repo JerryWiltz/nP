@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width">
-		<title>Resistors in Series</title>
+		<title>3dB Attenuator via Voltage Divider</title>
 
 		<!-- Create a simple CodeMirror instance -->
 		<link rel="stylesheet" href="../../codemirror/codemirror.css">
@@ -37,18 +37,38 @@
 			<input class='runButton' type="button" value="Run" onclick="run();" />
 			<p class='outputHeader'>Output Area</p>
 			<textarea id='code' name="code" >
-// define the resistors, in Ohms
-var R1 = 50;
-var R2 = 50;
+// this is a 3dB attenuator that we will analyse at DC
 
-// calculate the series resistance, Rs
-var Rs = R1 + R2;
+// define the resistance, in Ohms and the input voltage, in volts
+var RSource = 50, R1 = 292.4, R2 = 17.6, R3 = 292.4, RLoad = 50, V = 1;
 
-// show the output
-nP.log("Series Risistance Demonstration");
-nP.log(Rs);
+// STEP 1: find Rp1 for parallel resistors R3 and RLoad
+Rp1 = 1/(1/R3 + 1/RLoad);
+
+// STEP 2: find Rs1 for series resistors R2 and Rp1
+Rs1= R2 + Rp1;
+
+// STEP 3: find Rp2 for parallel resistors R1 and Rs1
+Rp2 = 1/(1/R1 + 1/Rs1);
+
+// STEP 4: find V1 using V with the voltage divider equation
+V1 = V * Rp2/(RLoad + Rp2);
+
+// STEP 5: find V2 using V1
+V2 = V1 * Rp1/(R2 + Rp1);
+
+// now we find the attenuation based upon the ratio of V1 and V2
+var Attenuation = 20 * Math.log10(V2/V1);
+
+// display outputs
+nP.log('V1 from V');
+nP.log(V1);
+nP.log('V2 from V1');
+nP.log(V2)
+nP.log('3dB Attenuation calculation at DC Demonstration');
+nP.log(Attenuation);		
 			</textarea>
-				<img class="image" src="../../RFbook-image/fig1-3.png" alt="Ohm's Law">
+				<img class="image" src="../../RFbook-image/fig1-10.png" alt="Ohm's Law">
 				<div class='outputBox'><div>
 		</div>
 		<script>

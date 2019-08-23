@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width">
-		<title>Resistors in Series</title>
+		<title>3dB Attenuator via nPort</title>
 
 		<!-- Create a simple CodeMirror instance -->
 		<link rel="stylesheet" href="../../codemirror/codemirror.css">
@@ -37,18 +37,26 @@
 			<input class='runButton' type="button" value="Run" onclick="run();" />
 			<p class='outputHeader'>Output Area</p>
 			<textarea id='code' name="code" >
-// define the resistors, in Ohms
-var R1 = 50;
-var R2 = 50;
+var g = nP.global;
+g.fList = [0]; // if the RF frequency is 0Hz, then it is at DC
 
-// calculate the series resistance, Rs
-var Rs = R1 + R2;
+// define each resistor 2-port
+var R1 = nP.paR(292.4);
+var R2 = nP.seR(17.6);
+var R3 = nP.paR(292.4);
 
-// show the output
-nP.log("Series Risistance Demonstration");
-nP.log(Rs);
+// cascade them forming the attenuator 2-port
+var attenuator = nP.cascade(R1,R2,R3);
+
+// specify the output
+var s21dB = attenuator.out('s21dB');
+
+// display the output
+nP.log('Attenuation, in dB, solved by nPort');
+nP.log(s21dB);
+		
 			</textarea>
-				<img class="image" src="../../RFbook-image/fig1-3.png" alt="Ohm's Law">
+				<img class="image" src="../../RFbook-image/fig1-12.png" alt="Ohm's Law">
 				<div class='outputBox'><div>
 		</div>
 		<script>

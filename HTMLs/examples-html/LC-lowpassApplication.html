@@ -3,12 +3,31 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width">
-		<title>LPF Application</title>
+		<title>Low Pass Filter Application</title>
 
 		<!-- Add nPort -->
-		<script src="index-js/nP.js"></script>
+		<script src="../../dist/nP.js"></script>
+		<link rel="stylesheet" href="../index-css/index.css">
+
 	</head>
-	<body id="body">
+	<body id='body'>
+		<header>
+			<p id='topLeft'><span id='n'>n</span><span id='port'>Port</span><span> </span>A JavaScript Based Microwave Analysis and Learning Tool</p>
+			<ul id='topRight'>
+				<li>
+					<a class='inTable' href="https://github.com/JerryWiltz/nP">code</a><span> / </span>
+				</li>
+				<li>
+					<a class='inTable' href="https://github.com/JerryWiltz/nP/blob/master/README.md">readme</a><span> / </span>
+				</li>
+				<li>
+					<a class='inTable' href="HTMLs/np-repl/repl.html">an RF repl</a><span> / </span>
+				</li>
+				<li>
+					<a class='inTable' href="../../index.html">home</a>
+				</li>
+			</ul>
+		</header>
 		<div id="firstDiv">
 			<table id="firstTable" style="width:880px">
 
@@ -27,7 +46,7 @@
 					<td><input id="minRejFreq" value="1.5"></td>
 				</tr>
 				<tr>
-					<td>Frequecy Units</td>
+					<td>Frequency Units</td>
 					<td>
 						<select id="MultiplierOut">
 							<option value="Hz">Hz</option>
@@ -55,7 +74,7 @@
 				</tr>
 				<tr>
 					<td>Number of Sections (n):</td>
-					<td><span class="output" id="n"></span></td>
+					<td><span class="output" id="N"></span></td> <!-- had to change from n to N -->
 				</tr>
 				<tr>
 					<td>Filter Elements:</td>
@@ -107,7 +126,7 @@ var doDesign = function doDesign () {
 
 	// Fill in the bandwidth and number of sections
 	document.getElementById('w').innerHTML = w.toFixed(2);
-	document.getElementById('n').innerHTML = n.toFixed(0);
+	document.getElementById('N').innerHTML = n.toFixed(0);
 
 	// Fill in the parallel C and series L components
 	LP = nP.chebyLPLCs(gk, maxPassFreq * multiplier);
