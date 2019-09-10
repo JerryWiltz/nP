@@ -210,7 +210,7 @@ export	function  lineChart (lineChartInputObject = {}) {
 	var svg = d3.select(chartID) // this always runs and it overwrites the chartID specified svg
 		.attr("width", outerWidth)
 		.attr("height", outerHeight)
-		.attr("class", 'lineChart')
+		.attr("class", 'lineChart remove') // added remove class for elements that could be removed
 		.style('background-color', '#ffffff');
 
 	var rect = svg.append('rect')
@@ -483,6 +483,7 @@ export	function  lineChart (lineChartInputObject = {}) {
 				.attr('width', outerWidth)
 				.attr('height', outerHeight)
 				.attr('id', 'newImg')
+				.attr('class', 'remove')
 				.node();
 
 			newImg.onload = function() {

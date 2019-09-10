@@ -184,7 +184,7 @@ export	function  lineTable (lineTableInputObject = {}) {
 	var svg = d3.select(tableID) // this always runs and it overwrites the tableID specified svg
 		.attr("width", outerWidth)
 		.attr("height", outerHeight)
-		.attr("class", 'lineTable')
+		.attr("class", 'lineTable remove') // added extra classname for elements that could be removed
 		.style('background-color', '#ffffff');
 	//		.style('border', '1px solid black');
 
@@ -372,6 +372,7 @@ export	function  lineTable (lineTableInputObject = {}) {
 				.attr('width', outerWidth)
 				.attr('height', outerHeight)
 				.attr('id', 'newImg')
+				.attr('class', 'remove')
 				.node();
 
 			newImg.onload = function() {

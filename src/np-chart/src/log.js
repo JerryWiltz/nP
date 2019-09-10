@@ -96,7 +96,7 @@ export function log(input) {
 	// added this for webpage
 	var outputBox = document.getElementsByClassName('outputBox')[0];
 
-	classAttr.value = 'outputSection';
+	classAttr.value = 'outputSection remove'; // added another class name for elements to be removed
 	pre.setAttributeNode(classAttr);
 	if ( typeof input === 'string'){
 		output = input;

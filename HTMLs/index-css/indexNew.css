@@ -1,0 +1,149 @@
+* {box-sizing: border-box; margin: 0; padding: 0;}
+
+body {
+	margin-left: 15px;
+}
+
+.schematic {
+	width: 100%;
+	height: auto;
+}
+
+.wrapper {
+  display: grid;
+  grid-template-columns: repeat(4, [col-start] 1fr);
+  grid-gap: 20px;
+}
+
+.header {
+	grid-column: col-start / span 2;
+	grid-row: 1;
+}
+
+.navigation {
+	grid-column: col-start 3 / span 2;
+	grid-row: 1;
+}
+
+.buttons {
+	grid-column: col-start / span 2;
+	grid-row 2;
+}
+
+.outputHeader {
+	grid-column: col-start 3 / span 2;
+	grid-row: 2;
+}
+
+.text-schematic-wrapper {
+	display: block;
+	grid-column: col-start / span 2;
+	grid-row: 3;
+}
+
+.outputBox {
+	grid-colunm col-start 3 / span 2;
+	grid-row: 3;
+}
+
+
+/*.wrapper {
+	display: grid;
+	grid-template-columns: 1fr 1fr 1fr 1fr;
+	grid-gap: 20px;
+	grid-template-areas:
+	'nPort nPort'
+	'circuitTitle circuitTitle'
+	'circuitTitle circuitTitle';
+}*/
+
+/*
+p#topLeft {
+	padding: 25px;
+	border: 1px solid gray;
+	max-width: 400px;
+	display: inline-block;
+}
+
+ul#topRight {
+	display: inline-block;
+	position: relative;
+	bottom: 25px;
+	left: 250px;
+}
+
+ul#topRight li {
+	display: inline-block;
+}
+
+#n, #port {
+	font-size: 48px;
+	font-weight: bold;
+}
+
+#n {
+	color: grey;
+	font-style: italic;
+}
+
+table#indexTable {
+}
+
+a.inTable {
+	color: grey;
+	text-decoration: none;
+}
+
+table#indexTable  th {
+	color: white;
+	background-color: DarkSlateGrey;
+}
+
+table#indexTable tr {
+	background-color: LightGrey;
+}
+
+table#indexTable th, table#indexTable td {
+	margin: 10px;
+	padding-left: 4px;
+	padding-right: 4px;
+}
+
+#main {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+}
+
+.runButton {
+	grid-row: 1;
+	margin-bottom: 5px;
+	width: 50px;
+}
+
+.outputHeader {
+	grid-row: 1;
+	margin: 0;
+}
+
+.CodeMirror {
+	grid-row: 2;
+	border: 1px solid black;
+	max-width: 95%;
+	display: inline;
+}
+
+.outputBox {
+	grid-row: 2;
+	border-top: 1px solid black;
+}
+
+.image {
+	grid-row: 3;
+	display: inline-block;
+	max-width: 100%;
+	width: calc(100% - 25px);
+	height: auto;
+	left: 25px;
+}
+*/
+

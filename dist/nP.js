@@ -6580,7 +6580,7 @@
 		var svg$$1 = select(chartID) // this always runs and it overwrites the chartID specified svg
 			.attr("width", outerWidth)
 			.attr("height", outerHeight)
-			.attr("class", 'lineChart')
+			.attr("class", 'lineChart remove') // added remove class for elements that could be removed
 			.style('background-color', '#ffffff');
 
 		var rect = svg$$1.append('rect')
@@ -6838,6 +6838,7 @@
 					.attr('width', outerWidth)
 					.attr('height', outerHeight)
 					.attr('id', 'newImg')
+					.attr('class', 'remove')
 					.node();
 
 				newImg.onload = function() {
@@ -6954,7 +6955,7 @@
 		// added this for webpage
 		var outputBox = document.getElementsByClassName('outputBox')[0];
 
-		classAttr.value = 'outputSection';
+		classAttr.value = 'outputSection remove'; // added another class name for elements to be removed
 		pre.setAttributeNode(classAttr);
 		if ( typeof input === 'string'){
 			output = input;
@@ -7141,7 +7142,7 @@
 		var svg$$1 = select(tableID) // this always runs and it overwrites the tableID specified svg
 			.attr("width", outerWidth)
 			.attr("height", outerHeight)
-			.attr("class", 'lineTable')
+			.attr("class", 'lineTable remove') // added extra classname for elements that could be removed
 			.style('background-color', '#ffffff');
 		//		.style('border', '1px solid black');
 
@@ -7325,6 +7326,7 @@
 					.attr('width', outerWidth)
 					.attr('height', outerHeight)
 					.attr('id', 'newImg')
+					.attr('class', 'remove')
 					.node();
 
 				newImg.onload = function() {
@@ -8338,6 +8340,39 @@
 		h1.innerHTML = 'Hello, nPort!';
 	}
 
+	function callCodemirror (textAreaId) {
+		var myTextarea = document.getElementById(textAreaId);
+		var editor = CodeMirror.fromTextArea(myTextarea, {
+			lineNumbers: true
+		});
+		return editor;
+	}
+
+	function runButton (editor, button) {
+
+		function removeNodes (nodeClass) {
+			var removed = document.getElementsByClassName(nodeClass);
+			var i = 0;
+			var nodes = JSON.parse(JSON.stringify(removed.length));
+			for (i; i < nodes; i++) {
+				removed[0].remove();
+			}	}
+		function run() {
+			removeNodes('remove');	
+			function doIt () {
+				var headID = document.getElementsByTagName("head")[0];
+				var newScript = document.createElement("script");
+				newScript.setAttribute('id', 'circuit');
+				newScript.type = "text/javascript";
+				newScript.innerHTML = editor.getValue();
+				headID.appendChild(newScript);
+			}
+			setTimeout(doIt, 100);
+		}
+		document.getElementById(button).addEventListener('click', run);
+
+	}
+
 	// main entry point
 
 	exports.complex = complex;
@@ -8392,6 +8427,8 @@
 	exports.mclin = mclin;
 	exports.mtee = mtee;
 	exports.helloNport = helloNport;
+	exports.callCodemirror = callCodemirror;
+	exports.runButton = runButton;
 
 	Object.defineProperty(exports, '__esModule', { value: true });
 
