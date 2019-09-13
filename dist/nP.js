@@ -8332,23 +8332,61 @@
 		return Ct;
 	}
 
-	function helloNport() {
-		var target = document.getElementsByTagName("body")[0],
-			h1 = document.createElement("h1");
+	function getCircuitTitle() {
+		var circuitTitle = document.getElementById('circuitTitle').innerHTML;
+	document.getElementsByClassName('circuitTitle')[0].innerHTML = circuitTitle;
 
-		target.appendChild(h1);
-		h1.innerHTML = 'Hello, nPort!';
 	}
+
+	var editor;
 
 	function callCodemirror (textAreaId) {
 		var myTextarea = document.getElementById(textAreaId);
-		var editor = CodeMirror.fromTextArea(myTextarea, {
+		editor = CodeMirror.fromTextArea(myTextarea, {
 			lineNumbers: true
 		});
 		return editor;
+
+	}
+	function removeNodes (nodeClass) {
+		var removed = document.getElementsByClassName(nodeClass);
+		var i = 0;
+		var nodes = JSON.parse(JSON.stringify(removed.length));
+		for (i; i < nodes; i++) {
+			removed[0].remove();
+		}}
+	function doIt () {
+		var headID = document.getElementsByTagName("head")[0];
+		var newScript = document.createElement("script");
+		newScript.setAttribute('id', 'circuit');
+		newScript.type = "text/javascript";
+		newScript.innerHTML = editor.getValue();
+		headID.appendChild(newScript);
+	}
+	function run() {
+			removeNodes('remove');	
+			setTimeout(doIt, 100);
+	}
+	function runButton (button) {
+		document.getElementById(button).addEventListener('click', run);
 	}
 
-	function runButton (editor, button) {
+
+
+	/*export	function run() {
+			removeNodes('remove');	
+			function doIt () {
+				var headID = document.getElementsByTagName("head")[0];
+				var newScript = document.createElement("script");
+				newScript.setAttribute('id', 'circuit');
+				newScript.type = "text/javascript";
+				newScript.innerHTML = editor.getValue();
+				headID.appendChild(newScript);
+			}
+			setTimeout(doIt, 100);
+		};
+
+	export function runButton (editor, button) {
 
 		function removeNodes (nodeClass) {
 			var removed = document.getElementsByClassName(nodeClass);
@@ -8356,7 +8394,9 @@
 			var nodes = JSON.parse(JSON.stringify(removed.length));
 			for (i; i < nodes; i++) {
 				removed[0].remove();
-			}	}
+			};
+		};
+
 		function run() {
 			removeNodes('remove');	
 			function doIt () {
@@ -8368,10 +8408,11 @@
 				headID.appendChild(newScript);
 			}
 			setTimeout(doIt, 100);
-		}
+		};
+
 		document.getElementById(button).addEventListener('click', run);
 
-	}
+	};*/
 
 	// main entry point
 
@@ -8426,8 +8467,9 @@
 	exports.mlin = mlin;
 	exports.mclin = mclin;
 	exports.mtee = mtee;
-	exports.helloNport = helloNport;
+	exports.getCircuitTitle = getCircuitTitle;
 	exports.callCodemirror = callCodemirror;
+	exports.run = run;
 	exports.runButton = runButton;
 
 	Object.defineProperty(exports, '__esModule', { value: true });

@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width">
-		<title>3dB Attenuator via nPort</title>
+		<title id='circuitTitle'>3dB Attenuator analyzed by nPort at DC</title>
 
 		<!-- Create a simple CodeMirror instance -->
 		<link rel="stylesheet" href="../../codemirror/codemirror.css">
@@ -16,27 +16,34 @@
 
 	</head>
 	<body>
-		<header>
-			<p id='topLeft'><span id='n'>n</span><span id='port'>Port</span><span> </span>A JavaScript Based Microwave Analysis and Learning Tool</p>
-			<ul id='topRight'>
-				<li>
-					<a class='inTable' href="https://github.com/JerryWiltz/nP">code</a><span> / </span>
-				</li>
-				<li>
-					<a class='inTable' href="https://github.com/JerryWiltz/nP/blob/master/README.md">readme</a><span> / </span>
-				</li>
-				<li>
-					<a class='inTable' href="../../np-repl/repl.html">an RF repl</a><span> / </span>
-				</li>
-				<li>
-					<a class='inTable' href="../../../index.html">home</a>
-				</li>
-			</ul>
-		</header>
-		<div id='main'>
-			<input class='runButton' type="button" value="Run" onclick="run();" />
-			<p class='outputHeader'>Output Area</p>
-			<textarea id='code' name="code" >
+		<div class='wrapper'>
+			<header class='header'>
+				<p class='nPort'><span id='n'>n</span><span id='port'>Port</span><span> </span>A JavaScript Based Microwave Analysis and Learning Tool</p>
+				<p class='circuitTitle'>Name of Circuit</p>
+			</header>
+			<section class='navigation'> 
+				<ul class='menu'>
+					<li>
+						<a class='menuItem' href="https://github.com/JerryWiltz/nP">code</a><span> / </span>
+					</li>
+					<li>
+						<a class='menuItem' href="https://github.com/JerryWiltz/nP/blob/master/README.md">readme</a><span> / </span>
+					</li>
+					<li>
+						<a class='menuItem' href="../../np-repl/repl.html">an RF repl</a><span> / </span>
+					</li>
+					<li>
+						<a class='menuItem' href="../../../index.html">home</a>
+					</li>
+				</ul>
+			</section>
+			<section class='buttons'>
+				<input class='button' id='runButton' type="button" value="Run Again"/>
+				<input class='button' id='startOverButton' type="button" value="Start Over" onClick='location.href=location.href'/>
+			</section>
+			<p class='outputLable'>Output Area</p>
+			<article class='text-schematic-wrapper'>
+			<textarea id='code' class='code' name="code" >
 var g = nP.global;
 g.fList = [0]; // if the RF frequency is 0Hz, then it is at DC
 
@@ -54,42 +61,16 @@ var s21dB = attenuator.out('s21dB');
 // display the output
 nP.log('Attenuation, in dB, solved by nPort');
 nP.log(s21dB);
-		
 			</textarea>
-				<img class="image" src="../../RFbook-image/fig1-12.png" alt="3dB attenuator via nPort">
-				<div class='outputBox'><div>
+				<img class='schematic' src="../../RFbook-image/fig1-12.png" alt="3dB attenuator via nPort">
+			</article>
+				<article class='outputBox'></article>
 		</div>
 		<script>
-myTextarea = document.getElementById('code');
-
-
-var editor = CodeMirror.fromTextArea(myTextarea, {
-	lineNumbers: true
-});
-
-function removeNodes (nodeClass) {
-	var zap = document.getElementsByClassName(nodeClass);
-	var i = 0;
-	var nodes = JSON.parse(JSON.stringify(zap.length));
-	for (i; i < nodes; i++) {
-		zap[0].remove();
-	};
-};
-
-function run() {
-	removeNodes('outputSection');	
-	removeNodes('lineChart');
-	removeNodes('lineTable');
-	function doIt () {
-		var headID = document.getElementsByTagName("head")[0];
-		var newScript = document.createElement("script");
-		newScript.setAttribute('id', 'circuit');
-		newScript.type = "text/javascript";
-		newScript.innerHTML = editor.getValue();
-		headID.appendChild(newScript);
-	}
-	setTimeout(doIt, 100);
-};
+nP.getCircuitTitle();
+nP.callCodemirror('code');
+nP.run();
+nP.runButton('runButton');
 		</script>
 	</body>
 </html>
