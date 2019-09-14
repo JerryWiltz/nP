@@ -2,7 +2,7 @@
 <html>
 	<head>
 		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width">
+		<meta name="viewport" content="width=device-width,initial-scale=1">
 		<title id='circuitTitle'>3dB Attenuator analyzed by nPort at DC</title>
 
 		<!-- Create a simple CodeMirror instance -->
@@ -60,7 +60,7 @@ var s21dB = attenuator.out('s21dB');
 
 // display the output
 nP.log('Attenuation, in dB, solved by nPort');
-nP.log(s21dB);
+nP.log(s21dB); nP.log(nP.bodyWidth());
 			</textarea>
 				<img class='schematic' src="../../RFbook-image/fig1-12.png" alt="3dB attenuator via nPort">
 			</article>
