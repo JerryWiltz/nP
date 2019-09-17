@@ -15,7 +15,7 @@ body {
 	display: grid;
 	grid-template-columns: 1fr;
 	grid-gap: 10px;
-	width-max: 355px;
+	background-color: red;
 }
 
 .header {
@@ -45,6 +45,7 @@ body {
 
 .CodeMirror {
 	border: 1px solid grey;
+	min-width: 350px;
 }
 
 .schematic {
@@ -106,7 +107,7 @@ li {
 		display: grid;
 		grid-template-columns: repeat(4, [col-start] 1fr);
 		grid-gap: 20px;
-		width: 100%;
+		background-color: white;
 	}
 
 	.header {
