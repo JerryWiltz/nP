@@ -5,10 +5,10 @@
 }
 
 body {
-	margin-top: 5px;
+	/*margin-top: 5px;
 	margin-left: 20px;
 	margin-right: 20px;
-	margin-bottom: 20px;
+	margin-bottom: 20px;*/
 }
 
 .wrapper {
@@ -16,6 +16,8 @@ body {
 	grid-template-columns: 1fr;
 	grid-gap: 10px;
 	background-color: red;
+	width: 360;
+	margin: auto;
 }
 
 .header {
@@ -45,7 +47,8 @@ body {
 
 .CodeMirror {
 	border: 1px solid grey;
-	min-width: 350px;
+	width: 90%;
+	margin: auto;
 }
 
 .schematic {
@@ -101,7 +104,7 @@ li {
 	padding-left: 5px;
 }
 
-@media (min-width: 860px) {
+/*@media (min-width: 860px) {
 
 	.wrapper {
 		display: grid;
@@ -193,3 +196,4 @@ li {
 	}
 
 }
+*/

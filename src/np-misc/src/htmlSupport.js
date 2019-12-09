@@ -1,4 +1,4 @@
-var editor;
+export var editor;
 
 export function callCodemirror (textAreaId) {
 	var myTextarea = document.getElementById(textAreaId);

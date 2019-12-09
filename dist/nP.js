@@ -8338,11 +8338,9 @@
 
 	}
 
-	var editor;
-
 	function callCodemirror (textAreaId) {
 		var myTextarea = document.getElementById(textAreaId);
-		editor = CodeMirror.fromTextArea(myTextarea, {
+		exports.editor = CodeMirror.fromTextArea(myTextarea, {
 			lineNumbers: true
 		});
 
@@ -8359,7 +8357,7 @@
 		var newScript = document.createElement("script");
 		newScript.setAttribute('id', 'circuit');
 		newScript.type = "text/javascript";
-		newScript.innerHTML = editor.getValue();
+		newScript.innerHTML = exports.editor.getValue();
 		headID.appendChild(newScript);
 	}
 	function run() {

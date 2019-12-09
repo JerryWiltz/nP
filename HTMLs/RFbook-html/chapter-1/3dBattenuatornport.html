@@ -69,6 +69,19 @@ nP.log(s21dB); nP.log(nP.bodyWidth());
 		<script>
 nP.getCircuitTitle();
 nP.callCodemirror('code');
+function getContainerWidth (containerClass) {
+	var width = document.getElementsByClassName(containerClass)[0].clientWidth;
+	return width;
+};
+function setContainerWidth (containerClass) {
+	var width = document.getElementsByClassName(containerClass)[0].clientWidth;
+	return width;
+};
+var w = getContainerWidth('wrapper');
+nP.editor.setSize(w, 200);
+
+//window.addEventListener('resize', function () {nP.editor.setSize(getContainerWidth('wrapper'), 200)});
+
 nP.run();
 nP.runButton('runButton');
 		</script>

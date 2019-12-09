@@ -64,7 +64,8 @@ var editor = CodeMirror.fromTextArea(myTextarea, {
 });
 
 // hard code the window of the textedit
-editor.setSize(800, 400);
+//editor.setSize(400, 400);
+editor.setSize('100%',800);
 
 myTextarea.innerHTML = editor.getValue();
 
