@@ -7,9 +7,9 @@
 	</head>
 	<body>
 		<div style="display: inline-block">
-			<svg id="canvas1" width="500" height="300"></svg>
+			<svg id="myChart" width="400" height="300"></svg>
 		</div>
-		<script src="../dist/nP.js"></script>
+		<script src="../../dist/nP.js"></script>
 
 		<script>
 
@@ -35,8 +35,8 @@ var branchOut = branch.out('s21dB','s31dB');
 
 // set up plot
 var plot = {
-	canvasID: '#canvas1',
-	inputTable: branchOut,
+	chartID: 'myChart',
+	inputTable: [branchOut],
 	freqUnits: 'GHz'
 };
 nP.lineChart(plot);

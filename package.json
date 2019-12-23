@@ -6,8 +6,8 @@
     "build": "rollup -c"
   },
   "devDependencies": {
-    "d3": "^5.4.0",
-    "rollup-plugin-node-resolve": "^3.3.0"
+    "@rollup/plugin-node-resolve": "^6.0.0",
+    "d3": "^5.4.0"
   },
   "dependencies": {},
   "description": "A microwave computer analysis program",
