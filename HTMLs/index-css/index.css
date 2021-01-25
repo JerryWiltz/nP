@@ -1,93 +1,144 @@
+
 body {
-	margin-left: 15px;
+	margin: 5px;
+	font-family: Arial, sans-serif;
 }
 
-p#topLeft {
-	padding: 25px;
+header {
+	padding: 20px;
 	border: 1px solid gray;
-	max-width: 400px;
-	display: inline-block;
 }
 
-ul#topRight {
-	display: inline-block;
-	position: relative;
-	bottom: 25px;
-	left: 250px;
+.nPortLogo {
+	padding: 15px;
+	text-decoration: none;
 }
 
-ul#topRight li {
-	display: inline-block;
-}
-
-#n, #port {
-	font-size: 48px;
-	font-weight: bold;
-}
-
-#n {
+.nStyle {
 	color: grey;
 	font-style: italic;
 }
 
-table#indexTable {
+.portStyle {
+	color: black;
+	font-style: normal;
 }
 
-a.inTable {
-	color: grey;
-	text-decoration: none;
+.nStyle, .portStyle {
+	font-size: 48px;
+	font-weight: bold;
 }
 
-table#indexTable  th {
-	color: white;
-	background-color: DarkSlateGrey;
-}
-
-table#indexTable tr {
-	background-color: LightGrey;
-}
-
-table#indexTable th, table#indexTable td {
-	margin: 10px;
-	padding-left: 4px;
-	padding-right: 4px;
-}
-
-#main {
-	display: grid;
-	grid-template-columns: 1fr 1fr;
-}
-
-.runButton {
-	grid-row: 1;
-	margin-bottom: 5px;
-	width: 50px;
-}
-
-.outputHeader {
-	grid-row: 1;
+.titleParagraph {
+	padding: 10px;
 	margin: 0;
 }
 
-.CodeMirror {
-	grid-row: 2;
-	border: 1px solid black;
-	max-width: 95%;
+/* main nav */
+
+ul.mainMenu {
+	padding: 0;
+}
+
+ul.mainMenu li {
 	display: inline;
+	list-style-type: none;
+	padding-left: 30px;
+}
+
+ul.mainMenu li a {
+	text-decoration: none;
+	color: grey;
+	background-color: LightGrey;
+	border-radius: 5px;
+	padding: 2px;
+}
+
+ul.mainMenu li a:hover {
+	color: blue;
+}
+
+/* examples nav */
+
+
+ul.chapter  {
+	padding: 2px;
+	margin: 0;
+
+}
+
+ul.chapter span {
+	display: inline-block;
+	background-color: DarkSlateGrey;
+	padding: 1px;
+	margin: 1px;
+	color: white;
+	border-radius: 5px;
+}
+
+ul.chapter span:hover {
+	color: yellow;
+}
+
+ul.chapter li {
+	display: inline-block;
+	list-style-type: none;
+	padding: 1px;
+	margin: 1px;
+}
+
+ul.chapter li a {
+	color: grey;
+	background-color: LightGrey;
+	text-decoration: none;
+	padding-top: 2px;
+	padding-bottom: 1px;
+	padding-left: 1px;
+	padding-right: 1px;
+	border-radius: 5px;
+	margin: 0;
+}
+
+ul.chapter li a:hover {
+	color: blue;
+}
+
+/*
+#main {
+display: grid;
+grid-template-columns: 1fr 1fr;
+}
+
+.runButton {
+grid-row: 1;
+margin-bottom: 5px;
+width: 50px;
+}
+
+.outputHeader {
+grid-row: 1;
+margin: 0;
+}
+
+.CodeMirror {
+grid-row: 2;
+border: 1px solid black;
+max-width: 95%;
+display: inline;
 }
 
 .outputBox {
-	grid-row: 2;
-	border-top: 1px solid black;
+grid-row: 2;
+border-top: 1px solid black;
 }
 
 .image {
-	grid-row: 3;
-	display: inline-block;
-	max-width: 100%;
-	width: calc(100% - 25px);
-	height: auto;
-	left: 25px;
+grid-row: 3;
+display: inline-block;
+max-width: 100%;
+width: calc(100% - 25px);
+height: auto;
+left: 25px;
 }
 
-
+ */
