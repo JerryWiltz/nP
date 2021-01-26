@@ -1,3 +1,9 @@
+* {
+	margin: 0;
+	padding: 0;
+	outline: 0;
+	box-sizing: border-box;
+}
 
 body {
 	margin: 5px;
@@ -5,7 +11,7 @@ body {
 }
 
 header {
-	padding: 20px;
+	padding: 5px 5px 5px 20px;
 	border: 1px solid gray;
 }
 
@@ -34,72 +40,64 @@ header {
 	margin: 0;
 }
 
-/* main nav */
+/***** MAIN NAVIGATION ****/
 
 ul.mainMenu {
-	padding: 0;
+	list-style-type: none;
+	padding: 3px;
+	margin: 5px 0 3px 0;
 }
 
 ul.mainMenu li {
-	display: inline;
-	list-style-type: none;
-	padding-left: 30px;
+	display: inline-block;
+	padding: 1px 30px 1px 1px;
 }
 
 ul.mainMenu li a {
 	text-decoration: none;
-	color: grey;
-	background-color: LightGrey;
+	color: black;
+	padding: 1px;
+	background-color: #aab8bf;
 	border-radius: 5px;
-	padding: 2px;
+
 }
 
 ul.mainMenu li a:hover {
 	color: blue;
 }
 
-/* examples nav */
+/**** EXAMPLES NAVIGATION ****/
 
-
-ul.chapter  {
-	padding: 2px;
+ul.examples {
+	list-style-type: none;
+	padding: 0;
 	margin: 0;
-
 }
 
-ul.chapter span {
+ul.examples li  {
 	display: inline-block;
-	background-color: DarkSlateGrey;
 	padding: 1px;
 	margin: 1px;
 	color: white;
 	border-radius: 5px;
 }
 
-ul.chapter span:hover {
-	color: yellow;
+ul.examples li.chapter:hover {
+	color: yellow; 
 }
 
-ul.chapter li {
-	display: inline-block;
-	list-style-type: none;
-	padding: 1px;
-	margin: 1px;
-}
-
-ul.chapter li a {
-	color: grey;
+ul.examples li a  { color: grey; padding: 1px;
 	background-color: LightGrey;
 	text-decoration: none;
-	padding-top: 2px;
-	padding-bottom: 1px;
-	padding-left: 1px;
-	padding-right: 1px;
+	padding-bottom: 1.5px;
 	border-radius: 5px;
-	margin: 0;
 }
 
-ul.chapter li a:hover {
+ul.examples li.chapter {
+	background-color: DarkSlateGrey;
+}
+
+ul.examples li a:hover {
 	color: blue;
 }
 
