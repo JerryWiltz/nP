@@ -88,12 +88,10 @@ a.nav:hover {
 	margin-bottom: 0.75rem;
 }
 
-.examples p {
-	font-weight: bold;
+img.image {
+	display: block;
+	width: 80%;
+	margin-left: auto;
+	margin-right: auto;
 }
-
-.examples ul li {
-	display: inline-block;
-}
-
 /** <a> nav element sytles are listed above **/

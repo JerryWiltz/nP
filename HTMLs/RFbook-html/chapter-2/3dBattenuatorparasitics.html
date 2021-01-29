@@ -12,59 +12,67 @@
 
 		<!-- Add nPort -->
 		<script src="../../../dist/nP.js"></script>
-		<link rel="stylesheet" href="../../index-css/index.css">
+		<link rel="stylesheet" href="../../index-css/examples.css">
 
 	</head>
 	<body>
-		<header>
-			<p id='topLeft'><span id='n'>n</span><span id='port'>Port</span><span> </span>A JavaScript Based Microwave Analysis and Learning Tool</p>
-			<ul id='topRight'>
-				<li>
-					<a class='inTable' href="https://github.com/JerryWiltz/nP">code</a><span> / </span>
-				</li>
-				<li>
-					<a class='inTable' href="https://github.com/JerryWiltz/nP/blob/master/README.md">readme</a><span> / </span>
-				</li>
-				<li>
-					<a class='inTable' href="../../np-repl/repl.html">an RF repl</a><span> / </span>
-				</li>
-				<li>
-					<a class='inTable' href="../../../index.html">home</a>
-				</li>
-			</ul>
+		<header class='flexHeader'>		
+			<div class='logo'>
+				<a href="index.html"><span class='grayColor'>n</span><span class='blackColor'>Port</span></a>
+				<p>A JavaScript Based Microwave Analysis and Learning Tool</p>
+			</div>
+
+			<div class='headerNavigation'>
+				<ul>
+					<li>
+						<a class='nav' href="https://github.com/JerryWiltz/nP/blob/master/README.md">How To</a>
+					</li>
+					<li>
+						<a class='nav' href="HTMLs/np-repl/repl.html">Try It</a>
+					</li>
+				</ul>
+			</div>
 		</header>
-		<div id='main'>
-			<input class='runButton' type="button" value="Run" onclick="run();" />
-			<p class='outputHeader'>Output Area</p>
-			<textarea id='code' name="code" >
-var g = nP.global;
-g.fList = g.fGen(.1e9,10e9,21);
 
-// define attenuator 2-port, "attenuator"
-var R1 = nP.paR(292.4);
-var R2 = nP.seR(17.6);
-var R3 = nP.paR(292.4);
-var attenuator = nP.cascade(R1,R2,R3);
+		<section class='main'>
+			<div class='examples'>
+				<h3>3 dB Attenuator with Parasitics</h3>
+				<div>
+					<a class='nav' href='#' onclick='run()'>Run</a>
+				</div>
 
-// add the parasitic capacitance Cf1 and Cf2 to define the 2-port, "attenuatorWithParasitics"
-var Cf1 = nP.paC(0.5e-12);
-var Cf2 = nP.paC(0.5e-12);
-var attenuatorWithParasitics = nP.cascade(Cf1,attenuator,Cf2);
+				<div>
+					<img class="image" src="../../RFbook-image/fig2-1.png" alt="3dB attenuator with parasitics">
+				</div>
+				<textarea id='code' name="code" >
+					var g = nP.global;
+					g.fList = g.fGen(.1e9,10e9,21);
 
-// specify the outputs
-var s21dB = attenuator.out('s21dB');
-var s21dBParasitics = attenuatorWithParasitics.out('s21dB')
+					// define attenuator 2-port, "attenuator"
+					var R1 = nP.paR(292.4);
+					var R2 = nP.seR(17.6);
+					var R3 = nP.paR(292.4);
+					var attenuator = nP.cascade(R1,R2,R3);
 
-// compare output plots with nP.lineChart();
-nP.log('Ideal and non-ideal 3dB attenuator demonstration')
-nP.lineChart({inputTable: [s21dB, s21dBParasitics]});			</textarea>
-				<img class="image" src="../../RFbook-image/fig2-1.png" alt="3dB attenuator with parasitics">
-				<div class='outputBox'><div>
-		</div>
-		<script>
-myTextarea = document.getElementById('code');
+					// add the parasitic capacitance Cf1 and Cf2 to define the 2-port, "attenuatorWithParasitics"
+					var Cf1 = nP.paC(0.5e-12);
+					var Cf2 = nP.paC(0.5e-12);
+					var attenuatorWithParasitics = nP.cascade(Cf1,attenuator,Cf2);
 
+					// specify the outputs
+					var s21dB = attenuator.out('s21dB');
+					var s21dBParasitics = attenuatorWithParasitics.out('s21dB')
 
+					// compare output plots with nP.lineChart();
+					nP.log('Ideal and non-ideal 3dB attenuator demonstration')
+					nP.lineChart({inputTable: [s21dB, s21dBParasitics]});
+				</textarea>
+					<div class='outputBox'>
+						<h3>Output</h3>
+					</div>
+			</div>
+			<script>
+				var myTextarea = document.getElementById('code');
 var editor = CodeMirror.fromTextArea(myTextarea, {
 	lineNumbers: true
 });
@@ -92,6 +100,7 @@ function run() {
 	}
 	setTimeout(doIt, 100);
 };
-		</script>
+			</script>
+		</section>
 	</body>
 </html>
