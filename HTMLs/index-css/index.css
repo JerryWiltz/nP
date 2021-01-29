@@ -2,6 +2,8 @@
 	margin: 0;
 	padding: 0;
 	outline: 0;
+	text-decoration: none;
+	list-style-type: none;
 	box-sizing: border-box;
 }
 
@@ -15,89 +17,95 @@ header {
 	border: 1px solid gray;
 }
 
-.nPortLogo {
-	padding: 15px;
-	text-decoration: none;
+/**** Header Logo ****/
+
+.logo {
+	padding: .75rem;
 }
 
-.nStyle {
-	color: grey;
+.grayColor {
+	color: gray;
 	font-style: italic;
 }
 
-.portStyle {
+.blackColor {
 	color: black;
 	font-style: normal;
 }
 
-.nStyle, .portStyle {
-	font-size: 48px;
+.logo a span {
+	font-size: 3rem;
 	font-weight: bold;
+	display: inline-block;
 }
 
-.titleParagraph {
-	padding: 10px;
-	margin: 0;
+.logo a:hover .blackColor {
+		color: #f56642;
 }
 
-/***** MAIN NAVIGATION ****/
+.logo a:hover .grayColor {
+	color: black;
+}
+	
+.logo p {
+	font-size: 0.75rem;
+}
 
-ul.mainMenu {
-	list-style-type: none;
+/**** Header Menu ****/
+
+.headerNavigation ul {
 	padding: 3px;
 	margin: 5px 0 3px 0;
 }
 
-ul.mainMenu li {
+.headerNavigation ul li {
 	display: inline-block;
 	padding: 1px 30px 1px 1px;
 }
 
-ul.mainMenu li a {
-	text-decoration: none;
-	color: black;
+.headerNavigation ul li a {
+	color: gray;
 	padding: 1px;
-	background-color: #aab8bf;
+	background-color: LightGray;
 	border-radius: 5px;
 
 }
 
-ul.mainMenu li a:hover {
+.headerNavigation ul li a:hover {
 	color: blue;
 }
 
-/**** EXAMPLES NAVIGATION ****/
-
-ul.examples {
-	list-style-type: none;
-	padding: 0;
-	margin: 0;
+.flexHeader {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
 }
 
-ul.examples li  {
+/**** Main Section ****/
+
+.examples {
+	margin-top: 0.75rem;
+	margin-bottom: 0.75rem;
+}
+
+.examples p {
+	font-weight: bold;
+}
+
+.examples ul li {
 	display: inline-block;
+}
+
+.examples ul li a  {
+	display: inline-block;
+	color: gray; 
 	padding: 1px;
 	margin: 1px;
-	color: white;
+	background-color: LightGray;
 	border-radius: 5px;
 }
 
-ul.examples li.chapter:hover {
-	color: yellow; 
-}
-
-ul.examples li a  { color: grey; padding: 1px;
-	background-color: LightGrey;
-	text-decoration: none;
-	padding-bottom: 1.5px;
-	border-radius: 5px;
-}
-
-ul.examples li.chapter {
-	background-color: DarkSlateGrey;
-}
-
-ul.examples li a:hover {
+.examples ul li a:hover {
 	color: blue;
 }
 
