@@ -11,39 +11,41 @@ body {
 	font-family: Arial, sans-serif;
 }
 
-header {
+.flexHeader { /*** flex 1 ***/
+	display: flex;
+	flex-direction: column;
 	padding: 5px 5px 5px 20px;
 	border: 1px solid gray;
 }
 
 /**** Header Logo ****/
 
-.logo {
+.nPortlogo {
 	padding: .75rem;
 }
 
-.grayColor {
+.nColor {
 	color: gray;
 	font-style: italic;
 }
 
-.blackColor {
+.PortColor {
 	color: black;
 	font-style: normal;
 }
 
-.logo a span {
+.nPortlogo a span {
 	font-size: 3rem;
 	font-weight: bold;
 	display: inline-block;
 }
 
-.logo a:hover .blackColor {
-	color: #cc3300;
+.nPortlogo a:hover .nColor {
+	color: black;
 }
 
-.logo a:hover .grayColor {
-	color: black;
+.nPortlogo a:hover .PortColor {
+	color: #cc3300;
 }
 
 .logo p {
@@ -62,7 +64,7 @@ header {
 	padding: 1px 30px 1px 1px;
 }
 
-/** whole page **/
+/** a.nav for whole page **/
 a.nav {
 	color: gray;
 	padding: 1px;
@@ -70,28 +72,56 @@ a.nav {
 	border-radius: 5px;
 }
 
-/** whole page **/
+/** a.nav:howver for whole page **/
 a.nav:hover {
 	color: blue;
 }
 
-.flexHeader {
-	display: flex;
-	flex-wrap: wrap;
-	justify-content: space-between;
-}
-
+/**********************/
 /**** Main Section ****/
+/**********************/
 
-.examples {
+.main {
 	margin-top: 0.75rem;
 	margin-bottom: 0.75rem;
 }
 
+.flexHeaderAndButton { /*** flex 2 ***/
+	display: flex;
+	flex-direction: column;
+}
+
+.code {
+	display: block;
+}
+
+.flexImageAndCode { /*** flex 3 ***/
+	display: flex;
+	flex-direction: column;
+}
+
 img.image {
 	display: block;
-	width: 80%;
+	width: 100%;
 	margin-left: auto;
 	margin-right: auto;
 }
-/** <a> nav element sytles are listed above **/
+
+div.code {
+	outline: solid 1px red;
+	flex-grow: 1;
+}
+
+@media (min-width: 800px) {
+	.col {
+		flex-direction: row;
+	}
+	div.code {
+		outline: solid 1px green;
+		width: 100%;
+	}
+}
+
+/** For the Run buttom, using an <a> nav element sytles are listed above **/
+
+
