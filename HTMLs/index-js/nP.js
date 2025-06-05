@@ -8314,7 +8314,7 @@
 		var circuitTitle = document.getElementById('circuitTitle').innerHTML;
 	document.getElementsByClassName('circuitTitle')[0].innerHTML = circuitTitle;
 
-	}
+	}// check comment
 
 	function callCodemirror (textAreaId) {
 		var myTextarea = document.getElementById(textAreaId);
