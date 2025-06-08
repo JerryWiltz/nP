@@ -8,7 +8,7 @@ export default 	{
 			file: './dist/nP.js',
 			format: 'umd',
 			name: 'nP',
-			global: 'd3',
+			global: 'd3'
 		}
 	],
 	plugins: [
