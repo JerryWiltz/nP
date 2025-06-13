@@ -4,7 +4,7 @@
 		<title>Heulsman Example 3.4.1</title>
 	</head>
 	<body id="body">
-		<script src="../dist/nP.js"></script>
+		<script src="../../dist/nP.js"></script>
 		<script>
 
 // Set up resistance Matrix
@@ -29,7 +29,7 @@ var R = nP.matrix([[1017+3492,        -1017,            0,                  0,  
 		   [    -3492,            0,            0,               -837,837+949+3492, 0]]);
 
 var I = R.solveGaussFB();
-console.log(I);
+nP.log(I);
 
 
 // This is the correct value for i and I; they are the same!!

@@ -12,7 +12,7 @@
 		<div style="display: inline-block">
 			<svg id="canvas2" width="500" height="300"></svg>
 		</div>
-<script src="../dist/nP.js"></script>
+<script src="../../dist/nP.js"></script>
 
 		<script>
 
@@ -20,7 +20,6 @@
 // this is for a quarter wave at 10GHz
 var g = nP.global;	
 g.fList = g.fGen(2000e6,18000e6,21);
-//g.fList = [2e9];
 
 //set up the coupleing factor
 var C = 3;
@@ -35,8 +34,8 @@ var directionalCouplerOut1 = q1.out('s21dB','s41dB');
 
 // set up plot
 var plot1 = {
-	canvasID: '#canvas1',
-	inputTable: directionalCouplerOut1,
+	chartID: 'canvas1',
+	inputTable: [directionalCouplerOut1],
 	freqUnits: 'GHz'
 };
 nP.lineChart(plot1);
@@ -48,13 +47,11 @@ var directionalCouplerOut2 = q2.out('s21dB','s41dB');
 
 // set up plot
 var plot2 = {
-	canvasID: '#canvas2',
-	inputTable: directionalCouplerOut2,
+	chartID: 'canvas2',
+	inputTable: [directionalCouplerOut2],
 	freqUnits: 'GHz'
 };
 nP.lineChart(plot2);
-
-
 
 		</script>
 	</body>

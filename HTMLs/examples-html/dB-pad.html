@@ -13,7 +13,7 @@
 			<h3>Resistive Atenuator with parasitics</h3>
 			<svg id="canvas2" width="500" height="300"></svg>
 		</div>
-		<script src="../dist/nP.js"></script>
+		<script src="../../dist/nP.js"></script>
 		<script>
 
 // Generate frequency list
@@ -29,16 +29,16 @@ var c2 = nP.paC(0.15e-12);
 
 
 // the no parasitics case
-var pad = nP.cascade(r1, r2, r3);
-var table = pad.out('s11dB', 's21dB');
-var inputObject = { inputTable: table, canvasID: '#canvas1' };
-nP.lineChart(inputObject);
+var pad1 = nP.cascade(r1, r2, r3);
+var table1 = pad1.out('s11dB', 's21dB');
+var inputObject1 = { chartID: 'canvas1', inputTable: [table1], freqUnits: 'GHz' };
+nP.lineChart(inputObject1);
 
 // the parasitics case
-var pad1 = nP.cascade(c1, r1, r2, r3, c2);
-var table1 = pad1.out('s11dB', 's21dB');
-var inputObject1 = { inputTable: table1, canvasID: '#canvas2'};
-nP.lineChart(inputObject1);
+var pad2 = nP.cascade(c1, r1, r2, r3, c2);
+var table2 = pad2.out('s11dB', 's21dB');
+var inputObject2 = { chartID: 'canvas2', inputTable2: [table2], freqUnits: 'GHz'};
+nP.lineChart(inputObject2);
 
 		</script>
 	</body>

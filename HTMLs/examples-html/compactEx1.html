@@ -7,16 +7,16 @@
 	</head>
 	<body>
 		<div style="display: inline-block">
-			<svg id="canvas1" width="500" height="300"></svg>
+			<svg id="myChart" width="500" height="300"></svg>
 		</div>
-		<script src="../dist/nP.js"></script>
+		<script src="../../dist/nP.js"></script>
 
 		<script>
 
 // set up the frequency
 var g = nP.global;	
-//g.fList = g.fGen(100e6,1000e6, 500);
-g.fList = [100e6,400e6,700e6,1000e6];
+g.fList = g.fGen(100e6,1000e6, 500);
+//g.fList = [100e6,400e6,700e6,1000e6];
 
 // set up the high pass
 var c1 = nP.seC(3.05e-12);
@@ -32,14 +32,16 @@ var lp = rl2.cas(c3).cas(rl3);
 
 // set up the diplexer
 var tee = nP.Tee();
-var filt = nP.nodal([tee,1,2,3],[hp,2,4],[lp,3,5],['out',1,4,5]).out('s11dB','s21dB','s31dB');
+var filt = nP.nodal([tee,1,2,3],[hp,2,4],[lp,3,5],['out',1,4,5]);
+var filtOut = filt.out('s21dB','s31dB');
 
 // set up plot
 var plot = {
-	canvasID: '#canvas1',
-	inputTable: filt,
+	chartID:'myChart',
+	inputTable: [filtOut],
 	freqUnits: 'GHz'
 };
+
 nP.lineChart(plot);
 
 		</script>

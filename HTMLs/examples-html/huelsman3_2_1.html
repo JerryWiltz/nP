@@ -4,7 +4,7 @@
 		<title>Heulsman Example 3.2.1</title>
 	</head>
 	<body id="body">
-		<script src="../dist/nP.js"></script>
+		<script src="../../dist/nP.js"></script>
 		<script>
 
 // Set up resistance Matrix
@@ -15,7 +15,7 @@ var v = nP.matrix([[7],[-12],[9]]);
 
 // Compute the current Matrix by performing invert().mult() operations
 var i = r.invert().mul(v);
-console.log(i);
+nP.log(i);
 
 // This is the correct value for i
 /*
