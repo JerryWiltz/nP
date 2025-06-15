@@ -6844,7 +6844,7 @@
 
 	}
 
-	const version = '0.0.2';
+	const version = '0.0.45';
 
 	function CplxToCell(complexNumber) {
 		return complexNumber.x.toPrecision(4) + (complexNumber.y.toPrecision(4) >= 0 ? " +j" + complexNumber.y.toPrecision(4) : " -j" + (-complexNumber.y).toPrecision(4));
