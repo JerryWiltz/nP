@@ -1,0 +1,107 @@
+<!--DOCTYPE html-->
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>3dB Attenuator via Voltage Divider</title>
+
+		<!-- Create a simple CodeMirror instance -->
+		<link rel="stylesheet" href="../../codemirror/codemirror.css">
+		<script src="../../codemirror/codemirror.js"></script>
+		<script src="../../codemirror/javascript/javascript.js"></script>
+
+		<!-- Add nPort -->
+		<script src="../../../dist/nP.js"></script>
+		<link rel="stylesheet" href="../../index-css/index.css">
+
+	</head>
+	<body>
+		<header>
+			<p id='topLeft'><span id='n'>n</span><span id='port'>Port</span><span> </span>A JavaScript Based Microwave Analysis and Learning Tool</p>
+			<ul id='topRight'>
+				<li>
+					<a class='inTable' href="https://github.com/JerryWiltz/nP">code</a><span> / </span>
+				</li>
+				<li>
+					<a class='inTable' href="https://github.com/JerryWiltz/nP/blob/master/README.md">readme</a><span> / </span>
+				</li>
+				<li>
+					<a class='inTable' href="../../np-repl/repl.html">an RF repl</a><span> / </span>
+				</li>
+				<li>
+					<a class='inTable' href="../../../index.html">home</a>
+				</li>
+			</ul>
+		</header>
+		<div id='main'>
+			<input class='runButton' type="button" value="Run" onclick="run();" />
+			<p class='outputHeader'>Output Area</p>
+			<textarea id='code' name="code" >
+// this is a 3dB attenuator that we will analyse at DC
+
+// define the resistance, in Ohms and the input voltage, in volts
+var RSource = 50, R1 = 292.4, R2 = 17.6, R3 = 292.4, RLoad = 50, V = 1;
+
+// STEP 1: find Rp1 for parallel resistors R3 and RLoad
+Rp1 = 1/(1/R3 + 1/RLoad);
+
+// STEP 2: find Rs1 for series resistors R2 and Rp1
+Rs1= R2 + Rp1;
+
+// STEP 3: find Rp2 for parallel resistors R1 and Rs1
+Rp2 = 1/(1/R1 + 1/Rs1);
+
+// STEP 4: find V1 using V with the voltage divider equation
+V1 = V * Rp2/(RLoad + Rp2);
+
+// STEP 5: find V2 using V1
+V2 = V1 * Rp1/(R2 + Rp1);
+
+// now we find the attenuation based upon the ratio of V1 and V2
+var Attenuation = 20 * Math.log10(V2/V1);
+
+// display outputs
+nP.log('V1 from V');
+nP.log(V1);
+nP.log('V2 from V1');
+nP.log(V2)
+nP.log('3dB Attenuation calculation at DC Demonstration');
+nP.log(Attenuation);		
+			</textarea>
+				<img class="image" src="../../RFbook-image/fig1-10.png" alt="3dB attenuator via voltage divider">
+				<div class='outputBox'><div>
+		</div>
+		<script>
+myTextarea = document.getElementById('code');
+
+
+var editor = CodeMirror.fromTextArea(myTextarea, {
+	lineNumbers: true
+});
+
+function removeNodes (nodeClass) {
+	var zap = document.getElementsByClassName(nodeClass);
+	var i = 0;
+	var nodes = JSON.parse(JSON.stringify(zap.length));
+	for (i; i < nodes; i++) {
+		zap[0].remove();
+	};
+};
+
+function run() {
+	removeNodes('outputSection');	
+	removeNodes('lineChart');
+	removeNodes('lineTable');
+	function doIt () {
+		var headID = document.getElementsByTagName("head")[0];
+		var newScript = document.createElement("script");
+		newScript.setAttribute('id', 'circuit');
+		newScript.type = "text/javascript";
+		newScript.innerHTML = editor.getValue();
+		headID.appendChild(newScript);
+	}
+	setTimeout(doIt, 100);
+};
+		</script>
+	</body>
+</html>
