@@ -1,0 +1,114 @@
+<!--DOCTYPE html-->
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>Matrix Arithmetic</title>
+
+		<!-- Create a simple CodeMirror instance -->
+		<link rel="stylesheet" href="../codemirror/codemirror.css">
+		<script src="../codemirror/codemirror.js"></script>
+		<script src="../codemirror/javascript/javascript.js"></script>
+
+		<!-- Add nPort -->
+		<script src="../../dist/nP.js"></script>
+		<link rel="stylesheet" href="../index-css/index.css">
+
+	</head>
+	<body>
+		<header>
+			<p id='topLeft'><span id='n'>n</span><span id='port'>Port</span><span> </span>A JavaScript Based Microwave Analysis and Learning Tool</p>
+			<ul id='topRight'>
+				<li>
+					<a class='inTable' href="https://github.com/JerryWiltz/nP">code</a><span> / </span>
+				</li>
+				<li>
+					<a class='inTable' href="https://github.com/JerryWiltz/nP/blob/master/README.md">readme</a><span> / </span>
+				</li>
+				<li>
+					<a class='inTable' href="../np-repl/repl.html">an RF repl</a><span> / </span>
+				</li>
+				<li>
+					<a class='inTable' href="../../index.html">home</a>
+				</li>
+			</ul>
+		</header>
+		<div id='main'>
+			<input class='runButton' type="button" value="Run" onclick="run();" />
+			<p class='outputHeader'>Output Area</p>
+			<textarea id='code' name="code" >
+nP.log('define and show the 3 by 3 matrix, a');
+var a = nP.matrix([
+	[3,5,2],
+	[0,8,2],
+	[6,2,8]
+]);
+nP.log(a);
+
+nP.log('--------');
+
+nP.log('perform matrix operations with method chaining for matrix, b');
+var b = a.invert().mul(nP.matrix([[8],[-7],[26]]));
+nP.log(b);
+
+nP.log('--------');
+
+nP.log('define matrix c, and d; show matrix d');
+var c = nP.matrix([[1]]);
+var d = c.add(c).add(c).add(c);
+nP.log(d);
+
+nP.log('--------');
+
+// complex numbers
+nP.log('define and show the 3 by 3 matrix with complex numbers, e');
+var e = nP.matrix([
+	[nP.complex(3,0), nP.complex(5,0), nP.complex(2,0)],
+	[nP.complex(0,3), nP.complex(8,0), nP.complex(2,0)],
+	[nP.complex(6,0), nP.complex(2,0), nP.complex(8,-1)]
+]);
+nP.log(e);
+
+nP.log('--------');
+
+nP.log('perform operations on matrices with complex numbers with method chaining');
+var f = e.invertCplx().mulCplx(nP.matrix([[nP.complex(8,0)],[nP.complex(-7,0)],[nP.complex(26,0)]]));
+nP.log(f);
+			</textarea>
+				<!--img class="image" src="../../RFbook-image/fig1-2.png" alt="Ohm's Law"-->
+				<div class='outputBox'><div>
+		</div>
+		<script>
+myTextarea = document.getElementById('code');
+
+
+var editor = CodeMirror.fromTextArea(myTextarea, {
+	lineNumbers: true
+});
+
+function removeNodes (nodeClass) {
+	var zap = document.getElementsByClassName(nodeClass);
+	var i = 0;
+	var nodes = JSON.parse(JSON.stringify(zap.length));
+	for (i; i < nodes; i++) {
+		zap[0].remove();
+	};
+};
+
+function run() {
+	removeNodes('outputSection');	
+	removeNodes('lineChart');
+	removeNodes('lineTable');
+	function doIt () {
+		var headID = document.getElementsByTagName("head")[0];
+		var newScript = document.createElement("script");
+		newScript.setAttribute('id', 'circuit');
+		newScript.type = "text/javascript";
+		newScript.innerHTML = editor.getValue();
+		headID.appendChild(newScript);
+	}
+	setTimeout(doIt, 100);
+};
+		</script>
+	</body>
+</html>

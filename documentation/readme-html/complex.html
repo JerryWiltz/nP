@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>Complex</title>
+	</head>
+	<body>
+		<script src="./nP.js"></script>
+		<script>
+
+// define some complex numbers
+var c1 = nP.complex(1,2);
+var c2 = nP.complex(2,3);
+var c3 = nP.complex(5,-7);
+
+// use nP.log to show c3
+nP.log('show c3 = nP.complex(5,-7)');
+nP.log(c3); 
+
+nP.log('--------');
+
+// get and show the real part of c2
+nP.log('show the real part of c2');
+var realPartOfc2 = c2.getR();
+nP.log(realPartOfc2);
+
+nP.log('--------');
+
+// in one step, set and show a new imaginary part of c1
+nP.log('change the imaginary part of c1 to 42 in one step');
+nP.log( c1.setI(42).getI() );
+
+nP.log('--------');
+
+// perform multiple operations with method chaining
+nP.log('demo method chaining in one step');
+nP.log( c1.add(c1).sub(c2).mul(c3) ); 
+
+nP.log('--------')
+
+// hyperbolic complex sin and cos functions used for transmission lines
+var C = nP.complex(1,2);
+var gamma = nP.complex(3,4);
+var B = nP.complex(5,6);
+Ds = C.mul(gamma.coshCplx()).add(B.mul(gamma.sinhCplx()));
+nP.log('an example to show that coshCplx and sinhCplx work together');
+nP.log(Ds); // 21.557232562315377 -j98.12775767092192}
+
+		</script>
+	</body>
+</html>
