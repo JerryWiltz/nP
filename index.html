@@ -3,13 +3,53 @@
   <head>
     <title>Hello nPort!</title>
     <script src="https://cdn.jsdelivr.net/gh/jerrywiltz/nP@v0.0.45/dist/nP.js"></script>
-    <link rel="stylesheet" href="./nP_index.css">
+    <link rel="stylesheet" href="./nP_index.css" />
   </head>
 
   <body>
-
-    <!--Navigation Bar-->
+    <!--New Navigation Bar-->
+    <!-- Navigation Bar -->
     <header class="VPNav">
+      <div class="VPNavBar home top">
+        <!-- Logo -->
+        <div class="VPNavBarTitle">
+          <a class="title" href="/">
+            <img class="VPImage logo" src="./nPortLogo.svg" alt="nPort logo" />
+            <span>nPort</span>
+          </a>
+        </div>
+
+        <!-- Navigation Menu -->
+        <div class="content">
+          <div class="content-body">
+            <nav
+              class="VPNavBarMenu menu"
+              role="navigation"
+              aria-label="Main navigation"
+            >
+              <ul class="nav-list">
+                <li>
+                  <a class="VPLink link VPNavBarMenuLink" href="./README.md"
+                    >guide</a
+                  >
+                </li>
+                <li>
+                  <a class="VPLink link VPNavBarMenuLink" href="/repl/">repl</a>
+                </li>
+                <li>
+                  <a class="title" href="https://github.com/JerryWiltz/nP">
+                    <img class="VPImage logo" src="./gitHub.svg" alt="GitHub" />
+                  </a>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!--Old Navigation Bar-->
+    <!--header class="VPNav">
       <div class="VPNavBar home top">
         <div class="VPNavBarTitle">
           <a class="title" href="/"
@@ -38,14 +78,14 @@
           </div>
         </div>
       </div>
-    </header>
+    </header-->
 
     <!--Hero Section-->
 
     <!--Call-To-Action Section-->
 
-    <div class="actions" >
-      <div class="action" >
+    <div class="actions">
+      <div class="action">
         <a
           class="VPButton medium brand"
           href="https://vite.dev/"
