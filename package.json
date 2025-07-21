@@ -3,12 +3,16 @@
   "version": "0.0.1",
   "main": "./index.js",
   "scripts": {
-    "build": "rollup -c"
+    "build": "rollup -c",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:serve": "vitepress serve docs"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^6.0.0",
     "d3": "^5.4.0",
-    "rollup": "^1.32.1"
+    "rollup": "^1.32.1",
+    "vitepress": "^1.6.3"
   },
   "description": "A microwave computer analysis program",
   "repository": {
