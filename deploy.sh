@@ -14,11 +14,18 @@ touch .nojekyll
 
 # Initialize a new Git repo
 git init
+
+# Add remote only if it doesn't exist
+git remote get-url origin 2>/dev/null || git remote add origin https://github.com/jerrywiltz/nP.git
+
+# Use -B to safely switch/create gh-pages branch
+git checkout -B gh-pages
+
 git add -A
 git commit -m 'Deploy VitePress site'
 
-# Force push to gh-pages branch of your repo
-git push -f https://github.com/jerrywiltz/nP.git master:gh-pages
+# Force push to gh-pages branch
+git push -f origin gh-pages
 
-# Return to the original directory
+# Return to original directory
 cd -
