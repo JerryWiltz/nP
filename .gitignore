@@ -1,6 +1,5 @@
-development
-examples
 node_modules
-RFbook
 debug.log
 docs/.vitepress/dist
+docs/_*/
+
