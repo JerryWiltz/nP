@@ -31,4 +31,3 @@ git push -f origin gh-pages
 
 # Return to original directory
 cd -
-
