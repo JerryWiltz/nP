@@ -1,7 +1,19 @@
 // main entry point
-export * from './src/np-math/index';
-export * from './src/np-lowpass-prototype/index';
-export * from './src/np-global/index';
-export * from './src/np-chart/index';
-export * from './src/np-nport/index';
-export * from './src/np-misc/index';
+export * from './np-math/index';
+export * from './np-lowpass-prototype/index';
+export * from './np-global/index';
+export * from './np-chart/index';
+export * from './np-nport/index';
+export * from './np-misc/index';
+
+/*
+Old entry point
+
+export * from './np-math/index';
+export * from './np-lowpass-prototype/index';
+export * from './np-global/index';
+export * from './np-chart/index';
+export * from './np-nport/index';
+export * from './np-misc/index';
+
+*/
