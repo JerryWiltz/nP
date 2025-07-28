@@ -2,6 +2,7 @@
   "name": "np",
   "version": "0.0.45",
   "main": "./index.js",
+  "type": "module",
   "scripts": {
     "build": "rollup -c",
     "docs:dev": "vitepress dev docs",
@@ -13,8 +14,8 @@
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^16.0.1",
-    "d3": "^5.4.0",
-    "rollup": "^4.45.1",
+    "d3": "^7.9.0",
+    "rollup": "^4.46.1",
     "vitepress": "^1.6.3"
   },
   "description": "A microwave computer analysis program",
