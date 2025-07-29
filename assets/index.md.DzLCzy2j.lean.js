@@ -1,0 +1,1 @@
+import{_ as a,c as r,o as t,ae as o}from"./chunks/framework.CKzP_PDW.js";const m=JSON.parse('{"title":"Welcome to nPort","description":"","frontmatter":{},"headers":[],"relativePath":"index.md","filePath":"index.md"}'),n={name:"index.md"};function s(c,e,i,l,d,_){return t(),r("div",null,e[0]||(e[0]=[o("",3)]))}const p=a(n,[["render",s]]);export{m as __pageData,p as default};
