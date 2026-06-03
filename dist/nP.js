@@ -498,13 +498,13 @@
 	  return 0;
 	}
 
-	function number$2(x) {
+	function number$1(x) {
 	  return x === null ? NaN : +x;
 	}
 
 	const ascendingBisect = bisector(ascending$1);
 	const bisectRight = ascendingBisect.right;
-	bisector(number$2).center;
+	bisector(number$1).center;
 
 	function extent(values, valueof) {
 	  let min;
@@ -522,6 +522,51 @@
 	    }
 	  }
 	  return [min, max];
+	}
+
+	class InternMap extends Map {
+	  constructor(entries, key = keyof) {
+	    super();
+	    Object.defineProperties(this, {_intern: {value: new Map()}, _key: {value: key}});
+	    if (entries != null) for (const [key, value] of entries) this.set(key, value);
+	  }
+	  get(key) {
+	    return super.get(intern_get(this, key));
+	  }
+	  has(key) {
+	    return super.has(intern_get(this, key));
+	  }
+	  set(key, value) {
+	    return super.set(intern_set(this, key), value);
+	  }
+	  delete(key) {
+	    return super.delete(intern_delete(this, key));
+	  }
+	}
+
+	function intern_get({_intern, _key}, value) {
+	  const key = _key(value);
+	  return _intern.has(key) ? _intern.get(key) : value;
+	}
+
+	function intern_set({_intern, _key}, value) {
+	  const key = _key(value);
+	  if (_intern.has(key)) return _intern.get(key);
+	  _intern.set(key, value);
+	  return value;
+	}
+
+	function intern_delete({_intern, _key}, value) {
+	  const key = _key(value);
+	  if (_intern.has(key)) {
+	    value = _intern.get(key);
+	    _intern.delete(key);
+	  }
+	  return value;
+	}
+
+	function keyof(value) {
+	  return value !== null && typeof value === "object" ? value.valueOf() : value;
 	}
 
 	const e10 = Math.sqrt(50),
@@ -578,175 +623,6 @@
 	  stop = +stop, start = +start, count = +count;
 	  const reverse = stop < start, inc = reverse ? tickIncrement(stop, start, count) : tickIncrement(start, stop, count);
 	  return (reverse ? -1 : 1) * (inc < 0 ? 1 / -inc : inc);
-	}
-
-	function identity$3(x) {
-	  return x;
-	}
-
-	var top = 1,
-	    right = 2,
-	    bottom = 3,
-	    left = 4,
-	    epsilon$1 = 1e-6;
-
-	function translateX(x) {
-	  return "translate(" + x + ",0)";
-	}
-
-	function translateY(y) {
-	  return "translate(0," + y + ")";
-	}
-
-	function number$1(scale) {
-	  return d => +scale(d);
-	}
-
-	function center(scale, offset) {
-	  offset = Math.max(0, scale.bandwidth() - offset * 2) / 2;
-	  if (scale.round()) offset = Math.round(offset);
-	  return d => +scale(d) + offset;
-	}
-
-	function entering() {
-	  return !this.__axis;
-	}
-
-	function axis(orient, scale) {
-	  var tickArguments = [],
-	      tickValues = null,
-	      tickFormat = null,
-	      tickSizeInner = 6,
-	      tickSizeOuter = 6,
-	      tickPadding = 3,
-	      offset = typeof window !== "undefined" && window.devicePixelRatio > 1 ? 0 : 0.5,
-	      k = orient === top || orient === left ? -1 : 1,
-	      x = orient === left || orient === right ? "x" : "y",
-	      transform = orient === top || orient === bottom ? translateX : translateY;
-
-	  function axis(context) {
-	    var values = tickValues == null ? (scale.ticks ? scale.ticks.apply(scale, tickArguments) : scale.domain()) : tickValues,
-	        format = tickFormat == null ? (scale.tickFormat ? scale.tickFormat.apply(scale, tickArguments) : identity$3) : tickFormat,
-	        spacing = Math.max(tickSizeInner, 0) + tickPadding,
-	        range = scale.range(),
-	        range0 = +range[0] + offset,
-	        range1 = +range[range.length - 1] + offset,
-	        position = (scale.bandwidth ? center : number$1)(scale.copy(), offset),
-	        selection = context.selection ? context.selection() : context,
-	        path = selection.selectAll(".domain").data([null]),
-	        tick = selection.selectAll(".tick").data(values, scale).order(),
-	        tickExit = tick.exit(),
-	        tickEnter = tick.enter().append("g").attr("class", "tick"),
-	        line = tick.select("line"),
-	        text = tick.select("text");
-
-	    path = path.merge(path.enter().insert("path", ".tick")
-	        .attr("class", "domain")
-	        .attr("stroke", "currentColor"));
-
-	    tick = tick.merge(tickEnter);
-
-	    line = line.merge(tickEnter.append("line")
-	        .attr("stroke", "currentColor")
-	        .attr(x + "2", k * tickSizeInner));
-
-	    text = text.merge(tickEnter.append("text")
-	        .attr("fill", "currentColor")
-	        .attr(x, k * spacing)
-	        .attr("dy", orient === top ? "0em" : orient === bottom ? "0.71em" : "0.32em"));
-
-	    if (context !== selection) {
-	      path = path.transition(context);
-	      tick = tick.transition(context);
-	      line = line.transition(context);
-	      text = text.transition(context);
-
-	      tickExit = tickExit.transition(context)
-	          .attr("opacity", epsilon$1)
-	          .attr("transform", function(d) { return isFinite(d = position(d)) ? transform(d + offset) : this.getAttribute("transform"); });
-
-	      tickEnter
-	          .attr("opacity", epsilon$1)
-	          .attr("transform", function(d) { var p = this.parentNode.__axis; return transform((p && isFinite(p = p(d)) ? p : position(d)) + offset); });
-	    }
-
-	    tickExit.remove();
-
-	    path
-	        .attr("d", orient === left || orient === right
-	            ? (tickSizeOuter ? "M" + k * tickSizeOuter + "," + range0 + "H" + offset + "V" + range1 + "H" + k * tickSizeOuter : "M" + offset + "," + range0 + "V" + range1)
-	            : (tickSizeOuter ? "M" + range0 + "," + k * tickSizeOuter + "V" + offset + "H" + range1 + "V" + k * tickSizeOuter : "M" + range0 + "," + offset + "H" + range1));
-
-	    tick
-	        .attr("opacity", 1)
-	        .attr("transform", function(d) { return transform(position(d) + offset); });
-
-	    line
-	        .attr(x + "2", k * tickSizeInner);
-
-	    text
-	        .attr(x, k * spacing)
-	        .text(format);
-
-	    selection.filter(entering)
-	        .attr("fill", "none")
-	        .attr("font-size", 10)
-	        .attr("font-family", "sans-serif")
-	        .attr("text-anchor", orient === right ? "start" : orient === left ? "end" : "middle");
-
-	    selection
-	        .each(function() { this.__axis = position; });
-	  }
-
-	  axis.scale = function(_) {
-	    return arguments.length ? (scale = _, axis) : scale;
-	  };
-
-	  axis.ticks = function() {
-	    return tickArguments = Array.from(arguments), axis;
-	  };
-
-	  axis.tickArguments = function(_) {
-	    return arguments.length ? (tickArguments = _ == null ? [] : Array.from(_), axis) : tickArguments.slice();
-	  };
-
-	  axis.tickValues = function(_) {
-	    return arguments.length ? (tickValues = _ == null ? null : Array.from(_), axis) : tickValues && tickValues.slice();
-	  };
-
-	  axis.tickFormat = function(_) {
-	    return arguments.length ? (tickFormat = _, axis) : tickFormat;
-	  };
-
-	  axis.tickSize = function(_) {
-	    return arguments.length ? (tickSizeInner = tickSizeOuter = +_, axis) : tickSizeInner;
-	  };
-
-	  axis.tickSizeInner = function(_) {
-	    return arguments.length ? (tickSizeInner = +_, axis) : tickSizeInner;
-	  };
-
-	  axis.tickSizeOuter = function(_) {
-	    return arguments.length ? (tickSizeOuter = +_, axis) : tickSizeOuter;
-	  };
-
-	  axis.tickPadding = function(_) {
-	    return arguments.length ? (tickPadding = +_, axis) : tickPadding;
-	  };
-
-	  axis.offset = function(_) {
-	    return arguments.length ? (offset = +_, axis) : offset;
-	  };
-
-	  return axis;
-	}
-
-	function axisBottom(scale) {
-	  return axis(bottom, scale);
-	}
-
-	function axisLeft(scale) {
-	  return axis(left, scale);
 	}
 
 	var noop = {value: () => {}};
@@ -1756,6 +1632,31 @@
 	      : new Selection$1([[selector]], root);
 	}
 
+	function sourceEvent(event) {
+	  let sourceEvent;
+	  while (sourceEvent = event.sourceEvent) event = sourceEvent;
+	  return event;
+	}
+
+	function pointer(event, node) {
+	  event = sourceEvent(event);
+	  if (node === undefined) node = event.currentTarget;
+	  if (node) {
+	    var svg = node.ownerSVGElement || node;
+	    if (svg.createSVGPoint) {
+	      var point = svg.createSVGPoint();
+	      point.x = event.clientX, point.y = event.clientY;
+	      point = point.matrixTransform(node.getScreenCTM().inverse());
+	      return [point.x, point.y];
+	    }
+	    if (node.getBoundingClientRect) {
+	      var rect = node.getBoundingClientRect();
+	      return [event.clientX - rect.left - node.clientLeft, event.clientY - rect.top - node.clientTop];
+	    }
+	  }
+	  return [event.pageX, event.pageY];
+	}
+
 	function define(constructor, factory, prototype) {
 	  constructor.prototype = factory.prototype = prototype;
 	  prototype.constructor = constructor;
@@ -2162,6 +2063,26 @@
 	      : m1) * 255;
 	}
 
+	function basis(t1, v0, v1, v2, v3) {
+	  var t2 = t1 * t1, t3 = t2 * t1;
+	  return ((1 - 3 * t1 + 3 * t2 - t3) * v0
+	      + (4 - 6 * t2 + 3 * t3) * v1
+	      + (1 + 3 * t1 + 3 * t2 - 3 * t3) * v2
+	      + t3 * v3) / 6;
+	}
+
+	function basis$1(values) {
+	  var n = values.length - 1;
+	  return function(t) {
+	    var i = t <= 0 ? (t = 0) : t >= 1 ? (t = 1, n - 1) : Math.floor(t * n),
+	        v1 = values[i],
+	        v2 = values[i + 1],
+	        v0 = i > 0 ? values[i - 1] : 2 * v1 - v2,
+	        v3 = i < n - 1 ? values[i + 2] : 2 * v2 - v1;
+	    return basis((t - i / n) * n, v0, v1, v2, v3);
+	  };
+	}
+
 	var constant$1 = x => () => x;
 
 	function linear$1(a, d) {
@@ -2208,6 +2129,34 @@
 
 	  return rgb$1;
 	})(1);
+
+	function rgbSpline(spline) {
+	  return function(colors) {
+	    var n = colors.length,
+	        r = new Array(n),
+	        g = new Array(n),
+	        b = new Array(n),
+	        i, color;
+	    for (i = 0; i < n; ++i) {
+	      color = rgb(colors[i]);
+	      r[i] = color.r || 0;
+	      g[i] = color.g || 0;
+	      b[i] = color.b || 0;
+	    }
+	    r = spline(r);
+	    g = spline(g);
+	    b = spline(b);
+	    color.opacity = 1;
+	    return function(t) {
+	      color.r = r(t);
+	      color.g = g(t);
+	      color.b = b(t);
+	      return color + "";
+	    };
+	  };
+	}
+
+	var rgbBasis = rgbSpline(basis$1);
 
 	function numberArray(a, b) {
 	  if (!b) b = [];
@@ -3596,175 +3545,6 @@
 	  }
 	}
 
-	var EOL = {},
-	    EOF = {},
-	    QUOTE = 34,
-	    NEWLINE = 10,
-	    RETURN = 13;
-
-	function objectConverter(columns) {
-	  return new Function("d", "return {" + columns.map(function(name, i) {
-	    return JSON.stringify(name) + ": d[" + i + "] || \"\"";
-	  }).join(",") + "}");
-	}
-
-	function customConverter(columns, f) {
-	  var object = objectConverter(columns);
-	  return function(row, i) {
-	    return f(object(row), i, columns);
-	  };
-	}
-
-	// Compute unique columns in order of discovery.
-	function inferColumns(rows) {
-	  var columnSet = Object.create(null),
-	      columns = [];
-
-	  rows.forEach(function(row) {
-	    for (var column in row) {
-	      if (!(column in columnSet)) {
-	        columns.push(columnSet[column] = column);
-	      }
-	    }
-	  });
-
-	  return columns;
-	}
-
-	function pad(value, width) {
-	  var s = value + "", length = s.length;
-	  return length < width ? new Array(width - length + 1).join(0) + s : s;
-	}
-
-	function formatYear(year) {
-	  return year < 0 ? "-" + pad(-year, 6)
-	    : year > 9999 ? "+" + pad(year, 6)
-	    : pad(year, 4);
-	}
-
-	function formatDate(date) {
-	  var hours = date.getUTCHours(),
-	      minutes = date.getUTCMinutes(),
-	      seconds = date.getUTCSeconds(),
-	      milliseconds = date.getUTCMilliseconds();
-	  return isNaN(date) ? "Invalid Date"
-	      : formatYear(date.getUTCFullYear()) + "-" + pad(date.getUTCMonth() + 1, 2) + "-" + pad(date.getUTCDate(), 2)
-	      + (milliseconds ? "T" + pad(hours, 2) + ":" + pad(minutes, 2) + ":" + pad(seconds, 2) + "." + pad(milliseconds, 3) + "Z"
-	      : seconds ? "T" + pad(hours, 2) + ":" + pad(minutes, 2) + ":" + pad(seconds, 2) + "Z"
-	      : minutes || hours ? "T" + pad(hours, 2) + ":" + pad(minutes, 2) + "Z"
-	      : "");
-	}
-
-	function dsvFormat(delimiter) {
-	  var reFormat = new RegExp("[\"" + delimiter + "\n\r]"),
-	      DELIMITER = delimiter.charCodeAt(0);
-
-	  function parse(text, f) {
-	    var convert, columns, rows = parseRows(text, function(row, i) {
-	      if (convert) return convert(row, i - 1);
-	      columns = row, convert = f ? customConverter(row, f) : objectConverter(row);
-	    });
-	    rows.columns = columns || [];
-	    return rows;
-	  }
-
-	  function parseRows(text, f) {
-	    var rows = [], // output rows
-	        N = text.length,
-	        I = 0, // current character index
-	        n = 0, // current line number
-	        t, // current token
-	        eof = N <= 0, // current token followed by EOF?
-	        eol = false; // current token followed by EOL?
-
-	    // Strip the trailing newline.
-	    if (text.charCodeAt(N - 1) === NEWLINE) --N;
-	    if (text.charCodeAt(N - 1) === RETURN) --N;
-
-	    function token() {
-	      if (eof) return EOF;
-	      if (eol) return eol = false, EOL;
-
-	      // Unescape quotes.
-	      var i, j = I, c;
-	      if (text.charCodeAt(j) === QUOTE) {
-	        while (I++ < N && text.charCodeAt(I) !== QUOTE || text.charCodeAt(++I) === QUOTE);
-	        if ((i = I) >= N) eof = true;
-	        else if ((c = text.charCodeAt(I++)) === NEWLINE) eol = true;
-	        else if (c === RETURN) { eol = true; if (text.charCodeAt(I) === NEWLINE) ++I; }
-	        return text.slice(j + 1, i - 1).replace(/""/g, "\"");
-	      }
-
-	      // Find next delimiter or newline.
-	      while (I < N) {
-	        if ((c = text.charCodeAt(i = I++)) === NEWLINE) eol = true;
-	        else if (c === RETURN) { eol = true; if (text.charCodeAt(I) === NEWLINE) ++I; }
-	        else if (c !== DELIMITER) continue;
-	        return text.slice(j, i);
-	      }
-
-	      // Return last token before EOF.
-	      return eof = true, text.slice(j, N);
-	    }
-
-	    while ((t = token()) !== EOF) {
-	      var row = [];
-	      while (t !== EOL && t !== EOF) row.push(t), t = token();
-	      if (f && (row = f(row, n++)) == null) continue;
-	      rows.push(row);
-	    }
-
-	    return rows;
-	  }
-
-	  function preformatBody(rows, columns) {
-	    return rows.map(function(row) {
-	      return columns.map(function(column) {
-	        return formatValue(row[column]);
-	      }).join(delimiter);
-	    });
-	  }
-
-	  function format(rows, columns) {
-	    if (columns == null) columns = inferColumns(rows);
-	    return [columns.map(formatValue).join(delimiter)].concat(preformatBody(rows, columns)).join("\n");
-	  }
-
-	  function formatBody(rows, columns) {
-	    if (columns == null) columns = inferColumns(rows);
-	    return preformatBody(rows, columns).join("\n");
-	  }
-
-	  function formatRows(rows) {
-	    return rows.map(formatRow).join("\n");
-	  }
-
-	  function formatRow(row) {
-	    return row.map(formatValue).join(delimiter);
-	  }
-
-	  function formatValue(value) {
-	    return value == null ? ""
-	        : value instanceof Date ? formatDate(value)
-	        : reFormat.test(value += "") ? "\"" + value.replace(/"/g, "\"\"") + "\""
-	        : value;
-	  }
-
-	  return {
-	    parse: parse,
-	    parseRows: parseRows,
-	    format: format,
-	    formatBody: formatBody,
-	    formatRows: formatRows,
-	    formatRow: formatRow,
-	    formatValue: formatValue
-	  };
-	}
-
-	var tsv = dsvFormat("\t");
-
-	var tsvParse = tsv.parse;
-
 	function formatDecimal(x) {
 	  return Math.abs(x = Math.round(x)) >= 1e21
 	      ? x.toLocaleString("en").replace(/,/g, "")
@@ -4101,6 +3881,50 @@
 	  return this;
 	}
 
+	const implicit = Symbol("implicit");
+
+	function ordinal() {
+	  var index = new InternMap(),
+	      domain = [],
+	      range = [],
+	      unknown = implicit;
+
+	  function scale(d) {
+	    let i = index.get(d);
+	    if (i === undefined) {
+	      if (unknown !== implicit) return unknown;
+	      index.set(d, i = domain.push(d) - 1);
+	    }
+	    return range[i % range.length];
+	  }
+
+	  scale.domain = function(_) {
+	    if (!arguments.length) return domain.slice();
+	    domain = [], index = new InternMap();
+	    for (const value of _) {
+	      if (index.has(value)) continue;
+	      index.set(value, domain.push(value) - 1);
+	    }
+	    return scale;
+	  };
+
+	  scale.range = function(_) {
+	    return arguments.length ? (range = Array.from(_), scale) : range.slice();
+	  };
+
+	  scale.unknown = function(_) {
+	    return arguments.length ? (unknown = _, scale) : unknown;
+	  };
+
+	  scale.copy = function() {
+	    return ordinal(domain, range).unknown(unknown);
+	  };
+
+	  initRange.apply(scale, arguments);
+
+	  return scale;
+	}
+
 	function constants(x) {
 	  return function() {
 	    return x;
@@ -4333,6 +4157,20 @@
 
 	var category10 = colors("1f77b4ff7f0e2ca02cd627289467bd8c564be377c27f7f7fbcbd2217becf");
 
+	var ramp = scheme => rgbBasis(scheme[scheme.length - 1]);
+
+	var scheme = new Array(3).concat(
+	  "f0f0f0bdbdbd636363",
+	  "f7f7f7cccccc969696525252",
+	  "f7f7f7cccccc969696636363252525",
+	  "f7f7f7d9d9d9bdbdbd969696636363252525",
+	  "f7f7f7d9d9d9bdbdbd969696737373525252252525",
+	  "fffffff0f0f0d9d9d9bdbdbd969696737373525252252525",
+	  "fffffff0f0f0d9d9d9bdbdbd969696737373525252252525000000"
+	).map(colors);
+
+	ramp(scheme);
+
 	function constant(x) {
 	  return function constant() {
 	    return x;
@@ -4501,486 +4339,473 @@
 
 	Transform.prototype;
 
-	function  lineChart (lineChartInputObject = {}) {
-
-		// here is the definition of the lineChartInputObject data structure:
-
-		// lineChartInputObject.inputTable,	// an array of outs [out1, out2 ... outn]; default is internal inputTable
-		// lineChartInputObject.chartID,	// a string of an svg id 'chart'; default is 'chart1'
-		// lineChartInputObject.metricPrefix,	// a string of a metric prefix such as 'giga'; default is 'giga'
-		// lineChartInputObject.chartTitle,	// a string of the chart title; default is blank
-		// lineChartInputObject.xAxisTitle,	// a string of the x axis title; default is 'Frequency'
-		// lineChartInputObject.yAxisTitle,	// a string of the y axis title; default is 'dB'
-		// lineChartInputObject.xRange,		// an array of min, max such as [2e9, 12e9]; default is autorange based on data
-		// lineChartInputObject.yRange,		// an array of min, max such as [0, -80]; default is autorange based on data
-		// lineChartInputObject.showPoints,	// a string with either 'show' or 'hide', if not specified, default is 'show'
-		// lineChartInputObject.showLables,	// a string with either 'show' or 'hide', if not specified, default is 'show'
-		// lineChartInputObject.traceColor,	// a string with either 'color' or 'gray', if not specified, default is 'color'
-
-		// there are default values for all the above.
-		// just use nP.lineChart() and view Gain and Noise Figure
-
-		// lineChart has one arguement, lineChartInputObject.
-		// if no arguement, an svg and a default chart is created
-
-		/*
-		 ********************************************************
-		 ********************************************************
-
-		This section sets up the inputs
-
-		 ********************************************************
-		 ********************************************************	
-		 */
-
-		// there is a requierment for unique ID for each chart svg, it is defined by the user in the svg, or created if no svg
-		// a sequencial chartID is generated at every lineChart call. if no chartID provided, this one is used.
-		var chartText = 'chart' + (document.getElementsByTagName('svg').length + 1).toString();
-
-		(function ( ) {
-			var idAttr = document.createAttribute('id');
-			var widthAttr = document.createAttribute('width');
-			var heightAttr = document.createAttribute('height');
-			var chartBody = document.getElementsByTagName("body")[0];
-			var chart = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-			idAttr.value = chartText; // chart1
-			widthAttr.value = 400;
-			heightAttr.value = 300;
-			chart.setAttributeNode(idAttr);
-			chart.setAttributeNode(widthAttr);
-			chart.setAttributeNode(heightAttr);
-			if(!lineChartInputObject.chartID){
-				// added this for webpage
-				var outputBox = document.getElementsByClassName('outputBox')[0];
-
-				outputBox === undefined ? chartBody.appendChild(chart) : outputBox.appendChild(chart);}	})();
-
-		// this is the internal inputTable that has default data if no inputTable data provided
-		var inputTable = lineChartInputObject.inputTable || [ 
-			[
-				['Freq','s21dB','s23dB'],
-				[0,-3.52182,-3.52182],
-				[600000000,-3.51008,-4.19455],
-				[1200000000,-3.47582,-5.72534],
-				[1800000000,-3.42189,-7.46851],
-				[2400000000,-3.35291,-9.21548],
-				[3000000000,-3.27504,-11.01964],
-				[3600000000,-3.19561,-13.04088],
-				[4200000000,-3.12248,-15.53461],
-				[4800000000,-3.06328,-18.99038],
-				[5400000000,-3.02443,-24.83689],
-				[6000000000,-3.01031,-53.90094],
-				[6600000000,-3.02253,-25.46905],
-				[7200000000,-3.05969,-19.30541],
-				[7800000000,-3.11761,-15.74536],
-				[8400000000,-3.18997,-13.20271],
-				[9000000000,-3.26921,-11.15721],
-				[9600000000,-3.34745,-9.34356],
-				[10200000000,-3.41731,-7.596],
-				[10800000000,-3.47251,-5.85015],
-				[11400000000,-3.50832,-4.28704],
-				[12000000000,-3.52176,-3.52571]
-			]	
-		];
-
-		// lineChart mutates inputTable. if same inputTable is reused by another lineChart, output is distorted.
-		// so we create a duplicate version of the inputTable and leave the original version unmutated.
-		var inputTableDuplicated = JSON.parse(JSON.stringify(inputTable));
-
-		var metricPrefix = lineChartInputObject.metricPrefix || 'giga';
-		var chartID = lineChartInputObject.chartID ? ('#' + lineChartInputObject.chartID) : ('#' + chartText) ; //d3 wants a '#' in front of an id
-		var chartTitle = lineChartInputObject.chartTitle || '';
-		var titleVisibilty = function () {
-			if (chartTitle===''){return 'hidden'}
-			else {return 'visible'}	};
-		var xAxisTitle = lineChartInputObject.xAxisTitle || 'Frequency';
-		var yAxisTitle = lineChartInputObject.yAxisTitle || 'dB';
-		var xAxisTitleOffset = 40;
-		var yAxisTitleOffset = 40;
-		var showPoints = lineChartInputObject.showPoints === 'hide' ? false : (lineChartInputObject.showPoints === 'show' ? true : true);
-		var showLables = lineChartInputObject.showLables === 'hide' ? false : (lineChartInputObject.showLables === 'show' ? true : true);
-		var traceColor = lineChartInputObject.traceColor === 'color' ? false : (lineChartInputObject.traceColor === 'gray' ? true : false);
-
-		var pickScale = function (metricPrefix){
-			var out = 0;
-			if (metricPrefix === 'giga') {out = 1e9;}		if (metricPrefix === 'mega') {out = 1e6;}		if (metricPrefix === 'kilo') {out = 1e3;}		if (metricPrefix === 'none') {out = 1;}		if (metricPrefix === 'deci') {out = 1e-1;}		if (metricPrefix === 'centi') {out = 1e-2;}		if (metricPrefix === 'milli') {out = 1e-3;}		if (metricPrefix === 'micro') {out = 1e-6;}		if (metricPrefix === 'nano') {out = 1e-9;}		if (metricPrefix === 'pico') {out = 1e-12;}		return out;
-		};
-
-		/*
-		 ********************************************************
-		 ********************************************************
-
-		This section formats the data so d3 likes it
-
-		 ********************************************************
-		 ********************************************************	
-		 */
-
-		var generateFormattedData = function (inputTable) {
-			var k = 0;
-			var divisor = pickScale(metricPrefix); // default is giga, 1e9
-			var inputTableFrequencyAdjusted = [];
-
-			inputTableFrequencyAdjusted = inputTable;
-
-			for (k = 1; k < inputTable.length; k++) {
-				inputTableFrequencyAdjusted[k][0] = inputTable[k][0]/divisor;
-			}
-			var tsv = '';
-			inputTableFrequencyAdjusted.forEach( (element) => {
-				tsv += element.join('\t') + '\n';
-			});
-			//use d3 to turn tsv data into d3 data
-			var data = tsvParse(tsv);
-
-			//change data type from string to float, for arbitrary sized/named table
-			data.forEach( d => {
-				for (k = 0; k < data.columns.length; k++){
-					d[data.columns[k]] = +d[data.columns[k]];
-				}		});
-
-			//change the data to groupData
-			var groupData = data.columns.slice(1).map(function(yName) {// this will return an array of objects
-				return {
-					yName: yName,                       // this is the rf dB plot
-					yValues: data.map(function(d) {     // this will return an inner Array of objects
-						return {xValue: d[data.columns[0]], // this is the rf frequency
-							yValue: d[yName]};          // this is the dB value
-					})
-				};
-			});
-			return groupData;
-		};
-
-		var formattedData = inputTableDuplicated.map( function(element) {
-			return generateFormattedData(element);
-		});
-
-		var xSpan = []; // the span of the the x axis
-		formattedData.flat().forEach( function (element) {
-			element.yValues.forEach(function (item) { xSpan.push(item.xValue);});	
-		});
-
-		// checks if xRange is specified, if it is then xSpan is updated with scaled xRange input
-		if(lineChartInputObject.xRange) {xSpan = lineChartInputObject.xRange.map( function (element) { return element/pickScale(metricPrefix);});}
-		var ySpan = []; // the span of the y axis
-		formattedData.flat().forEach( function (element) {
-			element.yValues.forEach(function (item) { ySpan.push(item.yValue);});	
-		});
-
-		// checks if yRange is specified, if it is then ySpan is updated with yRange input
-		ySpan = lineChartInputObject.yRange || ySpan;
-
-		/*
-		 ********************************************************
-		 ********************************************************
-
-		This section sets up the plot area
-
-		 ********************************************************
-		 ********************************************************	
-		 */
-
-		//set up the plot area
-		var chartRect = select(chartID).node().getBoundingClientRect();
-		var outerWidth = chartRect.width;
-		var outerHeight = chartRect.height;
-		var margin = { left: 70, top: 20, right: 20, bottom: 60 };
-
-		var innerWidth  = outerWidth  - margin.left - margin.right;
-		var innerHeight = outerHeight - margin.top  - margin.bottom;
-
-		var x = linear().domain(extent(xSpan)).range([0, innerWidth]);
-		var y = linear().domain(extent(ySpan)).range([innerHeight, 0]);
-
-		var svg = select(chartID) // this always runs and it overwrites the chartID specified svg
-			.attr("width", outerWidth)
-			.attr("height", outerHeight)
-			.attr("class", 'lineChart remove') // added remove class for elements that could be removed
-			.style('background-color', '#ffffff');
-
-		svg.append('rect')
-			.attr("width", outerWidth)
-			.attr("height", outerHeight)
-			.attr('fill', 'none')
-			.attr('stroke', 'black')
-			.attr('stroke-width', '1px')
-			.attr('id', 'outerRect');
-
-		var chartTitle = svg.append('text')
-			.attr('transform', 'translate(' + (2) + ',' + (8) + ')')
-			.attr("x", 3)
-			.attr("dy",  "0.35em")
-			.attr('id', 'chartTitleID')
-			.style('visibility', titleVisibilty)
-			.style("font", "11px sans-serif")
-			.text(chartTitle);
-
-		var g = svg.append("g")
-			.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-		//append the x axis onto g
-		g.append('g')
-			.attr('class', 'xAxis')
-			.style('font-size', '12')
-			.attr('transform', 'translate(0,' + innerHeight + ')')
-			.call(axisBottom(x))
-			.append('text')
-			.attr("fill", "#000")
-			.style("text-anchor", "middle")
-			.attr("transform", "translate(" + (innerWidth / 2) + "," + xAxisTitleOffset + ")")
-			.style('font-size', '20')
-			.text(xAxisTitle);						
-		//append the x axis grid onto g
-		g.append('g')
-			.attr("class", "xGrid")
-			.attr('transform', 'translate(0,' + innerHeight + ')')
-			.call(axisBottom(x).tickSize(-innerHeight).tickFormat("")).attr('stroke', 'gray').attr('stroke-dasharray', '3, 3');	  
-		//append the y axis onto g
-		g.append('g')
-			.attr('class', 'yAxis')
-			.style('font-size', '12')
-			.call(axisLeft(y))
-			.append('text')
-			.attr("fill", "#000")
-			.style("text-anchor", "middle")
-			.attr("transform", "translate(-" + yAxisTitleOffset + "," + (innerHeight / 2) + ") rotate(-90)")
-			.style('font-size', '20')
-			.text(yAxisTitle);						
-		//append the y axis grid onto g
-		g.append('g')
-			.attr("class", "yGrid")
-			.call(axisLeft(y).tickSize(-innerWidth).tickFormat("")).attr('stroke', 'gray').attr('stroke-dasharray', '3, 3');
-
-		/*
-		 ********************************************************
-		 ********************************************************
-
-		This section plots the data
-
-		 ********************************************************
-		 ********************************************************	
-		 */
-
-		var colorIndex = 0;
-		formattedData.forEach(function(groupData, groupIndex) { 
-
-			function plotColor (colorIndex) {	
-				var grayScale = ['d4d4d4','646464','c4c4c4','545454','b4b4b4','444444','a4a4a4','343434','949494','242424','848484','141414','747474','040404'][colorIndex];
-				var colorScale = category10[colorIndex];
-				var outScale = traceColor ? grayScale : colorScale;
-				return outScale;
-			}
-			var newPlot = 'newPlot' + groupIndex.toString();	
-			g.selectAll('g.newPlot')
-				.data(groupData)
-				.enter()
-				.append('g')
-				.attr('class', newPlot)
-				.each( function (d) {
-					var line$1 = line()
-						.x(d => x(d.xValue))
-						.y(d => y(d.yValue));
-
-					select(this).append("path")
-						.attr('d', d => line$1(d.yValues))
-						.style("stroke", plotColor(colorIndex)).style('fill', 'none').style('stroke-width', '2');
-
-					if(showPoints === true){
-						select(this).selectAll('circle')
-							.data(d => d.yValues)
-							.enter()
-							.append('circle')
-							.attr('class', 'peek' + chartID.slice(1))
-							.attr('cx', d => x(d.xValue))
-							.attr('cy', d => y(d.yValue))
-							.attr('r', 2)
-							.style("stroke", plotColor(colorIndex)).style('fill', plotColor(colorIndex)).style('stroke-width','2');
-					}
-					if (showLables === true) {
-						select(this).append("text")
-							.attr('class', 'textLable')
-							.attr("transform", function(d) { 
-								let textShift = function () { // put start of lable to the right side of chart rectangle
-									let points = d.yValues.length;
-									if (points === 1) {return 1}								if (points === 2) {return 2}								if (points === 3) {return 2}								if (points === 4) {return 2}								if ( (points => 5) && (points <= 10) ) {return Math.ceil(points/4) + 2}								if ( (points => 11) && (points <= 100) ) {return Math.ceil(points/4) + 1}								if (points => 101) {return Math.ceil(points/4)}							}();
-								let shiftDown = function () { // put lable above or below the trace depending on slope
-									let points = d.yValues.length;
-									if (points < 50) {return 10}								if (points => 50) {
-										let low = d.yValues[d.yValues.length-textShift-10].yValue;
-										let high = d.yValues[d.yValues.length-textShift+10].yValue;
-										if(low <= high) {return 10} // put lable below trace, positive slope
-										if(low > high) { return -10} // put lable above trace, negative slope	
-									}
-								}();
-								let shiftRight = 10;
-								return "translate(" + (x(d.yValues[d.yValues.length-textShift].xValue) + shiftRight) + "," + (y(d.yValues[d.yValues.length-textShift].yValue) + shiftDown) + ")";})
-							.attr("x", 3)
-							.attr("dy", "0.35em")
-							.style("font", "12px sans-serif")
-							.text(function(d) { return d.yName; });
-					}				colorIndex++;
-				});//end d3.each() 
-		});// end .forEach()
-
-		/*
-		 ********************************************************
-		 ********************************************************
-
-		This section enables a capability to hover over a point, then see the x and y values the bottom right of the plot.
-		You may also click on a point to high light it and show the x and y values and include them in the PNG.
-
-		 ********************************************************
-		 ********************************************************	
-		 */
-
-		// define outside if-then because I want to remove it in the toPNG function
-		let dataTextID = 'dataText' + chartID.slice(1); // slice(1) removes '#' from chartID
-		let dataText = svg.append('text')
-			.attr('transform', 'translate(' + (outerWidth - 190) + ',' + ( outerHeight - 10 ) + ')' )
-			.attr("x", 3)
-			.attr("dy",  "0.35em")
-			.attr('id', dataTextID)
-			.style('visibility', 'visible')
-			.style("font", "11px sans-serif");
-
-		// make clicked visible to toPNG
-		var clicked = false;
-		if(showPoints===true){ // example of the data structure of the points: {xValue: 10, yValue: 8}
-			let circleArray = document.getElementsByClassName('peek' + chartID.slice(1));// console.log(circleArray);
-			let circleArrayEnter = [], circleArrayLeave = [], circleClick = [], circleColor = '', i = 0;
-			let oldIndex = -1;
-
-			for (let element of circleArray) {
-				element.__data__.index = i; // need to number all the circles
-				circleArrayEnter[i] = element.addEventListener('mouseenter', function () {
-					if(clicked===false) {
-						circleColor = element.getAttribute('style','fill');
-						element.setAttribute('style', 'fill: black'); 
-						element.setAttribute('r', '4'); 
-						dataText.text(xAxisTitle + ' = ' + (element.__data__).xValue.toPrecision(3) + ', ' + yAxisTitle + ' = ' + (element.__data__).yValue.toPrecision(3)  );
-					}
-				});
-				circleArrayLeave[i] = element.addEventListener('mouseleave', function () {
-					if(clicked===false) {
-						dataText.text("");
-						element.setAttribute('r', '2');
-						element.setAttribute('style', circleColor);
-					}
-				});
-				circleClick[i] = element.addEventListener('click', function () {
-					if(oldIndex===-1) {
-						oldIndex = element.__data__.index;
-						clicked = true;
-					} else if (element.__data__.index===oldIndex){
-						dataText.text("");
-						circleArray[oldIndex].setAttribute('r', '2');
-						circleArray[oldIndex].setAttribute('style', circleColor);
-						clicked = false;
-						oldIndex=-1;
-					} else 	;	
-				});
-				i++;
-			}
-		}
-		/*
-		 ********************************************************
-		 ********************************************************
-
-		This section converts the svg into a png for Save as ...
-
-		 ********************************************************
-		 ********************************************************	
-		 */
-
-		// construct the little square button at the upper right of the plot
-		var buttonRectID = 'buttonRect' + chartID.slice(1); // slice(1) removes '#" from chartID
-		var buttonRect = svg.append('rect') // this sets up the 'To PNG' button
-			.attr('width', '10')
-			.attr('height', '10')
-			.attr('fill', '#d3d3d3')
-			.attr('stroke', '#a9a9a9')
-			.attr('stroke-width', '1px')
-			.attr('id', buttonRectID)
-			.attr('transform', 'translate(' + (outerWidth - 13) + ',' + 3 + ')');
-
-		var buttonTextID = 'buttonText' + chartID.slice(1); // slice(1) removes '#' from chartID
-		var buttonText = svg.append('text')
-			.attr('transform', 'translate(' + (outerWidth - 105) + ',' + 9.5 + ')')
-			.attr("x", 3)
-			.attr("dy",  "0.35em")
-			.attr('id', buttonTextID)
-			.style('visibility', 'visible')
-			.style("font", "11px sans-serif")
-			.text('Change to PNG?');
-
-
-		var toPNG = function toPNG () {
-			// get rid of the button and the button text before converting to PNG
-			buttonRect.remove(); buttonText.remove();
-
-			// get rid of the text if dot is not clicked	
-			if(clicked===false) {dataText.remove();}
-			// get the old svg element to be replaced
-			var oldSvg = document.getElementById(chartID.slice(1)); // slice(1) to remove '#' in front of chartID
-
-			// Put the svg into an image tag so that the Canvas element can read it in.
-			var doctype = '<?xml version="1.0" standalone="no"?>'
-				+ '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">';
-
-				// serialize our SVG XML to a string.			
-				var source = (new XMLSerializer()).serializeToString(select(chartID).node());
-
-			// create a file blob of our SVG.
-			var blob = new Blob([ doctype + source], { type: 'image/svg+xml;charset=utf-8' });
-
-			var url = window.URL.createObjectURL(blob);
-
-			var tempImg = select('body').append('img')
-				.attr('width', outerWidth)
-				.attr('height', outerHeight)
-				.attr('id', 'tempImg')
-				.node();
-
-			tempImg.onload = function(){
-				// Now that the image has loaded, put the image into a canvas element.
-				var canvas = select('body').append('canvas').node();
-				canvas.width = outerWidth;
-				canvas.height = outerHeight;
-				canvas.id = 'tempCanvas';
-				var ctx = canvas.getContext('2d');
-				ctx.drawImage(tempImg, 0, 0);
-				var canvasUrl = canvas.toDataURL("image/png");
-				var newImg = select('body').append('img') 
-					.attr('width', outerWidth)
-					.attr('height', outerHeight)
-					.attr('id', 'newImg')
-					.attr('class', 'remove')
-					.node();
-
-				newImg.onload = function() {
-					document.getElementById('newImg');
-					oldSvg.parentNode.replaceChild(newImg, oldSvg);
-				};
-				// this is now the base64 encoded version of our PNG! you could optionally 
-				// redirect the user to download the PNG by sending them to the url with 
-				// `window.location.href= canvasUrl`.
-				newImg.src = canvasUrl;
-				canvas.remove();
-
-			};
-			// start loading the image.
-			tempImg.src = url;
-			tempImg.remove();
-
-		};
-		var buttonRect = document.getElementById(buttonRectID);
-		var buttonText = document.getElementById(buttonTextID);
-
-		buttonRect.addEventListener('mouseenter', function () { buttonRect.setAttribute('fill', '#a9a9a9');});
-		buttonRect.addEventListener('mouseleave', function () { buttonRect.setAttribute('fill', '#d3d3d3');});
-		buttonRect.addEventListener("click", function() { toPNG(); });
-
-	}
+	function lineChart(options = {}) {
+	            // ======== Options & defaults ========
+	            const {
+	                // Default inputTable
+	                inputTable = [[
+	                    ['Freq', 's21dB', 's23dB'],
+	                    [0, -3.52, -3.52],
+	                    [600000000, -3.51, -4.19],
+	                    [1200000000, -3.47, -5.72],
+	                    [1800000000, -3.42, -7.46],
+	                    [2400000000, -3.35, -9.21],
+	                    [3000000000, -3.27, -11.01],
+	                    [3600000000, -3.19, -13.04],
+	                    [4200000000, -3.12, -15.53],
+	                    [4800000000, -3.06, -18.99],
+	                    [5400000000, -3.02, -24.83],
+	                    [6000000000, -3.01, -53.9],
+	                    [6600000000, -3.02, -25.46],
+	                    [7200000000, -3.05, -19.3],
+	                    [7800000000, -3.11, -15.74],
+	                    [8400000000, -3.18, -13.2],
+	                    [9000000000, -3.26, -11.15],
+	                    [9600000000, -3.34, -9.34],
+	                    [10200000000, -3.41, -7.59],
+	                    [10800000000, -3.47, -5.85],
+	                    [11400000000, -3.5, -4.28],
+	                    [12000000000, -3.52, -3.52]
+	                ]],
+
+		                // Where to append the container. Defaults to <body>.
+		                mount = 'body',
+		                containerId,
+		                svgId,
+
+	                // Default Settings
+	                title = '',
+	                chartTitle,
+	                xAxisTitle = 'Frequency',
+	                yAxisTitle = 'dB',
+	                metricPrefix = 'giga',
+	                showPoints = true,
+	                showLabels = true,
+	                traceColor = true, // true for color, false for gray
+	                width = 600, // this is 1:1 ratio
+	                height = 600,
+	                margin = { top: 30, right: 70, bottom: 50, left: 70 },
+
+	                // Raw ranges (may be undefined, handled later)
+	                xRange: rawXRange,
+	                yRange: rawYRange,
+
+	                // Default Font Size
+	                fontFamily = 'sans-serif',
+	                fontSize = 14,
+	                containerFontSizePx,
+
+	                // Default background
+	                pngBackground = 'transparent'
+
+	            } = options;
+
+	            // Starting font sizes since d3.axisBottom and d3.axisLeft will overide the constainer styles
+	            const effectiveTitle = chartTitle ?? title;
+	            const effectiveFontSize = containerFontSizePx ?? fontSize;
+
+	            // Metric Scale
+	            const pickScale = {
+	                giga: 1e9, mega: 1e6, kilo: 1e3, none: 1,
+	                milli: 1e-3, micro: 1e-6, nano: 1e-9, pico: 1e-12
+	            }[metricPrefix] || 1e9;
+
+	            // Format Data
+	            const formattedData = inputTable.map(table => {
+	                const headers = table[0];
+	                return headers.slice(1).map(yName => ({
+	                    yName,
+	                    yValues: table.slice(1).map(row => ({
+	                        xValue: row[0] / pickScale,
+	                        yValue: row[headers.indexOf(yName)]
+	                    }))
+	                }));
+	            }).flat();
+
+	            // Extract values
+	            const xValues = formattedData.flatMap(d => d.yValues.map(v => v.xValue));
+	            const yValues = formattedData.flatMap(d => d.yValues.map(v => v.yValue));
+
+	            const xRange = rawXRange
+	                ? rawXRange.map(v => v / pickScale)
+	                : extent(xValues);
+
+	            const yRange = rawYRange || extent(yValues);
+
+	            // Dimensions
+	            const innerWidth = width - margin.left - margin.right;
+	            const innerHeight = height - margin.top - margin.bottom;
+
+	            // 🔸 make the plot area square, centered
+	            const plotSize = Math.min(innerWidth, innerHeight);
+	            const offsetX = (innerWidth - plotSize) / 2;
+	            const offsetY = (innerHeight - plotSize) / 2;
+
+
+	            // Scales
+	            const x = linear().domain(xRange).nice().range([0, plotSize]);
+	            const y = linear().domain(yRange).nice().range([plotSize, 0]);
+
+
+	            // color or gray plots
+	            const n = Math.max(3, Math.min(9, formattedData.length));
+
+	            const color = traceColor
+	                ? ordinal(category10)
+	                : ordinal(scheme[n]);
+
+	            // Container DIV (position relative for button)
+	            const container = select(mount) // was 'body'
+	                .append('div')
+	                .style('position', 'relative')
+	                .style('display', 'inline-block')
+	                .style('padding', '5px')
+		                .style('font-family', fontFamily)
+		                .style('font-size', `${effectiveFontSize}px`)
+		                .attr('id', containerId || null)
+		                .attr('class', 'containerClass');  //was 'font-size', '20px'
+
+	            // Add SVG
+	            const svg = container.append('svg')
+		                .attr('width', width)
+		                .attr('height', height)
+		                .attr('id', svgId || null)
+		                .attr('class', 'svgContainerClass');
+
+	            // SVG background so on-screen matches PNG
+	            svg.insert('rect', ':first-child')
+	                .attr('x', 0)
+	                .attr('y', 0)
+	                .attr('width', width)
+	                .attr('height', height)
+	                .attr('fill', pngBackground === 'transparent' ? 'none' : pngBackground)
+	                .attr('class', 'svgRectClass');
+
+	            // Ensure container is positioned correctly
+	            container.style('position', 'relative');
+
+	            // Button
+	            const button = container.append('button')
+	                .attr('aria-label', 'Copy')
+	                .style('position', 'absolute')
+	                .style('top', '5px')
+	                .style('right', '100px')
+	                .style('background', 'none')
+	                .style('border', 'none')
+	                .style('padding', '4px 8px')
+	                .style('cursor', 'pointer')
+	                .style('display', 'inline-flex')
+	                .style('align-items', 'center')
+	                .style('gap', '4px')
+	                .style('border-radius', '6px')
+	                .on('mouseover', function () { select(this).style('background', '#ccf2ff'); })  //#ccf2ff
+	                .on('mouseout', function () { select(this).style('background', 'none'); })
+	                .on('mousedown', function () { select(this).style('background', '#00ace6'); }) //#00ace6
+	                .on('mouseup', function () { select(this).style('background', '#ccf2ff'); });
+
+	            // Button icon + text
+	            button.html(`
+            <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <path
+          d="M12.668 10.667C12.668 9.95614 12.668 9.46258 12.6367 9.0791C12.6137 8.79732 12.5758 8.60761 12.5244 8.46387L12.4688 8.33399C12.3148 8.03193 12.0803 7.77885 11.793 7.60254L11.666 7.53125C11.508 7.45087 11.2963 7.39395 10.9209 7.36328C10.5374 7.33197 10.0439 7.33203 9.33301 7.33203H6.5C5.78896 7.33203 5.29563 7.33195 4.91211 7.36328C4.63016 7.38632 4.44065 7.42413 4.29688 7.47559L4.16699 7.53125C3.86488 7.68518 3.61186 7.9196 3.43555 8.20703L3.36524 8.33399C3.28478 8.49198 3.22795 8.70352 3.19727 9.0791C3.16595 9.46259 3.16504 9.95611 3.16504 10.667V13.5C3.16504 14.211 3.16593 14.7044 3.19727 15.0879C3.22797 15.4636 3.28473 15.675 3.36524 15.833L3.43555 15.959C3.61186 16.2466 3.86474 16.4807 4.16699 16.6348L4.29688 16.6914C4.44063 16.7428 4.63025 16.7797 4.91211 16.8027C5.29563 16.8341 5.78896 16.835 6.5 16.835H9.33301C10.0439 16.835 10.5374 16.8341 10.9209 16.8027C11.2965 16.772 11.508 16.7152 11.666 16.6348L11.793 16.5645C12.0804 16.3881 12.3148 16.1351 12.4688 15.833L12.5244 15.7031C12.5759 15.5594 12.6137 15.3698 12.6367 15.0879C12.6681 14.7044 12.668 14.211 12.668 13.5V10.667ZM13.998 12.665C14.4528 12.6634 14.8011 12.6602 15.0879 12.6367C15.4635 12.606 15.675 12.5492 15.833 12.4688L15.959 12.3975C16.2466 12.2211 16.4808 11.9682 16.6348 11.666L16.6914 11.5361C16.7428 11.3924 16.7797 11.2026 16.8027 10.9209C16.8341 10.5374 16.835 10.0439 16.835 9.33301V6.5C16.835 5.78896 16.8341 5.29563 16.8027 4.91211C16.7797 4.63025 16.7428 4.44063 16.6914 4.29688L16.6348 4.16699C16.4807 3.86474 16.2466 3.61186 15.959 3.43555L15.833 3.36524C15.675 3.28473 15.4636 3.22797 15.0879 3.19727C14.7044 3.16593 14.211 3.16504 13.5 3.16504H10.667C9.9561 3.16504 9.46259 3.16595 9.0791 3.19727C8.79739 3.22028 8.6076 3.2572 8.46387 3.30859L8.33399 3.36524C8.03176 3.51923 7.77886 3.75343 7.60254 4.04102L7.53125 4.16699C7.4508 4.32498 7.39397 4.53655 7.36328 4.91211C7.33985 5.19893 7.33562 5.54719 7.33399 6.00195H9.33301C10.022 6.00195 10.5791 6.00131 11.0293 6.03809C11.4873 6.07551 11.8937 6.15471 12.2705 6.34668L12.4883 6.46875C12.984 6.7728 13.3878 7.20854 13.6533 7.72949L13.7197 7.87207C13.8642 8.20859 13.9292 8.56974 13.9619 8.9707C13.9987 9.42092 13.998 9.97799 13.998 10.667V12.665ZM18.165 9.33301C18.165 10.022 18.1657 10.5791 18.1289 11.0293C18.0961 11.4302 18.0311 11.7914 17.8867 12.1279L17.8203 12.2705C17.5549 12.7914 17.1509 13.2272 16.6553 13.5313L16.4365 13.6533C16.0599 13.8452 15.6541 13.9245 15.1963 13.9619C14.8593 13.9895 14.4624 13.9935 13.9951 13.9951C13.9935 14.4624 13.9895 14.8593 13.9619 15.1963C13.9292 15.597 13.864 15.9576 13.7197 16.2939L13.6533 16.4365C13.3878 16.9576 12.9841 17.3941 12.4883 17.6982L12.2705 17.8203C11.8937 18.0123 11.4873 18.0915 11.0293 18.1289C10.5791 18.1657 10.022 18.165 9.33301 18.165H6.5C5.81091 18.165 5.25395 18.1657 4.80371 18.1289C4.40306 18.0962 4.04235 18.031 3.70606 17.8867L3.56348 17.8203C3.04244 17.5548 2.60585 17.151 2.30176 16.6553L2.17969 16.4365C1.98788 16.0599 1.90851 15.6541 1.87109 15.1963C1.83431 14.746 1.83496 14.1891 1.83496 13.5V10.667C1.83496 9.978 1.83432 9.42091 1.87109 8.9707C1.90851 8.5127 1.98772 8.10625 2.17969 7.72949L2.30176 7.51172C2.60586 7.0159 3.04236 6.6122 3.56348 6.34668L3.70606 6.28027C4.04237 6.136 4.40303 6.07083 4.80371 6.03809C5.14051 6.01057 5.53708 6.00551 6.00391 6.00391C6.00551 5.53708 6.01057 5.14051 6.03809 4.80371C6.0755 4.34588 6.15483 3.94012 6.34668 3.56348L6.46875 3.34473C6.77282 2.84912 7.20856 2.44514 7.72949 2.17969L7.87207 2.11328C8.20855 1.96886 8.56979 1.90385 8.9707 1.87109C9.42091 1.83432 9.978 1.83496 10.667 1.83496H13.5C14.1891 1.83496 14.746 1.83431 15.1963 1.87109C15.6541 1.90851 16.0599 1.98788 16.4365 2.17969L16.6553 2.30176C17.151 2.60585 17.5548 3.04244 17.8203 3.56348L17.8867 3.70606C18.031 4.04235 18.0962 4.40306 18.1289 4.80371C18.1657 5.25395 18.165 5.81091 18.165 6.5V9.33301Z">
+        </path>
+      </svg>Copy as png
+    `);
+
+	            // New button function fire
+	            button.on('click', copyPNG);
+
+	            // --- One function to copy the current SVG as PNG to clipboard ---
+	            function copyPNG() {
+	                const containerDiv = container.node();
+	                const svgElement = containerDiv.querySelector('svg');
+
+	                const serializer = new XMLSerializer();
+	                const svgString = serializer.serializeToString(svgElement);
+
+	                const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+	                const url = URL.createObjectURL(svgBlob);
+
+	                const img = new Image();
+	                img.onload = async () => {
+	                    const canvas = document.createElement("canvas");
+	                    // Use rendered size
+	                    canvas.width = svgElement.clientWidth || +svgElement.getAttribute('width') || 800;
+	                    canvas.height = svgElement.clientHeight || +svgElement.getAttribute('height') || 600;
+
+	                    const ctx = canvas.getContext("2d");
+
+	                    // ------ NEW: optional background fill (defaults to transparent) ------
+	                    if (pngBackground && pngBackground !== 'transparent') {
+	                        ctx.save();
+	                        ctx.globalCompositeOperation = 'source-over';
+	                        ctx.fillStyle = pngBackground;    // e.g., 'white', '#fff', 'rgba(0,0,0,0.5)'
+	                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+	                        ctx.restore();
+	                    }
+	                    // --------------------------------------------------------------------
+
+	                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+	                    URL.revokeObjectURL(url);
+
+	                    canvas.toBlob(async (blob) => {
+	                        try {
+	                            await navigator.clipboard.write([
+	                                new ClipboardItem({ "image/png": blob })
+	                            ]);
+	                            //console.log("Image copied to clipboard!");
+	                        } catch (err) {
+	                            //console.error("Failed to copy image:", err);
+	                        }
+	                    }, "image/png");
+	                };
+	                img.onerror = (e) => {
+	                    URL.revokeObjectURL(url);
+	                    console.error("Failed to load serialized SVG into Image", e);
+	                };
+	                img.src = url;
+	            }
+
+	            // Chart Title
+	            const txtChartTitle = svg.append('text')
+	                .attr('x', 10)
+	                .attr('y', 15)
+	                .style('visibility', effectiveTitle ? 'visible' : 'hidden')
+	                .text(effectiveTitle);
+
+	            // Chart group
+	            const g = svg.append('g')
+	                .attr('transform', `translate(${margin.left + offsetX},${margin.top + offsetY})`)
+	                .attr('class', 'svgPlotAreaClass');
+
+	            // rect around g
+	            // 🔸 Append a square background rect inside g
+	            g.append('rect')
+	                .attr('width', plotSize)
+	                .attr('height', plotSize)
+	                .attr('fill', 'none')        // or a color, e.g. '#f9f9f9'
+	                .attr('stroke', 'black');     // optional border
+
+	            // inside your lineChart function, after you’ve defined g and plotSize
+	            const localCenterX = plotSize / 2;
+	            const localCenterY = plotSize / 2;
+
+	            // Draw a black plus sign (+) centered at the middle of the square
+	            g.append('path')  // Note M is Move to, L is Line to
+	                .attr('d', `
+            M ${localCenterX - 5} ${localCenterY}
+            L ${localCenterX + 5} ${localCenterY}
+            M ${localCenterX} ${localCenterY - 5}
+            L ${localCenterX} ${localCenterY + 5}
+            `)
+	                .attr('stroke', 'black')
+	                .attr('stroke-width', 1.5)
+	                .attr('fill', 'none')
+	                .attr('class', 'centerCrosshair');
+
+	            // localCenterX and localCenterY is the origin of the Smith Chart
+	            // U is the horizonal axis with -1 on left and +1 on right
+	            // V is the vertical axis with -1 down and +1 up
+
+	            // Draw the outer circle centered at the middle of the plot area
+	            g.append('circle')
+	                .attr('cx', localCenterX)
+	                .attr('cy', localCenterY)
+	                .attr('r', plotSize / 2)
+	                .attr('stroke', 'black')
+	                .attr('stroke-width', 1)
+	                .attr('fill', 'none')
+	                .attr('class', 'centerCircle');
+
+	            // Line generator
+	            const line$1 = line()
+	                .x(d => x(d.xValue))
+	                .y(d => y(d.yValue));
+
+	            // Draw Lines & Points
+	            const groups = g.selectAll('.lineGroup')
+	                .data(formattedData)
+	                .join('g')
+	                .attr('class', 'lineGroup');
+
+	            // Lines
+	            groups.append('path')
+	                .attr('d', d => line$1(d.yValues))
+	                .attr('fill', 'none')
+	                .attr('stroke', d => color(d.yName))
+	                .attr('stroke-width', 2);
+
+	            // Points
+	            if (showPoints) {
+	                let tooltip; // shared between handlers
+
+	                groups.selectAll('circle')
+	                    .data(d => d.yValues)
+	                    .join('circle')
+	                    .attr('cx', d => x(d.xValue))
+	                    .attr('cy', d => y(d.yValue))
+	                    .attr('r', 3)
+	                    .attr('fill', function (d, i, nodes) {
+	                        const groupData = select(nodes[i].parentNode).datum();
+	                        return color(groupData.yName);
+	                    })
+	                    .on('mouseenter', (event, d) => {
+	                        // ensure only one tooltip
+	                        container.select('.tooltip').remove();
+
+	                        const [px, py] = pointer(event, container.node());
+	                        tooltip = container.append('div')
+	                            .attr('class', 'tooltip')
+	                            .style('position', 'absolute')
+	                            .style('background', 'white')
+	                            .style('border', '1px solid #aaa')
+	                            .style('padding', '3px 6px')
+	                            //.style('font-size', '12px') // was 12
+	                            .style('white-space', 'nowrap')
+	                            .style('pointer-events', 'none')
+	                            .style('z-index', 10)
+	                            .style('left', `${px + 10}px`)
+	                            .style('top', `${py - 20}px`)
+	                            .html(`${xAxisTitle}: ${d.xValue.toPrecision(3)}<br>${yAxisTitle}: ${d.yValue.toPrecision(3)}`);
+	                    })
+	                    .on('mousemove', (event) => {
+	                        if (!tooltip) return;
+	                        const [px, py] = pointer(event, container.node());
+	                        tooltip.style('left', `${px + 10}px`).style('top', `${py - 20}px`);
+	                    })
+	                    .on('mouseleave', () => {
+	                        if (tooltip) { tooltip.remove(); tooltip = null; }
+	                    });
+	            }
+
+	            // Labels
+	            if (showLabels) {
+	                txtLables = groups.append('text')
+	                    .attr('x', d => {
+	                        const last = d.yValues[d.yValues.length - 1];
+	                        return x(last.xValue) + 6;
+	                    })
+	                    .attr('y', d => {
+	                        const last = d.yValues[d.yValues.length - 1];
+	                        return y(last.yValue);
+	                    })
+	                    .attr('dy', '0.35em')
+	                    .attr('class', 'txtLable')
+	                    .style('font-size', '11px') // was 11
+	                    .text(d => d.yName);
+	            }
+
+	            // Returned API methods 
+	            // Chart Title
+	            function setTxtChartTitleStyle(style) {
+	                if (typeof style === "string") {
+	                    // If the user passes a CSS string
+	                    txtChartTitle.node().setAttribute("style", txtChartTitle.node().getAttribute("style") + ";" + style);
+	                } else if (typeof style === "object" && style !== null) {
+	                    // If the user passes an object
+	                    for (const [key, value] of Object.entries(style)) {
+	                        txtChartTitle.node().style[key] = value;
+	                    }
+	                }
+	            }
+
+	            // X-Axis
+	            function setTxtXaxisTitleStyle(style) {
+	                if (typeof style === "string") {
+	                    // If the user passes a CSS string
+	                    txtXaxisTitle.node().setAttribute("style", txtXaxisTitle.node().getAttribute("style") + ";" + style);
+	                } else if (typeof style === "object" && style !== null) {
+	                    // If the user passes an object
+	                    for (const [key, value] of Object.entries(style)) {
+	                        txtXaxisTitle.node().style[key] = value;
+	                    }
+	                }
+	            }
+
+	            function setTxtXaxisNumbersStyle(style) {
+	                const nodes = document.querySelectorAll("text.txtXaxisNumbers");
+	                nodes.forEach(el => {
+	                    if (typeof style === "string") {
+	                        el.setAttribute("style", el.getAttribute("style") + ";" + style);
+	                    } else if (typeof style === "object" && style !== null) {
+	                        for (const [key, value] of Object.entries(style)) {
+	                            el.style[key] = value;
+	                        }
+	                    }
+	                });
+	            }
+
+	            // Y-Axis
+	            function setTxtYaxisTitleStyle(style) {
+	                if (typeof style === "string") {
+	                    // If the user passes a CSS string
+	                    txtYaxisTitle.node().setAttribute("style", txtYaxisTitle.node().getAttribute("style") + ";" + style);
+	                } else if (typeof style === "object" && style !== null) {
+	                    // If the user passes an object
+	                    for (const [key, value] of Object.entries(style)) {
+	                        txtYaxisTitle.node().style[key] = value;
+	                    }
+	                }
+	            }
+
+	            function setTxtYaxisNumbersStyle(style) {
+	                const nodes = document.querySelectorAll("text.txtYaxisNumbers");
+	                nodes.forEach(el => {
+	                    if (typeof style === "string") {
+	                        el.setAttribute("style", el.getAttribute("style") + ";" + style);
+	                    } else if (typeof style === "object" && style !== null) {
+	                        for (const [key, value] of Object.entries(style)) {
+	                            el.style[key] = value;
+	                        }
+	                    }
+	                });
+	            }
+
+	            // Lables
+	            function setTxtChartLablesStyle(style) {
+	                if (typeof style === "string") {
+	                    // If the user passes a CSS string
+	                    Array.from(txtLables).forEach((el) => { el.setAttribute("style", el.getAttribute("style") + ";" + style); });
+	                } else if (typeof style === "object" && style !== null) {
+	                    // If the user passes an object
+	                    Array.from(txtLables).forEach((el) => {
+	                        for (const [key, value] of Object.entries(style)) {
+	                            el.style[key] = value;
+	                        }
+	                    });
+	                }
+	            }
+
+	            // Returning an API to the user
+	            // There are exposed elements for super users
+	            // There are exposed setter methods to change the style
+	            // ---> You can pass an object to a setter: { fill: "red", fontStyle: "italic" }
+	            // ---> Or you can pass a string to a setter: "fill:red; font-style:italic;"
+	            // Either will work
+
+	            return {
+	                // return elements
+	                container: container.node(),
+	                svg: svg.node(),
+	                txtChartTitle: txtChartTitle.node(),
+	                //txtXaxisTitle: txtXaxisTitle.node(),
+	                //txtYaxisTitle: txtYaxisTitle.node(),
+
+	                // return setters
+	                setTxtChartTitleStyle: setTxtChartTitleStyle,
+
+	                setTxtXaxisTitleStyle: setTxtXaxisTitleStyle,
+	                setTxtXaxisNumbersStyle: setTxtXaxisNumbersStyle,
+
+	                setTxtYaxisTitleStyle: setTxtYaxisTitleStyle,
+	                setTxtYaxisNumbersStyle: setTxtYaxisNumbersStyle,
+
+	                setTxtChartLablesStyle: setTxtChartLablesStyle,
+	                setTxtChartLabelsStyle: setTxtChartLablesStyle
+	            }
+
+	        }
 
 	const version = '0.0.45';
 
@@ -5098,377 +4923,409 @@
 		outputBox === undefined ? document.body.appendChild(pre) : outputBox.appendChild(pre);
 	}
 
-	function  lineTable (lineTableInputObject = {}) {
+	function lineTable(options = {}) {
+			// ======== Options & defaults ========
+			const {
+				// data: array of tables; each table is a 2D array; row 0 is header strings
+				inputTable = [[
+					['Freq', 's21dB', 's23dB'],
+					[0, -3.52182, -3.52182],
+					[600000000, -3.51008, -4.19455],
+					[1200000000, -3.47582, -5.72534],
+					[1800000000, -3.42189, -7.46851],
+					[2400000000, -3.35291, -9.21548],
+					[3000000000, -3.27504, -11.01964],
+					[3600000000, -3.19561, -13.04088],
+					[4200000000, -3.12248, -15.53461],
+					[4800000000, -3.06328, -18.99038],
+					[5400000000, -3.02443, -24.83689],
+					[6000000000, -3.01031, -53.90094],
+					[6600000000, -3.02253, -25.46905],
+					[7200000000, -3.05969, -19.30541],
+					[7800000000, -3.11761, -15.74536],
+					[8400000000, -3.18997, -13.20271],
+					[9000000000, -3.26921, -11.15721],
+					[9600000000, -3.34745, -9.34356],
+					[10200000000, -3.41731, -7.596],
+					[10800000000, -3.47251, -5.85015],
+					[11400000000, -3.50832, -4.28704],
+					[12000000000, -3.52176, -3.52571]
+				]],
+				// Where to append the container. Defaults to <body>.
+				mount = 'body',
+				// Optional explicit IDs
+				containerId,
+				svgId,
+				// Visuals / behavior
+				metricPrefix = 'giga',
+				title = '',
+				tableTitle,
+				headColor = 'color', // 'color' (blue) | 'gray'
+				headerColor,
+				showWHAlert = false, // true => alert width/height
+				// Sizing
+				columnWidth = 100,
+				rowHeight = 20,
+				margin = { left: 20, top: 20, right: 20, bottom: 20 },
+				fontFamily = 'sans-serif',
+				fontSize = 14,
+				containerFontSizePx,
+				pngBackground = 'transparent'
+			} = options;
 
-		// here is the definition of the lineTableInputObject data structure:
+			const effectiveTitle = tableTitle ?? title;
+			const effectiveFontSize = containerFontSizePx ?? fontSize;
+			const effectiveHeaderColor = headerColor ?? headColor;
 
-		// lineTableInputObject.inputTable,	// an array of outs [out1, out2 ... outn]; default is internal inputTable
-		// lineTableInputObject.tableID,	// a string of an svg id 'table'; default is 'table1'
-		// lineTableInputObject.metricPrefix,	// a string of a metric prefix such as 'giga'; default is 'giga'
-		// lineTableInputObject.tableTitle,		// a string of the chart tableTitle; default is blank
-		// lineTableInputObject.headColor,	// a string with either 'color' or 'gray', if not specified, default is 'color'
-		// lineTableInputObject.tableWH,	// a string with either 'no' or 'yes', if not specified, default is 'no'
+			// ======== Helpers ========
+			const pickScale = (p) => ({
+				tera: 1e12, giga: 1e9, mega: 1e6, kilo: 1e3, one: 1,
+				deci: 1e-1, centi: 1e-2, milli: 1e-3, micro: 1e-6,
+				nano: 1e-9, pico: 1e-12
+			}[String(p).toLowerCase()] ?? 1e9);
 
-		// there are default values for all the above.
-		// just use nP.lineTable() and view the Insertion Loss, Return Loss
-
-		// this function has one arguement, lineTableInputObject.
-		// if no arguement, then an internal default version of the lineTableInputObject is used.
-		// if no lineTableImputObject.tableID, then a div is created.
-
-		// a sequencial tableID is generated at every lineChart call. if no canvasID provided, this one is used.
-
-		/*
-		 ********************************************************
-		 ********************************************************
-
-		This section sets up the inputs
-
-		 ********************************************************
-		 ********************************************************	
-		 */
-
-		var tableText = 'table' + (document.getElementsByTagName('svg').length + 1).toString();
-
-		(function ( ) {
-			var idAttr = document.createAttribute('id');
-			var widthAttr = document.createAttribute('width');
-			var heightAttr = document.createAttribute('height');
-			var tableBody = document.getElementsByTagName("body")[0];
-			var table = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-			idAttr.value = tableText; // table1
-			widthAttr.value = 400;
-			heightAttr.value = 400;
-			table.setAttributeNode(idAttr);
-			table.setAttributeNode(widthAttr);
-			table.setAttributeNode(heightAttr);
-			if(!lineTableInputObject.tableID){
-				// added this for webpage
-				var outputBox = document.getElementsByClassName('outputBox')[0];
-
-				outputBox === undefined ? tableBody.appendChild(table) : outputBox.appendChild(table);}	})();
-
-		// this is the internal inputTable that has default data if no inputTable data provided
-		var inputTable = lineTableInputObject.inputTable || [ 
-			[
-				['Freq','s21dB','s23dB'],
-				[0,-3.52182,-3.52182],
-				[600000000,-3.51008,-4.19455],
-				[1200000000,-3.47582,-5.72534],
-				[1800000000,-3.42189,-7.46851],
-				[2400000000,-3.35291,-9.21548],
-				[3000000000,-3.27504,-11.01964],
-				[3600000000,-3.19561,-13.04088],
-				[4200000000,-3.12248,-15.53461],
-				[4800000000,-3.06328,-18.99038],
-				[5400000000,-3.02443,-24.83689],
-				[6000000000,-3.01031,-53.90094],
-				[6600000000,-3.02253,-25.46905],
-				[7200000000,-3.05969,-19.30541],
-				[7800000000,-3.11761,-15.74536],
-				[8400000000,-3.18997,-13.20271],
-				[9000000000,-3.26921,-11.15721],
-				[9600000000,-3.34745,-9.34356],
-				[10200000000,-3.41731,-7.596],
-				[10800000000,-3.47251,-5.85015],
-				[11400000000,-3.50832,-4.28704],
-				[12000000000,-3.52176,-3.52571]
-			]	
-
-		];
-
-		// lineTable mutates inputTable. if same inputTable is reused by another lineTable, output is distorted.
-		// so we create a duplicate version of the inputTable and leave the original version pristine
-		var inputTableDuplicated = JSON.parse(JSON.stringify(inputTable));
-
-		var metricPrefix = lineTableInputObject.metricPrefix || 'giga';
-		var tableID = lineTableInputObject.tableID ? ('#' + lineTableInputObject.tableID) : ('#' + tableText) ; //d3 wants a '#' in front of an id
-		var tableTitle = lineTableInputObject.tableTitle || '';
-		var titleVisibilty = function () {
-			if (tableTitle===''){return 'hidden'}
-			else {return 'visible'}	};
-		var headColor = lineTableInputObject.headColor === 'color' ? false : (lineTableInputObject.headColor === 'gray' ? true : false);
-		var tableWH = lineTableInputObject.tableWH === 'no' ? false : (lineTableInputObject.tableWH === 'yes' ? true : false);
-
-		var pickScale = function (metricPrefix){
-			var out = 0;
-			if (metricPrefix === 'tera') {out = 1e12;}		if (metricPrefix === 'giga') {out = 1e9;}		if (metricPrefix === 'mega') {out = 1e6;}		if (metricPrefix === 'kilo') {out = 1e3;}		if (metricPrefix === 'one') {out = 1;}		if (metricPrefix === 'deci') {out = 1e-1;}		if (metricPrefix === 'centi') {out = 1e-2;}		if (metricPrefix === 'milli') {out = 1e-3;}		if (metricPrefix === 'micro') {out = 1e-6;}		if (metricPrefix === 'nano') {out = 1e-9;}		if (metricPrefix === 'pico') {out = 1e-12;}		return out;
-		};
-
-		// frequency number in column 0 is scaled by the metric prefix
-		var scaleFreq = function scaleFreq (array) {
-			var row = 0;
-			for (row = 1; row< array.length; row ++) {
-				array[row][0] = array[row][0]/pickScale(metricPrefix);
-			}
-		};
-
-		// inputTableDuplicated is mutated in this forEach !!! scale all the frequencies in all the tables
-		inputTableDuplicated.forEach(function (element) {
-			scaleFreq(element);
-		});
-
-		/*
-		 ********************************************************
-		 ********************************************************
-
-		This section sets up the <table> area. No 'toPNG' possible
-
-		 ********************************************************
-		 ********************************************************	
-		 */
-
-		//set up the <table> area
-
-		// determine total rows and colums of the table
-		var totalTables = inputTableDuplicated.length; // default is two tables
-		var totalRows = 0;
-		var totalCols = 0;
-		var rowsPerTable = [];
-		inputTableDuplicated.forEach( function (element) { return totalRows = totalRows + element.length;});
-		inputTableDuplicated.forEach( function (element) { 
-			element.forEach(function (e) {
-				totalCols = (totalCols >= e.length ? totalCols : e.length );
-				return totalCols;
-			});
-		});
-		inputTableDuplicated.forEach( function (element, d) {
-			rowsPerTable[d] = element.length;
-		});	
-
-		// determine the inner and outer dimensions
-		var columnWidth = 100;
-		var tableWidth = totalCols * (columnWidth + 3) + 1;
-		var rowHeight = 20;
-		var tableHeight = totalRows * (rowHeight + 1) + (totalTables - 1) + 1;// adding for border and for stacked tables
-		var margin = { left: 20, top: 20, right: 20, bottom: 20 };
-		var outerWidth = margin.left + tableWidth + margin.right;
-		var outerHeight = margin.top + tableHeight + margin.bottom;
-
-		// when producing the PNG, determine the x and y values for the upper left corner of the tables
-		var x = 20; // this will always be a constant, starting with 20
-		var y = []; // this will always be an array, starting with 20, each element of the array is a new table
-		rowsPerTable.forEach( function(element, index, array) {
-			if (index === 0) { y[0] = 21;}
-			if (index >   0) { y[index] = y[index-1] + (rowHeight + 1) * array[index-1] +1; }	}); 
-
-		// shows alert box displaying the width and height of the table if inputTableObject.tableWH is 'yes'
-		if(tableWH) {alert('The table dimensions: Width is ' + outerWidth + ', ' + 'Height is ' + outerHeight);}
-		// get the svg and add the children elements
-		var svg = select(tableID) // this always runs and it overwrites the tableID specified svg
-			.attr("width", outerWidth)
-			.attr("height", outerHeight)
-			.attr("class", 'lineTable remove') // added extra classname for elements that could be removed
-			.style('background-color', '#ffffff');
-		//		.style('border', '1px solid black');
-
-		svg.append('rect')
-			.attr("width", outerWidth)
-			.attr("height", outerHeight)
-			.attr('fill', 'none')
-			.attr('stroke', 'black')
-			.attr('stroke-width', '1px')
-			.attr('id', 'outerRect');
-
-
-		var g = svg.append('g')
-		//.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-		;
-
-		var tableTitle = svg.append('text')
-			.attr('transform', 'translate(' + (2) + ',' + (8) + ')')
-			.attr("x", 3)
-			.attr("dy",  "0.35em")
-			.attr('id', 'tableTitleID')
-			.style('visibility', titleVisibilty)
-			.style("font", "11px sans-serif")
-			.text(tableTitle);
-
-		var foreign = g.append('foreignObject')
-			.attr('id', 'foreign' + tableID.slice(1))
-			.attr('x',margin.left)
-			.attr('y',margin.top)
-			.attr('width',tableWidth)
-			.attr('height',tableHeight);
-		var divTable = foreign.append('xhtml:div'); // put the table in this div
-
-		// create each table	
-		function createTable (myArray) {
-			var row = 0, col = 0, textAlign = '', backgroundColor = '';
-			var table = divTable.append('table')
-				.attr('width', function () {return ( myArray[0].length===totalCols ? tableWidth : 25) ;})
-				.style('table-layout', 'fixed')
-				.style('border-collapse','collapse');
-			for (row = 0; row < myArray.length; row++) {
-				var tr = table.append('tr');
-				for (col = 0; col < myArray[0].length; col++) {
-					tr.append('td')
-						.attr('width',columnWidth)
-						.attr('height',rowHeight-2) // needed to enforce hmlt5 compliance, <!doctype html> must be used for nPort.
-						.style('border-style','solid')
-						.style('border-width','1px')
-						.style('overflow','hidden')
-						.style('white-space','nowrap')
-						.style('text-align', function() {
-							textAlign = (typeof myArray[row][col]==='string' ? 'center' : 'left');
-							return textAlign;
-						})
-						.style('background-color', function() {
-							backgroundColor = (typeof myArray[row][col]==='string' ? (headColor ? '#d4d4d4' : '#add8e6') : 'white');
-							return backgroundColor;
-						})	.html( (typeof myArray[row][col]==='string' ? myArray[row][col] : myArray[row][col].toFixed(5)) );
-				}		}
-		}
-		// calls createTable for each table, two tables included in the default inputTableOject
-		inputTableDuplicated.forEach(function (element) {
-			createTable(element);
-		});
-
-		/*
-		 ********************************************************
-		 ********************************************************
-
-		This section adds a button to the svg above and to the right of the table
-
-		 ********************************************************
-		 ********************************************************	
-		 */
-
-		// construct the little square button at the upper right of the plot
-		var buttonRectID = 'buttonRect' + tableID.slice(1); // slice(1) removes '#" from chartID
-		var buttonRect = svg.append('rect') // this sets up the 'To PNG' button
-			.attr('width', '10')
-			.attr('height', '10')
-			.attr('fill', '#d3d3d3')
-			.attr('stroke', '#a9a9a9')
-			.attr('stroke-width', '1px')
-			.attr('id', buttonRectID)
-			.attr('transform', 'translate(' + (outerWidth - 13) + ',' + 3 + ')');
-
-		var buttonTextID = 'buttonText' + tableID.slice(1); // slice(1) removes '#' from chartID
-		var buttonText = svg.append('text')
-			.attr('transform', 'translate(' + (outerWidth - 105) + ',' + 9.5 + ')')
-			.attr("x", 3)
-			.attr("dy",  "0.35em")
-			.attr('id', buttonTextID)
-			.style('visibility', 'visible')
-			.style("font", "11px sans-serif")
-			.text('Change to PNG?');
-
-		/*
-		 ********************************************************
-		 ********************************************************
-
-		This section creates the png image when the button is clicked
-
-		 ********************************************************
-		 ********************************************************	
-		 */
-
-		var createPngTable = function createPngTable (myArray, x, y) {
-			var row = 0, col = 0, notLastCellWidth = 0, lastCellWidth = 0, color = '';
-			for (row = 0; row < myArray.length; row++) {
-				for (col = 0; col < myArray[0].length; col++) {
-					svg.append('rect')
-						.attr('x', x + (columnWidth + 3) * col)
-						.attr('y', y + (rowHeight + 1) * row)
-						.attr('width', function() {
-							notLastCellWidth = columnWidth + 4;
-							lastCellWidth = notLastCellWidth -1;
-							if(col === myArray[0].length -1) { return lastCellWidth;}						return notLastCellWidth;
-						})
-						.attr('height', rowHeight + 1)
-						.attr('fill', function () {
-							color = typeof myArray[row][col]==='string' ? (headColor ? '#d4d4d4' : '#add8e6') : 'white';
-							return color;
-						})
-						.attr('stroke', 'black')
-						.attr('stroke-width', '1px');
-					svg.append('text')
-						.attr('transform', function () {
-							var center = 0;
-							center = typeof myArray[row][col]==='string' ? Math.round(columnWidth/2 - (myArray[row][col].length*columnWidth)/28) : 3;
-
-							return 'translate(' + (x + center + (columnWidth + 3) * col) + ',' + (y + 16 + (rowHeight + 1) * row) + ')'
-						})
-						.style('visibility', 'visible')
-						.text(typeof myArray[row][col]==='string' ? myArray[row][col] : myArray[row][col].toFixed(5));
-
+			// Deep clone and scale first column (frequency)
+			const data = JSON.parse(JSON.stringify(inputTable));
+			const freqScale = pickScale(metricPrefix);
+			data.forEach(tbl => {
+				for (let r = 1; r < tbl.length; r++) {
+					if (Number.isFinite(tbl[r][0])) tbl[r][0] = tbl[r][0] / freqScale;
 				}
-			}	};
-
-		var toPNG = function toPNG () {
-			// remove the foreignObject element and all it's children
-			var foreign = document.getElementById('foreign'+tableID.slice(1)); foreign.remove();
-
-			// calls createPngTable for each table, two tables included in the default inputTableOject
-			inputTableDuplicated.forEach(function (element, index) {
-				createPngTable(element, x, y[index]);
 			});
 
-			// get rid of the button and the button text before converting to PNG
-			buttonRect.remove(); buttonText.remove();
+			// Table shape calc
+			const tablesCount = data.length;
+			const rowsPerTable = data.map(t => t.length);
+			const totalRows = rowsPerTable.reduce((a, b) => a + b, 0);
+			const totalCols = data.reduce((max, t) => {
+				const localMax = Math.max(...t.map(row => row.length));
+				return Math.max(max, localMax);
+			}, 0);
+
+			const tableWidth = totalCols * (columnWidth + 3) + 1;
+			const tableHeight = totalRows * (rowHeight + 1) + (tablesCount - 1) + 1;
+			const outerWidth = margin.left + tableWidth + margin.right;
+			const outerHeight = margin.top + tableHeight + margin.bottom;
+
+			if (showWHAlert) {
+				// eslint-disable-next-line no-alert
+				alert(`The table dimensions: Width is ${outerWidth}, Height is ${outerHeight}`);
+			}
+
+			const headerFill = effectiveHeaderColor === 'gray' ? '#d4d4d4' : '#add8e6';
+			const titleVisible = effectiveTitle ? 'visible' : 'hidden';
+
+			// Y offsets for each stacked table (inside the drawing area)
+			const x0 = margin.left;
+			const yOffsets = [];
+			for (let i = 0; i < tablesCount; i++) {
+				const prev = i === 0 ? 0 : yOffsets[i - 1] + rowsPerTable[i - 1] * (rowHeight + 1) + 1;
+				yOffsets.push(prev);
+			}
+			const y0 = margin.top;
+
+			// ======== Mount points & elements ========
+			document.getElementsByTagName('svg').length;
+			//const defaultContainerId = containerId || `line-table-container-${existingSvgs + 1}`;
+			//const defaultSvgId = svgId || `line-table-${existingSvgs + 1}`;
+
+				const container = select(mount)
+					.append('div')
+					.attr('id', containerId || null)
+					.attr('class', 'line-table-container')
+					.style('display', 'inline-block')
+					.style('position', 'relative')        // anchor for absolute button
+					.style('font-family', fontFamily)
+					.style('font-size', `${effectiveFontSize}px`)
+					.style('padding-top', '32px');        // give the button some headroom above the SVG
+
+			// ======== PNG copy (keeps SVG in place) ========
+			async function svgToPngBlob(svgNode, width, height) {
+				const doctype = `<?xml version="1.0" standalone="no"?>` +
+					`<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">`;
+				const source = (new XMLSerializer()).serializeToString(svgNode);
+				const svgBlob = new Blob([doctype + source], { type: 'image/svg+xml;charset=utf-8' });
+				const url = URL.createObjectURL(svgBlob);
+
+				try {
+					const img = new Image();
+					// Important for some browsers to render local SVG properly
+					img.decoding = 'async';
+					img.loading = 'eager';
+
+					const loadPromise = new Promise((resolve, reject) => {
+						img.onload = () => resolve();
+						img.onerror = (e) => reject(e);
+					});
+					img.src = url;
+					await loadPromise;
+
+						const canvas = document.createElement('canvas');
+						canvas.width = width;
+						canvas.height = height;
+						const ctx = canvas.getContext('2d', { willReadFrequently: false });
+						if (pngBackground && pngBackground !== 'transparent') {
+							ctx.fillStyle = pngBackground;
+							ctx.fillRect(0, 0, width, height);
+						}
+						ctx.drawImage(img, 0, 0);
+
+					const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+					return blob;
+				} finally {
+					URL.revokeObjectURL(url);
+				}
+			}
+
+			async function copyPNG() {
+				const node = svg.node();
+				try {
+					const blob = await svgToPngBlob(node, outerWidth, outerHeight);
+					if (!blob) throw new Error('Failed to create PNG blob');
+
+					if (!navigator.clipboard || !window.ClipboardItem) {
+						throw new Error('Clipboard API for images is not supported in this browser/context.');
+					}
+
+					await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+
+					//console.log("Image copied to clipboard!");
+
+				} catch (err) {
+					//console.error(err);
+					//console.error("Failed to copy image:", err);
+				}
+			}
+
+			function csvEscape(val) {
+				const s = (val ?? '').toString();
+				if (/[",\n\r]/.test(s)) {
+					return '"' + s.replace(/"/g, '""') + '"';
+				}
+				return s;
+			}
+
+			async function copyCSV() {
+				try {
+					const csvChunks = data.map(tbl => {
+						const cols = Math.max(...tbl.map(r => r.length));
+						const lines = [];
+						for (let r = 0; r < tbl.length; r++) {
+							const row = [];
+							for (let c = 0; c < cols; c++) {
+								const val = (tbl[r] || [])[c];
+								const formatted = (typeof val === 'string')
+									? val
+									: Number.isFinite(val) ? val.toFixed(5) : '';
+								row.push(csvEscape(formatted));
+							}
+							lines.push(row.join(','));
+						}
+						return lines.join('\n');
+					});
+
+					const csvText = csvChunks.join('\n\n'); // blank line between tables
+
+					if (!navigator.clipboard || !navigator.clipboard.writeText) {
+						throw new Error('Clipboard text API not available.');
+					}
+
+					await navigator.clipboard.writeText(csvText);
+
+					//console.log("copied to clipboard");
 
 
-			// get the old svg element to be replaced
-			var oldSvg = document.getElementById(tableID.slice(1)); // slice(1) to remove '#' in front of chartID
+				} catch (err) {
+					//console.error("Failed to copy image:", err);
+				}
+			}
 
-			// Put the svg into an image tag so that the Canvas element can read it in.
-			var doctype = '<?xml version="1.0" standalone="no"?>'
-				+ '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">';
+			// ======== Button (direct child of container) ========
+			const button = container.append('button')
+				//.attr('id', 'copyImage')
+				.attr('aria-label', 'Copy')
+				.style('position', 'absolute')
+				.style('top', '5px')
+				.style('right', '10px')
+				.style('background', 'none')
+				.style('border', 'none')
+				.style('padding', '4px 8px')
+				.style('cursor', 'pointer')
+				.style('display', 'inline-flex')
+				.style('align-items', 'center')
+				.style('gap', '4px')
+				.style('border-radius', '6px')
+				.on('mouseover', function () { select(this).style('background', '#ccf2ff'); })  //#ccf2ff
+				.on('mouseout', function () { select(this).style('background', 'none'); })
+				.on('mousedown', function () { select(this).style('background', '#00ace6'); })  //#00ace6
+				.on('mouseup', function () { select(this).style('background', '#ccf2ff'); })
+				.on('click', copyPNG);
 
-				// serialize our SVG XML to a string.			
-				var source = (new XMLSerializer()).serializeToString(select(tableID).node());
+			button.html(`
+    <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M12.668 10.667C12.668 9.95614 12.668 9.46258 12.6367 9.0791C12.6137 8.79732 12.5758 8.60761 12.5244 8.46387L12.4688 8.33399C12.3148 8.03193 12.0803 7.77885 11.793 7.60254L11.666 7.53125C11.508 7.45087 11.2963 7.39395 10.9209 7.36328C10.5374 7.33197 10.0439 7.33203 9.33301 7.33203H6.5C5.78896 7.33203 5.29563 7.33195 4.91211 7.36328C4.63016 7.38632 4.44065 7.42413 4.29688 7.47559L4.16699 7.53125C3.86488 7.68518 3.61186 7.9196 3.43555 8.20703L3.36524 8.33399C3.28478 8.49198 3.22795 8.70352 3.19727 9.0791C3.16595 9.46259 3.16504 9.95611 3.16504 10.667V13.5C3.16504 14.211 3.16593 14.7044 3.19727 15.0879C3.22797 15.4636 3.28473 15.675 3.36524 15.833L3.43555 15.959C3.61186 16.2466 3.86474 16.4807 4.16699 16.6348L4.29688 16.6914C4.44063 16.7428 4.63025 16.7797 4.91211 16.8027C5.29563 16.8341 5.78896 16.835 6.5 16.835H9.33301C10.0439 16.835 10.5374 16.8341 10.9209 16.8027C11.2965 16.772 11.508 16.7152 11.666 16.6348L11.793 16.5645C12.0804 16.3881 12.3148 16.1351 12.4688 15.833L12.5244 15.7031C12.5759 15.5594 12.6137 15.3698 12.6367 15.0879C12.6681 14.7044 12.668 14.211 12.668 13.5V10.667ZM13.998 12.665C14.4528 12.6634 14.8011 12.6602 15.0879 12.6367C15.4635 12.606 15.675 12.5492 15.833 12.4688L15.959 12.3975C16.2466 12.2211 16.4808 11.9682 16.6348 11.666L16.6914 11.5361C16.7428 11.3924 16.7797 11.2026 16.8027 10.9209C16.8341 10.5374 16.835 10.0439 16.835 9.33301V6.5C16.835 5.78896 16.8341 5.29563 16.8027 4.91211C16.7797 4.63025 16.7428 4.44063 16.6914 4.29688L16.6348 4.16699C16.4807 3.86474 16.2466 3.61186 15.959 3.43555L15.833 3.36524C15.675 3.28473 15.4636 3.22797 15.0879 3.19727C14.7044 3.16593 14.211 3.16504 13.5 3.16504H10.667C9.9561 3.16504 9.46259 3.16595 9.0791 3.19727C8.79739 3.22028 8.6076 3.2572 8.46387 3.30859L8.33399 3.36524C8.03176 3.51923 7.77886 3.75343 7.60254 4.04102L7.53125 4.16699C7.4508 4.32498 7.39397 4.53655 7.36328 4.91211C7.33985 5.19893 7.33562 5.54719 7.33399 6.00195H9.33301C10.022 6.00195 10.5791 6.00131 11.0293 6.03809C11.4873 6.07551 11.8937 6.15471 12.2705 6.34668L12.4883 6.46875C12.984 6.7728 13.3878 7.20854 13.6533 7.72949L13.7197 7.87207C13.8642 8.20859 13.9292 8.56974 13.9619 8.9707C13.9987 9.42092 13.998 9.97799 13.998 10.667V12.665ZM18.165 9.33301C18.165 10.022 18.1657 10.5791 18.1289 11.0293C18.0961 11.4302 18.0311 11.7914 17.8867 12.1279L17.8203 12.2705C17.5549 12.7914 17.1509 13.2272 16.6553 13.5313L16.4365 13.6533C16.0599 13.8452 15.6541 13.9245 15.1963 13.9619C14.8593 13.9895 14.4624 13.9935 13.9951 13.9951C13.9935 14.4624 13.9895 14.8593 13.9619 15.1963C13.9292 15.597 13.864 15.9576 13.7197 16.2939L13.6533 16.4365C13.3878 16.9576 12.9841 17.3941 12.4883 17.6982L12.2705 17.8203C11.8937 18.0123 11.4873 18.0915 11.0293 18.1289C10.5791 18.1657 10.022 18.165 9.33301 18.165H6.5C5.81091 18.165 5.25395 18.1657 4.80371 18.1289C4.40306 18.0962 4.04235 18.031 3.70606 17.8867L3.56348 17.8203C3.04244 17.5548 2.60585 17.151 2.30176 16.6553L2.17969 16.4365C1.98788 16.0599 1.90851 15.6541 1.87109 15.1963C1.83431 14.746 1.83496 14.1891 1.83496 13.5V10.667C1.83496 9.978 1.83432 9.42091 1.87109 8.9707C1.90851 8.5127 1.98772 8.10625 2.17969 7.72949L2.30176 7.51172C2.60586 7.0159 3.04236 6.6122 3.56348 6.34668L3.70606 6.28027C4.04237 6.136 4.40303 6.07083 4.80371 6.03809C5.14051 6.01057 5.53708 6.00551 6.00391 6.00391C6.00551 5.53708 6.01057 5.14051 6.03809 4.80371C6.0755 4.34588 6.15483 3.94012 6.34668 3.56348L6.46875 3.34473C6.77282 2.84912 7.20856 2.44514 7.72949 2.17969L7.87207 2.11328C8.20855 1.96886 8.56979 1.90385 8.9707 1.87109C9.42091 1.83432 9.978 1.83496 10.667 1.83496H13.5C14.1891 1.83496 14.746 1.83431 15.1963 1.87109C15.6541 1.90851 16.0599 1.98788 16.4365 2.17969L16.6553 2.30176C17.151 2.60585 17.5548 3.04244 17.8203 3.56348L17.8867 3.70606C18.031 4.04235 18.0962 4.40306 18.1289 4.80371C18.1657 5.25395 18.165 5.81091 18.165 6.5V9.33301Z">
+      </path>
+    </svg>Copy as png
+  `);
 
-			// create a file blob of our SVG.
-			var blob = new Blob([ doctype + source], { type: 'image/svg+xml;charset=utf-8' });
+			const csvBtn = container.append('button')
+				//.attr('id', 'copyCsv')
+				.attr('aria-label', 'Copy CSV')
+				.style('position', 'absolute')
+				.style('top', '5px')
+				.style('right', '150px')  // adjust so it doesn’t overlap your PNG button
+				.style('background', 'none')
+				.style('border', 'none')
+				.style('padding', '4px 8px')
+				.style('cursor', 'pointer')
+				.style('display', 'inline-flex')
+				.style('align-items', 'center')
+				.style('gap', '4px')
+				.style('border-radius', '6px')
+				.on('mouseover', function () { select(this).style('background', '#ccf2ff'); })
+				.on('mouseout', function () { select(this).style('background', 'none'); })
+				.on('mousedown', function () { select(this).style('background', '#00ace6'); })
+				.on('mouseup', function () { select(this).style('background', '#ccf2ff'); })
+				.on('click', copyCSV);
 
-			var url = window.URL.createObjectURL(blob);
-			var tempImg = select('body').append('img')
-				.attr('width', outerWidth)
-				.attr('height', outerHeight)
-				.attr('id', 'tempImg')
-				.node();
-			tempImg.onload = function(){
-				// Now that the image has loaded, put the image into a canvas element.
-				var canvas = select('body').append('canvas').node();
-				canvas.width = outerWidth;
-				canvas.height = outerHeight;
-				canvas.id = 'tempCanvas';
-				var ctx = canvas.getContext('2d');
-				ctx.drawImage(tempImg, 0, 0);
-				var canvasUrl = canvas.toDataURL("image/png");
-				var newImg = select('body').append('img') 
+			csvBtn.html([
+				'<svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">',
+				'  <path d="M12.668 10.667C12.668 9.95614 12.668 9.46258 12.6367 9.0791C12.6137 8.79732 12.5758 8.60761 12.5244 8.46387L12.4688 8.33399C12.3148 8.03193 12.0803 7.77885 11.793 7.60254L11.666 7.53125C11.508 7.45087 11.2963 7.39395 10.9209 7.36328C10.5374 7.33197 10.0439 7.33203 9.33301 7.33203H6.5C5.78896 7.33203 5.29563 7.33195 4.91211 7.36328C4.63016 7.38632 4.44065 7.42413 4.29688 7.47559L4.16699 7.53125C3.86488 7.68518 3.61186 7.9196 3.43555 8.20703L3.36524 8.33399C3.28478 8.49198 3.22795 8.70352 3.19727 9.0791C3.16595 9.46259 3.16504 9.95611 3.16504 10.667V13.5C3.16504 14.211 3.16593 14.7044 3.19727 15.0879C3.22797 15.4636 3.28473 15.675 3.36524 15.833L3.43555 15.959C3.61186 16.2466 3.86474 16.4807 4.16699 16.6348L4.29688 16.6914C4.44063 16.7428 4.63025 16.7797 4.91211 16.8027C5.29563 16.8341 5.78896 16.835 6.5 16.835H9.33301C10.0439 16.835 10.5374 16.8341 10.9209 16.8027C11.2965 16.772 11.508 16.7152 11.666 16.6348L11.793 16.5645C12.0804 16.3881 12.3148 16.1351 12.4688 15.833L12.5244 15.7031C12.5759 15.5594 12.6137 15.3698 12.6367 15.0879C12.6681 14.7044 12.668 14.211 12.668 13.5V10.667ZM13.998 12.665C14.4528 12.6634 14.8011 12.6602 15.0879 12.6367C15.4635 12.606 15.675 12.5492 15.833 12.4688L15.959 12.3975C16.2466 12.2211 16.4808 11.9682 16.6348 11.666L16.6914 11.5361C16.7428 11.3924 16.7797 11.2026 16.8027 10.9209C16.8341 10.5374 16.835 10.0439 16.835 9.33301V6.5C16.835 5.78896 16.8341 5.29563 16.8027 4.91211C16.7797 4.63025 16.7428 4.44063 16.6914 4.29688L16.6348 4.16699C16.4807 3.86474 16.2466 3.61186 15.959 3.43555L15.833 3.36524C15.675 3.28473 15.4636 3.22797 15.0879 3.19727C14.7044 3.16593 14.211 3.16504 13.5 3.16504H10.667C9.9561 3.16504 9.46259 3.16595 9.0791 3.19727C8.79739 3.22028 8.6076 3.2572 8.46387 3.30859L8.33399 3.36524C8.03176 3.51923 7.77886 3.75343 7.60254 4.04102L7.53125 4.16699C7.4508 4.32498 7.39397 4.53655 7.36328 4.91211C7.33985 5.19893 7.33562 5.54719 7.33399 6.00195H9.33301C10.022 6.00195 10.5791 6.00131 11.0293 6.03809C11.4873 6.07551 11.8937 6.15471 12.2705 6.34668L12.4883 6.46875C12.984 6.7728 13.3878 7.20854 13.6533 7.72949L13.7197 7.87207C13.8642 8.20859 13.9292 8.56974 13.9619 8.9707C13.9987 9.42092 13.998 9.97799 13.998 10.667V12.665ZM18.165 9.33301C18.165 10.022 18.1657 10.5791 18.1289 11.0293C18.0961 11.4302 18.0311 11.7914 17.8867 12.1279L17.8203 12.2705C17.5549 12.7914 17.1509 13.2272 16.6553 13.5313L16.4365 13.6533C16.0599 13.8452 15.6541 13.9245 15.1963 13.9619C14.8593 13.9895 14.4624 13.9935 13.9951 13.9951C13.9935 14.4624 13.9895 14.8593 13.9619 15.1963C13.9292 15.597 13.864 15.9576 13.7197 16.2939L13.6533 16.4365C13.3878 16.9576 12.9841 17.3941 12.4883 17.6982L12.2705 17.8203C11.8937 18.0123 11.4873 18.0915 11.0293 18.1289C10.5791 18.1657 10.022 18.165 9.33301 18.165H6.5C5.81091 18.165 5.25395 18.1657 4.80371 18.1289C4.40306 18.0962 4.04235 18.031 3.70606 17.8867L3.56348 17.8203C3.04244 17.5548 2.60585 17.151 2.30176 16.6553L2.17969 16.4365C1.98788 16.0599 1.90851 15.6541 1.87109 15.1963C1.83431 14.746 1.83496 14.1891 1.83496 13.5V10.667C1.83496 9.978 1.83432 9.42091 1.87109 8.9707C1.90851 8.5127 1.98772 8.10625 2.17969 7.72949L2.30176 7.51172C2.60586 7.0159 3.04236 6.6122 3.56348 6.34668L3.70606 6.28027C4.04237 6.136 4.40303 6.07083 4.80371 6.03809C5.14051 6.01057 5.53708 6.00551 6.00391 6.00391C6.00551 5.53708 6.01057 5.14051 6.03809 4.80371C6.0755 4.34588 6.15483 3.94012 6.34668 3.56348L6.46875 3.34473C6.77282 2.84912 7.20856 2.44514 7.72949 2.17969L7.87207 2.11328C8.20855 1.96886 8.56979 1.90385 8.9707 1.87109C9.42091 1.83432 9.978 1.83496 10.667 1.83496H13.5C14.1891 1.83496 14.746 1.83431 15.1963 1.87109C15.6541 1.90851 16.0599 1.98788 16.4365 2.17969L16.6553 2.30176C17.151 2.60585 17.5548 3.04244 17.8203 3.56348L17.8867 3.70606C18.031 4.04235 18.0962 4.40306 18.1289 4.80371C18.1657 5.25395 18.165 5.81091 18.165 6.5V9.33301Z"></path>',
+				'</svg>Copy as csv'
+			].join(''));
+
+
+			// ======== The SVG itself ========
+				const svg = container.append('svg')
+					.attr('id', svgId || null)
+					.style('user-select', 'text')
+				.style('-webkit-user-select', 'text')
+				.style('-ms-user-select', 'text')
+					.attr('class', 'line-table-svg')
 					.attr('width', outerWidth)
 					.attr('height', outerHeight)
-					.attr('id', 'newImg')
-					.attr('class', 'remove')
-					.node();
+					.style('background-color', pngBackground === 'transparent' ? 'transparent' : pngBackground);
 
-				newImg.onload = function() {
-					document.getElementById('newImg');
-					oldSvg.parentNode.replaceChild(newImg, oldSvg);
-				};
-				// this is now the base64 encoded versikjon of our NG! you could optionally 
-				// redirect the user to download the PNG by sending them to the url with 
-				// `window.location.href= canvasUrl`.
-				newImg.src = canvasUrl;
-				canvas.remove();
+				svg.insert('rect', ':first-child')
+					.attr('x', 0)
+					.attr('y', 0)
+					.attr('width', outerWidth)
+					.attr('height', outerHeight)
+					.attr('fill', pngBackground === 'transparent' ? 'none' : pngBackground)
+					.attr('class', 'line-table-background');
 
+			// Border
+			svg.append('rect')
+				.attr('width', outerWidth)
+				.attr('height', outerHeight)
+				.attr('fill', 'none')
+				.attr('stroke', 'none')//black
+				.attr('stroke-width', 1);
+
+			// Title
+			const txtTableTitle = svg.append('text')
+					.attr('x', 2)
+					.attr('y', 10)
+					.style('visibility', titleVisible)
+					.style('font', `${effectiveFontSize}px ${fontFamily}`)
+					.text(effectiveTitle);
+
+			const txtHeaders = [];
+			const txtData = [];
+
+			function applyTextStyle(elements, style) {
+				elements.forEach((el) => {
+					if (typeof style === 'string') {
+						el.setAttribute('style', `${el.getAttribute('style') || ''};${style}`);
+					} else if (typeof style === 'object' && style !== null) {
+						for (const [key, value] of Object.entries(style)) {
+							el.style[key] = value;
+						}
+					}
+				});
+			}
+
+			// ======== Pure-SVG table renderer ========
+			function drawTable(myArray, originX, originY) {
+				const cols = Math.max(...myArray.map(r => r.length));
+				for (let row = 0; row < myArray.length; row++) {
+					for (let col = 0; col < cols; col++) {
+						const val = (myArray[row] || [])[col];
+						const isHeader = row === 0; // your format uses row 0 as headers
+						const fill = isHeader ? headerFill : 'white';
+						const x = originX + (columnWidth + 3) * col;
+						const y = originY + (rowHeight + 1) * row;
+
+						// Cell rect
+						svg.append('rect')
+							.attr('x', x)
+							.attr('y', y)
+							.attr('width', (col === cols - 1 ? columnWidth + 3 - 1 : columnWidth + 3)) // last cell a tad narrower for outer stroke symmetry
+							.attr('height', rowHeight + 1)
+							.attr('fill', fill)
+							.attr('stroke', 'black')//'black'
+							.attr('stroke-width', 1)
+							.attr('pointer-events', 'none');   // allow text selection
+
+						// Cell text
+						const txt = (typeof val === 'string')
+							? val
+							: Number.isFinite(val) ? val.toFixed(5) : '';
+
+						const textX = isHeader
+							? x + Math.max(3, Math.round(columnWidth / 2 - (String(txt).length * columnWidth) / 28)) // crude center
+							: x + 3;
+
+						const text = svg.append('text')
+								.attr('x', textX)
+								.attr('y', y + 16) // baseline adjustment
+								.attr('class', 'line-table-text')
+								.style('font', `${effectiveFontSize}px ${fontFamily}`)
+							.text(txt)
+							.style('user-select', 'text')
+							.style('-webkit-user-select', 'text')
+							.style('-ms-user-select', 'text')
+							.style('cursor', 'text');
+
+						if (isHeader) {
+							txtHeaders.push(text.node());
+						} else {
+							txtData.push(text.node());
+						}
+					}
+				}
+			}
+
+			// Draw all tables stacked
+			data.forEach((tbl, i) => {
+				drawTable(tbl, x0, y0 + yOffsets[i]);
+			});
+
+			function setTxtTableTitleStyle(style) {
+				applyTextStyle([txtTableTitle.node()], style);
+			}
+
+			function setTxtTableHeadersStyle(style) {
+				applyTextStyle(txtHeaders, style);
+			}
+
+			function setTxtTableDataStyle(style) {
+				applyTextStyle(txtData, style);
+			}
+
+			return {
+				container: container.node(),
+				svg: svg.node(),
+				txtTableTitle: txtTableTitle.node(),
+				txtHeaders: txtHeaders,
+				txtData: txtData,
+				setTxtTableTitleStyle: setTxtTableTitleStyle,
+				setTxtTableHeadersStyle: setTxtTableHeadersStyle,
+				setTxtTableDataStyle: setTxtTableDataStyle
 			};
-			// start loading the image.
-			tempImg.src = url;
-			tempImg.remove();
 
-		};
-		var buttonRect = document.getElementById(buttonRectID);
-		var buttonText = document.getElementById(buttonTextID);
-
-		buttonRect.addEventListener('mouseenter', function () { buttonRect.setAttribute('fill', '#a9a9a9');});
-		buttonRect.addEventListener('mouseleave', function () { buttonRect.setAttribute('fill', '#d3d3d3');});
-		buttonRect.addEventListener("click", function() { toPNG(); });
-
-	}
+		}
 
 	function nPort() {}
 	nPort.prototype = {

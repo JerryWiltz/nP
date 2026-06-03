@@ -1,6 +1,19 @@
-import * as d3 from 'd3';
+<!DOCTYPE html>
+<html>
 
-export function lineChart(options = {}) {
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>smithChartDevelopment</title>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.8.5"></script>
+    <script src="https://cdn.jsdelivr.net/gh/jerrywiltz/nP@v0.0.45/dist/nP.js"></script>
+</head>
+
+<body>
+
+    <script>
+
+        function lineChart(options = {}) {
             // ======== Options & defaults ========
             const {
                 // Default inputTable
@@ -29,14 +42,11 @@ export function lineChart(options = {}) {
                     [12000000000, -3.52, -3.52]
                 ]],
 
-	                // Where to append the container. Defaults to <body>.
-	                mount = 'body',
-	                containerId,
-	                svgId,
+                // Where to append the container. Defaults to <body>.
+                mount = 'body',
 
                 // Default Settings
-                title = '',
-                chartTitle,
+                chartTitle = '',
                 xAxisTitle = 'Frequency',
                 yAxisTitle = 'dB',
                 metricPrefix = 'giga',
@@ -45,16 +55,13 @@ export function lineChart(options = {}) {
                 traceColor = true, // true for color, false for gray
                 width = 600, // this is 1:1 ratio
                 height = 600,
-                margin = { top: 30, right: 70, bottom: 50, left: 70 },
 
                 // Raw ranges (may be undefined, handled later)
                 xRange: rawXRange,
                 yRange: rawYRange,
 
                 // Default Font Size
-                fontFamily = 'sans-serif',
-                fontSize = 14,
-                containerFontSizePx,
+                containerFontSizePx = 14,
 
                 // Default background
                 pngBackground = 'transparent'
@@ -62,9 +69,7 @@ export function lineChart(options = {}) {
             } = options;
 
             // Starting font sizes since d3.axisBottom and d3.axisLeft will overide the constainer styles
-            const effectiveTitle = chartTitle ?? title;
-            const effectiveFontSize = containerFontSizePx ?? fontSize;
-            const axisFontPx = effectiveFontSize;
+            const axisFontPx = containerFontSizePx;
 
             // Metric Scale
             const pickScale = {
@@ -95,6 +100,7 @@ export function lineChart(options = {}) {
             const yRange = rawYRange || d3.extent(yValues);
 
             // Dimensions
+            const margin = { top: 30, right: 70, bottom: 50, left: 70 };
             const innerWidth = width - margin.left - margin.right;
             const innerHeight = height - margin.top - margin.bottom;
 
@@ -122,17 +128,15 @@ export function lineChart(options = {}) {
                 .style('position', 'relative')
                 .style('display', 'inline-block')
                 .style('padding', '5px')
-	                .style('font-family', fontFamily)
-	                .style('font-size', `${effectiveFontSize}px`)
-	                .attr('id', containerId || null)
-	                .attr('class', 'containerClass');  //was 'font-size', '20px'
+                .style('font-family', 'sans-serif')
+                .style('font-size', `${containerFontSizePx}px`)
+                .attr('class', 'containerClass');  //was 'font-size', '20px'
 
             // Add SVG
             const svg = container.append('svg')
-	                .attr('width', width)
-	                .attr('height', height)
-	                .attr('id', svgId || null)
-	                .attr('class', 'svgContainerClass');
+                .attr('width', width)
+                .attr('height', height)
+                .attr('class', 'svgContainerClass');
 
             // SVG background so on-screen matches PNG
             svg.insert('rect', ':first-child')
@@ -233,8 +237,8 @@ export function lineChart(options = {}) {
             const txtChartTitle = svg.append('text')
                 .attr('x', 10)
                 .attr('y', 15)
-                .style('visibility', effectiveTitle ? 'visible' : 'hidden')
-                .text(effectiveTitle);
+                .style('visibility', chartTitle ? 'visible' : 'hidden')
+                .text(chartTitle);
 
             // Chart group
             const g = svg.append('g')
@@ -463,8 +467,85 @@ export function lineChart(options = {}) {
                 setTxtYaxisTitleStyle: setTxtYaxisTitleStyle,
                 setTxtYaxisNumbersStyle: setTxtYaxisNumbersStyle,
 
-                setTxtChartLablesStyle: setTxtChartLablesStyle,
-                setTxtChartLabelsStyle: setTxtChartLablesStyle
+                setTxtChartLablesStyle: setTxtChartLablesStyle
             }
 
-        }
+        } // end of lineChart
+
+    </script>
+
+    <div id="chartDiv"></div>
+
+    <script>
+
+        // start of the RF analysis section
+        // set up the frequency
+        var g = nP.global;
+        g.fList = g.fGen(100e6, 1000e6, 50);
+        //g.fList = [100e6,400e6,700e6,1000e6];
+
+        // set up the high pass
+        var c1 = nP.seC(3.05e-12);
+        var rl1 = nP.paSeRL(0.6, 56.4e-9);
+        var c2 = nP.seC(23.55e-12);
+        var hp = c1.cas(rl1).cas(c2);
+
+        // set up the low pass
+        var rl2 = nP.seSeRL(0.3, 32.4e-9);
+        var c3 = nP.paC(7.15e-12);
+        var rl3 = nP.seSeRL(0.1, 33.5e-9);
+        var lp = rl2.cas(c3).cas(rl3);
+
+        // set up the diplexer and run the analysis
+        var tee = nP.Tee();
+        var filt = nP.nodal([tee, 1, 2, 3], [hp, 2, 4], [lp, 3, 5], ['out', 1, 4, 5]);
+        //var filtOut = filt.out('s11dB', 's21dB', 's31dB');
+        var filtOut = filt.out('s11dB');
+
+        var plot = {
+            inputTable: [filtOut],
+            chartTitle: "My Chart",
+            mount: "#chartDiv",
+            containerFontSizePx: 14,
+            pngBackground: '#FFC0CB'
+            /*xAxisTitle: "My xAxis, MHz",
+            yAxisTitle: "My yAxis, Db",
+            metricPrefix: "mega",
+            showPoints: false,
+            showLabels: true,
+            traceColor: true,
+            width: 800,
+            height: 600*/
+        };
+
+        //lineChart(plot);
+        const chart = lineChart(plot);
+
+        //change the styling
+
+        chart.setTxtChartTitleStyle({ fill: "red", fontStyle: "italic" });
+        //chart.setTxtChartTitleStyle("fill:red; font-style:italic;");
+
+        //chart.setTxtXaxisTitleStyle({ fill: "red", fontStyle: "italic" });
+        //chart.setTxtXaxisTitleStyle("fill:red; font-style:italic;");
+
+        //chart.setTxtXaxisNumbersStyle({ fill: "red", fontStyle: "italic" });
+        //chart.setTxtXaxisNumbersStyle("fill:red; font-style:italic;");
+
+        //chart.setTxtYaxisTitleStyle({ fill: "red", fontStyle: "italic" });
+        //chart.setTxtYaxisTitleStyle("fill:red; font-style:italic;");
+
+        //chart.setTxtYaxisNumbersStyle({ fill: "red", fontStyle: "italic" });
+        //chart.setTxtYaxisNumbersStyle("fill:red; font-style:italic;");
+
+        //chart.setTxtChartLablesStyle({ fill: "red", fontStyle: "italic" });
+        //chart.setTxtChartLablesStyle("fill:red; font-style:italic;");
+
+    </script>
+
+
+    </script>
+
+</body>
+
+</html>

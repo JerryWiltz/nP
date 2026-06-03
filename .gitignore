@@ -40,3 +40,5 @@ nPortVersionVerify.html
 
 # Ignore GitHub Pages .nojekyll marker if it shows up in root
 .nojekyll
+.aider*
+latestCodex.txt
