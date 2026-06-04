@@ -20,8 +20,5 @@ echo "$IGNORED_FILES"
 # Remove the tracked files from Git's index (but keep them on disk)
 git ls-files -i -c --exclude-from=.gitignore -z | xargs -0 git rm --cached
 
-# Commit the cleanup
-echo "📦 Committing changes..."
-git commit -m "Stop tracking files ignored by .gitignore"
-
-echo "🎉 Cleanup complete!"
+echo "Review with: git status --short"
+echo "Commit manually when ready."

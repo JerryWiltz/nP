@@ -30,6 +30,8 @@ Primary domains:
 - `package.json`: root scripts and dev dependencies.
 - `docs/`: VitePress documentation.
 - `scripts/deploy.sh`: builds docs and force-pushes `docs/.vitepress/dist` to `gh-pages`.
+- `scripts/extensionless-loader.mjs`: test-only Node loader for the repo's extensionless relative imports.
+- `test/`: Node tests for math, global settings, and nPort behavior.
 - `dev/`: local browser development and verification pages. These files are manual harnesses, not source of truth.
   - `dev/lineChartDevelopment.html` and `dev/lineTableDevelopment.html` load `../dist/nP.js` and exercise the built chart/table APIs.
   - `dev/nPortBuildVerify.html` verifies the local built bundle.
@@ -45,10 +47,11 @@ Use these commands from the repo root:
 - `npm run docs:dev`: run the VitePress docs dev server.
 - `npm run docs:build`: build the docs.
 - `npm run docs:serve` or `npm run docs:preview`: serve built docs.
+- `npm test`: run Node's built-in test runner against tests under `test/`.
 - `npm run clean`: run `scripts/cleanup-gitignore.sh`.
 - `npm run deploy`: build and deploy docs to `gh-pages`. This rewrites Git state inside the docs build output and force-pushes; do not run without explicit user approval.
 
-There is currently no configured automated test script in `package.json`.
+The test command uses `scripts/extensionless-loader.mjs` so Node can run source files with the repo's existing extensionless import style.
 
 ## Coding Style
 
