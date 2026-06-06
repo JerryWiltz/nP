@@ -6,6 +6,13 @@ Repository guide for agents working in the `nP` repo.
 
 These instructions apply to the entire repository rooted at `/home/jerrywiltz/nP`.
 
+## Local Environment
+
+- The user is working from an Acer Chromebook Plus 515.
+- The Linux home directory may not contain a normal `~/Downloads` folder.
+- The ChromeOS Downloads folder is visible from the Linux container at `/mnt/chromeos/MyFiles/Downloads`.
+- When the user refers to downloaded files, check `/mnt/chromeos/MyFiles/Downloads` first before assuming the files are unavailable.
+
 ## Project Summary
 
 `nP` is a browser-oriented JavaScript library for microwave/RF circuit analysis and visualization. The public API is exported from `src/index.js`, bundled by Rollup into `dist/nP.js`, and exposed as the global `nP` in browser usage.
@@ -16,7 +23,7 @@ Primary domains:
 - Complex arithmetic and matrix solving in `src/np-math`.
 - Global analysis settings such as frequency list, reference impedance, and temperature in `src/np-global`.
 - Chebyshev low-pass prototype helpers in `src/np-lowpass-prototype`.
-- D3-based chart and table rendering in `src/np-chart`.
+- D3-based chart and table rendering in `src/np-chart`; `smithChart()` currently exists as a placeholder copy of `lineChart()` for future Smith chart development.
 - Browser helper utilities in `src/np-misc`.
 - User documentation in `README.md` and `docs/index.md`.
 
@@ -33,9 +40,9 @@ Primary domains:
 - `scripts/extensionless-loader.mjs`: test-only Node loader for the repo's extensionless relative imports.
 - `test/`: Node tests for math, global settings, and nPort behavior.
 - `dev/`: local browser development and verification pages. These files are manual harnesses, not source of truth.
-  - `dev/lineChartDevelopment.html` and `dev/lineTableDevelopment.html` load `../dist/nP.js` and exercise the built chart/table APIs.
+  - `dev/lineChartDevelopment.html`, `dev/lineTableDevelopment.html`, and `dev/smithChartDevelopment.html` load `../dist/nP.js` and exercise the built chart/table APIs.
   - `dev/nPortBuildVerify.html` verifies the local built bundle.
-  - `dev/nPortVersionVerify.html` and `dev/smithChartDevelopment.html` currently use CDN scripts.
+  - `dev/nPortVersionVerify.html` currently uses CDN scripts.
 
 The old subpackage-level build artifacts under `src/np-*` have been removed. Treat the root package and root Rollup config as the only current build path.
 
@@ -62,7 +69,7 @@ The test command uses `scripts/extensionless-loader.mjs` so Node can run source 
 - Many functions depend on the shared mutable `global` object from `src/np-global/src/global.js`. Be careful with changes that affect `global.fList`, `global.Ro`, or object-level `setglobal/getglobal` behavior.
 - S-parameter rows are represented as `[frequency, s11, s12, s21, s22, ...]`, where complex entries are `complex()` objects.
 - `nPort.out()` returns a table with a header row followed by numeric data rows. `lineChart()` and `lineTable()` consume this table shape.
-- `lineChart()` and `lineTable()` share common option names where possible: `inputTable`, `mount`, `title`, `containerId`, `svgId`, `metricPrefix`, `fontFamily`, `fontSize`, `containerFontSizePx`, and `pngBackground`. Keep older aliases such as `chartTitle`, `tableTitle`, and `headColor` working unless the user explicitly requests a breaking cleanup.
+- `lineChart()`, `smithChart()`, and `lineTable()` share common option names where possible: `inputTable`, `mount`, `title`, `containerId`, `svgId`, `metricPrefix`, `fontFamily`, `fontSize`, `containerFontSizePx`, and `pngBackground`. Keep older aliases such as `chartTitle`, `tableTitle`, and `headColor` working unless the user explicitly requests a breaking cleanup.
 - Browser rendering code in `src/np-chart` and `src/np-misc` assumes `document`, `window`, and sometimes clipboard APIs. Do not make those modules server-only without preserving browser behavior.
 - Do not add large dependencies unless they are clearly justified. Current root dev dependencies are Rollup, D3, VitePress, and the Rollup node resolver plugin.
 
@@ -72,8 +79,8 @@ The test command uses `scripts/extensionless-loader.mjs` so Node can run source 
 - Do not revert, reformat, or overwrite user changes unless explicitly requested.
 - `dist/nP.js` is generated but tracked. Only modify it when a source change should be reflected in the distributable bundle.
 - Avoid running `npm run build` when the user asked for source-only edits or asked not to change generated files.
-- `node_modules/`, logs, docs build output, `.aider*`, and `*Verify.html` files are ignored.
-- `dev/` is not currently ignored. Treat files there as local manual test harnesses unless the user decides to publish examples from them.
+- `node_modules/`, logs, docs build output, `.aider*`, and temporary `*Verify.html` files are ignored.
+- `dev/` is not currently ignored. Tracked dev harnesses under `dev/` are intentionally kept; treat them as local manual test harnesses unless the user decides to publish examples from them.
 
 ## Verification Plan
 
@@ -130,7 +137,7 @@ Follow this plan for substantive work in this repo:
 
 ## Known Cautions
 
-- `lineChart()` mutates a derived copy of input table data before D3 parsing; preserve the no-mutation behavior for caller-owned input.
+- `lineChart()` derives formatted chart data from `inputTable` without mutating caller-owned input; preserve that behavior.
 - `lineTable()` includes clipboard-based PNG and CSV copy behavior; browser support and secure-context requirements can affect it.
 - `nP.log()` writes HTML directly into the document. Be cautious about passing unsanitized user content.
 - Matrix and nodal algorithms use custom complex arithmetic and mutable arrays. Small shape or indexing changes can affect RF results broadly.
