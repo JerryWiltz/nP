@@ -43,11 +43,11 @@ export function lineTable(options = {}) {
 			// Sizing
 			columnWidth = 100,
 			rowHeight = 20,
-			margin = { left: 20, top: 20, right: 20, bottom: 20 },
+			margin = { left: 20, top: 36, right: 20, bottom: 20 },
 			fontFamily = 'sans-serif',
 			fontSize = 14,
 			containerFontSizePx,
-			pngBackground = 'transparent'
+			pngBackground = 'white'
 		} = options;
 
 		const effectiveTitle = tableTitle ?? title;
@@ -56,13 +56,16 @@ export function lineTable(options = {}) {
 
 		// ======== Helpers ========
 		const pickScale = (p) => ({
-			tera: 1e12, giga: 1e9, mega: 1e6, kilo: 1e3, one: 1,
-			deci: 1e-1, centi: 1e-2, milli: 1e-3, micro: 1e-6,
+			tera: 1e12, giga: 1e9, mega: 1e6, kilo: 1e3,
+			none: 1, one: 1, deci: 1e-1, centi: 1e-2,
+			milli: 1e-3, micro: 1e-6,
 			nano: 1e-9, pico: 1e-12
 		}[String(p).toLowerCase()] ?? 1e9);
 
-		// Deep clone and scale first column (frequency)
-		const data = JSON.parse(JSON.stringify(inputTable));
+		// Copy tables and rows before scaling the frequency column.
+		const data = inputTable.map(table =>
+			table.map(row => row.slice())
+		);
 		const freqScale = pickScale(metricPrefix);
 		data.forEach(tbl => {
 			for (let r = 1; r < tbl.length; r++) {
@@ -114,7 +117,7 @@ export function lineTable(options = {}) {
 				.style('position', 'relative')        // anchor for absolute button
 				.style('font-family', fontFamily)
 				.style('font-size', `${effectiveFontSize}px`)
-				.style('padding-top', '32px');        // give the button some headroom above the SVG
+				.style('padding-top', '0');
 
 		// ======== PNG copy (keeps SVG in place) ========
 		async function svgToPngBlob(svgNode, width, height) {
@@ -222,7 +225,7 @@ export function lineTable(options = {}) {
 			//.attr('id', 'copyImage')
 			.attr('aria-label', 'Copy')
 			.style('position', 'absolute')
-			.style('top', '5px')
+			.style('top', '0')
 			.style('right', '10px')
 			.style('background', 'none')
 			.style('border', 'none')
@@ -250,7 +253,7 @@ export function lineTable(options = {}) {
 			//.attr('id', 'copyCsv')
 			.attr('aria-label', 'Copy CSV')
 			.style('position', 'absolute')
-			.style('top', '5px')
+			.style('top', '0')
 			.style('right', '150px')  // adjust so it doesn’t overlap your PNG button
 			.style('background', 'none')
 			.style('border', 'none')
@@ -284,7 +287,7 @@ export function lineTable(options = {}) {
 				.attr('height', outerHeight)
 				.style('background-color', pngBackground === 'transparent' ? 'transparent' : pngBackground);
 
-			svg.insert('rect', ':first-child')
+			const tableBackground = svg.insert('rect', ':first-child')
 				.attr('x', 0)
 				.attr('y', 0)
 				.attr('width', outerWidth)
@@ -293,9 +296,10 @@ export function lineTable(options = {}) {
 				.attr('class', 'line-table-background');
 
 		// Border
-		svg.append('rect')
+		const tableBorder = svg.append('rect')
 			.attr('width', outerWidth)
 			.attr('height', outerHeight)
+			.attr('class', 'line-table-border')
 			.attr('fill', 'none')
 			.attr('stroke', 'none')//black
 			.attr('stroke-width', 1);
@@ -303,23 +307,40 @@ export function lineTable(options = {}) {
 		// Title
 		const txtTableTitle = svg.append('text')
 				.attr('x', 2)
-				.attr('y', 10)
+				.attr('y', 18)
 				.style('visibility', titleVisible)
 				.style('font', `${effectiveFontSize}px ${fontFamily}`)
+				.style('user-select', 'none')
+				.style('-webkit-user-select', 'none')
+				.style('-ms-user-select', 'none')
+				.style('pointer-events', 'none')
 				.text(effectiveTitle);
 
 		const txtHeaders = [];
 		const txtData = [];
 
+		function cssPropertyToJsName(propertyName) {
+			return propertyName.replace(/-([a-z])/g, function (_, letter) {
+				return letter.toUpperCase();
+			});
+		}
+
+		function applyStyleToElement(element, style) {
+			if (!element) return;
+
+			if (typeof style === 'string') {
+				const currentStyle = element.getAttribute('style') || '';
+				element.setAttribute('style', currentStyle ? currentStyle + ';' + style : style);
+			} else if (typeof style === 'object' && style !== null) {
+				for (const [key, value] of Object.entries(style)) {
+					element.style[cssPropertyToJsName(key)] = value;
+				}
+			}
+		}
+
 		function applyTextStyle(elements, style) {
 			elements.forEach((el) => {
-				if (typeof style === 'string') {
-					el.setAttribute('style', `${el.getAttribute('style') || ''};${style}`);
-				} else if (typeof style === 'object' && style !== null) {
-					for (const [key, value] of Object.entries(style)) {
-						el.style[key] = value;
-					}
-				}
+				applyStyleToElement(el, style);
 			});
 		}
 
@@ -380,7 +401,15 @@ export function lineTable(options = {}) {
 		});
 
 		function setTxtTableTitleStyle(style) {
-			applyTextStyle([txtTableTitle.node()], style);
+			applyStyleToElement(txtTableTitle.node(), style);
+		}
+
+		function setTableBackgroundStyle(style) {
+			applyStyleToElement(tableBackground.node(), style);
+		}
+
+		function setTableBorderStyle(style) {
+			applyStyleToElement(tableBorder.node(), style);
 		}
 
 		function setTxtTableHeadersStyle(style) {
@@ -391,13 +420,27 @@ export function lineTable(options = {}) {
 			applyTextStyle(txtData, style);
 		}
 
+		// Returning an API to the user
+		// There are exposed elements for super users
+		// There are exposed setter methods to change the style
+		// ---> You can pass an object to a setter: { fill: "red", fontStyle: "italic" }
+		// ---> Or you can pass a string to a setter: "fill:red; font-style:italic;"
+		// Either will work
+
 		return {
+			// return elements
 			container: container.node(),
 			svg: svg.node(),
+			tableBackground: tableBackground.node(),
+			tableBorder: tableBorder.node(),
 			txtTableTitle: txtTableTitle.node(),
 			txtHeaders: txtHeaders,
 			txtData: txtData,
+
+			// return setters
 			setTxtTableTitleStyle: setTxtTableTitleStyle,
+			setTableBackgroundStyle: setTableBackgroundStyle,
+			setTableBorderStyle: setTableBorderStyle,
 			setTxtTableHeadersStyle: setTxtTableHeadersStyle,
 			setTxtTableDataStyle: setTxtTableDataStyle
 		};

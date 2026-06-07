@@ -786,6 +786,14 @@
 	  return axis;
 	}
 
+	function axisTop(scale) {
+	  return axis(top, scale);
+	}
+
+	function axisRight(scale) {
+	  return axis(right, scale);
+	}
+
 	function axisBottom(scale) {
 	  return axis(bottom, scale);
 	}
@@ -4324,6 +4332,160 @@
 	  return linearish(scale);
 	}
 
+	function nice(domain, interval) {
+	  domain = domain.slice();
+
+	  var i0 = 0,
+	      i1 = domain.length - 1,
+	      x0 = domain[i0],
+	      x1 = domain[i1],
+	      t;
+
+	  if (x1 < x0) {
+	    t = i0, i0 = i1, i1 = t;
+	    t = x0, x0 = x1, x1 = t;
+	  }
+
+	  domain[i0] = interval.floor(x0);
+	  domain[i1] = interval.ceil(x1);
+	  return domain;
+	}
+
+	function transformLog(x) {
+	  return Math.log(x);
+	}
+
+	function transformExp(x) {
+	  return Math.exp(x);
+	}
+
+	function transformLogn(x) {
+	  return -Math.log(-x);
+	}
+
+	function transformExpn(x) {
+	  return -Math.exp(-x);
+	}
+
+	function pow10(x) {
+	  return isFinite(x) ? +("1e" + x) : x < 0 ? 0 : x;
+	}
+
+	function powp(base) {
+	  return base === 10 ? pow10
+	      : base === Math.E ? Math.exp
+	      : x => Math.pow(base, x);
+	}
+
+	function logp(base) {
+	  return base === Math.E ? Math.log
+	      : base === 10 && Math.log10
+	      || base === 2 && Math.log2
+	      || (base = Math.log(base), x => Math.log(x) / base);
+	}
+
+	function reflect(f) {
+	  return (x, k) => -f(-x, k);
+	}
+
+	function loggish(transform) {
+	  const scale = transform(transformLog, transformExp);
+	  const domain = scale.domain;
+	  let base = 10;
+	  let logs;
+	  let pows;
+
+	  function rescale() {
+	    logs = logp(base), pows = powp(base);
+	    if (domain()[0] < 0) {
+	      logs = reflect(logs), pows = reflect(pows);
+	      transform(transformLogn, transformExpn);
+	    } else {
+	      transform(transformLog, transformExp);
+	    }
+	    return scale;
+	  }
+
+	  scale.base = function(_) {
+	    return arguments.length ? (base = +_, rescale()) : base;
+	  };
+
+	  scale.domain = function(_) {
+	    return arguments.length ? (domain(_), rescale()) : domain();
+	  };
+
+	  scale.ticks = count => {
+	    const d = domain();
+	    let u = d[0];
+	    let v = d[d.length - 1];
+	    const r = v < u;
+
+	    if (r) ([u, v] = [v, u]);
+
+	    let i = logs(u);
+	    let j = logs(v);
+	    let k;
+	    let t;
+	    const n = count == null ? 10 : +count;
+	    let z = [];
+
+	    if (!(base % 1) && j - i < n) {
+	      i = Math.floor(i), j = Math.ceil(j);
+	      if (u > 0) for (; i <= j; ++i) {
+	        for (k = 1; k < base; ++k) {
+	          t = i < 0 ? k / pows(-i) : k * pows(i);
+	          if (t < u) continue;
+	          if (t > v) break;
+	          z.push(t);
+	        }
+	      } else for (; i <= j; ++i) {
+	        for (k = base - 1; k >= 1; --k) {
+	          t = i > 0 ? k / pows(-i) : k * pows(i);
+	          if (t < u) continue;
+	          if (t > v) break;
+	          z.push(t);
+	        }
+	      }
+	      if (z.length * 2 < n) z = ticks(u, v, n);
+	    } else {
+	      z = ticks(i, j, Math.min(j - i, n)).map(pows);
+	    }
+	    return r ? z.reverse() : z;
+	  };
+
+	  scale.tickFormat = (count, specifier) => {
+	    if (count == null) count = 10;
+	    if (specifier == null) specifier = base === 10 ? "s" : ",";
+	    if (typeof specifier !== "function") {
+	      if (!(base % 1) && (specifier = formatSpecifier(specifier)).precision == null) specifier.trim = true;
+	      specifier = format(specifier);
+	    }
+	    if (count === Infinity) return specifier;
+	    const k = Math.max(1, base * count / scale.ticks().length); // TODO fast estimate?
+	    return d => {
+	      let i = d / pows(Math.round(logs(d)));
+	      if (i * base < base - 0.5) i *= base;
+	      return i <= k ? specifier(d) : "";
+	    };
+	  };
+
+	  scale.nice = () => {
+	    return domain(nice(domain(), {
+	      floor: x => pows(Math.floor(logs(x))),
+	      ceil: x => pows(Math.ceil(logs(x)))
+	    }));
+	  };
+
+	  return scale;
+	}
+
+	function log$1() {
+	  const scale = loggish(transformer()).domain([1, 10]);
+	  scale.copy = () => copy(scale, log$1()).base(scale.base());
+	  initRange.apply(scale, arguments);
+	  return scale;
+	}
+
 	function colors(specifier) {
 	  var n = specifier.length / 6 | 0, colors = new Array(n), i = 0;
 	  while (i < n) colors[i] = "#" + specifier.slice(i * 6, ++i * 6);
@@ -4553,6 +4715,10 @@
 	                chartTitle,
 	                xAxisTitle = 'Frequency',
 	                yAxisTitle = 'dB',
+	                xScale = 'linear',
+	                yScale = 'linear',
+	                xAxisPosition = 'bottom',
+	                yAxisPosition = 'left',
 	                metricPrefix = 'giga',
 	                showPoints = true,
 	                showLabels = true,
@@ -4585,7 +4751,8 @@
 
 	            // Metric Scale
 	            const pickScale = {
-	                giga: 1e9, mega: 1e6, kilo: 1e3, none: 1,
+	                tera: 1e12, giga: 1e9, mega: 1e6, kilo: 1e3,
+	                none: 1, one: 1, deci: 1e-1, centi: 1e-2,
 	                milli: 1e-3, micro: 1e-6, nano: 1e-9, pico: 1e-12
 	            }[metricPrefix] || 1e9;
 
@@ -4615,9 +4782,52 @@
 	            const innerWidth = width - margin.left - margin.right;
 	            const innerHeight = height - margin.top - margin.bottom;
 
+	            function makeScale(scaleType, domain, range, axisName) {
+	                const effectiveScaleType = String(scaleType).toLowerCase();
+
+	                if (effectiveScaleType === 'log') {
+	                    if (domain[0] <= 0 || domain[1] <= 0) {
+	                        throw new Error(`${axisName}Scale: log scale requires a positive domain.`);
+	                    }
+	                    return log$1().domain(domain).nice().range(range);
+	                }
+
+	                return linear().domain(domain).nice().range(range);
+	            }
+
 	            // Scales
-	            const x = linear().domain(xRange).nice().range([0, innerWidth]);
-	            const y = linear().domain(yRange).nice().range([innerHeight, 0]);
+	            const x = makeScale(xScale, xRange, [0, innerWidth], 'x');
+	            const y = makeScale(yScale, yRange, [innerHeight, 0], 'y');
+
+	            const xDomain = x.domain();
+	            const yDomain = y.domain();
+
+	            function domainIncludesZero(domain) {
+	                return domain[0] <= 0 && domain[1] >= 0;
+	            }
+
+	            const effectiveXAxisPosition = String(xAxisPosition).toLowerCase();
+	            const effectiveYAxisPosition = String(yAxisPosition).toLowerCase();
+
+	            const xAxisY = effectiveXAxisPosition === 'top'
+	                ? 0
+	                : effectiveXAxisPosition === 'origin' && domainIncludesZero(yDomain)
+	                    ? y(0)
+	                    : innerHeight;
+
+	            const yAxisX = effectiveYAxisPosition === 'right'
+	                ? innerWidth
+	                : effectiveYAxisPosition === 'origin' && domainIncludesZero(xDomain)
+	                    ? x(0)
+	                    : 0;
+
+	            const xAxisGenerator = effectiveXAxisPosition === 'top'
+	                ? axisTop(x).ticks(10)
+	                : axisBottom(x).ticks(10);
+
+	            const yAxisGenerator = effectiveYAxisPosition === 'right'
+	                ? axisRight(y).ticks(10)
+	                : axisLeft(y).ticks(10);
 
 
 	            // color or gray plots
@@ -4787,9 +4997,9 @@
 	                .attr('stroke', 'black');
 
 	            const xAxisGroup = g.append('g')
-	                .attr('transform', `translate(0,${innerHeight})`)
+	                .attr('transform', `translate(0,${xAxisY})`)
 	                .attr('class', 'xAxis')
-	                .call(axisBottom(x).ticks(10));
+	                .call(xAxisGenerator);
 
 	            xAxisGroup.selectAll('text')
 	                .attr('class', 'txtXAxisNumbers')
@@ -4799,8 +5009,9 @@
 	                .attr('class', 'xAxisLine');
 
 	            const yAxisGroup = g.append('g')
+	                .attr('transform', `translate(${yAxisX},0)`)
 	                .attr('class', 'yAxis')
-	                .call(axisLeft(y).ticks(10));
+	                .call(yAxisGenerator);
 
 	            yAxisGroup.selectAll('text')
 	                .attr('class', 'txtYAxisNumbers')
@@ -5095,7 +5306,8 @@
 
 	            // Metric Scale
 	            const pickScale = {
-	                giga: 1e9, mega: 1e6, kilo: 1e3, none: 1,
+	                tera: 1e12, giga: 1e9, mega: 1e6, kilo: 1e3,
+	                none: 1, one: 1, deci: 1e-1, centi: 1e-2,
 	                milli: 1e-3, micro: 1e-6, nano: 1e-9, pico: 1e-12
 	            }[metricPrefix] || 1e9;
 
@@ -5693,11 +5905,11 @@
 				// Sizing
 				columnWidth = 100,
 				rowHeight = 20,
-				margin = { left: 20, top: 20, right: 20, bottom: 20 },
+				margin = { left: 20, top: 36, right: 20, bottom: 20 },
 				fontFamily = 'sans-serif',
 				fontSize = 14,
 				containerFontSizePx,
-				pngBackground = 'transparent'
+				pngBackground = 'white'
 			} = options;
 
 			const effectiveTitle = tableTitle ?? title;
@@ -5706,13 +5918,16 @@
 
 			// ======== Helpers ========
 			const pickScale = (p) => ({
-				tera: 1e12, giga: 1e9, mega: 1e6, kilo: 1e3, one: 1,
-				deci: 1e-1, centi: 1e-2, milli: 1e-3, micro: 1e-6,
+				tera: 1e12, giga: 1e9, mega: 1e6, kilo: 1e3,
+				none: 1, one: 1, deci: 1e-1, centi: 1e-2,
+				milli: 1e-3, micro: 1e-6,
 				nano: 1e-9, pico: 1e-12
 			}[String(p).toLowerCase()] ?? 1e9);
 
-			// Deep clone and scale first column (frequency)
-			const data = JSON.parse(JSON.stringify(inputTable));
+			// Copy tables and rows before scaling the frequency column.
+			const data = inputTable.map(table =>
+				table.map(row => row.slice())
+			);
 			const freqScale = pickScale(metricPrefix);
 			data.forEach(tbl => {
 				for (let r = 1; r < tbl.length; r++) {
@@ -5764,7 +5979,7 @@
 					.style('position', 'relative')        // anchor for absolute button
 					.style('font-family', fontFamily)
 					.style('font-size', `${effectiveFontSize}px`)
-					.style('padding-top', '32px');        // give the button some headroom above the SVG
+					.style('padding-top', '0');
 
 			// ======== PNG copy (keeps SVG in place) ========
 			async function svgToPngBlob(svgNode, width, height) {
@@ -5872,7 +6087,7 @@
 				//.attr('id', 'copyImage')
 				.attr('aria-label', 'Copy')
 				.style('position', 'absolute')
-				.style('top', '5px')
+				.style('top', '0')
 				.style('right', '10px')
 				.style('background', 'none')
 				.style('border', 'none')
@@ -5900,7 +6115,7 @@
 				//.attr('id', 'copyCsv')
 				.attr('aria-label', 'Copy CSV')
 				.style('position', 'absolute')
-				.style('top', '5px')
+				.style('top', '0')
 				.style('right', '150px')  // adjust so it doesn’t overlap your PNG button
 				.style('background', 'none')
 				.style('border', 'none')
@@ -5934,7 +6149,7 @@
 					.attr('height', outerHeight)
 					.style('background-color', pngBackground === 'transparent' ? 'transparent' : pngBackground);
 
-				svg.insert('rect', ':first-child')
+				const tableBackground = svg.insert('rect', ':first-child')
 					.attr('x', 0)
 					.attr('y', 0)
 					.attr('width', outerWidth)
@@ -5943,9 +6158,10 @@
 					.attr('class', 'line-table-background');
 
 			// Border
-			svg.append('rect')
+			const tableBorder = svg.append('rect')
 				.attr('width', outerWidth)
 				.attr('height', outerHeight)
+				.attr('class', 'line-table-border')
 				.attr('fill', 'none')
 				.attr('stroke', 'none')//black
 				.attr('stroke-width', 1);
@@ -5953,23 +6169,40 @@
 			// Title
 			const txtTableTitle = svg.append('text')
 					.attr('x', 2)
-					.attr('y', 10)
+					.attr('y', 18)
 					.style('visibility', titleVisible)
 					.style('font', `${effectiveFontSize}px ${fontFamily}`)
+					.style('user-select', 'none')
+					.style('-webkit-user-select', 'none')
+					.style('-ms-user-select', 'none')
+					.style('pointer-events', 'none')
 					.text(effectiveTitle);
 
 			const txtHeaders = [];
 			const txtData = [];
 
+			function cssPropertyToJsName(propertyName) {
+				return propertyName.replace(/-([a-z])/g, function (_, letter) {
+					return letter.toUpperCase();
+				});
+			}
+
+			function applyStyleToElement(element, style) {
+				if (!element) return;
+
+				if (typeof style === 'string') {
+					const currentStyle = element.getAttribute('style') || '';
+					element.setAttribute('style', currentStyle ? currentStyle + ';' + style : style);
+				} else if (typeof style === 'object' && style !== null) {
+					for (const [key, value] of Object.entries(style)) {
+						element.style[cssPropertyToJsName(key)] = value;
+					}
+				}
+			}
+
 			function applyTextStyle(elements, style) {
 				elements.forEach((el) => {
-					if (typeof style === 'string') {
-						el.setAttribute('style', `${el.getAttribute('style') || ''};${style}`);
-					} else if (typeof style === 'object' && style !== null) {
-						for (const [key, value] of Object.entries(style)) {
-							el.style[key] = value;
-						}
-					}
+					applyStyleToElement(el, style);
 				});
 			}
 
@@ -6030,7 +6263,15 @@
 			});
 
 			function setTxtTableTitleStyle(style) {
-				applyTextStyle([txtTableTitle.node()], style);
+				applyStyleToElement(txtTableTitle.node(), style);
+			}
+
+			function setTableBackgroundStyle(style) {
+				applyStyleToElement(tableBackground.node(), style);
+			}
+
+			function setTableBorderStyle(style) {
+				applyStyleToElement(tableBorder.node(), style);
 			}
 
 			function setTxtTableHeadersStyle(style) {
@@ -6041,13 +6282,27 @@
 				applyTextStyle(txtData, style);
 			}
 
+			// Returning an API to the user
+			// There are exposed elements for super users
+			// There are exposed setter methods to change the style
+			// ---> You can pass an object to a setter: { fill: "red", fontStyle: "italic" }
+			// ---> Or you can pass a string to a setter: "fill:red; font-style:italic;"
+			// Either will work
+
 			return {
+				// return elements
 				container: container.node(),
 				svg: svg.node(),
+				tableBackground: tableBackground.node(),
+				tableBorder: tableBorder.node(),
 				txtTableTitle: txtTableTitle.node(),
 				txtHeaders: txtHeaders,
 				txtData: txtData,
+
+				// return setters
 				setTxtTableTitleStyle: setTxtTableTitleStyle,
+				setTableBackgroundStyle: setTableBackgroundStyle,
+				setTableBorderStyle: setTableBorderStyle,
 				setTxtTableHeadersStyle: setTxtTableHeadersStyle,
 				setTxtTableDataStyle: setTxtTableDataStyle
 			};

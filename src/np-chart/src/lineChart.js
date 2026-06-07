@@ -39,6 +39,10 @@ export function lineChart(options = {}) {
                 chartTitle,
                 xAxisTitle = 'Frequency',
                 yAxisTitle = 'dB',
+                xScale = 'linear',
+                yScale = 'linear',
+                xAxisPosition = 'bottom',
+                yAxisPosition = 'left',
                 metricPrefix = 'giga',
                 showPoints = true,
                 showLabels = true,
@@ -71,7 +75,8 @@ export function lineChart(options = {}) {
 
             // Metric Scale
             const pickScale = {
-                giga: 1e9, mega: 1e6, kilo: 1e3, none: 1,
+                tera: 1e12, giga: 1e9, mega: 1e6, kilo: 1e3,
+                none: 1, one: 1, deci: 1e-1, centi: 1e-2,
                 milli: 1e-3, micro: 1e-6, nano: 1e-9, pico: 1e-12
             }[metricPrefix] || 1e9;
 
@@ -101,9 +106,52 @@ export function lineChart(options = {}) {
             const innerWidth = width - margin.left - margin.right;
             const innerHeight = height - margin.top - margin.bottom;
 
+            function makeScale(scaleType, domain, range, axisName) {
+                const effectiveScaleType = String(scaleType).toLowerCase();
+
+                if (effectiveScaleType === 'log') {
+                    if (domain[0] <= 0 || domain[1] <= 0) {
+                        throw new Error(`${axisName}Scale: log scale requires a positive domain.`);
+                    }
+                    return d3.scaleLog().domain(domain).nice().range(range);
+                }
+
+                return d3.scaleLinear().domain(domain).nice().range(range);
+            }
+
             // Scales
-            const x = d3.scaleLinear().domain(xRange).nice().range([0, innerWidth]);
-            const y = d3.scaleLinear().domain(yRange).nice().range([innerHeight, 0]);
+            const x = makeScale(xScale, xRange, [0, innerWidth], 'x');
+            const y = makeScale(yScale, yRange, [innerHeight, 0], 'y');
+
+            const xDomain = x.domain();
+            const yDomain = y.domain();
+
+            function domainIncludesZero(domain) {
+                return domain[0] <= 0 && domain[1] >= 0;
+            }
+
+            const effectiveXAxisPosition = String(xAxisPosition).toLowerCase();
+            const effectiveYAxisPosition = String(yAxisPosition).toLowerCase();
+
+            const xAxisY = effectiveXAxisPosition === 'top'
+                ? 0
+                : effectiveXAxisPosition === 'origin' && domainIncludesZero(yDomain)
+                    ? y(0)
+                    : innerHeight;
+
+            const yAxisX = effectiveYAxisPosition === 'right'
+                ? innerWidth
+                : effectiveYAxisPosition === 'origin' && domainIncludesZero(xDomain)
+                    ? x(0)
+                    : 0;
+
+            const xAxisGenerator = effectiveXAxisPosition === 'top'
+                ? d3.axisTop(x).ticks(10)
+                : d3.axisBottom(x).ticks(10);
+
+            const yAxisGenerator = effectiveYAxisPosition === 'right'
+                ? d3.axisRight(y).ticks(10)
+                : d3.axisLeft(y).ticks(10);
 
 
             // color or gray plots
@@ -273,9 +321,9 @@ export function lineChart(options = {}) {
                 .attr('stroke', 'black');
 
             const xAxisGroup = g.append('g')
-                .attr('transform', `translate(0,${innerHeight})`)
+                .attr('transform', `translate(0,${xAxisY})`)
                 .attr('class', 'xAxis')
-                .call(d3.axisBottom(x).ticks(10));
+                .call(xAxisGenerator);
 
             xAxisGroup.selectAll('text')
                 .attr('class', 'txtXAxisNumbers')
@@ -285,8 +333,9 @@ export function lineChart(options = {}) {
                 .attr('class', 'xAxisLine');
 
             const yAxisGroup = g.append('g')
+                .attr('transform', `translate(${yAxisX},0)`)
                 .attr('class', 'yAxis')
-                .call(d3.axisLeft(y).ticks(10));
+                .call(yAxisGenerator);
 
             yAxisGroup.selectAll('text')
                 .attr('class', 'txtYAxisNumbers')
