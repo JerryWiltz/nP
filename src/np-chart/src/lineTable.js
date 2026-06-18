@@ -62,12 +62,22 @@ export function lineTable(options = {}) {
 			nano: 1e-9, pico: 1e-12
 		}[String(p).toLowerCase()] ?? 1e9);
 
+		const metricPrefixLabel = (p) => ({
+			tera: 'tera', giga: 'giga', mega: 'mega', kilo: 'kilo',
+			deci: 'deci', centi: 'centi', milli: 'milli',
+			micro: 'micro', nano: 'nano', pico: 'pico'
+		}[String(p).toLowerCase()] ?? 'giga');
+
 		// Copy tables and rows before scaling the frequency column.
 		const data = inputTable.map(table =>
 			table.map(row => row.slice())
 		);
 		const freqScale = pickScale(metricPrefix);
+		const freqPrefixLabel = metricPrefixLabel(metricPrefix);
 		data.forEach(tbl => {
+			if (tbl[0] && typeof tbl[0][0] === 'string' && freqPrefixLabel) {
+				tbl[0][0] = `${tbl[0][0]} ${freqPrefixLabel}`;
+			}
 			for (let r = 1; r < tbl.length; r++) {
 				if (Number.isFinite(tbl[r][0])) tbl[r][0] = tbl[r][0] / freqScale;
 			}
@@ -84,7 +94,10 @@ export function lineTable(options = {}) {
 
 		const tableWidth = totalCols * (columnWidth + 3) + 1;
 		const tableHeight = totalRows * (rowHeight + 1) + (tablesCount - 1) + 1;
-		const outerWidth = margin.left + tableWidth + margin.right;
+		const titleWidth = effectiveTitle ? effectiveTitle.length * effectiveFontSize * 0.65 : 0;
+		const controlsWidth = 280;
+		const minOuterWidth = Math.ceil(titleWidth + controlsWidth);
+		const outerWidth = Math.max(margin.left + tableWidth + margin.right, minOuterWidth);
 		const outerHeight = margin.top + tableHeight + margin.bottom;
 
 		if (showWHAlert) {

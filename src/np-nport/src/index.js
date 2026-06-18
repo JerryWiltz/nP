@@ -1,8 +1,11 @@
 export {seR} from './rlc/seR';
+export {R} from './rlc/R';
 export {paR} from './rlc/paR';
 export {seL} from './rlc/seL';
+export {L} from './rlc/L';
 export {paL} from './rlc/paL';
 export {seC} from './rlc/seC';
+export {C} from './rlc/C';
 export {paC} from './rlc/paC';
 
 export {trf} from './rlc/trf';
@@ -44,4 +47,3 @@ export {tclin} from './tlin/tclin';
 export {mlin} from './mlin/mlin';
 export {mclin} from './mlin/mclin';
 export {mtee} from './mlin/mtee';
-

@@ -633,7 +633,7 @@
 	    right = 2,
 	    bottom = 3,
 	    left = 4,
-	    epsilon$1 = 1e-6;
+	    epsilon$2 = 1e-6;
 
 	function translateX(x) {
 	  return "translate(" + x + ",0)";
@@ -707,11 +707,11 @@
 	      text = text.transition(context);
 
 	      tickExit = tickExit.transition(context)
-	          .attr("opacity", epsilon$1)
+	          .attr("opacity", epsilon$2)
 	          .attr("transform", function(d) { return isFinite(d = position(d)) ? transform(d + offset) : this.getAttribute("transform"); });
 
 	      tickEnter
-	          .attr("opacity", epsilon$1)
+	          .attr("opacity", epsilon$2)
 	          .attr("transform", function(d) { var p = this.parentNode.__axis; return transform((p && isFinite(p = p(d)) ? p : position(d)) + offset); });
 	    }
 
@@ -3584,8 +3584,8 @@
 
 	const pi = Math.PI,
 	    tau = 2 * pi,
-	    epsilon = 1e-6,
-	    tauEpsilon = tau - epsilon;
+	    epsilon$1 = 1e-6,
+	    tauEpsilon = tau - epsilon$1;
 
 	function append(strings) {
 	  this._ += strings[0];
@@ -3652,12 +3652,12 @@
 	    }
 
 	    // Or, is (x1,y1) coincident with (x0,y0)? Do nothing.
-	    else if (!(l01_2 > epsilon));
+	    else if (!(l01_2 > epsilon$1));
 
 	    // Or, are (x0,y0), (x1,y1) and (x2,y2) collinear?
 	    // Equivalently, is (x1,y1) coincident with (x2,y2)?
 	    // Or, is the radius zero? Line to (x1,y1).
-	    else if (!(Math.abs(y01 * x21 - y21 * x01) > epsilon) || !r) {
+	    else if (!(Math.abs(y01 * x21 - y21 * x01) > epsilon$1) || !r) {
 	      this._append`L${this._x1 = x1},${this._y1 = y1}`;
 	    }
 
@@ -3674,7 +3674,7 @@
 	          t21 = l / l21;
 
 	      // If the start tangent is not coincident with (x0,y0), line to.
-	      if (Math.abs(t01 - 1) > epsilon) {
+	      if (Math.abs(t01 - 1) > epsilon$1) {
 	        this._append`L${x1 + t01 * x01},${y1 + t01 * y01}`;
 	      }
 
@@ -3700,7 +3700,7 @@
 	    }
 
 	    // Or, is (x0,y0) not coincident with the previous point? Line to (x0,y0).
-	    else if (Math.abs(this._x1 - x0) > epsilon || Math.abs(this._y1 - y0) > epsilon) {
+	    else if (Math.abs(this._x1 - x0) > epsilon$1 || Math.abs(this._y1 - y0) > epsilon$1) {
 	      this._append`L${x0},${y0}`;
 	    }
 
@@ -3716,7 +3716,7 @@
 	    }
 
 	    // Is this arc non-empty? Draw an arc!
-	    else if (da > epsilon) {
+	    else if (da > epsilon$1) {
 	      this._append`A${r},${r},0,${+(da >= pi)},${cw},${this._x1 = x + r * Math.cos(a1)},${this._y1 = y + r * Math.sin(a1)}`;
 	    }
 	  }
@@ -4514,6 +4514,8 @@
 	  };
 	}
 
+	const epsilon = 1e-12;
+
 	function withPath(shape) {
 	  let digits = 3;
 
@@ -4630,6 +4632,154 @@
 
 	  return line;
 	}
+
+	function point$1(that, x, y) {
+	  that._context.bezierCurveTo(
+	    that._x1 + that._k * (that._x2 - that._x0),
+	    that._y1 + that._k * (that._y2 - that._y0),
+	    that._x2 + that._k * (that._x1 - x),
+	    that._y2 + that._k * (that._y1 - y),
+	    that._x2,
+	    that._y2
+	  );
+	}
+
+	function Cardinal(context, tension) {
+	  this._context = context;
+	  this._k = (1 - tension) / 6;
+	}
+
+	Cardinal.prototype = {
+	  areaStart: function() {
+	    this._line = 0;
+	  },
+	  areaEnd: function() {
+	    this._line = NaN;
+	  },
+	  lineStart: function() {
+	    this._x0 = this._x1 = this._x2 =
+	    this._y0 = this._y1 = this._y2 = NaN;
+	    this._point = 0;
+	  },
+	  lineEnd: function() {
+	    switch (this._point) {
+	      case 2: this._context.lineTo(this._x2, this._y2); break;
+	      case 3: point$1(this, this._x1, this._y1); break;
+	    }
+	    if (this._line || (this._line !== 0 && this._point === 1)) this._context.closePath();
+	    this._line = 1 - this._line;
+	  },
+	  point: function(x, y) {
+	    x = +x, y = +y;
+	    switch (this._point) {
+	      case 0: this._point = 1; this._line ? this._context.lineTo(x, y) : this._context.moveTo(x, y); break;
+	      case 1: this._point = 2; this._x1 = x, this._y1 = y; break;
+	      case 2: this._point = 3; // falls through
+	      default: point$1(this, x, y); break;
+	    }
+	    this._x0 = this._x1, this._x1 = this._x2, this._x2 = x;
+	    this._y0 = this._y1, this._y1 = this._y2, this._y2 = y;
+	  }
+	};
+
+	((function custom(tension) {
+
+	  function cardinal(context) {
+	    return new Cardinal(context, tension);
+	  }
+
+	  cardinal.tension = function(tension) {
+	    return custom(+tension);
+	  };
+
+	  return cardinal;
+	}))(0);
+
+	function point(that, x, y) {
+	  var x1 = that._x1,
+	      y1 = that._y1,
+	      x2 = that._x2,
+	      y2 = that._y2;
+
+	  if (that._l01_a > epsilon) {
+	    var a = 2 * that._l01_2a + 3 * that._l01_a * that._l12_a + that._l12_2a,
+	        n = 3 * that._l01_a * (that._l01_a + that._l12_a);
+	    x1 = (x1 * a - that._x0 * that._l12_2a + that._x2 * that._l01_2a) / n;
+	    y1 = (y1 * a - that._y0 * that._l12_2a + that._y2 * that._l01_2a) / n;
+	  }
+
+	  if (that._l23_a > epsilon) {
+	    var b = 2 * that._l23_2a + 3 * that._l23_a * that._l12_a + that._l12_2a,
+	        m = 3 * that._l23_a * (that._l23_a + that._l12_a);
+	    x2 = (x2 * b + that._x1 * that._l23_2a - x * that._l12_2a) / m;
+	    y2 = (y2 * b + that._y1 * that._l23_2a - y * that._l12_2a) / m;
+	  }
+
+	  that._context.bezierCurveTo(x1, y1, x2, y2, that._x2, that._y2);
+	}
+
+	function CatmullRom(context, alpha) {
+	  this._context = context;
+	  this._alpha = alpha;
+	}
+
+	CatmullRom.prototype = {
+	  areaStart: function() {
+	    this._line = 0;
+	  },
+	  areaEnd: function() {
+	    this._line = NaN;
+	  },
+	  lineStart: function() {
+	    this._x0 = this._x1 = this._x2 =
+	    this._y0 = this._y1 = this._y2 = NaN;
+	    this._l01_a = this._l12_a = this._l23_a =
+	    this._l01_2a = this._l12_2a = this._l23_2a =
+	    this._point = 0;
+	  },
+	  lineEnd: function() {
+	    switch (this._point) {
+	      case 2: this._context.lineTo(this._x2, this._y2); break;
+	      case 3: this.point(this._x2, this._y2); break;
+	    }
+	    if (this._line || (this._line !== 0 && this._point === 1)) this._context.closePath();
+	    this._line = 1 - this._line;
+	  },
+	  point: function(x, y) {
+	    x = +x, y = +y;
+
+	    if (this._point) {
+	      var x23 = this._x2 - x,
+	          y23 = this._y2 - y;
+	      this._l23_a = Math.sqrt(this._l23_2a = Math.pow(x23 * x23 + y23 * y23, this._alpha));
+	    }
+
+	    switch (this._point) {
+	      case 0: this._point = 1; this._line ? this._context.lineTo(x, y) : this._context.moveTo(x, y); break;
+	      case 1: this._point = 2; break;
+	      case 2: this._point = 3; // falls through
+	      default: point(this, x, y); break;
+	    }
+
+	    this._l01_a = this._l12_a, this._l12_a = this._l23_a;
+	    this._l01_2a = this._l12_2a, this._l12_2a = this._l23_2a;
+	    this._x0 = this._x1, this._x1 = this._x2, this._x2 = x;
+	    this._y0 = this._y1, this._y1 = this._y2, this._y2 = y;
+	  }
+	};
+
+	var catmullRom = (function custom(alpha) {
+
+	  function catmullRom(context) {
+	    return alpha ? new CatmullRom(context, alpha) : new Cardinal(context, 0);
+	  }
+
+	  catmullRom.alpha = function(alpha) {
+	    return custom(+alpha);
+	  };
+
+	  return catmullRom;
+	})(0.5);
 
 	function Transform(k, x, y) {
 	  this.k = k;
@@ -5236,170 +5386,148 @@
 	        }
 
 	function smithChart(options = {}) {
-	            // ======== Options & defaults ========
-	            const {
-	                // Default inputTable
-	                inputTable = [[
-	                    ['Freq', 's21dB', 's23dB'],
-	                    [0, -3.52, -3.52],
-	                    [600000000, -3.51, -4.19],
-	                    [1200000000, -3.47, -5.72],
-	                    [1800000000, -3.42, -7.46],
-	                    [2400000000, -3.35, -9.21],
-	                    [3000000000, -3.27, -11.01],
-	                    [3600000000, -3.19, -13.04],
-	                    [4200000000, -3.12, -15.53],
-	                    [4800000000, -3.06, -18.99],
-	                    [5400000000, -3.02, -24.83],
-	                    [6000000000, -3.01, -53.9],
-	                    [6600000000, -3.02, -25.46],
-	                    [7200000000, -3.05, -19.3],
-	                    [7800000000, -3.11, -15.74],
-	                    [8400000000, -3.18, -13.2],
-	                    [9000000000, -3.26, -11.15],
-	                    [9600000000, -3.34, -9.34],
-	                    [10200000000, -3.41, -7.59],
-	                    [10800000000, -3.47, -5.85],
-	                    [11400000000, -3.5, -4.28],
-	                    [12000000000, -3.52, -3.52]
-	                ]],
+		// ======== Options & defaults ========
+		const {
+			inputTable = [[
+				['Freq', 's11Re', 's11Im'],
+				[100000000, -0.5, 0.2],
+				[200000000, -0.35, 0.35],
+				[300000000, -0.1, 0.45],
+				[400000000, 0.15, 0.35],
+				[500000000, 0.35, 0.1],
+				[600000000, 0.45, -0.15]
+			]],
+			mount = 'body',
+			containerId,
+			svgId,
+			title = '',
+			chartTitle,
+			metricPrefix = 'giga',
+			showPoints = true,
+			showLabels = true,
+			gridColor = '#b8b8b8',
+			traceColor = true,
+			width = 600,
+			height = 600,
+			margin = { top: 40, right: 40, bottom: 40, left: 40 },
+			fontFamily = 'sans-serif',
+			fontSize = 14,
+			containerFontSizePx,
+			pngBackground = 'transparent'
+		} = options;
 
-		                // Where to append the container. Defaults to <body>.
-		                mount = 'body',
-		                containerId,
-		                svgId,
+		const effectiveTitle = chartTitle ?? title;
+		const effectiveFontSize = containerFontSizePx ?? fontSize;
+		let txtLabels = selectAll([]);
 
-	                // Default Settings
-	                title = '',
-	                chartTitle,
-	                xAxisTitle = 'Frequency',
-	                yAxisTitle = 'dB',
-	                metricPrefix = 'giga',
-	                showPoints = true,
-	                showLabels = true,
-	                showGrid = true,
-	                gridColor = '#e0e0e0',
-	                traceColor = true, // true for color, false for gray
-	                width = 700,
-	                height = 450,
-	                margin = { top: 35, right: 80, bottom: 55, left: 75 },
+		const pickScale = {
+			tera: 1e12, giga: 1e9, mega: 1e6, kilo: 1e3,
+			none: 1, one: 1, deci: 1e-1, centi: 1e-2,
+			milli: 1e-3, micro: 1e-6, nano: 1e-9, pico: 1e-12
+		}[metricPrefix] || 1e9;
 
-	                // Raw ranges (may be undefined, handled later)
-	                xRange: rawXRange,
-	                yRange: rawYRange,
+		function stripComplexSuffix(header) {
+			return String(header).replace(/(?:Re|Im)$/i, '');
+		}
 
-	                // Default Font Size
-	                fontFamily = 'sans-serif',
-	                fontSize = 14,
-	                containerFontSizePx,
+		function formatData(tables) {
+			return tables.flatMap(table => {
+				const headers = table[0];
+				const traces = [];
 
-	                // Default background
-	                pngBackground = 'transparent'
+				for (let i = 1; i < headers.length; i += 2) {
+					const reHeader = headers[i];
+					const imHeader = headers[i + 1];
+					if (!imHeader) continue;
 
-	            } = options;
+					const traceName = stripComplexSuffix(reHeader);
+					traces.push({
+						traceName,
+						values: table.slice(1).map(row => ({
+							frequency: row[0] / pickScale,
+							re: row[i],
+							im: row[i + 1]
+						})).filter(point =>
+							Number.isFinite(point.re) && Number.isFinite(point.im)
+						)
+					});
+				}
 
-	            // Starting font sizes since d3.axisBottom and d3.axisLeft will override the container styles
-	            const effectiveTitle = chartTitle ?? title;
-	            const effectiveFontSize = containerFontSizePx ?? fontSize;
-	            const axisFontPx = effectiveFontSize;
-	            let txtLabels = selectAll([]);
+				return traces;
+			});
+		}
 
-	            // Metric Scale
-	            const pickScale = {
-	                tera: 1e12, giga: 1e9, mega: 1e6, kilo: 1e3,
-	                none: 1, one: 1, deci: 1e-1, centi: 1e-2,
-	                milli: 1e-3, micro: 1e-6, nano: 1e-9, pico: 1e-12
-	            }[metricPrefix] || 1e9;
+		const formattedData = formatData(inputTable);
+		const n = Math.max(3, Math.min(9, formattedData.length));
+		const color = traceColor
+			? ordinal(category10)
+			: ordinal(scheme[n]);
 
-	            // Format Data
-	            const formattedData = inputTable.map(table => {
-	                const headers = table[0];
-	                return headers.slice(1).map(yName => ({
-	                    yName,
-	                    yValues: table.slice(1).map(row => ({
-	                        xValue: row[0] / pickScale,
-	                        yValue: row[headers.indexOf(yName)]
-	                    }))
-	                }));
-	            }).flat();
+		const innerWidth = width - margin.left - margin.right;
+		const innerHeight = height - margin.top - margin.bottom;
+		const plotSize = Math.min(innerWidth, innerHeight);
+		const plotLeft = margin.left + (innerWidth - plotSize) / 2;
+		const plotTop = margin.top + (innerHeight - plotSize) / 2;
+		const center = plotSize / 2;
+		const radius = plotSize / 2;
 
-	            // Extract values
-	            const xValues = formattedData.flatMap(d => d.yValues.map(v => v.xValue));
-	            const yValues = formattedData.flatMap(d => d.yValues.map(v => v.yValue));
+		function gammaToPoint(gamma) {
+			return [
+				center + gamma.re * radius,
+				center - gamma.im * radius
+			];
+		}
 
-	            const xRange = rawXRange
-	                ? rawXRange.map(v => v / pickScale)
-	                : extent(xValues);
+		const line$1 = line()
+			.x(d => gammaToPoint(d)[0])
+			.y(d => gammaToPoint(d)[1])
+			.curve(catmullRom.alpha(0.5));
 
-	            const yRange = rawYRange || extent(yValues);
+		const container = select(mount)
+			.append('div')
+			.style('position', 'relative')
+			.style('display', 'inline-block')
+			.style('padding', '5px')
+			.style('font-family', fontFamily)
+			.style('font-size', `${effectiveFontSize}px`)
+			.attr('id', containerId || null)
+			.attr('class', 'smith-chart-container');
 
-	            // Dimensions
-	            const innerWidth = width - margin.left - margin.right;
-	            const innerHeight = height - margin.top - margin.bottom;
+		const svg = container.append('svg')
+			.attr('width', width)
+			.attr('height', height)
+			.attr('id', svgId || null)
+			.attr('class', 'smith-chart-svg');
 
-	            // Scales
-	            const x = linear().domain(xRange).nice().range([0, innerWidth]);
-	            const y = linear().domain(yRange).nice().range([innerHeight, 0]);
+		const chartBackground = svg.insert('rect', ':first-child')
+			.attr('x', 0)
+			.attr('y', 0)
+			.attr('width', width)
+			.attr('height', height)
+			.attr('fill', pngBackground === 'transparent' ? 'none' : pngBackground)
+			.attr('class', 'smith-chart-background');
 
+		container.style('position', 'relative');
 
-	            // color or gray plots
-	            const n = Math.max(3, Math.min(9, formattedData.length));
+		const button = container.append('button')
+			.attr('aria-label', 'Copy')
+			.style('position', 'absolute')
+			.style('top', '5px')
+			.style('right', '100px')
+			.style('background', 'none')
+			.style('border', 'none')
+			.style('padding', '4px 8px')
+			.style('cursor', 'pointer')
+			.style('display', 'inline-flex')
+			.style('align-items', 'center')
+			.style('gap', '4px')
+			.style('border-radius', '6px')
+			.on('mouseover', function () { select(this).style('background', '#ccf2ff'); })
+			.on('mouseout', function () { select(this).style('background', 'none'); })
+			.on('mousedown', function () { select(this).style('background', '#00ace6'); })
+			.on('mouseup', function () { select(this).style('background', '#ccf2ff'); });
 
-	            const color = traceColor
-	                ? ordinal(category10)
-	                : ordinal(scheme[n]);
-
-	            // Container DIV (position relative for button)
-	            const container = select(mount) // was 'body'
-	                .append('div')
-	                .style('position', 'relative')
-	                .style('display', 'inline-block')
-	                .style('padding', '5px')
-		                .style('font-family', fontFamily)
-		                .style('font-size', `${effectiveFontSize}px`)
-		                .attr('id', containerId || null)
-		                .attr('class', 'containerClass');  //was 'font-size', '20px'
-
-	            // Add SVG
-	            const svg = container.append('svg')
-		                .attr('width', width)
-		                .attr('height', height)
-		                .attr('id', svgId || null)
-		                .attr('class', 'svgContainerClass');
-
-	            // SVG background so on-screen matches PNG
-	            const chartBackground = svg.insert('rect', ':first-child')
-	                .attr('x', 0)
-	                .attr('y', 0)
-	                .attr('width', width)
-	                .attr('height', height)
-	                .attr('fill', pngBackground === 'transparent' ? 'none' : pngBackground)
-	                .attr('class', 'svgRectClass');
-
-	            // Ensure container is positioned correctly
-	            container.style('position', 'relative');
-
-	            // Button
-	            const button = container.append('button')
-	                .attr('aria-label', 'Copy')
-	                .style('position', 'absolute')
-	                .style('top', '5px')
-	                .style('right', '100px')
-	                .style('background', 'none')
-	                .style('border', 'none')
-	                .style('padding', '4px 8px')
-	                .style('cursor', 'pointer')
-	                .style('display', 'inline-flex')
-	                .style('align-items', 'center')
-	                .style('gap', '4px')
-	                .style('border-radius', '6px')
-	                .on('mouseover', function () { select(this).style('background', '#ccf2ff'); })  //#ccf2ff
-	                .on('mouseout', function () { select(this).style('background', 'none'); })
-	                .on('mousedown', function () { select(this).style('background', '#00ace6'); }) //#00ace6
-	                .on('mouseup', function () { select(this).style('background', '#ccf2ff'); });
-
-	            // Button icon + text
-	            button.html(`
+		button.html(`
             <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
         <path
           d="M12.668 10.667C12.668 9.95614 12.668 9.46258 12.6367 9.0791C12.6137 8.79732 12.5758 8.60761 12.5244 8.46387L12.4688 8.33399C12.3148 8.03193 12.0803 7.77885 11.793 7.60254L11.666 7.53125C11.508 7.45087 11.2963 7.39395 10.9209 7.36328C10.5374 7.33197 10.0439 7.33203 9.33301 7.33203H6.5C5.78896 7.33203 5.29563 7.33195 4.91211 7.36328C4.63016 7.38632 4.44065 7.42413 4.29688 7.47559L4.16699 7.53125C3.86488 7.68518 3.61186 7.9196 3.43555 8.20703L3.36524 8.33399C3.28478 8.49198 3.22795 8.70352 3.19727 9.0791C3.16595 9.46259 3.16504 9.95611 3.16504 10.667V13.5C3.16504 14.211 3.16593 14.7044 3.19727 15.0879C3.22797 15.4636 3.28473 15.675 3.36524 15.833L3.43555 15.959C3.61186 16.2466 3.86474 16.4807 4.16699 16.6348L4.29688 16.6914C4.44063 16.7428 4.63025 16.7797 4.91211 16.8027C5.29563 16.8341 5.78896 16.835 6.5 16.835H9.33301C10.0439 16.835 10.5374 16.8341 10.9209 16.8027C11.2965 16.772 11.508 16.7152 11.666 16.6348L11.793 16.5645C12.0804 16.3881 12.3148 16.1351 12.4688 15.833L12.5244 15.7031C12.5759 15.5594 12.6137 15.3698 12.6367 15.0879C12.6681 14.7044 12.668 14.211 12.668 13.5V10.667ZM13.998 12.665C14.4528 12.6634 14.8011 12.6602 15.0879 12.6367C15.4635 12.606 15.675 12.5492 15.833 12.4688L15.959 12.3975C16.2466 12.2211 16.4808 11.9682 16.6348 11.666L16.6914 11.5361C16.7428 11.3924 16.7797 11.2026 16.8027 10.9209C16.8341 10.5374 16.835 10.0439 16.835 9.33301V6.5C16.835 5.78896 16.8341 5.29563 16.8027 4.91211C16.7797 4.63025 16.7428 4.44063 16.6914 4.29688L16.6348 4.16699C16.4807 3.86474 16.2466 3.61186 15.959 3.43555L15.833 3.36524C15.675 3.28473 15.4636 3.22797 15.0879 3.19727C14.7044 3.16593 14.211 3.16504 13.5 3.16504H10.667C9.9561 3.16504 9.46259 3.16595 9.0791 3.19727C8.79739 3.22028 8.6076 3.2572 8.46387 3.30859L8.33399 3.36524C8.03176 3.51923 7.77886 3.75343 7.60254 4.04102L7.53125 4.16699C7.4508 4.32498 7.39397 4.53655 7.36328 4.91211C7.33985 5.19893 7.33562 5.54719 7.33399 6.00195H9.33301C10.022 6.00195 10.5791 6.00131 11.0293 6.03809C11.4873 6.07551 11.8937 6.15471 12.2705 6.34668L12.4883 6.46875C12.984 6.7728 13.3878 7.20854 13.6533 7.72949L13.7197 7.87207C13.8642 8.20859 13.9292 8.56974 13.9619 8.9707C13.9987 9.42092 13.998 9.97799 13.998 10.667V12.665ZM18.165 9.33301C18.165 10.022 18.1657 10.5791 18.1289 11.0293C18.0961 11.4302 18.0311 11.7914 17.8867 12.1279L17.8203 12.2705C17.5549 12.7914 17.1509 13.2272 16.6553 13.5313L16.4365 13.6533C16.0599 13.8452 15.6541 13.9245 15.1963 13.9619C14.8593 13.9895 14.4624 13.9935 13.9951 13.9951C13.9935 14.4624 13.9895 14.8593 13.9619 15.1963C13.9292 15.597 13.864 15.9576 13.7197 16.2939L13.6533 16.4365C13.3878 16.9576 12.9841 17.3941 12.4883 17.6982L12.2705 17.8203C11.8937 18.0123 11.4873 18.0915 11.0293 18.1289C10.5791 18.1657 10.022 18.165 9.33301 18.165H6.5C5.81091 18.165 5.25395 18.1657 4.80371 18.1289C4.40306 18.0962 4.04235 18.031 3.70606 17.8867L3.56348 17.8203C3.04244 17.5548 2.60585 17.151 2.30176 16.6553L2.17969 16.4365C1.98788 16.0599 1.90851 15.6541 1.87109 15.1963C1.83431 14.746 1.83496 14.1891 1.83496 13.5V10.667C1.83496 9.978 1.83432 9.42091 1.87109 8.9707C1.90851 8.5127 1.98772 8.10625 2.17969 7.72949L2.30176 7.51172C2.60586 7.0159 3.04236 6.6122 3.56348 6.34668L3.70606 6.28027C4.04237 6.136 4.40303 6.07083 4.80371 6.03809C5.14051 6.01057 5.53708 6.00551 6.00391 6.00391C6.00551 5.53708 6.01057 5.14051 6.03809 4.80371C6.0755 4.34588 6.15483 3.94012 6.34668 3.56348L6.46875 3.34473C6.77282 2.84912 7.20856 2.44514 7.72949 2.17969L7.87207 2.11328C8.20855 1.96886 8.56979 1.90385 8.9707 1.87109C9.42091 1.83432 9.978 1.83496 10.667 1.83496H13.5C14.1891 1.83496 14.746 1.83431 15.1963 1.87109C15.6541 1.90851 16.0599 1.98788 16.4365 2.17969L16.6553 2.30176C17.151 2.60585 17.5548 3.04244 17.8203 3.56348L17.8867 3.70606C18.031 4.04235 18.0962 4.40306 18.1289 4.80371C18.1657 5.25395 18.165 5.81091 18.165 6.5V9.33301Z">
@@ -5407,344 +5535,260 @@
       </svg>Copy as png
     `);
 
-	            // New button function fire
-	            button.on('click', copyPNG);
+		// New button function fire
+		button.on('click', copyPNG);
 
-	            // --- One function to copy the current SVG as PNG to clipboard ---
-	            function copyPNG() {
-	                const containerDiv = container.node();
-	                const svgElement = containerDiv.querySelector('svg');
+		function copyPNG() {
+			const containerDiv = container.node();
+			const svgElement = containerDiv.querySelector('svg');
 
-	                const serializer = new XMLSerializer();
-	                const svgString = serializer.serializeToString(svgElement);
+			const serializer = new XMLSerializer();
+			const svgString = serializer.serializeToString(svgElement);
 
-	                const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
-	                const url = URL.createObjectURL(svgBlob);
+			const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+			const url = URL.createObjectURL(svgBlob);
 
-	                const img = new Image();
-	                img.onload = async () => {
-	                    const canvas = document.createElement("canvas");
-	                    // Use rendered size
-	                    canvas.width = svgElement.clientWidth || +svgElement.getAttribute('width') || 800;
-	                    canvas.height = svgElement.clientHeight || +svgElement.getAttribute('height') || 600;
+			const img = new Image();
+			img.onload = async () => {
+				const canvas = document.createElement('canvas');
+				// Use rendered size
+				canvas.width = svgElement.clientWidth || +svgElement.getAttribute('width') || 800;
+				canvas.height = svgElement.clientHeight || +svgElement.getAttribute('height') || 600;
 
-	                    const ctx = canvas.getContext("2d");
+				const ctx = canvas.getContext('2d');
 
-	                    // ------ NEW: optional background fill (defaults to transparent) ------
-	                    if (pngBackground && pngBackground !== 'transparent') {
-	                        ctx.save();
-	                        ctx.globalCompositeOperation = 'source-over';
-	                        ctx.fillStyle = pngBackground;    // e.g., 'white', '#fff', 'rgba(0,0,0,0.5)'
-	                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-	                        ctx.restore();
-	                    }
-	                    // --------------------------------------------------------------------
+				// ------ NEW: optional background fill (defaults to transparent) ------
+				if (pngBackground && pngBackground !== 'transparent') {
+					ctx.save();
+					ctx.globalCompositeOperation = 'source-over';
+					ctx.fillStyle = pngBackground;
+					ctx.fillRect(0, 0, canvas.width, canvas.height);
+					ctx.restore();
+				}
+				// --------------------------------------------------------------------
 
-	                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+				ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-	                    URL.revokeObjectURL(url);
+				URL.revokeObjectURL(url);
 
-	                    canvas.toBlob(async (blob) => {
-	                        try {
-	                            await navigator.clipboard.write([
-	                                new ClipboardItem({ "image/png": blob })
-	                            ]);
-	                            //console.log("Image copied to clipboard!");
-	                        } catch (err) {
-	                            //console.error("Failed to copy image:", err);
-	                        }
-	                    }, "image/png");
-	                };
-	                img.onerror = (e) => {
-	                    URL.revokeObjectURL(url);
-	                    console.error("Failed to load serialized SVG into Image", e);
-	                };
-	                img.src = url;
-	            }
+				canvas.toBlob(async (blob) => {
+					try {
+						await navigator.clipboard.write([
+							new ClipboardItem({ 'image/png': blob })
+						]);
+						//console.log("Image copied to clipboard!");
+					} catch (err) {
+						//console.error("Failed to copy image:", err);
+					}
+				}, 'image/png');
+			};
+			img.onerror = (e) => {
+				URL.revokeObjectURL(url);
+				console.error("Failed to load serialized SVG into Image", e);
+			};
+			img.src = url;
+		}
 
-	            // Chart Title
-	            const txtChartTitle = svg.append('text')
-	                .attr('x', 10)
-	                .attr('y', 15)
-	                .style('visibility', effectiveTitle ? 'visible' : 'hidden')
-	                .text(effectiveTitle);
+		const txtChartTitle = svg.append('text')
+			.attr('x', 10)
+			.attr('y', 18)
+			.style('visibility', effectiveTitle ? 'visible' : 'hidden')
+			.text(effectiveTitle);
 
-	            // Chart group
-	            const g = svg.append('g')
-	                .attr('transform', `translate(${margin.left},${margin.top})`)
-	                .attr('class', 'svgPlotAreaClass');
+		const g = svg.append('g')
+			.attr('transform', `translate(${plotLeft},${plotTop})`)
+			.attr('class', 'smith-chart-plot-area');
 
-	            const xGridGroup = g.append('g')
-	                .attr('transform', `translate(0,${innerHeight})`)
-	                .attr('class', 'xGrid')
-	                .style('visibility', showGrid ? 'visible' : 'hidden')
-	                .call(axisBottom(x).ticks(10).tickSize(-innerHeight).tickFormat(''));
+		const clipId = `smith-clip-${Math.random().toString(36).slice(2)}`;
+		svg.append('defs')
+			.append('clipPath')
+			.attr('id', clipId)
+			.append('circle')
+			.attr('cx', center)
+			.attr('cy', center)
+			.attr('r', radius);
 
-	            xGridGroup.selectAll('path')
-	                .attr('stroke', 'none');
+		const smithGridGroup = g.append('g')
+			.attr('class', 'smith-grid')
+			.attr('clip-path', `url(#${clipId})`);
 
-	            xGridGroup.selectAll('line')
-	                .attr('class', 'xGridLine')
-	                .attr('stroke', gridColor)
-	                .attr('stroke-width', 1);
+		smithGridGroup.append('line')
+			.attr('x1', 0)
+			.attr('y1', center)
+			.attr('x2', plotSize)
+			.attr('y2', center)
+			.attr('stroke', gridColor)
+			.attr('stroke-width', 1);
 
-	            const yGridGroup = g.append('g')
-	                .attr('class', 'yGrid')
-	                .style('visibility', showGrid ? 'visible' : 'hidden')
-	                .call(axisLeft(y).ticks(10).tickSize(-innerWidth).tickFormat(''));
+		[0.2, 0.5, 1, 2, 5].forEach(r => {
+			smithGridGroup.append('circle')
+				.attr('cx', center + (r / (r + 1)) * radius)
+				.attr('cy', center)
+				.attr('r', (1 / (r + 1)) * radius)
+				.attr('fill', 'none')
+				.attr('stroke', gridColor)
+				.attr('stroke-width', 1);
+		});
 
-	            yGridGroup.selectAll('path')
-	                .attr('stroke', 'none');
+		[0.2, 0.5, 1, 2, 5].forEach(x => {
+			[x, -x].forEach(value => {
+				smithGridGroup.append('circle')
+					.attr('cx', center + radius)
+					.attr('cy', center - (1 / value) * radius)
+					.attr('r', Math.abs((1 / value) * radius))
+					.attr('fill', 'none')
+					.attr('stroke', gridColor)
+					.attr('stroke-width', 1);
+			});
+		});
 
-	            yGridGroup.selectAll('line')
-	                .attr('class', 'yGridLine')
-	                .attr('stroke', gridColor)
-	                .attr('stroke-width', 1);
+		const unitCircle = g.append('circle')
+			.attr('cx', center)
+			.attr('cy', center)
+			.attr('r', radius)
+			.attr('fill', 'none')
+			.attr('stroke', 'black')
+			.attr('stroke-width', 1.5)
+			.attr('class', 'smith-unit-circle');
 
-	            // Plot border
-	            const plotBorder = g.append('rect')
-	                .attr('width', innerWidth)
-	                .attr('height', innerHeight)
-	                .attr('fill', 'none')
-	                .attr('stroke', 'black');
+		const traceGroup = g.append('g')
+			.attr('class', 'smith-traces')
+			.attr('clip-path', `url(#${clipId})`);
 
-	            const xAxisGroup = g.append('g')
-	                .attr('transform', `translate(0,${innerHeight})`)
-	                .attr('class', 'xAxis')
-	                .call(axisBottom(x).ticks(10));
+		const labelGroup = g.append('g')
+			.attr('class', 'smith-labels');
 
-	            xAxisGroup.selectAll('text')
-	                .attr('class', 'txtXAxisNumbers')
-	                .style('font-size', `${axisFontPx}px`);
+		const groups = traceGroup.selectAll('.smith-trace-group')
+			.data(formattedData)
+			.join('g')
+			.attr('class', 'smith-trace-group');
 
-	            xAxisGroup.selectAll('path,line')
-	                .attr('class', 'xAxisLine');
+		groups.append('path')
+			.attr('d', d => line$1(d.values))
+			.attr('fill', 'none')
+			.attr('stroke', d => color(d.traceName))
+			.attr('stroke-width', 2);
 
-	            const yAxisGroup = g.append('g')
-	                .attr('class', 'yAxis')
-	                .call(axisLeft(y).ticks(10));
+		if (showPoints) {
+			let tooltip;
 
-	            yAxisGroup.selectAll('text')
-	                .attr('class', 'txtYAxisNumbers')
-	                .style('font-size', `${axisFontPx}px`);
+			groups.selectAll('circle')
+				.data(d => d.values.map(point => ({ ...point, traceName: d.traceName })))
+				.join('circle')
+				.attr('cx', d => gammaToPoint(d)[0])
+				.attr('cy', d => gammaToPoint(d)[1])
+				.attr('r', 3)
+				.attr('fill', d => color(d.traceName))
+				.on('mouseenter', (event, d) => {
+					container.select('.tooltip').remove();
 
-	            yAxisGroup.selectAll('path,line')
-	                .attr('class', 'yAxisLine');
+					const [px, py] = pointer(event, container.node());
+					tooltip = container.append('div')
+						.attr('class', 'tooltip')
+						.style('position', 'absolute')
+						.style('background', 'white')
+						.style('border', '1px solid #aaa')
+						.style('padding', '3px 6px')
+						.style('white-space', 'nowrap')
+						.style('pointer-events', 'none')
+						.style('z-index', 10)
+						.style('left', `${px + 10}px`)
+						.style('top', `${py - 20}px`)
+						.html(`${d.traceName}<br>Freq: ${d.frequency.toPrecision(3)}<br>Re: ${d.re.toPrecision(3)}<br>Im: ${d.im.toPrecision(3)}<br>Mag: ${Math.hypot(d.re, d.im).toPrecision(3)}<br>Ang: ${(Math.atan2(d.im, d.re) * 180 / Math.PI).toPrecision(3)} deg`);
+				})
+				.on('mousemove', (event) => {
+					if (!tooltip) return;
+					const [px, py] = pointer(event, container.node());
+					tooltip.style('left', `${px + 10}px`).style('top', `${py - 20}px`);
+				})
+				.on('mouseleave', () => {
+					if (tooltip) { tooltip.remove(); tooltip = null; }
+				});
+		}
 
-	            const txtXAxisTitle = svg.append('text')
-	                .attr('x', margin.left + innerWidth / 2)
-	                .attr('y', height - 10)
-	                .attr('text-anchor', 'middle')
-	                .attr('class', 'txtXAxisTitle')
-	                .style('font-size', `${axisFontPx}px`)
-	                .text(xAxisTitle);
+		if (showLabels) {
+			txtLabels = labelGroup.selectAll('.txtLabel')
+				.data(formattedData)
+				.join('text')
+				.attr('x', d => {
+					const last = d.values[d.values.length - 1];
+					return gammaToPoint(last)[0] + 6;
+				})
+				.attr('y', d => {
+					const last = d.values[d.values.length - 1];
+					return gammaToPoint(last)[1];
+				})
+				.attr('dy', '0.35em')
+				.attr('class', 'txtLabel')
+				.style('font-size', '11px')
+				.text(d => d.traceName);
+		}
 
-	            const txtYAxisTitle = svg.append('text')
-	                .attr('x', -(margin.top + innerHeight / 2))
-	                .attr('y', 15)
-	                .attr('text-anchor', 'middle')
-	                .attr('transform', 'rotate(-90)')
-	                .attr('class', 'txtYAxisTitle')
-	                .style('font-size', `${axisFontPx}px`)
-	                .text(yAxisTitle);
+		function cssPropertyToJsName(propertyName) {
+			return propertyName.replace(/-([a-z])/g, function (_, letter) {
+				return letter.toUpperCase();
+			});
+		}
 
-	            // Line generator
-	            const line$1 = line()
-	                .x(d => x(d.xValue))
-	                .y(d => y(d.yValue));
+		function applyStyleToElement(element, style) {
+			if (!element) return;
 
-	            // Draw Lines & Points
-	            const groups = g.selectAll('.lineGroup')
-	                .data(formattedData)
-	                .join('g')
-	                .attr('class', 'lineGroup');
+			if (typeof style === 'string') {
+				const currentStyle = element.getAttribute('style') || '';
+				element.setAttribute('style', currentStyle ? currentStyle + ';' + style : style);
+			} else if (typeof style === 'object' && style !== null) {
+				for (const [key, value] of Object.entries(style)) {
+					element.style[cssPropertyToJsName(key)] = value;
+				}
+			}
+		}
 
-	            // Lines
-	            groups.append('path')
-	                .attr('d', d => line$1(d.yValues))
-	                .attr('fill', 'none')
-	                .attr('stroke', d => color(d.yName))
-	                .attr('stroke-width', 2);
+		function applyStyleToSelection(selection, style) {
+			selection.each(function () {
+				applyStyleToElement(this, style);
+			});
+		}
 
-	            // Points
-	            if (showPoints) {
-	                let tooltip; // shared between handlers
+		function setTxtChartTitleStyle(style) {
+			applyStyleToElement(txtChartTitle.node(), style);
+		}
 
-	                groups.selectAll('circle')
-	                    .data(d => d.yValues)
-	                    .join('circle')
-	                    .attr('cx', d => x(d.xValue))
-	                    .attr('cy', d => y(d.yValue))
-	                    .attr('r', 3)
-	                    .attr('fill', function (d, i, nodes) {
-	                        const groupData = select(nodes[i].parentNode).datum();
-	                        return color(groupData.yName);
-	                    })
-	                    .on('mouseenter', (event, d) => {
-	                        // ensure only one tooltip
-	                        container.select('.tooltip').remove();
+		function setChartBackgroundStyle(style) {
+			applyStyleToElement(chartBackground.node(), style);
+		}
 
-	                        const [px, py] = pointer(event, container.node());
-	                        tooltip = container.append('div')
-	                            .attr('class', 'tooltip')
-	                            .style('position', 'absolute')
-	                            .style('background', 'white')
-	                            .style('border', '1px solid #aaa')
-	                            .style('padding', '3px 6px')
-	                            //.style('font-size', '12px') // was 12
-	                            .style('white-space', 'nowrap')
-	                            .style('pointer-events', 'none')
-	                            .style('z-index', 10)
-	                            .style('left', `${px + 10}px`)
-	                            .style('top', `${py - 20}px`)
-	                            .html(`${xAxisTitle}: ${d.xValue.toPrecision(3)}<br>${yAxisTitle}: ${d.yValue.toPrecision(3)}`);
-	                    })
-	                    .on('mousemove', (event) => {
-	                        if (!tooltip) return;
-	                        const [px, py] = pointer(event, container.node());
-	                        tooltip.style('left', `${px + 10}px`).style('top', `${py - 20}px`);
-	                    })
-	                    .on('mouseleave', () => {
-	                        if (tooltip) { tooltip.remove(); tooltip = null; }
-	                    });
-	            }
+		function setUnitCircleStyle(style) {
+			applyStyleToElement(unitCircle.node(), style);
+		}
 
-	            // Labels
-	            if (showLabels) {
-	                txtLabels = groups.append('text')
-	                    .attr('x', d => {
-	                        const last = d.yValues[d.yValues.length - 1];
-	                        return x(last.xValue) + 6;
-	                    })
-	                    .attr('y', d => {
-	                        const last = d.yValues[d.yValues.length - 1];
-	                        return y(last.yValue);
-	                    })
-	                    .attr('dy', '0.35em')
-	                    .attr('class', 'txtLabel')
-	                    .style('font-size', '11px') // was 11
-	                    .text(d => d.yName);
-	            }
+		function setSmithGridStyle(style) {
+			applyStyleToSelection(smithGridGroup.selectAll('circle,line'), style);
+		}
 
-	            // Returned API methods 
-	            function cssPropertyToJsName(propertyName) {
-	                return propertyName.replace(/-([a-z])/g, function (_, letter) {
-	                    return letter.toUpperCase();
-	                });
-	            }
+		function setTxtChartLabelsStyle(style) {
+			applyStyleToSelection(txtLabels, style);
+		}
 
-	            function applyStyleToElement(element, style) {
-	                if (!element) return;
+		return {
+			// return elements
+			container: container.node(),
+			svg: svg.node(),
+			chartBackground: chartBackground.node(),
+			txtChartTitle: txtChartTitle.node(),
+			unitCircle: unitCircle.node(),
+			smithGridGroup: smithGridGroup.node(),
+			traceGroup: traceGroup.node(),
+			labelGroup: labelGroup.node(),
+			txtChartLabels: txtLabels.nodes(),
 
-	                if (typeof style === "string") {
-	                    const currentStyle = element.getAttribute("style") || "";
-	                    element.setAttribute("style", currentStyle ? currentStyle + ";" + style : style);
-	                } else if (typeof style === "object" && style !== null) {
-	                    for (const [key, value] of Object.entries(style)) {
-	                        element.style[cssPropertyToJsName(key)] = value;
-	                    }
-	                }
-	            }
-
-	            function applyStyleToSelection(selection, style) {
-	                selection.each(function () {
-	                    applyStyleToElement(this, style);
-	                });
-	            }
-
-	            // Chart Title
-	            function setTxtChartTitleStyle(style) {
-	                applyStyleToElement(txtChartTitle.node(), style);
-	            }
-
-	            function setChartBackgroundStyle(style) {
-	                applyStyleToElement(chartBackground.node(), style);
-	            }
-
-	            function setPlotBorderStyle(style) {
-	                applyStyleToElement(plotBorder.node(), style);
-	            }
-
-	            // X-Axis
-	            function setTxtXAxisTitleStyle(style) {
-	                applyStyleToElement(txtXAxisTitle.node(), style);
-	            }
-
-	            function setTxtXAxisNumbersStyle(style) {
-	                applyStyleToSelection(xAxisGroup.selectAll('text'), style);
-	            }
-
-	            function setXAxisLineStyle(style) {
-	                applyStyleToSelection(xAxisGroup.selectAll('path,line'), style);
-	            }
-
-	            function setXGridLineStyle(style) {
-	                applyStyleToSelection(xGridGroup.selectAll('line'), style);
-	            }
-
-	            // Y-Axis
-	            function setTxtYAxisTitleStyle(style) {
-	                applyStyleToElement(txtYAxisTitle.node(), style);
-	            }
-
-	            function setTxtYAxisNumbersStyle(style) {
-	                applyStyleToSelection(yAxisGroup.selectAll('text'), style);
-	            }
-
-	            function setYAxisLineStyle(style) {
-	                applyStyleToSelection(yAxisGroup.selectAll('path,line'), style);
-	            }
-
-	            function setYGridLineStyle(style) {
-	                applyStyleToSelection(yGridGroup.selectAll('line'), style);
-	            }
-
-	            // Labels
-	            function setTxtChartLabelsStyle(style) {
-	                applyStyleToSelection(txtLabels, style);
-	            }
-
-	            // Returning an API to the user
-	            // There are exposed elements for super users
-	            // There are exposed setter methods to change the style
-	            // ---> You can pass an object to a setter: { fill: "red", fontStyle: "italic" }
-	            // ---> Or you can pass a string to a setter: "fill:red; font-style:italic;"
-	            // Either will work
-
-	            return {
-	                // return elements
-	                container: container.node(),
-	                svg: svg.node(),
-	                chartBackground: chartBackground.node(),
-	                plotBorder: plotBorder.node(),
-	                txtChartTitle: txtChartTitle.node(),
-	                txtXAxisTitle: txtXAxisTitle.node(),
-	                txtYAxisTitle: txtYAxisTitle.node(),
-	                txtChartLabels: txtLabels.nodes(),
-	                xAxisGroup: xAxisGroup.node(),
-	                yAxisGroup: yAxisGroup.node(),
-	                xGridGroup: xGridGroup.node(),
-	                yGridGroup: yGridGroup.node(),
-
-	                // return setters
-	                setTxtChartTitleStyle: setTxtChartTitleStyle,
-	                setChartBackgroundStyle: setChartBackgroundStyle,
-	                setPlotBorderStyle: setPlotBorderStyle,
-
-	                setTxtXAxisTitleStyle: setTxtXAxisTitleStyle,
-	                setTxtXAxisNumbersStyle: setTxtXAxisNumbersStyle,
-	                setXAxisLineStyle: setXAxisLineStyle,
-	                setXGridLineStyle: setXGridLineStyle,
-
-	                setTxtYAxisTitleStyle: setTxtYAxisTitleStyle,
-	                setTxtYAxisNumbersStyle: setTxtYAxisNumbersStyle,
-	                setYAxisLineStyle: setYAxisLineStyle,
-	                setYGridLineStyle: setYGridLineStyle,
-
-	                setTxtChartLabelsStyle: setTxtChartLabelsStyle
-	            }
-
-	        }
+			// return setters
+			setTxtChartTitleStyle: setTxtChartTitleStyle,
+			setChartBackgroundStyle: setChartBackgroundStyle,
+			setUnitCircleStyle: setUnitCircleStyle,
+			setSmithGridStyle: setSmithGridStyle,
+			setTxtChartLabelsStyle: setTxtChartLabelsStyle
+		};
+	}
 
 	const version = '0.0.45';
 
@@ -5924,12 +5968,22 @@
 				nano: 1e-9, pico: 1e-12
 			}[String(p).toLowerCase()] ?? 1e9);
 
+			const metricPrefixLabel = (p) => ({
+				tera: 'tera', giga: 'giga', mega: 'mega', kilo: 'kilo',
+				deci: 'deci', centi: 'centi', milli: 'milli',
+				micro: 'micro', nano: 'nano', pico: 'pico'
+			}[String(p).toLowerCase()] ?? 'giga');
+
 			// Copy tables and rows before scaling the frequency column.
 			const data = inputTable.map(table =>
 				table.map(row => row.slice())
 			);
 			const freqScale = pickScale(metricPrefix);
+			const freqPrefixLabel = metricPrefixLabel(metricPrefix);
 			data.forEach(tbl => {
+				if (tbl[0] && typeof tbl[0][0] === 'string' && freqPrefixLabel) {
+					tbl[0][0] = `${tbl[0][0]} ${freqPrefixLabel}`;
+				}
 				for (let r = 1; r < tbl.length; r++) {
 					if (Number.isFinite(tbl[r][0])) tbl[r][0] = tbl[r][0] / freqScale;
 				}
@@ -5946,7 +6000,10 @@
 
 			const tableWidth = totalCols * (columnWidth + 3) + 1;
 			const tableHeight = totalRows * (rowHeight + 1) + (tablesCount - 1) + 1;
-			const outerWidth = margin.left + tableWidth + margin.right;
+			const titleWidth = effectiveTitle ? effectiveTitle.length * effectiveFontSize * 0.65 : 0;
+			const controlsWidth = 280;
+			const minOuterWidth = Math.ceil(titleWidth + controlsWidth);
+			const outerWidth = Math.max(margin.left + tableWidth + margin.right, minOuterWidth);
 			const outerHeight = margin.top + tableHeight + margin.bottom;
 
 			if (showWHAlert) {
@@ -6390,6 +6447,23 @@
 		return seR;
 	}
 
+	function R(R = 75) { // series resistor nPort object
+		var rPort = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = complex(R, 0);
+			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
+			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}	
+		rPort.setspars(sparsArray);
+		rPort.setglobal(global);
+		return rPort;
+	}
+
 	function paR(R = 75) { // parallel resistor nPort object
 		var paR = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
@@ -6424,6 +6498,22 @@
 		return seL;
 	}
 
+	function L(L = 5e-9) { // series inductor nPort object
+		var lPort = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount]);	
+			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
+			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}	lPort.setspars(sparsArray);
+		lPort.setglobal(global);	
+		return lPort;
+	}
+
 	function paL(L = 5e-9) { // parallel capacitor nPort object   
 		var paL = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
@@ -6456,6 +6546,22 @@
 		}	seC.setspars(sparsArray);
 		seC.setglobal(global);	
 		return seC;
+	}
+
+	function C$1(C = 1e-12) { // series inductor nPort object
+		var cPort = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = complex(0, -1/(2*Math.PI*C*frequencyList[freqCount]));	
+			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
+			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}	cPort.setspars(sparsArray);
+		cPort.setglobal(global);	
+		return cPort;
 	}
 
 	function paC(C = 1e-12) { // parallel capacitor nPort object   
@@ -7073,45 +7179,46 @@
 		return ctlin;
 	}
 
-	function mlin(Width = 0.023 * 0.0254, Height = 0.025 * 0.0254, Length = 0.5 * 0.025, Thickness = 0.00 * 0.0254, er = 10, rho = 0, tand = 0.000) {
+	function mlin(Width = 0.023 * 0.0254, Height = 0.025 * 0.0254, Length = 0.5 * 0.0254, Thickness = 0.0000125 * 0.0254, er = 10, rho = 0, tand = 0.000) {
+		// this from Gupta page 60 at the bottom
 		var mlin = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
-		var Zo = complex(Ro,0); Zo.inv(); complex(1,0); var two = complex(2,0), freqCount = 0, s11, s12, s21, s22, sparsArray = [];
+		var Zo = complex(Ro, 0); Zo.inv(); complex(1, 0); var two = complex(2, 0), freqCount = 0, s11, s12, s21, s22, sparsArray = [];
 		var Atlin = {}, Btlin = {}, Ctlin = {}, Zmlin = {}, Ds = {}, alpha = 0, beta = 0, gamma = {};
 
 		var pi = Math.PI;
-		var f = 12e9;
-		var wOverH = Width/Height;
-		var delWOverH = Thickness > 0.0 ? ( wOverH <= 1/(2*pi) ? (1.25/pi)*(Thickness/Height)*(1+Math.log(4*pi*Width/Thickness)) : (1.25/pi)*(Thickness/Height)*(1+Math.log(2*Height/Thickness)) ) : 0.0;
-		var weOverH = Width/Height + delWOverH;
-		var Q = ((er-1)/4.6)*(Thickness/Height)*(1/Math.sqrt(Width/Height));
-		var Fwh = 1/Math.sqrt(1+10*Width/Height);
-		var ere = ((er+1)/2)+((er-1)/2)*Fwh-Q;
-		var Z = Width/Height <= 1.0 ? (60/Math.sqrt(ere))*Math.log(8/weOverH+0.25*weOverH) : (376.7/Math.sqrt(ere))*(1/(weOverH+1.393+0.667*Math.log(weOverH+1.444 )));
+		var wOverH = Width / Height;
+		var delWOverH = Thickness > 0.0 ? (wOverH <= 1 / (2 * pi) ? (1.25 / pi) * (Thickness / Height) * (1 + Math.log(4 * pi * Width / Thickness)) : (1.25 / pi) * (Thickness / Height) * (1 + Math.log(2 * Height / Thickness))) : 0.0;
+		var weOverH = Width / Height + delWOverH;
+		var Q = ((er - 1) / 4.6) * (Thickness / Height) * (1 / Math.sqrt(Width / Height));
+		var Fwh = 1 / Math.sqrt(1 + 10 * Width / Height);
+		var ere = ((er + 1) / 2) + ((er - 1) / 2) * Fwh - Q;
+		var Z = Width / Height <= 1.0 ? (60 / Math.sqrt(ere)) * Math.log(8 / weOverH + 0.25 * weOverH) : (376.7 / Math.sqrt(ere)) * (1 / (weOverH + 1.393 + 0.667 * Math.log(weOverH + 1.444)));
 
 		// compute dispersive ZoT ----- INTERLUDE per Gupta page 64, I need stripline version of Zo from pages 57 and 28 with b = 2h
-		var b = 2*Height, x = Thickness/b, m = 2*(1/(1 + (2/3)*(x/(1-x))));
-		var delW = (x/(pi*(1-x)))*(1-0.5*Math.log( (x/(2-x))**2 + (0.0796 * x/(Width/b + 1.1*x))**m )) * (b-Thickness);
+		var b = 2 * Height, x = Thickness / b, m = 2 * (1 / (1 + (2 / 3) * (x / (1 - x))));
+		var delW = Thickness > 0.0 ? (x / (pi * (1 - x))) * (1 - 0.5 * Math.log((x / (2 - x)) ** 2 + (0.0796 * x / (Width / b + 1.1 * x)) ** m)) * (b - Thickness) : 0.0;
 		var wPrime = Width + delW;
-		var ZoT = 2 * (1/Math.sqrt(er)) * 30 * Math.log( 1 + (4/pi) * (b-Thickness)/wPrime * ( 8/pi * (b-Thickness)/wPrime + Math.sqrt( (8/pi * (b-Thickness)/wPrime)**2 + 6.27)));
+		var ZoT = 2 * (1 / Math.sqrt(er)) * 30 * Math.log(1 + (4 / pi) * (b - Thickness) / wPrime * (8 / pi * (b - Thickness) / wPrime + Math.sqrt((8 / pi * (b - Thickness) / wPrime) ** 2 + 6.27)));
+
 		// back to microstrip now that I have ZoT
-		var hMils = Height * 1000/0.0254;
-		var fpGHz = 15.66 * Z/hMils; // fGHz = f/1e9;
-		var G = Math.sqrt( (Z-5)/60 ) + 0.004*Z;
+		var hMils = Height * 1000 / 0.0254;
+		var fpGHz = 15.66 * Z / hMils; // fGHz = f/1e9;
+		var G = Math.sqrt((Z - 5) / 60) + 0.004 * Z;
 		var Zf = 0;
 		var eref = 0;
 
 		// compute conductor and dielectric losses
-		var B = Width/Height >= 1/(2*pi) ? Height : 2*pi*Width;
-		var Rs = Math.sqrt(pi*f*4*pi*1e-7*rho*1.72e-8);
-		var A = 1 + 1/weOverH * ( 1 + 1/pi * Math.log(2 * B/Thickness));
-		var Ac = Width/Height <= 1.0 ? 1.38*A*(Rs/(Height*Z))*(32-weOverH)**2/(32+weOverH)**2 : 6.1e-5*A*(Rs*Z*ere/Height)*(weOverH+(0.667*weOverH)/(weOverH+1.44));
-		var Ad = 27.3*er/(er-1)*(ere-1)/Math.sqrt(ere)*tand/0.05;
+		var B = Width / Height >= 1 / (2 * pi) ? Height : 2 * pi * Width;
+		var A = Thickness > 0.0 ? 1 + 1 / weOverH * (1 + 1 / pi * Math.log(2 * B / Thickness)) : 0.0;
+		var Ad = 27.3 * er / (er - 1) * (ere - 1) / Math.sqrt(ere) * tand / 0.05;
 
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			var Rs = Math.sqrt(pi * frequencyList[freqCount] * 4 * pi * 1e-7 * rho * 1.72e-8);
+			var Ac = Thickness > 0.0 && rho > 0.0 ? (Width / Height <= 1.0 ? 1.38 * A * (Rs / (Height * Z)) * (32 - weOverH) ** 2 / (32 + weOverH) ** 2 : 6.1e-5 * A * (Rs * Z * ere / Height) * (weOverH + (0.667 * weOverH) / (weOverH + 1.44))) : 0.0;
 
-			Zf = ZoT - (ZoT-Z)/(1+G*(  (frequencyList[freqCount]/1e9) /fpGHz)**2);
-			eref = er - (er-ere)/(1+G*(  (frequencyList[freqCount]/1e9)   /fpGHz)**2);
+			Zf = ZoT - (ZoT - Z) / (1 + G * ((frequencyList[freqCount] / 1e9) / fpGHz) ** 2);
+			eref = er - (er - ere) / (1 + G * ((frequencyList[freqCount] / 1e9) / fpGHz) ** 2);
 
 			Zmlin = complex(Zf, 0);
 
@@ -7119,19 +7226,19 @@
 			Btlin = Zmlin.mul(Zmlin).add(Zo.mul(Zo));
 			Ctlin = two.mul(Zmlin).mul(Zo);
 
-			alpha = (Ac + Ad)/8.68588;
-			beta = Math.sqrt(eref)*2*Math.PI*frequencyList[freqCount]/2.997925e8;
+			alpha = (Ac + Ad) / 8.68588;
+			beta = Math.sqrt(eref) * 2 * Math.PI * frequencyList[freqCount] / 2.997925e8;
 			gamma = complex(alpha * Length, beta * Length);
 
 			Ds = Ctlin.mul(gamma.coshCplx()).add(Btlin.mul(gamma.sinhCplx()));
 
 			s11 = Atlin.mul(gamma.sinhCplx()).div(Ds);
-			s12 = Ctlin.div(Ds);	
+			s12 = Ctlin.div(Ds);
 			s21 = s12;
 			s22 = s11;
-			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+			sparsArray[freqCount] = [frequencyList[freqCount], s11, s12, s21, s22];
 		}	mlin.setspars(sparsArray);
-		mlin.setglobal(global);	
+		mlin.setglobal(global);
 		return mlin;
 	}
 
@@ -7325,8 +7432,11 @@
 		return width;
 	}
 
+	exports.C = C$1;
+	exports.L = L;
 	exports.Load = Load;
 	exports.Open = Open;
+	exports.R = R;
 	exports.Short = Short;
 	exports.Tee = Tee;
 	exports.Tee4 = Tee4;

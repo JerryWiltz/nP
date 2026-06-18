@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>mlinDevelopment</title>
+    <script src="../dist/nP.js"></script>
+</head>
+
+<body>
+    <div id="tableDiv"></div>
+    <div id="chartDiv"></div>
+    <div id="smithDiv"></div>
+
+    <script>
+        var fGlobal = nP.global;
+        fGlobal.fList = fGlobal.fGen(1e9, 10e9, 100);
+
+        const mlin1 = nP.mlin();
+        var test = nP.nodal(
+            [mlin1, 1, 2],
+            ['out', 1, 2]
+        );
+        var mlinOut = test.out('s21dB');
+        var smithOut = test.out('s11Re', 's11Im');
+
+        var table = {
+            inputTable: [mlinOut],
+            title: 'Microstrip Line',
+            mount: '#tableDiv',
+            fontFamily: 'sans-serif',
+            fontSize: 14
+        };
+
+        nP.lineTable(table);
+
+        var chart = {
+            inputTable: [mlinOut],
+            title: 'Microstrip Line',
+            mount: '#chartDiv',
+            fontFamily: 'sans-serif',
+            fontSize: 14
+        };
+
+        nP.lineChart(chart);
+
+        var smithChart = {
+            inputTable: [smithOut],
+            title: 'Microstrip Line Smith Chart',
+            mount: '#smithDiv',
+            fontFamily: 'sans-serif',
+            fontSize: 14
+        };
+
+        nP.smithChart(smithChart);
+    </script>
+</body>
+
+</html>

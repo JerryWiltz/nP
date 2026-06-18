@@ -26,7 +26,12 @@
         var lp = rl2.cas(c3).cas(rl3);
 
         var tee = nP.Tee();
-        var filt = nP.nodal([tee, 1, 2, 3], [hp, 2, 4], [lp, 3, 5], ['out', 1, 4, 5]);
+        var filt = nP.nodal(
+            [tee, 1, 2, 3],
+            [hp, 2, 4],
+            [lp, 3, 5],
+            ['out', 1, 4, 5]
+        );
         var filtOut = filt.out('s21dB', 's31dB', 's11dB');
 
         var table = {

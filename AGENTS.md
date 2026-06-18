@@ -1,3 +1,5 @@
+codex resume 019e89f1-41f2-70a0-85b9-da332da8146b
+
 # AGENTS.md
 
 Repository guide for agents working in the `nP` repo.
@@ -69,6 +71,7 @@ The test command uses `scripts/extensionless-loader.mjs` so Node can run source 
 - Many functions depend on the shared mutable `global` object from `src/np-global/src/global.js`. Be careful with changes that affect `global.fList`, `global.Ro`, or object-level `setglobal/getglobal` behavior.
 - S-parameter rows are represented as `[frequency, s11, s12, s21, s22, ...]`, where complex entries are `complex()` objects.
 - `nPort.out()` returns a table with a header row followed by numeric data rows. `lineChart()` and `lineTable()` consume this table shape.
+- In `dev/` HTML files, format `nP.nodal(...)` calls with one connection argument per line so circuit connections are easy to read.
 - `lineChart()`, `smithChart()`, and `lineTable()` share common option names where possible: `inputTable`, `mount`, `title`, `containerId`, `svgId`, `metricPrefix`, `fontFamily`, `fontSize`, `containerFontSizePx`, and `pngBackground`. Keep older aliases such as `chartTitle`, `tableTitle`, and `headColor` working unless the user explicitly requests a breaking cleanup.
 - Browser rendering code in `src/np-chart` and `src/np-misc` assumes `document`, `window`, and sometimes clipboard APIs. Do not make those modules server-only without preserving browser behavior.
 - Do not add large dependencies unless they are clearly justified. Current root dev dependencies are Rollup, D3, VitePress, and the Rollup node resolver plugin.

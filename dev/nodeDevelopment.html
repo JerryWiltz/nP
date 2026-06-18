@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>nodeDevelopment</title>
+    <script src="../dist/nP.js"></script>
+</head>
+
+<body>
+    <div id="seriesR"></div>
+    <div id="parallelR"></div>
+
+    <script>
+        var g = nP.global;
+        g.fList = g.fGen(100e6, 1000e6, 50);
+
+        var r = nP.R(75);
+
+        var rSeries = nP.nodal(
+            [r, 1, 2],
+            ['out', 1, 2]
+        );
+
+        var seriesOut = rSeries.out('s11mag', 's21mag');
+
+        const series = nP.lineChart({
+            inputTable: [seriesOut],
+            title: 'My Chart',
+            mount: '#seriesR',
+            yAxisTitle: 'Mag',
+            pngBackground: 'white'
+        });
+
+        var Short = nP.Short();
+        var Tee = nP.Tee();
+
+        var rParallel = nP.nodal(
+            [r, 3, 4],
+            [Tee, 3, 1, 2],
+            [Short, 4],
+            ['out', 1, 2]
+        );
+
+        var parallelOut = rParallel.out('s11mag', 's21mag');
+
+        const parallel = nP.lineChart({
+            inputTable: [parallelOut],
+            title: 'My Chart',
+            mount: '#parallelR',
+            yAxisTitle: 'Mag',
+            pngBackground: 'white'
+
+        })
+        /*
+                const testXY = nP.lineChart({
+                    inputTable: [testXYTable],
+                    title: 'testXY',
+                    mount: '#parallelR',
+                    xAxisTitle: 'x',
+                    yAxisTitle: 'y',
+                    metricPrefix: 'none',
+                    xScale: 'linear',
+                    yScale: 'linear',
+                    xAxisPosition: 'origin',
+                    yAxisPosition: 'origin',
+                    xRange: [-2, 2],
+                    yRange: [-4, 4],
+                    pngBackground: 'white'
+                });
+        */
+    </script>
+</body>
+
+</html>
