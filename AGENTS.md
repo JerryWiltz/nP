@@ -29,6 +29,19 @@ Primary domains:
 - Browser helper utilities in `src/np-misc`.
 - User documentation in `README.md` and `docs/index.md`.
 
+## nP Workflow Model
+
+The normal browser/example workflow is hierarchical:
+
+1. Set the analysis frequencies first, usually with `nP.global.fList = nP.global.fGen(start, stop, points)`.
+2. Create electrical components and fixtures as n-port objects, such as `nP.R()`, `nP.L()`, `nP.C()`, `nP.Tee()`, `nP.Short()`, `nP.Open()`, `nP.Load()`, `nP.tlin()`, or `nP.mlin()`.
+3. Combine smaller n-port objects into larger n-port objects with helpers such as `nP.nodal()` or `nP.cascade()`.
+4. Reuse those combined n-port objects as building blocks in larger circuits when useful.
+5. Call `.out(...)` on any n-port object to extract selected values such as `s11dB`, `s21dB`, `s11Re`, or `s11Im`.
+6. Pass the resulting output table to display helpers such as `nP.lineChart()`, `nP.lineTable()`, or `nP.smithChart()`.
+
+Preserve this mental model when writing examples, docs, tests, or dev pages. Prefer examples that make the flow visible: frequencies, components, combinations, outputs, then plots/tables.
+
 ## Repository Layout
 
 - `src/index.js`: root public module entry point. Re-exports the subpackages.
