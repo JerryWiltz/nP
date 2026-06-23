@@ -26,6 +26,16 @@ Write dev examples in this order so the circuit logic is easy to follow:
 
 This pattern is preferred over putting unrelated chart/table data directly into a dev page unless the page is specifically testing chart or table behavior.
 
+## Math And nPort Objects In Dev Pages
+
+- `nP.complex(real, imaginary)` returns a complex object with `.x` and `.y` fields plus methods such as `getR()`, `getI()`, `add()`, `sub()`, `mul()`, `div()`, `inv()`, `mag()`, `ang()`, `mag10dB()`, and `mag20dB()`.
+- `setR()` and `setI()` mutate a complex object and return `this`, so chained examples such as `c.setR(1).setI(2)` are valid.
+- `nP.matrix(array2d)` returns a matrix object with public field `.m`.
+- Use real matrix methods for numeric matrices: `add()`, `sub()`, `mul()`, `invert()`, and `solveGaussFB()`.
+- Use complex matrix methods for complex entries: `addCplx()`, `subCplx()`, `mulCplx()`, `invertCplx()`, and `solveGaussFBCplx()`.
+- n-port objects carry S-parameter rows in `.spars`; each row is `[frequency, s11, s12, s21, s22, ...]` and S-parameter values are complex objects.
+- Use `.out(...)` on any n-port object to produce chart/table-ready numeric data.
+
 ## Ladder Network Pattern
 
 When a dev page shows a ladder network, write it as explicit parts plus `nP.nodal()` so the circuit is readable.

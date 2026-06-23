@@ -118,9 +118,6 @@ export function lineTable(options = {}) {
 		const y0 = margin.top;
 
 		// ======== Mount points & elements ========
-		document.getElementsByTagName('svg').length;
-		//const defaultContainerId = containerId || `line-table-container-${existingSvgs + 1}`;
-		//const defaultSvgId = svgId || `line-table-${existingSvgs + 1}`;
 
 			const container = d3.select(mount)
 				.append('div')

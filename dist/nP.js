@@ -8,39 +8,44 @@
 
 	Complex.prototype = {
 		constructor: Complex,
-		set: function(real, imaginary) { this.x = real; this.y = imaginary; return this },
-		
+		set: function(real, imaginary) { this.x = real; this.y = imaginary; return this; },
+
 		getR: function () {return this.x;},	  
 		getI: function () {return this.y;}, 
 
-		setR: function (R) {this.x = R; return this;}, // added return this to fix issue with nP.log
-		setI: function (I) {this.y = I; return this;},	
+		setR: function (R) {this.x = R; return this;},
+		setI: function (I) {this.y = I; return this;},
 
 		add: function (c2) {return complex(this.x + c2.x, this.y + c2.y);},
 		sub: function (c2) {return complex(this.x - c2.x, this.y - c2.y);},
-		mul: function (c2) {return complex(this.x * c2.x -this.y * c2.y, this.x * c2.y + this.y * c2.x);},		
-		div: function (c2) {return complex(
-			(this.x * c2.x + this.y * c2.y)/(c2.x * c2.x + c2.y * c2.y),
-			(c2.x * this.y - this.x * c2.y)/(c2.x * c2.x + c2.y * c2.y));},	
-		inv: function () {return complex(
-			(1 * this.x + 0 * this.y)/(this.x * this.x + this.y * this.y),
-			(this.x * 0 - 1 * this.y)/(this.x * this.x + this.y * this.y));},	
+		mul: function (c2) {return complex(this.x * c2.x - this.y * c2.y, this.x * c2.y + this.y * c2.x);},
+		div: function (c2) {
+			var denominator = c2.x * c2.x + c2.y * c2.y;
+			return complex(
+				(this.x * c2.x + this.y * c2.y) / denominator,
+				(c2.x * this.y - this.x * c2.y) / denominator
+			);
+		},
+		inv: function () {
+			var denominator = this.x * this.x + this.y * this.y;
+			return complex(this.x / denominator, -this.y / denominator);
+		},
 		neg: function () {return complex(-this.x, -this.y);},
 		copy: function () {return complex(this.x, this.y);},
 
 		mag: function () {return Math.sqrt(this.x * this.x + this.y * this.y);},
 		ang: function () {return Math.atan2(this.y, this.x) * (180/Math.PI);},
-		mag10dB: function () {return 10 * Math.log(   Math.sqrt(this.x * this.x + this.y * this.y) )/2.302585092994046   },
-		mag20dB: function () {return 20 * Math.log(   Math.sqrt(this.x * this.x + this.y * this.y) )/2.302585092994046   },
+		mag10dB: function () {return 10 * Math.log(this.mag()) / Math.LN10;},
+		mag20dB: function () {return 20 * Math.log(this.mag()) / Math.LN10;},
 
-		sinhCplx: function () {return complex(Math.sinh(this.x)*Math.cos(this.y), Math.cosh(this.x)*Math.sin(this.y));},
-		coshCplx: function () {return complex(Math.cosh(this.x)*Math.cos(this.y), Math.sinh(this.x)*Math.sin(this.y));}
+		sinhCplx: function () {return complex(Math.sinh(this.x) * Math.cos(this.y), Math.cosh(this.x) * Math.sin(this.y));},
+		coshCplx: function () {return complex(Math.cosh(this.x) * Math.cos(this.y), Math.sinh(this.x) * Math.sin(this.y));}
 	};
 
 	function complex(real, imaginary) {
-		var complex = new Complex ;
-		complex.set(real, imaginary);
-		return complex;
+		var complexNumber = new Complex;
+		complexNumber.set(real, imaginary);
+		return complexNumber;
 	}
 
 	function Matrix () {}
@@ -165,9 +170,9 @@
 
 		sub : function sub (matrixB) {
 			var A = this.m,
-				B = matrixB.m;
-				dim(A.length, A[0].length, 0);
-				var numRows = A.length,
+				B = matrixB.m,
+				C = dim(A.length, A[0].length, 0),
+				numRows = A.length,
 				numCols = A[0].length,
 				row = 0, col = 0;
 			for(row = 0; row < numRows; row++) {
@@ -218,7 +223,7 @@
 		},
 
 
-		solveGaussFB : function solveGaussFB() { //this works
+		solveGaussFB : function solveGaussFB() {
 			var A = dup(this.m),
 				a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
 				row = 0, col = 0, accum = 0;
@@ -245,7 +250,7 @@
 		},
 
 
-		solveGaussFBCplx : function solveGaussFBCplx() { // this works 12/9/16 and now on 6/24/17
+		solveGaussFBCplx : function solveGaussFBCplx() {
 			var A = dup(this.m),
 				a = complex(0, 0), numRows = A.length, numCols = A[0].length, constRow = 0,
 				row = 0, col = 0, accum = complex(0, 0);
@@ -263,14 +268,14 @@
 					accum = accum.add(  A[row][col].mul( A[col][numCols -1]));
 				}			A[row][numCols -1] =  (complex(1, 0)).div(A[row][row]).mul( A[row][numCols -1].sub(accum));          
 			}
-			for(row = 0; row < numRows; row++) { // get to the rig<!DOCTYPE html>
+			for(row = 0; row < numRows; row++) { // get to the right column of A
 				for ( col = 0; col < numCols -1; col++) {
 					A[row].shift();
 				}		}		return matrix(A);
 		},
 
 
-		invert : function invert() { //this works
+		invert : function invert() {
 			var A = dup(this.m),
 				a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
 				row = 0, col = 0;
@@ -299,7 +304,7 @@
 					}			}		}		// Real variable forward upper Elimination routine
 			for(constRow = numRows - 1; constRow > 0 ; constRow--) { // 2 , 1, 0 this row stays the same			
 				for(row = 0; row < constRow; row++) { // 0, 1  this row moves down
-					a = -A[row][constRow]/A[constRow][constRow];				
+					a = -A[row][constRow]/A[constRow][constRow];
 					for(col = 0; col < numCols; col++) { // this sweeps across the columns	
 						A[row][col] = A[row][col] + a*A[constRow][col];
 					}			}		}		for(row = 0; row < numRows; row++) { // get to the right column of A				
@@ -308,7 +313,7 @@
 				}		}		return matrix(A);
 		},
 
-		invertCplx : function invertCplx() { //this works
+		invertCplx : function invertCplx() {
 			var A = dup(this.m),
 				a = complex(0, 0), numRows = A.length, numCols = A[0].length, constRow = 0,
 				row = 0, col = 0;
@@ -355,9 +360,9 @@
 	};
 
 	function matrix(mat) {
-		var matrix = new Matrix;
-		matrix.set(mat);
-		return matrix;
+		var matrixObject = new Matrix;
+		matrixObject.set(mat);
+		return matrixObject;
 	}
 
 	// Generates an array of chebyshev values based on number of section and ripple
@@ -4988,7 +4993,7 @@
 	                : ordinal(scheme[n]);
 
 	            // Container DIV (position relative for button)
-	            const container = select(mount) // was 'body'
+	            const container = select(mount)
 	                .append('div')
 	                .style('position', 'relative')
 	                .style('display', 'inline-block')
@@ -4996,7 +5001,7 @@
 		                .style('font-family', fontFamily)
 		                .style('font-size', `${effectiveFontSize}px`)
 		                .attr('id', containerId || null)
-		                .attr('class', 'containerClass');  //was 'font-size', '20px'
+		                .attr('class', 'containerClass');
 
 	            // Add SVG
 	            const svg = container.append('svg')
@@ -5230,7 +5235,6 @@
 	                            .style('background', 'white')
 	                            .style('border', '1px solid #aaa')
 	                            .style('padding', '3px 6px')
-	                            //.style('font-size', '12px') // was 12
 	                            .style('white-space', 'nowrap')
 	                            .style('pointer-events', 'none')
 	                            .style('z-index', 10)
@@ -5261,7 +5265,7 @@
 	                    })
 	                    .attr('dy', '0.35em')
 	                    .attr('class', 'txtLabel')
-	                    .style('font-size', '11px') // was 11
+	                    .style('font-size', '11px')
 	                    .text(d => d.yName);
 	            }
 
@@ -6024,9 +6028,6 @@
 			const y0 = margin.top;
 
 			// ======== Mount points & elements ========
-			document.getElementsByTagName('svg').length;
-			//const defaultContainerId = containerId || `line-table-container-${existingSvgs + 1}`;
-			//const defaultSvgId = svgId || `line-table-${existingSvgs + 1}`;
 
 				const container = select(mount)
 					.append('div')
@@ -6383,7 +6384,6 @@
 				s12 =           ( s12a.mul(s12b)           ).div( (one.sub( s22a.mul(s11b) ) ) )  ;
 				s22 = s22b.add (( s21b.mul(s22a).mul(s12b) ).div( (one.sub( s22a.mul(s11b) ) ) ) );
 				s21 =           ( s21a.mul(s21b)           ).div( (one.sub( s22a.mul(s11b) ) ) )  ;
-				//sparsArray[freqCount] =	[this.spars[freqCount][0],s11, s12, s21, s22];
 				sparsArray[freqCount] =	[sparsA[freqCount][0],s11, s12, s21, s22];
 			}		var casOut = new nPort();
 			casOut.setspars(sparsArray);
@@ -6532,7 +6532,7 @@
 		return paL;
 	}
 
-	function seC(C = 1e-12) { // series inductor nPort object
+	function seC(C = 1e-12) { // series capacitor nPort object
 		var seC = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
 		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
@@ -6548,7 +6548,7 @@
 		return seC;
 	}
 
-	function C$1(C = 1e-12) { // series inductor nPort object
+	function C(C = 1e-12) { // series inductor nPort object
 		var cPort = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
 		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
@@ -7245,16 +7245,18 @@
 	function mclin(Width = 10 * 0.0254, Space = 63 * 0.0254, Height = 63 * 0.0254, Thickness = 0.0012 * 0.0254, Length = 0.180 * 0.0254, er = 4, rho = 1, tand = 0.001 ) { // 1.4732 is the quarter wavelength at 2GHz, (1.3412 at 2.2 GHz)
 		var ctlin = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
-		var Zo = complex(Ro,0); Zo.inv(); complex(1,0); var two = complex(2,0), freqCount = 0, Zoemclin = [], Zoomclin = [];
+		var Zo = complex(Ro,0), two = complex(2,0), freqCount = 0, Zoemclin = [], Zoomclin = [];
 		var s11oe, s12oe, s21oe, s22oe;
 		var s11oo, s12oo, s21oo, s22oo;
 		var s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44;
 		var sparsArray = [];
 		var Aoe = {}, Boe = {}, Coe = {}, Dsoe = {};
 		var Aoo = {}, Boo = {}, Coo = {}, Dsoo = {};
-		var alpha = 0, beta = 0, gamma = {};
+		var alpha = 0, betaOe = 0, betaOo = 0, gammaOe = {}, gammaOo = {};
 
 		// come up with Zo and eref of a microstrip line for a given Width/Height
+		var epsilon0 = 8.854187817e-12;
+		var c0 = 2.99792458e8;
 		var pi = Math.PI;
 		var delWOverH = Thickness > 0.0 ? ( Width/Height <= 1/(2*pi) ? (1.25/pi)*(Thickness/Height)*(1+Math.log(4*pi*Width/Thickness)) : (1.25/pi)*(Thickness/Height)*(1+Math.log(2*Height/Thickness)) ) : 0.0;
 		var weOverH = Width/Height + delWOverH;
@@ -7265,7 +7267,7 @@
 
 		// come up with even and odd mode W/H due to strip thickness
 		var delThickness = Height * ( 1/er ) * (Thickness/Height)/(Space/Height);
-		var delWidth = delWOverH/Height;
+		var delWidth = delWOverH * Height;
 		var WtoeOverH = Thickness > 0.0 ? Width/Height + delWOverH*(1 - 0.5*Math.exp(-0.69*delWidth/delThickness)) : Width/Height;
 		var WtooOverH = WtoeOverH + delThickness/Height;
 
@@ -7273,42 +7275,42 @@
 		var ZoAIR = Width/Height <= 1.0 ? (60/Math.sqrt(1))*Math.log(8/weOverH+0.25*weOverH) : (376.7/Math.sqrt(1))*(1/(weOverH+1.393+0.667*Math.log(weOverH+1.444 )));
 
 		// come up with even and odd mode capacitances with er = ER
-		var CpoeER = 8.854187817e-12 * er * WtoeOverH;
-		var CpooER = 8.854187817e-12 * er * WtooOverH;
-		var CpoeAIR = 8.854187817e-12 * 1 * WtoeOverH;
-		var CpooAIR = 8.854187817e-12 * 1 * WtooOverH;
-		var CfoeER = 0.5 * Math.sqrt(ere)/(2.992925e8*ZoER) - CpoeER;
-		var CfooER = 0.5 * Math.sqrt(ere)/(2.992925e8*ZoER) - CpooER;
-		var CfoeAIR = 0.5 * Math.sqrt(1)/(2.992925e8*ZoAIR) - CpoeAIR;
-		var CfooAIR = 0.5 * Math.sqrt(1)/(2.992925e8*ZoAIR) - CpooAIR;
+		var coth = function (x) { return 1/Math.tanh(x); };
+		var CpoeER = epsilon0 * er * WtoeOverH;
+		var CpooER = epsilon0 * er * WtooOverH;
+		var CpoeAIR = epsilon0 * WtoeOverH;
+		var CpooAIR = epsilon0 * WtooOverH;
+		var CfoeER = 0.5 * (Math.sqrt(ere)/(c0*ZoER) - CpoeER);
+		var CfooER = 0.5 * (Math.sqrt(ere)/(c0*ZoER) - CpooER);
+		var CfoeAIR = 0.5 * (1/(c0*ZoAIR) - CpoeAIR);
+		var CfooAIR = 0.5 * (1/(c0*ZoAIR) - CpooAIR);
 		var Aoecaps = Math.exp( -0.1 * Math.exp(2.33 - 2.53 * WtoeOverH));
 		var CfoePrimeER = CfoeER/(1 + Aoecaps * (Height/Space) * Math.tanh(10 * Space/Height )) * Math.sqrt(er/ere);
-		var CfoePrimeAIR = CfoeAIR/(1 + Aoecaps * (Height/Space) * Math.tanh(10 * Space/Height )) * Math.sqrt(1/1);
+		var CfoePrimeAIR = CfoeAIR/(1 + Aoecaps * (Height/Space) * Math.tanh(10 * Space/Height ));
 		var koo = (Space/Height)/( (Space/Height) + 2 * WtooOverH);
 		var kooPrime = Math.sqrt(1-koo**2);
-		var CgooAIR = 8.8541817e-12 * ( koo <= 0.7 ? 1/( (1/pi) * Math.log( 2 * ( 1 + Math.sqrt(kooPrime))/( 1 - Math.sqrt(kooPrime)))) : (1/pi) * Math.log( 2 * ( 1 + Math.sqrt(koo))/( 1 - Math.sqrt(koo))) );
-		var CgooER = (8.8541817e-12*er/pi) * Math.log( Math.cosh( pi*Space/(4 * Height))) + 0.65 * CfooER * ( (0.02/(Space/Height)) * Math.sqrt(er) + 1.0 - (1/er**2));
+		var Cga = epsilon0 * ( koo <= 0.7 ? 1/( (1/pi) * Math.log( 2 * ( 1 + Math.sqrt(kooPrime))/( 1 - Math.sqrt(kooPrime)))) : (1/pi) * Math.log( 2 * ( 1 + Math.sqrt(koo))/( 1 - Math.sqrt(koo))) );
+		var CgdER = (epsilon0*er/pi) * Math.log( coth( pi*Space/(4 * Height))) + 0.65 * CfooER * ( (0.02/(Space/Height)) * Math.sqrt(er) + 1.0 - (1/er**2));
+		var CgdAIR = (epsilon0/pi) * Math.log( coth( pi*Space/(4 * Height))) + 0.65 * CfooAIR * ( (0.02/(Space/Height)) + 1.0 - 1);
 		var CoeER = CpoeER + CfoeER + CfoePrimeER;
 		var CoeAIR = CpoeAIR + CfoeAIR + CfoePrimeAIR;
-		var CooER = CpooER + CfooER + CgooAIR + CgooER;
-		var CooAIR = CpooAIR + CfooAIR + CgooAIR + CgooER;
+		var CooER = CpooER + CfooER + Cga + CgdER;
+		var CooAIR = CpooAIR + CfooAIR + Cga + CgdAIR;
 
 		// come up with even and odd mode impedances and effective dielectric constants
-		var Zoe = 1/(2.992925e8 * Math.sqrt(CoeER * CoeAIR));
-		var Zoo = 1/(2.992925e8 * Math.sqrt(CooER * CooAIR));
+		var Zoe = 1/(c0 * Math.sqrt(CoeER * CoeAIR));
+		var Zoo = 1/(c0 * Math.sqrt(CooER * CooAIR));
 		var ereoe = CoeER/CoeAIR;
 		var ereoo = CooER/CooAIR;
-		console.log(Zoe);
-		console.log(Zoo);
-		console.log(ereoe);
-		console.log(ereoo);
 
 
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			// alpha beta gamma section
 			alpha = 0;
-			beta = 2*Math.PI*frequencyList[freqCount]/2.997925e8;
-			gamma = complex(alpha * Length, beta * Length);
+			betaOe = Math.sqrt(ereoe) * 2*Math.PI*frequencyList[freqCount]/c0;
+			betaOo = Math.sqrt(ereoo) * 2*Math.PI*frequencyList[freqCount]/c0;
+			gammaOe = complex(alpha * Length, betaOe * Length);
+			gammaOo = complex(alpha * Length, betaOo * Length);
 
 			// Zoe section
 			Zoemclin = complex(Zoe, 0);
@@ -7317,9 +7319,9 @@
 			Boe = Zoemclin.mul(Zoemclin).add(Zo.mul(Zo));
 			Coe = two.mul(Zoemclin).mul(Zo);
 
-			Dsoe = Coe.mul(gamma.coshCplx()).add(Boe.mul(gamma.sinhCplx()));
+			Dsoe = Coe.mul(gammaOe.coshCplx()).add(Boe.mul(gammaOe.sinhCplx()));
 
-			s11oe = Aoe.mul(gamma.sinhCplx()).div(Dsoe);
+			s11oe = Aoe.mul(gammaOe.sinhCplx()).div(Dsoe);
 			s12oe = Coe.div(Dsoe);	
 			s21oe = s12oe;
 			s22oe = s11oe; 
@@ -7330,9 +7332,9 @@
 			Boo = Zoomclin.mul(Zoomclin).add(Zo.mul(Zo));
 			Coo = two.mul(Zoomclin).mul(Zo);
 
-			Dsoo = Coo.mul(gamma.coshCplx()).add(Boo.mul(gamma.sinhCplx()));
+			Dsoo = Coo.mul(gammaOo.coshCplx()).add(Boo.mul(gammaOo.sinhCplx()));
 
-			s11oo = Aoo.mul(gamma.sinhCplx()).div(Dsoo);
+			s11oo = Aoo.mul(gammaOo.sinhCplx()).div(Dsoo);
 			s12oo = Coo.div(Dsoo);	
 			s21oo = s12oo;
 			s22oo = s11oo;
@@ -7432,7 +7434,7 @@
 		return width;
 	}
 
-	exports.C = C$1;
+	exports.C = C;
 	exports.L = L;
 	exports.Load = Load;
 	exports.Open = Open;

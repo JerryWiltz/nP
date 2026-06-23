@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { global } from '../src/np-global/index.js';
-import { seR, Open, Short, Load, cascade } from '../src/np-nport/index.js';
+import { seR, Open, Short, Load, cascade, mclin } from '../src/np-nport/index.js';
 
 const closeTo = (actual, expected, tolerance = 1e-12) => {
 	assert.ok(
@@ -77,5 +77,42 @@ test('method cascade and cascade helper agree for simple two-port chains', () =>
 				closeTo(method[row][col].getI(), helper[row][col].getI());
 			}
 		}
+	});
+});
+
+test('mclin creates a finite reciprocal four-port coupled microstrip line', () => {
+	withGlobal({ fList: [2e9, 10e9, 18e9], Ro: 50 }, () => {
+		const coupledLine = mclin(
+			0.020 * 0.0254,
+			0.0025 * 0.0254,
+			0.025 * 0.0254,
+			0.0 * 0.0254,
+			0.300 * 0.0254,
+			9.9,
+			1,
+			0.001
+		);
+		const spars = coupledLine.getspars();
+
+		assert.equal(spars.length, 3);
+		assert.equal(spars[0].length, 17);
+
+		for (const row of spars) {
+			for (let col = 1; col < row.length; col++) {
+				assert.ok(Number.isFinite(row[col].getR()));
+				assert.ok(Number.isFinite(row[col].getI()));
+			}
+
+			closeTo(row[2].getR(), row[5].getR());
+			closeTo(row[2].getI(), row[5].getI());
+			closeTo(row[4].getR(), row[13].getR());
+			closeTo(row[4].getI(), row[13].getI());
+		}
+
+		const out = coupledLine.out('s21dB', 's41dB', 's11dB', 's31dB');
+		closeTo(out[1][1], -0.24286556079501287);
+		closeTo(out[1][2], -13.06299863968385);
+		closeTo(out[2][1], -0.5054093709789177);
+		closeTo(out[2][2], -11.546111704687643);
 	});
 });

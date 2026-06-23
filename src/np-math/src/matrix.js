@@ -136,7 +136,7 @@ Matrix.prototype = {
 	sub : function sub (matrixB) {
 		var A = this.m,
 			B = matrixB.m,
-			matrixC = dim(A.length, A[0].length, 0),
+			C = dim(A.length, A[0].length, 0),
 			numRows = A.length,
 			numCols = A[0].length,
 			row = 0, col = 0;
@@ -198,10 +198,10 @@ Matrix.prototype = {
 	},
 
 
-	solveGaussFB : function solveGaussFB() { //this works
+	solveGaussFB : function solveGaussFB() {
 		var A = dup(this.m),
 			a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
-			row = 0, col = 0, accum = 0, B = [];
+			row = 0, col = 0, accum = 0;
 
 		for(constRow = 0; constRow < numRows; constRow++) { // FORWARD ELIMINAION - this row stays the same
 			pivotSort(A, constRow);
@@ -230,10 +230,10 @@ Matrix.prototype = {
 	},
 
 
-	solveGaussFBCplx : function solveGaussFBCplx() { // this works 12/9/16 and now on 6/24/17
+	solveGaussFBCplx : function solveGaussFBCplx() {
 		var A = dup(this.m),
 			a = complex(0, 0), numRows = A.length, numCols = A[0].length, constRow = 0,
-			row = 0, col = 0, accum = complex(0, 0), B = [];
+			row = 0, col = 0, accum = complex(0, 0);
 
 		for(constRow = 0; constRow < numRows; constRow++) { // FORWARD ELIMINATION - this row stays the same
 			pivotSortCplx(A, constRow);
@@ -253,7 +253,7 @@ Matrix.prototype = {
 			A[row][numCols -1] =  (complex(1, 0)).div(A[row][row]).mul( A[row][numCols -1].sub(accum));          
 		};
 
-		for(row = 0; row < numRows; row++) { // get to the rig<!DOCTYPE html>
+		for(row = 0; row < numRows; row++) { // get to the right column of A
 			for ( col = 0; col < numCols -1; col++) {
 				A[row].shift();
 			};				
@@ -262,10 +262,10 @@ Matrix.prototype = {
 	},
 
 
-	invert : function invert() { //this works
+	invert : function invert() {
 		var A = dup(this.m),
 			a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
-			row = 0, col = 0, count = 0;
+			row = 0, col = 0;
 		//append a 0 Matrix to Matrix, A
 		for(row = 0; row < numRows; row++) {
 			for(col = numRows; col < 2*numRows; col++) {
@@ -273,7 +273,7 @@ Matrix.prototype = {
 			};
 		};
 		//update numCols since Matrix, A is now wider;
-		numCols = A[0].length
+		numCols = A[0].length;
 		//add diagonal 1's to append array, A
 		for(row = 0; row < numRows; row++) {
 			A[row][row + numRows] = 1;
@@ -300,7 +300,7 @@ Matrix.prototype = {
 		// Real variable forward upper Elimination routine
 		for(constRow = numRows - 1; constRow > 0 ; constRow--) { // 2 , 1, 0 this row stays the same			
 			for(row = 0; row < constRow; row++) { // 0, 1  this row moves down
-				a = -A[row][constRow]/A[constRow][constRow]				
+				a = -A[row][constRow]/A[constRow][constRow];
 				for(col = 0; col < numCols; col++) { // this sweeps across the columns	
 					A[row][col] = A[row][col] + a*A[constRow][col];
 				};	
@@ -314,11 +314,10 @@ Matrix.prototype = {
 		return matrix(A);
 	},
 
-	invertCplx : function invertCplx() { //this works
+	invertCplx : function invertCplx() {
 		var A = dup(this.m),
 			a = complex(0, 0), numRows = A.length, numCols = A[0].length, constRow = 0,
-			row = 0, col = 0, B = [], count = 0;
-		var countAConstRow = 0, countARow = 0, countACol = 0, countBConstRow1 = 0, countBRow = 0, countBCol = 0;
+			row = 0, col = 0;
 		//append a 0 Matrix to Matrix, A
 		for(row = 0; row < numRows; row++) {
 			for(col = numRows; col < 2*numRows; col++) {
@@ -327,7 +326,7 @@ Matrix.prototype = {
 		};
 
 		//update numCols since Matrix, A is now wider;
-		numCols = A[0].length
+		numCols = A[0].length;
 
 		//add diagonal 1's to appened array, A
 		for(row = 0; row < numRows; row++) {
@@ -376,7 +375,7 @@ Matrix.prototype = {
 };
 
 export function matrix(mat) {
-	var matrix = new Matrix;
-	matrix.set(mat)
-	return matrix;
+	var matrixObject = new Matrix;
+	matrixObject.set(mat);
+	return matrixObject;
 };

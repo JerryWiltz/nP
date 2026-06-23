@@ -42,6 +42,38 @@ The normal browser/example workflow is hierarchical:
 
 Preserve this mental model when writing examples, docs, tests, or dev pages. Prefer examples that make the flow visible: frequencies, components, combinations, outputs, then plots/tables.
 
+## Core Object Model
+
+The main internal objects are `complex`, `matrix`, and `nPort`. Keep their existing shapes intact unless the user explicitly requests a breaking API cleanup.
+
+### `complex()` Objects
+
+- `nP.complex(real, imaginary)` returns a `Complex` object with public numeric fields `.x` and `.y`.
+- `.x` and `.y` are read directly in some browser/logging code. Do not rename them to `.real`/`.imag` without updating every consumer.
+- Public accessors and mutators are `getR()`, `getI()`, `setR()`, and `setI()`. `setR()` and `setI()` mutate the object and return `this`; keep that chainable behavior.
+- Arithmetic methods such as `add()`, `sub()`, `mul()`, `div()`, `inv()`, `neg()`, `copy()`, `sinhCplx()`, and `coshCplx()` return new `complex()` objects rather than mutating the receiver.
+- Magnitude and angle helpers include `mag()`, `ang()`, `mag10dB()`, and `mag20dB()`.
+- `nP.log()` and some docs/examples identify complex values by `constructor.name === 'Complex'`, so avoid changing the constructor name casually.
+
+### `matrix()` Objects
+
+- `nP.matrix(array2d)` returns a `Matrix` object with public field `.m`, a two-dimensional JavaScript array.
+- Real matrix methods include `add()`, `sub()`, `mul()`, `invert()`, and `solveGaussFB()`.
+- Complex matrix methods include `addCplx()`, `subCplx()`, `mulCplx()`, `invertCplx()`, and `solveGaussFBCplx()`.
+- `dim(rows, cols, initial)` and `dup(array2d)` are exported helpers and are used by nodal analysis. Preserve their behavior.
+- `invert()`, `invertCplx()`, `solveGaussFB()`, and `solveGaussFBCplx()` operate on duplicated array data and return new matrix objects. Preserve that non-mutating behavior for caller-owned matrices.
+- Matrix entries may be numbers or `complex()` objects. Use the real methods only for numeric entries and the `Cplx` methods for complex entries.
+- Matrix shape/indexing changes can break RF behavior because `nP.nodal()` depends on complex matrix inversion.
+
+### `nPort` Objects
+
+- n-port constructors return objects with `.spars` and `.global` managed through `setspars()`, `getspars()`, `setglobal()`, and `getglobal()`.
+- `.spars` is an array of rows. Each row is `[frequency, s11, s12, s21, s22, ...]`; every S-parameter entry is a `complex()` object.
+- The number of ports is inferred as `Math.sqrt(row.length - 1)`. Keep S-parameter row shapes square.
+- `nPort.out('s21dB', 's11Re', ...)` extracts numeric tables with a header row. Valid suffixes are `mag`, `dB`, `ang`, `Re`, and `Im`.
+- `cas()` and `nP.cascade()` are for 2-port cascades. Use `nP.nodal()` for arbitrary interconnections and multiport circuits.
+- Any nPort can be reused as a component in a larger `nP.nodal(...)` call.
+
 ## Ladder Network Pattern
 
 For ladder-style circuits, prefer explicit components plus `nP.nodal()` over combined RLC constructors when the example should show the circuit topology.
@@ -134,6 +166,7 @@ The test command uses `scripts/extensionless-loader.mjs` so Node can run source 
 - Many functions depend on the shared mutable `global` object from `src/np-global/src/global.js`. Be careful with changes that affect `global.fList`, `global.Ro`, or object-level `setglobal/getglobal` behavior.
 - S-parameter rows are represented as `[frequency, s11, s12, s21, s22, ...]`, where complex entries are `complex()` objects.
 - `nPort.out()` returns a table with a header row followed by numeric data rows. `lineChart()` and `lineTable()` consume this table shape.
+- Preserve the public `.x`/`.y` fields on complex objects, `.m` on matrix objects, and `.spars`/`.global` on nPort objects.
 - In `dev/` HTML files, format `nP.nodal(...)` calls with one connection argument per line so circuit connections are easy to read.
 - `lineChart()`, `smithChart()`, and `lineTable()` share common option names where possible: `inputTable`, `mount`, `title`, `containerId`, `svgId`, `metricPrefix`, `fontFamily`, `fontSize`, `containerFontSizePx`, and `pngBackground`. Keep older aliases such as `chartTitle`, `tableTitle`, and `headColor` working unless the user explicitly requests a breaking cleanup.
 - Browser rendering code in `src/np-chart` and `src/np-misc` assumes `document`, `window`, and sometimes clipboard APIs. Do not make those modules server-only without preserving browser behavior.

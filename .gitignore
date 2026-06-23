@@ -30,8 +30,6 @@ docs/_*/
 # ========================
 
 # Ignore your test/verification HTML files (or any file ending with Verify.html)
-nPortBuildVerify.html
-nPortVersionVerify.html
 *Verify.html
 
 # ========================

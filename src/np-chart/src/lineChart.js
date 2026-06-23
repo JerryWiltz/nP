@@ -162,7 +162,7 @@ export function lineChart(options = {}) {
                 : d3.scaleOrdinal(d3.schemeGreys[n]);
 
             // Container DIV (position relative for button)
-            const container = d3.select(mount) // was 'body'
+            const container = d3.select(mount)
                 .append('div')
                 .style('position', 'relative')
                 .style('display', 'inline-block')
@@ -170,7 +170,7 @@ export function lineChart(options = {}) {
 	                .style('font-family', fontFamily)
 	                .style('font-size', `${effectiveFontSize}px`)
 	                .attr('id', containerId || null)
-	                .attr('class', 'containerClass');  //was 'font-size', '20px'
+	                .attr('class', 'containerClass');
 
             // Add SVG
             const svg = container.append('svg')
@@ -404,7 +404,6 @@ export function lineChart(options = {}) {
                             .style('background', 'white')
                             .style('border', '1px solid #aaa')
                             .style('padding', '3px 6px')
-                            //.style('font-size', '12px') // was 12
                             .style('white-space', 'nowrap')
                             .style('pointer-events', 'none')
                             .style('z-index', 10)
@@ -435,7 +434,7 @@ export function lineChart(options = {}) {
                     })
                     .attr('dy', '0.35em')
                     .attr('class', 'txtLabel')
-                    .style('font-size', '11px') // was 11
+                    .style('font-size', '11px')
                     .text(d => d.yName);
             }
 
