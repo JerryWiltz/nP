@@ -42,6 +42,56 @@ The normal browser/example workflow is hierarchical:
 
 Preserve this mental model when writing examples, docs, tests, or dev pages. Prefer examples that make the flow visible: frequencies, components, combinations, outputs, then plots/tables.
 
+## Ladder Network Pattern
+
+For ladder-style circuits, prefer explicit components plus `nP.nodal()` over combined RLC constructors when the example should show the circuit topology.
+
+- Give actual electrical components reference-designator-style variable names such as `r1`, `l1`, `c1`, `series1`, or `shunt1`.
+- `nP.Tee()` and `nP.Short()` are ideal connection/fixture objects. They may be constructed once and reused in multiple places when the same ideal object is sufficient.
+- In `nP.Tee()`, internal port 1 is the common/shunt branch. In `nP.nodal(...)`, put the shunt node first for that Tee connection.
+- A shunt branch normally connects from the Tee common branch through the shunt component to `nP.Short()`, not to a literal ground object.
+
+Example pattern:
+
+```js
+var Tee = nP.Tee();
+var Short = nP.Short();
+
+var ladder = nP.nodal(
+    [series1, 1, 2],
+    [Tee, 4, 2, 3],
+    [shunt1, 4, 5],
+    [Short, 5],
+
+    [series2, 3, 6],
+    [Tee, 8, 6, 7],
+    [shunt2, 8, 9],
+    [Short, 9],
+
+    [series3, 7, 10],
+    ['out', 1, 10]
+);
+```
+
+## RF Power Divider Pattern
+
+`nP.Tee()` is also the natural ideal junction for RF power divider examples. In divider topology, use Tee internal port 1 as the common input or combining branch, with the other two Tee ports feeding the output branches.
+
+Example simple 3-port divider shape:
+
+```js
+var Tee = nP.Tee();
+
+var divider = nP.nodal(
+    [Tee, 1, 2, 3],
+    [branch1, 2, 4],
+    [branch2, 3, 5],
+    ['out', 1, 4, 5]
+);
+```
+
+Here node `1` is the common input, and nodes `4` and `5` are output ports. For Wilkinson-style examples, the branches are typically transmission-line sections and an isolation resistor may connect between the two output branch nodes. Inspect `s21dB` and `s31dB` for split, `s11dB` for input match, and `s23dB`/`s32dB` for output isolation.
+
 ## Repository Layout
 
 - `src/index.js`: root public module entry point. Re-exports the subpackages.

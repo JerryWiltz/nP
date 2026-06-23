@@ -12,22 +12,50 @@
     <div id="chartDiv"></div>
 
     <script>
+        // from Compact Manual example #1 p27
         var g = nP.global;
-        g.fList = g.fGen(100e6, 1000e6, 50);
+        g.fList = g.fGen(100e6, 1000e6, 51);
 
-        var c1 = nP.seC(3.05e-12);
-        var rl1 = nP.paSeRL(0.6, 56.4e-9);
-        var c2 = nP.seC(23.55e-12);
-        var hp = c1.cas(rl1).cas(c2);
+        // high pass
+        var c1 = nP.C(3.05e-12);
+        var Tee = nP.Tee();
+        var r1 = nP.R(0.6);
+        var l1 = nP.L(56.4e-9);
+        var c2 = nP.C(23.55e-12);
+        var Short = nP.Short();
+        var hp = nP.nodal(
+            [c1, 1, 2],
+            [Tee, 5, 2, 3],
+            [c2, 3, 4],
+            [r1, 5, 6],
+            [l1, 6, 7],
+            [Short, 7],
+            ['out', 1, 4]
+        );
 
-        var rl2 = nP.seSeRL(0.3, 32.4e-9);
-        var c3 = nP.paC(7.15e-12);
-        var rl3 = nP.seSeRL(0.1, 33.5e-9);
-        var lp = rl2.cas(c3).cas(rl3);
+        // low pass
+        var r2 = nP.R(0.3);
+        var l2 = nP.L(32.4e-9);
+        // Tee reuse
+        var c3 = nP.C(7.15e-12);
+        var r3 = nP.R(0.1);
+        var l3 = nP.L(33.5e-9);
+        // Short reuse
+        var lp = nP.nodal(
+            [r2, 1, 2],
+            [l2, 2, 3],
+            [Tee, 7, 3, 4],
+            [r3, 4, 5],
+            [l3, 5, 6],
+            [c3, 7, 8],
+            [Short, 8],
+            ['out', 1, 6]
+        );
 
-        var tee = nP.Tee();
+        // combine into diplexer
+        // Tee reuse
         var filt = nP.nodal(
-            [tee, 1, 2, 3],
+            [Tee, 1, 2, 3],
             [hp, 2, 4],
             [lp, 3, 5],
             ['out', 1, 4, 5]
