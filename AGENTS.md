@@ -25,7 +25,7 @@ Primary domains:
 - Complex arithmetic and matrix solving in `src/np-math`.
 - Global analysis settings such as frequency list, reference impedance, and temperature in `src/np-global`.
 - Chebyshev low-pass prototype helpers in `src/np-lowpass-prototype`.
-- D3-based chart and table rendering in `src/np-chart`; `smithChart()` currently exists as a placeholder copy of `lineChart()` for future Smith chart development.
+- D3-based chart, Smith chart, and table rendering in `src/np-chart`.
 - Browser helper utilities in `src/np-misc`.
 - User documentation in `README.md` and `docs/index.md`.
 
@@ -124,6 +124,17 @@ var divider = nP.nodal(
 
 Here node `1` is the common input, and nodes `4` and `5` are output ports. For Wilkinson-style examples, the branches are typically transmission-line sections and an isolation resistor may connect between the two output branch nodes. Inspect `s21dB` and `s31dB` for split, `s11dB` for input match, and `s23dB`/`s32dB` for output isolation.
 
+## Coupled Transmission Line Port Order
+
+Coupled transmission line components are numbered clockwise starting at the upper-left port. Preserve this convention for existing and future coupled-line constructors such as `nP.tclin()` and `nP.mclin()`.
+
+```text
+port 1  ---- coupled line ----  port 2
+port 4  ---- coupled line ----  port 3
+```
+
+With input at port 1, port 2 is the through port, port 4 is the coupled port, and port 3 is the isolated port. In `nP.nodal(...)`, connect these components in that same order, for example `[coupledLine, 1, 2, 3, 4]`.
+
 ## Repository Layout
 
 - `src/index.js`: root public module entry point. Re-exports the subpackages.
@@ -138,8 +149,7 @@ Here node `1` is the common input, and nodes `4` and `5` are output ports. For W
 - `test/`: Node tests for math, global settings, and nPort behavior.
 - `dev/`: local browser development and verification pages. These files are manual harnesses, not source of truth.
   - `dev/lineChartDevelopment.html`, `dev/lineTableDevelopment.html`, and `dev/smithChartDevelopment.html` load `../dist/nP.js` and exercise the built chart/table APIs.
-  - `dev/nPortBuildVerify.html` verifies the local built bundle.
-  - `dev/nPortVersionVerify.html` currently uses CDN scripts.
+  - `dev/mlinDevelopment.html`, `dev/mclinDevelopment.html`, `dev/matrixDevelopment.html`, and `dev/nodeDevelopment.html` are manual development pages for focused RF/math workflows.
 
 The old subpackage-level build artifacts under `src/np-*` have been removed. Treat the root package and root Rollup config as the only current build path.
 
@@ -169,6 +179,9 @@ The test command uses `scripts/extensionless-loader.mjs` so Node can run source 
 - Preserve the public `.x`/`.y` fields on complex objects, `.m` on matrix objects, and `.spars`/`.global` on nPort objects.
 - In `dev/` HTML files, format `nP.nodal(...)` calls with one connection argument per line so circuit connections are easy to read.
 - `lineChart()`, `smithChart()`, and `lineTable()` share common option names where possible: `inputTable`, `mount`, `title`, `containerId`, `svgId`, `metricPrefix`, `fontFamily`, `fontSize`, `containerFontSizePx`, and `pngBackground`. Keep older aliases such as `chartTitle`, `tableTitle`, and `headColor` working unless the user explicitly requests a breaking cleanup.
+- `lineChart()` consumes numeric x/y tables, supports linear/log x and y scales, origin or edge axis placement, hover values, chart labels, plot border styling, and PNG copy.
+- `smithChart()` consumes paired real/imaginary columns such as `s11Re`, `s11Im`, `s22Re`, and `s22Im`. It draws a square Smith chart with SVG resistance/reactance circles, trace labels, hover values for frequency/Re/Im/magnitude/angle, and PNG copy.
+- `lineTable()` consumes the same table shape returned by `nPort.out(...)`, renders SVG tables, and includes clipboard-based PNG and TSV copy behavior.
 - Browser rendering code in `src/np-chart` and `src/np-misc` assumes `document`, `window`, and sometimes clipboard APIs. Do not make those modules server-only without preserving browser behavior.
 - Do not add large dependencies unless they are clearly justified. Current root dev dependencies are Rollup, D3, VitePress, and the Rollup node resolver plugin.
 
@@ -237,7 +250,7 @@ Follow this plan for substantive work in this repo:
 ## Known Cautions
 
 - `lineChart()` derives formatted chart data from `inputTable` without mutating caller-owned input; preserve that behavior.
-- `lineTable()` includes clipboard-based PNG and CSV copy behavior; browser support and secure-context requirements can affect it.
+- `lineTable()` includes clipboard-based PNG and TSV copy behavior; browser support and secure-context requirements can affect it.
 - `nP.log()` writes HTML directly into the document. Be cautious about passing unsanitized user content.
 - Matrix and nodal algorithms use custom complex arithmetic and mutable arrays. Small shape or indexing changes can affect RF results broadly.
 - `cascade()` mutates its local `nPortsTable` reference while reducing. Be careful if changing it to avoid altering observable behavior unexpectedly.

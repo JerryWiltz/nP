@@ -7,7 +7,7 @@ These files are manual browser development and verification harnesses. They are 
 - Load the built browser bundle with `../dist/nP.js`.
 - Put reusable library code under `src/`, then run `npm run build` when the browser bundle should be updated.
 - Use `npm run dev:new -- pageName [divId ...]` to create a new dev HTML page without rewriting boilerplate by hand.
-- (example: npm run dev:new -- tempWorkflowTest chartDiv)
+- Example: `npm run dev:new -- tempWorkflowTest chartDiv`.
 - Format `nP.nodal(...)` calls with one connection argument per line.
 - Prefer clear mount div names such as `chartDiv`, `tableDiv`, `smithDiv`, `seriesR`, or `parallelR`.
 - Keep examples small enough to inspect visually in a browser.
@@ -25,6 +25,14 @@ Write dev examples in this order so the circuit logic is easy to follow:
 6. Send the output table to `nP.lineChart()`, `nP.lineTable()`, or `nP.smithChart()`.
 
 This pattern is preferred over putting unrelated chart/table data directly into a dev page unless the page is specifically testing chart or table behavior.
+
+## Chart And Table Dev Pages
+
+- `nP.lineChart()` consumes numeric x/y tables. It supports linear/log x and y scales, origin or edge axis placement, hover values, chart labels, plot border styling, and PNG copy.
+- `nP.smithChart()` consumes paired real/imaginary columns such as `s11Re`, `s11Im`, `s22Re`, and `s22Im`. Keep its rendered area square. It draws SVG Smith-grid circles, trace labels, hover values for frequency/Re/Im/magnitude/angle, and PNG copy.
+- `nP.lineTable()` consumes the same table shape returned by `nPort.out(...)`, renders SVG tables, and provides PNG and TSV copy buttons.
+- Use `pngBackground: 'white'` in dev pages when a copied PNG should have an opaque white background.
+- Prefer `metricPrefix` values that match the displayed frequency header. For example, `metricPrefix: 'giga'` displays frequencies scaled to GHz.
 
 ## Math And nPort Objects In Dev Pages
 
@@ -85,6 +93,17 @@ var divider = nP.nodal(
 ```
 
 For Wilkinson-style examples, use transmission-line branches and, when needed, an isolation resistor between output branch nodes. Useful outputs include `s21dB`, `s31dB`, `s11dB`, and `s23dB`.
+
+## Coupled Transmission Line Port Order
+
+For coupled transmission line dev pages, number ports clockwise starting at the upper-left port. Use this same convention for `nP.tclin()`, `nP.mclin()`, and future coupled-line constructors.
+
+```text
+port 1  ---- coupled line ----  port 2
+port 4  ---- coupled line ----  port 3
+```
+
+With input at port 1, port 2 is through, port 4 is coupled, and port 3 is isolated. In `nP.nodal(...)`, preserve the constructor order, for example `[coupledLine, 1, 2, 3, 4]`.
 
 ## `nP.js` Functions Available In Dev Pages
 
