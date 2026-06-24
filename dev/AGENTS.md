@@ -115,7 +115,7 @@ Chart and browser helpers:
 - `nP.lineTable()`
 - `nP.smithChart()`
 - `nP.log()`
-- `nP.version()`
+- `nP.version`
 - `nP.getCircuitTitle()`
 - `nP.callCodemirror()`
 - `nP.run()`

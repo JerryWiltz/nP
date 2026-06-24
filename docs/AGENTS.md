@@ -10,6 +10,8 @@ These files are user-facing documentation, examples, images, and documentation-s
 - Use `npm run docs:build` from the repo root after substantive docs changes when practical.
 - Do not edit generated VitePress output unless the user explicitly asks.
 - When updating archived material under `docs/_archive/`, preserve historical intent, but modernize examples when the user asks for docs-wide cleanup.
+- In browser examples, prefer `nP.log(...)` over `console.log(...)` when the output is meant to appear on the page. Make sure the page loads the built bundle before using `nP.log(...)`.
+- The version value is `nP.version`, not `nP.version()`.
 
 ## Documentation Example Flow
 
@@ -110,6 +112,7 @@ Update docs as needed when examples use `nP.complex()` or `nP.matrix()`.
 - Complex helpers include `getR()`, `getI()`, `setR()`, `setI()`, `add()`, `sub()`, `mul()`, `div()`, `inv()`, `mag()`, `ang()`, `mag10dB()`, and `mag20dB()`.
 - `setR()` and `setI()` mutate the complex object and return `this`.
 - `nP.matrix(array2d)` returns a matrix object with public field `.m`.
+- Read matrix entries through `.m[row][column]`; matrix objects do not have an `.out()` method.
 - Use real matrix methods for numeric matrices: `add()`, `sub()`, `mul()`, `invert()`, and `solveGaussFB()`.
 - Use complex matrix methods for complex entries: `addCplx()`, `subCplx()`, `mulCplx()`, `invertCplx()`, and `solveGaussFBCplx()`.
 - n-port objects carry S-parameter rows in `.spars`; each row is `[frequency, s11, s12, s21, s22, ...]` and S-parameter values are complex objects.
