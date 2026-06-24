@@ -1,4 +1,5 @@
 # AGENTS.md
+<!-- Modified: 2026-06-24 -->
 
 Instructions for files in `docs/` and its subdirectories.
 
@@ -12,6 +13,7 @@ These files are user-facing documentation, examples, images, and documentation-s
 - When updating archived material under `docs/_archive/`, preserve historical intent, but modernize examples when the user asks for docs-wide cleanup.
 - In browser examples, prefer `nP.log(...)` over `console.log(...)` when the output is meant to appear on the page. Make sure the page loads the built bundle before using `nP.log(...)`.
 - The version value is `nP.version`, not `nP.version()`.
+- When intentionally editing a hand-maintained documentation file, add or update a simple `Modified: YYYY-MM-DD` comment near the top of the file. Do not update dates in generated VitePress output.
 
 ## Documentation Example Flow
 

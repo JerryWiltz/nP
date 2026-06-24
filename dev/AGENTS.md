@@ -1,4 +1,5 @@
 # AGENTS.md
+<!-- Modified: 2026-06-24 -->
 
 Instructions for files in `dev/`.
 
@@ -12,6 +13,7 @@ These files are manual browser development and verification harnesses. They are 
 - Prefer clear mount div names such as `chartDiv`, `tableDiv`, `smithDiv`, `seriesR`, or `parallelR`.
 - Keep examples small enough to inspect visually in a browser.
 - When testing downloaded screenshots, check `/mnt/chromeos/MyFiles/Downloads`.
+- When intentionally editing a hand-maintained dev file, add or update a simple `Modified: YYYY-MM-DD` comment near the top of the file. Do not update dates in generated output.
 
 ## Dev Page Example Flow
 

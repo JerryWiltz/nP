@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- Modified: 2026-06-24 -->
 <html>
 	<head>
 		<meta charset="utf-8">
@@ -19,7 +20,15 @@ var tl = nP.tlin(70.7, 0.49 * 0.0254);
 var r = nP.R(100);
 
 // Note the array of components and node numbers right below
-var pwr = nP.nodal([threeWay, 1,2,3],[tl,3,5],[tl,2,4],[threeWay,9,7,5],[threeWay,8,4,6],[r,8,9],['out',1,7,6]);
+var pwr = nP.nodal(
+	[threeWay, 1, 2, 3],
+	[tl, 3, 5],
+	[tl, 2, 4],
+	[threeWay, 9, 7, 5],
+	[threeWay, 8, 4, 6],
+	[r, 8, 9],
+	['out', 1, 7, 6]
+);
 var powerDivider = pwr.out('s11dB','s21dB','s23dB');
 
 nP.log(powerDivider);

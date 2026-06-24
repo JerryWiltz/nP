@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- Modified: 2026-06-24 -->
 <html>
 	<head>
 		<meta charset="utf-8">
@@ -22,7 +23,18 @@ var tclin3 = nP.tclin(79.667,37.834,0.491 * 0.0254);
 var open = nP.Open();
 
 // set up the filter
-var filt = nP.nodal([tclin1,1,2,3,4],[tclin2,3,5,6,7],[tclin3,6,8,9,10],[open,2],[open,4],[open,5],[open,7],[open,8],[open,10],['out',1,9]);
+var filt = nP.nodal(
+	[tclin1, 1, 2, 3, 4],
+	[tclin2, 3, 5, 6, 7],
+	[tclin3, 6, 8, 9, 10],
+	[open, 2],
+	[open, 4],
+	[open, 5],
+	[open, 7],
+	[open, 8],
+	[open, 10],
+	['out', 1, 9]
+);
 var filtOut = filt.out('s21dB','s11dB');
 
 // set up the plot

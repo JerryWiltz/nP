@@ -1,4 +1,5 @@
-<!--DOCTYPE html-->
+<!DOCTYPE html>
+<!-- Modified: 2026-06-24 -->
 <html>
 	<head>
 		<meta charset="utf-8">
@@ -18,7 +19,7 @@
 
 // set up the frequency from https://www.microwaves101.com/encyclopedias/branchline-couplers
 // this is for a quarter wave at 10GHz
-var g = nP.global;	
+var g = nP.global;
 g.fList = g.fGen(2000e6,18000e6,21);
 
 //set up the coupleing factor
@@ -29,7 +30,10 @@ var zoo = 50*Math.sqrt(((1-c)/(1+c)));
 
 // set up the tclin directional coupler
 var tclin = nP.tclin(zoe,zoo,0.295 * 0.0254);
-var q1 = nP.nodal([tclin,1,2,3,4],['out',1,2,3,4])
+var q1 = nP.nodal(
+	[tclin, 1, 2, 3, 4],
+	['out', 1, 2, 3, 4]
+);
 var directionalCouplerOut1 = q1.out('s21dB','s41dB');
 
 // set up plot
@@ -42,7 +46,10 @@ nP.lineChart(plot1);
 
 // set up the mclin directional coupler
 var mclin = nP.mclin( Width = .020 * 0.0254, Space = 0.0025 * 0.0254, Height = 0.025 * 0.0254, Thickness = 0.00 * 0.0254, Length = .3 * 0.0254, er = 9.9, rho = 1, tand = 0.001 );
-var q2 = nP.nodal([mclin,1,2,3,4],['out',1,2,3,4])
+var q2 = nP.nodal(
+	[mclin, 1, 2, 3, 4],
+	['out', 1, 2, 3, 4]
+);
 var directionalCouplerOut2 = q2.out('s21dB','s41dB');
 
 // set up plot

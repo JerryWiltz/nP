@@ -1,6 +1,7 @@
 codex resume 019e89f1-41f2-70a0-85b9-da332da8146b
 
 # AGENTS.md
+<!-- Modified: 2026-06-24 -->
 
 Repository guide for agents working in the `nP` repo.
 
@@ -193,6 +194,13 @@ The test command uses `scripts/extensionless-loader.mjs` so Node can run source 
 - Avoid running `npm run build` when the user asked for source-only edits or asked not to change generated files.
 - `node_modules/`, logs, docs build output, `.aider*`, and temporary `*Verify.html` files are ignored.
 - `dev/` is not currently ignored. Tracked dev harnesses under `dev/` are intentionally kept; treat them as local manual test harnesses unless the user decides to publish examples from them.
+
+## Modification Dates
+
+- When intentionally editing a hand-maintained file, add or update a simple `Modified: YYYY-MM-DD` comment near the top of the file.
+- Use the comment syntax native to the file type: `// Modified: YYYY-MM-DD` for JavaScript, `<!-- Modified: YYYY-MM-DD -->` for HTML and Markdown, and `/* Modified: YYYY-MM-DD */` for CSS.
+- Do not add manual modification-date comments to generated output such as `dist/nP.js` or `docs/.vitepress/dist/` files unless the user explicitly asks.
+- Do not touch files solely to update the date; update it only when the file is otherwise being edited.
 
 ## Verification Plan
 

@@ -1,4 +1,5 @@
-<!--DOCTYPE html-->
+<!DOCTYPE html>
+<!-- Modified: 2026-06-24 -->
 <html>
 	<head>
 		<meta charset="utf-8">
@@ -15,7 +16,7 @@
 
 // set up the frequency from https://www.microwaves101.com/encyclopedias/branchline-couplers
 // this is for a quarter wave at 10GHz
-var g = nP.global;	
+var g = nP.global;
 g.fList = g.fGen(5000e6,15000e6,20);
 //g.fList = [15000e6];
 
@@ -29,7 +30,17 @@ var short = nP.Short();
 
 // set up the branchline coupler
 var tee = nP.Tee();
-var branch = nP.nodal([tee,5,1,2],[z35,2,3],[tee,6,3,4],[z50,5,7],[z50,6,8],[tee,7,10,9],[z35,10,11],[tee,8,12,11],['out',1,4,12,9]);
+var branch = nP.nodal(
+	[tee, 5, 1, 2],
+	[z35, 2, 3],
+	[tee, 6, 3, 4],
+	[z50, 5, 7],
+	[z50, 6, 8],
+	[tee, 7, 10, 9],
+	[z35, 10, 11],
+	[tee, 8, 12, 11],
+	['out', 1, 4, 12, 9]
+);
 var branchOut = branch.out('s21dB','s31dB');
 
 // set up plot

@@ -1,4 +1,5 @@
-<!--DOCTYPE html-->
+<!DOCTYPE html>
+<!-- Modified: 2026-06-24 -->
 <html>
 	<head>
 		<meta charset="utf-8">
@@ -19,7 +20,12 @@ nP.log(trf);
 nP.log('four port transformer, trf4Port()');
 var t = nP.trf4Port()
 var short = nP.Short();
-var trf4Port = nP.nodal([t,1,2,3,4],[short,3],[short,4],['out',1,2]).out('s11mag','s11ang','s21mag','s21ang');
+var trf4Port = nP.nodal(
+	[t, 1, 2, 3, 4],
+	[short, 3],
+	[short, 4],
+	['out', 1, 2]
+).out('s11mag','s11ang','s21mag','s21ang');
 nP.log(trf4Port);
 
 		</script>
