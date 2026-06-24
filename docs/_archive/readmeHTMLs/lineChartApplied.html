@@ -1,0 +1,64 @@
+<!--DOCTYPE html-->
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>lineChart() Applied</title>
+	</head>
+	<body>
+			<div id="canvas1"></div>
+		<script src="../../../dist/nP.js"></script>
+
+		<script>
+// Set up the frequency range
+var g = nP.global;	
+g.fList = g.fGen(50e6, 10e9, 50);
+
+// A 9 section low pass filter
+var c1 = nP.C(3.1716836788279897e-12);
+var l1 = nP.L(9.566513256241392e-9);
+var c2 = nP.C(5.6621309381827996e-12);
+var l2 = nP.L(1.0721164178932893e-8);
+var c3 = nP.C(5.8499784682761105e-12);
+var l3 = nP.L(1.0721164178932898e-8);
+var c4 = nP.C(5.662130938182797e-12);
+var l4 = nP.L(9.566513256241397e-9);
+var c5 = nP.C(3.171683678827988e-12);
+var Tee = nP.Tee();
+var Short = nP.Short();
+var filter = nP.nodal(
+	[Tee, 2, 1, 3],
+	[c1, 2, 4],
+	[Short, 4],
+	[l1, 3, 5],
+	[Tee, 6, 5, 7],
+	[c2, 6, 8],
+	[Short, 8],
+	[l2, 7, 9],
+	[Tee, 10, 9, 11],
+	[c3, 10, 12],
+	[Short, 12],
+	[l3, 11, 13],
+	[Tee, 14, 13, 15],
+	[c4, 14, 16],
+	[Short, 16],
+	[l4, 15, 17],
+	[Tee, 18, 17, 19],
+	[c5, 18, 20],
+	[Short, 20],
+	['out', 1, 19]
+).out('s11dB', 's21dB');
+
+// Create the lineChartInputObject
+var lineChartInputObject = {
+	mount: '#canvas1',
+	inputTable: [filter]
+};
+
+// Pass the lineChartInputObject to lineChart
+nP.lineChart(lineChartInputObject);
+
+
+		</script>
+	</body>
+</html>

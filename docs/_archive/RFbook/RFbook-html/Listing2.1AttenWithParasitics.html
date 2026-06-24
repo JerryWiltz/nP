@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Listing 2.1 3dB Attenuator with Parsitics</title>
+	</head>
+	<body>
+		<script src="../../../../dist/nP.js"></script>
+		<script>
+
+// define the frequency list, 0Hz = DC
+var g = nP.global;
+g.fList = g.fGen(1e9,10e9,21);
+
+// define each component
+var Cf1 = nP.C(0.5e-12);
+var R1 = nP.R(292.4);
+var R2 = nP.R(17.6);
+var R3 = nP.R(292.4);
+var Cf2 = nP.C(0.5e-12);
+var Tee = nP.Tee();
+var Short = nP.Short();
+
+// hook up the attenuator with nodal
+var attnIdeal = nP.nodal(
+	[Tee, 2, 1, 3],
+	[R1, 2, 4],
+	[Short, 4],
+	[R2, 3, 5],
+	[Tee, 6, 5, 7],
+	[R3, 6, 8],
+	[Short, 8],
+	['out', 1, 7]
+);
+var attnReal = nP.nodal(
+	[Tee, 2, 1, 3],
+	[Cf1, 2, 4],
+	[Short, 4],
+	[Tee, 6, 3, 7],
+	[R1, 6, 8],
+	[Short, 8],
+	[R2, 7, 9],
+	[Tee, 10, 9, 11],
+	[R3, 10, 12],
+	[Short, 12],
+	[Tee, 14, 11, 15],
+	[Cf2, 14, 16],
+	[Short, 16],
+	['out', 1, 15]
+);
+
+// specify the outputs
+var s21dBIdeal = attnIdeal.out('s21dB');
+var s21dBReal = attnReal.out('s21dB');
+
+// display the outputs
+var Chart = {
+	inputTable: [s21dBIdeal, s21dBReal],
+	yRange: [0, -10],
+	title: 'Comparing Ideal versus Real 3dB Attenuators',
+	xAxisTitle: 'Frequency, GHz'
+};
+nP.lineChart(Chart);
+
+		</script>
+	</body>
+</html>

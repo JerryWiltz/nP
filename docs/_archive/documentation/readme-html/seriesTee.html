@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>seriesTee</title>
+	</head>
+	<body>
+		<script src="../../../../dist/nP.js"></script>
+		<script>
+
+var g = nP.global;	
+g.fList = [2e9]; // 2GHz
+
+// define the resistors for the attenuator
+var r1 = nP.R(292.4);
+var r2 = nP.R(17.6);
+var r3 = nP.R(292.4);
+var Tee = nP.Tee();
+var Short = nP.Short();
+
+// use nodal to combine the parts
+var attn1 = nP.nodal(
+	[Tee, 2, 1, 3],
+	[r1, 2, 4],
+	[Short, 4],
+	[r2, 3, 5],
+	[Tee, 6, 5, 7],
+	[r3, 6, 8],
+	[Short, 8],
+	['out', 1, 7]
+);
+var attn1Out = attn1.out('s21dB','s11dB');
+nP.lineTable({inputTable: [attn1Out], title:'Pi attenuator solved with nP.nodal()'});
+
+// define the seriesTee and open
+var tee = nP.seriesTee();
+var open = nP.Open();
+var r4 = nP.R(17.6);
+
+// use nodal to combine the 2-ports
+var attn2 = nP.nodal([r1,1,2], [tee,2,3,4], [r4,4,5], [open,5], [r3,3,6], ['out',1,6]);
+var attn2Out = attn2.out('s21dB','s11dB');
+nP.lineTable({inputTable: [attn2Out], title:'seriesTee realization solved with nP.nodal()'});
+
+		</script>
+	</body>
+</html>

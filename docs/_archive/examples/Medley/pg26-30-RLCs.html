@@ -1,0 +1,125 @@
+<!--DOCTYPE html-->
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>RLC elements with nodal</title>
+	</head>
+	<body>
+
+		<script src="../../../../dist/nP.js"></script>
+
+		<script>
+// from Medley page 26-30
+// uses default values for frequency and components
+
+function out(part) {
+	return part.out('s11mag','s11ang','s21mag','s21ang');
+}
+
+function shuntToGround(part) {
+	var Tee = nP.Tee();
+	var Short = nP.Short();
+
+	return nP.nodal(
+		[Tee, 1, 2, 3],
+		[part, 1, 4],
+		[Short, 4],
+		['out', 2, 3]
+	);
+}
+
+function seriesChain(parts) {
+	var connections = [];
+	var i;
+
+	for (i = 0; i < parts.length; i++) {
+		connections.push([parts[i], i + 1, i + 2]);
+	}
+	connections.push(['out', 1, parts.length + 1]);
+	return nP.nodal.apply(null, connections);
+}
+
+function parallelPair(part1, part2) {
+	var Tee = nP.Tee();
+	var Short = nP.Short();
+
+	return nP.nodal(
+		[Tee, 1, 2, 3],
+		[part1, 1, 4],
+		[part2, 1, 5],
+		[Short, 4],
+		[Short, 5],
+		['out', 2, 3]
+	);
+}
+
+nP.log('series resistor');
+nP.log(out(nP.R()));
+
+nP.log('shunt resistor');
+nP.log(out(shuntToGround(nP.R())));
+
+nP.log('series inductor');
+nP.log(out(nP.L()));
+
+nP.log('shunt inductor');
+nP.log(out(shuntToGround(nP.L())));
+
+nP.log('series capacitor');
+nP.log(out(nP.C()));
+
+nP.log('shunt capacitor');
+nP.log(out(shuntToGround(nP.C())));
+
+nP.log('series resistor and inductor');
+nP.log(out(seriesChain([nP.R(), nP.L()])));
+
+nP.log('shunt resistor, then series inductor');
+nP.log(out(seriesChain([shuntToGround(nP.R()), nP.L()])));
+
+nP.log('series resistor and capacitor');
+nP.log(out(seriesChain([nP.R(), nP.C()])));
+
+nP.log('shunt resistor, then series capacitor');
+nP.log(out(seriesChain([shuntToGround(nP.R()), nP.C()])));
+
+nP.log('series inductor and capacitor');
+nP.log(out(seriesChain([nP.L(), nP.C()])));
+
+nP.log('shunt inductor, then series capacitor');
+nP.log(out(seriesChain([shuntToGround(nP.L()), nP.C()])));
+
+nP.log('series resistor, inductor, and capacitor');
+nP.log(out(seriesChain([nP.R(), nP.L(), nP.C()])));
+
+nP.log('shunt resistor, then series inductor and capacitor');
+nP.log(out(seriesChain([shuntToGround(nP.R()), nP.L(), nP.C()])));
+
+nP.log('parallel resistor and inductor as a shunt branch');
+nP.log(out(parallelPair(nP.R(), nP.L())));
+
+nP.log('series resistor, then shunt inductor');
+nP.log(out(seriesChain([nP.R(), shuntToGround(nP.L())])));
+
+nP.log('parallel resistor and capacitor as a shunt branch');
+nP.log(out(parallelPair(nP.R(), nP.C())));
+
+nP.log('series resistor, then shunt capacitor');
+nP.log(out(seriesChain([nP.R(), shuntToGround(nP.C())])));
+
+nP.log('parallel inductor and capacitor as a shunt branch');
+nP.log(out(parallelPair(nP.L(), nP.C())));
+
+nP.log('series inductor, then shunt capacitor');
+nP.log(out(seriesChain([nP.L(), shuntToGround(nP.C())])));
+
+nP.log('parallel resistor, inductor, and capacitor as a shunt branch');
+nP.log(out(parallelPair(nP.R(), seriesChain([nP.L(), nP.C()]))));
+
+nP.log('series resistor, then shunt inductor and capacitor');
+nP.log(out(seriesChain([nP.R(), parallelPair(nP.L(), nP.C())])));
+
+		</script>
+	</body>
+</html>

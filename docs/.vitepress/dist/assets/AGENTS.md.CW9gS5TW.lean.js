@@ -1,0 +1,1 @@
+import{_ as i,o as s,c as a,a0 as n}from"./chunks/framework.COZJitdt.js";const k=JSON.parse('{"title":"AGENTS.md","description":"","frontmatter":{},"headers":[],"relativePath":"AGENTS.md","filePath":"AGENTS.md"}'),l={name:"AGENTS.md"};function t(o,e,d,c,h,p){return s(),a("div",null,e[0]||(e[0]=[n("",35)]))}const E=i(l,[["render",t]]);export{k as __pageData,E as default};

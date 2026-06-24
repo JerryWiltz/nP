@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>3dB Pad with paracitics</title>
+	</head>
+	<body id="body">
+		<div>
+			<h3>Resistor Atenuator with no parasitics</h3>
+		</div>
+		<div id="canvas1"></div>
+		
+		<div>
+			<h3>Resistive Atenuator with parasitics</h3>
+			<div id="canvas2"></div>
+		</div>
+		<script src="../../../../dist/nP.js"></script>
+		<script>
+
+// Generate frequency list
+g = nP.global;
+g.fList = g.fGen(.50e9, 10e9, 25);
+
+// define the components
+var c1 = nP.C(0.15e-12);
+var r1 = nP.R(430);
+var r2 = nP.R(17);
+var r3 = nP.R(430);
+var c2 = nP.C(0.15e-12);
+var Tee = nP.Tee();
+var Short = nP.Short();
+
+
+// the no parasitics case
+var pad1 = nP.nodal(
+	[Tee, 2, 1, 3],
+	[r1, 2, 4],
+	[Short, 4],
+	[r2, 3, 5],
+	[Tee, 6, 5, 7],
+	[r3, 6, 8],
+	[Short, 8],
+	['out', 1, 7]
+);
+var table1 = pad1.out('s11dB', 's21dB');
+var inputObject1 = { inputTable: [table1], mount: '#canvas1', metricPrefix : 'giga'};
+nP.lineChart(inputObject1);
+
+// the parasitics case
+var pad2 = nP.nodal(
+	[Tee, 2, 1, 3],
+	[c1, 2, 4],
+	[Short, 4],
+	[Tee, 6, 3, 7],
+	[r1, 6, 8],
+	[Short, 8],
+	[r2, 7, 9],
+	[Tee, 10, 9, 11],
+	[r3, 10, 12],
+	[Short, 12],
+	[Tee, 14, 11, 15],
+	[c2, 14, 16],
+	[Short, 16],
+	['out', 1, 15]
+);
+var table2 = pad2.out('s11dB', 's21dB');
+var inputObject2 = { inputTable: [table2], mount: '#canvas2', metricPrefix : 'giga'};
+nP.lineChart(inputObject2);
+
+		</script>
+	</body>
+</html>

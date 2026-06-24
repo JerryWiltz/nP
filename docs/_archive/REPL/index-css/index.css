@@ -1,0 +1,99 @@
+* {
+	margin: 0;
+	padding: 0;
+	text-decoration: none;
+	list-style-type: none;
+	box-sizing: border-box;
+}
+
+body {
+	margin: 5px;
+	font-family: Arial, sans-serif;
+}
+
+header {
+	padding: 5px 5px 5px 20px;
+	border: 1px solid gray;
+}
+
+/**** Header Logo ****/
+
+.logo {
+	padding: .75rem;
+}
+
+.grayColor {
+	color: gray;
+	font-style: italic;
+}
+
+.blackColor {
+	color: black;
+	font-style: normal;
+}
+
+.logo a span {
+	font-size: 3rem;
+	font-weight: bold;
+	display: inline-block;
+}
+
+.logo a:hover .blackColor {
+	color: #cc3300;
+}
+
+.logo a:hover .grayColor {
+	color: black;
+}
+
+.logo p {
+	font-size: 0.75rem;
+}
+
+/**** Header Menu ****/
+
+.headerNavigation ul {
+	padding: 3px;
+	margin: 5px 0 3px 0;
+}
+
+.headerNavigation ul li {
+	display: inline-block;
+	padding: 1px 30px 1px 1px;
+}
+
+/** whole page **/
+a.nav {
+	color: gray;
+	padding: 1px;
+	background-color: #ddd;
+	border-radius: 5px;
+}
+
+/** whole page **/
+a.nav:hover {
+	color: blue;
+}
+
+.flexHeader {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+}
+
+/**** Main Section ****/
+
+.examples {
+	margin-top: 0.75rem;
+	margin-bottom: 0.75rem;
+}
+
+.examples p {
+	font-weight: bold;
+}
+
+.examples ul li {
+	display: inline-block;
+}
+
+/** <a> nav element sytles are listed above **/
