@@ -165,8 +165,19 @@ Use these commands from the repo root:
 - `npm test`: run Node's built-in test runner against tests under `test/`.
 - `npm run clean`: run `scripts/cleanup-gitignore.sh`.
 - `npm run deploy`: build and deploy docs to `gh-pages`. This rewrites Git state inside the docs build output and force-pushes; do not run without explicit user approval.
+- `npx playwright install chromium`: install Playwright's browser binary into the local Linux cache when it is missing.
 
 The test command uses `scripts/extensionless-loader.mjs` so Node can run source files with the repo's existing extensionless import style.
+
+## Playwright Browser Checks
+
+- Playwright is a dev dependency for real browser smoke tests of docs and dev HTML pages.
+- Browser binaries are installed outside the repo under `/home/jerrywiltz/.cache/ms-playwright/`; do not commit browser binaries or `node_modules/`.
+- On this Chromebook Linux container, Playwright Chromium may fail inside the Codex sandbox with a Linux sandbox permission error. If browser launch fails with sandbox/permission errors, rerun the same Playwright command with escalated permissions.
+- Use Playwright for browser-facing changes to `src/np-chart`, `src/np-misc`, `dev/*.html`, or docs HTML examples when visual/DOM behavior matters.
+- For generated docs output, do not keep changes under `docs/.vitepress/dist/` unless the user explicitly asks. If `npm run docs:build` changes generated output during verification, restore that generated output after the check.
+- A useful docs smoke pattern is to open each changed HTML file with `file://`, listen for `pageerror` and `console.error`, and check that pages which execute `nP.lineChart()` or `nP.lineTable()` produce an SVG.
+- Some docs pages store runnable example code inside `<textarea>` for CodeMirror. Do not require chart/table SVG output from code that is only inside a textarea and not executed on page load.
 
 ## Coding Style
 
@@ -214,7 +225,8 @@ When changing source code, use the narrowest verification that fits the change:
    - `nP.global.fGen(start, stop, points)` should include the expected first and last frequency.
    - Complex arithmetic should preserve basic identities such as `a.mul(b).div(b)` approximately equaling `a` when `b` is nonzero.
 4. For docs changes, run `npm run docs:build`.
-5. If build or docs commands cannot run because dependencies are missing, report that clearly and do not silently skip verification.
+5. For browser-facing docs/dev changes, run a Playwright Chromium smoke check when practical.
+6. If build, docs, or browser commands cannot run because dependencies are missing or browser launch is blocked, report that clearly and do not silently skip verification.
 
 ## Detailed Execution Plan For Future Agents
 

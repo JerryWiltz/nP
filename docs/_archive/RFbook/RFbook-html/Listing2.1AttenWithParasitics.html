@@ -1,7 +1,10 @@
 <!DOCTYPE html>
+<!-- Modified: 2026-06-26 -->
 <html>
 	<head>
-		<title>Listing 2.1 3dB Attenuator with Parsitics</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>Listing 2.1 3dB Attenuator with Parasitics</title>
 	</head>
 	<body>
 		<script src="../../../../dist/nP.js"></script>
@@ -55,7 +58,7 @@ var s21dBReal = attnReal.out('s21dB');
 // display the outputs
 var Chart = {
 	inputTable: [s21dBIdeal, s21dBReal],
-	yRange: [0, -10],
+	yRange: [-10, 0],
 	title: 'Comparing Ideal versus Real 3dB Attenuators',
 	xAxisTitle: 'Frequency, GHz'
 };

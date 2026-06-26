@@ -14,6 +14,8 @@ These files are user-facing documentation, examples, images, and documentation-s
 - In browser examples, prefer `nP.log(...)` over `console.log(...)` when the output is meant to appear on the page. Make sure the page loads the built bundle before using `nP.log(...)`.
 - The version value is `nP.version`, not `nP.version()`.
 - When intentionally editing a hand-maintained documentation file, add or update a simple `Modified: YYYY-MM-DD` comment near the top of the file. Do not update dates in generated VitePress output.
+- Use Playwright Chromium for real browser smoke tests of changed docs HTML when practical. Browser launch may need escalated permissions in this Chromebook Linux container.
+- In Playwright checks, pages that execute `nP.lineChart()` or `nP.lineTable()` on load should produce SVG output. Do not require SVG output from example code that is only inside a CodeMirror `<textarea>` and not executed on page load.
 
 ## Documentation Example Flow
 

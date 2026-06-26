@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- Modified: 2026-06-26 -->
 <html>
 	<head>
 		<meta charset="utf-8">
@@ -67,7 +68,7 @@ var sparsF = function sparsF (f) {
 	return out; // return an array
 };
 var sparsTable = function sparsTable (fStart, fStop, points) {
-	var out = [];
+	var out = [['Frequency', 's11dB', 's21dB', 's11mag', 's11ang', 's21mag', 's21ang']];
 	var fStep = (fStop-fStart)/(points-1);
 	var fMax = fStart;
 	var i = 0; 
@@ -77,46 +78,21 @@ var sparsTable = function sparsTable (fStart, fStop, points) {
 	return out; // return a table
 };
 var table = sparsTable(0.1e9, 10e9, 501);
+var plotTable = table.map(function(row) {
+	return [row[0], row[1], row[2]];
+});
 
-// chart library
-var lineChart = function lineChart(table, xRangeArray, yRangeArray) {
-	var canvasBody = document.getElementsByTagName("body")[0];
-	var canvas = document.createElement('canvas');
-	var g = canvas.getContext('2d');
-	var width = 400, height = 300;
-	var xSlope = width/(xRangeArray[1]-xRangeArray[0]);
-	var ySlope = height/(yRangeArray[1]-yRangeArray[0]); 
-	var xPixels = function xPixels(f) {
-		return xSlope*(f-xRangeArray[1]) + width;
-	};
-	var yPixels = function yPixels(dB) {
-		return height - (ySlope*(dB-yRangeArray[1]) + height);
-	};
-	canvas.id     = "CursorLayer";
-	canvas.width  = width;
-	canvas.height = height;
-	canvas.style.zIndex   = 8;
-	canvas.style.position = "absolute";
-	canvas.style.border   = "1px solid";
-	canvasBody.appendChild(canvas);
-	g.beginPath(); // plot s11dB
-	for (var i = 0; i < table.length; i++) {
-		if(i === 0) g.moveTo(xPixels(table[0][0]), yPixels(table[0][1]));
-		g.lineTo(xPixels(table[i][0]), yPixels(table[i][1]));
-	};
-	g.strokeStyle = 'red';
-	g.lineWidth = 5;
-	g.stroke();
-	g.beginPath(); // plot s21dB
-	for (var i = 0; i < table.length; i++) {
-		if(i === 0) g.moveTo(xPixels(table[0][0]), yPixels(table[0][2]));
-		g.lineTo(xPixels(table[i][0]), yPixels(table[i][2]));
-	};
-	g.strokeStyle = 'blue';
-	g.stroke();
-
-};      
-lineChart(table,[0.1e9, 10e9], [-40,0]);
+var chart1 = nP.lineChart({
+	inputTable: [plotTable],
+	metricPrefix: 'giga',
+	title: 'Listing 2-8 nPort Matrix',
+	xAxisTitle: 'Frequency, GHz',
+	yAxisTitle: 's11 and s21, dB',
+	xRange: [0.1e9, 10e9],
+	yRange: [-40, 0],
+	showPoints: false,
+	showLabels: true
+});
 		</script>
 	</body>
 </html>

@@ -14,6 +14,7 @@ These files are manual browser development and verification harnesses. They are 
 - Keep examples small enough to inspect visually in a browser.
 - When testing downloaded screenshots, check `/mnt/chromeos/MyFiles/Downloads`.
 - When intentionally editing a hand-maintained dev file, add or update a simple `Modified: YYYY-MM-DD` comment near the top of the file. Do not update dates in generated output.
+- Use Playwright Chromium for real browser smoke tests of dev pages when chart/table/Smith chart rendering changes. Browser launch may need escalated permissions in this Chromebook Linux container.
 
 ## Dev Page Example Flow
 
