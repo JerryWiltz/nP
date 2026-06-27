@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- Modified: 2026-06-27 -->
 <html>
 
 <head>
@@ -66,13 +67,12 @@
             inputTable: [filtOut],
             title: 'My Smith Chart',
             mount: '#chartDiv',
+            backgroundColor: 'white',
             fontFamily: 'sans-serif',
-            fontSize: 14,
-            pngBackground: 'white'
+            fontSize: 14
         };
 
-        nP.smithChart(plot);
-        // const chart = nP.smithChart(plot);
+        const chart = nP.smithChart(plot);
         // chart.setTxtChartTitleStyle({ fill: 'red', fontStyle: 'italic' });
     </script>
 </body>

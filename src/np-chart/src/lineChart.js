@@ -1,3 +1,4 @@
+// Modified: 2026-06-27
 import * as d3 from 'd3';
 
 export function lineChart(options = {}) {
@@ -49,9 +50,15 @@ export function lineChart(options = {}) {
                 showGrid = true,
                 gridColor = '#e0e0e0',
                 traceColor = true, // true for color, false for gray
+                traceWidth = 2,
+                pointRadius = 3,
+                labelFontSize = 11,
+                labelColor,
                 width = 700,
                 height = 450,
                 margin = { top: 35, right: 80, bottom: 55, left: 75 },
+                plotBorderColor = 'black',
+                plotBorderWidth = 1,
 
                 // Raw ranges (may be undefined, handled later)
                 xRange: rawXRange,
@@ -63,6 +70,7 @@ export function lineChart(options = {}) {
                 containerFontSizePx,
 
                 // Default background
+                backgroundColor,
                 pngBackground = 'transparent'
 
             } = options;
@@ -70,6 +78,7 @@ export function lineChart(options = {}) {
             // Starting font sizes since d3.axisBottom and d3.axisLeft will override the container styles
             const effectiveTitle = chartTitle ?? title;
             const effectiveFontSize = containerFontSizePx ?? fontSize;
+            const effectiveBackgroundColor = backgroundColor ?? pngBackground;
             const axisFontPx = effectiveFontSize;
             let txtLabels = d3.selectAll([]);
 
@@ -185,7 +194,7 @@ export function lineChart(options = {}) {
                 .attr('y', 0)
                 .attr('width', width)
                 .attr('height', height)
-                .attr('fill', pngBackground === 'transparent' ? 'none' : pngBackground)
+                .attr('fill', effectiveBackgroundColor === 'transparent' ? 'none' : effectiveBackgroundColor)
                 .attr('class', 'svgRectClass');
 
             // Ensure container is positioned correctly
@@ -243,10 +252,10 @@ export function lineChart(options = {}) {
                     const ctx = canvas.getContext("2d");
 
                     // ------ NEW: optional background fill (defaults to transparent) ------
-                    if (pngBackground && pngBackground !== 'transparent') {
+                    if (effectiveBackgroundColor && effectiveBackgroundColor !== 'transparent') {
                         ctx.save();
                         ctx.globalCompositeOperation = 'source-over';
-                        ctx.fillStyle = pngBackground;    // e.g., 'white', '#fff', 'rgba(0,0,0,0.5)'
+                        ctx.fillStyle = effectiveBackgroundColor;    // e.g., 'white', '#fff', 'rgba(0,0,0,0.5)'
                         ctx.fillRect(0, 0, canvas.width, canvas.height);
                         ctx.restore();
                     }
@@ -318,7 +327,8 @@ export function lineChart(options = {}) {
                 .attr('width', innerWidth)
                 .attr('height', innerHeight)
                 .attr('fill', 'none')
-                .attr('stroke', 'black');
+                .attr('stroke', plotBorderColor)
+                .attr('stroke-width', plotBorderWidth);
 
             const xAxisGroup = g.append('g')
                 .attr('transform', `translate(0,${xAxisY})`)
@@ -377,7 +387,7 @@ export function lineChart(options = {}) {
                 .attr('d', d => line(d.yValues))
                 .attr('fill', 'none')
                 .attr('stroke', d => color(d.yName))
-                .attr('stroke-width', 2);
+                .attr('stroke-width', traceWidth);
 
             // Points
             if (showPoints) {
@@ -388,7 +398,7 @@ export function lineChart(options = {}) {
                     .join('circle')
                     .attr('cx', d => x(d.xValue))
                     .attr('cy', d => y(d.yValue))
-                    .attr('r', 3)
+                    .attr('r', pointRadius)
                     .attr('fill', function (d, i, nodes) {
                         const groupData = d3.select(nodes[i].parentNode).datum();
                         return color(groupData.yName);
@@ -434,7 +444,8 @@ export function lineChart(options = {}) {
                     })
                     .attr('dy', '0.35em')
                     .attr('class', 'txtLabel')
-                    .style('font-size', '11px')
+                    .style('font-size', `${labelFontSize}px`)
+                    .style('fill', labelColor || null)
                     .text(d => d.yName);
             }
 

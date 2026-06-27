@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<!-- Modified: 2026-06-27 -->
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>mteeDelevopment</title>
+    <script src="../dist/nP.js"></script>
+</head>
+
+<body>
+    <div id="tableDiv"></div>
+    <div id="chartDiv"></div>
+    <div id="smithDiv"></div>
+
+    <script>
+        var g = nP.global;
+        g.fList = g.fGen(1e9, 10e9, 101);
+
+        var tee = nP.mtee();
+
+        var test = nP.nodal(
+            [tee, 1, 2, 3],
+            ['out', 1, 2, 3]
+        );
+
+        var tableOut = test.out('s11dB', 's21dB', 's31dB');
+        var smithOut = test.out('s11Re', 's11Im', 's22Re', 's22Im', 's33Re', 's33Im');
+
+        const table = nP.lineTable({
+            inputTable: [tableOut],
+            title: 'Microstrip Tee',
+            mount: '#tableDiv',
+            metricPrefix: 'giga',
+            backgroundColor: 'white',
+            fontFamily: 'sans-serif',
+            fontSize: 14
+        });
+
+        const chart = nP.lineChart({
+            inputTable: [tableOut],
+            title: 'Microstrip Tee',
+            mount: '#chartDiv',
+            metricPrefix: 'giga',
+            backgroundColor: 'white',
+            fontFamily: 'sans-serif',
+            fontSize: 14
+        });
+
+        const smithChart = nP.smithChart({
+            inputTable: [smithOut],
+            title: 'Microstrip Tee Smith Chart',
+            mount: '#smithDiv',
+            metricPrefix: 'giga',
+            backgroundColor: 'white',
+            fontFamily: 'sans-serif',
+            fontSize: 14
+        });
+    </script>
+</body>
+
+</html>

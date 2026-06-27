@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Modified: 2026-06-26 -->
+<!-- Modified: 2026-06-27 -->
 <html>
 	<head>
 		<meta charset="utf-8">
@@ -33,7 +33,7 @@ var LCLowPass = nP.nodal(
 var Plot = LCLowPass.out('s11dB', 's21dB');
 
 // plot the results
-nP.lineChart({inputTable: [Plot]});
+var chart1 = nP.lineChart({inputTable: [Plot]});
 
 		</script>
 	</body>

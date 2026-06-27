@@ -1,3 +1,4 @@
+// Modified: 2026-06-27
 import * as d3 from 'd3';
 
 export function smithChart(options = {}) {
@@ -20,19 +21,28 @@ export function smithChart(options = {}) {
 		metricPrefix = 'giga',
 		showPoints = true,
 		showLabels = true,
+		showGrid = true,
 		gridColor = '#b8b8b8',
 		traceColor = true,
+		traceWidth = 2,
+		pointRadius = 3,
+		labelFontSize = 11,
+		labelColor,
 		width = 600,
 		height = 600,
 		margin = { top: 40, right: 40, bottom: 40, left: 40 },
+		unitCircleColor = 'black',
+		unitCircleWidth = 1.5,
 		fontFamily = 'sans-serif',
 		fontSize = 14,
 		containerFontSizePx,
+		backgroundColor,
 		pngBackground = 'transparent'
 	} = options;
 
 	const effectiveTitle = chartTitle ?? title;
 	const effectiveFontSize = containerFontSizePx ?? fontSize;
+	const effectiveBackgroundColor = backgroundColor ?? pngBackground;
 	let txtLabels = d3.selectAll([]);
 
 	const pickScale = {
@@ -119,7 +129,7 @@ export function smithChart(options = {}) {
 		.attr('y', 0)
 		.attr('width', width)
 		.attr('height', height)
-		.attr('fill', pngBackground === 'transparent' ? 'none' : pngBackground)
+		.attr('fill', effectiveBackgroundColor === 'transparent' ? 'none' : effectiveBackgroundColor)
 		.attr('class', 'smith-chart-background');
 
 	container.style('position', 'relative');
@@ -173,10 +183,10 @@ export function smithChart(options = {}) {
 			const ctx = canvas.getContext('2d');
 
 			// ------ NEW: optional background fill (defaults to transparent) ------
-			if (pngBackground && pngBackground !== 'transparent') {
+			if (effectiveBackgroundColor && effectiveBackgroundColor !== 'transparent') {
 				ctx.save();
 				ctx.globalCompositeOperation = 'source-over';
-				ctx.fillStyle = pngBackground;
+				ctx.fillStyle = effectiveBackgroundColor;
 				ctx.fillRect(0, 0, canvas.width, canvas.height);
 				ctx.restore();
 			}
@@ -225,6 +235,7 @@ export function smithChart(options = {}) {
 
 	const smithGridGroup = g.append('g')
 		.attr('class', 'smith-grid')
+		.style('visibility', showGrid ? 'visible' : 'hidden')
 		.attr('clip-path', `url(#${clipId})`);
 
 	smithGridGroup.append('line')
@@ -262,8 +273,8 @@ export function smithChart(options = {}) {
 		.attr('cy', center)
 		.attr('r', radius)
 		.attr('fill', 'none')
-		.attr('stroke', 'black')
-		.attr('stroke-width', 1.5)
+		.attr('stroke', unitCircleColor)
+		.attr('stroke-width', unitCircleWidth)
 		.attr('class', 'smith-unit-circle');
 
 	const traceGroup = g.append('g')
@@ -282,7 +293,7 @@ export function smithChart(options = {}) {
 		.attr('d', d => line(d.values))
 		.attr('fill', 'none')
 		.attr('stroke', d => color(d.traceName))
-		.attr('stroke-width', 2);
+		.attr('stroke-width', traceWidth);
 
 	if (showPoints) {
 		let tooltip;
@@ -292,7 +303,7 @@ export function smithChart(options = {}) {
 			.join('circle')
 			.attr('cx', d => gammaToPoint(d)[0])
 			.attr('cy', d => gammaToPoint(d)[1])
-			.attr('r', 3)
+			.attr('r', pointRadius)
 			.attr('fill', d => color(d.traceName))
 			.on('mouseenter', (event, d) => {
 				container.select('.tooltip').remove();
@@ -335,7 +346,8 @@ export function smithChart(options = {}) {
 			})
 			.attr('dy', '0.35em')
 			.attr('class', 'txtLabel')
-			.style('font-size', '11px')
+			.style('font-size', `${labelFontSize}px`)
+			.style('fill', labelColor || null)
 			.text(d => d.traceName);
 	}
 

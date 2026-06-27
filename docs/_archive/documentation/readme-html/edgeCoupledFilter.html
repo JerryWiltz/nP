@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Modified: 2026-06-24 -->
+<!-- Modified: 2026-06-27 -->
 <html>
 	<head>
 		<meta charset="utf-8">
@@ -41,13 +41,13 @@ var filtOut = filt.out('s21dB','s11dB');
 var plot = {title:'Edge Coupled Filter', inputTable: [filtOut]};
 
 // plot the data
-nP.lineChart(plot);
+var chart1 = nP.lineChart(plot);
 
 // set up the table
 var table = {title:'Edge Coupled Filter', inputTable: [filtOut]};
 
 // tabulate the data
-nP.lineTable(table);
+var table1 = nP.lineTable(table);
 
 		</script>
 	</body>

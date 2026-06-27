@@ -1,8 +1,10 @@
+// Modified: 2026-06-27
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
+import {C0, EPSILON0, INCH_TO_METER, MIL_TO_METER, VACUUM_IMPEDANCE} from './constants';
 
-export function mclin(Width = 10 * 0.0254, Space = 63 * 0.0254, Height = 63 * 0.0254, Thickness = 0.0012 * 0.0254, Length = 0.180 * 0.0254, er = 4, rho = 1, tand = 0.001 ) { // 1.4732 is the quarter wavelength at 2GHz, (1.3412 at 2.2 GHz)
+export function mclin(Width = 10 * MIL_TO_METER, Space = 63 * MIL_TO_METER, Height = 63 * MIL_TO_METER, Thickness = 1.2 * MIL_TO_METER, Length = 0.180 * INCH_TO_METER, er = 4, rho = 1, tand = 0.001 ) { // 1.4732 is the quarter wavelength at 2GHz, (1.3412 at 2.2 GHz)
 	var ctlin = new nPort;
 	var frequencyList = global.fList, Ro = global.Ro;
 	var Zo = complex(Ro,0), two = complex(2,0), freqCount = 0, Zoemclin = [], Zoomclin = [];
@@ -15,8 +17,8 @@ export function mclin(Width = 10 * 0.0254, Space = 63 * 0.0254, Height = 63 * 0.
 	var alpha = 0, betaOe = 0, betaOo = 0, gammaOe = {}, gammaOo = {};
 
 	// come up with Zo and eref of a microstrip line for a given Width/Height
-	var epsilon0 = 8.854187817e-12;
-	var c0 = 2.99792458e8;
+	var epsilon0 = EPSILON0;
+	var c0 = C0;
 	var pi = Math.PI;
 	var wOverH = Width/Height;
 	var delWOverH = Thickness > 0.0 ? ( Width/Height <= 1/(2*pi) ? (1.25/pi)*(Thickness/Height)*(1+Math.log(4*pi*Width/Thickness)) : (1.25/pi)*(Thickness/Height)*(1+Math.log(2*Height/Thickness)) ) : 0.0;
@@ -24,7 +26,7 @@ export function mclin(Width = 10 * 0.0254, Space = 63 * 0.0254, Height = 63 * 0.
 	var Q = ((er-1)/4.6)*(Thickness/Height)*(1/Math.sqrt(Width/Height));
 	var Fwh = 1/Math.sqrt(1+10*Width/Height);
 	var ere = ((er+1)/2)+((er-1)/2)*Fwh-Q;
-	var ZoER = Width/Height <= 1.0 ? (60/Math.sqrt(ere))*Math.log(8/weOverH+0.25*weOverH) : (376.7/Math.sqrt(ere))*(1/(weOverH+1.393+0.667*Math.log(weOverH+1.444 )));
+	var ZoER = Width/Height <= 1.0 ? (60/Math.sqrt(ere))*Math.log(8/weOverH+0.25*weOverH) : (VACUUM_IMPEDANCE/Math.sqrt(ere))*(1/(weOverH+1.393+0.667*Math.log(weOverH+1.444 )));
 
 	// come up with even and odd mode W/H due to strip thickness
 	var delThickness = Height * ( 1/er ) * (Thickness/Height)/(Space/Height);
@@ -33,7 +35,7 @@ export function mclin(Width = 10 * 0.0254, Space = 63 * 0.0254, Height = 63 * 0.
 	var WtooOverH = WtoeOverH + delThickness/Height;
 
 	// come up with Zo and ere of a microstrip line for given Width/Height with er = 1, ie air.
-	var ZoAIR = Width/Height <= 1.0 ? (60/Math.sqrt(1))*Math.log(8/weOverH+0.25*weOverH) : (376.7/Math.sqrt(1))*(1/(weOverH+1.393+0.667*Math.log(weOverH+1.444 )));
+	var ZoAIR = Width/Height <= 1.0 ? (60/Math.sqrt(1))*Math.log(8/weOverH+0.25*weOverH) : (VACUUM_IMPEDANCE/Math.sqrt(1))*(1/(weOverH+1.393+0.667*Math.log(weOverH+1.444 )));
 
 	// come up with even and odd mode capacitances with er = ER
 	var coth = function (x) { return 1/Math.tanh(x); };

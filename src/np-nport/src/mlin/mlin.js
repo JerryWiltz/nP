@@ -1,8 +1,10 @@
+// Modified: 2026-06-27
 import { complex } from '../../../np-math/src/complex';
 import { nPort } from '../nPort';
 import { global } from '../../../np-global/src/global';
+import { C0, COPPER_RESISTIVITY, INCH_TO_METER, MU0, VACUUM_IMPEDANCE } from './constants';
 
-export function mlin(Width = 0.023 * 0.0254, Height = 0.025 * 0.0254, Length = 0.5 * 0.0254, Thickness = 0.0000125 * 0.0254, er = 10, rho = 0, tand = 0.000) {
+export function mlin(Width = 0.023 * INCH_TO_METER, Height = 0.025 * INCH_TO_METER, Length = 0.5 * INCH_TO_METER, Thickness = 0.0000125 * INCH_TO_METER, er = 10, rho = 0, tand = 0.000) {
 	// this from Gupta page 60 at the bottom
 	var mlin = new nPort;
 	var frequencyList = global.fList, Ro = global.Ro;
@@ -16,7 +18,7 @@ export function mlin(Width = 0.023 * 0.0254, Height = 0.025 * 0.0254, Length = 0
 	var Q = ((er - 1) / 4.6) * (Thickness / Height) * (1 / Math.sqrt(Width / Height));
 	var Fwh = 1 / Math.sqrt(1 + 10 * Width / Height);
 	var ere = ((er + 1) / 2) + ((er - 1) / 2) * Fwh - Q;
-	var Z = Width / Height <= 1.0 ? (60 / Math.sqrt(ere)) * Math.log(8 / weOverH + 0.25 * weOverH) : (376.7 / Math.sqrt(ere)) * (1 / (weOverH + 1.393 + 0.667 * Math.log(weOverH + 1.444)));
+	var Z = Width / Height <= 1.0 ? (60 / Math.sqrt(ere)) * Math.log(8 / weOverH + 0.25 * weOverH) : (VACUUM_IMPEDANCE / Math.sqrt(ere)) * (1 / (weOverH + 1.393 + 0.667 * Math.log(weOverH + 1.444)));
 
 	// compute dispersive ZoT ----- INTERLUDE per Gupta page 64, I need stripline version of Zo from pages 57 and 28 with b = 2h
 	var b = 2 * Height, x = Thickness / b, m = 2 * (1 / (1 + (2 / 3) * (x / (1 - x))));
@@ -25,7 +27,7 @@ export function mlin(Width = 0.023 * 0.0254, Height = 0.025 * 0.0254, Length = 0
 	var ZoT = 2 * (1 / Math.sqrt(er)) * 30 * Math.log(1 + (4 / pi) * (b - Thickness) / wPrime * (8 / pi * (b - Thickness) / wPrime + Math.sqrt((8 / pi * (b - Thickness) / wPrime) ** 2 + 6.27)));
 
 	// back to microstrip now that I have ZoT
-	var hMils = Height * 1000 / 0.0254;
+	var hMils = Height * 1000 / INCH_TO_METER;
 	var fpGHz = 15.66 * Z / hMils; // fGHz = f/1e9;
 	var G = Math.sqrt((Z - 5) / 60) + 0.004 * Z;
 	var Zf = 0;
@@ -37,7 +39,7 @@ export function mlin(Width = 0.023 * 0.0254, Height = 0.025 * 0.0254, Length = 0
 	var Ad = 27.3 * er / (er - 1) * (ere - 1) / Math.sqrt(ere) * tand / 0.05;
 
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
-		var Rs = Math.sqrt(pi * frequencyList[freqCount] * 4 * pi * 1e-7 * rho * 1.72e-8);
+		var Rs = Math.sqrt(pi * frequencyList[freqCount] * MU0 * rho * COPPER_RESISTIVITY);
 		var Ac = Thickness > 0.0 && rho > 0.0 ? (Width / Height <= 1.0 ? 1.38 * A * (Rs / (Height * Z)) * (32 - weOverH) ** 2 / (32 + weOverH) ** 2 : 6.1e-5 * A * (Rs * Z * ere / Height) * (weOverH + (0.667 * weOverH) / (weOverH + 1.44))) : 0.0;
 
 		Zf = ZoT - (ZoT - Z) / (1 + G * ((frequencyList[freqCount] / 1e9) / fpGHz) ** 2);
@@ -50,7 +52,7 @@ export function mlin(Width = 0.023 * 0.0254, Height = 0.025 * 0.0254, Length = 0
 		Ctlin = two.mul(Zmlin).mul(Zo);
 
 		alpha = (Ac + Ad) / 8.68588;
-		beta = Math.sqrt(eref) * 2 * Math.PI * frequencyList[freqCount] / 2.997925e8;
+		beta = Math.sqrt(eref) * 2 * Math.PI * frequencyList[freqCount] / C0;
 		gamma = complex(alpha * Length, beta * Length);
 
 		Ds = Ctlin.mul(gamma.coshCplx()).add(Btlin.mul(gamma.sinhCplx()));

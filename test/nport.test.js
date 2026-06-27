@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { global } from '../src/np-global/index.js';
-import { seR, Open, Short, Load, cascade, mclin } from '../src/np-nport/index.js';
+import { seR, Open, Short, Load, cascade, mlin, mclin, mtee } from '../src/np-nport/index.js';
 
 const closeTo = (actual, expected, tolerance = 1e-12) => {
 	assert.ok(
@@ -114,5 +114,38 @@ test('mclin creates a finite reciprocal four-port coupled microstrip line', () =
 		closeTo(out[1][2], -13.06299863968385);
 		closeTo(out[2][1], -0.5054093709789177);
 		closeTo(out[2][2], -11.546111704687643);
+	});
+});
+
+test('default microstrip constructors create finite n-port objects', () => {
+	withGlobal({ fList: [1e9, 2e9], Ro: 50 }, () => {
+		const line = mlin();
+		const coupledLine = mclin();
+		const tee = mtee();
+
+		assert.equal(line.getspars().length, 2);
+		assert.equal(line.getspars()[0].length, 5);
+
+		assert.equal(coupledLine.getspars().length, 2);
+		assert.equal(coupledLine.getspars()[0].length, 17);
+
+		assert.equal(tee.getspars().length, 2);
+		assert.equal(tee.getspars()[0].length, 10);
+		assert.ok(Number.isFinite(tee.Ct));
+		closeTo(tee.microstrip.Width, 0.023 * 0.0254);
+		closeTo(tee.microstrip.Height, 0.025 * 0.0254);
+		closeTo(tee.microstrip.Thickness, 0.0000125 * 0.0254);
+		assert.equal(tee.microstrip.er, 10);
+		assert.equal(tee.microstrip.rho, 0);
+		assert.equal(tee.microstrip.tand, 0);
+
+		for (const network of [line, coupledLine, tee]) {
+			for (const row of network.getspars()) {
+				for (let col = 1; col < row.length; col++) {
+					assert.ok(Number.isFinite(row[col].getR()));
+					assert.ok(Number.isFinite(row[col].getI()));
+				}
+			}
+		}
 	});
 });

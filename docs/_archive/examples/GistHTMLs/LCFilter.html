@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<!-- Modified: 2026-06-26 -->
+<!-- Modified: 2026-06-27 -->
 <html>
 	<head>
+		<meta name="viewport" content="width=device-width">
 		<meta charset="utf-8">
 		<title>Low Pass Filter with LC</title>
 	</head>
@@ -53,7 +54,7 @@ var fullInputObject = {
 };
 
 // plot the filter response
-nP.lineChart(fullInputObject);
+var chart1 = nP.lineChart(fullInputObject);
 
 // show the LC components
 var LC = document.createElement('div');

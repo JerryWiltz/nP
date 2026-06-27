@@ -1,4 +1,4 @@
-<!-- Modified: 2026-06-24 -->
+<!-- Modified: 2026-06-27 -->
 <!DOCTYPE html>
 <html>
 	<head>
@@ -63,7 +63,7 @@ var plot = wilkinson.out('s21dB','s23dB');
 
 // plot the frequency response
 nP.log('Wilkinson Power Divider Demonstration');
-nP.lineChart({inputTable: [plot], yRange: [-60, 5], title: 'Wilkinson Power Divider'});
+var chart1 = nP.lineChart({inputTable: [plot], yRange: [-60, 5], title: 'Wilkinson Power Divider'});
 			</textarea>
 				<img class="image" src="../readme-image/wilkinson-web.png" alt="Wilkinson power divider">
 				<div class='outputBox'><div>

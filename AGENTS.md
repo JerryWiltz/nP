@@ -1,7 +1,7 @@
 codex resume 019e89f1-41f2-70a0-85b9-da332da8146b
 
 # AGENTS.md
-<!-- Modified: 2026-06-24 -->
+<!-- Modified: 2026-06-27 -->
 
 Repository guide for agents working in the `nP` repo.
 
@@ -136,6 +136,20 @@ port 4  ---- coupled line ----  port 3
 
 With input at port 1, port 2 is the through port, port 4 is the coupled port, and port 3 is the isolated port. In `nP.nodal(...)`, connect these components in that same order, for example `[coupledLine, 1, 2, 3, 4]`.
 
+## Microstrip Physical Constants
+
+Shared microstrip constants live in `src/np-nport/src/mlin/constants.js`. Use those names consistently in `mlin()`, `mclin()`, `mtee()`, tests, dev notes, and future microstrip constructors.
+
+- `INCH_TO_METER`
+- `MIL_TO_METER`
+- `C0`
+- `EPSILON0`
+- `MU0`
+- `VACUUM_IMPEDANCE`
+- `COPPER_RESISTIVITY`
+
+Do not create alternate spellings for the same physical constant in nearby constructors. If a paper uses a different symbol, map it to the shared nP name in comments or raw notes, for example `eta_0 = VACUUM_IMPEDANCE`.
+
 ## Repository Layout
 
 - `src/index.js`: root public module entry point. Re-exports the subpackages.
@@ -150,7 +164,8 @@ With input at port 1, port 2 is the through port, port 4 is the coupled port, an
 - `test/`: Node tests for math, global settings, and nPort behavior.
 - `dev/`: local browser development and verification pages. These files are manual harnesses, not source of truth.
   - `dev/lineChartDevelopment.html`, `dev/lineTableDevelopment.html`, and `dev/smithChartDevelopment.html` load `../dist/nP.js` and exercise the built chart/table APIs.
-  - `dev/mlinDevelopment.html`, `dev/mclinDevelopment.html`, `dev/matrixDevelopment.html`, and `dev/nodeDevelopment.html` are manual development pages for focused RF/math workflows.
+  - `dev/mlinDevelopment.html`, `dev/mclinDevelopment.html`, `dev/mteeDelevopment.html`, `dev/matrixDevelopment.html`, and `dev/nodeDevelopment.html` are manual development pages for focused RF/math workflows.
+  - `dev/raw/` holds raw technical source material, equation notes, and early derivations for work such as `mtee()`.
 
 The old subpackage-level build artifacts under `src/np-*` have been removed. Treat the root package and root Rollup config as the only current build path.
 
@@ -190,7 +205,7 @@ The test command uses `scripts/extensionless-loader.mjs` so Node can run source 
 - `nPort.out()` returns a table with a header row followed by numeric data rows. `lineChart()` and `lineTable()` consume this table shape.
 - Preserve the public `.x`/`.y` fields on complex objects, `.m` on matrix objects, and `.spars`/`.global` on nPort objects.
 - In `dev/` HTML files, format `nP.nodal(...)` calls with one connection argument per line so circuit connections are easy to read.
-- `lineChart()`, `smithChart()`, and `lineTable()` share common option names where possible: `inputTable`, `mount`, `title`, `containerId`, `svgId`, `metricPrefix`, `fontFamily`, `fontSize`, `containerFontSizePx`, and `pngBackground`. Keep older aliases such as `chartTitle`, `tableTitle`, and `headColor` working unless the user explicitly requests a breaking cleanup.
+- `lineChart()`, `smithChart()`, and `lineTable()` share common option names where possible: `inputTable`, `mount`, `title`, `containerId`, `svgId`, `metricPrefix`, `fontFamily`, `fontSize`, `containerFontSizePx`, and `backgroundColor`. Keep older aliases such as `pngBackground`, `chartTitle`, `tableTitle`, and `headColor` working unless the user explicitly requests a breaking cleanup.
 - `lineChart()` consumes numeric x/y tables, supports linear/log x and y scales, origin or edge axis placement, hover values, chart labels, plot border styling, and PNG copy.
 - `smithChart()` consumes paired real/imaginary columns such as `s11Re`, `s11Im`, `s22Re`, and `s22Im`. It draws a square Smith chart with SVG resistance/reactance circles, trace labels, hover values for frequency/Re/Im/magnitude/angle, and PNG copy.
 - `lineTable()` consumes the same table shape returned by `nPort.out(...)`, renders SVG tables, and includes clipboard-based PNG and TSV copy behavior.

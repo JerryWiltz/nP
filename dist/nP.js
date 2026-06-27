@@ -4831,6 +4831,8 @@
 
 	Transform.prototype;
 
+	// Modified: 2026-06-27
+
 	function lineChart(options = {}) {
 	            // ======== Options & defaults ========
 	            const {
@@ -4880,9 +4882,15 @@
 	                showGrid = true,
 	                gridColor = '#e0e0e0',
 	                traceColor = true, // true for color, false for gray
+	                traceWidth = 2,
+	                pointRadius = 3,
+	                labelFontSize = 11,
+	                labelColor,
 	                width = 700,
 	                height = 450,
 	                margin = { top: 35, right: 80, bottom: 55, left: 75 },
+	                plotBorderColor = 'black',
+	                plotBorderWidth = 1,
 
 	                // Raw ranges (may be undefined, handled later)
 	                xRange: rawXRange,
@@ -4894,6 +4902,7 @@
 	                containerFontSizePx,
 
 	                // Default background
+	                backgroundColor,
 	                pngBackground = 'transparent'
 
 	            } = options;
@@ -4901,6 +4910,7 @@
 	            // Starting font sizes since d3.axisBottom and d3.axisLeft will override the container styles
 	            const effectiveTitle = chartTitle ?? title;
 	            const effectiveFontSize = containerFontSizePx ?? fontSize;
+	            const effectiveBackgroundColor = backgroundColor ?? pngBackground;
 	            const axisFontPx = effectiveFontSize;
 	            let txtLabels = selectAll([]);
 
@@ -5016,7 +5026,7 @@
 	                .attr('y', 0)
 	                .attr('width', width)
 	                .attr('height', height)
-	                .attr('fill', pngBackground === 'transparent' ? 'none' : pngBackground)
+	                .attr('fill', effectiveBackgroundColor === 'transparent' ? 'none' : effectiveBackgroundColor)
 	                .attr('class', 'svgRectClass');
 
 	            // Ensure container is positioned correctly
@@ -5074,10 +5084,10 @@
 	                    const ctx = canvas.getContext("2d");
 
 	                    // ------ NEW: optional background fill (defaults to transparent) ------
-	                    if (pngBackground && pngBackground !== 'transparent') {
+	                    if (effectiveBackgroundColor && effectiveBackgroundColor !== 'transparent') {
 	                        ctx.save();
 	                        ctx.globalCompositeOperation = 'source-over';
-	                        ctx.fillStyle = pngBackground;    // e.g., 'white', '#fff', 'rgba(0,0,0,0.5)'
+	                        ctx.fillStyle = effectiveBackgroundColor;    // e.g., 'white', '#fff', 'rgba(0,0,0,0.5)'
 	                        ctx.fillRect(0, 0, canvas.width, canvas.height);
 	                        ctx.restore();
 	                    }
@@ -5149,7 +5159,8 @@
 	                .attr('width', innerWidth)
 	                .attr('height', innerHeight)
 	                .attr('fill', 'none')
-	                .attr('stroke', 'black');
+	                .attr('stroke', plotBorderColor)
+	                .attr('stroke-width', plotBorderWidth);
 
 	            const xAxisGroup = g.append('g')
 	                .attr('transform', `translate(0,${xAxisY})`)
@@ -5208,7 +5219,7 @@
 	                .attr('d', d => line$1(d.yValues))
 	                .attr('fill', 'none')
 	                .attr('stroke', d => color(d.yName))
-	                .attr('stroke-width', 2);
+	                .attr('stroke-width', traceWidth);
 
 	            // Points
 	            if (showPoints) {
@@ -5219,7 +5230,7 @@
 	                    .join('circle')
 	                    .attr('cx', d => x(d.xValue))
 	                    .attr('cy', d => y(d.yValue))
-	                    .attr('r', 3)
+	                    .attr('r', pointRadius)
 	                    .attr('fill', function (d, i, nodes) {
 	                        const groupData = select(nodes[i].parentNode).datum();
 	                        return color(groupData.yName);
@@ -5265,7 +5276,8 @@
 	                    })
 	                    .attr('dy', '0.35em')
 	                    .attr('class', 'txtLabel')
-	                    .style('font-size', '11px')
+	                    .style('font-size', `${labelFontSize}px`)
+	                    .style('fill', labelColor || null)
 	                    .text(d => d.yName);
 	            }
 
@@ -5389,6 +5401,8 @@
 
 	        }
 
+	// Modified: 2026-06-27
+
 	function smithChart(options = {}) {
 		// ======== Options & defaults ========
 		const {
@@ -5409,19 +5423,28 @@
 			metricPrefix = 'giga',
 			showPoints = true,
 			showLabels = true,
+			showGrid = true,
 			gridColor = '#b8b8b8',
 			traceColor = true,
+			traceWidth = 2,
+			pointRadius = 3,
+			labelFontSize = 11,
+			labelColor,
 			width = 600,
 			height = 600,
 			margin = { top: 40, right: 40, bottom: 40, left: 40 },
+			unitCircleColor = 'black',
+			unitCircleWidth = 1.5,
 			fontFamily = 'sans-serif',
 			fontSize = 14,
 			containerFontSizePx,
+			backgroundColor,
 			pngBackground = 'transparent'
 		} = options;
 
 		const effectiveTitle = chartTitle ?? title;
 		const effectiveFontSize = containerFontSizePx ?? fontSize;
+		const effectiveBackgroundColor = backgroundColor ?? pngBackground;
 		let txtLabels = selectAll([]);
 
 		const pickScale = {
@@ -5508,7 +5531,7 @@
 			.attr('y', 0)
 			.attr('width', width)
 			.attr('height', height)
-			.attr('fill', pngBackground === 'transparent' ? 'none' : pngBackground)
+			.attr('fill', effectiveBackgroundColor === 'transparent' ? 'none' : effectiveBackgroundColor)
 			.attr('class', 'smith-chart-background');
 
 		container.style('position', 'relative');
@@ -5562,10 +5585,10 @@
 				const ctx = canvas.getContext('2d');
 
 				// ------ NEW: optional background fill (defaults to transparent) ------
-				if (pngBackground && pngBackground !== 'transparent') {
+				if (effectiveBackgroundColor && effectiveBackgroundColor !== 'transparent') {
 					ctx.save();
 					ctx.globalCompositeOperation = 'source-over';
-					ctx.fillStyle = pngBackground;
+					ctx.fillStyle = effectiveBackgroundColor;
 					ctx.fillRect(0, 0, canvas.width, canvas.height);
 					ctx.restore();
 				}
@@ -5614,6 +5637,7 @@
 
 		const smithGridGroup = g.append('g')
 			.attr('class', 'smith-grid')
+			.style('visibility', showGrid ? 'visible' : 'hidden')
 			.attr('clip-path', `url(#${clipId})`);
 
 		smithGridGroup.append('line')
@@ -5651,8 +5675,8 @@
 			.attr('cy', center)
 			.attr('r', radius)
 			.attr('fill', 'none')
-			.attr('stroke', 'black')
-			.attr('stroke-width', 1.5)
+			.attr('stroke', unitCircleColor)
+			.attr('stroke-width', unitCircleWidth)
 			.attr('class', 'smith-unit-circle');
 
 		const traceGroup = g.append('g')
@@ -5671,7 +5695,7 @@
 			.attr('d', d => line$1(d.values))
 			.attr('fill', 'none')
 			.attr('stroke', d => color(d.traceName))
-			.attr('stroke-width', 2);
+			.attr('stroke-width', traceWidth);
 
 		if (showPoints) {
 			let tooltip;
@@ -5681,7 +5705,7 @@
 				.join('circle')
 				.attr('cx', d => gammaToPoint(d)[0])
 				.attr('cy', d => gammaToPoint(d)[1])
-				.attr('r', 3)
+				.attr('r', pointRadius)
 				.attr('fill', d => color(d.traceName))
 				.on('mouseenter', (event, d) => {
 					container.select('.tooltip').remove();
@@ -5724,7 +5748,8 @@
 				})
 				.attr('dy', '0.35em')
 				.attr('class', 'txtLabel')
-				.style('font-size', '11px')
+				.style('font-size', `${labelFontSize}px`)
+				.style('fill', labelColor || null)
 				.text(d => d.traceName);
 		}
 
@@ -5910,6 +5935,8 @@
 		outputBox === undefined ? document.body.appendChild(pre) : outputBox.appendChild(pre);
 	}
 
+	// Modified: 2026-06-27
+
 	function lineTable(options = {}) {
 			// ======== Options & defaults ========
 			const {
@@ -5949,6 +5976,12 @@
 				tableTitle,
 				headColor = 'color', // 'color' (blue) | 'gray'
 				headerColor,
+				headerFill,
+				cellFill = 'white',
+				cellBorderColor = 'black',
+				cellBorderWidth = 1,
+				tableBorderColor = 'none',
+				tableBorderWidth = 1,
 				showWHAlert = false, // true => alert width/height
 				// Sizing
 				columnWidth = 100,
@@ -5957,11 +5990,13 @@
 				fontFamily = 'sans-serif',
 				fontSize = 14,
 				containerFontSizePx,
+				backgroundColor,
 				pngBackground = 'white'
 			} = options;
 
 			const effectiveTitle = tableTitle ?? title;
 			const effectiveFontSize = containerFontSizePx ?? fontSize;
+			const effectiveBackgroundColor = backgroundColor ?? pngBackground;
 			const effectiveHeaderColor = headerColor ?? headColor;
 
 			// ======== Helpers ========
@@ -6015,7 +6050,7 @@
 				alert(`The table dimensions: Width is ${outerWidth}, Height is ${outerHeight}`);
 			}
 
-			const headerFill = effectiveHeaderColor === 'gray' ? '#d4d4d4' : '#add8e6';
+			const effectiveHeaderFill = headerFill ?? (effectiveHeaderColor === 'gray' ? '#d4d4d4' : '#add8e6');
 			const titleVisible = effectiveTitle ? 'visible' : 'hidden';
 
 			// Y offsets for each stacked table (inside the drawing area)
@@ -6064,8 +6099,8 @@
 						canvas.width = width;
 						canvas.height = height;
 						const ctx = canvas.getContext('2d', { willReadFrequently: false });
-						if (pngBackground && pngBackground !== 'transparent') {
-							ctx.fillStyle = pngBackground;
+						if (effectiveBackgroundColor && effectiveBackgroundColor !== 'transparent') {
+							ctx.fillStyle = effectiveBackgroundColor;
 							ctx.fillRect(0, 0, width, height);
 						}
 						ctx.drawImage(img, 0, 0);
@@ -6202,14 +6237,14 @@
 					.attr('class', 'line-table-svg')
 					.attr('width', outerWidth)
 					.attr('height', outerHeight)
-					.style('background-color', pngBackground === 'transparent' ? 'transparent' : pngBackground);
+					.style('background-color', effectiveBackgroundColor === 'transparent' ? 'transparent' : effectiveBackgroundColor);
 
 				const tableBackground = svg.insert('rect', ':first-child')
 					.attr('x', 0)
 					.attr('y', 0)
 					.attr('width', outerWidth)
 					.attr('height', outerHeight)
-					.attr('fill', pngBackground === 'transparent' ? 'none' : pngBackground)
+					.attr('fill', effectiveBackgroundColor === 'transparent' ? 'none' : effectiveBackgroundColor)
 					.attr('class', 'line-table-background');
 
 			// Border
@@ -6218,8 +6253,8 @@
 				.attr('height', outerHeight)
 				.attr('class', 'line-table-border')
 				.attr('fill', 'none')
-				.attr('stroke', 'none')//black
-				.attr('stroke-width', 1);
+				.attr('stroke', tableBorderColor)
+				.attr('stroke-width', tableBorderWidth);
 
 			// Title
 			const txtTableTitle = svg.append('text')
@@ -6268,7 +6303,7 @@
 					for (let col = 0; col < cols; col++) {
 						const val = (myArray[row] || [])[col];
 						const isHeader = row === 0; // your format uses row 0 as headers
-						const fill = isHeader ? headerFill : 'white';
+						const fill = isHeader ? effectiveHeaderFill : cellFill;
 						const x = originX + (columnWidth + 3) * col;
 						const y = originY + (rowHeight + 1) * row;
 
@@ -6279,8 +6314,8 @@
 							.attr('width', (col === cols - 1 ? columnWidth + 3 - 1 : columnWidth + 3)) // last cell a tad narrower for outer stroke symmetry
 							.attr('height', rowHeight + 1)
 							.attr('fill', fill)
-							.attr('stroke', 'black')//'black'
-							.attr('stroke-width', 1)
+							.attr('stroke', cellBorderColor)
+							.attr('stroke-width', cellBorderWidth)
 							.attr('pointer-events', 'none');   // allow text selection
 
 						// Cell text
@@ -7179,7 +7214,21 @@
 		return ctlin;
 	}
 
-	function mlin(Width = 0.023 * 0.0254, Height = 0.025 * 0.0254, Length = 0.5 * 0.0254, Thickness = 0.0000125 * 0.0254, er = 10, rho = 0, tand = 0.000) {
+	// Modified: 2026-06-27
+
+	const INCH_TO_METER = 0.0254;
+	const MIL_TO_METER = 0.001 * INCH_TO_METER;
+
+	const C0 = 2.99792458e8;
+	const EPSILON0 = 8.854187817e-12;
+	const MU0 = 4 * Math.PI * 1e-7;
+	const VACUUM_IMPEDANCE = 120 * Math.PI;
+
+	const COPPER_RESISTIVITY = 1.72e-8;
+
+	// Modified: 2026-06-27
+
+	function mlin(Width = 0.023 * INCH_TO_METER, Height = 0.025 * INCH_TO_METER, Length = 0.5 * INCH_TO_METER, Thickness = 0.0000125 * INCH_TO_METER, er = 10, rho = 0, tand = 0.000) {
 		// this from Gupta page 60 at the bottom
 		var mlin = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
@@ -7193,7 +7242,7 @@
 		var Q = ((er - 1) / 4.6) * (Thickness / Height) * (1 / Math.sqrt(Width / Height));
 		var Fwh = 1 / Math.sqrt(1 + 10 * Width / Height);
 		var ere = ((er + 1) / 2) + ((er - 1) / 2) * Fwh - Q;
-		var Z = Width / Height <= 1.0 ? (60 / Math.sqrt(ere)) * Math.log(8 / weOverH + 0.25 * weOverH) : (376.7 / Math.sqrt(ere)) * (1 / (weOverH + 1.393 + 0.667 * Math.log(weOverH + 1.444)));
+		var Z = Width / Height <= 1.0 ? (60 / Math.sqrt(ere)) * Math.log(8 / weOverH + 0.25 * weOverH) : (VACUUM_IMPEDANCE / Math.sqrt(ere)) * (1 / (weOverH + 1.393 + 0.667 * Math.log(weOverH + 1.444)));
 
 		// compute dispersive ZoT ----- INTERLUDE per Gupta page 64, I need stripline version of Zo from pages 57 and 28 with b = 2h
 		var b = 2 * Height, x = Thickness / b, m = 2 * (1 / (1 + (2 / 3) * (x / (1 - x))));
@@ -7202,7 +7251,7 @@
 		var ZoT = 2 * (1 / Math.sqrt(er)) * 30 * Math.log(1 + (4 / pi) * (b - Thickness) / wPrime * (8 / pi * (b - Thickness) / wPrime + Math.sqrt((8 / pi * (b - Thickness) / wPrime) ** 2 + 6.27)));
 
 		// back to microstrip now that I have ZoT
-		var hMils = Height * 1000 / 0.0254;
+		var hMils = Height * 1000 / INCH_TO_METER;
 		var fpGHz = 15.66 * Z / hMils; // fGHz = f/1e9;
 		var G = Math.sqrt((Z - 5) / 60) + 0.004 * Z;
 		var Zf = 0;
@@ -7214,7 +7263,7 @@
 		var Ad = 27.3 * er / (er - 1) * (ere - 1) / Math.sqrt(ere) * tand / 0.05;
 
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
-			var Rs = Math.sqrt(pi * frequencyList[freqCount] * 4 * pi * 1e-7 * rho * 1.72e-8);
+			var Rs = Math.sqrt(pi * frequencyList[freqCount] * MU0 * rho * COPPER_RESISTIVITY);
 			var Ac = Thickness > 0.0 && rho > 0.0 ? (Width / Height <= 1.0 ? 1.38 * A * (Rs / (Height * Z)) * (32 - weOverH) ** 2 / (32 + weOverH) ** 2 : 6.1e-5 * A * (Rs * Z * ere / Height) * (weOverH + (0.667 * weOverH) / (weOverH + 1.44))) : 0.0;
 
 			Zf = ZoT - (ZoT - Z) / (1 + G * ((frequencyList[freqCount] / 1e9) / fpGHz) ** 2);
@@ -7227,7 +7276,7 @@
 			Ctlin = two.mul(Zmlin).mul(Zo);
 
 			alpha = (Ac + Ad) / 8.68588;
-			beta = Math.sqrt(eref) * 2 * Math.PI * frequencyList[freqCount] / 2.997925e8;
+			beta = Math.sqrt(eref) * 2 * Math.PI * frequencyList[freqCount] / C0;
 			gamma = complex(alpha * Length, beta * Length);
 
 			Ds = Ctlin.mul(gamma.coshCplx()).add(Btlin.mul(gamma.sinhCplx()));
@@ -7242,7 +7291,9 @@
 		return mlin;
 	}
 
-	function mclin(Width = 10 * 0.0254, Space = 63 * 0.0254, Height = 63 * 0.0254, Thickness = 0.0012 * 0.0254, Length = 0.180 * 0.0254, er = 4, rho = 1, tand = 0.001 ) { // 1.4732 is the quarter wavelength at 2GHz, (1.3412 at 2.2 GHz)
+	// Modified: 2026-06-27
+
+	function mclin(Width = 10 * MIL_TO_METER, Space = 63 * MIL_TO_METER, Height = 63 * MIL_TO_METER, Thickness = 1.2 * MIL_TO_METER, Length = 0.180 * INCH_TO_METER, er = 4, rho = 1, tand = 0.001 ) { // 1.4732 is the quarter wavelength at 2GHz, (1.3412 at 2.2 GHz)
 		var ctlin = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
 		var Zo = complex(Ro,0), two = complex(2,0), freqCount = 0, Zoemclin = [], Zoomclin = [];
@@ -7255,15 +7306,15 @@
 		var alpha = 0, betaOe = 0, betaOo = 0, gammaOe = {}, gammaOo = {};
 
 		// come up with Zo and eref of a microstrip line for a given Width/Height
-		var epsilon0 = 8.854187817e-12;
-		var c0 = 2.99792458e8;
+		var epsilon0 = EPSILON0;
+		var c0 = C0;
 		var pi = Math.PI;
 		var delWOverH = Thickness > 0.0 ? ( Width/Height <= 1/(2*pi) ? (1.25/pi)*(Thickness/Height)*(1+Math.log(4*pi*Width/Thickness)) : (1.25/pi)*(Thickness/Height)*(1+Math.log(2*Height/Thickness)) ) : 0.0;
 		var weOverH = Width/Height + delWOverH;
 		var Q = ((er-1)/4.6)*(Thickness/Height)*(1/Math.sqrt(Width/Height));
 		var Fwh = 1/Math.sqrt(1+10*Width/Height);
 		var ere = ((er+1)/2)+((er-1)/2)*Fwh-Q;
-		var ZoER = Width/Height <= 1.0 ? (60/Math.sqrt(ere))*Math.log(8/weOverH+0.25*weOverH) : (376.7/Math.sqrt(ere))*(1/(weOverH+1.393+0.667*Math.log(weOverH+1.444 )));
+		var ZoER = Width/Height <= 1.0 ? (60/Math.sqrt(ere))*Math.log(8/weOverH+0.25*weOverH) : (VACUUM_IMPEDANCE/Math.sqrt(ere))*(1/(weOverH+1.393+0.667*Math.log(weOverH+1.444 )));
 
 		// come up with even and odd mode W/H due to strip thickness
 		var delThickness = Height * ( 1/er ) * (Thickness/Height)/(Space/Height);
@@ -7272,7 +7323,7 @@
 		var WtooOverH = WtoeOverH + delThickness/Height;
 
 		// come up with Zo and ere of a microstrip line for given Width/Height with er = 1, ie air.
-		var ZoAIR = Width/Height <= 1.0 ? (60/Math.sqrt(1))*Math.log(8/weOverH+0.25*weOverH) : (376.7/Math.sqrt(1))*(1/(weOverH+1.393+0.667*Math.log(weOverH+1.444 )));
+		var ZoAIR = Width/Height <= 1.0 ? (60/Math.sqrt(1))*Math.log(8/weOverH+0.25*weOverH) : (VACUUM_IMPEDANCE/Math.sqrt(1))*(1/(weOverH+1.393+0.667*Math.log(weOverH+1.444 )));
 
 		// come up with even and odd mode capacitances with er = ER
 		var coth = function (x) { return 1/Math.tanh(x); };
@@ -7356,23 +7407,25 @@
 		return ctlin;
 	}
 
-	function mtee(w1 = 0.186*0.0254, w2 = 0.334*0.0254, er = 2.55, h = 0.125*0.0254) { // series resistor nPort object
+	// Modified: 2026-06-27
+
+	function mtee(Width = 0.023 * INCH_TO_METER, Height = 0.025 * INCH_TO_METER, Thickness = 0.0000125 * INCH_TO_METER, er = 10, rho = 0, tand = 0.000, Width2 = Width) { // microstrip tee nPort object
 		var mtee = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
 		var Zo = complex(Ro,0); Zo.inv(); complex(2,0); var freqCount = 0, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [];
 
 		//microstrip calcs
-		var eta = 120*Math.PI;
-		var ere = (er+1)/2 + ( (er-1)/2 * 1/Math.sqrt(1+10*h/w1) );
+		var eta = VACUUM_IMPEDANCE;
+		var ere = (er+1)/2 + ( (er-1)/2 * 1/Math.sqrt(1+10*Height/Width) );
 		var zo  = function () {
-			if (w1/h < 1) {
-				return eta/((2*Math.PI)*Math.sqrt(ere)) * Math.log(8*h/w1 + 0.25*w1/h)
+			if (Width/Height < 1) {
+				return eta/((2*Math.PI)*Math.sqrt(ere)) * Math.log(8*Height/Width + 0.25*Width/Height)
 			}
 			else {
-				return eta/Math.sqrt(ere) * 1/(w1/h + 1.393 + 0.667 * Math.log(w1/h + 1.444));
+				return eta/Math.sqrt(ere) * 1/(Width/Height + 1.393 + 0.667 * Math.log(Width/Height + 1.444));
 			}
 		}();
-		var Ct = (100/Math.tanh(0.0072 * zo) + 0.64 * zo - 261)*w1*1e-12;
+		var Ct = (100/Math.tanh(0.0072 * zo) + 0.64 * zo - 261)*Width*1e-12;
 		
 		
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
@@ -7389,7 +7442,9 @@
 		}	
 		mtee.setspars(sparsArray);
 		mtee.setglobal(global);
-		return Ct;
+		mtee.Ct = Ct;
+		mtee.microstrip = {Width, Height, Thickness, er, rho, tand, Width2};
+		return mtee;
 	}
 
 	function getCircuitTitle() {

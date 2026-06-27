@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Modified: 2026-06-24 -->
+<!-- Modified: 2026-06-27 -->
 <html>
 	<head>
 		<meta charset="utf-8">
@@ -43,7 +43,7 @@ var plot1 = pwr.out('s12dB','s13dB','s14dB');
 var inputObject1 = { inputTable: [plot1], mount: '#canvas1' };
 
 // Plot the frequency response
-nP.lineChart(inputObject1);
+var chart1 = nP.lineChart(inputObject1);
 
 // set up the rat race with mlins
 var threeWay = nP.Tee();
@@ -65,7 +65,7 @@ var plot2 = pwr.out('s12dB','s13dB','s14dB');
 var inputObject2 = { inputTable: [plot2], mount: '#canvas2' };
 
 // Plot the frequency response
-nP.lineChart(inputObject2);
+var chart2 = nP.lineChart(inputObject2);
 
 
 		</script>

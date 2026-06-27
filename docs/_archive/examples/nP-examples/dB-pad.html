@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Modified: 2026-06-26 -->
+<!-- Modified: 2026-06-27 -->
 <html>
 	<head>
 		<meta charset="utf-8">
@@ -46,7 +46,7 @@ var pad1 = nP.nodal(
 );
 var table1 = pad1.out('s11dB', 's21dB');
 var inputObject1 = { inputTable: [table1], mount: '#canvas1', metricPrefix : 'giga'};
-nP.lineChart(inputObject1);
+var chart1 = nP.lineChart(inputObject1);
 
 // the parasitics case
 var pad2 = nP.nodal(
@@ -67,7 +67,7 @@ var pad2 = nP.nodal(
 );
 var table2 = pad2.out('s11dB', 's21dB');
 var inputObject2 = { inputTable: [table2], mount: '#canvas2', metricPrefix : 'giga'};
-nP.lineChart(inputObject2);
+var chart2 = nP.lineChart(inputObject2);
 
 		</script>
 	</body>

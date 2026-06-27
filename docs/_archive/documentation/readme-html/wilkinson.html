@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Modified: 2026-06-24 -->
+<!-- Modified: 2026-06-27 -->
 <html>
 	<head>
 		<meta charset="utf-8">
@@ -33,7 +33,7 @@ var wilkinson = nP.nodal(
 var plot = wilkinson.out('s21dB','s23dB');
 
 // plot the frequency response
-nP.lineChart({inputTable: [plot], yRange: [-60, 5], title: 'Wilkinson Power Divider'});
+var chart1 = nP.lineChart({inputTable: [plot], yRange: [-60, 5], title: 'Wilkinson Power Divider'});
 
 		</script>
 	</body>

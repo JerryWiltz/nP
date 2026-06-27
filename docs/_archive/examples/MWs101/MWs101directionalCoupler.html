@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Modified: 2026-06-24 -->
+<!-- Modified: 2026-06-27 -->
 <html>
 	<head>
 		<meta charset="utf-8">
@@ -42,7 +42,7 @@ var plot1 = {
 	mount: '#canvas1',
 	metricPrefix : 'giga'
 };
-nP.lineChart(plot1);
+var chart1 = nP.lineChart(plot1);
 
 // set up the mclin directional coupler
 var mclin = nP.mclin( Width = .020 * 0.0254, Space = 0.0025 * 0.0254, Height = 0.025 * 0.0254, Thickness = 0.00 * 0.0254, Length = .3 * 0.0254, er = 9.9, rho = 1, tand = 0.001 );
@@ -58,7 +58,7 @@ var plot2 = {
 	mount: '#canvas2',
 	metricPrefix : 'giga'
 };
-nP.lineChart(plot2);
+var chart2 = nP.lineChart(plot2);
 
 		</script>
 	</body>

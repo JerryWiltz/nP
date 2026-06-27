@@ -1,5 +1,13 @@
 <!DOCTYPE html>
-<div id="canvas"></div>
+<!-- Modified: 2026-06-27 -->
+<html>
+<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>Archived Line Chart Example</title>
+</head>
+<body>
+<div id="canvas" style="width: 700px; height: 450px;"></div>
 <script src="https://d3js.org/d3.v5.min.js"></script>
 <script>
 
@@ -24,7 +32,7 @@ var lineChartInputObject = myLineChart;
 
 function lineChart (lineChartInputObject) {
 	var inputTable = lineChartInputObject.inputTable;
-	var canvasID = lineChartInputObject.canvasId;
+	var canvasID = lineChartInputObject.mount;
 	var xMin = lineChartInputObject.xMin, xMax = lineChartInputObject.xMax, yMin = lineChartInputObject.yMin, yMax = lineChartInputObject.yMax;
 	var k = 0;
 	var p = 0;
@@ -175,3 +183,5 @@ function lineChart (lineChartInputObject) {
 };
 testLineChart ();
 </script>
+</body>
+</html>

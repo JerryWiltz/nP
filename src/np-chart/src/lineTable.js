@@ -1,3 +1,4 @@
+// Modified: 2026-06-27
 import * as d3 from 'd3';
 
 export function lineTable(options = {}) {
@@ -39,6 +40,12 @@ export function lineTable(options = {}) {
 			tableTitle,
 			headColor = 'color', // 'color' (blue) | 'gray'
 			headerColor,
+			headerFill,
+			cellFill = 'white',
+			cellBorderColor = 'black',
+			cellBorderWidth = 1,
+			tableBorderColor = 'none',
+			tableBorderWidth = 1,
 			showWHAlert = false, // true => alert width/height
 			// Sizing
 			columnWidth = 100,
@@ -47,11 +54,13 @@ export function lineTable(options = {}) {
 			fontFamily = 'sans-serif',
 			fontSize = 14,
 			containerFontSizePx,
+			backgroundColor,
 			pngBackground = 'white'
 		} = options;
 
 		const effectiveTitle = tableTitle ?? title;
 		const effectiveFontSize = containerFontSizePx ?? fontSize;
+		const effectiveBackgroundColor = backgroundColor ?? pngBackground;
 		const effectiveHeaderColor = headerColor ?? headColor;
 
 		// ======== Helpers ========
@@ -105,7 +114,7 @@ export function lineTable(options = {}) {
 			alert(`The table dimensions: Width is ${outerWidth}, Height is ${outerHeight}`);
 		}
 
-		const headerFill = effectiveHeaderColor === 'gray' ? '#d4d4d4' : '#add8e6';
+		const effectiveHeaderFill = headerFill ?? (effectiveHeaderColor === 'gray' ? '#d4d4d4' : '#add8e6');
 		const titleVisible = effectiveTitle ? 'visible' : 'hidden';
 
 		// Y offsets for each stacked table (inside the drawing area)
@@ -154,8 +163,8 @@ export function lineTable(options = {}) {
 					canvas.width = width;
 					canvas.height = height;
 					const ctx = canvas.getContext('2d', { willReadFrequently: false });
-					if (pngBackground && pngBackground !== 'transparent') {
-						ctx.fillStyle = pngBackground;
+					if (effectiveBackgroundColor && effectiveBackgroundColor !== 'transparent') {
+						ctx.fillStyle = effectiveBackgroundColor;
 						ctx.fillRect(0, 0, width, height);
 					}
 					ctx.drawImage(img, 0, 0);
@@ -292,14 +301,14 @@ export function lineTable(options = {}) {
 				.attr('class', 'line-table-svg')
 				.attr('width', outerWidth)
 				.attr('height', outerHeight)
-				.style('background-color', pngBackground === 'transparent' ? 'transparent' : pngBackground);
+				.style('background-color', effectiveBackgroundColor === 'transparent' ? 'transparent' : effectiveBackgroundColor);
 
 			const tableBackground = svg.insert('rect', ':first-child')
 				.attr('x', 0)
 				.attr('y', 0)
 				.attr('width', outerWidth)
 				.attr('height', outerHeight)
-				.attr('fill', pngBackground === 'transparent' ? 'none' : pngBackground)
+				.attr('fill', effectiveBackgroundColor === 'transparent' ? 'none' : effectiveBackgroundColor)
 				.attr('class', 'line-table-background');
 
 		// Border
@@ -308,8 +317,8 @@ export function lineTable(options = {}) {
 			.attr('height', outerHeight)
 			.attr('class', 'line-table-border')
 			.attr('fill', 'none')
-			.attr('stroke', 'none')//black
-			.attr('stroke-width', 1);
+			.attr('stroke', tableBorderColor)
+			.attr('stroke-width', tableBorderWidth);
 
 		// Title
 		const txtTableTitle = svg.append('text')
@@ -358,7 +367,7 @@ export function lineTable(options = {}) {
 				for (let col = 0; col < cols; col++) {
 					const val = (myArray[row] || [])[col];
 					const isHeader = row === 0; // your format uses row 0 as headers
-					const fill = isHeader ? headerFill : 'white';
+					const fill = isHeader ? effectiveHeaderFill : cellFill;
 					const x = originX + (columnWidth + 3) * col;
 					const y = originY + (rowHeight + 1) * row;
 
@@ -369,8 +378,8 @@ export function lineTable(options = {}) {
 						.attr('width', (col === cols - 1 ? columnWidth + 3 - 1 : columnWidth + 3)) // last cell a tad narrower for outer stroke symmetry
 						.attr('height', rowHeight + 1)
 						.attr('fill', fill)
-						.attr('stroke', 'black')//'black'
-						.attr('stroke-width', 1)
+						.attr('stroke', cellBorderColor)
+						.attr('stroke-width', cellBorderWidth)
 						.attr('pointer-events', 'none');   // allow text selection
 
 					// Cell text

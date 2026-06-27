@@ -1,5 +1,5 @@
 # AGENTS.md
-<!-- Modified: 2026-06-24 -->
+<!-- Modified: 2026-06-27 -->
 
 Instructions for files in `dev/`.
 
@@ -34,8 +34,14 @@ This pattern is preferred over putting unrelated chart/table data directly into 
 - `nP.lineChart()` consumes numeric x/y tables. It supports linear/log x and y scales, origin or edge axis placement, hover values, chart labels, plot border styling, and PNG copy.
 - `nP.smithChart()` consumes paired real/imaginary columns such as `s11Re`, `s11Im`, `s22Re`, and `s22Im`. Keep its rendered area square. It draws SVG Smith-grid circles, trace labels, hover values for frequency/Re/Im/magnitude/angle, and PNG copy.
 - `nP.lineTable()` consumes the same table shape returned by `nPort.out(...)`, renders SVG tables, and provides PNG and TSV copy buttons.
-- Use `pngBackground: 'white'` in dev pages when a copied PNG should have an opaque white background.
+- Use `backgroundColor: 'white'` in dev pages when a copied PNG should have an opaque white background. `pngBackground` is an older alias.
 - Prefer `metricPrefix` values that match the displayed frequency header. For example, `metricPrefix: 'giga'` displays frequencies scaled to GHz.
+
+## Microstrip Dev Pages
+
+- Keep microstrip physical constant names consistent with `src/np-nport/src/mlin/constants.js` when writing source, tests, notes, or dev pages.
+- Use `dev/raw/` for raw technical source material, equation notes, and early derivations for work such as `nP.mtee()`.
+- `nP.mtee()` is a three-port microstrip tee constructor. Its physical defaults should stay aligned with `nP.mlin()` unless the user intentionally changes the model.
 
 ## Math And nPort Objects In Dev Pages
 

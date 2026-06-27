@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- Modified: 2026-06-27 -->
 <html>
 	<head>
 		<meta charset="utf-8">
@@ -51,7 +52,7 @@ var filter = nP.nodal(
 	['out', 1, 19]
 );
 
-nP.lineChart({
+var chart1 = nP.lineChart({
 	inputTable: [filter.out('s11dB','s21dB')],
 	mount: '#chart1',
 	title: 'Solved by nP.nodal()'
@@ -71,7 +72,7 @@ var filterGenerated = nP.lpfGen([
 	50
 ]);
 
-nP.lineChart({
+var chart2 = nP.lineChart({
 	inputTable: [filterGenerated.out('s11dB','s21dB')],
 	mount: '#chart2',
 	title: 'Solved by nP.lpfGen()'

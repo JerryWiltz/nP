@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Modified: 2026-06-24 -->
+<!-- Modified: 2026-06-27 -->
 <html>
 	<head>
 		<meta charset="utf-8">
@@ -32,7 +32,7 @@ var attn1 = nP.nodal(
 	['out', 1, 7]
 );
 var attn1Out = attn1.out('s21dB','s11dB');
-nP.lineTable({inputTable: [attn1Out], title:'Pi attenuator solved with nP.nodal()'});
+var table1 = nP.lineTable({inputTable: [attn1Out], title:'Pi attenuator solved with nP.nodal()'});
 
 // define the seriesTee and open
 var tee = nP.seriesTee();
@@ -49,7 +49,7 @@ var attn2 = nP.nodal(
 	['out', 1, 6]
 );
 var attn2Out = attn2.out('s21dB','s11dB');
-nP.lineTable({inputTable: [attn2Out], title:'seriesTee realization solved with nP.nodal()'});
+var table2 = nP.lineTable({inputTable: [attn2Out], title:'seriesTee realization solved with nP.nodal()'});
 
 		</script>
 	</body>

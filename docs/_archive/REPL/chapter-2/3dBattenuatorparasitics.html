@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Modified: 2026-06-24 -->
+<!-- Modified: 2026-06-27 -->
 <html>
 
 <head>
@@ -91,7 +91,7 @@ var s21dBParasitics = attenuatorWithParasitics.out('s21dB')
 
 // compare output plots with nP.lineChart();
 nP.log('Ideal and non-ideal 3dB attenuator demonstration')
-nP.lineChart({inputTable: [s21dB, s21dBParasitics]});
+var chart1 = nP.lineChart({inputTable: [s21dB, s21dBParasitics]});
 		</textarea>
 
 		<img class='image' src="../RFbook-image/fig2-1.png" alt="3dB attenuator with parasitics">
