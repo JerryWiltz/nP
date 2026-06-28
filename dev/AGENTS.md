@@ -1,5 +1,5 @@
 # AGENTS.md
-<!-- Modified: 2026-06-27 -->
+<!-- Modified: 2026-06-28 -->
 
 Instructions for files in `dev/`.
 
@@ -42,6 +42,7 @@ This pattern is preferred over putting unrelated chart/table data directly into 
 - Keep microstrip physical constant names consistent with `src/np-nport/src/mlin/constants.js` when writing source, tests, notes, or dev pages.
 - Use `dev/raw/` for raw technical source material, equation notes, and early derivations for work such as `nP.mtee()`.
 - `nP.mtee()` is a three-port microstrip tee constructor. Its physical defaults should stay aligned with `nP.mlin()` unless the user intentionally changes the model.
+- In dev pages, call `nP.mtee()` with power-divider-style width names when explicit dimensions are useful: `commonWidth` for port 1, `branch1Width` for port 2, and `branch2Width` for port 3. This matches the public `nP.Tee()` convention even when the internal equation source uses inline-Tee arm names.
 
 ## Math And nPort Objects In Dev Pages
 

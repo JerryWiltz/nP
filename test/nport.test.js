@@ -170,7 +170,9 @@ test('default microstrip constructors create finite n-port objects', () => {
 		assert.equal(tee.getspars().length, 2);
 		assert.equal(tee.getspars()[0].length, 10);
 		assert.ok(Number.isFinite(tee.Ct));
-		closeTo(tee.microstrip.Width, 0.023 * 0.0254);
+		closeTo(tee.microstrip.commonWidth, 0.023 * 0.0254);
+		closeTo(tee.microstrip.branch1Width, 0.023 * 0.0254);
+		closeTo(tee.microstrip.branch2Width, 0.023 * 0.0254);
 		closeTo(tee.microstrip.Height, 0.025 * 0.0254);
 		closeTo(tee.microstrip.Thickness, 0.0000125 * 0.0254);
 		assert.equal(tee.microstrip.er, 10);
@@ -184,6 +186,31 @@ test('default microstrip constructors create finite n-port objects', () => {
 					assert.ok(Number.isFinite(row[col].getI()));
 				}
 			}
+		}
+	});
+});
+
+test('mtee accepts power-divider-style width names', () => {
+	withGlobal({ fList: [1e9], Ro: 50 }, () => {
+		const tee = mtee({
+			commonWidth: 0.030 * 0.0254,
+			branch1Width: 0.020 * 0.0254,
+			branch2Width: 0.025 * 0.0254,
+			Height: 0.025 * 0.0254,
+			Thickness: 0.0000125 * 0.0254,
+			er: 10,
+			rho: 0,
+			tand: 0
+		});
+
+		assert.equal(tee.getspars()[0].length, 10);
+		closeTo(tee.microstrip.commonWidth, 0.030 * 0.0254);
+		closeTo(tee.microstrip.branch1Width, 0.020 * 0.0254);
+		closeTo(tee.microstrip.branch2Width, 0.025 * 0.0254);
+
+		for (let col = 1; col < tee.getspars()[0].length; col++) {
+			assert.ok(Number.isFinite(tee.getspars()[0][col].getR()));
+			assert.ok(Number.isFinite(tee.getspars()[0][col].getI()));
 		}
 	});
 });

@@ -1,7 +1,7 @@
 codex resume 019e89f1-41f2-70a0-85b9-da332da8146b
 
 # AGENTS.md
-<!-- Modified: 2026-06-27 -->
+<!-- Modified: 2026-06-28 -->
 
 Repository guide for agents working in the `nP` repo.
 
@@ -124,6 +124,18 @@ var divider = nP.nodal(
 ```
 
 Here node `1` is the common input, and nodes `4` and `5` are output ports. For Wilkinson-style examples, the branches are typically transmission-line sections and an isolation resistor may connect between the two output branch nodes. Inspect `s21dB` and `s31dB` for split, `s11dB` for input match, and `s23dB`/`s32dB` for output isolation.
+
+`nP.mtee()` follows the same public port convention as `nP.Tee()` for power-divider use:
+
+```text
+          port 2
+            |
+port 1 -----+
+            |
+          port 3
+```
+
+Use `commonWidth` for port 1, `branch1Width` for port 2, and `branch2Width` for port 3. Internally, published microstrip Tee equations may use inline-Tee naming such as main arms `a` and `b` plus side arm `2`; remap those internal equations so the external nP order remains `[common, branch1, branch2]`.
 
 ## Coupled Transmission Line Port Order
 
