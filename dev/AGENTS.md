@@ -168,6 +168,7 @@ Ideal fixtures:
 - `nP.Open()`
 - `nP.Short()`
 - `nP.Load()`
+- `nP.shift90()`
 
 Transmission-line and microstrip constructors:
 

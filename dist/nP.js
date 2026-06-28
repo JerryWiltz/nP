@@ -6617,20 +6617,21 @@
 		return paC;
 	}
 
-	function trf(N = 0.5) { // parallel resistor nPort object
+	// Modified: 2026-06-27
+
+	function trf(N = 0.5) { // ideal transformer nPort object
 		var trf = new nPort;
-		var e = 1e-7;
 		var frequencyList = global.fList; global.Ro;
 		var freqCount = 0, s11, s12, s21, s22, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
-			s11 = complex((N**2-1)/(N**2+1),0+e);
-			s12 = complex(2*N/(N**2+1),0+e);  
-			s21 = complex(2*N/(N**2+1),0+e);  
-			s22 = complex((1-N**2)/(N**2+1),0+e);
-			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+			s11 = complex((N ** 2 - 1) / (N ** 2 + 1), 0);
+			s12 = complex(2 * N / (N ** 2 + 1), 0);
+			s21 = complex(2 * N / (N ** 2 + 1), 0);
+			s22 = complex((1 - N ** 2) / (N ** 2 + 1), 0);
+			sparsArray[freqCount] = [frequencyList[freqCount], s11, s12, s21, s22];
 		}
 		trf.setspars(sparsArray);
-		trf.setglobal(global);	
+		trf.setglobal(global);
 		return trf;
 	}
 
@@ -7125,6 +7126,24 @@
 		return Load;
 	}
 
+	// Modified: 2026-06-27
+
+	function shift90() { // lossless matched two-port with +90 degree through phase
+		var shift90 = new nPort;
+		var frequencyList = global.fList; global.Ro;
+		var freqCount = 0, s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			s11 = complex(0,0);
+			s12 = complex(0,1);
+			s21 = complex(0,1);
+			s22 = complex(0,0);
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		shift90.setspars(sparsArray);
+		shift90.setglobal(global);
+		return shift90;
+	}
+
 	function tlin(Z = 60, Length = 0.5 * 0.0254) { // Z is in ohms and Length is in meters, sparameters of a physical transmission line
 		var tlin = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
@@ -7543,6 +7562,7 @@
 	exports.seSeRL = seSeRL;
 	exports.seSeRLC = seSeRLC;
 	exports.seriesTee = seriesTee;
+	exports.shift90 = shift90;
 	exports.smithChart = smithChart;
 	exports.tclin = tclin;
 	exports.tlin = tlin;

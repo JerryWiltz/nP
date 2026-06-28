@@ -40,6 +40,7 @@ export {cascade} from './combining/cascade';
 export {Open} from './openShortLoad/Open';
 export {Short} from './openShortLoad/Short';
 export {Load} from './openShortLoad/Load';
+export {shift90} from './openShortLoad/shift90';
 
 export {tlin} from  './tlin/tlin';
 export {tclin} from './tlin/tclin';

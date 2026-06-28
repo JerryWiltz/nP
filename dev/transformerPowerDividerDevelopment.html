@@ -16,30 +16,23 @@
 
     <script>
         var g = nP.global;
-        g.fList = g.fGen(100e6, 1000e6, 101);
+        g.fList = g.fGen(100e6, 1000e6, 11);
 
-        var ratio = Math.sqrt(70.7 / 50);
+        var ratioHL = Math.sqrt(70.7 / 50);
+        var ratioLH = Math.sqrt(50 / 70.7);
 
-        var trf1 = nP.trf(ratio);
-        var trf2 = nP.trf(ratio);
-        var tee1 = nP.Tee();
-        var tee2 = nP.Tee();
-        var rIso = nP.R(100);
+        var trfHL = nP.trf(ratioHL);
+        var trfLH = nP.trf(ratioLH);
+        var shift = nP.shift90();
 
-        var divider = nP.nodal(
-            [trf1, 1, 2],
-            [trf2, 1, 3],
-
-            [tee1, 4, 2, 5],
-            [tee2, 6, 3, 7],
-
-            [rIso, 4, 6],
-
-            ['out', 1, 5, 7]
+        var line50 = nP.nodal(
+            [trfHL, 1, 2],
+            [trfLH, 2, 3],
+            [shift, 3, 4],
+            ['out', 1, 4]
         );
 
-        var tableOut = divider.out('s11dB', 's21dB', 's31dB', 's23dB');
-        var smithOut = divider.out('s11Re', 's11Im', 's22Re', 's22Im', 's33Re', 's33Im');
+        var tableOut = line50.out('s11dB', 's21dB', 's21ang');
 
         const table = nP.lineTable({
             inputTable: [tableOut],
@@ -51,27 +44,66 @@
             fontSize: 14
         });
 
-        const chart = nP.lineChart({
-            inputTable: [tableOut],
-            title: 'Transformer Power Divider',
-            mount: '#chartDiv',
-            metricPrefix: 'mega',
-            xAxisTitle: 'Frequency, MHz',
-            yAxisTitle: 'dB',
-            backgroundColor: 'white',
-            fontFamily: 'sans-serif',
-            fontSize: 14
-        });
-
-        const smithChart = nP.smithChart({
-            inputTable: [smithOut],
-            title: 'Transformer Power Divider Smith Chart',
-            mount: '#smithDiv',
-            metricPrefix: 'mega',
-            backgroundColor: 'white',
-            fontFamily: 'sans-serif',
-            fontSize: 14
-        });
+        /*
+                var tee = nP.Tee();
+                //var tee2 = nP.Tee();
+                var rIso = nP.R(95);
+        
+                var shift = nP.shift90();
+        
+                var divider = nP.nodal(
+                    [tee, 1, 2, 6],
+        
+                    [trf, 2, 3],
+                    [shift90, ]
+                    [trf, 4, 3],
+        
+                    [trf, 6, 7],
+                    [trf, 8, 7],
+        
+                    [tee, 10, 4, 5],
+                    [tee, 11, 9, 8],
+        
+                    [rIso, 10, 11],
+        
+                    ['out', 1, 5, 9]
+                );
+        
+                var tableOut = divider.out('s11dB', 's21dB', 's31dB', 's23dB');
+                var smithOut = divider.out('s11Re', 's11Im', 's22Re', 's22Im', 's33Re', 's33Im');
+        
+                const table = nP.lineTable({
+                    inputTable: [tableOut],
+                    title: 'Transformer Power Divider',
+                    mount: '#tableDiv',
+                    metricPrefix: 'mega',
+                    backgroundColor: 'white',
+                    fontFamily: 'sans-serif',
+                    fontSize: 14
+                });
+        
+                const chart = nP.lineChart({
+                    inputTable: [tableOut],
+                    title: 'Transformer Power Divider',
+                    mount: '#chartDiv',
+                    metricPrefix: 'mega',
+                    xAxisTitle: 'Frequency, MHz',
+                    yAxisTitle: 'dB',
+                    backgroundColor: 'white',
+                    fontFamily: 'sans-serif',
+                    fontSize: 14
+                });
+        
+                const smithChart = nP.smithChart({
+                    inputTable: [smithOut],
+                    title: 'Transformer Power Divider Smith Chart',
+                    mount: '#smithDiv',
+                    metricPrefix: 'mega',
+                    backgroundColor: 'white',
+                    fontFamily: 'sans-serif',
+                    fontSize: 14
+                });
+    */
     </script>
 </body>
 

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { global } from '../src/np-global/index.js';
-import { seR, Open, Short, Load, cascade, mlin, mclin, mtee } from '../src/np-nport/index.js';
+import { seR, Open, Short, Load, shift90, cascade, trf, mlin, mclin, mtee } from '../src/np-nport/index.js';
 
 const closeTo = (actual, expected, tolerance = 1e-12) => {
 	assert.ok(
@@ -44,6 +44,27 @@ test('Open, Short, and Load create expected one-port reflection coefficients', (
 	});
 });
 
+test('shift90 creates a matched lossless two-port with +90 degree through phase', () => {
+	withGlobal({ fList: [1e9, 2e9], Ro: 50 }, () => {
+		const spars = shift90().getspars();
+
+		assert.equal(spars.length, 2);
+
+		for (const row of spars) {
+			assert.equal(row.length, 5);
+
+			closeTo(row[1].getR(), 0);
+			closeTo(row[1].getI(), 0);
+			closeTo(row[2].getR(), 0);
+			closeTo(row[2].getI(), 1);
+			closeTo(row[3].getR(), 0);
+			closeTo(row[3].getI(), 1);
+			closeTo(row[4].getR(), 0);
+			closeTo(row[4].getI(), 0);
+		}
+	});
+});
+
 test('series resistor at 50 ohms has expected two-port S-parameters with 50 ohm reference', () => {
 	withGlobal({ fList: [1e9], Ro: 50 }, () => {
 		const spars = seR(50).getspars()[0];
@@ -77,6 +98,23 @@ test('method cascade and cascade helper agree for simple two-port chains', () =>
 				closeTo(method[row][col].getI(), helper[row][col].getI());
 			}
 		}
+	});
+});
+
+test('inverse ideal transformers cascade to a matched lossless through', () => {
+	withGlobal({ fList: [1e9], Ro: 50 }, () => {
+		const ratioHL = Math.sqrt(70.7 / 50);
+		const ratioLH = Math.sqrt(50 / 70.7);
+		const spars = cascade(trf(ratioHL), trf(ratioLH)).getspars()[0];
+
+		closeTo(spars[1].getR(), 0);
+		closeTo(spars[1].getI(), 0);
+		closeTo(spars[2].getR(), 1);
+		closeTo(spars[2].getI(), 0);
+		closeTo(spars[3].getR(), 1);
+		closeTo(spars[3].getI(), 0);
+		closeTo(spars[4].getR(), 0);
+		closeTo(spars[4].getI(), 0);
 	});
 });
 
