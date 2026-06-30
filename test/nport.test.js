@@ -1,3 +1,4 @@
+// Modified: 2026-06-30
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -148,10 +149,92 @@ test('mclin creates a finite reciprocal four-port coupled microstrip line', () =
 		}
 
 		const out = coupledLine.out('s21dB', 's41dB', 's11dB', 's31dB');
-		closeTo(out[1][1], -0.24286556079501287);
-		closeTo(out[1][2], -13.06299863968385);
-		closeTo(out[2][1], -0.5054093709789177);
-		closeTo(out[2][2], -11.546111704687643);
+		closeTo(out[1][1], -0.5176381460041771);
+		closeTo(out[1][2], -9.637289796048867);
+		closeTo(out[2][1], -0.8721613492986204);
+		closeTo(out[2][2], -9.537713381356786);
+
+		assert.ok(Number.isFinite(coupledLine.microstrip.Zoe));
+		assert.ok(Number.isFinite(coupledLine.microstrip.Zoo));
+		assert.ok(Number.isFinite(coupledLine.microstrip.ereoe));
+		assert.ok(Number.isFinite(coupledLine.microstrip.ereoo));
+		assert.ok(coupledLine.microstrip.Zoe > coupledLine.microstrip.Zoo);
+		assert.equal(coupledLine.microstrip.dispersion.length, 3);
+		assert.equal(coupledLine.microstrip.dispersion[0].frequency, 2e9);
+		assert.equal(coupledLine.microstrip.dispersion[2].frequency, 18e9);
+		assert.ok(coupledLine.microstrip.dispersion[2].Zoe > coupledLine.microstrip.dispersion[0].Zoe);
+		assert.ok(coupledLine.microstrip.dispersion[2].ereoe > coupledLine.microstrip.dispersion[0].ereoe);
+	});
+});
+
+test('mclin default geometry matches a known coupled microstrip calculator case', () => {
+	withGlobal({ fList: [1.8e9], Ro: 50 }, () => {
+		const coupledLine = mclin();
+
+		closeTo(coupledLine.microstrip.Zoe, 72.25036995770157);
+		closeTo(coupledLine.microstrip.Zoo, 34.59185454255114);
+		closeTo(coupledLine.microstrip.ereoe, 7.112784879904657);
+		closeTo(coupledLine.microstrip.ereoo, 5.672289633106345);
+	});
+});
+
+test('mclin loss parameters reduce through magnitude', () => {
+	withGlobal({ fList: [10e9], Ro: 50 }, () => {
+		const lossless = mclin(
+			0.020 * 0.0254,
+			0.0025 * 0.0254,
+			0.025 * 0.0254,
+			1.0e-3 * 0.0254,
+			0.300 * 0.0254,
+			9.9,
+			0,
+			0
+		);
+		const lossy = mclin(
+			0.020 * 0.0254,
+			0.0025 * 0.0254,
+			0.025 * 0.0254,
+			1.0e-3 * 0.0254,
+			0.300 * 0.0254,
+			9.9,
+			1,
+			0.001
+		);
+
+		const losslessOut = lossless.out('s21dB');
+		const lossyOut = lossy.out('s21dB');
+
+		assert.ok(lossyOut[1][1] < losslessOut[1][1]);
+	});
+});
+
+test('mlin roughness increases conductor loss', () => {
+	withGlobal({ fList: [10e9], Ro: 50 }, () => {
+		const smooth = mlin(
+			0.023 * 0.0254,
+			0.025 * 0.0254,
+			0.5 * 0.0254,
+			1.0e-3 * 0.0254,
+			10,
+			1,
+			0.001,
+			0
+		);
+		const rough = mlin(
+			0.023 * 0.0254,
+			0.025 * 0.0254,
+			0.5 * 0.0254,
+			1.0e-3 * 0.0254,
+			10,
+			1,
+			0.001,
+			2.0e-6
+		);
+
+		assert.equal(smooth.microstrip.roughnessRms, 0);
+		closeTo(rough.microstrip.roughnessRms, 2.0e-6);
+		assert.ok(rough.microstrip.analysis[0].conductorLossDbPerMeter > smooth.microstrip.analysis[0].conductorLossDbPerMeter);
+		assert.ok(rough.out('s21dB')[1][1] < smooth.out('s21dB')[1][1]);
 	});
 });
 
@@ -163,9 +246,18 @@ test('default microstrip constructors create finite n-port objects', () => {
 
 		assert.equal(line.getspars().length, 2);
 		assert.equal(line.getspars()[0].length, 5);
+		assert.equal(line.microstrip.roughnessRms, 0);
 
 		assert.equal(coupledLine.getspars().length, 2);
 		assert.equal(coupledLine.getspars()[0].length, 17);
+		closeTo(coupledLine.microstrip.Width, 19.1155 * 0.001 * 0.0254);
+		closeTo(coupledLine.microstrip.Space, 5.82185 * 0.001 * 0.0254);
+		closeTo(coupledLine.microstrip.Height, 25 * 0.001 * 0.0254);
+		closeTo(coupledLine.microstrip.Thickness, 0.0000125 * 0.0254);
+		closeTo(coupledLine.microstrip.Length, 719.794 * 0.001 * 0.0254);
+		assert.equal(coupledLine.microstrip.er, 10);
+		assert.equal(coupledLine.microstrip.rho, 1);
+		assert.equal(coupledLine.microstrip.tand, 0.001);
 
 		assert.equal(tee.getspars().length, 2);
 		assert.equal(tee.getspars()[0].length, 10);

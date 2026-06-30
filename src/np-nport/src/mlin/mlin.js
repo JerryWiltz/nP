@@ -1,10 +1,10 @@
-// Modified: 2026-06-27
+// Modified: 2026-06-30
 import { complex } from '../../../np-math/src/complex';
 import { nPort } from '../nPort';
 import { global } from '../../../np-global/src/global';
 import { C0, COPPER_RESISTIVITY, INCH_TO_METER, MU0, VACUUM_IMPEDANCE } from './constants';
 
-export function mlin(Width = 0.023 * INCH_TO_METER, Height = 0.025 * INCH_TO_METER, Length = 0.5 * INCH_TO_METER, Thickness = 0.0000125 * INCH_TO_METER, er = 10, rho = 0, tand = 0.000) {
+export function mlin(Width = 0.023 * INCH_TO_METER, Height = 0.025 * INCH_TO_METER, Length = 0.5 * INCH_TO_METER, Thickness = 0.0000125 * INCH_TO_METER, er = 10, rho = 1, tand = 0.001, roughnessRms = 0) {
 	// this from Gupta page 60 at the bottom
 	var mlin = new nPort;
 	var frequencyList = global.fList, Ro = global.Ro;
@@ -32,18 +32,32 @@ export function mlin(Width = 0.023 * INCH_TO_METER, Height = 0.025 * INCH_TO_MET
 	var G = Math.sqrt((Z - 5) / 60) + 0.004 * Z;
 	var Zf = 0;
 	var eref = 0;
+	var analysis = [];
 
-	// compute conductor and dielectric losses
+	// compute conductor loss terms
 	var B = Width / Height >= 1 / (2 * pi) ? Height : 2 * pi * Width;
 	var A = Thickness > 0.0 ? 1 + 1 / weOverH * (1 + 1 / pi * Math.log(2 * B / Thickness)) : 0.0;
-	var Ad = 27.3 * er / (er - 1) * (ere - 1) / Math.sqrt(ere) * tand / 0.05;
 
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		var skinDepth = rho > 0.0 ? Math.sqrt(COPPER_RESISTIVITY * rho / (pi * frequencyList[freqCount] * MU0)) : 0.0;
 		var Rs = Math.sqrt(pi * frequencyList[freqCount] * MU0 * rho * COPPER_RESISTIVITY);
+		if (roughnessRms > 0.0 && skinDepth > 0.0) {
+			Rs *= 1 + (2 / pi) * Math.atan(1.4 * (roughnessRms / skinDepth) ** 2);
+		}
 		var Ac = Thickness > 0.0 && rho > 0.0 ? (Width / Height <= 1.0 ? 1.38 * A * (Rs / (Height * Z)) * (32 - weOverH) ** 2 / (32 + weOverH) ** 2 : 6.1e-5 * A * (Rs * Z * ere / Height) * (weOverH + (0.667 * weOverH) / (weOverH + 1.44))) : 0.0;
 
 		Zf = ZoT - (ZoT - Z) / (1 + G * ((frequencyList[freqCount] / 1e9) / fpGHz) ** 2);
 		eref = er - (er - ere) / (1 + G * ((frequencyList[freqCount] / 1e9) / fpGHz) ** 2);
+		var lambda0 = C0 / frequencyList[freqCount];
+		var Ad = tand > 0.0 ? 27.3 * er / (er - 1) * (eref - 1) / Math.sqrt(eref) * tand / lambda0 : 0.0;
+		analysis[freqCount] = {
+			frequency: frequencyList[freqCount],
+			Z: Zf,
+			ere: eref,
+			conductorLossDbPerMeter: Ac,
+			dielectricLossDbPerMeter: Ad,
+			skinDepth
+		};
 
 		Zmlin = complex(Zf, 0);
 
@@ -65,5 +79,20 @@ export function mlin(Width = 0.023 * INCH_TO_METER, Height = 0.025 * INCH_TO_MET
 	};
 	mlin.setspars(sparsArray);
 	mlin.setglobal(global);
+	mlin.microstrip = {
+		Width,
+		Height,
+		Length,
+		Thickness,
+		er,
+		rho,
+		tand,
+		roughnessRms,
+		Z: analysis[0] ? analysis[0].Z : Z,
+		ere: analysis[0] ? analysis[0].ere : ere,
+		ZQuasiStatic: Z,
+		ereQuasiStatic: ere,
+		analysis
+	};
 	return mlin;
 };

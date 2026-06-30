@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- Modified: 2026-06-30 -->
 <html>
 
 <head>
@@ -15,14 +16,15 @@
 
     <script>
         var g = nP.global;
-        g.fList = g.fGen(2e9, 18e9, 101);
+        g.fList = [1.8e9];
 
-        var width = 0.020 * 0.0254;
-        var space = 0.0025 * 0.0254;
-        var height = 0.025 * 0.0254;
-        var thickness = 0.0 * 0.0254;
-        var length = 0.300 * 0.0254;
-        var er = 9.9;
+        var mil = 0.001 * 0.0254;
+        var width = 19.1155 * mil;
+        var space = 5.82185 * mil;
+        var height = 25 * mil;
+        var thickness = 0.0000125 * 0.0254;
+        var length = 719.794 * mil;
+        var er = 10;
         var rho = 1;
         var tand = 0.001;
 
