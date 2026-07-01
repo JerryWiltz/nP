@@ -1,8 +1,59 @@
-// Modified: 2026-06-28
+// Modified: 2026-07-01
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global}  from '../../../np-global/src/global';
 import {C0, INCH_TO_METER, VACUUM_IMPEDANCE} from './constants';
+
+var pi = Math.PI;
+
+var square = function (x) { return x * x; };
+var cube = function (x) { return x * x * x; };
+var fourth = function (x) { return x * x * x * x; };
+
+var hammerstadAB = function (u, er) {
+	var u2 = square(u);
+	var u3 = cube(u);
+	var u4 = fourth(u);
+	var a = 1 + Math.log((u4 + u2 / 2704) / (u4 + 0.432)) / 49 + Math.log(1 + u3 / 5929.741) / 18.7;
+	var b = 0.564 * ((er - 0.9) / (er + 3)) ** 0.053;
+	return {a, b};
+};
+
+var hammerstadEr = function (u, er) {
+	var ab = hammerstadAB(u, er);
+	return (er + 1) / 2 + (er - 1) / 2 * (1 + 10 / u) ** (-ab.a * ab.b);
+};
+
+var homogeneousZ0 = function (u) {
+	var f = 6 + (2 * pi - 6) * Math.exp(-((30.666 / u) ** 0.7528));
+	return (VACUUM_IMPEDANCE / (2 * pi)) * Math.log(f / u + Math.sqrt(1 + 4 / square(u)));
+};
+
+var deltaUThicknessSingle = function (u, thicknessOverHeight) {
+	if (thicknessOverHeight <= 0.0) {
+		return 0.0;
+	}
+
+	return (1.25 * thicknessOverHeight / pi) *
+		(1 + Math.log((2 + (4 * pi * u - 2) / (1 + Math.exp(-100 * (u - 1 / (2 * pi))))) / thicknessOverHeight));
+};
+
+var microstripLine = function (width, Height, Thickness, er) {
+	var u = width / Height;
+	var effectiveU = u + deltaUThicknessSingle(u, Thickness / Height);
+	var ere = hammerstadEr(effectiveU, er);
+	var Z = homogeneousZ0(effectiveU) / Math.sqrt(ere);
+
+	return {
+		width: width,
+		u: u,
+		effectiveU: effectiveU,
+		ere: ere,
+		Z: Z,
+		D: VACUUM_IMPEDANCE / Math.sqrt(ere) * Height / Z,
+		fp: 4e5 * Z / Height
+	};
+};
 
 export function mtee({
 	commonWidth = 0.023 * INCH_TO_METER,
@@ -11,36 +62,19 @@ export function mtee({
 	Height = 0.025 * INCH_TO_METER,
 	Thickness = 0.0000125 * INCH_TO_METER,
 	er = 10,
-	rho = 0,
-	tand = 0.000
+	rho = 1,
+	tand = 0.001,
+	roughnessRms = 0
 } = {}) { // microstrip tee nPort object
 	var mtee = new nPort;
 	var frequencyList = global.fList, Ro = global.Ro;
 	var freqCount = 0, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [];
-	var pi = Math.PI;
 	var WidthA = branch1Width, WidthB = branch2Width, WidthSide = commonWidth;
+	var analysis = [];
 
-	function microstripLine(width) {
-		var wOverH = width / Height;
-		var delWOverH = Thickness > 0.0 ? (wOverH <= 1 / (2 * pi) ? (1.25 / pi) * (Thickness / Height) * (1 + Math.log(4 * pi * width / Thickness)) : (1.25 / pi) * (Thickness / Height) * (1 + Math.log(2 * Height / Thickness))) : 0.0;
-		var weOverH = width / Height + delWOverH;
-		var Q = ((er - 1) / 4.6) * (Thickness / Height) * (1 / Math.sqrt(width / Height));
-		var Fwh = 1 / Math.sqrt(1 + 10 * width / Height);
-		var ere = ((er + 1) / 2) + ((er - 1) / 2) * Fwh - Q;
-		var Z = width / Height <= 1.0 ? (60 / Math.sqrt(ere)) * Math.log(8 / weOverH + 0.25 * weOverH) : (VACUUM_IMPEDANCE / Math.sqrt(ere)) * (1 / (weOverH + 1.393 + 0.667 * Math.log(weOverH + 1.444)));
-
-		return {
-			width: width,
-			ere: ere,
-			Z: Z,
-			D: VACUUM_IMPEDANCE / Math.sqrt(ere) * Height / Z,
-			fp: 4e5 * Z / Height
-		};
-	}
-
-	var armA = microstripLine(WidthA);
-	var armB = microstripLine(WidthB);
-	var armSide = microstripLine(WidthSide);
+	var armA = microstripLine(WidthA, Height, Thickness, er);
+	var armB = microstripLine(WidthB, Height, Thickness, er);
+	var armSide = microstripLine(WidthSide, Height, Thickness, er);
 	
 	
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
@@ -81,10 +115,38 @@ export function mtee({
 		s32 = Sba;
 		s33 = Sbb;
 		sparsArray[freqCount] = [frequencyList[freqCount], s11, s12, s13, s21, s22, s23, s31, s32, s33];
+		analysis[freqCount] = {
+			frequency: freq,
+			R: R,
+			Q: Q,
+			da: da,
+			db: db,
+			d2: d2,
+			Ta2: Ta2,
+			Tb2: Tb2,
+			na: na,
+			nb: nb,
+			BT: BT
+		};
 	}	
 	mtee.setspars(sparsArray);
 	mtee.setglobal(global);
 	mtee.Ct = (100 / Math.tanh(0.0072 * armSide.Z) + 0.64 * armSide.Z - 261) * WidthSide * 1e-12;
-	mtee.microstrip = {commonWidth, branch1Width, branch2Width, Height, Thickness, er, rho, tand};
+	mtee.microstrip = {
+		commonWidth,
+		branch1Width,
+		branch2Width,
+		Height,
+		Thickness,
+		er,
+		rho,
+		tand,
+		roughnessRms,
+		commonArm: armSide,
+		branch1Arm: armA,
+		branch2Arm: armB,
+		Ct: mtee.Ct,
+		analysis
+	};
 	return mtee;
 };

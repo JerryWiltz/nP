@@ -1,5 +1,5 @@
 # AGENTS.md
-<!-- Modified: 2026-06-28 -->
+<!-- Modified: 2026-07-01 -->
 
 Instructions for files in `dev/`.
 
@@ -169,7 +169,7 @@ Ideal fixtures:
 - `nP.Open()`
 - `nP.Short()`
 - `nP.Load()`
-- `nP.shift90()`
+- `nP.Shift90()`
 
 Transmission-line and microstrip constructors:
 

@@ -1,9 +1,9 @@
-// Modified: 2026-06-30
+// Modified: 2026-07-01
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { global } from '../src/np-global/index.js';
-import { seR, Open, Short, Load, shift90, cascade, trf, mlin, mclin, mtee } from '../src/np-nport/index.js';
+import { seR, Open, Short, Load, Shift90, cascade, trf, mlin, mclin, mtee, mcross, mstep, mbend, mtfr, mvgnd, mvia } from '../src/np-nport/index.js';
 
 const closeTo = (actual, expected, tolerance = 1e-12) => {
 	assert.ok(
@@ -45,9 +45,9 @@ test('Open, Short, and Load create expected one-port reflection coefficients', (
 	});
 });
 
-test('shift90 creates a matched lossless two-port with +90 degree through phase', () => {
+test('Shift90 creates a matched lossless two-port with +90 degree through phase', () => {
 	withGlobal({ fList: [1e9, 2e9], Ro: 50 }, () => {
-		const spars = shift90().getspars();
+		const spars = Shift90().getspars();
 
 		assert.equal(spars.length, 2);
 
@@ -238,6 +238,21 @@ test('mlin roughness increases conductor loss', () => {
 	});
 });
 
+test('mlin default geometry exposes Hammerstad Jensen style diagnostics', () => {
+	withGlobal({ fList: [10e9], Ro: 50 }, () => {
+		const line = mlin();
+
+		closeTo(line.microstrip.Z, 51.26004376289776);
+		closeTo(line.microstrip.ere, 7.009861180706938);
+		closeTo(line.microstrip.ZQuasiStatic, 50.80674831133571);
+		closeTo(line.microstrip.ereQuasiStatic, 6.66084124751819);
+		assert.equal(line.microstrip.analysis.length, 1);
+		closeTo(line.microstrip.analysis[0].frequency, 10e9);
+		assert.ok(line.microstrip.analysis[0].conductorLossDbPerMeter > 0);
+		assert.ok(line.microstrip.analysis[0].dielectricLossDbPerMeter > 0);
+	});
+});
+
 test('default microstrip constructors create finite n-port objects', () => {
 	withGlobal({ fList: [1e9, 2e9], Ro: 50 }, () => {
 		const line = mlin();
@@ -268,8 +283,15 @@ test('default microstrip constructors create finite n-port objects', () => {
 		closeTo(tee.microstrip.Height, 0.025 * 0.0254);
 		closeTo(tee.microstrip.Thickness, 0.0000125 * 0.0254);
 		assert.equal(tee.microstrip.er, 10);
-		assert.equal(tee.microstrip.rho, 0);
-		assert.equal(tee.microstrip.tand, 0);
+		assert.equal(tee.microstrip.rho, 1);
+		assert.equal(tee.microstrip.tand, 0.001);
+		assert.equal(tee.microstrip.roughnessRms, 0);
+		assert.equal(tee.microstrip.analysis.length, 2);
+		closeTo(tee.microstrip.commonArm.Z, 50.80674831133571);
+		closeTo(tee.microstrip.commonArm.ere, 6.66084124751819);
+		closeTo(tee.microstrip.Ct, tee.Ct);
+		closeTo(tee.microstrip.analysis[0].R, 1);
+		assert.ok(Number.isFinite(tee.microstrip.analysis[0].BT));
 
 		for (const network of [line, coupledLine, tee]) {
 			for (const row of network.getspars()) {
@@ -303,6 +325,193 @@ test('mtee accepts power-divider-style width names', () => {
 		for (let col = 1; col < tee.getspars()[0].length; col++) {
 			assert.ok(Number.isFinite(tee.getspars()[0][col].getR()));
 			assert.ok(Number.isFinite(tee.getspars()[0][col].getI()));
+		}
+	});
+});
+
+test('mcross creates a finite four-port microstrip cross', () => {
+	withGlobal({ fList: [1e9, 2e9], Ro: 50 }, () => {
+		const cross = mcross();
+
+		assert.equal(cross.getspars().length, 2);
+		assert.equal(cross.getspars()[0].length, 17);
+		closeTo(cross.microstrip.leftWidth, 0.023 * 0.0254);
+		closeTo(cross.microstrip.topWidth, 0.023 * 0.0254);
+		closeTo(cross.microstrip.rightWidth, 0.023 * 0.0254);
+		closeTo(cross.microstrip.bottomWidth, 0.023 * 0.0254);
+		closeTo(cross.microstrip.Height, 0.025 * 0.0254);
+		closeTo(cross.microstrip.Thickness, 0.0000125 * 0.0254);
+		assert.equal(cross.microstrip.er, 10);
+		assert.equal(cross.microstrip.rho, 1);
+		assert.equal(cross.microstrip.tand, 0.001);
+		assert.equal(cross.microstrip.roughnessRms, 0);
+		assert.equal(cross.microstrip.analysis.length, 2);
+		closeTo(cross.microstrip.leftArm.Z, 50.80674831133571);
+		closeTo(cross.microstrip.leftArm.ere, 6.66084124751819);
+		closeTo(cross.microstrip.Ct, cross.Ct);
+		assert.equal(cross.microstrip.armCaps.length, 4);
+		assert.equal(cross.microstrip.armInds.length, 4);
+		closeTo(cross.microstrip.Ct, -2.889780775500356e-14);
+		closeTo(cross.microstrip.Lcenter, -1.74771255961485e-10);
+		closeTo(cross.microstrip.armCaps[0], -7.22445193875089e-15);
+		closeTo(cross.microstrip.armInds[0], 9.503576111752356e-11);
+		assert.ok(cross.microstrip.analysis[0].armCaps.every(Number.isFinite));
+		assert.ok(cross.microstrip.analysis[0].armInds.every(Number.isFinite));
+		assert.ok(Number.isFinite(cross.microstrip.analysis[0].Lcenter));
+
+		for (const row of cross.getspars()) {
+			for (let col = 1; col < row.length; col++) {
+				assert.ok(Number.isFinite(row[col].getR()));
+				assert.ok(Number.isFinite(row[col].getI()));
+			}
+		}
+	});
+});
+
+test('mstep creates a finite two-port microstrip impedance step', () => {
+	withGlobal({ fList: [1e9, 2e9], Ro: 50 }, () => {
+		const step = mstep();
+
+		assert.equal(step.getspars().length, 2);
+		assert.equal(step.getspars()[0].length, 5);
+		closeTo(step.microstrip.width1, 0.046 * 0.0254);
+		closeTo(step.microstrip.width2, 0.023 * 0.0254);
+		closeTo(step.microstrip.Height, 0.025 * 0.0254);
+		closeTo(step.microstrip.Thickness, 0.0000125 * 0.0254);
+		assert.equal(step.microstrip.er, 10);
+		assert.equal(step.microstrip.rho, 1);
+		assert.equal(step.microstrip.tand, 0.001);
+		assert.equal(step.microstrip.roughnessRms, 0);
+		assert.equal(step.microstrip.analysis.length, 2);
+		closeTo(step.microstrip.CsPf, 0.007510008588927712);
+		closeTo(step.microstrip.LsNh, 0.011507946456502898);
+		closeTo(step.microstrip.L1Nh, 0.004783294294823262);
+		closeTo(step.microstrip.L2Nh, 0.006724652161679638);
+
+		for (const row of step.getspars()) {
+			for (let col = 1; col < row.length; col++) {
+				assert.ok(Number.isFinite(row[col].getR()));
+				assert.ok(Number.isFinite(row[col].getI()));
+			}
+		}
+	});
+});
+
+test('mbend creates a finite two-port mitered microstrip bend', () => {
+	withGlobal({ fList: [1e9, 2e9], Ro: 50 }, () => {
+		const bend = mbend();
+
+		assert.equal(bend.getspars().length, 2);
+		assert.equal(bend.getspars()[0].length, 5);
+		closeTo(bend.microstrip.Width, 0.023 * 0.0254);
+		closeTo(bend.microstrip.Height, 0.025 * 0.0254);
+		closeTo(bend.microstrip.Thickness, 0.0000125 * 0.0254);
+		closeTo(bend.microstrip.miterLength, 0.0004130917815691811);
+		closeTo(bend.microstrip.miterFraction, 0.5);
+		assert.equal(bend.microstrip.er, 10);
+		assert.equal(bend.microstrip.rho, 1);
+		assert.equal(bend.microstrip.tand, 0.001);
+		assert.equal(bend.microstrip.roughnessRms, 0);
+		assert.equal(bend.microstrip.analysis.length, 2);
+		closeTo(bend.microstrip.CpF, 0.06807472288);
+		closeTo(bend.microstrip.LnH, 0.027448363470750275);
+		closeTo(bend.microstrip.halfMitered.CpF, bend.microstrip.CpF);
+		closeTo(bend.microstrip.halfMitered.LnH, bend.microstrip.LnH);
+
+		for (const row of bend.getspars()) {
+			for (let col = 1; col < row.length; col++) {
+				assert.ok(Number.isFinite(row[col].getR()));
+				assert.ok(Number.isFinite(row[col].getI()));
+			}
+		}
+	});
+});
+
+test('mtfr creates a finite two-port film resistor from sheet resistance', () => {
+	withGlobal({ fList: [1e9, 2e9], Ro: 50, Temp: 25 }, () => {
+		const resistor = mtfr();
+
+		assert.equal(resistor.getspars().length, 2);
+		assert.equal(resistor.getspars()[0].length, 5);
+		assert.equal(resistor.filmResistor.ohmsPerSquare, 50);
+		closeTo(resistor.filmResistor.Width, 10 * 0.001 * 0.0254);
+		closeTo(resistor.filmResistor.Length, 10 * 0.001 * 0.0254);
+		closeTo(resistor.filmResistor.squares, 1);
+		closeTo(resistor.filmResistor.resistanceAtReference, 50);
+		closeTo(resistor.filmResistor.resistance, 50);
+		closeTo(resistor.out('s11Re', 's21Re')[1][1], 1 / 3);
+		closeTo(resistor.out('s11Re', 's21Re')[1][2], 2 / 3);
+
+		for (const row of resistor.getspars()) {
+			for (let col = 1; col < row.length; col++) {
+				assert.ok(Number.isFinite(row[col].getR()));
+				assert.ok(Number.isFinite(row[col].getI()));
+			}
+		}
+	});
+});
+
+test('mvgnd creates a finite one-port grounded microstrip via', () => {
+	withGlobal({ fList: [1e9, 2e9], Ro: 50 }, () => {
+		const via = mvgnd();
+
+		assert.equal(via.getspars().length, 2);
+		assert.equal(via.getspars()[0].length, 2);
+		closeTo(via.microstrip.Diameter, 100e-6);
+		closeTo(via.microstrip.Height, 0.025 * 0.0254);
+		closeTo(via.microstrip.Thickness, 0.0000125 * 0.0254);
+		closeTo(via.microstrip.rho, 1.72e-8);
+		closeTo(via.microstrip.Rdc, 0.10984736623502148);
+		closeTo(via.microstrip.L, 2.349199007351922e-10);
+		closeTo(via.microstrip.fdelta, 43219650533.77667);
+		closeTo(via.microstrip.analysis[0].R, 0.11111090272099025);
+		closeTo(via.microstrip.analysis[0].X, 1.4760452686634467);
+
+		for (const row of via.getspars()) {
+			assert.ok(Number.isFinite(row[1].getR()));
+			assert.ok(Number.isFinite(row[1].getI()));
+		}
+	});
+});
+
+test('mvia creates a finite two-port multilayer via barrel', () => {
+	withGlobal({ fList: [1e9, 2e9], Ro: 50 }, () => {
+		const via = mvia();
+
+		assert.equal(via.getspars().length, 2);
+		assert.equal(via.getspars()[0].length, 5);
+		closeTo(via.microstrip.Diameter, 100e-6);
+		closeTo(via.microstrip.connectionHeight, 0.025 * 0.0254);
+		closeTo(via.microstrip.Thickness, 0.0000125 * 0.0254);
+		closeTo(via.microstrip.rho, 1.72e-8);
+		closeTo(via.microstrip.er, 10);
+		closeTo(via.microstrip.Rdc, 0.10984736623502148);
+		closeTo(via.microstrip.Lbarrel, 2.349199007351922e-10);
+		closeTo(via.microstrip.fdelta, 43219650533.77667);
+		closeTo(via.microstrip.analysis[0].R, 0.11111090272099025);
+		closeTo(via.microstrip.analysis[0].X, 1.4760452686634467);
+		closeTo(via.out('s11Re', 's21Re')[1][1], 0.0013269749786874842);
+		closeTo(via.out('s11Re', 's21Re')[1][2], 0.9986730250213127);
+
+		const multilayer = mvia({
+			padDiameter: 200e-6,
+			antipadDiameter: 500e-6,
+			topPadHeight: 0.1e-3,
+			bottomPadHeight: 0.1e-3,
+			topStubLength: 0.2e-3
+		});
+		closeTo(multilayer.microstrip.topPadCapacitance, 6.071490288349174e-14);
+		closeTo(multilayer.microstrip.bottomPadCapacitance, 6.071490288349174e-14);
+		closeTo(multilayer.microstrip.topStubCapacitance, 6.913283497173839e-14);
+		closeTo(multilayer.microstrip.bottomStubCapacitance, 0);
+
+		for (const network of [via, multilayer]) {
+			for (const row of network.getspars()) {
+				for (let col = 1; col < row.length; col++) {
+					assert.ok(Number.isFinite(row[col].getR()));
+					assert.ok(Number.isFinite(row[col].getI()));
+				}
+			}
 		}
 	});
 });

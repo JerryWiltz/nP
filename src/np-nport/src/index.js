@@ -40,7 +40,7 @@ export {cascade} from './combining/cascade';
 export {Open} from './openShortLoad/Open';
 export {Short} from './openShortLoad/Short';
 export {Load} from './openShortLoad/Load';
-export {shift90} from './openShortLoad/shift90';
+export {Shift90} from './openShortLoad/Shift90';
 
 export {tlin} from  './tlin/tlin';
 export {tclin} from './tlin/tclin';
@@ -48,3 +48,9 @@ export {tclin} from './tlin/tclin';
 export {mlin} from './mlin/mlin';
 export {mclin} from './mlin/mclin';
 export {mtee} from './mlin/mtee';
+export {mcross} from './mlin/mcross';
+export {mstep} from './mlin/mstep';
+export {mbend} from './mlin/mbend';
+export {mtfr} from './mlin/mtfr';
+export {mvgnd} from './mlin/mvgnd';
+export {mvia} from './mlin/mvia';

@@ -2368,7 +2368,7 @@
 	      c = new Array(nb),
 	      i;
 
-	  for (i = 0; i < na; ++i) x[i] = interpolate$1(a[i], b[i]);
+	  for (i = 0; i < na; ++i) x[i] = interpolate$2(a[i], b[i]);
 	  for (; i < nb; ++i) c[i] = b[i];
 
 	  return function(t) {
@@ -2400,7 +2400,7 @@
 
 	  for (k in b) {
 	    if (k in a) {
-	      i[k] = interpolate$1(a[k], b[k]);
+	      i[k] = interpolate$2(a[k], b[k]);
 	    } else {
 	      c[k] = b[k];
 	    }
@@ -2475,7 +2475,7 @@
 	        });
 	}
 
-	function interpolate$1(a, b) {
+	function interpolate$2(a, b) {
 	  var t = typeof b, c;
 	  return b == null || t === "boolean" ? constant$1(b)
 	      : (t === "number" ? interpolateNumber
@@ -2980,7 +2980,7 @@
 	  };
 	}
 
-	function interpolate(a, b) {
+	function interpolate$1(a, b) {
 	  var c;
 	  return (typeof b === "number" ? interpolateNumber
 	      : b instanceof color ? interpolateRgb
@@ -3055,7 +3055,7 @@
 	}
 
 	function transition_attr(name, value) {
-	  var fullname = namespace(name), i = fullname === "transform" ? interpolateTransformSvg : interpolate;
+	  var fullname = namespace(name), i = fullname === "transform" ? interpolateTransformSvg : interpolate$1;
 	  return this.attrTween(name, typeof value === "function"
 	      ? (fullname.local ? attrFunctionNS : attrFunction)(fullname, i, tweenValue(this, "attr." + name, value))
 	      : value == null ? (fullname.local ? attrRemoveNS : attrRemove)(fullname)
@@ -3363,7 +3363,7 @@
 	}
 
 	function transition_style(name, value, priority) {
-	  var i = (name += "") === "transform" ? interpolateTransformCss : interpolate;
+	  var i = (name += "") === "transform" ? interpolateTransformCss : interpolate$1;
 	  return value == null ? this
 	      .styleTween(name, styleNull(name, i))
 	      .on("end.style." + name, styleRemove(name))
@@ -3587,8 +3587,8 @@
 	selection.prototype.interrupt = selection_interrupt;
 	selection.prototype.transition = selection_transition;
 
-	const pi$1 = Math.PI,
-	    tau = 2 * pi$1,
+	const pi$8 = Math.PI,
+	    tau = 2 * pi$8,
 	    epsilon$1 = 1e-6,
 	    tauEpsilon = tau - epsilon$1;
 
@@ -3674,7 +3674,7 @@
 	          l20_2 = x20 * x20 + y20 * y20,
 	          l21 = Math.sqrt(l21_2),
 	          l01 = Math.sqrt(l01_2),
-	          l = r * Math.tan((pi$1 - Math.acos((l21_2 + l01_2 - l20_2) / (2 * l21 * l01))) / 2),
+	          l = r * Math.tan((pi$8 - Math.acos((l21_2 + l01_2 - l20_2) / (2 * l21 * l01))) / 2),
 	          t01 = l / l01,
 	          t21 = l / l21;
 
@@ -3722,7 +3722,7 @@
 
 	    // Is this arc non-empty? Draw an arc!
 	    else if (da > epsilon$1) {
-	      this._append`A${r},${r},0,${+(da >= pi$1)},${cw},${this._x1 = x + r * Math.cos(a1)},${this._y1 = y + r * Math.sin(a1)}`;
+	      this._append`A${r},${r},0,${+(da >= pi$8)},${cw},${this._x1 = x + r * Math.cos(a1)},${this._y1 = y + r * Math.sin(a1)}`;
 	    }
 	  }
 	  rect(x, y, w, h) {
@@ -4185,7 +4185,7 @@
 	function transformer() {
 	  var domain = unit,
 	      range = unit,
-	      interpolate = interpolate$1,
+	      interpolate = interpolate$2,
 	      transform,
 	      untransform,
 	      unknown,
@@ -7126,10 +7126,10 @@
 		return Load;
 	}
 
-	// Modified: 2026-06-27
+	// Modified: 2026-07-01
 
-	function shift90() { // lossless matched two-port with +90 degree through phase
-		var shift90 = new nPort;
+	function Shift90() { // lossless matched two-port with +90 degree through phase
+		var Shift90 = new nPort;
 		var frequencyList = global.fList; global.Ro;
 		var freqCount = 0, s11, s12, s21, s22, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
@@ -7139,9 +7139,9 @@
 			s22 = complex(0,0);
 			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 		}
-		shift90.setspars(sparsArray);
-		shift90.setglobal(global);
-		return shift90;
+		Shift90.setspars(sparsArray);
+		Shift90.setglobal(global);
+		return Shift90;
 	}
 
 	function tlin(Z = 60, Length = 0.5 * 0.0254) { // Z is in ohms and Length is in meters, sparameters of a physical transmission line
@@ -7239,59 +7239,121 @@
 	const MIL_TO_METER = 0.001 * INCH_TO_METER;
 
 	const C0 = 2.99792458e8;
+	const EPSILON0 = 8.854187817e-12;
 	const MU0 = 4 * Math.PI * 1e-7;
 	const VACUUM_IMPEDANCE = 120 * Math.PI;
 
 	const COPPER_RESISTIVITY = 1.72e-8;
 
-	// Modified: 2026-06-30
+	// Modified: 2026-07-01
+
+	var pi$7 = Math.PI;
+
+	var square$4 = function (x) { return x * x; };
+	var cube$4 = function (x) { return x * x * x; };
+	var fourth$4 = function (x) { return x * x * x * x; };
+
+	var hammerstadAB$4 = function (u, er) {
+		var u2 = square$4(u);
+		var u3 = cube$4(u);
+		var u4 = fourth$4(u);
+		var a = 1 + Math.log((u4 + u2 / 2704) / (u4 + 0.432)) / 49 + Math.log(1 + u3 / 5929.741) / 18.7;
+		var b = 0.564 * ((er - 0.9) / (er + 3)) ** 0.053;
+		return {a, b};
+	};
+
+	var hammerstadEr$4 = function (u, er) {
+		var ab = hammerstadAB$4(u, er);
+		return (er + 1) / 2 + (er - 1) / 2 * (1 + 10 / u) ** (-ab.a * ab.b);
+	};
+
+	var homogeneousZ0$4 = function (u) {
+		var f = 6 + (2 * pi$7 - 6) * Math.exp(-((30.666 / u) ** 0.7528));
+		return (VACUUM_IMPEDANCE / (2 * pi$7)) * Math.log(f / u + Math.sqrt(1 + 4 / square$4(u)));
+	};
+
+	var deltaUThicknessSingle$4 = function (u, thicknessOverHeight) {
+		if (thicknessOverHeight <= 0.0) {
+			return 0.0;
+		}
+
+		return (1.25 * thicknessOverHeight / pi$7) *
+			(1 + Math.log((2 + (4 * pi$7 * u - 2) / (1 + Math.exp(-100 * (u - 1 / (2 * pi$7))))) / thicknessOverHeight));
+	};
+
+	var singleLine$1 = function (u, er) {
+		var erEff = hammerstadEr$4(u, er);
+		var z0 = homogeneousZ0$4(u) / Math.sqrt(erEff);
+		return {erEff, z0};
+	};
+
+	var singleLineDispersion$1 = function (u, er, erEff0, z0, frequency, Height) {
+		var fn = frequency * Height / 1e6; // GHz-mm when frequency is Hz and Height is meters.
+		var p1 = 0.27488 + u * (0.6315 + 0.525 / (1 + 0.0157 * fn) ** 20) - 0.065683 * Math.exp(-8.7513 * u);
+		var p2 = 0.33622 * (1 - Math.exp(-0.03442 * er));
+		var p3 = 0.0363 * Math.exp(-4.6 * u) * (1 - Math.exp(-((fn / 38.7) ** 4.97)));
+		var p4 = 1 + 2.751 * (1 - Math.exp(-((er / 15.916) ** 8)));
+		var p = p1 * p2 * ((p3 * p4 + 0.1844) * fn) ** 1.5763;
+		var erEff = er - (er - erEff0) / (1 + p);
+
+		var r1 = 0.03891 * er ** 1.4;
+		var r2 = 0.267 * u ** 7;
+		var r3 = 4.766 * Math.exp(-3.228 * u ** 0.641);
+		var r4 = 0.016 + (0.0514 * er) ** 4.524;
+		var r5 = (fn / 28.843) ** 12;
+		var r6 = 22.2 * u ** 1.92;
+		var r7 = 1.206 - 0.3144 * Math.exp(-r1) * (1 - Math.exp(-r2));
+		var r8 = 1 + 1.275 * (1 - Math.exp(-4625e-6 * r3 * er ** 1.674 * (fn / 18.365) ** 2.745));
+		var r9Base = (er - 1) ** 6;
+		var r9 = 5.086 * r4 * (r5 / (0.3838 + 0.386 * r4)) * (Math.exp(-r6) / (1 + 1.2992 * r5)) * (r9Base / (1 + 10 * r9Base));
+		var r10 = 0.00044 * er ** 2.136 + 0.0184;
+		var r11Base = (fn / 19.47) ** 6;
+		var r11 = r11Base / (1 + 0.0962 * r11Base);
+		var r12 = 1 / (1 + 0.00245 * square$4(u));
+		var r13 = 0.9408 * erEff ** r8 - 0.9603;
+		var r14 = (0.9408 - r9) * erEff0 ** r8 - 0.9603;
+		var r15 = 0.707 * r10 * (fn / 12.3) ** 1.097;
+		var r16 = 1 + 0.0503 * square$4(er) * r11 * (1 - Math.exp(-((u / 15) ** 6)));
+		var r17 = r7 * (1 - 1.1241 * (r12 / r16) * Math.exp(-0.026 * fn ** 1.15656 - r15));
+		var z0Frequency = z0 * (r13 / r14) ** r17;
+
+		return {erEff, z0Frequency};
+	};
 
 	function mlin(Width = 0.023 * INCH_TO_METER, Height = 0.025 * INCH_TO_METER, Length = 0.5 * INCH_TO_METER, Thickness = 0.0000125 * INCH_TO_METER, er = 10, rho = 1, tand = 0.001, roughnessRms = 0) {
-		// this from Gupta page 60 at the bottom
 		var mlin = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
-		var Zo = complex(Ro, 0); Zo.inv(); complex(1, 0); var two = complex(2, 0), freqCount = 0, s11, s12, s21, s22, sparsArray = [];
+		var Zo = complex(Ro, 0), two = complex(2, 0), freqCount = 0, s11, s12, s21, s22, sparsArray = [];
 		var Atlin = {}, Btlin = {}, Ctlin = {}, Zmlin = {}, Ds = {}, alpha = 0, beta = 0, gamma = {};
 
-		var pi = Math.PI;
 		var wOverH = Width / Height;
-		var delWOverH = Thickness > 0.0 ? (wOverH <= 1 / (2 * pi) ? (1.25 / pi) * (Thickness / Height) * (1 + Math.log(4 * pi * Width / Thickness)) : (1.25 / pi) * (Thickness / Height) * (1 + Math.log(2 * Height / Thickness))) : 0.0;
-		var weOverH = Width / Height + delWOverH;
-		var Q = ((er - 1) / 4.6) * (Thickness / Height) * (1 / Math.sqrt(Width / Height));
-		var Fwh = 1 / Math.sqrt(1 + 10 * Width / Height);
-		var ere = ((er + 1) / 2) + ((er - 1) / 2) * Fwh - Q;
-		var Z = Width / Height <= 1.0 ? (60 / Math.sqrt(ere)) * Math.log(8 / weOverH + 0.25 * weOverH) : (VACUUM_IMPEDANCE / Math.sqrt(ere)) * (1 / (weOverH + 1.393 + 0.667 * Math.log(weOverH + 1.444)));
-
-		// compute dispersive ZoT ----- INTERLUDE per Gupta page 64, I need stripline version of Zo from pages 57 and 28 with b = 2h
-		var b = 2 * Height, x = Thickness / b, m = 2 * (1 / (1 + (2 / 3) * (x / (1 - x))));
-		var delW = Thickness > 0.0 ? (x / (pi * (1 - x))) * (1 - 0.5 * Math.log((x / (2 - x)) ** 2 + (0.0796 * x / (Width / b + 1.1 * x)) ** m)) * (b - Thickness) : 0.0;
-		var wPrime = Width + delW;
-		var ZoT = 2 * (1 / Math.sqrt(er)) * 30 * Math.log(1 + (4 / pi) * (b - Thickness) / wPrime * (8 / pi * (b - Thickness) / wPrime + Math.sqrt((8 / pi * (b - Thickness) / wPrime) ** 2 + 6.27)));
-
-		// back to microstrip now that I have ZoT
-		var hMils = Height * 1000 / INCH_TO_METER;
-		var fpGHz = 15.66 * Z / hMils; // fGHz = f/1e9;
-		var G = Math.sqrt((Z - 5) / 60) + 0.004 * Z;
+		var thicknessOverHeight = Thickness / Height;
+		var deltaU = deltaUThicknessSingle$4(wOverH, thicknessOverHeight);
+		var effectiveWOverH = wOverH + deltaU;
+		var quasiStatic = singleLine$1(effectiveWOverH, er);
+		var Z = quasiStatic.z0;
+		var ere = quasiStatic.erEff;
 		var Zf = 0;
 		var eref = 0;
 		var analysis = [];
 
 		// compute conductor loss terms
-		var B = Width / Height >= 1 / (2 * pi) ? Height : 2 * pi * Width;
-		var A = Thickness > 0.0 ? 1 + 1 / weOverH * (1 + 1 / pi * Math.log(2 * B / Thickness)) : 0.0;
+		var B = Width / Height >= 1 / (2 * pi$7) ? Height : 2 * pi$7 * Width;
+		var A = Thickness > 0.0 ? 1 + 1 / effectiveWOverH * (1 + 1 / pi$7 * Math.log(2 * B / Thickness)) : 0.0;
 
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
-			var skinDepth = rho > 0.0 ? Math.sqrt(COPPER_RESISTIVITY * rho / (pi * frequencyList[freqCount] * MU0)) : 0.0;
-			var Rs = Math.sqrt(pi * frequencyList[freqCount] * MU0 * rho * COPPER_RESISTIVITY);
+			var skinDepth = rho > 0.0 ? Math.sqrt(COPPER_RESISTIVITY * rho / (pi$7 * frequencyList[freqCount] * MU0)) : 0.0;
+			var Rs = Math.sqrt(pi$7 * frequencyList[freqCount] * MU0 * rho * COPPER_RESISTIVITY);
 			if (roughnessRms > 0.0 && skinDepth > 0.0) {
-				Rs *= 1 + (2 / pi) * Math.atan(1.4 * (roughnessRms / skinDepth) ** 2);
+				Rs *= 1 + (2 / pi$7) * Math.atan(1.4 * (roughnessRms / skinDepth) ** 2);
 			}
-			var Ac = Thickness > 0.0 && rho > 0.0 ? (Width / Height <= 1.0 ? 1.38 * A * (Rs / (Height * Z)) * (32 - weOverH) ** 2 / (32 + weOverH) ** 2 : 6.1e-5 * A * (Rs * Z * ere / Height) * (weOverH + (0.667 * weOverH) / (weOverH + 1.44))) : 0.0;
+			var Ac = Thickness > 0.0 && rho > 0.0 ? (Width / Height <= 1.0 ? 1.38 * A * (Rs / (Height * Z)) * (32 - effectiveWOverH) ** 2 / (32 + effectiveWOverH) ** 2 : 6.1e-5 * A * (Rs * Z * ere / Height) * (effectiveWOverH + (0.667 * effectiveWOverH) / (effectiveWOverH + 1.44))) : 0.0;
 
-			Zf = ZoT - (ZoT - Z) / (1 + G * ((frequencyList[freqCount] / 1e9) / fpGHz) ** 2);
-			eref = er - (er - ere) / (1 + G * ((frequencyList[freqCount] / 1e9) / fpGHz) ** 2);
+			var dispersion = singleLineDispersion$1(effectiveWOverH, er, ere, Z, frequencyList[freqCount], Height);
+			Zf = dispersion.z0Frequency;
+			eref = dispersion.erEff;
 			var lambda0 = C0 / frequencyList[freqCount];
-			var Ad = tand > 0.0 ? 27.3 * er / (er - 1) * (eref - 1) / Math.sqrt(eref) * tand / lambda0 : 0.0;
+			var Ad = tand > 0.0 && er > 1.0 ? 27.3 * er / (er - 1) * (eref - 1) / Math.sqrt(eref) * tand / lambda0 : 0.0;
 			analysis[freqCount] = {
 				frequency: frequencyList[freqCount],
 				Z: Zf,
@@ -7340,43 +7402,43 @@
 
 	// Modified: 2026-06-30
 
-	var pi = Math.PI;
+	var pi$6 = Math.PI;
 
-	var square = function (x) { return x * x; };
-	var cube = function (x) { return x * x * x; };
-	var fourth = function (x) { return x * x * x * x; };
+	var square$3 = function (x) { return x * x; };
+	var cube$3 = function (x) { return x * x * x; };
+	var fourth$3 = function (x) { return x * x * x * x; };
 
-	var hammerstadAB = function (u, er) {
-		var u2 = square(u);
-		var u3 = cube(u);
-		var u4 = fourth(u);
+	var hammerstadAB$3 = function (u, er) {
+		var u2 = square$3(u);
+		var u3 = cube$3(u);
+		var u4 = fourth$3(u);
 		var a = 1 + Math.log((u4 + u2 / 2704) / (u4 + 0.432)) / 49 + Math.log(1 + u3 / 5929.741) / 18.7;
 		var b = 0.564 * ((er - 0.9) / (er + 3)) ** 0.053;
 		return {a, b};
 	};
 
-	var hammerstadEr = function (u, er) {
-		var ab = hammerstadAB(u, er);
+	var hammerstadEr$3 = function (u, er) {
+		var ab = hammerstadAB$3(u, er);
 		return (er + 1) / 2 + (er - 1) / 2 * (1 + 10 / u) ** (-ab.a * ab.b);
 	};
 
-	var homogeneousZ0 = function (u) {
-		var f = 6 + (2 * pi - 6) * Math.exp(-((30.666 / u) ** 0.7528));
-		return (VACUUM_IMPEDANCE / (2 * pi)) * Math.log(f / u + Math.sqrt(1 + 4 / square(u)));
+	var homogeneousZ0$3 = function (u) {
+		var f = 6 + (2 * pi$6 - 6) * Math.exp(-((30.666 / u) ** 0.7528));
+		return (VACUUM_IMPEDANCE / (2 * pi$6)) * Math.log(f / u + Math.sqrt(1 + 4 / square$3(u)));
 	};
 
-	var deltaUThicknessSingle = function (u, thicknessOverHeight) {
+	var deltaUThicknessSingle$3 = function (u, thicknessOverHeight) {
 		if (thicknessOverHeight <= 0.0) {
 			return 0.0;
 		}
 
-		return (1.25 * thicknessOverHeight / pi) *
-			(1 + Math.log((2 + (4 * pi * u - 2) / (1 + Math.exp(-100 * (u - 1 / (2 * pi))))) / thicknessOverHeight));
+		return (1.25 * thicknessOverHeight / pi$6) *
+			(1 + Math.log((2 + (4 * pi$6 * u - 2) / (1 + Math.exp(-100 * (u - 1 / (2 * pi$6))))) / thicknessOverHeight));
 	};
 
 	var singleLine = function (u, er) {
-		var erEff = hammerstadEr(u, er);
-		var z0 = homogeneousZ0(u) / Math.sqrt(erEff);
+		var erEff = hammerstadEr$3(u, er);
+		var z0 = homogeneousZ0$3(u) / Math.sqrt(erEff);
 		return {erEff, z0};
 	};
 
@@ -7402,11 +7464,11 @@
 		var r10 = 0.00044 * er ** 2.136 + 0.0184;
 		var r11Base = (fn / 19.47) ** 6;
 		var r11 = r11Base / (1 + 0.0962 * r11Base);
-		var r12 = 1 / (1 + 0.00245 * square(u));
+		var r12 = 1 / (1 + 0.00245 * square$3(u));
 		var r13 = 0.9408 * erEff ** r8 - 0.9603;
 		var r14 = (0.9408 - r9) * erEff0 ** r8 - 0.9603;
 		var r15 = 0.707 * r10 * (fn / 12.3) ** 1.097;
-		var r16 = 1 + 0.0503 * square(er) * r11 * (1 - Math.exp(-((u / 15) ** 6)));
+		var r16 = 1 + 0.0503 * square$3(er) * r11 * (1 - Math.exp(-((u / 15) ** 6)));
 		var r17 = r7 * (1 - 1.1241 * (r12 / r16) * Math.exp(-0.026 * fn ** 1.15656 - r15));
 		var z0Frequency = z0 * (r13 / r14) ** r17;
 
@@ -7417,7 +7479,7 @@
 		var u = Width / Height;
 		var g = Space / Height;
 		var thicknessOverHeight = Thickness / Height;
-		var deltaU = deltaUThicknessSingle(u, thicknessOverHeight);
+		var deltaU = deltaUThicknessSingle$3(u, thicknessOverHeight);
 		var deltaT = thicknessOverHeight > 0.0 ? thicknessOverHeight / (g * er) : 0.0;
 		var deltaUEven = thicknessOverHeight > 0.0 ? deltaU * (1 - 0.5 * Math.exp(-0.69 * deltaU / deltaT)) : 0.0;
 		var deltaUOdd = thicknessOverHeight > 0.0 ? deltaUEven + deltaT : 0.0;
@@ -7427,8 +7489,8 @@
 		var single = singleLine(u, er);
 		var singleOdd = singleLine(uOdd, er);
 
-		var v = uEven * (20 + square(g)) / (10 + square(g)) + g * Math.exp(-g);
-		var erEven = hammerstadEr(v, er);
+		var v = uEven * (20 + square$3(g)) / (10 + square$3(g)) + g * Math.exp(-g);
+		var erEven = hammerstadEr$3(v, er);
 
 		var bo = 0.747 * er / (0.15 + er);
 		var co = bo - (bo - 0.207) * Math.exp(-0.414 * uOdd);
@@ -7444,7 +7506,7 @@
 
 		var q5 = 1.794 + 1.14 * Math.log(1 + 0.638 / (g + 0.517 * g ** 2.43));
 		var q6 = 0.2305 + Math.log(g ** 10 / (1 + (g / 5.8) ** 10)) / 281.3 + Math.log(1 + 0.598 * g ** 1.154) / 5.1;
-		var q7 = (10 + 190 * square(g)) / (1 + 82.3 * cube(g));
+		var q7 = (10 + 190 * square$3(g)) / (1 + 82.3 * cube$3(g));
 		var q8 = Math.exp(-6.5 - 0.95 * Math.log(g) - (g / 0.15) ** 5);
 		var q9 = Math.log(q7) * (q8 + 1 / 16.5);
 		var q10 = (q2 * q4 - q5 * Math.exp(Math.log(uOdd) * q6 * uOdd ** -q9)) / q2;
@@ -7485,10 +7547,10 @@
 		var q13 = 1 + 0.038 * (er / 8) ** 5.1;
 		var q14 = 1 + 1.203 * (er / 15) ** 4 / (1 + (er / 15) ** 4);
 		var q15 = 1.887 * Math.exp(-1.5 * g ** 0.84) * g ** q14 / (1 + 0.41 * (fn / 15) ** 3 * u ** (2 / q13) / (0.125 + u ** (1.626 / q13)));
-		var q16 = (1 + 9 / (1 + 0.403 * square(er - 1))) * q15;
+		var q16 = (1 + 9 / (1 + 0.403 * square$3(er - 1))) * q15;
 		var q17 = 0.394 * (1 - Math.exp(-1.47 * (u / 7) ** 0.672)) * (1 - Math.exp(-4.25 * (fn / 20) ** 1.87));
 		var q18 = 0.61 * (1 - Math.exp(-2.13 * (u / 8) ** 1.593)) / (1 + 6.544 * g ** 4.17);
-		var q19 = 0.21 * fourth(g) / ((1 + 0.18 * g ** 4.9) * (1 + 0.1 * square(u)) * (1 + (fn / 24) ** 3));
+		var q19 = 0.21 * fourth$3(g) / ((1 + 0.18 * g ** 4.9) * (1 + 0.1 * square$3(u)) * (1 + (fn / 24) ** 3));
 		var q20 = (0.09 + 1 / (1 + 0.1 * (er - 1) ** 2.7)) * q19;
 		var q21 = Math.abs(1 - 42.54 * g ** 0.133 * Math.exp(-0.812 * g) * u ** 2.5 / (1 + 0.033 * u ** 2.5));
 		var re = (fn / 28.843) ** 12;
@@ -7503,19 +7565,19 @@
 		var r10 = 0.00044 * er ** 2.136 + 0.0184;
 		var r11Base = (fn / 19.47) ** 6;
 		var r11 = r11Base / (1 + 0.0962 * r11Base);
-		var r12 = 1 / (1 + 0.00245 * square(u));
+		var r12 = 1 / (1 + 0.00245 * square$3(u));
 		var r15 = 0.707 * r10 * (fn / 12.3) ** 1.097;
-		var r16 = 1 + 0.0503 * square(er) * r11 * (1 - Math.exp(-((u / 15) ** 6)));
+		var r16 = 1 + 0.0503 * square$3(er) * r11 * (1 - Math.exp(-((u / 15) ** 6)));
 		var q0 = r7 * (1 - 1.1241 * (r12 / r16) * Math.exp(-0.026 * fn ** 1.15656 - r15));
 		var Zoe = quasiStatic.Zoe * ((0.9408 * singleDispersion.erEff ** ce - 0.9603) / ((0.9408 - de) * quasiStatic.single.erEff ** ce - 0.9603)) ** q0;
 
-		var q29 = 15.16 / (1 + 0.196 * square(er - 1));
-		var q28 = 0.149 * cube(er - 1) / (94.5 + 0.038 * cube(er - 1));
+		var q29 = 15.16 / (1 + 0.196 * square$3(er - 1));
+		var q28 = 0.149 * cube$3(er - 1) / (94.5 + 0.038 * cube$3(er - 1));
 		var q27 = 0.4 * g ** 0.84 * (1 + 2.5 * (er - 1) ** 1.5 / (5 + (er - 1) ** 1.5));
 		var q26 = 30 - 22.2 * (((er - 1) / 13) ** 12 / (1 + 3 * ((er - 1) / 13) ** 12)) - q29;
-		var q25 = 0.3 * square(fn) / (10 + square(fn)) * (1 + 2.333 * square(er - 1) / (5 + square(er - 1)));
+		var q25 = 0.3 * square$3(fn) / (10 + square$3(fn)) * (1 + 2.333 * square$3(er - 1) / (5 + square$3(er - 1)));
 		var q24 = 2.506 * q28 * u ** 0.894 * ((1 + 1.3 * u) * fn / 99.25) ** 4.29 / (3.575 + u ** 0.894);
-		var q23 = 1 + 0.005 * fn * q27 / ((1 + 0.812 * (fn / 15) ** 1.9) * (1 + 0.025 * square(u)));
+		var q23 = 1 + 0.005 * fn * q27 / ((1 + 0.812 * (fn / 15) ** 1.9) * (1 + 0.025 * square$3(u)));
 		var q22 = 0.925 * (fn / q26) ** 1.536 / (1 + 0.3 * (fn / 30) ** 1.536);
 		var Zoo = singleDispersion.z0Frequency + (quasiStatic.Zoo * (ereoo / quasiStatic.ereoo) ** q22 - singleDispersion.z0Frequency * q23) / (1 + q24 + (0.46 * g) ** 2.2 * q25);
 
@@ -7529,20 +7591,20 @@
 		if (frequency > 0.0 && Width > 0.0 && Height > 0.0 && modeZ0 > 0.0 && modeErEff > 0.0) {
 			var z0Homogeneous = modeZ0 * Math.sqrt(modeErEff);
 			var otherZ0Homogeneous = otherModeZ0 * Math.sqrt(otherModeErEff);
-			var skinDepth = rho > 0.0 ? Math.sqrt(COPPER_RESISTIVITY * rho / (pi * frequency * MU0)) : 0.0;
+			var skinDepth = rho > 0.0 ? Math.sqrt(COPPER_RESISTIVITY * rho / (pi$6 * frequency * MU0)) : 0.0;
 
 			if (Thickness > 0.0 && rho > 0.0 && skinDepth > 0.0) {
 				var currentFactor = Math.exp(-1.2 * ((z0Homogeneous + otherZ0Homogeneous) / (2 * VACUUM_IMPEDANCE)) ** 0.7);
-				var surfaceResistance = Math.sqrt(pi * frequency * MU0 * rho * COPPER_RESISTIVITY);
+				var surfaceResistance = Math.sqrt(pi$6 * frequency * MU0 * rho * COPPER_RESISTIVITY);
 				if (roughnessRms > 0.0) {
-					surfaceResistance *= 1 + (2 / pi) * Math.atan(1.4 * square(roughnessRms / skinDepth));
+					surfaceResistance *= 1 + (2 / pi$6) * Math.atan(1.4 * square$3(roughnessRms / skinDepth));
 				}
-				var conductorQ = pi * z0Homogeneous * Width * frequency / (surfaceResistance * C0 * currentFactor);
-				conductorDb = (20 * pi / Math.log(10)) * frequency * Math.sqrt(modeErEff) / (C0 * conductorQ) * Length;
+				var conductorQ = pi$6 * z0Homogeneous * Width * frequency / (surfaceResistance * C0 * currentFactor);
+				conductorDb = (20 * pi$6 / Math.log(10)) * frequency * Math.sqrt(modeErEff) / (C0 * conductorQ) * Length;
 			}
 
 			if (tand > 0.0 && er > 1.0) {
-				dielectricDb = (20 * pi / Math.log(10)) * (frequency / C0) * (er / Math.sqrt(modeErEff)) * ((modeErEff - 1) / (er - 1)) * tand * Length;
+				dielectricDb = (20 * pi$6 / Math.log(10)) * (frequency / C0) * (er / Math.sqrt(modeErEff)) * ((modeErEff - 1) / (er - 1)) * tand * Length;
 			}
 		}
 
@@ -7574,8 +7636,8 @@
 
 			alphaOe = evenLoss.alphaNepers;
 			alphaOo = oddLoss.alphaNepers;
-			betaOe = Math.sqrt(mode.ereoe) * 2 * pi * frequency / C0;
-			betaOo = Math.sqrt(mode.ereoo) * 2 * pi * frequency / C0;
+			betaOe = Math.sqrt(mode.ereoe) * 2 * pi$6 * frequency / C0;
+			betaOo = Math.sqrt(mode.ereoo) * 2 * pi$6 * frequency / C0;
 			gammaOe = complex(alphaOe, betaOe * Length);
 			gammaOo = complex(alphaOo, betaOo * Length);
 			dispersion[freqCount] = {
@@ -7656,7 +7718,58 @@
 		return ctlin;
 	}
 
-	// Modified: 2026-06-28
+	// Modified: 2026-07-01
+
+	var pi$5 = Math.PI;
+
+	var square$2 = function (x) { return x * x; };
+	var cube$2 = function (x) { return x * x * x; };
+	var fourth$2 = function (x) { return x * x * x * x; };
+
+	var hammerstadAB$2 = function (u, er) {
+		var u2 = square$2(u);
+		var u3 = cube$2(u);
+		var u4 = fourth$2(u);
+		var a = 1 + Math.log((u4 + u2 / 2704) / (u4 + 0.432)) / 49 + Math.log(1 + u3 / 5929.741) / 18.7;
+		var b = 0.564 * ((er - 0.9) / (er + 3)) ** 0.053;
+		return {a, b};
+	};
+
+	var hammerstadEr$2 = function (u, er) {
+		var ab = hammerstadAB$2(u, er);
+		return (er + 1) / 2 + (er - 1) / 2 * (1 + 10 / u) ** (-ab.a * ab.b);
+	};
+
+	var homogeneousZ0$2 = function (u) {
+		var f = 6 + (2 * pi$5 - 6) * Math.exp(-((30.666 / u) ** 0.7528));
+		return (VACUUM_IMPEDANCE / (2 * pi$5)) * Math.log(f / u + Math.sqrt(1 + 4 / square$2(u)));
+	};
+
+	var deltaUThicknessSingle$2 = function (u, thicknessOverHeight) {
+		if (thicknessOverHeight <= 0.0) {
+			return 0.0;
+		}
+
+		return (1.25 * thicknessOverHeight / pi$5) *
+			(1 + Math.log((2 + (4 * pi$5 * u - 2) / (1 + Math.exp(-100 * (u - 1 / (2 * pi$5))))) / thicknessOverHeight));
+	};
+
+	var microstripLine$2 = function (width, Height, Thickness, er) {
+		var u = width / Height;
+		var effectiveU = u + deltaUThicknessSingle$2(u, Thickness / Height);
+		var ere = hammerstadEr$2(effectiveU, er);
+		var Z = homogeneousZ0$2(effectiveU) / Math.sqrt(ere);
+
+		return {
+			width: width,
+			u: u,
+			effectiveU: effectiveU,
+			ere: ere,
+			Z: Z,
+			D: VACUUM_IMPEDANCE / Math.sqrt(ere) * Height / Z,
+			fp: 4e5 * Z / Height
+		};
+	};
 
 	function mtee({
 		commonWidth = 0.023 * INCH_TO_METER,
@@ -7665,36 +7778,19 @@
 		Height = 0.025 * INCH_TO_METER,
 		Thickness = 0.0000125 * INCH_TO_METER,
 		er = 10,
-		rho = 0,
-		tand = 0.000
+		rho = 1,
+		tand = 0.001,
+		roughnessRms = 0
 	} = {}) { // microstrip tee nPort object
 		var mtee = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
 		var freqCount = 0, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [];
-		var pi = Math.PI;
 		var WidthA = branch1Width, WidthB = branch2Width, WidthSide = commonWidth;
+		var analysis = [];
 
-		function microstripLine(width) {
-			var wOverH = width / Height;
-			var delWOverH = Thickness > 0.0 ? (wOverH <= 1 / (2 * pi) ? (1.25 / pi) * (Thickness / Height) * (1 + Math.log(4 * pi * width / Thickness)) : (1.25 / pi) * (Thickness / Height) * (1 + Math.log(2 * Height / Thickness))) : 0.0;
-			var weOverH = width / Height + delWOverH;
-			var Q = ((er - 1) / 4.6) * (Thickness / Height) * (1 / Math.sqrt(width / Height));
-			var Fwh = 1 / Math.sqrt(1 + 10 * width / Height);
-			var ere = ((er + 1) / 2) + ((er - 1) / 2) * Fwh - Q;
-			var Z = width / Height <= 1.0 ? (60 / Math.sqrt(ere)) * Math.log(8 / weOverH + 0.25 * weOverH) : (VACUUM_IMPEDANCE / Math.sqrt(ere)) * (1 / (weOverH + 1.393 + 0.667 * Math.log(weOverH + 1.444)));
-
-			return {
-				width: width,
-				ere: ere,
-				Z: Z,
-				D: VACUUM_IMPEDANCE / Math.sqrt(ere) * Height / Z,
-				fp: 4e5 * Z / Height
-			};
-		}
-
-		var armA = microstripLine(WidthA);
-		var armB = microstripLine(WidthB);
-		var armSide = microstripLine(WidthSide);
+		var armA = microstripLine$2(WidthA, Height, Thickness, er);
+		var armB = microstripLine$2(WidthB, Height, Thickness, er);
+		var armSide = microstripLine$2(WidthSide, Height, Thickness, er);
 		
 		
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
@@ -7706,8 +7802,8 @@
 			var da = 0.055 * armSide.D * armA.Z / armSide.Z * (1 - 2 * armA.Z / armSide.Z * (freq / armA.fp) ** 2);
 			var db = 0.055 * armSide.D * armB.Z / armSide.Z * (1 - 2 * armB.Z / armSide.Z * (freq / armB.fp) ** 2);
 			var d2 = Math.sqrt(armA.D * armB.D) * (0.5 - R * (0.05 + 0.7 * Math.exp(-1.6 * R) + 0.25 * R * Q - 0.17 * Math.log(R)));
-			var Ta2 = 1 - pi * (freq / armA.fp) ** 2 * ((1 / 12) * (armA.Z / armSide.Z) ** 2 + (0.5 - d2 / armA.D) ** 2);
-			var Tb2 = 1 - pi * (freq / armB.fp) ** 2 * ((1 / 12) * (armB.Z / armSide.Z) ** 2 + (0.5 - d2 / armB.D) ** 2);
+			var Ta2 = 1 - pi$5 * (freq / armA.fp) ** 2 * ((1 / 12) * (armA.Z / armSide.Z) ** 2 + (0.5 - d2 / armA.D) ** 2);
+			var Tb2 = 1 - pi$5 * (freq / armB.fp) ** 2 * ((1 / 12) * (armB.Z / armSide.Z) ** 2 + (0.5 - d2 / armB.D) ** 2);
 			var na = Math.sqrt(Math.max(Ta2, 1e-6));
 			var nb = Math.sqrt(Math.max(Tb2, 1e-6));
 			var BT = 5.5 * Math.sqrt((armA.D * armB.D) / (lambdaA * lambdaB)) * ((er + 2) / er) * (1 / (armSide.Z * na * nb)) * (Math.sqrt(Math.max(da * db, 0)) / armSide.D) * (1 + 0.9 * Math.log(R) + 4.5 * R * Q - 4.4 * Math.exp(-1.3 * R) - 20 * (armSide.Z / VACUUM_IMPEDANCE) ** 2);
@@ -7735,12 +7831,822 @@
 			s32 = Sba;
 			s33 = Sbb;
 			sparsArray[freqCount] = [frequencyList[freqCount], s11, s12, s13, s21, s22, s23, s31, s32, s33];
+			analysis[freqCount] = {
+				frequency: freq,
+				R: R,
+				Q: Q,
+				da: da,
+				db: db,
+				d2: d2,
+				Ta2: Ta2,
+				Tb2: Tb2,
+				na: na,
+				nb: nb,
+				BT: BT
+			};
 		}	
 		mtee.setspars(sparsArray);
 		mtee.setglobal(global);
 		mtee.Ct = (100 / Math.tanh(0.0072 * armSide.Z) + 0.64 * armSide.Z - 261) * WidthSide * 1e-12;
-		mtee.microstrip = {commonWidth, branch1Width, branch2Width, Height, Thickness, er, rho, tand};
+		mtee.microstrip = {
+			commonWidth,
+			branch1Width,
+			branch2Width,
+			Height,
+			Thickness,
+			er,
+			rho,
+			tand,
+			roughnessRms,
+			commonArm: armSide,
+			branch1Arm: armA,
+			branch2Arm: armB,
+			Ct: mtee.Ct,
+			analysis
+		};
 		return mtee;
+	}
+
+	// Modified: 2026-07-01
+
+	var pi$4 = Math.PI;
+
+	var square$1 = function (x) { return x * x; };
+	var cube$1 = function (x) { return x * x * x; };
+	var fourth$1 = function (x) { return x * x * x * x; };
+
+	var hammerstadAB$1 = function (u, er) {
+		var u2 = square$1(u);
+		var u3 = cube$1(u);
+		var u4 = fourth$1(u);
+		var a = 1 + Math.log((u4 + u2 / 2704) / (u4 + 0.432)) / 49 + Math.log(1 + u3 / 5929.741) / 18.7;
+		var b = 0.564 * ((er - 0.9) / (er + 3)) ** 0.053;
+		return {a, b};
+	};
+
+	var hammerstadEr$1 = function (u, er) {
+		var ab = hammerstadAB$1(u, er);
+		return (er + 1) / 2 + (er - 1) / 2 * (1 + 10 / u) ** (-ab.a * ab.b);
+	};
+
+	var homogeneousZ0$1 = function (u) {
+		var f = 6 + (2 * pi$4 - 6) * Math.exp(-((30.666 / u) ** 0.7528));
+		return (VACUUM_IMPEDANCE / (2 * pi$4)) * Math.log(f / u + Math.sqrt(1 + 4 / square$1(u)));
+	};
+
+	var deltaUThicknessSingle$1 = function (u, thicknessOverHeight) {
+		if (thicknessOverHeight <= 0.0) {
+			return 0.0;
+		}
+
+		return (1.25 * thicknessOverHeight / pi$4) *
+			(1 + Math.log((2 + (4 * pi$4 * u - 2) / (1 + Math.exp(-100 * (u - 1 / (2 * pi$4))))) / thicknessOverHeight));
+	};
+
+	var microstripLine$1 = function (width, Height, Thickness, er) {
+		var u = width / Height;
+		var effectiveU = u + deltaUThicknessSingle$1(u, Thickness / Height);
+		var ere = hammerstadEr$1(effectiveU, er);
+		var Z = homogeneousZ0$1(effectiveU) / Math.sqrt(ere);
+
+		return {
+			width: width,
+			u: u,
+			effectiveU: effectiveU,
+			ere: ere,
+			Z: Z,
+			D: VACUUM_IMPEDANCE / Math.sqrt(ere) * Height / Z,
+			fp: 4e5 * Z / Height
+		};
+	};
+
+	var emptyCplxMatrix = function (size) {
+		var out = dim(size, size, complex(0, 0));
+		for (var row = 0; row < size; row++) {
+			for (var col = 0; col < size; col++) {
+				out[row][col] = complex(0, 0);
+			}
+		}
+		return out;
+	};
+
+	var stampAdmittance = function (Y, nodeA, nodeB, admittance) {
+		if (nodeB === null) {
+			Y[nodeA][nodeA] = Y[nodeA][nodeA].add(admittance);
+			return;
+		}
+
+		Y[nodeA][nodeA] = Y[nodeA][nodeA].add(admittance);
+		Y[nodeB][nodeB] = Y[nodeB][nodeB].add(admittance);
+		Y[nodeA][nodeB] = Y[nodeA][nodeB].sub(admittance);
+		Y[nodeB][nodeA] = Y[nodeB][nodeA].sub(admittance);
+	};
+
+	var subMatrix = function (source, rows, cols) {
+		var out = dim(rows.length, cols.length, complex(0, 0));
+		for (var row = 0; row < rows.length; row++) {
+			for (var col = 0; col < cols.length; col++) {
+				out[row][col] = source[rows[row]][cols[col]];
+			}
+		}
+		return matrix(out);
+	};
+
+	var reducedExternalY = function (Y) {
+		var ports = [0, 1, 2, 3];
+		var internal = [4, 5];
+		var Ypp = subMatrix(Y, ports, ports);
+		var Ypi = subMatrix(Y, ports, internal);
+		var Yip = subMatrix(Y, internal, ports);
+		var Yii = subMatrix(Y, internal, internal);
+		return Ypp.subCplx(Ypi.mulCplx(Yii.invertCplx()).mulCplx(Yip));
+	};
+
+	var identityCplx$2 = function (size) {
+		var out = dim(size, size, complex(0, 0));
+		for (var row = 0; row < size; row++) {
+			for (var col = 0; col < size; col++) {
+				out[row][col] = row === col ? complex(1, 0) : complex(0, 0);
+			}
+		}
+		return matrix(out);
+	};
+
+	var yToS = function (Y, Ro) {
+		var size = Y.m.length;
+		var I = identityCplx$2(size);
+		var normalizedY = dim(size, size, complex(0, 0));
+		for (var row = 0; row < size; row++) {
+			for (var col = 0; col < size; col++) {
+				normalizedY[row][col] = Y.m[row][col].mul(complex(Ro, 0));
+			}
+		}
+		var y = matrix(normalizedY);
+		return I.subCplx(y).mulCplx(I.addCplx(y).invertCplx());
+	};
+
+	var crossCapacitanceBase = function (width, crossingWidth, Height) {
+		var widthOverHeight = width / Height;
+		var crossingOverHeight = crossingWidth / Height;
+		var X = Math.log10(widthOverHeight) *
+			(86.6 * crossingOverHeight - 30.9 * Math.sqrt(crossingOverHeight) + 367) +
+			cube$1(crossingOverHeight) + 74 * crossingOverHeight + 130;
+		return 1e-12 * width *
+			(0.25 * X * widthOverHeight ** (-1 / 3) - 60 +
+			1 / (2 * crossingOverHeight) -
+			0.375 * widthOverHeight * (1 - crossingOverHeight));
+	};
+
+	var capCorrection = function (width, Height, Thickness, er) {
+		var reference = microstripLine$1(width, Height, Thickness, 9.9);
+		var actual = microstripLine$1(width, Height, Thickness, er);
+		return reference.Z / actual.Z * Math.sqrt(actual.ere / reference.ere);
+	};
+
+	var armCapacitance = function (width, crossingWidth, Height, Thickness, er) {
+		return crossCapacitanceBase(width, crossingWidth, Height) *
+			capCorrection(width, Height, Thickness, er);
+	};
+
+	var armInductance = function (width, crossingWidth, Height) {
+		var widthOverHeight = width / Height;
+		var crossingOverHeight = crossingWidth / Height;
+		var Y = 165.6 * crossingOverHeight + 31.2 * Math.sqrt(crossingOverHeight) - 11.8 * square$1(crossingOverHeight);
+		return 1e-9 * Height *
+			(Y * widthOverHeight - 32 * crossingOverHeight + 3) *
+			widthOverHeight ** -1.5;
+	};
+
+	var centerInductance = function (horizontalWidth, verticalWidth, Height) {
+		var horizontalOverHeight = horizontalWidth / Height;
+		var verticalOverHeight = verticalWidth / Height;
+		var L = 1e-9 * Height *
+			(5 * verticalOverHeight * Math.cos(pi$4 / 2 * (1.5 - horizontalOverHeight)) -
+			(1 + 7 / horizontalOverHeight) / verticalOverHeight -
+			337.5);
+		return 0.8 * L;
+	};
+
+	function mcross({
+		leftWidth = 0.023 * INCH_TO_METER,
+		topWidth = 0.023 * INCH_TO_METER,
+		rightWidth = 0.023 * INCH_TO_METER,
+		bottomWidth = 0.023 * INCH_TO_METER,
+		Height = 0.025 * INCH_TO_METER,
+		Thickness = 0.0000125 * INCH_TO_METER,
+		er = 10,
+		rho = 1,
+		tand = 0.001,
+		roughnessRms = 0
+	} = {}) {
+		var cross = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var widths = [leftWidth, topWidth, rightWidth, bottomWidth];
+		var arms = widths.map(function (width) { return microstripLine$1(width, Height, Thickness, er); });
+		var sparsArray = [];
+		var analysis = [];
+		var horizontalWidth = 0.5 * (leftWidth + rightWidth);
+		var verticalWidth = 0.5 * (topWidth + bottomWidth);
+		var armCaps = [
+			armCapacitance(leftWidth, verticalWidth, Height, Thickness, er),
+			armCapacitance(topWidth, horizontalWidth, Height, Thickness, er),
+			armCapacitance(rightWidth, verticalWidth, Height, Thickness, er),
+			armCapacitance(bottomWidth, horizontalWidth, Height, Thickness, er)
+		];
+		var armInds = [
+			armInductance(leftWidth, verticalWidth, Height),
+			armInductance(topWidth, horizontalWidth, Height),
+			armInductance(rightWidth, verticalWidth, Height),
+			armInductance(bottomWidth, horizontalWidth, Height)
+		];
+		var Lcenter = centerInductance(horizontalWidth, verticalWidth, Height);
+		var Ct = armCaps.reduce(function (sum, cap) { return sum + cap; }, 0);
+
+		for (var freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			var freq = frequencyList[freqCount];
+			var omega = 2 * pi$4 * freq;
+			var Y = emptyCplxMatrix(6);
+
+			stampAdmittance(Y, 0, 4, complex(0, -1 / (omega * armInds[0])));
+			stampAdmittance(Y, 1, 5, complex(0, -1 / (omega * armInds[1])));
+			stampAdmittance(Y, 2, 4, complex(0, -1 / (omega * armInds[2])));
+			stampAdmittance(Y, 3, 5, complex(0, -1 / (omega * armInds[3])));
+			stampAdmittance(Y, 4, 5, complex(0, -1 / (omega * Lcenter)));
+
+			for (var i = 0; i < arms.length; i++) {
+				stampAdmittance(Y, i, null, complex(0, omega * armCaps[i]));
+			}
+
+			var externalY = reducedExternalY(Y);
+			var S = yToS(externalY, Ro);
+			var row = [freq];
+			for (var sRow = 0; sRow < 4; sRow++) {
+				for (var sCol = 0; sCol < 4; sCol++) {
+					row.push(S.m[sRow][sCol]);
+				}
+			}
+
+			sparsArray[freqCount] = row;
+			analysis[freqCount] = {
+				frequency: freq,
+				armCaps: armCaps.slice(),
+				armInds: armInds.slice(),
+				Lcenter: Lcenter,
+				Ct: Ct,
+				Y: externalY.m
+			};
+		}
+
+		cross.setspars(sparsArray);
+		cross.setglobal(global);
+		cross.Ct = Ct;
+		cross.microstrip = {
+			leftWidth,
+			topWidth,
+			rightWidth,
+			bottomWidth,
+			Height,
+			Thickness,
+			er,
+			rho,
+			tand,
+			roughnessRms,
+			leftArm: arms[0],
+			topArm: arms[1],
+			rightArm: arms[2],
+			bottomArm: arms[3],
+			armCaps,
+			armInds,
+			Lcenter,
+			Ct,
+			analysis
+		};
+		return cross;
+	}
+
+	// Modified: 2026-07-01
+
+	var pi$3 = Math.PI;
+
+	var square = function (x) { return x * x; };
+	var cube = function (x) { return x * x * x; };
+	var fourth = function (x) { return x * x * x * x; };
+
+	var hammerstadAB = function (u, er) {
+		var u2 = square(u);
+		var u3 = cube(u);
+		var u4 = fourth(u);
+		var a = 1 + Math.log((u4 + u2 / 2704) / (u4 + 0.432)) / 49 + Math.log(1 + u3 / 5929.741) / 18.7;
+		var b = 0.564 * ((er - 0.9) / (er + 3)) ** 0.053;
+		return {a, b};
+	};
+
+	var hammerstadEr = function (u, er) {
+		var ab = hammerstadAB(u, er);
+		return (er + 1) / 2 + (er - 1) / 2 * (1 + 10 / u) ** (-ab.a * ab.b);
+	};
+
+	var homogeneousZ0 = function (u) {
+		var f = 6 + (2 * pi$3 - 6) * Math.exp(-((30.666 / u) ** 0.7528));
+		return (VACUUM_IMPEDANCE / (2 * pi$3)) * Math.log(f / u + Math.sqrt(1 + 4 / square(u)));
+	};
+
+	var deltaUThicknessSingle = function (u, thicknessOverHeight) {
+		if (thicknessOverHeight <= 0.0) {
+			return 0.0;
+		}
+
+		return (1.25 * thicknessOverHeight / pi$3) *
+			(1 + Math.log((2 + (4 * pi$3 * u - 2) / (1 + Math.exp(-100 * (u - 1 / (2 * pi$3))))) / thicknessOverHeight));
+	};
+
+	var microstripLine = function (width, Height, Thickness, er) {
+		var u = width / Height;
+		var effectiveU = u + deltaUThicknessSingle(u, Thickness / Height);
+		var ere = hammerstadEr(effectiveU, er);
+		var Z = homogeneousZ0(effectiveU) / Math.sqrt(ere);
+
+		return {
+			width: width,
+			u: u,
+			effectiveU: effectiveU,
+			ere: ere,
+			Z: Z,
+			lineInductancePerMeter: Z * Math.sqrt(ere) / C0
+		};
+	};
+
+	var identityCplx$1 = function (size) {
+		var out = dim(size, size, complex(0, 0));
+		for (var row = 0; row < size; row++) {
+			for (var col = 0; col < size; col++) {
+				out[row][col] = row === col ? complex(1, 0) : complex(0, 0);
+			}
+		}
+		return matrix(out);
+	};
+
+	var zToS$1 = function (Z, Ro) {
+		var size = Z.m.length;
+		var I = identityCplx$1(size);
+		var normalizedZ = dim(size, size, complex(0, 0));
+		for (var row = 0; row < size; row++) {
+			for (var col = 0; col < size; col++) {
+				normalizedZ[row][col] = Z.m[row][col].div(complex(Ro, 0));
+			}
+		}
+		var z = matrix(normalizedZ);
+		return z.subCplx(I).mulCplx(z.addCplx(I).invertCplx());
+	};
+
+	var stepCapacitancePf = function (wideWidth, narrowWidth, er) {
+		var ratio = wideWidth / narrowWidth;
+		var logEr = Math.log10(er);
+		return Math.sqrt(wideWidth * narrowWidth) *
+			((10.1 * logEr + 2.33) * ratio - 12.6 * logEr - 3.17);
+	};
+
+	var stepInductanceNh = function (wideWidth, narrowWidth, Height) {
+		var ratio = wideWidth / narrowWidth;
+		var ratioMinusOne = ratio - 1;
+		return Height * (ratioMinusOne * (40.5 + 0.2 * ratioMinusOne) - 75 * Math.log10(ratio));
+	};
+
+	function mstep({
+		width1 = 0.046 * INCH_TO_METER,
+		width2 = 0.023 * INCH_TO_METER,
+		Height = 0.025 * INCH_TO_METER,
+		Thickness = 0.0000125 * INCH_TO_METER,
+		er = 10,
+		rho = 1,
+		tand = 0.001,
+		roughnessRms = 0
+	} = {}) {
+		var step = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var port1Line = microstripLine(width1, Height, Thickness, er);
+		var port2Line = microstripLine(width2, Height, Thickness, er);
+		var wideWidth = Math.max(width1, width2);
+		var narrowWidth = Math.min(width1, width2);
+		var CsPf = stepCapacitancePf(wideWidth, narrowWidth, er);
+		var LsNh = stepInductanceNh(wideWidth, narrowWidth, Height);
+		var lineInductanceSum = port1Line.lineInductancePerMeter + port2Line.lineInductancePerMeter;
+		var L1Nh = LsNh * port1Line.lineInductancePerMeter / lineInductanceSum;
+		var L2Nh = LsNh * port2Line.lineInductancePerMeter / lineInductanceSum;
+		var sparsArray = [];
+		var analysis = [];
+
+		for (var freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			var frequency = frequencyList[freqCount];
+			var z21 = complex(0, -1 / (2 * pi$3 * frequency * CsPf * 1e-12));
+			var z11 = complex(0, 2 * pi$3 * frequency * L1Nh * 1e-9).add(z21);
+			var z22 = complex(0, 2 * pi$3 * frequency * L2Nh * 1e-9).add(z21);
+			var Z = matrix([
+				[z11, z21],
+				[z21, z22]
+			]);
+			var S = zToS$1(Z, Ro);
+
+			sparsArray[freqCount] = [frequency, S.m[0][0], S.m[0][1], S.m[1][0], S.m[1][1]];
+			analysis[freqCount] = {
+				frequency,
+				CsPf,
+				LsNh,
+				L1Nh,
+				L2Nh,
+				Z: Z.m
+			};
+		}
+
+		step.setspars(sparsArray);
+		step.setglobal(global);
+		step.microstrip = {
+			width1,
+			width2,
+			Height,
+			Thickness,
+			er,
+			rho,
+			tand,
+			roughnessRms,
+			port1Line,
+			port2Line,
+			CsPf,
+			LsNh,
+			L1Nh,
+			L2Nh,
+			validity: {
+				capacitanceRatio: '1.5 <= max(width1,width2) / min(width1,width2) <= 3.5, er <= 10',
+				inductanceRatio: 'max(width1,width2) / min(width1,width2) <= 5, best stated for narrowWidth / Height = 1'
+			},
+			analysis
+		};
+		return step;
+	}
+
+	// Modified: 2026-07-01
+
+	var pi$2 = Math.PI;
+
+	var identityCplx = function (size) {
+		var out = dim(size, size, complex(0, 0));
+		for (var row = 0; row < size; row++) {
+			for (var col = 0; col < size; col++) {
+				out[row][col] = row === col ? complex(1, 0) : complex(0, 0);
+			}
+		}
+		return matrix(out);
+	};
+
+	var zToS = function (Z, Ro) {
+		var size = Z.m.length;
+		var I = identityCplx(size);
+		var normalizedZ = dim(size, size, complex(0, 0));
+		for (var row = 0; row < size; row++) {
+			for (var col = 0; col < size; col++) {
+				normalizedZ[row][col] = Z.m[row][col].div(complex(Ro, 0));
+			}
+		}
+		var z = matrix(normalizedZ);
+		return z.subCplx(I).mulCplx(z.addCplx(I).invertCplx());
+	};
+
+	var unmiteredCorner = function (Width, Height, er) {
+		var widthOverHeight = Width / Height;
+		return {
+			CpF: Width * ((10.35 * er + 2.5) * widthOverHeight + (2.6 * er + 5.64)),
+			LnH: 220 * Height * (1 - 1.35 * Math.exp(-0.18 * widthOverHeight ** 1.39))
+		};
+	};
+
+	var halfMiteredCorner = function (Width, Height, er) {
+		var widthOverHeight = Width / Height;
+		return {
+			CpF: Width * ((3.93 * er + 0.62) * widthOverHeight + (7.6 * er + 3.80)),
+			LnH: 440 * Height * (1 - 1.062 * Math.exp(-0.177 * widthOverHeight ** 0.947))
+		};
+	};
+
+	var interpolate = function (a, b, t) {
+		return a + (b - a) * t;
+	};
+
+	function mbend({
+		Width = 0.023 * INCH_TO_METER,
+		miterLength,
+		Height = 0.025 * INCH_TO_METER,
+		Thickness = 0.0000125 * INCH_TO_METER,
+		er = 10,
+		rho = 1,
+		tand = 0.001,
+		roughnessRms = 0
+	} = {}) {
+		var bend = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var defaultMiterLength = 0.5 * Math.SQRT2 * Width;
+		var actualMiterLength = miterLength === undefined ? defaultMiterLength : miterLength;
+		var miterFraction = actualMiterLength / (Math.SQRT2 * Width);
+		var interpolation = Math.max(0, Math.min(1, miterFraction / 0.5));
+		var unmitered = unmiteredCorner(Width, Height, er);
+		var halfMitered = halfMiteredCorner(Width, Height, er);
+		var CpF = interpolate(unmitered.CpF, halfMitered.CpF, interpolation);
+		var LnH = interpolate(unmitered.LnH, halfMitered.LnH, interpolation);
+		var sparsArray = [];
+		var analysis = [];
+
+		for (var freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			var frequency = frequencyList[freqCount];
+			var z21 = complex(0, -1 / (2 * pi$2 * frequency * CpF * 1e-12));
+			var z11 = complex(0, 2 * pi$2 * frequency * LnH * 1e-9).add(z21);
+			var Z = matrix([
+				[z11, z21],
+				[z21, z11]
+			]);
+			var S = zToS(Z, Ro);
+
+			sparsArray[freqCount] = [frequency, S.m[0][0], S.m[0][1], S.m[1][0], S.m[1][1]];
+			analysis[freqCount] = {
+				frequency,
+				CpF,
+				LnH,
+				Z: Z.m
+			};
+		}
+
+		bend.setspars(sparsArray);
+		bend.setglobal(global);
+		bend.microstrip = {
+			Width,
+			miterLength: actualMiterLength,
+			defaultMiterLength,
+			miterFraction,
+			interpolation,
+			Height,
+			Thickness,
+			er,
+			rho,
+			tand,
+			roughnessRms,
+			CpF,
+			LnH,
+			unmitered,
+			halfMitered,
+			validity: {
+				widthOverHeight: '0.2 <= Width / Height <= 6.0',
+				er: '2.36 <= er <= 10.4',
+				frequencyHeight: 'frequency * Height <= 12e6',
+				miter: 'Published equations provide unmitered and 50% mitered endpoints; intermediate miter lengths use linear interpolation.'
+			},
+			analysis
+		};
+		return bend;
+	}
+
+	// Modified: 2026-07-01
+
+	function mtfr({
+		ohmsPerSquare = 50,
+		Width = 10 * MIL_TO_METER,
+		Length = 10 * MIL_TO_METER,
+		temperatureCoefficient = 0,
+		temperatureReference = 25
+	} = {}) {
+		var filmResistor = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro, Temp = global.Temp;
+		var Zo = complex(Ro, 0), two = complex(2, 0), freqCount = 0;
+		var squares = Length / Width;
+		var resistanceAtReference = ohmsPerSquare * squares;
+		var resistance = resistanceAtReference * (1 + temperatureCoefficient * (Temp - temperatureReference));
+		var sparsArray = [];
+
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			var Z = complex(resistance, 0);
+			var denominator = Z.add(Zo.add(Zo));
+			var s11 = Z.div(denominator);
+			var s21 = two.mul(Zo).div(denominator);
+			var s12 = s21;
+			var s22 = s11;
+			sparsArray[freqCount] = [frequencyList[freqCount], s11, s12, s21, s22];
+		}
+
+		filmResistor.setspars(sparsArray);
+		filmResistor.setglobal(global);
+		filmResistor.filmResistor = {
+			ohmsPerSquare,
+			Width,
+			Length,
+			squares,
+			resistanceAtReference,
+			resistance,
+			temperatureCoefficient,
+			temperatureReference,
+			temperature: Temp,
+			model: 'series sheet resistance, R = ohmsPerSquare * Length / Width'
+		};
+		return filmResistor;
+	}
+
+	// Modified: 2026-07-01
+
+	var pi$1 = Math.PI;
+
+	var viaInductance$1 = function (Height, radius) {
+		var a = Math.sqrt(radius * radius + Height * Height);
+		return (MU0 / (2 * pi$1)) *
+			(Height * Math.log((Height + a) / radius) + 1.5 * (radius - a));
+	};
+
+	var viaResistanceDc$1 = function (Height, radius, Thickness, rho) {
+		var innerRadius = Math.max(radius - Thickness, 0);
+		var metalArea = pi$1 * (radius * radius - innerRadius * innerRadius);
+		return rho * Height / metalArea;
+	};
+
+	function mvgnd({
+		Diameter = 100e-6,
+		Height = 0.025 * INCH_TO_METER,
+		Thickness = 0.0000125 * INCH_TO_METER,
+		rho = COPPER_RESISTIVITY
+	} = {}) {
+		var via = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var radius = Diameter / 2;
+		var L = viaInductance$1(Height, radius);
+		var Rdc = viaResistanceDc$1(Height, radius, Thickness, rho);
+		var fdelta = rho / (pi$1 * MU0 * Thickness * Thickness);
+		var sparsArray = [];
+		var analysis = [];
+
+		for (var freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			var frequency = frequencyList[freqCount];
+			var R = Rdc * Math.sqrt(1 + frequency / fdelta);
+			var Z = complex(R, 2 * pi$1 * frequency * L);
+			var s11 = Z.sub(complex(Ro, 0)).div(Z.add(complex(Ro, 0)));
+			sparsArray[freqCount] = [frequency, s11];
+			analysis[freqCount] = {
+				frequency,
+				R,
+				X: 2 * pi$1 * frequency * L,
+				Z
+			};
+		}
+
+		via.setspars(sparsArray);
+		via.setglobal(global);
+		via.microstrip = {
+			Diameter,
+			radius,
+			Height,
+			Thickness,
+			rho,
+			Rdc,
+			L,
+			fdelta,
+			validity: 'Goldfarb/Pucel via model stated for Height < 0.03 * lambda0',
+			analysis
+		};
+		return via;
+	}
+
+	// Modified: 2026-07-01
+
+	var pi = Math.PI;
+
+	var viaInductance = function (Height, radius) {
+		var a = Math.sqrt(radius * radius + Height * Height);
+		return (MU0 / (2 * pi)) *
+			(Height * Math.log((Height + a) / radius) + 1.5 * (radius - a));
+	};
+
+	var viaResistanceDc = function (Height, radius, Thickness, rho) {
+		var innerRadius = Math.max(radius - Thickness, 0);
+		var metalArea = pi * (radius * radius - innerRadius * innerRadius);
+		return rho * Height / metalArea;
+	};
+
+	var annularCapacitance = function (padDiameter, antipadDiameter, Height, er) {
+		if (padDiameter <= 0 || antipadDiameter <= padDiameter || Height <= 0) {
+			return 0;
+		}
+		var padRadius = padDiameter / 2;
+		var antipadRadius = antipadDiameter / 2;
+		return 2 * pi * EPSILON0 * er * Height / Math.log(antipadRadius / padRadius);
+	};
+
+	var shunt = function (Y) {
+		return {
+			A: complex(1, 0),
+			B: complex(0, 0),
+			C: Y,
+			D: complex(1, 0)
+		};
+	};
+
+	var series = function (Z) {
+		return {
+			A: complex(1, 0),
+			B: Z,
+			C: complex(0, 0),
+			D: complex(1, 0)
+		};
+	};
+
+	var multiplyAbcd = function (left, right) {
+		return {
+			A: left.A.mul(right.A).add(left.B.mul(right.C)),
+			B: left.A.mul(right.B).add(left.B.mul(right.D)),
+			C: left.C.mul(right.A).add(left.D.mul(right.C)),
+			D: left.C.mul(right.B).add(left.D.mul(right.D))
+		};
+	};
+
+	var abcdToS = function (abcd, Ro) {
+		var A = abcd.A, B = abcd.B, C = abcd.C, D = abcd.D;
+		var Bnorm = B.div(complex(Ro, 0));
+		var Cnorm = C.mul(complex(Ro, 0));
+		var denominator = A.add(Bnorm).add(Cnorm).add(D);
+		var s11 = A.add(Bnorm).sub(Cnorm).sub(D).div(denominator);
+		var s21 = complex(2, 0).div(denominator);
+		var s12 = complex(2, 0).mul(A.mul(D).sub(B.mul(C))).div(denominator);
+		var s22 = D.add(Bnorm).sub(Cnorm).sub(A).div(denominator);
+		return {s11, s12, s21, s22};
+	};
+
+	function mvia({
+		Diameter = 100e-6,
+		connectionHeight = 0.025 * INCH_TO_METER,
+		Thickness = 0.0000125 * INCH_TO_METER,
+		rho = COPPER_RESISTIVITY,
+		er = 10,
+		padDiameter = 0,
+		antipadDiameter = 0,
+		topPadHeight = 0,
+		bottomPadHeight = 0,
+		topStubLength = 0,
+		bottomStubLength = 0
+	} = {}) {
+		var via = new nPort;
+		var frequencyList = global.fList, Ro = global.Ro;
+		var radius = Diameter / 2;
+		var Lbarrel = viaInductance(connectionHeight, radius);
+		var Rdc = viaResistanceDc(connectionHeight, radius, Thickness, rho);
+		var fdelta = rho / (pi * MU0 * Thickness * Thickness);
+		var topPadCapacitance = annularCapacitance(padDiameter, antipadDiameter, topPadHeight, er);
+		var bottomPadCapacitance = annularCapacitance(padDiameter, antipadDiameter, bottomPadHeight, er);
+		var topStubCapacitance = topStubLength > 0 ? annularCapacitance(Diameter, antipadDiameter || 2 * Diameter, topStubLength, er) : 0;
+		var bottomStubCapacitance = bottomStubLength > 0 ? annularCapacitance(Diameter, antipadDiameter || 2 * Diameter, bottomStubLength, er) : 0;
+		var sparsArray = [];
+		var analysis = [];
+
+		for (var freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			var frequency = frequencyList[freqCount];
+			var omega = 2 * pi * frequency;
+			var R = Rdc * Math.sqrt(1 + frequency / fdelta);
+			var X = omega * Lbarrel;
+			var Zbarrel = complex(R, X);
+			var Yin = complex(0, omega * (topPadCapacitance + topStubCapacitance));
+			var Yout = complex(0, omega * (bottomPadCapacitance + bottomStubCapacitance));
+			var network = multiplyAbcd(multiplyAbcd(shunt(Yin), series(Zbarrel)), shunt(Yout));
+			var S = abcdToS(network, Ro);
+
+			sparsArray[freqCount] = [frequency, S.s11, S.s12, S.s21, S.s22];
+			analysis[freqCount] = {
+				frequency,
+				R,
+				X,
+				Zbarrel,
+				Yin,
+				Yout
+			};
+		}
+
+		via.setspars(sparsArray);
+		via.setglobal(global);
+		via.microstrip = {
+			Diameter,
+			radius,
+			connectionHeight,
+			Thickness,
+			rho,
+			er,
+			padDiameter,
+			antipadDiameter,
+			topPadHeight,
+			bottomPadHeight,
+			topStubLength,
+			bottomStubLength,
+			Rdc,
+			Lbarrel,
+			fdelta,
+			topPadCapacitance,
+			bottomPadCapacitance,
+			topStubCapacitance,
+			bottomStubCapacitance,
+			model: 'two-port via barrel with optional pad/antipad and unused-stub shunt capacitance',
+			validity: 'Barrel R/L follows the Goldfarb/Pucel via model; pad and stub capacitances are first-order coaxial approximations.',
+			analysis
+		};
+		return via;
 	}
 
 	function getCircuitTitle() {
@@ -7790,6 +8696,7 @@
 	exports.Load = Load;
 	exports.Open = Open;
 	exports.R = R;
+	exports.Shift90 = Shift90;
 	exports.Short = Short;
 	exports.Tee = Tee;
 	exports.Tee4 = Tee4;
@@ -7810,9 +8717,15 @@
 	exports.log = log;
 	exports.lpfGen = lpfGen;
 	exports.matrix = matrix;
+	exports.mbend = mbend;
 	exports.mclin = mclin;
+	exports.mcross = mcross;
 	exports.mlin = mlin;
+	exports.mstep = mstep;
 	exports.mtee = mtee;
+	exports.mtfr = mtfr;
+	exports.mvgnd = mvgnd;
+	exports.mvia = mvia;
 	exports.nodal = nodal;
 	exports.paC = paC;
 	exports.paL = paL;
@@ -7839,7 +8752,6 @@
 	exports.seSeRL = seSeRL;
 	exports.seSeRLC = seSeRLC;
 	exports.seriesTee = seriesTee;
-	exports.shift90 = shift90;
 	exports.smithChart = smithChart;
 	exports.tclin = tclin;
 	exports.tlin = tlin;
