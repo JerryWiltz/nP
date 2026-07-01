@@ -22,9 +22,9 @@ g.fList = g.fGen(5000e6,15000e6,20);
 
 // set up components
 var tee = nP.Tee();
-var z50 = nP.tlin(50,0.295*0.0254);
-var z35 = nP.tlin(35.35,0.295*0.0254);
-var z50half = nP.tlin(50.0,0.295*0.0254/2);
+var z50 = nP.Tlin(50,0.295*0.0254);
+var z35 = nP.Tlin(35.35,0.295*0.0254);
+var z50half = nP.Tlin(50.0,0.295*0.0254/2);
 var open = nP.Open();
 var short = nP.Short();
 

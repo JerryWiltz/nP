@@ -28,10 +28,10 @@ var c = Math.pow(10,-C/20);
 var zoe = 50*Math.sqrt((1+c)/(1-c));
 var zoo = 50*Math.sqrt(((1-c)/(1+c)));
 
-// set up the tclin directional coupler
-var tclin = nP.tclin(zoe,zoo,0.295 * 0.0254);
+// set up the Tclin directional coupler
+var Tclin = nP.Tclin(zoe,zoo,0.295 * 0.0254);
 var q1 = nP.nodal(
-	[tclin, 1, 2, 3, 4],
+	[Tclin, 1, 2, 3, 4],
 	['out', 1, 2, 3, 4]
 );
 var directionalCouplerOut1 = q1.out('s21dB','s41dB');

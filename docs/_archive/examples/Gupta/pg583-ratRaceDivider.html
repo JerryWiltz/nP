@@ -25,8 +25,8 @@ g.fList = g.fGen(.5e9,5.5e9,101);
 
 // set up the rat race with tlins
 var threeWay = nP.Tee();
-var t3qtr = nP.tlin(70.7, 2.9507 * 0.0254);
-var t1qtr = nP.tlin(70.7, 0.9835 * 0.0254);
+var t3qtr = nP.Tlin(70.7, 2.9507 * 0.0254);
+var t1qtr = nP.Tlin(70.7, 0.9835 * 0.0254);
 
 var pwr = nP.nodal([threeWay, 1,12,2],
 		[t1qtr,2,3],

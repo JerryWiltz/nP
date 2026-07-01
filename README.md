@@ -167,7 +167,7 @@ g.fList = g.fGen(0e9,12e9,101);
 
 // define the components of the power divider
 var tee = nP.Tee();
-var t70 = nP.tlin(70.7, 0.49 * 0.0254);
+var t70 = nP.Tlin(70.7, 0.49 * 0.0254);
 var r100 = nP.seR(100);
 
 // hook up the components with nodal, it creates a output 3-port named "wilkinson"
@@ -351,14 +351,14 @@ nP.<b>lpfGen</b>(<i> filt = [50, 1.641818746502858e-11, 4.565360855435164e-8, 1.
 
 ---
 
-## nP-Open-Short-Load
-### These are ideal one-ports
+## nP-Ideal-Components
+### These are ideal components
 
-nP.<b>Open</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/openShortLoad/Open.js "Source") Creates and returns a new nPort Object of a one port Open. No argument required.
+nP.<b>Open</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/idealComponents/Open.js "Source") Creates and returns a new nPort Object of a one port Open. No argument required.
 
-nP.<b>Short</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/openShortLoad/Short.js "Source") Creates and returns a new nPort Object of a one port Short. No argument required.
+nP.<b>Short</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/idealComponents/Short.js "Source") Creates and returns a new nPort Object of a one port Short. No argument required.
 
-nP.<b>Load</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/openShortLoad/Load.js "Source") Creates and returns a new nPort Object of a one port Load. No argument required.
+nP.<b>Load</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/idealComponents/Load.js "Source") Creates and returns a new nPort Object of a one port Load. No argument required.
 
 ---
 
@@ -366,15 +366,13 @@ nP.<b>Load</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/
 
 Connections are 3-Port and n-Port "dummy" components. Using these connections enables 2-Port components to be connected together to form more complex circuits such as power dividers.
 
-nP.<b>Tee</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/connections/Tee.js "Source") Creates and returns a new nPort Object of 3-port interconnect, a 3 input junction. Valid only with nP.nodal(). See the wilkinson example. No argument required, must use nP.nodal().
+nP.<b>Tee</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/idealComponents/Tee.js "Source") Creates and returns a new nPort Object of 3-port interconnect, a 3 input junction. Valid only with nP.nodal(). See the wilkinson example. No argument required, must use nP.nodal().
 
-nP.<b>Tee4</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/connections/Tee4.js "Source") Creates and returns a new nPort Object of 4-port interconnect, a 4 input junction. Valid only with nP.nodal(). No argument required, must use nP.nodal().
+nP.<b>Tee4</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/idealComponents/Tee4.js "Source") Creates and returns a new nPort Object of 4-port interconnect, a 4 input junction. Valid only with nP.nodal(). No argument required, must use nP.nodal().
 
-nP.<b>Tee5</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/connections/Tee5.js "Source") Creates and returns a new nPort Object of 5-port interconnect, a 5 input junction. Valid only with nP.nodal(). No argument required, must use nP.nodal().
+nP.<b>Tee5</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/idealComponents/Tee5.js "Source") Creates and returns a new nPort Object of 5-port interconnect, a 5 input junction. Valid only with nP.nodal(). No argument required, must use nP.nodal().
 
-nP.<b>SeriesTee</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/connections/seriesTee.js "Source") Creates and returns a new nPort Object of 3-port interconnect. Ports 1 and 2 are input and outputs. Port 3 is the series port. Valid only with nP.nodal(). No argument required, must use nP.nodal().
-
-### Compare attenuator analysis results with and without nP.seriesTee()
+### Pi attenuator solved with nP.nodal()
 
 ```html
 <!DOCTYPE html>
@@ -382,7 +380,7 @@ nP.<b>SeriesTee</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width">
-		<title>seriesTee</title>
+		<title>Pi attenuator with nodal</title>
 	</head>
 	<body>
 		<script src="./nP.js"></script>
@@ -391,40 +389,37 @@ nP.<b>SeriesTee</b>(<i>  </i>) [<>](https://github.com/JerryWiltz/nP/blob/master
 var g = nP.global;	
 g.fList = [2e9]; // 2GHz
 
-// define the resistors for the attenuator
-var r1 = nP.paR(292.4);
-var r2 = nP.seR(17.6);
-var r3 = nP.paR(292.4);
+var r1 = nP.R(292.4);
+var r2 = nP.R(17.6);
+var r3 = nP.R(292.4);
+var Tee = nP.Tee();
+var Short = nP.Short();
 
-// using cas to combine the 2-ports
-var attn1 = r1.cas(r2).cas(r3);
-var attn1Out = attn1.out('s21dB','s11dB');
-nP.lineTable({inputTable: [attn1Out], tableTitle:'Solved by nP.cas()'});
-
-// define the seriesTee and open
-var tee = nP.seriesTee();
-var open = nP.Open();
-var r4 = nP.paR(17.6); // note, the 17.6 ohm resistor must be a parallel 2-port!
-
-// use nodal to combine the 2-ports
-var attn2 = nP.nodal([r1,1,2], [tee,2,3,4], [r4,4,5], [open,5], [r3,3,6], ['out',1,6]);
-var attn2Out = attn2.out('s21dB','s11dB');
-nP.lineTable({inputTable: [attn2Out], tableTitle:'seriesTee realization solved with nP.nodal()'});
+var attn = nP.nodal(
+	[Tee, 2, 1, 3],
+	[r1, 2, 4],
+	[Short, 4],
+	[r2, 3, 5],
+	[Tee, 6, 5, 7],
+	[r3, 6, 8],
+	[Short, 8],
+	['out', 1, 7]
+);
+var attnOut = attn.out('s21dB','s11dB');
+nP.lineTable({inputTable: [attnOut], tableTitle:'Pi attenuator solved with nP.nodal()'});
 
 		</script>
 	</body>
 </html>
 ```
 
-<a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/HTMLs/readme-image/seriesTeeAnalysis.png></a>
-
 ---
 
 ## nP-Transmission-lines
 
-nP.<b>tlin</b>(<i> Z = 60, Length = 0.5 * 0.0254 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/tlin/tlin.js "Source") An ideal two port transmission line. The tlin is lossless and the dielectric constant is 1.0 . Z is the characteristic impedance in Ohms, and Length is the physical length in meters. Creates and returns a new nPort Object. If no arguments, the default values are 60 Ohms, 0.5 * 0.0254 Meters.
+nP.<b>Tlin</b>(<i> Z = 60, Length = 0.5 * 0.0254 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/idealComponents/Tlin.js "Source") An ideal two port transmission line. The Tlin is lossless and the dielectric constant is 1.0 . Z is the characteristic impedance in Ohms, and Length is the physical length in meters. Creates and returns a new nPort Object. If no arguments, the default values are 60 Ohms, 0.5 * 0.0254 Meters.
 
-nP.<b>tclin</b>(<i> Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/tlin/tclin.js "Source") An ideal four port coupled transmission line. The ports are numbered clockwise. Port 1 is the upper left, Port 2 is the upper right, Port 3 is the lower right, and Port 4 is the lower left. When the input is at Port 1, the through port is Port 2, the coupled port is Port 4, and the isolated port is Port 3. The tclin is lossless and the dielectric constant is 1.0 . Zoe is the even mode characteristic impedance in Ohms, Zoo is the odd mode characteristic impedance in Ohms, and Length is the physical length in meters. Creates and returns a new nPort Object. If no arguments, the default values are 100 Ohms, 30 Ohms, and 1.341 * 0.0254 Meters. Note: 1.341 * 0.0254 is the 1/4 wavelength at 2.2GHz. 
+nP.<b>Tclin</b>(<i> Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/idealComponents/Tclin.js "Source") An ideal four port coupled transmission line. The ports are numbered clockwise. Port 1 is the upper left, Port 2 is the upper right, Port 3 is the lower right, and Port 4 is the lower left. When the input is at Port 1, the through port is Port 2, the coupled port is Port 4, and the isolated port is Port 3. The Tclin is lossless and the dielectric constant is 1.0 . Zoe is the even mode characteristic impedance in Ohms, Zoo is the odd mode characteristic impedance in Ohms, and Length is the physical length in meters. Creates and returns a new nPort Object. If no arguments, the default values are 100 Ohms, 30 Ohms, and 1.341 * 0.0254 Meters. Note: 1.341 * 0.0254 is the 1/4 wavelength at 2.2GHz. 
 
 ### Here below is a coupled bandpass filter example.
 
@@ -445,9 +440,9 @@ var g = nP.global;
 g.fList = g.fGen(4e9,8e9,21);
 
 // set up the couplers
-var tclin1 = nP.tclin(79.667,37.834,0.491 * 0.0254);
-var tclin2 = nP.tclin(60.866,42.505,0.491 * 0.0254);
-var tclin3 = nP.tclin(79.667,37.834,0.491 * 0.0254);
+var tclin1 = nP.Tclin(79.667,37.834,0.491 * 0.0254);
+var tclin2 = nP.Tclin(60.866,42.505,0.491 * 0.0254);
+var tclin3 = nP.Tclin(79.667,37.834,0.491 * 0.0254);
 
 // set up the open
 var open = nP.Open();

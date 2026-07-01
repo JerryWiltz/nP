@@ -1,5 +1,5 @@
 # AGENTS.md
-<!-- Modified: 2026-06-24 -->
+<!-- Modified: 2026-07-01 -->
 
 Instructions for files in `docs/` and its subdirectories.
 
@@ -29,6 +29,10 @@ Write RF examples in this order so the circuit logic is easy to follow:
 6. Send the output table to `nP.lineChart()`, `nP.lineTable()`, or `nP.smithChart()`.
 
 Prefer this flow over examples that hide topology inside legacy combined RLC constructors or long cascades.
+
+## Ideal Component Naming
+
+Use uppercase-first public names for ideal components in docs examples, including `nP.Tlin()` and `nP.Tclin()`. Keep physical microstrip models lowercase, such as `nP.mlin()` and `nP.mclin()`. Use `nP.Tee()` for ideal junctions and connect series two-port components directly in `nP.nodal(...)`; do not use or reintroduce a separate series-tee helper.
 
 ## Modernizing Legacy RF Examples
 
@@ -91,7 +95,7 @@ For Wilkinson-style examples, use transmission-line branches and, when needed, a
 
 ## Coupled Transmission Line Port Order
 
-Coupled transmission line components are numbered clockwise starting at the upper-left port. Use this convention for `nP.tclin()`, `nP.mclin()`, and future coupled-line constructors.
+Coupled transmission line components are numbered clockwise starting at the upper-left port. Use this convention for `nP.Tclin()`, `nP.mclin()`, and future coupled-line constructors.
 
 ```text
 port 1  ---- coupled line ----  port 2

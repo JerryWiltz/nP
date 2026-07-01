@@ -29,6 +29,10 @@ Write dev examples in this order so the circuit logic is easy to follow:
 
 This pattern is preferred over putting unrelated chart/table data directly into a dev page unless the page is specifically testing chart or table behavior.
 
+## Ideal Component Naming
+
+Use uppercase-first public names for ideal components in dev pages, including `nP.Tlin()` and `nP.Tclin()`. Keep physical microstrip models lowercase, such as `nP.mlin()` and `nP.mclin()`. Use `nP.Tee()` for ideal junctions and connect series two-port components directly in `nP.nodal(...)`; do not use or reintroduce a separate series-tee helper.
+
 ## Chart And Table Dev Pages
 
 - `nP.lineChart()` consumes numeric x/y tables. It supports linear/log x and y scales, origin or edge axis placement, hover values, chart labels, plot border styling, and PNG copy.
@@ -106,7 +110,7 @@ For Wilkinson-style examples, use transmission-line branches and, when needed, a
 
 ## Coupled Transmission Line Port Order
 
-For coupled transmission line dev pages, number ports clockwise starting at the upper-left port. Use this same convention for `nP.tclin()`, `nP.mclin()`, and future coupled-line constructors.
+For coupled transmission line dev pages, number ports clockwise starting at the upper-left port. Use this same convention for `nP.Tclin()`, `nP.mclin()`, and future coupled-line constructors.
 
 ```text
 port 1  ---- coupled line ----  port 2
@@ -160,7 +164,6 @@ Connection and combining helpers:
 - `nP.Tee()`
 - `nP.Tee4()`
 - `nP.Tee5()`
-- `nP.seriesTee()`
 - `nP.nodal()`
 - `nP.cascade()`
 
@@ -173,8 +176,8 @@ Ideal fixtures:
 
 Transmission-line and microstrip constructors:
 
-- `nP.tlin()`
-- `nP.tclin()`
+- `nP.Tlin()`
+- `nP.Tclin()`
 - `nP.mlin()`
 - `nP.mclin()`
 - `nP.mtee()`

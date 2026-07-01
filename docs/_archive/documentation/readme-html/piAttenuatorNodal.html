@@ -4,7 +4,7 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width">
-		<title>seriesTee</title>
+		<title>Pi attenuator with nodal</title>
 	</head>
 	<body>
 		<script src="../../../../dist/nP.js"></script>
@@ -34,22 +34,17 @@ var attn1 = nP.nodal(
 var attn1Out = attn1.out('s21dB','s11dB');
 var table1 = nP.lineTable({inputTable: [attn1Out], title:'Pi attenuator solved with nP.nodal()'});
 
-// define the seriesTee and open
-var tee = nP.seriesTee();
-var open = nP.Open();
 var r4 = nP.R(17.6);
 
-// use nodal to combine the 2-ports
+// use direct series two-port connections in nodal
 var attn2 = nP.nodal(
 	[r1, 1, 2],
-	[tee, 2, 3, 4],
-	[r4, 4, 5],
-	[open, 5],
-	[r3, 3, 6],
-	['out', 1, 6]
+	[r4, 2, 3],
+	[r3, 3, 4],
+	['out', 1, 4]
 );
 var attn2Out = attn2.out('s21dB','s11dB');
-var table2 = nP.lineTable({inputTable: [attn2Out], title:'seriesTee realization solved with nP.nodal()'});
+var table2 = nP.lineTable({inputTable: [attn2Out], title:'Series elements solved directly with nP.nodal()'});
 
 		</script>
 	</body>

@@ -15,7 +15,7 @@ g.fList = g.fGen(0e9,12e9,101);
 
 // define the components of the power divider
 var tee = nP.Tee();
-var t70 = nP.tlin(70.7, 0.49 * 0.0254);
+var t70 = nP.Tlin(70.7, 0.49 * 0.0254);
 var r100 = nP.R(100);
 
 // hook up the components with nodal, it creates a output 3-port named "wilkinson"

@@ -7890,22 +7890,6 @@
 		return Tee5;
 	}
 
-	function seriesTee() { // series resistor nPort object
-		var seriesTee = new nPort;
-		var e = 1e-7;
-		var frequencyList = global.fList, Ro = global.Ro;
-		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [];
-		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
-			s11 = complex(e + 1/3,0); s12 = complex(e + 2/3,0); s13 = complex(e +-2/3,0);
-			s21 = complex(e + 2/3,0); s22 = complex(e + 1/3,0); s23 = complex(e + 2/3,0);
-			s31 = complex(e +-2/3,0); s32 = complex(e + 2/3,0); s33 = complex(e + 1/3,0);
-
-			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s21, s22, s23, s31, s32, s33];
-		}	
-		seriesTee.setspars(sparsArray);
-		seriesTee.setglobal(global);
-		return seriesTee;
-	}
 
 	function nodal( ... nPortsAndNodes) { //nPortsAndNodes = [[nPort1, n1, n2 ...], [nPort2, n1, n2 ...], ... ['out', n1, nn2, ...] ]
 		var i = 0, j = 0, k = 0, row = 0, col = 0, offset = 0, base = 0;
@@ -8016,8 +8000,8 @@
 		return Load;
 	}
 
-	function tlin(Z = 60, Length = 0.5 * 0.0254) { // Z is in ohms and Length is in meters, sparameters of a physical transmission line
-		var tlin = new nPort;
+	function Tlin(Z = 60, Length = 0.5 * 0.0254) { // Z is in ohms and Length is in meters, sparameters of a physical transmission line
+		var Tlin = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
 		var Zo = complex(Ro,0), Yo = Zo.inv(), one = complex(1,0), two = complex(2,0), freqCount = 0, Ztlin = [], s11, s12, s21, s22, sparsArray = [];
 		var Atlin = {}, Btlin = {}, Ctlin = {}, Ds = {}, alpha = 0, beta = 0, gamma = {};
@@ -8039,12 +8023,12 @@
 			s21 = s12;
 			s22 = s11;
 			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
-		}	tlin.setspars(sparsArray);
-		tlin.setglobal(global);	
-		return tlin;
+		}	Tlin.setspars(sparsArray);
+		Tlin.setglobal(global);	
+		return Tlin;
 	}
 
-	function tclin(Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254) { // 1.4732 is the quarter wavelength at 2GHz, (1.3412 at 2.2 GHz)
+	function Tclin(Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254) { // 1.4732 is the quarter wavelength at 2GHz, (1.3412 at 2.2 GHz)
 		var ctlin = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
 		var Zo = complex(Ro,0), Yo = Zo.inv(), one = complex(1,0), two = complex(2,0), freqCount = 0, Zoetclin = [], Zootclin = [];
@@ -8365,14 +8349,13 @@
 	exports.Tee = Tee;
 	exports.Tee4 = Tee4;
 	exports.Tee5 = Tee5;
-	exports.seriesTee = seriesTee;
 	exports.nodal = nodal;
 	exports.cascade = cascade;
 	exports.Open = Open;
 	exports.Short = Short;
 	exports.Load = Load;
-	exports.tlin = tlin;
-	exports.tclin = tclin;
+	exports.Tlin = Tlin;
+	exports.Tclin = Tclin;
 	exports.mlin = mlin;
 	exports.mclin = mclin;
 	exports.mtee = mtee;

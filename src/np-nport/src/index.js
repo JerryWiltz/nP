@@ -29,21 +29,20 @@ export {paPaRLC} from './rlc/paPaRLC';
 export {sePaRLC} from './rlc/sePaRLC';
 export {lpfGen} from './rlc/lpfGen';
 
-export {Tee} from './connections/Tee';
-export {Tee4} from './connections/Tee4';
-export {Tee5} from './connections/Tee5';
-export {seriesTee} from './connections/seriesTee';
+export {Tee} from './idealComponents/Tee';
+export {Tee4} from './idealComponents/Tee4';
+export {Tee5} from './idealComponents/Tee5';
 
 export {nodal} from './combining/nodal';
 export {cascade} from './combining/cascade';
 
-export {Open} from './openShortLoad/Open';
-export {Short} from './openShortLoad/Short';
-export {Load} from './openShortLoad/Load';
-export {Shift90} from './openShortLoad/Shift90';
+export {Open} from './idealComponents/Open';
+export {Short} from './idealComponents/Short';
+export {Load} from './idealComponents/Load';
+export {Shift90} from './idealComponents/Shift90';
 
-export {tlin} from  './tlin/tlin';
-export {tclin} from './tlin/tclin';
+export {Tlin} from  './idealComponents/Tlin';
+export {Tclin} from './idealComponents/Tclin';
 
 export {mlin} from './mlin/mlin';
 export {mclin} from './mlin/mclin';

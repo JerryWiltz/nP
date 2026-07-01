@@ -1,7 +1,7 @@
 codex resume 019e89f1-41f2-70a0-85b9-da332da8146b
 
 # AGENTS.md
-<!-- Modified: 2026-06-28 -->
+<!-- Modified: 2026-07-01 -->
 
 Repository guide for agents working in the `nP` repo.
 
@@ -22,7 +22,7 @@ These instructions apply to the entire repository rooted at `/home/jerrywiltz/nP
 
 Primary domains:
 
-- RF n-port analysis, S-parameters, cascading, nodal interconnection, RLC components, transmission lines, microstrip helpers, and ideal fixtures in `src/np-nport`.
+- RF n-port analysis, S-parameters, cascading, nodal interconnection, RLC components, ideal components, microstrip helpers, and fixtures in `src/np-nport`.
 - Complex arithmetic and matrix solving in `src/np-math`.
 - Global analysis settings such as frequency list, reference impedance, and temperature in `src/np-global`.
 - Chebyshev low-pass prototype helpers in `src/np-lowpass-prototype`.
@@ -35,13 +35,23 @@ Primary domains:
 The normal browser/example workflow is hierarchical:
 
 1. Set the analysis frequencies first, usually with `nP.global.fList = nP.global.fGen(start, stop, points)`.
-2. Create electrical components and fixtures as n-port objects, such as `nP.R()`, `nP.L()`, `nP.C()`, `nP.Tee()`, `nP.Short()`, `nP.Open()`, `nP.Load()`, `nP.tlin()`, or `nP.mlin()`.
+2. Create electrical components and fixtures as n-port objects, such as `nP.R()`, `nP.L()`, `nP.C()`, `nP.Tee()`, `nP.Short()`, `nP.Open()`, `nP.Load()`, `nP.Tlin()`, or `nP.mlin()`.
 3. Combine smaller n-port objects into larger n-port objects with helpers such as `nP.nodal()` or `nP.cascade()`.
 4. Reuse those combined n-port objects as building blocks in larger circuits when useful.
 5. Call `.out(...)` on any n-port object to extract selected values such as `s11dB`, `s21dB`, `s11Re`, or `s11Im`.
 6. Pass the resulting output table to display helpers such as `nP.lineChart()`, `nP.lineTable()`, or `nP.smithChart()`.
 
 Preserve this mental model when writing examples, docs, tests, or dev pages. Prefer examples that make the flow visible: frequencies, components, combinations, outputs, then plots/tables.
+
+## Ideal Component Naming
+
+Ideal component constructors use an uppercase first letter in the public API, even when the underlying concept is a transmission line or coupled line.
+
+- Use `nP.Tlin()` for the ideal lossless two-port transmission line.
+- Use `nP.Tclin()` for the ideal lossless four-port coupled transmission line.
+- Keep physical microstrip models lowercase, such as `nP.mlin()` and `nP.mclin()`.
+- Put ideal component source files in `src/np-nport/src/idealComponents/` and name the files to match the public constructor casing.
+- Use `nP.Tee()` for ideal junctions. Do not reintroduce a separate series-tee helper; connect series two-port components directly in `nP.nodal(...)`.
 
 ## Core Object Model
 
@@ -139,7 +149,7 @@ Use `commonWidth` for port 1, `branch1Width` for port 2, and `branch2Width` for 
 
 ## Coupled Transmission Line Port Order
 
-Coupled transmission line components are numbered clockwise starting at the upper-left port. Preserve this convention for existing and future coupled-line constructors such as `nP.tclin()` and `nP.mclin()`.
+Coupled transmission line components are numbered clockwise starting at the upper-left port. Preserve this convention for existing and future coupled-line constructors such as `nP.Tclin()` and `nP.mclin()`.
 
 ```text
 port 1  ---- coupled line ----  port 2
@@ -167,6 +177,7 @@ Do not create alternate spellings for the same physical constant in nearby const
 - `src/index.js`: root public module entry point. Re-exports the subpackages.
 - `src/np-*/index.js`: subpackage entry points.
 - `src/np-*/src/*.js`: implementation files.
+- `src/np-nport/src/idealComponents/`: ideal n-port components and fixtures such as `Open`, `Short`, `Load`, `Shift90`, `Tee`, `Tee4`, `Tee5`, `Tlin`, and `Tclin`.
 - `dist/nP.js`: generated UMD browser bundle. It is versioned in this repo, so update it only when intentionally rebuilding for release or distribution.
 - `rollup.config.js`: root bundle config. Input is `src/index.js`; output is `dist/nP.js`; bundle name is `nP`.
 - `package.json`: root scripts and dev dependencies.

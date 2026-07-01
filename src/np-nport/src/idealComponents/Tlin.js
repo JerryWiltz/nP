@@ -2,8 +2,8 @@ import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
 
-export function tlin(Z = 60, Length = 0.5 * 0.0254) { // Z is in ohms and Length is in meters, sparameters of a physical transmission line
-	var tlin = new nPort;
+export function Tlin(Z = 60, Length = 0.5 * 0.0254) { // Z is in ohms and Length is in meters, sparameters of a physical transmission line
+	var Tlin = new nPort;
 	var frequencyList = global.fList, Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), one = complex(1,0), two = complex(2,0), freqCount = 0, Ztlin = [], s11, s12, s21, s22, sparsArray = [];
 	var Atlin = {}, Btlin = {}, Ctlin = {}, Ds = {}, alpha = 0, beta = 0, gamma = {};
@@ -26,7 +26,7 @@ export function tlin(Z = 60, Length = 0.5 * 0.0254) { // Z is in ohms and Length
 		s22 = s11;
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	};
-	tlin.setspars(sparsArray);
-	tlin.setglobal(global);	
-	return tlin;
+	Tlin.setspars(sparsArray);
+	Tlin.setglobal(global);	
+	return Tlin;
 }

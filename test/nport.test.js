@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { global } from '../src/np-global/index.js';
-import { seR, Open, Short, Load, Shift90, cascade, trf, mlin, mclin, mtee, mcross, mstep, mbend, mtfr, mvgnd, mvia } from '../src/np-nport/index.js';
+import { seR, Open, Short, Load, Shift90, Tlin, Tclin, cascade, trf, mlin, mclin, mtee, mcross, mstep, mbend, mtfr, mvgnd, mvia } from '../src/np-nport/index.js';
 
 const closeTo = (actual, expected, tolerance = 1e-12) => {
 	assert.ok(
@@ -63,6 +63,13 @@ test('Shift90 creates a matched lossless two-port with +90 degree through phase'
 			closeTo(row[4].getR(), 0);
 			closeTo(row[4].getI(), 0);
 		}
+	});
+});
+
+test('Tlin and Tclin expose ideal transmission line constructors', () => {
+	withGlobal({ fList: [1e9], Ro: 50 }, () => {
+		assert.equal(Tlin().getspars()[0].length, 5);
+		assert.equal(Tclin().getspars()[0].length, 17);
 	});
 });
 
