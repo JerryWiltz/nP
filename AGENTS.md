@@ -1,7 +1,7 @@
 codex resume 019e89f1-41f2-70a0-85b9-da332da8146b
 
 # AGENTS.md
-<!-- Modified: 2026-07-01 -->
+<!-- Modified: 2026-07-02 -->
 
 Repository guide for agents working in the `nP` repo.
 
@@ -171,6 +171,10 @@ Shared microstrip constants live in `src/np-nport/src/mlin/constants.js`. Use th
 - `COPPER_RESISTIVITY`
 
 Do not create alternate spellings for the same physical constant in nearby constructors. If a paper uses a different symbol, map it to the shared nP name in comments or raw notes, for example `eta_0 = VACUUM_IMPEDANCE`.
+
+## Technical Name Spelling
+
+Preserve standard author, paper, and model-family spellings in filenames, headings, notes, comments, and docs. In particular, use `Hammerstad/Jensen`, not misspellings such as `Hammestad` or `Jensn`. When unsure about a paper author or equation family name, verify before creating filenames or headings.
 
 ## Repository Layout
 

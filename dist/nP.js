@@ -7701,7 +7701,7 @@
 		return ctlin;
 	}
 
-	// Modified: 2026-07-01
+	// Modified: 2026-07-02
 
 	var pi$5 = Math.PI;
 
@@ -7738,6 +7738,7 @@
 	};
 
 	var microstripLine$2 = function (width, Height, Thickness, er) {
+		// Arm baseline follows Hammerstad/Jensen-style single microstrip equations.
 		var u = width / Height;
 		var effectiveU = u + deltaUThicknessSingle$2(u, Thickness / Height);
 		var ere = hammerstadEr$2(effectiveU, er);
@@ -7777,6 +7778,7 @@
 		
 		
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			// QUCS technical manual, Microstrip tee junction, eqs. 11.207 through 11.224.
 			var freq = frequencyList[freqCount];
 			var lambdaA = C0 / (Math.sqrt(armA.ere) * freq);
 			var lambdaB = C0 / (Math.sqrt(armB.ere) * freq);
@@ -7850,7 +7852,7 @@
 		return mtee;
 	}
 
-	// Modified: 2026-07-01
+	// Modified: 2026-07-02
 
 	var pi$4 = Math.PI;
 
@@ -7969,6 +7971,7 @@
 	};
 
 	var crossCapacitanceBase = function (width, crossingWidth, Height) {
+		// QUCS technical manual, Microstrip cross, eqs. 11.226 and 11.227.
 		var widthOverHeight = width / Height;
 		var crossingOverHeight = crossingWidth / Height;
 		var X = Math.log10(widthOverHeight) *
@@ -7981,6 +7984,7 @@
 	};
 
 	var capCorrection = function (width, Height, Thickness, er) {
+		// QUCS technical manual, Microstrip cross, eq. 11.231.
 		var reference = microstripLine$1(width, Height, Thickness, 9.9);
 		var actual = microstripLine$1(width, Height, Thickness, er);
 		return reference.Z / actual.Z * Math.sqrt(actual.ere / reference.ere);
@@ -7992,6 +7996,7 @@
 	};
 
 	var armInductance = function (width, crossingWidth, Height) {
+		// QUCS technical manual, Microstrip cross, eqs. 11.228 and 11.229.
 		var widthOverHeight = width / Height;
 		var crossingOverHeight = crossingWidth / Height;
 		var Y = 165.6 * crossingOverHeight + 31.2 * Math.sqrt(crossingOverHeight) - 11.8 * square$1(crossingOverHeight);
@@ -8001,6 +8006,7 @@
 	};
 
 	var centerInductance = function (horizontalWidth, verticalWidth, Height) {
+		// QUCS technical manual, Microstrip cross, eq. 11.230 with the 0.8 correction noted there.
 		var horizontalOverHeight = horizontalWidth / Height;
 		var verticalOverHeight = verticalWidth / Height;
 		var L = 1e-9 * Height *
@@ -8107,7 +8113,7 @@
 		return cross;
 	}
 
-	// Modified: 2026-07-01
+	// Modified: 2026-07-02
 
 	var pi$3 = Math.PI;
 
@@ -8183,6 +8189,7 @@
 	};
 
 	var stepCapacitancePf = function (wideWidth, narrowWidth, er) {
+		// QUCS technical manual, Microstrip impedance step, eq. 11.202.
 		var ratio = wideWidth / narrowWidth;
 		var logEr = Math.log10(er);
 		return Math.sqrt(wideWidth * narrowWidth) *
@@ -8190,6 +8197,7 @@
 	};
 
 	var stepInductanceNh = function (wideWidth, narrowWidth, Height) {
+		// QUCS technical manual, Microstrip impedance step, eq. 11.206.
 		var ratio = wideWidth / narrowWidth;
 		var ratioMinusOne = ratio - 1;
 		return Height * (ratioMinusOne * (40.5 + 0.2 * ratioMinusOne) - 75 * Math.log10(ratio));
@@ -8267,7 +8275,7 @@
 		return step;
 	}
 
-	// Modified: 2026-07-01
+	// Modified: 2026-07-02
 
 	var pi$2 = Math.PI;
 
@@ -8295,6 +8303,7 @@
 	};
 
 	var unmiteredCorner = function (Width, Height, er) {
+		// QUCS technical manual, Microstrip corner, eqs. 11.84 and 11.85.
 		var widthOverHeight = Width / Height;
 		return {
 			CpF: Width * ((10.35 * er + 2.5) * widthOverHeight + (2.6 * er + 5.64)),
@@ -8303,6 +8312,7 @@
 	};
 
 	var halfMiteredCorner = function (Width, Height, er) {
+		// QUCS technical manual, Microstrip corner, eqs. 11.86 and 11.87.
 		var widthOverHeight = Width / Height;
 		return {
 			CpF: Width * ((3.93 * er + 0.62) * widthOverHeight + (7.6 * er + 3.80)),
@@ -8429,11 +8439,12 @@
 		return filmResistor;
 	}
 
-	// Modified: 2026-07-01
+	// Modified: 2026-07-02
 
 	var pi$1 = Math.PI;
 
 	var viaInductance$1 = function (Height, radius) {
+		// QUCS technical manual, Microstrip via hole, Goldfarb/Pucel model, eq. 11.232.
 		var a = Math.sqrt(radius * radius + Height * Height);
 		return (MU0 / (2 * pi$1)) *
 			(Height * Math.log((Height + a) / radius) + 1.5 * (radius - a));
@@ -8456,6 +8467,7 @@
 		var radius = Diameter / 2;
 		var L = viaInductance$1(Height, radius);
 		var Rdc = viaResistanceDc$1(Height, radius, Thickness, rho);
+		// QUCS technical manual, Microstrip via hole, eqs. 11.233 and 11.234.
 		var fdelta = rho / (pi$1 * MU0 * Thickness * Thickness);
 		var sparsArray = [];
 		var analysis = [];
@@ -8491,11 +8503,12 @@
 		return via;
 	}
 
-	// Modified: 2026-07-01
+	// Modified: 2026-07-02
 
 	var pi = Math.PI;
 
 	var viaInductance = function (Height, radius) {
+		// QUCS technical manual, Microstrip via hole, Goldfarb/Pucel model, eq. 11.232.
 		var a = Math.sqrt(radius * radius + Height * Height);
 		return (MU0 / (2 * pi)) *
 			(Height * Math.log((Height + a) / radius) + 1.5 * (radius - a));
@@ -8573,6 +8586,7 @@
 		var radius = Diameter / 2;
 		var Lbarrel = viaInductance(connectionHeight, radius);
 		var Rdc = viaResistanceDc(connectionHeight, radius, Thickness, rho);
+		// QUCS technical manual, Microstrip via hole, eqs. 11.233 and 11.234.
 		var fdelta = rho / (pi * MU0 * Thickness * Thickness);
 		var topPadCapacitance = annularCapacitance(padDiameter, antipadDiameter, topPadHeight, er);
 		var bottomPadCapacitance = annularCapacitance(padDiameter, antipadDiameter, bottomPadHeight, er);

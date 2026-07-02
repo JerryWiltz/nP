@@ -1,4 +1,4 @@
-// Modified: 2026-07-01
+// Modified: 2026-07-02
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
@@ -7,6 +7,7 @@ import {COPPER_RESISTIVITY, INCH_TO_METER, MU0} from './constants';
 var pi = Math.PI;
 
 var viaInductance = function (Height, radius) {
+	// QUCS technical manual, Microstrip via hole, Goldfarb/Pucel model, eq. 11.232.
 	var a = Math.sqrt(radius * radius + Height * Height);
 	return (MU0 / (2 * pi)) *
 		(Height * Math.log((Height + a) / radius) + 1.5 * (radius - a));
@@ -29,6 +30,7 @@ export function mvgnd({
 	var radius = Diameter / 2;
 	var L = viaInductance(Height, radius);
 	var Rdc = viaResistanceDc(Height, radius, Thickness, rho);
+	// QUCS technical manual, Microstrip via hole, eqs. 11.233 and 11.234.
 	var fdelta = rho / (pi * MU0 * Thickness * Thickness);
 	var sparsArray = [];
 	var analysis = [];

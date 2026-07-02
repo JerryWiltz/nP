@@ -1,4 +1,4 @@
-// Modified: 2026-07-01
+// Modified: 2026-07-02
 import {complex} from '../../../np-math/src/complex';
 import {matrix, dim} from '../../../np-math/src/matrix';
 import {nPort} from '../nPort';
@@ -79,6 +79,7 @@ var zToS = function (Z, Ro) {
 };
 
 var stepCapacitancePf = function (wideWidth, narrowWidth, er) {
+	// QUCS technical manual, Microstrip impedance step, eq. 11.202.
 	var ratio = wideWidth / narrowWidth;
 	var logEr = Math.log10(er);
 	return Math.sqrt(wideWidth * narrowWidth) *
@@ -86,6 +87,7 @@ var stepCapacitancePf = function (wideWidth, narrowWidth, er) {
 };
 
 var stepInductanceNh = function (wideWidth, narrowWidth, Height) {
+	// QUCS technical manual, Microstrip impedance step, eq. 11.206.
 	var ratio = wideWidth / narrowWidth;
 	var ratioMinusOne = ratio - 1;
 	return Height * (ratioMinusOne * (40.5 + 0.2 * ratioMinusOne) - 75 * Math.log10(ratio));

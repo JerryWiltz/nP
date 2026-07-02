@@ -1,4 +1,4 @@
-// Modified: 2026-07-01
+// Modified: 2026-07-02
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global}  from '../../../np-global/src/global';
@@ -39,6 +39,7 @@ var deltaUThicknessSingle = function (u, thicknessOverHeight) {
 };
 
 var microstripLine = function (width, Height, Thickness, er) {
+	// Arm baseline follows Hammerstad/Jensen-style single microstrip equations.
 	var u = width / Height;
 	var effectiveU = u + deltaUThicknessSingle(u, Thickness / Height);
 	var ere = hammerstadEr(effectiveU, er);
@@ -78,6 +79,7 @@ export function mtee({
 	
 	
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		// QUCS technical manual, Microstrip tee junction, eqs. 11.207 through 11.224.
 		var freq = frequencyList[freqCount];
 		var lambdaA = C0 / (Math.sqrt(armA.ere) * freq);
 		var lambdaB = C0 / (Math.sqrt(armB.ere) * freq);

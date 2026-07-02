@@ -1,4 +1,4 @@
-// Modified: 2026-07-01
+// Modified: 2026-07-02
 import {complex} from '../../../np-math/src/complex';
 import {matrix, dim} from '../../../np-math/src/matrix';
 import {nPort} from '../nPort';
@@ -31,6 +31,7 @@ var zToS = function (Z, Ro) {
 };
 
 var unmiteredCorner = function (Width, Height, er) {
+	// QUCS technical manual, Microstrip corner, eqs. 11.84 and 11.85.
 	var widthOverHeight = Width / Height;
 	return {
 		CpF: Width * ((10.35 * er + 2.5) * widthOverHeight + (2.6 * er + 5.64)),
@@ -39,6 +40,7 @@ var unmiteredCorner = function (Width, Height, er) {
 };
 
 var halfMiteredCorner = function (Width, Height, er) {
+	// QUCS technical manual, Microstrip corner, eqs. 11.86 and 11.87.
 	var widthOverHeight = Width / Height;
 	return {
 		CpF: Width * ((3.93 * er + 0.62) * widthOverHeight + (7.6 * er + 3.80)),

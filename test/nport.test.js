@@ -1,4 +1,4 @@
-// Modified: 2026-07-01
+// Modified: 2026-07-02
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -298,7 +298,15 @@ test('default microstrip constructors create finite n-port objects', () => {
 		closeTo(tee.microstrip.commonArm.ere, 6.66084124751819);
 		closeTo(tee.microstrip.Ct, tee.Ct);
 		closeTo(tee.microstrip.analysis[0].R, 1);
-		assert.ok(Number.isFinite(tee.microstrip.analysis[0].BT));
+		closeTo(tee.microstrip.analysis[0].Q, 0.0009763030970527234);
+		closeTo(tee.microstrip.analysis[0].da, 0.00010021500592968646);
+		closeTo(tee.microstrip.analysis[0].db, 0.00010021500592968646);
+		closeTo(tee.microstrip.analysis[0].d2, 0.000563084028445046);
+		closeTo(tee.microstrip.analysis[0].Ta2, 0.9996318411080485);
+		closeTo(tee.microstrip.analysis[0].Tb2, 0.9996318411080485);
+		closeTo(tee.microstrip.analysis[0].na, 0.9998159036082835);
+		closeTo(tee.microstrip.analysis[0].nb, 0.9998159036082835);
+		closeTo(tee.microstrip.analysis[0].BT, -0.00006255957028808236);
 
 		for (const network of [line, coupledLine, tee]) {
 			for (const row of network.getspars()) {
@@ -336,7 +344,7 @@ test('mtee accepts power-divider-style width names', () => {
 	});
 });
 
-test('mcross creates a finite four-port microstrip cross', () => {
+test('mcross matches pinned QUCS microstrip cross equation outputs', () => {
 	withGlobal({ fList: [1e9, 2e9], Ro: 50 }, () => {
 		const cross = mcross();
 
@@ -375,7 +383,7 @@ test('mcross creates a finite four-port microstrip cross', () => {
 	});
 });
 
-test('mstep creates a finite two-port microstrip impedance step', () => {
+test('mstep matches pinned QUCS impedance step equation outputs', () => {
 	withGlobal({ fList: [1e9, 2e9], Ro: 50 }, () => {
 		const step = mstep();
 
@@ -404,7 +412,7 @@ test('mstep creates a finite two-port microstrip impedance step', () => {
 	});
 });
 
-test('mbend creates a finite two-port mitered microstrip bend', () => {
+test('mbend matches pinned QUCS mitered bend equation outputs', () => {
 	withGlobal({ fList: [1e9, 2e9], Ro: 50 }, () => {
 		const bend = mbend();
 
@@ -422,6 +430,8 @@ test('mbend creates a finite two-port mitered microstrip bend', () => {
 		assert.equal(bend.microstrip.analysis.length, 2);
 		closeTo(bend.microstrip.CpF, 0.06807472288);
 		closeTo(bend.microstrip.LnH, 0.027448363470750275);
+		closeTo(bend.microstrip.unmitered.CpF, 0.075455272);
+		closeTo(bend.microstrip.unmitered.LnH, -0.020961611167322106);
 		closeTo(bend.microstrip.halfMitered.CpF, bend.microstrip.CpF);
 		closeTo(bend.microstrip.halfMitered.LnH, bend.microstrip.LnH);
 
@@ -458,7 +468,7 @@ test('mtfr creates a finite two-port film resistor from sheet resistance', () =>
 	});
 });
 
-test('mvgnd creates a finite one-port grounded microstrip via', () => {
+test('mvgnd matches pinned QUCS Goldfarb/Pucel via equation outputs', () => {
 	withGlobal({ fList: [1e9, 2e9], Ro: 50 }, () => {
 		const via = mvgnd();
 

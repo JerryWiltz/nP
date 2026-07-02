@@ -1,4 +1,4 @@
-// Modified: 2026-07-01
+// Modified: 2026-07-02
 import {complex} from '../../../np-math/src/complex';
 import {matrix, dim} from '../../../np-math/src/matrix';
 import {nPort} from '../nPort';
@@ -122,6 +122,7 @@ var yToS = function (Y, Ro) {
 };
 
 var crossCapacitanceBase = function (width, crossingWidth, Height) {
+	// QUCS technical manual, Microstrip cross, eqs. 11.226 and 11.227.
 	var widthOverHeight = width / Height;
 	var crossingOverHeight = crossingWidth / Height;
 	var X = Math.log10(widthOverHeight) *
@@ -134,6 +135,7 @@ var crossCapacitanceBase = function (width, crossingWidth, Height) {
 };
 
 var capCorrection = function (width, Height, Thickness, er) {
+	// QUCS technical manual, Microstrip cross, eq. 11.231.
 	var reference = microstripLine(width, Height, Thickness, 9.9);
 	var actual = microstripLine(width, Height, Thickness, er);
 	return reference.Z / actual.Z * Math.sqrt(actual.ere / reference.ere);
@@ -145,6 +147,7 @@ var armCapacitance = function (width, crossingWidth, Height, Thickness, er) {
 };
 
 var armInductance = function (width, crossingWidth, Height) {
+	// QUCS technical manual, Microstrip cross, eqs. 11.228 and 11.229.
 	var widthOverHeight = width / Height;
 	var crossingOverHeight = crossingWidth / Height;
 	var Y = 165.6 * crossingOverHeight + 31.2 * Math.sqrt(crossingOverHeight) - 11.8 * square(crossingOverHeight);
@@ -154,6 +157,7 @@ var armInductance = function (width, crossingWidth, Height) {
 };
 
 var centerInductance = function (horizontalWidth, verticalWidth, Height) {
+	// QUCS technical manual, Microstrip cross, eq. 11.230 with the 0.8 correction noted there.
 	var horizontalOverHeight = horizontalWidth / Height;
 	var verticalOverHeight = verticalWidth / Height;
 	var L = 1e-9 * Height *
