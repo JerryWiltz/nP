@@ -412,7 +412,7 @@ test('mstep matches pinned QUCS impedance step equation outputs', () => {
 	});
 });
 
-test('mbend matches pinned QUCS mitered bend equation outputs', () => {
+test('mbend matches pinned Edwards/Steer bend equation outputs', () => {
 	withGlobal({ fList: [1e9, 2e9], Ro: 50 }, () => {
 		const bend = mbend();
 
@@ -421,19 +421,19 @@ test('mbend matches pinned QUCS mitered bend equation outputs', () => {
 		closeTo(bend.microstrip.Width, 0.023 * 0.0254);
 		closeTo(bend.microstrip.Height, 0.025 * 0.0254);
 		closeTo(bend.microstrip.Thickness, 0.0000125 * 0.0254);
-		closeTo(bend.microstrip.miterLength, 0.0004130917815691811);
-		closeTo(bend.microstrip.miterFraction, 0.5);
+		closeTo(bend.microstrip.miterLength, 0);
+		closeTo(bend.microstrip.miterFraction, 0);
+		closeTo(bend.microstrip.recommendedMiterLength, 0.0004957101378830173);
+		closeTo(bend.microstrip.recommendedMiterFraction, 0.6);
 		assert.equal(bend.microstrip.er, 10);
 		assert.equal(bend.microstrip.rho, 1);
 		assert.equal(bend.microstrip.tand, 0.001);
 		assert.equal(bend.microstrip.roughnessRms, 0);
 		assert.equal(bend.microstrip.analysis.length, 2);
-		closeTo(bend.microstrip.CpF, 0.06807472288);
-		closeTo(bend.microstrip.LnH, 0.027448363470750275);
-		closeTo(bend.microstrip.unmitered.CpF, 0.075455272);
-		closeTo(bend.microstrip.unmitered.LnH, -0.020961611167322106);
-		closeTo(bend.microstrip.halfMitered.CpF, bend.microstrip.CpF);
-		closeTo(bend.microstrip.halfMitered.LnH, bend.microstrip.LnH);
+		closeTo(bend.microstrip.CpF, 0.07567702247999389);
+		closeTo(bend.microstrip.LnH, -0.023706758615713867);
+		closeTo(bend.microstrip.equivalent.CpF, bend.microstrip.CpF);
+		closeTo(bend.microstrip.equivalent.LnH, bend.microstrip.LnH);
 
 		for (const row of bend.getspars()) {
 			for (let col = 1; col < row.length; col++) {
@@ -441,6 +441,13 @@ test('mbend matches pinned QUCS mitered bend equation outputs', () => {
 				assert.ok(Number.isFinite(row[col].getI()));
 			}
 		}
+	});
+
+	withGlobal({ fList: [10e9], Ro: 50 }, () => {
+		const bend = mbend({ Width: 0.75e-3, Height: 0.5e-3, er: 9.9 });
+
+		closeTo(bend.microstrip.CpF, 0.1510725);
+		closeTo(bend.microstrip.LnH, 0.03444897427831779);
 	});
 });
 

@@ -234,6 +234,54 @@ Physical behavior:
 
 A simple model treats the bend as a short equivalent transmission-line section plus added capacitance or a corrected electrical length.
 
+Source check: `dev/raw/edwards.pdf` is a scanned page from Terry Edwards and Michael Steer, *Foundations for Microstrip Circuit Design*, page 236. The available page starts section 9.3 on right-angled bends and states the same qualitative model used here: bend discontinuities create fringing-field capacitance and current-flow disturbance inductance, and compensation is useful for MIC design up to roughly 18 GHz. That page does not include the bend equations, numerical coefficients, or miter design formulas, so by itself it supports the physical interpretation but does not independently validate the current `mbend()` equation values.
+
+Second source check: `dev/raw/edwards2.pdf` contains pages 236 through 239 from the same Edwards/Steer text. These pages do include formulas and a worked example for an unmitered right-angle bend. The book attributes closed-form bend capacitance formulas to Gupta et al. and bend inductance data to Thomson and Gopinath. For `Width / Height > 1`, the capacitance formula on page 237 has the form:
+
+```text
+Cbend / Width = (9.5 * er + 1.25) * Width / Height + 5.2 * er + 7.0  pF/m
+```
+
+For `Width / Height < 1`, the book gives a separate formula using `sqrt(Width / Height)`. The inductance formula on page 237 is:
+
+```text
+L / Height = 100 * (4 * sqrt(Width / Height) - 4.21)  nH/m
+```
+
+The worked example uses `Width = 0.75 mm`, `Height = 0.5 mm`, and `er = 9.9`, and gives about:
+
+```text
+Cbend = 0.135 pF
+Lbend = 0.031 nH
+```
+
+The old QUCS/Kirschning `nP.mbend({ Width: 0.75e-3, Height: 0.5e-3, er: 9.9, miterLength: 0 })` gave:
+
+```text
+Cbend = 0.141620625 pF
+Lbend = 0.0017624298607490274 nH
+```
+
+So the old QUCS/Kirschning capacitance was close to the Edwards/Steer example, but the old QUCS/Kirschning inductance was much smaller than the Edwards/Steer example.
+
+Implementation decision, 2026-07-02: `nP.mbend()` now uses the Edwards/Steer equations as the source of authority for bend C/L values. The Edwards/Steer equations give:
+
+```text
+nP.mbend({ Width: 0.75e-3, Height: 0.5e-3, er: 9.9 })
+Cbend = 0.1510725 pF
+Lbend = 0.03444897427831779 nH
+```
+
+This is close to the textbook's worked example. The remaining difference from `0.135 pF` and `0.031 nH` is consistent with reading from a rounded scanned example and using exact equation arithmetic.
+
+For mitered bends, Edwards/Steer page 239 shows a measured-curve based miter discussion and recommends a chamfer fraction near:
+
+```text
+1 - b / (sqrt(2) * Width) approximately 0.6
+```
+
+for many alumina-like practical cases. `mbend()` exposes that recommendation as `recommendedMiterFraction = 0.6`, but the implemented C/L values are still the unmitered Edwards/Steer bend equations because the scanned Edwards/Steer pages provide a miter graph and recommendation, not closed-form mitered C/L equations.
+
 ## Tee Junction
 
 A microstrip tee is a three-port discontinuity. Current and fields split between branches, and the junction area has extra capacitance. Depending on the model, the tee may also include equivalent series inductances in each arm.
@@ -354,13 +402,13 @@ Useful source families for microstrip discontinuity work:
 
 ## Implemented Equation Source Map
 
-The current nP discontinuity constructors use the QUCS technical manual as the immediate equation source for the first closed-form implementations. The original papers behind the QUCS references should still be tracked later when they are available, but the equation numbers below are the exact source trail for the formulas currently in code.
+Most current nP discontinuity constructors use the QUCS technical manual as the immediate equation source for the first closed-form implementations. `nP.mbend()` is now the exception and uses Edwards/Steer section 9.3 as its immediate equation source. The original papers behind the QUCS and Edwards/Steer references should still be tracked later when they are available, but the equation numbers below are the exact source trail for the formulas currently in code.
 
 QUCS source pages used:
 
 ```text
 Single microstrip line: https://qucs.sourceforge.net/tech/node75.html
-Microstrip corner: https://qucs.sourceforge.net/tech/node76.html
+Microstrip corner: https://qucs.sourceforge.net/tech/node76.html (historical/cross-check for mbend, not current source)
 Microstrip impedance step: https://qucs.sourceforge.net/tech/node80.html
 Microstrip tee junction: https://qucs.sourceforge.net/tech/node81.html
 Microstrip cross: https://qucs.sourceforge.net/tech/node82.html
@@ -379,12 +427,14 @@ Microstrip bend:
 
 ```text
 nP.mbend()
-Immediate source: QUCS technical manual, Microstrip corner.
-Equations used: 11.84 and 11.85 for unmitered corner C and L.
-Equations used: 11.86 and 11.87 for 50% mitered corner C and L.
-Equation shape used: 11.88 for the Z-parameter equivalent circuit.
-Validity noted by source: Width / Height from 0.2 to 6.0, er from 2.36 to 10.4, up to 14 GHz, approximate precision 0.3%.
-Implementation note: nP linearly interpolates between unmitered and 50% mitered values for intermediate miter lengths. That interpolation is an nP approximation, not a separately sourced published fit.
+Immediate source: Edwards and Steer, Foundations for Microstrip Circuit Design, 2016 copy, section 9.3.
+Equations used: 9.24 and 9.25 for unmitered bend capacitance.
+Equation used: 9.26 for unmitered bend inductance.
+Equivalent-circuit shape: one shunt capacitance and two equal effective series inductances around the bend node.
+Validity noted by source: capacitance equations within about 5% over 2.5 <= er <= 15 and 0.1 <= Width / Height <= 5.0; inductance equation about 3% for 0.5 <= Width / Height <= 2.0.
+Implementation note: nP exposes miter geometry and the Edwards/Steer recommended chamfer fraction near 0.6, but the implemented C/L values are currently the unmitered bend values.
+Edwards/Steer check: dev/raw/edwards.pdf, page 236, supports the capacitance-plus-inductance bend-discontinuity interpretation and notes bend compensation as important up to around 18 GHz. The available scan does not include equations, so it is not yet an independent numeric benchmark.
+Edwards/Steer extended check: dev/raw/edwards2.pdf, pages 237 through 239, gives Gupta-style unmitered bend capacitance formulas, an inductance formula, a worked example, and a mitered-bend chamfer recommendation. This is now the source family used by `mbend()`.
 ```
 
 Microstrip impedance step:
@@ -472,13 +522,12 @@ LsNh = 0.011507946456502898
 L1Nh = 0.004783294294823262
 L2Nh = 0.006724652161679638
 
-mbend(), QUCS equations 11.84 through 11.88
-unmitered CpF = 0.075455272
-unmitered LnH = -0.020961611167322106
-50% mitered CpF = 0.06807472288
-50% mitered LnH = 0.02744836347075028
-default CpF = 0.06807472288
-default LnH = 0.027448363470750275
+mbend(), Edwards/Steer equations 9.24 through 9.26
+default CpF = 0.07567702247999389
+default LnH = -0.023706758615713867
+recommended miter fraction = 0.6
+textbook example CpF = 0.1510725
+textbook example LnH = 0.03444897427831779
 
 mtee(), QUCS equations 11.207 through 11.224
 common arm Zo = 50.80674831133571
@@ -512,7 +561,7 @@ Maturity status:
 
 ```text
 mstep(): sourced and pinned to equation outputs; still needs independent calculator or field-solver comparison.
-mbend(): sourced and pinned to equation outputs; intermediate miter interpolation is an nP approximation.
+mbend(): sourced and pinned to Edwards/Steer equation outputs for the unmitered bend. The textbook worked example is now pinned in tests. Miter geometry is exposed, but mitered C/L behavior is not yet implemented because the available source gives a graph/recommendation rather than closed-form miter equations.
 mtee(): sourced and pinned to intermediate equation outputs; still needs external S-parameter benchmark.
 mcross(): sourced and pinned to equation outputs; asymmetric width handling is first-order, following QUCS guidance.
 mvgnd(): sourced and pinned to equation outputs.

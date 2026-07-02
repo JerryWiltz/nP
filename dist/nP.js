@@ -2368,7 +2368,7 @@
 	      c = new Array(nb),
 	      i;
 
-	  for (i = 0; i < na; ++i) x[i] = interpolate$2(a[i], b[i]);
+	  for (i = 0; i < na; ++i) x[i] = interpolate$1(a[i], b[i]);
 	  for (; i < nb; ++i) c[i] = b[i];
 
 	  return function(t) {
@@ -2400,7 +2400,7 @@
 
 	  for (k in b) {
 	    if (k in a) {
-	      i[k] = interpolate$2(a[k], b[k]);
+	      i[k] = interpolate$1(a[k], b[k]);
 	    } else {
 	      c[k] = b[k];
 	    }
@@ -2475,7 +2475,7 @@
 	        });
 	}
 
-	function interpolate$2(a, b) {
+	function interpolate$1(a, b) {
 	  var t = typeof b, c;
 	  return b == null || t === "boolean" ? constant$1(b)
 	      : (t === "number" ? interpolateNumber
@@ -2980,7 +2980,7 @@
 	  };
 	}
 
-	function interpolate$1(a, b) {
+	function interpolate(a, b) {
 	  var c;
 	  return (typeof b === "number" ? interpolateNumber
 	      : b instanceof color ? interpolateRgb
@@ -3055,7 +3055,7 @@
 	}
 
 	function transition_attr(name, value) {
-	  var fullname = namespace(name), i = fullname === "transform" ? interpolateTransformSvg : interpolate$1;
+	  var fullname = namespace(name), i = fullname === "transform" ? interpolateTransformSvg : interpolate;
 	  return this.attrTween(name, typeof value === "function"
 	      ? (fullname.local ? attrFunctionNS : attrFunction)(fullname, i, tweenValue(this, "attr." + name, value))
 	      : value == null ? (fullname.local ? attrRemoveNS : attrRemove)(fullname)
@@ -3363,7 +3363,7 @@
 	}
 
 	function transition_style(name, value, priority) {
-	  var i = (name += "") === "transform" ? interpolateTransformCss : interpolate$1;
+	  var i = (name += "") === "transform" ? interpolateTransformCss : interpolate;
 	  return value == null ? this
 	      .styleTween(name, styleNull(name, i))
 	      .on("end.style." + name, styleRemove(name))
@@ -4185,7 +4185,7 @@
 	function transformer() {
 	  var domain = unit,
 	      range = unit,
-	      interpolate = interpolate$2,
+	      interpolate = interpolate$1,
 	      transform,
 	      untransform,
 	      unknown,
@@ -8302,26 +8302,17 @@
 		return z.subCplx(I).mulCplx(z.addCplx(I).invertCplx());
 	};
 
-	var unmiteredCorner = function (Width, Height, er) {
-		// QUCS technical manual, Microstrip corner, eqs. 11.84 and 11.85.
+	var edwardsSteerBend = function (Width, Height, er) {
+		// Edwards/Steer, Foundations for Microstrip Circuit Design, 2016, eqs. 9.24 through 9.26.
 		var widthOverHeight = Width / Height;
-		return {
-			CpF: Width * ((10.35 * er + 2.5) * widthOverHeight + (2.6 * er + 5.64)),
-			LnH: 220 * Height * (1 - 1.35 * Math.exp(-0.18 * widthOverHeight ** 1.39))
-		};
-	};
+		var capacitancePerWidth = widthOverHeight < 1
+			? ((14 * er + 12.5) * widthOverHeight - (1.83 * er - 2.25)) / Math.sqrt(widthOverHeight)
+			: (9.5 * er + 1.25) * widthOverHeight + 5.2 * er + 7.0;
 
-	var halfMiteredCorner = function (Width, Height, er) {
-		// QUCS technical manual, Microstrip corner, eqs. 11.86 and 11.87.
-		var widthOverHeight = Width / Height;
 		return {
-			CpF: Width * ((3.93 * er + 0.62) * widthOverHeight + (7.6 * er + 3.80)),
-			LnH: 440 * Height * (1 - 1.062 * Math.exp(-0.177 * widthOverHeight ** 0.947))
+			CpF: Width * capacitancePerWidth,
+			LnH: Height * 100 * (4 * Math.sqrt(widthOverHeight) - 4.21)
 		};
-	};
-
-	var interpolate = function (a, b, t) {
-		return a + (b - a) * t;
 	};
 
 	function mbend({
@@ -8336,14 +8327,13 @@
 	} = {}) {
 		var bend = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
-		var defaultMiterLength = 0.5 * Math.SQRT2 * Width;
+		var recommendedMiterFraction = 0.6;
+		var defaultMiterLength = 0;
 		var actualMiterLength = miterLength === undefined ? defaultMiterLength : miterLength;
 		var miterFraction = actualMiterLength / (Math.SQRT2 * Width);
-		var interpolation = Math.max(0, Math.min(1, miterFraction / 0.5));
-		var unmitered = unmiteredCorner(Width, Height, er);
-		var halfMitered = halfMiteredCorner(Width, Height, er);
-		var CpF = interpolate(unmitered.CpF, halfMitered.CpF, interpolation);
-		var LnH = interpolate(unmitered.LnH, halfMitered.LnH, interpolation);
+		var equivalent = edwardsSteerBend(Width, Height, er);
+		var CpF = equivalent.CpF;
+		var LnH = equivalent.LnH;
 		var sparsArray = [];
 		var analysis = [];
 
@@ -8372,8 +8362,9 @@
 			Width,
 			miterLength: actualMiterLength,
 			defaultMiterLength,
+			recommendedMiterFraction,
+			recommendedMiterLength: recommendedMiterFraction * Math.SQRT2 * Width,
 			miterFraction,
-			interpolation,
 			Height,
 			Thickness,
 			er,
@@ -8382,13 +8373,11 @@
 			roughnessRms,
 			CpF,
 			LnH,
-			unmitered,
-			halfMitered,
+			equivalent,
 			validity: {
-				widthOverHeight: '0.2 <= Width / Height <= 6.0',
-				er: '2.36 <= er <= 10.4',
-				frequencyHeight: 'frequency * Height <= 12e6',
-				miter: 'Published equations provide unmitered and 50% mitered endpoints; intermediate miter lengths use linear interpolation.'
+				capacitance: '2.5 <= er <= 15 and 0.1 <= Width / Height <= 5.0',
+				inductance: 'best stated for 0.5 <= Width / Height <= 2.0',
+				miter: 'Edwards/Steer recommend chamfer fraction near 0.6 for many alumina-like cases; current C/L equations are for the unmitered bend.'
 			},
 			analysis
 		};

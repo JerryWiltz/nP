@@ -237,7 +237,7 @@ Current argument names and defaults:
 ```js
 nP.mbend({
     Width = 0.023 inch,
-    miterLength = 0.5 * sqrt(2) * Width,
+    miterLength = 0,
     Height = 0.025 inch,
     Thickness = 0.0000125 inch,
     er = 10,
@@ -249,12 +249,14 @@ nP.mbend({
 
 Model notes:
 
-- The equivalent circuit follows the QUCS technical manual microstrip-corner section.
+- The equivalent circuit follows the Edwards/Steer right-angle bend section: a symmetric two-port with one shunt capacitance and one effective series inductance.
 - The model is a symmetric two-port Z-parameter discontinuity with one shunt capacitance and one effective series inductance.
-- The QUCS source gives separate capacitance and inductance equations for an unmitered corner and a 50% mitered bend.
-- The default `miterLength` is `0.5 * sqrt(2) * Width`, which corresponds to the documented 50% mitered-bend endpoint.
-- If a different `miterLength` is supplied, `mbend()` converts it to `miterFraction = miterLength / (sqrt(2) * Width)` and linearly interpolates between the unmitered and 50% mitered endpoint equations. Values above 50% use the 50% endpoint.
-- The published validity statement is `0.2 <= Width / Height <= 6.0`, `2.36 <= er <= 10.4`, and operation up to 14 GHz. Qucsator additionally checks `frequency * Height <= 12e6`.
+- The capacitance equations follow Edwards/Steer equations 9.24 and 9.25, attributed there to Gupta et al.
+- The inductance equation follows Edwards/Steer equation 9.26, attributed there to Thomson and Gopinath data.
+- The default `miterLength` is 0 because the implemented C/L equations are for the unmitered bend.
+- Edwards/Steer recommend a chamfer fraction near 0.6 for many alumina-like practical cases. `mbend()` exposes `recommendedMiterFraction` and `recommendedMiterLength`, but it does not yet modify the C/L values for mitered bends because the available Edwards/Steer pages provide a graph and recommendation, not closed-form miter C/L equations.
+- The published capacitance validity statement is `2.5 <= er <= 15` and `0.1 <= Width / Height <= 5.0`.
+- The published inductance validity statement is best for `0.5 <= Width / Height <= 2.0`, but the formula can produce negative equivalent inductance for some allowed low `Width / Height` values. Treat that as an empirical equivalent-circuit artifact until a stronger source is chosen.
 - `rho`, `tand`, and `roughnessRms` are accepted and preserved for API consistency. As with other zero-length discontinuity models, physical line loss should normally be supplied by connected `mlin()` sections.
 
 ## `nP.mtfr()`
@@ -415,7 +417,7 @@ Model notes:
 - Manfred Kirschning and Rolf Jansen, "Accurate Wide-Range Design Equations for the Frequency-Dependent Characteristic of Parallel Coupled Microstrip Lines", IEEE Transactions on Microwave Theory and Techniques, vol. 32, no. 1, January 1984. Used for the coupled-line quasi-static and dispersion equation family.
 - Rolf Jansen, "High-Speed Computation of Single and Coupled Microstrip Parameters Including Dispersion, High-Order Modes, Loss and Finite Strip Thickness", IEEE Transactions on Microwave Theory and Techniques, vol. 26, no. 2, February 1978. Used for finite strip-thickness treatment.
 - Hammerstad/Jensen single microstrip equations are used as the single-line baseline.
-- QUCS technical manual, "Microstrip corner", `https://qucs.sourceforge.net/tech/node76.html`. Used for `mbend()` unmitered and 50% mitered bend capacitance, inductance, equivalent circuit, and validity ranges.
+- Edwards and Steer, *Foundations for Microstrip Circuit Design*, 2016 copy, section 9.3. Used for `mbend()` right-angle bend capacitance, inductance, equivalent circuit, worked example, and miter recommendation.
 - QUCS technical manual, "Microstrip impedance step", `https://qucs.sourceforge.net/tech/node80.html`. Used for `mstep()` capacitance, inductance, validity ranges, and equivalent circuit.
 - Qucs `qucs-transcalc/c_microstrip.cpp` and Qucsator `src/components/microstrip/mscoupled.cpp` were used as open implementation cross-checks, not copied as source. Qucs code is GPL, so nP should keep its implementation independently written from the published equations.
 - QUCS technical manual, "Microstrip cross", `https://qucs.sourceforge.net/tech/node82.html`. Used for `mcross()` equivalent-circuit equations, limitations, dielectric correction, and asymmetric approximation.

@@ -1,4 +1,4 @@
-# Modified: 2026-06-30
+# Modified: 2026-07-02
 
 # ========================
 # Node & build artifacts
@@ -33,3 +33,5 @@ node_modules/
 .aider*
 latestCodex.txt
 dev/raw/mclin.pdf
+dev/raw/edwards.pdf
+dev/raw/edwards2.pdf
