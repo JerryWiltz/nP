@@ -1,4 +1,4 @@
-<!-- Modified: 2026-07-01 -->
+<!-- Modified: 2026-07-03 -->
 
 # Microstrip Equation Notes
 
@@ -270,14 +270,18 @@ nP.mtfr({
     ohmsPerSquare = 50,
     Width = 10 mil,
     Length = 10 mil,
+    Height = 0.025 inch,
+    Thickness = 0.0000125 inch,
+    er = 10,
+    tand = 0.001,
     temperatureCoefficient = 0,
-    temperatureReference = 25
+    temperatureReference = 25,
+    sections = automatic
 })
 ```
 
 Model notes:
 
-- The current model is a two-port series sheet resistance.
 - Resistance is calculated from the number of squares:
 
 ```text
@@ -285,14 +289,41 @@ R = ohmsPerSquare * Length / Width
 ```
 
 - The default geometry is one square, so the default resistance is 50 ohms.
+- RF behavior is the default. The resistor is modeled as a cascaded distributed approximation:
+
+```text
+mlin half-section -> R section -> mlin half-section
+```
+
+- That cell is repeated `sections` times.
+- When `sections` is omitted, nP chooses an automatic section count from the film aspect ratio:
+
+```text
+automaticSections = min(200, max(10, ceil((Length / Width) * 10)))
+```
+
+- This gives short resistors at least 10 sections and gives long, skinny resistors more sections because they behave more like distributed lines.
+- An explicit `sections` value overrides the automatic count.
+- Each resistor section has:
+
+```text
+Rsection = R / sections
+```
+
+- Each `mlin()` half-section has:
+
+```text
+LengthHalf = Length / (2 * sections)
+```
+
+- The `mlin()` sections supply physical line length, phase, substrate dielectric behavior, and geometry. Their conductor loss is set to zero so the explicit sheet-resistance sections supply the intended film loss.
 - `temperatureCoefficient` is optional and uses the current `global.Temp`:
 
 ```text
 R = Rref * (1 + temperatureCoefficient * (global.Temp - temperatureReference))
 ```
 
-- This is intentionally a first-order model. It captures the dominant sheet resistance of a very lossy film section but does not yet include pad capacitance, resistor parasitic inductance, substrate coupling, distributed RC behavior, or thermal power handling.
-- In layout terms it can be thought of as a very lossy zero-length `mlin()`-like element, but electrically it currently reduces to a series resistor whose value is geometry-derived.
+- This is still an approximate model. It captures distributed sheet resistance and physical electrical length better than a lumped resistor, but it does not yet include resistor-end transition parasitics, detailed current spreading, thermal power handling, or measured thin-film frequency dependence.
 
 ## `nP.mvgnd()`
 
@@ -410,6 +441,30 @@ Model notes:
 - Qucsator's GPL `MSCROSS` implementation was used as an implementation cross-check. The source of authority for the equations is the QUCS technical manual page, not copied GPL code.
 - This is a meaningful structural improvement over an ideal four-way node, but it is still worth benchmarking against EM simulation for important geometries.
 - `rho`, `tand`, and `roughnessRms` are accepted and preserved for API consistency. As with `mtee()`, physical line loss should normally be supplied by connected `mlin()` sections.
+
+## Current Maturity Snapshot
+
+This is the current practical maturity ranking for the microstrip constructor family:
+
+```text
+mclin(), mlin()
+mtfr()
+mbend(), mstep(), mvgnd()
+mtee(), mcross()
+mvia()
+```
+
+Status notes:
+
+- `mclin()` is currently the strongest numerically checked model. It has equal-width coupled-line modal behavior, dispersion, loss, roughness, and comparison against outside coupled-line calculator values.
+- `mlin()` is mature enough for regular use. It has Hammerstad/Jensen-style impedance/effective dielectric constant, finite-thickness correction, dispersion, conductor loss, dielectric loss, and roughness support.
+- `mtfr()` is good enough for current RF use. It uses sheet resistance, physical length, automatic section count from `Length / Width`, and cascaded `mlin()`/`R()` sections. The zero-ohm/square case tracks a plain `mlin()` closely in both `s21mag` and `s21ang`, which checks the cascade structure. Remaining limits are end-transition parasitics, current-spreading correction, thermal behavior, and measured thin-film frequency correction.
+- `mbend()` is reasonably mature for unmitered bends. It uses Edwards/Steer equations and pins a textbook example. Miter geometry is exposed, but mitered capacitance/inductance behavior is not implemented.
+- `mstep()` is a reasonable sourced discontinuity model using QUCS equations and pinned equation outputs, but it still needs independent calculator, measurement, or field-solver comparison.
+- `mvgnd()` is a reasonable simple ground-via model using QUCS/Goldfarb-Pucel barrel equations and pinned outputs.
+- `mtee()` is usable and structurally meaningful, but it still needs an external S-parameter benchmark before treating it as mature.
+- `mcross()` is usable as a first implementation from QUCS equations. Asymmetric width behavior is still first-order and should be benchmarked before important use.
+- `mvia()` is the least mature. Its barrel resistance and inductance inherit the `mvgnd()` source, but pad, antipad, and stub capacitance terms need stronger source tracing and validation.
 
 ## Sources
 

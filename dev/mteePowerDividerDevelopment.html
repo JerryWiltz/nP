@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Modified: 2026-07-01 -->
+<!-- Modified: 2026-07-03 -->
 <html>
 
 <head>
@@ -19,15 +19,6 @@
         // define the components of the ideal Tee power divider
         var tee = nP.Tee();
         var t70 = nP.Tlin(70, 2.997925e8 / (4 * 6e9));
-        var mlin10 = nP.mlin(
-            10e-3 * 0.0254,
-            0.025 * 0.0254,
-            197e-3 * 0.0254,
-            0.0000125 * 0.0254,
-            10,
-            0,
-            0
-        );
         var r100 = nP.R(100);
 
         // hook up the components with nodal, it creates an output 3-port named "wilkinson"
@@ -35,14 +26,14 @@
             [tee, 1, 2, 3],
             [t70, 3, 5],
             [t70, 2, 4],
-            [tee, 9, 7, 5],
-            [tee, 8, 4, 6],
+            [tee, 9, 5, 7],
+            [tee, 8, 6, 4],
             [r100, 8, 9],
             ['out', 1, 7, 6]
         );
 
-        // create a matching comparison divider using mtee() for all junctions
-        var mtee = nP.mtee({
+        // create a matching comparison divider using mtee() and mlin() for all junctions
+        var mteeIn = nP.mtee({ // widths are 23, 10, 10
             commonWidth: 0.023 * 0.0254,
             branch1Width: 0.010 * 0.0254,
             branch2Width: 0.010 * 0.0254,
@@ -53,13 +44,40 @@
             tand: 0
         });
 
+        var mlin10 = nP.mlin(
+            10e-3 * 0.0254,
+            0.025 * 0.0254,
+            190e-3 * 0.0254, // tuned from ideal 197 mil to recenter mtee divider near 6 GHz
+            0.0000125 * 0.0254,
+            10,
+            0,
+            0
+        );
+
+        var mteeRes = nP.mtee({ // widths are 23, 23, 10
+            commonWidth: 0.023 * 0.0254,
+            branch1Width: 0.023 * 0.0254,
+            branch2Width: 0.010 * 0.0254,
+            Height: 0.025 * 0.0254,
+            Thickness: 0.0000125 * 0.0254,
+            er: 10,
+            rho: 0,
+            tand: 0
+        });
+
+        var rFilm100 = nP.mtfr({
+            ohmsPerSquare: 50,
+            Width: 23e-3 * 0.0254,
+            Length: 46e-3 * 0.0254
+        });
+
         var wilkinsonMtee = nP.nodal(
-            [mtee, 1, 2, 3],
+            [mteeIn, 1, 2, 3],
             [mlin10, 3, 5],
             [mlin10, 2, 4],
-            [mtee, 9, 7, 5],
-            [mtee, 8, 4, 6],
-            [r100, 8, 9],
+            [mteeRes, 9, 5, 7],
+            [mteeRes, 8, 6, 4],
+            [rFilm100, 8, 9],
             ['out', 1, 7, 6]
         );
 

@@ -1,4 +1,4 @@
-// Modified: 2026-07-02
+// Modified: 2026-07-03
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -451,7 +451,7 @@ test('mbend matches pinned Edwards/Steer bend equation outputs', () => {
 	});
 });
 
-test('mtfr creates a finite two-port film resistor from sheet resistance', () => {
+test('mtfr creates a distributed finite two-port film resistor from sheet resistance', () => {
 	withGlobal({ fList: [1e9, 2e9], Ro: 50, Temp: 25 }, () => {
 		const resistor = mtfr();
 
@@ -463,8 +463,27 @@ test('mtfr creates a finite two-port film resistor from sheet resistance', () =>
 		closeTo(resistor.filmResistor.squares, 1);
 		closeTo(resistor.filmResistor.resistanceAtReference, 50);
 		closeTo(resistor.filmResistor.resistance, 50);
-		closeTo(resistor.out('s11Re', 's21Re')[1][1], 1 / 3);
-		closeTo(resistor.out('s11Re', 's21Re')[1][2], 2 / 3);
+		assert.equal(resistor.filmResistor.sections, 10);
+		assert.equal(resistor.filmResistor.automaticSections, 10);
+		closeTo(resistor.filmResistor.resistancePerSection, 5);
+		closeTo(resistor.filmResistor.halfLineLength, 0.5 * 0.001 * 0.0254);
+		assert.match(resistor.filmResistor.model, /distributed/);
+
+		const longResistor = mtfr({
+			Width: 10 * 0.001 * 0.0254,
+			Length: 50 * 0.001 * 0.0254
+		});
+		assert.equal(longResistor.filmResistor.squares, 5);
+		assert.equal(longResistor.filmResistor.sections, 50);
+		assert.equal(longResistor.filmResistor.automaticSections, 50);
+
+		const overrideResistor = mtfr({
+			Width: 10 * 0.001 * 0.0254,
+			Length: 50 * 0.001 * 0.0254,
+			sections: 12
+		});
+		assert.equal(overrideResistor.filmResistor.sections, 12);
+		assert.equal(overrideResistor.filmResistor.automaticSections, 50);
 
 		for (const row of resistor.getspars()) {
 			for (let col = 1; col < row.length; col++) {
