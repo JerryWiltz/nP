@@ -1,7 +1,7 @@
 codex resume 019e89f1-41f2-70a0-85b9-da332da8146b
 
 # AGENTS.md
-<!-- Modified: 2026-07-02 -->
+<!-- Modified: 2026-07-03 -->
 
 Repository guide for agents working in the `nP` repo.
 
@@ -160,7 +160,7 @@ With input at port 1, port 2 is the through port, port 4 is the coupled port, an
 
 ## Microstrip Physical Constants
 
-Shared microstrip constants live in `src/np-nport/src/mlin/constants.js`. Use those names consistently in `mlin()`, `mclin()`, `mtee()`, tests, dev notes, and future microstrip constructors.
+Shared microstrip constants live in `src/np-nport/src/mlin/constants.js`. Use those names consistently in `mlin()`, `mclin()`, `mtee()`, `mtfr()`, tests, dev notes, and future microstrip constructors.
 
 - `INCH_TO_METER`
 - `MIL_TO_METER`
@@ -191,7 +191,7 @@ Preserve standard author, paper, and model-family spellings in filenames, headin
 - `test/`: Node tests for math, global settings, and nPort behavior.
 - `dev/`: local browser development and verification pages. These files are manual harnesses, not source of truth.
   - `dev/lineChartDevelopment.html`, `dev/lineTableDevelopment.html`, and `dev/smithChartDevelopment.html` load `../dist/nP.js` and exercise the built chart/table APIs.
-  - `dev/mlinDevelopment.html`, `dev/mclinDevelopment.html`, `dev/mteeDelevopment.html`, `dev/matrixDevelopment.html`, and `dev/nodeDevelopment.html` are manual development pages for focused RF/math workflows.
+  - `dev/mlinDevelopment.html`, `dev/mclinDevelopment.html`, `dev/mteeDelevopment.html`, `dev/mteePowerDividerDevelopment.html`, `dev/mtfrDelevopment.html`, `dev/matrixDevelopment.html`, and `dev/nodeDevelopment.html` are manual development pages for focused RF/math workflows.
   - `dev/raw/` holds raw technical source material, equation notes, and early derivations for work such as `mtee()`.
 
 The old subpackage-level build artifacts under `src/np-*` have been removed. Treat the root package and root Rollup config as the only current build path.

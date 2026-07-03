@@ -1,5 +1,5 @@
 # AGENTS.md
-<!-- Modified: 2026-07-01 -->
+<!-- Modified: 2026-07-03 -->
 
 Instructions for files in `dev/`.
 
@@ -181,6 +181,12 @@ Transmission-line and microstrip constructors:
 - `nP.mlin()`
 - `nP.mclin()`
 - `nP.mtee()`
+- `nP.mstep()`
+- `nP.mbend()`
+- `nP.mtfr()`
+- `nP.mcross()`
+- `nP.mvgnd()`
+- `nP.mvia()`
 - `nP.trf()`
 - `nP.trf4Port()`
 
