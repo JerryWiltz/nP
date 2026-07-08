@@ -1,4 +1,4 @@
-// Modified: 2026-07-02
+// Modified: 2026-07-08
 import {complex} from '../../../np-math/src/complex';
 import {matrix, dim} from '../../../np-math/src/matrix';
 import {nPort} from '../nPort';
@@ -259,6 +259,11 @@ export function mcross({
 		armInds,
 		Lcenter,
 		Ct,
+		source: 'QUCS microstrip cross equations 11.226 through 11.231; Edwards/Steer section 9.6.3 captures cross-junction equivalent-circuit shape and warns that theory/experiment agreement is weak, especially for inductance parameters.',
+		validity: {
+			modelFamily: 'First-order cross-junction equivalent circuit with arm capacitances, arm inductances, and center inductance.',
+			limitations: 'Edwards/Steer describe practical asymmetric crosses as important and note weak theory/experiment agreement. Treat asymmetric width behavior as engineering approximation until benchmarked.'
+		},
 		analysis
 	};
 	return cross;

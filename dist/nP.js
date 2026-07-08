@@ -7701,7 +7701,7 @@
 		return ctlin;
 	}
 
-	// Modified: 2026-07-02
+	// Modified: 2026-07-08
 
 	var pi$5 = Math.PI;
 
@@ -7847,12 +7847,17 @@
 			branch1Arm: armA,
 			branch2Arm: armB,
 			Ct: mtee.Ct,
+			source: 'QUCS microstrip tee equations 11.207 through 11.224; Edwards/Steer section 9.6.1 captures the same T-junction equivalent-circuit family, reference-plane shifts, transformer ratio, and shunt capacitance limits.',
+			validity: {
+				modelFamily: 'Hammerstad/Bekkadal-style tee reference-plane and transformer model as presented by QUCS and discussed by Edwards/Steer section 9.6.1',
+				limitations: 'Edwards/Steer note no quoted accuracy for tee shunt-capacitance expressions and increasing discrepancy when 2 * effectiveWidth / guidedWavelength > 0.3 or impedance ratio exceeds about 2.'
+			},
 			analysis
 		};
 		return mtee;
 	}
 
-	// Modified: 2026-07-02
+	// Modified: 2026-07-08
 
 	var pi$4 = Math.PI;
 
@@ -8108,12 +8113,17 @@
 			armInds,
 			Lcenter,
 			Ct,
+			source: 'QUCS microstrip cross equations 11.226 through 11.231; Edwards/Steer section 9.6.3 captures cross-junction equivalent-circuit shape and warns that theory/experiment agreement is weak, especially for inductance parameters.',
+			validity: {
+				modelFamily: 'First-order cross-junction equivalent circuit with arm capacitances, arm inductances, and center inductance.',
+				limitations: 'Edwards/Steer describe practical asymmetric crosses as important and note weak theory/experiment agreement. Treat asymmetric width behavior as engineering approximation until benchmarked.'
+			},
 			analysis
 		};
 		return cross;
 	}
 
-	// Modified: 2026-07-02
+	// Modified: 2026-07-08
 
 	var pi$3 = Math.PI;
 
@@ -8188,16 +8198,37 @@
 		return z.subCplx(I).mulCplx(z.addCplx(I).invertCplx());
 	};
 
-	var stepCapacitancePf = function (wideWidth, narrowWidth, er) {
-		// QUCS technical manual, Microstrip impedance step, eq. 11.202.
+	var stepCapacitance = function (wideWidth, narrowWidth, er) {
 		var ratio = wideWidth / narrowWidth;
-		var logEr = Math.log10(er);
-		return Math.sqrt(wideWidth * narrowWidth) *
-			((10.1 * logEr + 2.33) * ratio - 12.6 * logEr - 3.17);
+		var capacitancePerRootWidth;
+		var equation;
+		var validity;
+
+		if (Math.abs(er - 9.6) < 1e-12 && ratio >= 3.5 && ratio <= 10) {
+			// Edwards/Steer, Foundations for Microstrip Circuit Design, eq. 9.33.
+			capacitancePerRootWidth = 130 * Math.log10(ratio) - 44;
+			equation = 'Edwards/Steer 9.33, Garg/Bahl large step capacitance';
+			validity = 'er = 9.6, 3.5 <= max(width1,width2) / min(width1,width2) <= 10';
+		} else {
+			// Edwards/Steer, Foundations for Microstrip Circuit Design, eq. 9.32.
+			// Also matches QUCS technical manual, Microstrip impedance step, eq. 11.202.
+			var logEr = Math.log10(er);
+			capacitancePerRootWidth = (10.1 * logEr + 2.33) * ratio - 12.6 * logEr - 3.17;
+			equation = 'Edwards/Steer 9.32, Garg/Bahl slight step capacitance';
+			validity = 'er <= 10, 1.5 <= max(width1,width2) / min(width1,width2) <= 3.5';
+		}
+
+		return {
+			valuePf: Math.sqrt(wideWidth * narrowWidth) * capacitancePerRootWidth,
+			capacitancePerRootWidth,
+			equation,
+			validity
+		};
 	};
 
 	var stepInductanceNh = function (wideWidth, narrowWidth, Height) {
-		// QUCS technical manual, Microstrip impedance step, eq. 11.206.
+		// Edwards/Steer, Foundations for Microstrip Circuit Design, eq. 9.34.
+		// Also matches QUCS technical manual, Microstrip impedance step, eq. 11.206.
 		var ratio = wideWidth / narrowWidth;
 		var ratioMinusOne = ratio - 1;
 		return Height * (ratioMinusOne * (40.5 + 0.2 * ratioMinusOne) - 75 * Math.log10(ratio));
@@ -8219,7 +8250,8 @@
 		var port2Line = microstripLine(width2, Height, Thickness, er);
 		var wideWidth = Math.max(width1, width2);
 		var narrowWidth = Math.min(width1, width2);
-		var CsPf = stepCapacitancePf(wideWidth, narrowWidth, er);
+		var capacitance = stepCapacitance(wideWidth, narrowWidth, er);
+		var CsPf = capacitance.valuePf;
 		var LsNh = stepInductanceNh(wideWidth, narrowWidth, Height);
 		var lineInductanceSum = port1Line.lineInductancePerMeter + port2Line.lineInductancePerMeter;
 		var L1Nh = LsNh * port1Line.lineInductancePerMeter / lineInductanceSum;
@@ -8263,12 +8295,15 @@
 			port1Line,
 			port2Line,
 			CsPf,
+			capacitancePerRootWidth: capacitance.capacitancePerRootWidth,
+			capacitanceEquation: capacitance.equation,
 			LsNh,
 			L1Nh,
 			L2Nh,
 			validity: {
-				capacitanceRatio: '1.5 <= max(width1,width2) / min(width1,width2) <= 3.5, er <= 10',
-				inductanceRatio: 'max(width1,width2) / min(width1,width2) <= 5, best stated for narrowWidth / Height = 1'
+				capacitanceRatio: capacitance.validity,
+				inductanceRatio: 'max(width1,width2) / min(width1,width2) <= 5, best stated for narrowWidth / Height = 1',
+				source: 'Edwards/Steer section 9.4, equations 9.28 through 9.35; QUCS node80 equivalent equations 11.202 through 11.206'
 			},
 			analysis
 		};

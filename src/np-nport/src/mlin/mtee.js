@@ -1,4 +1,4 @@
-// Modified: 2026-07-02
+// Modified: 2026-07-08
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global}  from '../../../np-global/src/global';
@@ -148,6 +148,11 @@ export function mtee({
 		branch1Arm: armA,
 		branch2Arm: armB,
 		Ct: mtee.Ct,
+		source: 'QUCS microstrip tee equations 11.207 through 11.224; Edwards/Steer section 9.6.1 captures the same T-junction equivalent-circuit family, reference-plane shifts, transformer ratio, and shunt capacitance limits.',
+		validity: {
+			modelFamily: 'Hammerstad/Bekkadal-style tee reference-plane and transformer model as presented by QUCS and discussed by Edwards/Steer section 9.6.1',
+			limitations: 'Edwards/Steer note no quoted accuracy for tee shunt-capacitance expressions and increasing discrepancy when 2 * effectiveWidth / guidedWavelength > 0.3 or impedance ratio exceeds about 2.'
+		},
 		analysis
 	};
 	return mtee;

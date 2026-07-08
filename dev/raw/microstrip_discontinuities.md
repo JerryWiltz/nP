@@ -1,4 +1,4 @@
-<!-- Modified: 2026-07-02 -->
+<!-- Modified: 2026-07-08 -->
 
 # Microstrip Discontinuities Derivation Notes
 
@@ -234,9 +234,7 @@ Physical behavior:
 
 A simple model treats the bend as a short equivalent transmission-line section plus added capacitance or a corrected electrical length.
 
-Source check: `dev/raw/edwards.pdf` is a scanned page from Terry Edwards and Michael Steer, *Foundations for Microstrip Circuit Design*, page 236. The available page starts section 9.3 on right-angled bends and states the same qualitative model used here: bend discontinuities create fringing-field capacitance and current-flow disturbance inductance, and compensation is useful for MIC design up to roughly 18 GHz. That page does not include the bend equations, numerical coefficients, or miter design formulas, so by itself it supports the physical interpretation but does not independently validate the current `mbend()` equation values.
-
-Second source check: `dev/raw/edwards2.pdf` contains pages 236 through 239 from the same Edwards/Steer text. These pages do include formulas and a worked example for an unmitered right-angle bend. The book attributes closed-form bend capacitance formulas to Gupta et al. and bend inductance data to Thomson and Gopinath. For `Width / Height > 1`, the capacitance formula on page 237 has the form:
+Source check: `dev/raw/bends_in_microstrip_edwards_p236_239.pdf` contains pages 236 through 239 from Terry Edwards and Michael Steer, *Foundations for Microstrip Circuit Design*. Page 236 starts section 9.3 on right-angled bends and states the qualitative model used here: bend discontinuities create fringing-field capacitance and current-flow disturbance inductance, and compensation is useful for MIC design up to roughly 18 GHz. Pages 237 through 239 include formulas and a worked example for an unmitered right-angle bend. The book attributes closed-form bend capacitance formulas to Gupta et al. and bend inductance data to Thomson and Gopinath. For `Width / Height > 1`, the capacitance formula on page 237 has the form:
 
 ```text
 Cbend / Width = (9.5 * er + 1.25) * Width / Height + 5.2 * er + 7.0  pF/m
@@ -433,20 +431,23 @@ Equation used: 9.26 for unmitered bend inductance.
 Equivalent-circuit shape: one shunt capacitance and two equal effective series inductances around the bend node.
 Validity noted by source: capacitance equations within about 5% over 2.5 <= er <= 15 and 0.1 <= Width / Height <= 5.0; inductance equation about 3% for 0.5 <= Width / Height <= 2.0.
 Implementation note: nP exposes miter geometry and the Edwards/Steer recommended chamfer fraction near 0.6, but the implemented C/L values are currently the unmitered bend values.
-Edwards/Steer check: dev/raw/edwards.pdf, page 236, supports the capacitance-plus-inductance bend-discontinuity interpretation and notes bend compensation as important up to around 18 GHz. The available scan does not include equations, so it is not yet an independent numeric benchmark.
-Edwards/Steer extended check: dev/raw/edwards2.pdf, pages 237 through 239, gives Gupta-style unmitered bend capacitance formulas, an inductance formula, a worked example, and a mitered-bend chamfer recommendation. This is now the source family used by `mbend()`.
+Edwards/Steer check: dev/raw/bends_in_microstrip_edwards_p236_239.pdf, pages 236 through 239, supports the capacitance-plus-inductance bend-discontinuity interpretation and gives Gupta-style unmitered bend capacitance formulas, an inductance formula, a worked example, and a mitered-bend chamfer recommendation. This is now the source family used by `mbend()`.
 ```
 
 Microstrip impedance step:
 
 ```text
 nP.mstep()
-Immediate source: QUCS technical manual, Microstrip impedance step.
-Equations used: 11.202 for Cs.
-Equations used: 11.203 and 11.204 for splitting Ls into L1 and L2.
-Equation used: 11.205 for line inductance weighting.
-Equation used: 11.206 for Ls.
-Validity noted by source: Cs error below 10% for er <= 10 and 1.5 <= W1/W2 <= 3.5. Ls error below 5% for W1/W2 <= 5 and W2/Height = 1.
+Immediate source: Edwards and Steer, Foundations for Microstrip Circuit Design, 2016 copy, section 9.4, captured in dev/raw/step_changes_in_microstrip_edwards_p241_243.pdf.
+Cross-check source: QUCS technical manual, Microstrip impedance step.
+Equations used: Edwards/Steer 9.28 for capacitance interpreted as equivalent extra length.
+Equations used: Edwards/Steer 9.29 and 9.30 for splitting total step inductance into L1 and L2.
+Equation used: Edwards/Steer 9.31 for equivalent extra line lengths.
+Equation used: Edwards/Steer 9.32 / QUCS 11.202 for slight-step capacitance.
+Equation used: Edwards/Steer 9.33 for the larger-step capacitance branch at er = 9.6.
+Equation used: Edwards/Steer 9.34 / QUCS 11.206 for Ls.
+Validity noted by source: Cs error can be as high as 10% for er <= 10 and 1.5 <= Wwide/Wnarrow <= 3.5; the larger-ratio capacitance expression is stated for er = 9.6 and 3.5 <= Wwide/Wnarrow <= 10. Ls accuracy is stated better than 5% for Wwide/Wnarrow <= 5 and Wnarrow/Height = 1.
+Asymmetrical note: Edwards/Steer page 243 says the same equivalent-circuit shape may be used as a first approximation for an asymmetrical step, with actual parameter values about half the symmetrical-step values. nP.mstep() currently represents the symmetrical-step equations.
 ```
 
 Microstrip tee junction:
@@ -454,11 +455,14 @@ Microstrip tee junction:
 ```text
 nP.mtee()
 Immediate source: QUCS technical manual, Microstrip tee junction.
+Source context: Edwards and Steer, Foundations for Microstrip Circuit Design, 2016 copy, section 9.6.1, captured in dev/raw/junctions_in_microstrip_edwards_p245_250.pdf.
 Equation used: 11.207 for equivalent parallel-plate line width D.
 Equation used: 11.208 for first higher-order mode cutoff fp.
 Equation used: 11.209 for effective wavelength.
 Equations used: 11.210 through 11.216 for reference-plane displacement, transformer ratios, R, Q, and shunt susceptance BT.
 Equations used: 11.219 through 11.224 for the three-port S-parameters.
+Edwards/Steer equations 9.39 through 9.45 give related effective-width, transformer-ratio, reference-plane displacement, shunt-capacitance, and limitation context. These pages support the model family but do not provide a complete replacement S-parameter benchmark.
+Limitation noted by Edwards/Steer: actual accuracies for tee shunt-capacitance expressions are not quoted, discrepancies rise when 2 * effectiveWidth / guidedWavelength > 0.3, and impedance-ratio limits matter.
 Implementation note: QUCS labels the tee arms as a, b, and 2. nP remaps that to public order [common, branch1, branch2] to match nP.Tee() power-divider use.
 ```
 
@@ -467,10 +471,12 @@ Microstrip cross junction:
 ```text
 nP.mcross()
 Immediate source: QUCS technical manual, Microstrip cross.
+Source context: Edwards and Steer, Foundations for Microstrip Circuit Design, 2016 copy, section 9.6.3, captured in dev/raw/junctions_in_microstrip_edwards_p245_250.pdf.
 Equations used: 11.226 and 11.227 for arm capacitance.
 Equations used: 11.228 and 11.229 for arm inductance.
 Equation used: 11.230 for center inductance.
 Equation used: 11.231 for adapting capacitance away from er = 9.9.
+Edwards/Steer equations 9.46 and 9.47 give a practical asymmetric-cross capacitance approximation and range, but also state that theoretical and experimental agreement is not good, especially for cross-junction inductance parameters.
 Validity noted by source: capacitance equations within about 5% for 0.3 <= W1/Height <= 3 and 0.1 <= W2/Height <= 3. Inductance equations within about 5% for 0.5 <= W1,2/Height <= 2.
 Implementation note: QUCS notes that L3 is negative and that multiplying it by 0.8 improves results. nP follows that 0.8 correction.
 ```
@@ -516,8 +522,9 @@ Ro = 50 ohms
 Reference values currently pinned by Node tests:
 
 ```text
-mstep(), QUCS equations 11.202 through 11.206
+mstep(), Edwards/Steer equations 9.28 through 9.35 and matching QUCS equations 11.202 through 11.206
 CsPf = 0.007510008588927712
+large-ratio er=9.6 CsPf = 0.040038496202786863
 LsNh = 0.011507946456502898
 L1Nh = 0.004783294294823262
 L2Nh = 0.006724652161679638
@@ -560,10 +567,10 @@ X at 1 GHz = 1.4760452686634467
 Maturity status:
 
 ```text
-mstep(): sourced and pinned to equation outputs; still needs independent calculator or field-solver comparison.
+mstep(): sourced directly to Edwards/Steer section 9.4 and cross-checked against matching QUCS equations. The larger-ratio er=9.6 capacitance branch is implemented and pinned. Still needs independent calculator, measurement, or field-solver comparison.
 mbend(): sourced and pinned to Edwards/Steer equation outputs for the unmitered bend. The textbook worked example is now pinned in tests. Miter geometry is exposed, but mitered C/L behavior is not yet implemented because the available source gives a graph/recommendation rather than closed-form miter equations.
-mtee(): sourced and pinned to intermediate equation outputs; still needs external S-parameter benchmark.
-mcross(): sourced and pinned to equation outputs; asymmetric width handling is first-order, following QUCS guidance.
+mtee(): sourced and pinned to intermediate equation outputs; now cross-referenced to Edwards/Steer section 9.6.1 for the equivalent-circuit family, reference-plane shifts, transformer ratio, shunt capacitance context, and limitations. Still needs external S-parameter benchmark.
+mcross(): sourced and pinned to equation outputs; now cross-referenced to Edwards/Steer section 9.6.3 for the equivalent-circuit shape and cautionary limits. Asymmetric width handling is first-order, and Edwards/Steer explicitly warns that theory/experiment agreement is weak.
 mvgnd(): sourced and pinned to equation outputs.
 mvia(): partially sourced through mvgnd barrel equations; pad/stub additions need stronger source tracing.
 ```

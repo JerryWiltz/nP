@@ -307,6 +307,8 @@ test('default microstrip constructors create finite n-port objects', () => {
 		closeTo(tee.microstrip.analysis[0].na, 0.9998159036082835);
 		closeTo(tee.microstrip.analysis[0].nb, 0.9998159036082835);
 		closeTo(tee.microstrip.analysis[0].BT, -0.00006255957028808236);
+		assert.match(tee.microstrip.source, /Edwards\/Steer section 9\.6\.1/);
+		assert.match(tee.microstrip.validity.limitations, /impedance ratio exceeds about 2/);
 
 		for (const network of [line, coupledLine, tee]) {
 			for (const row of network.getspars()) {
@@ -370,6 +372,8 @@ test('mcross matches pinned QUCS microstrip cross equation outputs', () => {
 		closeTo(cross.microstrip.Lcenter, -1.74771255961485e-10);
 		closeTo(cross.microstrip.armCaps[0], -7.22445193875089e-15);
 		closeTo(cross.microstrip.armInds[0], 9.503576111752356e-11);
+		assert.match(cross.microstrip.source, /Edwards\/Steer section 9\.6\.3/);
+		assert.match(cross.microstrip.validity.limitations, /weak theory\/experiment agreement/);
 		assert.ok(cross.microstrip.analysis[0].armCaps.every(Number.isFinite));
 		assert.ok(cross.microstrip.analysis[0].armInds.every(Number.isFinite));
 		assert.ok(Number.isFinite(cross.microstrip.analysis[0].Lcenter));
@@ -399,9 +403,12 @@ test('mstep matches pinned QUCS impedance step equation outputs', () => {
 		assert.equal(step.microstrip.roughnessRms, 0);
 		assert.equal(step.microstrip.analysis.length, 2);
 		closeTo(step.microstrip.CsPf, 0.007510008588927712);
+		closeTo(step.microstrip.capacitancePerRootWidth, 9.09);
+		assert.equal(step.microstrip.capacitanceEquation, 'Edwards/Steer 9.32, Garg/Bahl slight step capacitance');
 		closeTo(step.microstrip.LsNh, 0.011507946456502898);
 		closeTo(step.microstrip.L1Nh, 0.004783294294823262);
 		closeTo(step.microstrip.L2Nh, 0.006724652161679638);
+		assert.match(step.microstrip.validity.source, /Edwards\/Steer section 9\.4/);
 
 		for (const row of step.getspars()) {
 			for (let col = 1; col < row.length; col++) {
@@ -409,6 +416,21 @@ test('mstep matches pinned QUCS impedance step equation outputs', () => {
 				assert.ok(Number.isFinite(row[col].getI()));
 			}
 		}
+	});
+});
+
+test('mstep uses Edwards/Steer large step capacitance branch for er 9.6', () => {
+	withGlobal({ fList: [1e9], Ro: 50 }, () => {
+		const step = mstep({
+			width1: 0.092 * 0.0254,
+			width2: 0.023 * 0.0254,
+			er: 9.6
+		});
+
+		closeTo(step.microstrip.CsPf, 0.040038496202786863);
+		closeTo(step.microstrip.capacitancePerRootWidth, 34.26779887263511);
+		assert.equal(step.microstrip.capacitanceEquation, 'Edwards/Steer 9.33, Garg/Bahl large step capacitance');
+		assert.match(step.microstrip.validity.capacitanceRatio, /3\.5 <=/);
 	});
 });
 

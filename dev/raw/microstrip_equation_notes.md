@@ -1,10 +1,10 @@
-<!-- Modified: 2026-07-03 -->
+<!-- Modified: 2026-07-08 -->
 
 # Microstrip Equation Notes
 
 These notes track the equation sources used for nP microstrip constructors. They are intentionally short so the implementation is tied to identifiable references without copying long source text or papers into the repo.
 
-Future transmission-media notes can follow this pattern, for example `stripline-equation-notes.md` and `waveguide-equation-notes.md`.
+Future transmission-media notes can follow this pattern, for example `stripline_equation_notes.md` and `waveguide_equation_notes.md`.
 
 ## Shared Inputs
 
@@ -183,10 +183,12 @@ Model notes:
 
 - Each tee arm now uses the same Hammerstad/Jensen-style single microstrip baseline used by `mlin()`.
 - Finite conductor thickness is handled through the same effective-width style correction used for the other microstrip constructors.
+- Edwards/Steer section 9.6.1, captured in `dev/raw/junctions_in_microstrip_edwards_p245_250.pdf`, confirms the tee-junction equivalent-circuit family: reference-plane shifts, a transformer ratio for the shunt branch, shunt capacitance, and series inductive effects.
+- The current implementation follows the QUCS closed-form S-parameter version of this model family. Edwards/Steer gives useful source context and limitations, but does not provide a complete replacement S-parameter benchmark in the captured pages.
 - The public nP order is `[common, branch1, branch2]`. Internal equation names may use side/main-arm naming, so keep the remap explicit.
 - The returned object exposes `mtee.microstrip.commonArm`, `branch1Arm`, `branch2Arm`, `Ct`, and a per-frequency `analysis` array.
 - `rho`, `tand`, and `roughnessRms` are accepted and preserved for API consistency with the other microstrip constructors. The current junction model itself is a discontinuity model without physical line length, so these values do not yet add separate conductor or dielectric attenuation at the tee. Loss should normally be supplied by the connected `mlin()` sections.
-- The next maturity step is to find an external reference case or a published benchmark for a symmetric microstrip tee and pin the expected S-parameters in tests.
+- Edwards/Steer notes that tee shunt-capacitance expression accuracies are not quoted and that discrepancies rise at higher electrical size and larger impedance ratios. The next maturity step is to find an external reference case or a published benchmark for a symmetric microstrip tee and pin the expected S-parameters in tests.
 
 ## `nP.mstep()`
 
@@ -215,11 +217,12 @@ nP.mstep({
 
 Model notes:
 
-- The equivalent circuit follows the QUCS technical manual microstrip impedance-step section.
+- The equivalent circuit follows Edwards/Steer section 9.4 and the matching QUCS technical manual microstrip impedance-step section.
 - The model is a two-port Z-parameter discontinuity with one shunt capacitance `Cs` and two series inductance portions `L1` and `L2`.
-- `Cs` is computed from the ratio of the wider trace to the narrower trace. The published capacitance validity statement is `er <= 10` and `1.5 <= Wwide / Wnarrow <= 3.5`.
+- `Cs` is computed from the ratio of the wider trace to the narrower trace. Edwards/Steer equation 9.32 covers the slight-step capacitance case with `er <= 10` and `1.5 <= Wwide / Wnarrow <= 3.5`. Edwards/Steer equation 9.33 covers a larger-step capacitance branch for `er = 9.6` and `3.5 <= Wwide / Wnarrow <= 10`.
 - Total step inductance `Ls` is split into `L1` and `L2` using each port's microstrip line inductance per meter, `Z * sqrt(ere) / C0`.
-- The published inductance validity statement is `Wwide / Wnarrow <= 5`, with the best-stated case at `Wnarrow / Height = 1`.
+- The published inductance statement comes from Edwards/Steer equations 9.29 through 9.35. The stated accuracy is better than 5 percent when `Wwide / Wnarrow <= 5` and the narrow side is near `Wnarrow / Height = 1`.
+- Edwards/Steer page 243 notes that an asymmetrical physical step can be approximated with the same equivalent-circuit shape, with actual parameter values about half those of the symmetrical step. The current `mstep()` constructor represents the symmetrical step case; use this note before interpreting it as an asymmetric layout step.
 - `rho`, `tand`, and `roughnessRms` are accepted and preserved for API consistency. As with other zero-length discontinuity models, physical line loss should normally be supplied by connected `mlin()` sections.
 
 ## `nP.mbend()`
@@ -436,6 +439,8 @@ Model notes:
 - The current S-parameter model is a six-node equivalent circuit. Ports 1 and 3 connect through arm inductances to one internal horizontal node; ports 2 and 4 connect through arm inductances to one internal vertical node; the two internal nodes are coupled by a center inductance; each external port has a shunt capacitance representing local discontinuity capacitance.
 - The six-node admittance matrix is reduced to the four external ports by eliminating the two internal nodes, then converted to a four-port S-parameter matrix.
 - The equivalent-circuit topology and component equations follow the QUCS technical manual microstrip-cross section. That source describes the four capacitances, four arm inductances, center inductance, validity ranges, 0.8 center-inductance correction, dielectric correction, and first-order asymmetric-width approximation.
+- Edwards/Steer section 9.6.3, captured in `dev/raw/junctions_in_microstrip_edwards_p245_250.pdf`, confirms the cross-junction equivalent-circuit shape and stresses that theoretical/experimental agreement is not good, especially for inductance parameters.
+- Edwards/Steer gives a practical asymmetric-cross capacitance approximation `Ct ~= 3/4 Cm` over a stated `w4 / h` range, but the captured pages do not provide enough complete, closed-form S-parameter detail to replace the current QUCS implementation.
 - The model is originally limited to opposite arms with equal width and `er = 9.9`; the QUCS technical manual gives the correction used here for other substrate permittivities and the arithmetic-mean approximation used here for mildly asymmetric opposite arms.
 - The center inductance can be negative; the source explicitly notes this and treats the model as a fitted discontinuity equivalent circuit that is unphysical without external microstrip lines. For some geometries the fitted capacitance expression may also produce negative capacitance values, so tests check finiteness and reference values rather than forcing every extracted element to be positive.
 - Qucsator's GPL `MSCROSS` implementation was used as an implementation cross-check. The source of authority for the equations is the QUCS technical manual page, not copied GPL code.
@@ -460,10 +465,10 @@ Status notes:
 - `mlin()` is mature enough for regular use. It has Hammerstad/Jensen-style impedance/effective dielectric constant, finite-thickness correction, dispersion, conductor loss, dielectric loss, and roughness support.
 - `mtfr()` is good enough for current RF use. It uses sheet resistance, physical length, automatic section count from `Length / Width`, and cascaded `mlin()`/`R()` sections. The zero-ohm/square case tracks a plain `mlin()` closely in both `s21mag` and `s21ang`, which checks the cascade structure. Remaining limits are end-transition parasitics, current-spreading correction, thermal behavior, and measured thin-film frequency correction.
 - `mbend()` is reasonably mature for unmitered bends. It uses Edwards/Steer equations and pins a textbook example. Miter geometry is exposed, but mitered capacitance/inductance behavior is not implemented.
-- `mstep()` is a reasonable sourced discontinuity model using QUCS equations and pinned equation outputs, but it still needs independent calculator, measurement, or field-solver comparison.
+- `mstep()` is reasonably mature for a symmetrical impedance step. It is now tied directly to Edwards/Steer section 9.4 and the matching QUCS equations, supports the larger-ratio `er = 9.6` capacitance branch, and has pinned equation outputs. It still needs independent calculator, measurement, or field-solver comparison before treating it as fully validated.
 - `mvgnd()` is a reasonable simple ground-via model using QUCS/Goldfarb-Pucel barrel equations and pinned outputs.
-- `mtee()` is usable and structurally meaningful, but it still needs an external S-parameter benchmark before treating it as mature.
-- `mcross()` is usable as a first implementation from QUCS equations. Asymmetric width behavior is still first-order and should be benchmarked before important use.
+- `mtee()` is usable and structurally meaningful. It is now source-traced to both the QUCS closed-form S-parameter implementation and Edwards/Steer section 9.6.1, but it still needs an external S-parameter benchmark before treating it as mature.
+- `mcross()` is usable as a first implementation from QUCS equations and is now cross-checked against Edwards/Steer section 9.6.3 for topology and cautionary limits. Edwards/Steer explicitly warns that theory/experiment agreement is weak for cross-junction equivalent circuits, so asymmetric width behavior should be benchmarked before important use.
 - `mvia()` is the least mature. Its barrel resistance and inductance inherit the `mvgnd()` source, but pad, antipad, and stub capacitance terms need stronger source tracing and validation.
 
 ## Sources
@@ -473,7 +478,9 @@ Status notes:
 - Rolf Jansen, "High-Speed Computation of Single and Coupled Microstrip Parameters Including Dispersion, High-Order Modes, Loss and Finite Strip Thickness", IEEE Transactions on Microwave Theory and Techniques, vol. 26, no. 2, February 1978. Used for finite strip-thickness treatment.
 - Hammerstad/Jensen single microstrip equations are used as the single-line baseline.
 - Edwards and Steer, *Foundations for Microstrip Circuit Design*, 2016 copy, section 9.3. Used for `mbend()` right-angle bend capacitance, inductance, equivalent circuit, worked example, and miter recommendation.
-- QUCS technical manual, "Microstrip impedance step", `https://qucs.sourceforge.net/tech/node80.html`. Used for `mstep()` capacitance, inductance, validity ranges, and equivalent circuit.
+- Edwards and Steer, *Foundations for Microstrip Circuit Design*, 2016 copy, section 9.4, captured in `dev/raw/step_changes_in_microstrip_edwards_p241_243.pdf`. Used for `mstep()` equivalent circuit, capacitance equations, inductance split equations, validity statements, and asymmetrical-step approximation note.
+- Edwards and Steer, *Foundations for Microstrip Circuit Design*, 2016 copy, section 9.6, captured in `dev/raw/junctions_in_microstrip_edwards_p245_250.pdf`. Used for `mtee()` equivalent-circuit interpretation, transformer/reference-plane context, limitations, compensated tee notes, and `mcross()` equivalent-circuit cautions.
+- QUCS technical manual, "Microstrip impedance step", `https://qucs.sourceforge.net/tech/node80.html`. Used as an online source matching the `mstep()` capacitance, inductance, validity ranges, and equivalent circuit.
 - Qucs `qucs-transcalc/c_microstrip.cpp` and Qucsator `src/components/microstrip/mscoupled.cpp` were used as open implementation cross-checks, not copied as source. Qucs code is GPL, so nP should keep its implementation independently written from the published equations.
 - QUCS technical manual, "Microstrip cross", `https://qucs.sourceforge.net/tech/node82.html`. Used for `mcross()` equivalent-circuit equations, limitations, dielectric correction, and asymmetric approximation.
 - QUCS technical manual, "Microstrip via hole", `https://qucs.sourceforge.net/tech/node83.html`. Used for `mvgnd()` and `mvia()` via resistance, inductance, frequency correction, and validity range.

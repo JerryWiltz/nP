@@ -33,5 +33,6 @@ node_modules/
 .aider*
 latestCodex.txt
 dev/raw/mclin.pdf
-dev/raw/edwards.pdf
-dev/raw/edwards2.pdf
+dev/raw/bends_in_microstrip_edwards_p236_239.pdf
+dev/raw/step_changes_in_microstrip_edwards_p241_243.pdf
+dev/raw/junctions_in_microstrip_edwards_p245_250.pdf
