@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<!-- Modified: 2026-07-09 -->
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>diodeDevelopment</title>
+    <script src="../dist/nP.js"></script>
+</head>
+
+<body>
+    <div id="sparsDiv"></div>
+    <div id="ivDiv"></div>
+
+    <script>
+        var g = nP.global;
+        g.fList = g.fGen(100e6, 2100e6, 101);
+
+        var diode = nP.diode1N4148({
+            biasVoltage: 0
+        });
+
+        var sparsOut = diode.out('s11dB', 's21dB');
+
+        var sparsChart = nP.lineChart({
+            inputTable: [sparsOut],
+            title: '1N4148 S-Parameters',
+            mount: '#sparsDiv',
+            xAxisTitle: 'Frequency',
+            yAxisTitle: 'S-Parameters (dB)',
+            metricPrefix: 'giga',
+            xScale: 'linear',
+            yScale: 'linear',
+            xAxisPosition: 'bottom',
+            yAxisPosition: 'left',
+            backgroundColor: 'white'
+        });
+
+        var ivRaw = diode.ivTable();
+        var ivOut = ivRaw.map(function (row, index) {
+            if (index === 0) {
+                return ['vD', 'iD mA'];
+            }
+
+            return [row[0], row[1] * 1000];
+        });
+
+        var ivChart = nP.lineChart({
+            inputTable: [ivOut],
+            title: '1N4148 DC I-V Curve',
+            mount: '#ivDiv',
+            xAxisTitle: 'Diode Voltage (V)',
+            yAxisTitle: 'Diode Current (mA)',
+            metricPrefix: 'none',
+            xScale: 'linear',
+            yScale: 'linear',
+            xAxisPosition: 'origin',
+            yAxisPosition: 'origin',
+            xRange: [-110, 1],
+            yRange: [-20, 12],
+            backgroundColor: 'white'
+        });
+    </script>
+</body>
+
+</html>

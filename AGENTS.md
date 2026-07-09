@@ -1,7 +1,8 @@
 codex resume 019e89f1-41f2-70a0-85b9-da332da8146b
+sudo npm install -g @openai/codex
 
 # AGENTS.md
-<!-- Modified: 2026-07-03 -->
+<!-- Modified: 2026-07-09 -->
 
 Repository guide for agents working in the `nP` repo.
 
@@ -28,6 +29,7 @@ Primary domains:
 - Chebyshev low-pass prototype helpers in `src/np-lowpass-prototype`.
 - D3-based chart, Smith chart, and table rendering in `src/np-chart`.
 - Browser helper utilities in `src/np-misc`.
+- Diode and nonlinear-device model development in `src/np-diodes`.
 - User documentation in `README.md` and `docs/index.md`.
 
 ## nP Workflow Model
@@ -172,6 +174,16 @@ Shared microstrip constants live in `src/np-nport/src/mlin/constants.js`. Use th
 
 Do not create alternate spellings for the same physical constant in nearby constructors. If a paper uses a different symbol, map it to the shared nP name in comments or raw notes, for example `eta_0 = VACUUM_IMPEDANCE`.
 
+## Diode Model Pattern
+
+Diode-related constructors live in `src/np-diodes`. These models are expected to support both RF and DC behavior:
+
+- Emit S-parameters as nPort-compatible objects when the model is used in RF analysis.
+- Expose DC I-V curve data in an `inputTable`-style shape that can be passed to `nP.lineChart()` or `nP.lineTable()`.
+- Build practical diode components from lumped parasitic elements plus diode equations, rather than treating every diode as only an ideal nonlinear equation.
+- Keep the RF and DC parts of a diode model visibly connected in examples: define physical/electrical parameters once, then derive S-parameters and I-V outputs from that model.
+- Preserve the normal nP workflow where possible: set frequencies, create components, combine nPort objects, call `.out(...)`, then display with chart/table helpers.
+
 ## Technical Name Spelling
 
 Preserve standard author, paper, and model-family spellings in filenames, headings, notes, comments, and docs. In particular, use `Hammerstad/Jensen`, not misspellings such as `Hammestad` or `Jensn`. When unsure about a paper author or equation family name, verify before creating filenames or headings.
@@ -182,6 +194,7 @@ Preserve standard author, paper, and model-family spellings in filenames, headin
 - `src/np-*/index.js`: subpackage entry points.
 - `src/np-*/src/*.js`: implementation files.
 - `src/np-nport/src/idealComponents/`: ideal n-port components and fixtures such as `Open`, `Short`, `Load`, `Shift90`, `Tee`, `Tee4`, `Tee5`, `Tlin`, and `Tclin`.
+- `src/np-diodes/`: diode and nonlinear-device models that may produce both RF S-parameters and DC I-V curve tables.
 - `dist/nP.js`: generated UMD browser bundle. It is versioned in this repo, so update it only when intentionally rebuilding for release or distribution.
 - `rollup.config.js`: root bundle config. Input is `src/index.js`; output is `dist/nP.js`; bundle name is `nP`.
 - `package.json`: root scripts and dev dependencies.
