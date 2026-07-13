@@ -1,5 +1,6 @@
-codex resume 019e89f1-41f2-70a0-85b9-da332da8146b
+codex resume 019f5328-5fec-70f0-a69b-52cf87215920
 sudo npm install -g @openai/codex
+Read all applicable AGENTS.md files before working. Inspect the current Git status and latest commits, then continue from the repository’s current state.
 
 # AGENTS.md
 <!-- Modified: 2026-07-09 -->

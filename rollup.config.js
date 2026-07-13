@@ -1,4 +1,4 @@
-// reviewed on 6/8/2025;
+// Modified: 2026-07-13
 import resolve from '@rollup/plugin-node-resolve';
 
 export default {
@@ -9,6 +9,15 @@ export default {
 			format: 'umd',
 			name: 'nP',
 			globals: { d3: 'd3' }//global: 'd3'
+		},
+		{
+			file: './dist/nP.esm.js',
+			format: 'es'
+		},
+		{
+			file: './dist/nP.cjs',
+			format: 'cjs',
+			exports: 'named'
 		}
 	],
 	plugins: [

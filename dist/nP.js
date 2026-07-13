@@ -5819,7 +5819,8 @@
 		};
 	}
 
-	const version = '0.0.45';
+	// Modified: 2026-07-13
+	const version = '0.0.47';
 
 	function CplxToCell(complexNumber) {
 		return complexNumber.x.toPrecision(4) + (complexNumber.y.toPrecision(4) >= 0 ? " +j" + complexNumber.y.toPrecision(4) : " -j" + (-complexNumber.y).toPrecision(4));

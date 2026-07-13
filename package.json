@@ -1,8 +1,24 @@
 {
   "name": "np",
-  "version": "0.0.45",
-  "main": "./dist/nP.js",
+  "version": "0.0.47",
+  "main": "./dist/nP.cjs",
+  "module": "./dist/nP.esm.js",
+  "browser": "./dist/nP.js",
   "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/nP.esm.js",
+      "require": "./dist/nP.cjs",
+      "default": "./dist/nP.esm.js"
+    },
+    "./browser": "./dist/nP.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "rollup -c",
     "test": "node --loader ./scripts/extensionless-loader.mjs --test",
@@ -24,14 +40,18 @@
   "overrides": {
     "vite": "6.4.3"
   },
-  "description": "A microwave computer analysis program",
+  "description": "JavaScript RF and microwave n-port analysis with S-parameters, microstrip models, and SVG visualization",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/JerryWiltz/nP.git"
   },
   "keywords": [
-    "Microwave",
-    "Analysis"
+    "rf",
+    "microwave",
+    "s-parameters",
+    "smith-chart",
+    "n-port",
+    "circuit-analysis"
   ],
   "author": "Jerry Wiltz",
   "license": "MIT",

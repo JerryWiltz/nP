@@ -1,8 +1,74 @@
-## nPort: A Microwave Circuit Analysis Program
+<!-- Modified: 2026-07-13 -->
+# nP: RF and microwave network analysis in JavaScript
 
-**nP** is a JavaScript library for analyzing microwave circuits. It helps you learn about, analyze and visualize the operation of various RF multiport circuits.
+**nP** is a browser-oriented JavaScript library for constructing, analyzing, and visualizing RF and microwave networks. It supports complex arithmetic, matrix solving, S-parameters, n-port interconnection, lumped components, ideal transmission lines, physical microstrip models, nonlinear-device models, line charts, SVG tables, and Smith charts.
 
-**nPort** creates one JavaScript global variable, **nP**.
+The normal workflow is:
+
+1. Set the analysis frequencies.
+2. Create electrical components as n-port objects.
+3. Connect components with `nP.nodal()` or `nP.cascade()`.
+4. Extract selected S-parameter data with `.out(...)`.
+5. Render the result with `nP.lineChart()`, `nP.lineTable()`, or `nP.smithChart()`.
+
+## Quick start
+
+Download [`dist/nP.js`](https://raw.githubusercontent.com/JerryWiltz/nP/master/dist/nP.js) and load it as a browser script. The UMD build exposes the global `nP` object.
+
+```html
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>nP RF analysis</title>
+</head>
+<body>
+    <div id="chart"></div>
+    <script src="./nP.js"></script>
+    <script>
+        nP.global.fList = nP.global.fGen(0.1e9, 6e9, 101);
+
+        var r1 = nP.R(25);
+        var l1 = nP.L(2e-9);
+        var circuit = nP.nodal(
+            [r1, 1, 2],
+            [l1, 2, 3],
+            ['out', 1, 3]
+        );
+
+        var response = circuit.out('s11dB', 's21dB');
+        nP.lineChart({
+            inputTable: [response],
+            mount: '#chart',
+            title: 'Series R-L response',
+            metricPrefix: 'giga'
+        });
+    </script>
+</body>
+</html>
+```
+
+## Package formats
+
+`npm run build` produces three self-contained distributions:
+
+- `dist/nP.js`: UMD browser bundle exposing the global `nP`.
+- `dist/nP.esm.js`: ES module bundle for modern applications and plugins.
+- `dist/nP.cjs`: CommonJS bundle.
+
+The ESM build is intended for integrations such as the planned **nP RF Analysis** plugin for Obsidian.
+
+## Development
+
+```sh
+npm install
+npm test
+npm run build
+npm run docs:dev
+```
+
+The source entry point is `src/index.js`. The versioned browser bundle is `dist/nP.js`.
 
 ## API Reference
 
@@ -19,36 +85,6 @@
 * [nP-chart](#nP-chart)
 
 ---
-## How to Download 
-
-* Create a new folder named "nPort"
-* Download nPort by clicking [here](https://raw.githubusercontent.com/JerryWiltz/nP/master/dist/nP.js)", then Save as... "nP.js" and put it in the "nPort" folder. 
-* Create the file below and name it "index.html" and put it in the "nPort" folder.
-* Run "index.html". I recommend Chrome. You should see <b>Hello, nPort!</b> After that, you are ready to go.
-
-### Here below is an html page for "Hello, nPort!"
-
-```html
-<!DOCTYPE html>
-<html>
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width">
-		<title>Hello, nPort!</title>
-	</head>
-	<body>
-		<script src="./nP.js"></script>
-		<script>
-		
-nP.log('Hello, nPort!');
-
-		</script>
-	</body>
-</html>
-```
-
----
- 
 ## nP-global
 As **nPort** analyses in the frequency domain, it requires at least one frequency point to do anything. **nPort** has a default frequency of 2e9 or 2GHz. Therefore, you must specify either a single frequency or a list of frequencies to give **nPort** the domain it needs. The frequency or frequencies must be in an array. The units must by in Hz. Suppose you require a frequency list with 1001. There is a function, fGen(), that will create long arrays for you.
 
