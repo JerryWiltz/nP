@@ -1,3 +1,4 @@
+// Modified: 2026-07-14
 'use strict';
 import {complex} from './complex';
 
@@ -203,7 +204,7 @@ Matrix.prototype = {
 			a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
 			row = 0, col = 0, accum = 0;
 
-		for(constRow = 0; constRow < numRows; constRow++) { // FORWARD ELIMINAION - this row stays the same
+		for(constRow = 0; constRow < numRows; constRow++) { // FORWARD ELIMINATION - this row stays the same
 			pivotSort(A, constRow);
 			for(row = constRow+1; row < numRows; row++) { // this row moves down
 				a = -A[row][constRow]/A[constRow][constRow]; // this computes "a"
@@ -328,7 +329,7 @@ Matrix.prototype = {
 		//update numCols since Matrix, A is now wider;
 		numCols = A[0].length;
 
-		//add diagonal 1's to appened array, A
+		// add diagonal 1s to appended array, A
 		for(row = 0; row < numRows; row++) {
 			A[row][row + numRows] = complex(1, 0);
 		};

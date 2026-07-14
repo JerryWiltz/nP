@@ -1,4 +1,5 @@
-// Generates an array of parallel Capacitors and series Inductors based on chebyshev values
+// Modified: 2026-07-14
+// Generates an array of parallel capacitors and series inductors based on Chebyshev values
 export function chebyLPLCs ( cheby = [1, 1.0315851425078764, 1.1474003299537219, 1.0315851425078761, 1], maxPassFrequency = 0.2e9, zo = 50) { 
 	var	chebyLPLCsout = new Array(cheby.length),
 		i = 0;

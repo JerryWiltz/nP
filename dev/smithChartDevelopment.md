@@ -1,0 +1,68 @@
+<!-- Modified: 2026-07-14 -->
+# Smith Chart Development
+
+This note builds the Compact Manual diplexer and plots the three port reflections on a Smith chart. It is converted from `dev/smithChartDevelopment.html`.
+
+```npjs
+// from Compact Manual example #1 p27
+var g = nP.global;
+g.fList = g.fGen(100e6, 1000e6, 51);
+
+// high pass
+var c1 = nP.C(3.05e-12);
+var Tee = nP.Tee();
+var r1 = nP.R(0.6);
+var l1 = nP.L(56.4e-9);
+var c2 = nP.C(23.55e-12);
+var Short = nP.Short();
+var hp = nP.nodal(
+    [c1, 1, 2],
+    [Tee, 5, 2, 3],
+    [c2, 3, 4],
+    [r1, 5, 6],
+    [l1, 6, 7],
+    [Short, 7],
+    ['out', 1, 4]
+);
+
+// low pass
+var r2 = nP.R(0.3);
+var l2 = nP.L(32.4e-9);
+// Tee reuse
+var c3 = nP.C(7.15e-12);
+var r3 = nP.R(0.1);
+var l3 = nP.L(33.5e-9);
+// Short reuse
+var lp = nP.nodal(
+    [r2, 1, 2],
+    [l2, 2, 3],
+    [Tee, 7, 3, 4],
+    [r3, 4, 5],
+    [l3, 5, 6],
+    [c3, 7, 8],
+    [Short, 8],
+    ['out', 1, 6]
+);
+
+// combine into diplexer
+// Tee reuse
+var filt = nP.nodal(
+    [Tee, 1, 2, 3],
+    [hp, 2, 4],
+    [lp, 3, 5],
+    ['out', 1, 4, 5]
+);
+var filtOut = filt.out('s11Re', 's11Im', 's22Re', 's22Im', 's33Re', 's33Im');
+
+var plot = {
+    inputTable: [filtOut],
+    title: 'My Smith Chart',
+    mount: '#chartDiv',
+    backgroundColor: 'white',
+    fontFamily: 'sans-serif',
+    fontSize: 14
+};
+
+const chart = nP.smithChart(plot);
+// chart.setTxtChartTitleStyle({ fill: 'red', fontStyle: 'italic' });
+```

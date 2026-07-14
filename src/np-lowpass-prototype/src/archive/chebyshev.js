@@ -1,4 +1,5 @@
-export default function chebyshev () { console.log('this is chevyshev'); }
+// Modified: 2026-07-14
+export default function chebyshev () { console.log('this is Chebyshev'); }
 /*
 // lowPassDesign.js
 define(['app/storage'], function (storage){

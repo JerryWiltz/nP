@@ -3,7 +3,7 @@ sudo npm install -g @openai/codex
 Read all applicable AGENTS.md files before working. Inspect the current Git status and latest commits, then continue from the repository’s current state.
 
 # AGENTS.md
-<!-- Modified: 2026-07-09 -->
+<!-- Modified: 2026-07-14 -->
 
 Repository guide for agents working in the `nP` repo.
 
@@ -185,9 +185,14 @@ Diode-related constructors live in `src/np-diodes`. These models are expected to
 - Keep the RF and DC parts of a diode model visibly connected in examples: define physical/electrical parameters once, then derive S-parameters and I-V outputs from that model.
 - Preserve the normal nP workflow where possible: set frequencies, create components, combine nPort objects, call `.out(...)`, then display with chart/table helpers.
 
-## Technical Name Spelling
+## Spelling And Naming Consistency
 
-Preserve standard author, paper, and model-family spellings in filenames, headings, notes, comments, and docs. In particular, use `Hammerstad/Jensen`, not misspellings such as `Hammestad` or `Jensn`. When unsure about a paper author or equation family name, verify before creating filenames or headings.
+- Correct spelling in filenames, headings, prose, comments, examples, and user-visible text whenever those files are otherwise being edited.
+- Use one canonical spelling for each project term and keep capitalization consistent across source, documentation, development pages, and Obsidian notes.
+- Preserve standard author, paper, equation-family, and model-family spellings. In particular, use `Hammerstad/Jensen`, not misspellings such as `Hammestad` or `Jensn`, and use `Chebyshev`, not variants such as `Chebychev`.
+- Verify unfamiliar technical names before introducing or renaming them.
+- Do not silently rename an established public API identifier merely to correct its spelling. Preserve compatibility or make an intentional, documented migration with an alias and updated consumers.
+- When correcting a filename, update every active reference to that path in the same change and verify that the old spelling is no longer referenced.
 
 ## Repository Layout
 
@@ -205,7 +210,7 @@ Preserve standard author, paper, and model-family spellings in filenames, headin
 - `test/`: Node tests for math, global settings, and nPort behavior.
 - `dev/`: local browser development and verification pages. These files are manual harnesses, not source of truth.
   - `dev/lineChartDevelopment.html`, `dev/lineTableDevelopment.html`, and `dev/smithChartDevelopment.html` load `../dist/nP.js` and exercise the built chart/table APIs.
-  - `dev/mlinDevelopment.html`, `dev/mclinDevelopment.html`, `dev/mteeDelevopment.html`, `dev/mteePowerDividerDevelopment.html`, `dev/mtfrDelevopment.html`, `dev/matrixDevelopment.html`, and `dev/nodeDevelopment.html` are manual development pages for focused RF/math workflows.
+  - `dev/mlinDevelopment.html`, `dev/mclinDevelopment.html`, `dev/mteeDevelopment.html`, `dev/mteePowerDividerDevelopment.html`, `dev/mtfrDevelopment.html`, `dev/matrixDevelopment.html`, and `dev/nodeDevelopment.html` are manual development pages for focused RF/math workflows.
   - `dev/raw/` holds raw technical source material, equation notes, and early derivations for work such as `mtee()`.
 
 The old subpackage-level build artifacts under `src/np-*` have been removed. Treat the root package and root Rollup config as the only current build path.

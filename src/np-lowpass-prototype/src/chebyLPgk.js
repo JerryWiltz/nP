@@ -1,4 +1,5 @@
-// Generates an array of chebyshev values based on number of section and ripple
+// Modified: 2026-07-14
+// Generates an array of Chebyshev values based on the number of sections and ripple
 export function chebyLPgk (n = 3, ripple = 0.1) { // Returns gk's shown in formula 4.05-2 on page 99 of MYJ
 	var	chebyLPgkin = new Array(1 + 1 + n + 1),  // Table title row, go row, gk's (n rows), and g(k+1)
 		chebyLPgkout = [],

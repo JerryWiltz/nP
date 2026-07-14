@@ -1,0 +1,54 @@
+<!-- Modified: 2026-07-14 -->
+# Diode Development
+
+This analysis shows the RF S-parameters and DC I-V curve of the nP 1N4148 diode model. It is converted from `dev/diodeDevelopment.html`.
+
+```npjs
+var g = nP.global;
+g.fList = g.fGen(100e6, 2100e6, 101);
+
+var diode = nP.diode1N4148({
+    biasVoltage: 0
+});
+
+var sparsOut = diode.out('s11dB', 's21dB');
+
+var sparsChart = nP.lineChart({
+    inputTable: [sparsOut],
+    title: '1N4148 S-Parameters',
+    mount: '#sparsDiv',
+    xAxisTitle: 'Frequency',
+    yAxisTitle: 'S-Parameters (dB)',
+    metricPrefix: 'giga',
+    xScale: 'linear',
+    yScale: 'linear',
+    xAxisPosition: 'bottom',
+    yAxisPosition: 'left',
+    backgroundColor: 'white'
+});
+
+var ivRaw = diode.ivTable();
+var ivOut = ivRaw.map(function (row, index) {
+    if (index === 0) {
+        return ['vD', 'iD mA'];
+    }
+
+    return [row[0], row[1] * 1000];
+});
+
+var ivChart = nP.lineChart({
+    inputTable: [ivOut],
+    title: '1N4148 DC I-V Curve',
+    mount: '#ivDiv',
+    xAxisTitle: 'Diode Voltage (V)',
+    yAxisTitle: 'Diode Current (mA)',
+    metricPrefix: 'none',
+    xScale: 'linear',
+    yScale: 'linear',
+    xAxisPosition: 'origin',
+    yAxisPosition: 'origin',
+    xRange: [-110, 1],
+    yRange: [-20, 12],
+    backgroundColor: 'white'
+});
+```

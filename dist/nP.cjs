@@ -44,6 +44,8 @@ function complex(real, imaginary) {
 	return complexNumber;
 }
 
+// Modified: 2026-07-14
+
 function Matrix () {}
 
 function dim(rows, cols, initial) { // used by nodal()
@@ -224,7 +226,7 @@ Matrix.prototype = {
 			a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
 			row = 0, col = 0, accum = 0;
 
-		for(constRow = 0; constRow < numRows; constRow++) { // FORWARD ELIMINAION - this row stays the same
+		for(constRow = 0; constRow < numRows; constRow++) { // FORWARD ELIMINATION - this row stays the same
 			pivotSort(A, constRow);
 			for(row = constRow+1; row < numRows; row++) { // this row moves down
 				a = -A[row][constRow]/A[constRow][constRow]; // this computes "a"
@@ -321,7 +323,7 @@ Matrix.prototype = {
 		//update numCols since Matrix, A is now wider;
 		numCols = A[0].length;
 
-		//add diagonal 1's to appened array, A
+		// add diagonal 1s to appended array, A
 		for(row = 0; row < numRows; row++) {
 			A[row][row + numRows] = complex(1, 0);
 		}
@@ -361,7 +363,8 @@ function matrix(mat) {
 	return matrixObject;
 }
 
-// Generates an array of chebyshev values based on number of section and ripple
+// Modified: 2026-07-14
+// Generates an array of Chebyshev values based on the number of sections and ripple
 function chebyLPgk (n = 3, ripple = 0.1) { // Returns gk's shown in formula 4.05-2 on page 99 of MYJ
 	var	chebyLPgkin = new Array(1 + 1 + n + 1),  // Table title row, go row, gk's (n rows), and g(k+1)
 		chebyLPgkout = [],
@@ -392,7 +395,8 @@ function chebyLPgk (n = 3, ripple = 0.1) { // Returns gk's shown in formula 4.05
 	return chebyLPgkout;
 }
 
-// Generates an array of parallel Capacitors and series Inductors based on chebyshev values
+// Modified: 2026-07-14
+// Generates an array of parallel capacitors and series inductors based on Chebyshev values
 function chebyLPLCs ( cheby = [1, 1.0315851425078764, 1.1474003299537219, 1.0315851425078761, 1], maxPassFrequency = 0.2e9, zo = 50) { 
 	var	chebyLPLCsout = new Array(cheby.length),
 		i = 0;
@@ -407,7 +411,8 @@ function chebyLPLCs ( cheby = [1, 1.0315851425078764, 1.1474003299537219, 1.0315
 	return chebyLPLCsout;
 }
 
-// Computes the number sections in a chebyshev lowpass filter
+// Modified: 2026-07-14
+// Computes the number of sections in a Chebyshev low-pass filter
 function chebyLPNsec (passFreq = .2, rejFreq = 1.5, ripple = 0.1, rejection = 30) { // Formula 4.03-4 for n on page 86 of MYJ
 	var chebyLPNsecout = 0;
 	function normalizedBandwidth() { return rejFreq/passFreq; }// Computes the w/w1 in MYJ on page 86 of MYJ
@@ -6709,7 +6714,9 @@ function seSeRC(R = 75, C = 1e-12) { // series inductor nPort object
 	return seSeRC;
 }
 
-function paSeRC(R = 75, C = 1e-12) { // parallel capaSeRCitor nPort object   
+// Modified: 2026-07-14
+
+function paSeRC(R = 75, C = 1e-12) { // parallel series-RC nPort object
 	var paSeRC = new nPort;
 	var frequencyList = global.fList, Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
