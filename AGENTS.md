@@ -3,7 +3,7 @@ sudo npm install -g @openai/codex
 Read all applicable AGENTS.md files before working. Inspect the current Git status and latest commits, then continue from the repository’s current state.
 
 # AGENTS.md
-<!-- Modified: 2026-07-14 -->
+<!-- Modified: 2026-07-15 -->
 
 Repository guide for agents working in the `nP` repo.
 
@@ -205,6 +205,7 @@ Diode-related constructors live in `src/np-diodes`. These models are expected to
 - `rollup.config.js`: root bundle config. Input is `src/index.js`; output is `dist/nP.js`; bundle name is `nP`.
 - `package.json`: root scripts and dev dependencies.
 - `docs/`: VitePress documentation.
+- `developmentDocs/`: internal RF mathematics, equation-to-code reasoning, model provenance, data contracts, implementation decisions, and verification guidance. Keep detailed engineering explanations here; keep `AGENTS.md` focused on concise mandatory rules.
 - `scripts/deploy.sh`: builds docs and force-pushes `docs/.vitepress/dist` to `gh-pages`.
 - `scripts/extensionless-loader.mjs`: test-only Node loader for the repo's extensionless relative imports.
 - `test/`: Node tests for math, global settings, and nPort behavior.
