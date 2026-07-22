@@ -21,6 +21,7 @@
   ],
   "scripts": {
     "build": "rollup -c",
+    "build:plugin": "rollup -c rollup.plugin.config.js",
     "test": "node --loader ./scripts/extensionless-loader.mjs --test",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
