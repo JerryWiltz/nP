@@ -1,9 +1,8 @@
-codex resume 019f5328-5fec-70f0-a69b-52cf87215920
 sudo npm install -g @openai/codex
 Read all applicable AGENTS.md files before working. Inspect the current Git status and latest commits, then continue from the repository’s current state.
 
 # AGENTS.md
-<!-- Modified: 2026-07-15 -->
+<!-- Modified: 2026-07-23 -->
 
 Repository guide for agents working in the `nP` repo.
 
