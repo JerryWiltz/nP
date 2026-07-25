@@ -2,13 +2,14 @@ sudo npm install -g @openai/codex
 Read all applicable AGENTS.md files before working. Inspect the current Git status and latest commits, then continue from the repository’s current state.
 
 # AGENTS.md
-<!-- Modified: 2026-07-23 -->
+<!-- Modified: 2026-07-24 -->
 
 Repository guide for agents working in the `nP` repo.
 
 ## Scope
 
-These instructions apply to the entire repository rooted at `/home/jerrywiltz/nP`.
+These instructions apply to the entire repository rooted at
+`/home/jerrywiltz/cad-development/nP`.
 
 ## Local Environment
 
