@@ -2,7 +2,7 @@ sudo npm install -g @openai/codex
 Read all applicable AGENTS.md files before working. Inspect the current Git status and latest commits, then continue from the repository’s current state.
 
 # AGENTS.md
-<!-- Modified: 2026-07-24 -->
+<!-- Modified: 2026-07-26 -->
 
 Repository guide for agents working in the `nP` repo.
 
@@ -10,6 +10,24 @@ Repository guide for agents working in the `nP` repo.
 
 These instructions apply to the entire repository rooted at
 `/home/jerrywiltz/cad-development/nP`.
+
+## Write-Target Validation
+
+Before creating, editing, moving, or deleting a file:
+
+1. Resolve the current repository root with Git.
+2. Verify that the intended target is inside that current root unless the user
+   explicitly authorizes another exact path.
+3. Check `/home/jerrywiltz/workspace-admin/logs/maintenance-log.md` when a
+   former repository path is known. Treat former paths as historical and
+   non-writable.
+4. For every absolute write target, report and validate the resolved path before
+   using it.
+5. Stop if an operation would recreate a former repository directory.
+6. Never create missing parent directories for an absolute target unless the
+   user explicitly approves that exact directory creation.
+7. Prefer paths relative to the verified current repository root for repository
+   files.
 
 ## Local Environment
 
