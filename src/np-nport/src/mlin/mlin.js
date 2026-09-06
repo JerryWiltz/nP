@@ -1,8 +1,9 @@
-// Modified: 2026-07-01
+// Modified: 2026-09-06
 import { complex } from '../../../np-math/src/complex';
 import { nPort } from '../nPort';
 import { global } from '../../../np-global/src/global';
 import { C0, COPPER_RESISTIVITY, INCH_TO_METER, MU0, VACUUM_IMPEDANCE } from './constants';
+import {isOptionsObject, normalizePhysicalModelOptions, physicalModelMetadata, requireNonnegative, requirePositive, resistivityScale} from '../physicalModels/options';
 
 var pi = Math.PI;
 
@@ -78,6 +79,27 @@ var singleLineDispersion = function (u, er, erEff0, z0, frequency, Height) {
 };
 
 export function mlin(Width = 0.023 * INCH_TO_METER, Height = 0.025 * INCH_TO_METER, Length = 0.5 * INCH_TO_METER, Thickness = 0.0000125 * INCH_TO_METER, er = 10, rho = 1, tand = 0.001, roughnessRms = 0) {
+	var inputOptions = isOptionsObject(Width) ? Width : null;
+	if (inputOptions) {
+		var options = normalizePhysicalModelOptions('mlin', inputOptions, [
+			{name: 'width', aliases: ['Width'], defaultValue: 0.023 * INCH_TO_METER},
+			{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
+			{name: 'length', aliases: ['Length'], defaultValue: 0.5 * INCH_TO_METER},
+			{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
+			{name: 'relativePermittivity', aliases: ['er'], defaultValue: 10},
+			{name: 'rho', defaultValue: 1},
+			{name: 'resistivity', defaultValue: undefined},
+			{name: 'lossTangent', aliases: ['tand'], defaultValue: 0.001},
+			{name: 'roughnessRms', defaultValue: 0}
+		]);
+		Width = options.width; Height = options.height; Length = options.length; Thickness = options.thickness;
+		er = options.relativePermittivity; rho = resistivityScale('mlin', inputOptions, options.rho, COPPER_RESISTIVITY);
+		tand = options.lossTangent; roughnessRms = options.roughnessRms;
+	}
+	requirePositive('mlin', 'width', Width); requirePositive('mlin', 'height', Height);
+	requireNonnegative('mlin', 'length', Length); requireNonnegative('mlin', 'thickness', Thickness);
+	requirePositive('mlin', 'relativePermittivity', er); requireNonnegative('mlin', 'resistivity', rho * COPPER_RESISTIVITY);
+	requireNonnegative('mlin', 'lossTangent', tand); requireNonnegative('mlin', 'roughnessRms', roughnessRms);
 	var mlin = new nPort;
 	var frequencyList = global.fList, Ro = global.Ro;
 	var Zo = complex(Ro, 0), two = complex(2, 0), freqCount = 0, s11, s12, s21, s22, sparsArray = [];
@@ -155,5 +177,13 @@ export function mlin(Width = 0.023 * INCH_TO_METER, Height = 0.025 * INCH_TO_MET
 		ereQuasiStatic: ere,
 		analysis
 	};
+	mlin.physicalModel = physicalModelMetadata('microstrip', 'uniform-line', {
+		width: Width, height: Height, length: Length, thickness: Thickness
+	}, {
+		relativePermittivity: er,
+		resistivity: rho * COPPER_RESISTIVITY,
+		lossTangent: tand,
+		roughnessRms
+	}, analysis);
 	return mlin;
 };

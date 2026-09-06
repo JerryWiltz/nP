@@ -1,7 +1,7 @@
-<!-- Modified: 2026-07-14 -->
+<!-- Modified: 2026-09-06 -->
 # Line Table Development
 
-This note builds the Compact Manual diplexer and displays its three-port response in a styled SVG table. It is converted from `dev/lineTableDevelopment.html`.
+This note builds the Compact Manual diplexer and displays its three-port response in a styled SVG table. Its executable harness is the `line-table` section of `dev/visualizationDevelopment.html`.
 
 ```npjs
 // from Compact Manual example #1 p27

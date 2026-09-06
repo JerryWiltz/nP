@@ -1,6 +1,6 @@
 {
-  "name": "np",
-  "version": "0.0.47",
+  "name": "@jerrywiltz/np",
+  "version": "0.0.48",
   "main": "./dist/nP.cjs",
   "module": "./dist/nP.esm.js",
   "browser": "./dist/nP.js",
@@ -15,10 +15,15 @@
     "./package.json": "./package.json"
   },
   "files": [
-    "dist/",
+    "dist/nP.js",
+    "dist/nP.esm.js",
+    "dist/nP.cjs",
     "README.md",
     "LICENSE"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "rollup -c",
     "build:plugin": "rollup -c rollup.plugin.config.js",
@@ -39,7 +44,9 @@
     "vitepress": "^1.6.4"
   },
   "overrides": {
-    "vite": "6.4.3"
+    "vite": "6.4.3",
+    "postcss": "8.5.25",
+    "nanoid": "3.3.18"
   },
   "description": "JavaScript RF and microwave n-port analysis with S-parameters, microstrip models, and SVG visualization",
   "repository": {

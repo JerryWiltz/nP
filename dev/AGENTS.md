@@ -1,5 +1,5 @@
 # AGENTS.md
-<!-- Modified: 2026-07-03 -->
+<!-- Modified: 2026-09-06 -->
 
 Instructions for files in `dev/`.
 
@@ -31,7 +31,7 @@ This pattern is preferred over putting unrelated chart/table data directly into 
 
 ## Ideal Component Naming
 
-Use uppercase-first public names for ideal components in dev pages, including `nP.Tlin()` and `nP.Tclin()`. Keep physical microstrip models lowercase, such as `nP.mlin()` and `nP.mclin()`. Use `nP.Tee()` for ideal junctions and connect series two-port components directly in `nP.nodal(...)`; do not use or reintroduce a separate series-tee helper.
+Use uppercase-first public names for ideal components in dev pages, including `nP.Tlin()` and `nP.Tclin()`. Keep physical microstrip models lowercase, such as `nP.mlin()` and `nP.mclin()`. Use `nP.Tee()` for ordinary ideal shunt junctions. Use `nP.seriesTee()` when a one-port network must be inserted as a floating series branch; ports 1 and 2 form the through path and port 3 connects the one-port branch.
 
 ## Chart And Table Dev Pages
 
@@ -46,7 +46,7 @@ Use uppercase-first public names for ideal components in dev pages, including `n
 - Keep microstrip physical constant names consistent with `src/np-nport/src/mlin/constants.js` when writing source, tests, notes, or dev pages.
 - Use `dev/raw/` for raw technical source material, equation notes, and early derivations for work such as `nP.mtee()`.
 - `nP.mtee()` is a three-port microstrip tee constructor. Its physical defaults should stay aligned with `nP.mlin()` unless the user intentionally changes the model.
-- In dev pages, call `nP.mtee()` with power-divider-style width names when explicit dimensions are useful: `commonWidth` for port 1, `branch1Width` for port 2, and `branch2Width` for port 3. This matches the public `nP.Tee()` convention even when the internal equation source uses inline-Tee arm names.
+- In dev pages, use canonical options objects for physical models. Use lower-camel-case names, full engineering terms, SI units, and absolute `resistivity` in ohm-meters. Existing positional forms and abbreviated properties remain compatibility paths, not the preferred example style.
 
 ## Math And nPort Objects In Dev Pages
 
@@ -164,6 +164,7 @@ Connection and combining helpers:
 - `nP.Tee()`
 - `nP.Tee4()`
 - `nP.Tee5()`
+- `nP.seriesTee()`
 - `nP.nodal()`
 - `nP.cascade()`
 

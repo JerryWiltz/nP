@@ -1,9 +1,9 @@
-// Modified: 2026-07-03
+// Modified: 2026-09-06
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { global } from '../src/np-global/index.js';
-import { seR, Open, Short, Load, Shift90, Tlin, Tclin, cascade, trf, mlin, mclin, mtee, mcross, mstep, mbend, mtfr, mvgnd, mvia } from '../src/np-nport/index.js';
+import { seR, Open, Short, Load, Shift90, Tee, seriesTee, Tlin, Tclin, nodal, cascade, trf, mlin, mclin, mtee, mcross, mstep, mbend, mtfr, mvgnd, mvia } from '../src/np-nport/index.js';
 
 const closeTo = (actual, expected, tolerance = 1e-12) => {
 	assert.ok(
@@ -70,6 +70,50 @@ test('Tlin and Tclin expose ideal transmission line constructors', () => {
 	withGlobal({ fList: [1e9], Ro: 50 }, () => {
 		assert.equal(Tlin().getspars()[0].length, 5);
 		assert.equal(Tclin().getspars()[0].length, 17);
+	});
+});
+
+test('seriesTee restores the ideal three-port series-junction matrix', () => {
+	withGlobal({ fList: [1e9], Ro: 50 }, () => {
+		const spars = seriesTee().getspars()[0];
+
+		assert.equal(spars.length, 10);
+		closeTo(spars[1].getR(), 1 / 3, 2e-7);
+		closeTo(spars[2].getR(), 2 / 3, 2e-7);
+		closeTo(spars[3].getR(), -2 / 3, 2e-7);
+		closeTo(spars[4].getR(), 2 / 3, 2e-7);
+		closeTo(spars[5].getR(), 1 / 3, 2e-7);
+		closeTo(spars[6].getR(), 2 / 3, 2e-7);
+		closeTo(spars[7].getR(), -2 / 3, 2e-7);
+		closeTo(spars[8].getR(), 2 / 3, 2e-7);
+		closeTo(spars[9].getR(), 1 / 3, 2e-7);
+	});
+});
+
+test('seriesTee supports the archived open and short series-stub topology', () => {
+	withGlobal({ fList: [1e9], Ro: 50 }, () => {
+		const line = Tlin(50, 0.0254);
+		const openSeriesStub = nodal(
+			[seriesTee(), 1, 2, 3],
+			[line, 3, 4],
+			[Open(), 4],
+			['out', 1, 2]
+		);
+		const shortSeriesStub = nodal(
+			[seriesTee(), 1, 2, 3],
+			[line, 3, 4],
+			[Short(), 4],
+			['out', 1, 2]
+		);
+
+		assert.equal(openSeriesStub.getspars()[0].length, 5);
+		assert.equal(shortSeriesStub.getspars()[0].length, 5);
+		for (const network of [openSeriesStub, shortSeriesStub]) {
+			for (const value of network.getspars()[0].slice(1)) {
+				assert.ok(Number.isFinite(value.getR()));
+				assert.ok(Number.isFinite(value.getI()));
+			}
+		}
 	});
 });
 
@@ -321,18 +365,19 @@ test('default microstrip constructors create finite n-port objects', () => {
 	});
 });
 
-test('mtee accepts power-divider-style width names', () => {
+test('mtee retains the legacy positional parameter list', () => {
 	withGlobal({ fList: [1e9], Ro: 50 }, () => {
-		const tee = mtee({
-			commonWidth: 0.030 * 0.0254,
-			branch1Width: 0.020 * 0.0254,
-			branch2Width: 0.025 * 0.0254,
-			Height: 0.025 * 0.0254,
-			Thickness: 0.0000125 * 0.0254,
-			er: 10,
-			rho: 0,
-			tand: 0
-		});
+		const tee = mtee(
+			0.030 * 0.0254,
+			0.020 * 0.0254,
+			0.025 * 0.0254,
+			0.025 * 0.0254,
+			0.0000125 * 0.0254,
+			10,
+			0,
+			0,
+			0
+		);
 
 		assert.equal(tee.getspars()[0].length, 10);
 		closeTo(tee.microstrip.commonWidth, 0.030 * 0.0254);
@@ -344,6 +389,93 @@ test('mtee accepts power-divider-style width names', () => {
 			assert.ok(Number.isFinite(tee.getspars()[0][col].getI()));
 		}
 	});
+});
+
+test('mtee canonical options match the legacy positional and property forms', () => {
+	withGlobal({ fList: [1e9], Ro: 50 }, () => {
+		const positional = mtee(
+			0.030 * 0.0254,
+			0.020 * 0.0254,
+			0.025 * 0.0254,
+			0.025 * 0.0254,
+			0.0000125 * 0.0254,
+			10,
+			0,
+			0,
+			0
+		);
+		const optionsObject = mtee({
+			commonWidth: 0.030 * 0.0254,
+			branch1Width: 0.020 * 0.0254,
+			branch2Width: 0.025 * 0.0254,
+			Height: 0.025 * 0.0254,
+			Thickness: 0.0000125 * 0.0254,
+			er: 10,
+			rho: 0,
+			tand: 0,
+			roughnessRms: 0
+		});
+
+		assert.deepEqual(optionsObject.microstrip, positional.microstrip);
+		assert.deepEqual(optionsObject.getspars(), positional.getspars());
+	});
+});
+
+test('physical microstrip constructors prefer canonical options objects without changing legacy results', () => {
+	withGlobal({ fList: [1e9], Ro: 50 }, () => {
+		const resistivity = 1.72e-8;
+		const lineLegacy = mlin(0.030 * 0.0254, 0.025 * 0.0254, 0.5 * 0.0254, 0.0000125 * 0.0254, 10, 1, 0.001, 0);
+		const lineCanonical = mlin({
+			width: 0.030 * 0.0254, height: 0.025 * 0.0254, length: 0.5 * 0.0254,
+			thickness: 0.0000125 * 0.0254, relativePermittivity: 10,
+			resistivity, lossTangent: 0.001, roughnessRms: 0
+		});
+		assert.deepEqual(lineCanonical.getspars(), lineLegacy.getspars());
+		assert.equal(lineCanonical.physicalModel.material.resistivity, resistivity);
+
+		const coupledLegacy = mclin(19.1155e-3 * 0.0254, 5.82185e-3 * 0.0254, 25e-3 * 0.0254,
+			0.0000125 * 0.0254, 719.794e-3 * 0.0254, 10, 1, 0.001, 0);
+		const coupledCanonical = mclin({
+			width: 19.1155e-3 * 0.0254, spacing: 5.82185e-3 * 0.0254, height: 25e-3 * 0.0254,
+			thickness: 0.0000125 * 0.0254, length: 719.794e-3 * 0.0254,
+			relativePermittivity: 10, resistivity, lossTangent: 0.001, roughnessRms: 0
+		});
+		assert.deepEqual(coupledCanonical.getspars(), coupledLegacy.getspars());
+
+		const teeCanonical = mtee({commonWidth: 0.030 * 0.0254, branch1Width: 0.020 * 0.0254,
+			branch2Width: 0.025 * 0.0254, height: 0.025 * 0.0254,
+			thickness: 0.0000125 * 0.0254, relativePermittivity: 10,
+			resistivity, lossTangent: 0, roughnessRms: 0});
+		const teeLegacy = mtee({commonWidth: 0.030 * 0.0254, branch1Width: 0.020 * 0.0254,
+			branch2Width: 0.025 * 0.0254, Height: 0.025 * 0.0254,
+			Thickness: 0.0000125 * 0.0254, er: 10, rho: 1, tand: 0, roughnessRms: 0});
+		assert.deepEqual(teeCanonical.getspars(), teeLegacy.getspars());
+
+		const constructors = [
+			mstep({inputWidth: 0.046 * 0.0254, outputWidth: 0.023 * 0.0254}),
+			mbend({width: 0.023 * 0.0254}),
+			mcross({leftWidth: 0.023 * 0.0254, topWidth: 0.023 * 0.0254,
+				rightWidth: 0.023 * 0.0254, bottomWidth: 0.023 * 0.0254}),
+			mtfr({width: 10e-3 * 0.0254, length: 10e-3 * 0.0254, referenceTemperature: 298}),
+			mvgnd({diameter: 100e-6, height: 0.025 * 0.0254, resistivity}),
+			mvia({diameter: 100e-6, connectionHeight: 0.025 * 0.0254,
+				relativePermittivity: 10, resistivity})
+		];
+		for (const component of constructors) {
+			assert.equal(component.physicalModel.family, 'microstrip');
+			assert.ok(component.physicalModel.geometry);
+			assert.ok(component.physicalModel.material);
+		}
+	});
+});
+
+test('physical model options reject ambiguous, unknown, and nonphysical input', () => {
+	assert.throws(() => mlin({height: 1e-3, Height: 1e-3}), /use only one of height, Height/);
+	assert.throws(() => mlin({rho: 1, resistivity: 1.72e-8}), /resistivity or legacy rho/);
+	assert.throws(() => mlin({widht: 1e-3}), /unknown option "widht"/);
+	assert.throws(() => mlin({width: 0}), /width must be greater than zero/);
+	assert.throws(() => mvia({diameter: 1e-3, padDiameter: 2e-3, antipadDiameter: 1e-3}),
+		/antipadDiameter must be greater than padDiameter/);
 });
 
 test('mcross matches pinned QUCS microstrip cross equation outputs', () => {
@@ -485,6 +617,8 @@ test('mtfr creates a distributed finite two-port film resistor from sheet resist
 		closeTo(resistor.filmResistor.squares, 1);
 		closeTo(resistor.filmResistor.resistanceAtReference, 50);
 		closeTo(resistor.filmResistor.resistance, 50);
+		closeTo(resistor.filmResistor.temperatureReference, 298.15);
+		assert.equal(resistor.physicalModel.temperatureUnit, 'kelvin');
 		assert.equal(resistor.filmResistor.sections, 10);
 		assert.equal(resistor.filmResistor.automaticSections, 10);
 		closeTo(resistor.filmResistor.resistancePerSection, 5);
@@ -513,6 +647,20 @@ test('mtfr creates a distributed finite two-port film resistor from sheet resist
 				assert.ok(Number.isFinite(row[col].getI()));
 			}
 		}
+	});
+});
+
+test('mtfr canonical temperatures use kelvin while the legacy alias retains its input scale', () => {
+	withGlobal({ fList: [1e9], Ro: 50, Temp: 308.15 }, () => {
+		const resistor = mtfr({temperatureCoefficient: 0.001, referenceTemperature: 298.15});
+		closeTo(resistor.filmResistor.resistance, 50.5);
+		assert.equal(resistor.physicalModel.temperatureUnit, 'kelvin');
+	});
+
+	withGlobal({ fList: [1e9], Ro: 50, Temp: 35 }, () => {
+		const resistor = mtfr({temperatureCoefficient: 0.001, temperatureReference: 25});
+		closeTo(resistor.filmResistor.resistance, 50.5);
+		assert.equal(resistor.physicalModel.temperatureUnit, 'legacy global.Temp scale');
 	});
 });
 

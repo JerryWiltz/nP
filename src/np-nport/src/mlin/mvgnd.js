@@ -1,8 +1,9 @@
-// Modified: 2026-07-02
+// Modified: 2026-09-06
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
 import {COPPER_RESISTIVITY, INCH_TO_METER, MU0} from './constants';
+import {absoluteResistivity, normalizePhysicalModelOptions, physicalModelMetadata, requireNonnegative, requirePositive} from '../physicalModels/options';
 
 var pi = Math.PI;
 
@@ -19,12 +20,18 @@ var viaResistanceDc = function (Height, radius, Thickness, rho) {
 	return rho * Height / metalArea;
 };
 
-export function mvgnd({
-	Diameter = 100e-6,
-	Height = 0.025 * INCH_TO_METER,
-	Thickness = 0.0000125 * INCH_TO_METER,
-	rho = COPPER_RESISTIVITY
-} = {}) {
+export function mvgnd(input = {}) {
+	var options = normalizePhysicalModelOptions('mvgnd', input, [
+		{name: 'diameter', aliases: ['Diameter'], defaultValue: 100e-6},
+		{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
+		{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
+		{name: 'rho', defaultValue: COPPER_RESISTIVITY}, {name: 'resistivity', defaultValue: undefined}
+	]);
+	var Diameter = options.diameter, Height = options.height, Thickness = options.thickness;
+	var rho = absoluteResistivity('mvgnd', input, options.rho);
+	requirePositive('mvgnd', 'diameter', Diameter); requirePositive('mvgnd', 'height', Height);
+	requirePositive('mvgnd', 'thickness', Thickness); requireNonnegative('mvgnd', 'resistivity', rho);
+	if (Thickness > Diameter / 2) throw new RangeError('nP.mvgnd(): thickness must not exceed the via radius.');
 	var via = new nPort;
 	var frequencyList = global.fList, Ro = global.Ro;
 	var radius = Diameter / 2;
@@ -63,5 +70,8 @@ export function mvgnd({
 		validity: 'Goldfarb/Pucel via model stated for Height < 0.03 * lambda0',
 		analysis
 	};
+	via.physicalModel = physicalModelMetadata('microstrip', 'via-to-ground', {
+		diameter: Diameter, height: Height, thickness: Thickness
+	}, {resistivity: rho}, analysis, {validity: via.microstrip.validity});
 	return via;
 };

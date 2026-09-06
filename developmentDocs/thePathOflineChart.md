@@ -1,4 +1,4 @@
-<!-- Modified: 2026-07-15 -->
+<!-- Modified: 2026-09-06 -->
 # The Path of `lineChart`
 
 This note documents how `nP.lineChart()` travels from its source in the nP repository into the nPort RF Analysis Obsidian plugin. It also explains the two different paths a chart request can take inside Obsidian: a verbatim JavaScript `npjs` block or a declarative JSON `np` block.
@@ -31,7 +31,7 @@ src/np-chart/index.js
 src/index.js
 ```
 
-`src/index.js` is the public entry point for the complete nP library. Rollup starts there and produces three distributions:
+`src/index.js` is the public entry point for the complete nP library. Rollup starts there and produces three public distributions:
 
 ```text
 src/index.js
@@ -41,14 +41,16 @@ src/index.js
           └── dist/nP.cjs      CommonJS bundle
 ```
 
-`dev/lineChartDevelopment.html` is a development and verification page, not the implementation of `lineChart()`. It loads `../dist/nP.js`, obtains the browser global `nP`, and calls `nP.lineChart(...)` to exercise the built library.
+The separately invoked `npm run build:plugin` command starts at `src/plugin.js` and produces `dist/nP.plugin.esm.js`. This host-safe entry point excludes legacy browser-development helpers and is not included in the public npm package.
+
+The `line-chart` section of `dev/visualizationDevelopment.html` is a development and verification harness, not the implementation of `lineChart()`. It loads `../dist/nP.js`, obtains the browser global `nP`, and calls `nP.lineChart(...)` to exercise the built library.
 
 ## Crossing from nP into the Obsidian plugin
 
-The plugin does not import files directly from the sibling nP repository at runtime. It contains a pinned copy of the ESM distribution:
+The plugin does not import files directly from the sibling nP repository at runtime. It contains a pinned copy of the host-safe plugin distribution:
 
 ```text
-nP/dist/nP.esm.js
+nP/dist/nP.plugin.esm.js
         ↓ copy when intentionally updating nP in the plugin
 np-rf-analysis/vendor/nP.esm.js
 ```
@@ -62,9 +64,10 @@ The complete update path is:
 ```text
 Edit nP source
     ↓
-Build nP with npm run build
+Build the host-safe bundle with npm run build:plugin
     ↓
-Copy dist/nP.esm.js to np-rf-analysis/vendor/nP.esm.js
+In a separate np-rf-analysis session, copy dist/nP.plugin.esm.js
+to np-rf-analysis/vendor/nP.esm.js
     ↓
 Build the plugin with npm run build
     ↓

@@ -1,2 +1,2 @@
-// Modified: 2026-07-13
-export const version = '0.0.47';
+// Modified: 2026-08-18
+export const version = '0.0.48';

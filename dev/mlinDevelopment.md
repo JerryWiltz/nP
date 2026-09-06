@@ -1,7 +1,7 @@
-<!-- Modified: 2026-07-14 -->
+<!-- Modified: 2026-09-06 -->
 # Microstrip Line Development
 
-This analysis evaluates a physical microstrip line and displays its output as a table, line chart, and Smith chart. It is converted from `dev/mlinDevelopment.html`.
+This analysis evaluates a physical microstrip line and displays its output as a table, line chart, and Smith chart. Its executable harness is the `mlin` section of `dev/microstripDevelopment.html`.
 
 ```npjs
 var fGlobal = nP.global;

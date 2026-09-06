@@ -1,7 +1,7 @@
-<!-- Modified: 2026-07-14 -->
+<!-- Modified: 2026-09-06 -->
 # Line Chart Development
 
-This note exercises an RF diplexer chart plus linear and log-log Cartesian chart options. It is converted from `dev/lineChartDevelopment.html`.
+This note exercises an RF diplexer chart plus linear and log-log Cartesian chart options. Its executable harness is the `line-chart` section of `dev/visualizationDevelopment.html`.
 
 ```npjs
 // from Compact Manual example #1 p27

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-07-15 -->
+<!-- Modified: 2026-09-06 -->
 # nP Development Documentation
 
 This directory contains internal engineering knowledge for developing nP. It records RF mathematics, equation-to-code translations, implementation decisions, data contracts, assumptions, units, references, and worked examples.
@@ -21,6 +21,7 @@ raw research → development documentation → AGENTS rules → source code and 
 - [`rf-math-coding.md`](rf-math-coding.md): shared practices for translating RF mathematics into maintainable JavaScript.
 - [`nport-data-model.md`](nport-data-model.md): the shapes and invariants of n-port objects and S-parameter data.
 - [`nodal-analysis.md`](nodal-analysis.md): the mathematical and coding model behind arbitrary n-port interconnection.
+- [`physical-model-api.md`](physical-model-api.md): canonical options, units, compatibility, validation, and metadata for physical transmission-media models.
 - [`thePathOflineChart.md`](thePathOflineChart.md): the path from the nP chart source through the nPort RF Analysis Obsidian plugin.
 - [`np-math/`](np-math/): complex-number, matrix, and numerical-method documentation.
 - [`np-nport/`](np-nport/): n-port constructors, composition, fixtures, and port-convention documentation.

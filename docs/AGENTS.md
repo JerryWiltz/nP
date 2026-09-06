@@ -1,5 +1,5 @@
 # AGENTS.md
-<!-- Modified: 2026-07-01 -->
+<!-- Modified: 2026-09-06 -->
 
 Instructions for files in `docs/` and its subdirectories.
 
@@ -32,7 +32,7 @@ Prefer this flow over examples that hide topology inside legacy combined RLC con
 
 ## Ideal Component Naming
 
-Use uppercase-first public names for ideal components in docs examples, including `nP.Tlin()` and `nP.Tclin()`. Keep physical microstrip models lowercase, such as `nP.mlin()` and `nP.mclin()`. Use `nP.Tee()` for ideal junctions and connect series two-port components directly in `nP.nodal(...)`; do not use or reintroduce a separate series-tee helper.
+Use uppercase-first public names for ideal components in docs examples, including `nP.Tlin()` and `nP.Tclin()`. Keep physical microstrip models lowercase, such as `nP.mlin()` and `nP.mclin()`. Use `nP.Tee()` for ordinary ideal shunt junctions. Use `nP.seriesTee()` when a one-port network must be inserted as a floating series branch; ports 1 and 2 form the through path and port 3 connects the one-port branch.
 
 ## Modernizing Legacy RF Examples
 

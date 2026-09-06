@@ -1,8 +1,9 @@
-// Modified: 2026-07-02
+// Modified: 2026-09-06
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
 import {C0, COPPER_RESISTIVITY, EPSILON0, INCH_TO_METER, MU0} from './constants';
+import {absoluteResistivity, normalizePhysicalModelOptions, physicalModelMetadata, requireNonnegative, requirePositive} from '../physicalModels/options';
 
 var pi = Math.PI;
 
@@ -67,19 +68,29 @@ var abcdToS = function (abcd, Ro) {
 	return {s11, s12, s21, s22};
 };
 
-export function mvia({
-	Diameter = 100e-6,
-	connectionHeight = 0.025 * INCH_TO_METER,
-	Thickness = 0.0000125 * INCH_TO_METER,
-	rho = COPPER_RESISTIVITY,
-	er = 10,
-	padDiameter = 0,
-	antipadDiameter = 0,
-	topPadHeight = 0,
-	bottomPadHeight = 0,
-	topStubLength = 0,
-	bottomStubLength = 0
-} = {}) {
+export function mvia(input = {}) {
+	var options = normalizePhysicalModelOptions('mvia', input, [
+		{name: 'diameter', aliases: ['Diameter'], defaultValue: 100e-6},
+		{name: 'connectionHeight', defaultValue: 0.025 * INCH_TO_METER},
+		{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
+		{name: 'rho', defaultValue: COPPER_RESISTIVITY}, {name: 'resistivity', defaultValue: undefined},
+		{name: 'relativePermittivity', aliases: ['er'], defaultValue: 10},
+		{name: 'padDiameter', defaultValue: 0}, {name: 'antipadDiameter', defaultValue: 0},
+		{name: 'topPadHeight', defaultValue: 0}, {name: 'bottomPadHeight', defaultValue: 0},
+		{name: 'topStubLength', defaultValue: 0}, {name: 'bottomStubLength', defaultValue: 0}
+	]);
+	var Diameter = options.diameter, connectionHeight = options.connectionHeight, Thickness = options.thickness;
+	var rho = absoluteResistivity('mvia', input, options.rho), er = options.relativePermittivity;
+	var padDiameter = options.padDiameter, antipadDiameter = options.antipadDiameter;
+	var topPadHeight = options.topPadHeight, bottomPadHeight = options.bottomPadHeight;
+	var topStubLength = options.topStubLength, bottomStubLength = options.bottomStubLength;
+	requirePositive('mvia', 'diameter', Diameter); requirePositive('mvia', 'connectionHeight', connectionHeight);
+	requirePositive('mvia', 'thickness', Thickness); requireNonnegative('mvia', 'resistivity', rho); requirePositive('mvia', 'relativePermittivity', er);
+	['padDiameter', 'antipadDiameter', 'topPadHeight', 'bottomPadHeight', 'topStubLength', 'bottomStubLength'].forEach(function (name) {
+		requireNonnegative('mvia', name, options[name]);
+	});
+	if (Thickness > Diameter / 2) throw new RangeError('nP.mvia(): thickness must not exceed the via radius.');
+	if (antipadDiameter > 0 && padDiameter > 0 && antipadDiameter <= padDiameter) throw new RangeError('nP.mvia(): antipadDiameter must be greater than padDiameter.');
 	var via = new nPort;
 	var frequencyList = global.fList, Ro = global.Ro;
 	var radius = Diameter / 2;
@@ -142,5 +153,9 @@ export function mvia({
 		validity: 'Barrel R/L follows the Goldfarb/Pucel via model; pad and stub capacitances are first-order coaxial approximations.',
 		analysis
 	};
+	via.physicalModel = physicalModelMetadata('microstrip', 'via-transition', {
+		diameter: Diameter, connectionHeight, thickness: Thickness, padDiameter, antipadDiameter,
+		topPadHeight, bottomPadHeight, topStubLength, bottomStubLength
+	}, {relativePermittivity: er, resistivity: rho}, analysis, {validity: via.microstrip.validity});
 	return via;
 };

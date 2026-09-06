@@ -1,9 +1,10 @@
-// Modified: 2026-07-08
+// Modified: 2026-09-06
 import {complex} from '../../../np-math/src/complex';
 import {matrix, dim} from '../../../np-math/src/matrix';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
-import {INCH_TO_METER, VACUUM_IMPEDANCE} from './constants';
+import {COPPER_RESISTIVITY, INCH_TO_METER, VACUUM_IMPEDANCE} from './constants';
+import {normalizePhysicalModelOptions, physicalModelMetadata, requireNonnegative, requirePositive, resistivityScale} from '../physicalModels/options';
 
 var pi = Math.PI;
 
@@ -167,18 +168,24 @@ var centerInductance = function (horizontalWidth, verticalWidth, Height) {
 	return 0.8 * L;
 };
 
-export function mcross({
-	leftWidth = 0.023 * INCH_TO_METER,
-	topWidth = 0.023 * INCH_TO_METER,
-	rightWidth = 0.023 * INCH_TO_METER,
-	bottomWidth = 0.023 * INCH_TO_METER,
-	Height = 0.025 * INCH_TO_METER,
-	Thickness = 0.0000125 * INCH_TO_METER,
-	er = 10,
-	rho = 1,
-	tand = 0.001,
-	roughnessRms = 0
-} = {}) {
+export function mcross(input = {}) {
+	var options = normalizePhysicalModelOptions('mcross', input, [
+		{name: 'leftWidth', defaultValue: 0.023 * INCH_TO_METER}, {name: 'topWidth', defaultValue: 0.023 * INCH_TO_METER},
+		{name: 'rightWidth', defaultValue: 0.023 * INCH_TO_METER}, {name: 'bottomWidth', defaultValue: 0.023 * INCH_TO_METER},
+		{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
+		{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
+		{name: 'relativePermittivity', aliases: ['er'], defaultValue: 10},
+		{name: 'rho', defaultValue: 1}, {name: 'resistivity', defaultValue: undefined},
+		{name: 'lossTangent', aliases: ['tand'], defaultValue: 0.001}, {name: 'roughnessRms', defaultValue: 0}
+	]);
+	var leftWidth = options.leftWidth, topWidth = options.topWidth, rightWidth = options.rightWidth, bottomWidth = options.bottomWidth;
+	var Height = options.height, Thickness = options.thickness, er = options.relativePermittivity;
+	var rho = resistivityScale('mcross', input, options.rho, COPPER_RESISTIVITY), tand = options.lossTangent, roughnessRms = options.roughnessRms;
+	[leftWidth, topWidth, rightWidth, bottomWidth].forEach(function (value, index) {
+		requirePositive('mcross', ['leftWidth', 'topWidth', 'rightWidth', 'bottomWidth'][index], value);
+	});
+	requirePositive('mcross', 'height', Height); requireNonnegative('mcross', 'thickness', Thickness); requirePositive('mcross', 'relativePermittivity', er);
+	requireNonnegative('mcross', 'resistivity', rho * COPPER_RESISTIVITY); requireNonnegative('mcross', 'lossTangent', tand); requireNonnegative('mcross', 'roughnessRms', roughnessRms);
 	var cross = new nPort;
 	var frequencyList = global.fList, Ro = global.Ro;
 	var widths = [leftWidth, topWidth, rightWidth, bottomWidth];
@@ -266,5 +273,9 @@ export function mcross({
 		},
 		analysis
 	};
+	cross.physicalModel = physicalModelMetadata('microstrip', 'cross-junction', {
+		leftWidth, topWidth, rightWidth, bottomWidth, height: Height, thickness: Thickness
+	}, {relativePermittivity: er, resistivity: rho * COPPER_RESISTIVITY, lossTangent: tand, roughnessRms}, analysis,
+	{sources: [cross.microstrip.source], validity: cross.microstrip.validity});
 	return cross;
 };

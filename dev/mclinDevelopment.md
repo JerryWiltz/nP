@@ -1,7 +1,7 @@
-<!-- Modified: 2026-07-14 -->
+<!-- Modified: 2026-09-06 -->
 # Coupled Microstrip Line Development
 
-This analysis evaluates a four-port coupled microstrip line, including through, coupled, matched, and isolated responses. It is converted from `dev/mclinDevelopment.html`.
+This analysis evaluates a four-port coupled microstrip line, including through, coupled, matched, and isolated responses. Its executable harness is the `mclin` section of `dev/microstripDevelopment.html`.
 
 ```npjs
 var g = nP.global;

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-07-08 -->
+<!-- Modified: 2026-08-18 -->
 
 # Microstrip Equation Notes
 
@@ -163,21 +163,23 @@ Use:
 - `branch1Width` for port 2.
 - `branch2Width` for port 3.
 
-Current argument names and defaults:
+Canonical options and defaults:
 
 ```js
 nP.mtee({
     commonWidth = 0.023 inch,
     branch1Width = 0.023 inch,
     branch2Width = 0.023 inch,
-    Height = 0.025 inch,
-    Thickness = 0.0000125 inch,
-    er = 10,
-    rho = 1,
-    tand = 0.001,
+    height = 0.025 inch,
+    thickness = 0.0000125 inch,
+    relativePermittivity = 10,
+    resistivity = COPPER_RESISTIVITY,
+    lossTangent = 0.001,
     roughnessRms = 0
 })
 ```
+
+The positional parameter form remains supported for backward compatibility.
 
 Model notes:
 
@@ -200,7 +202,7 @@ Public port convention:
 port 1 -- width1 step width2 -- port 2
 ```
 
-Current argument names and defaults:
+Canonical options and defaults:
 
 ```js
 nP.mstep({
@@ -271,14 +273,14 @@ Current argument names and defaults:
 ```js
 nP.mtfr({
     ohmsPerSquare = 50,
-    Width = 10 mil,
-    Length = 10 mil,
-    Height = 0.025 inch,
-    Thickness = 0.0000125 inch,
-    er = 10,
-    tand = 0.001,
+    width = 10 mil,
+    length = 10 mil,
+    height = 0.025 inch,
+    thickness = 0.0000125 inch,
+    relativePermittivity = 10,
+    lossTangent = 0.001,
     temperatureCoefficient = 0,
-    temperatureReference = 25,
+    referenceTemperature = 298.15 kelvin,
     sections = automatic
 })
 ```
@@ -320,10 +322,10 @@ LengthHalf = Length / (2 * sections)
 ```
 
 - The `mlin()` sections supply physical line length, phase, substrate dielectric behavior, and geometry. Their conductor loss is set to zero so the explicit sheet-resistance sections supply the intended film loss.
-- `temperatureCoefficient` is optional and uses the current `global.Temp`:
+- `temperatureCoefficient` is optional and uses `global.Temp` and canonical `referenceTemperature` in kelvin:
 
 ```text
-R = Rref * (1 + temperatureCoefficient * (global.Temp - temperatureReference))
+R = Rref * (1 + temperatureCoefficient * (global.Temp - referenceTemperature))
 ```
 
 - This is still an approximate model. It captures distributed sheet resistance and physical electrical length better than a lumped resistor, but it does not yet include resistor-end transition parasitics, detailed current spreading, thermal power handling, or measured thin-film frequency dependence.

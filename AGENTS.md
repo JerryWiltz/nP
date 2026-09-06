@@ -2,7 +2,7 @@ sudo npm install -g @openai/codex
 Read all applicable AGENTS.md files before working. Inspect the current Git status and latest commits, then continue from the repository’s current state.
 
 # AGENTS.md
-<!-- Modified: 2026-07-26 -->
+<!-- Modified: 2026-09-06 -->
 
 Repository guide for agents working in the `nP` repo.
 
@@ -72,7 +72,7 @@ Ideal component constructors use an uppercase first letter in the public API, ev
 - Use `nP.Tclin()` for the ideal lossless four-port coupled transmission line.
 - Keep physical microstrip models lowercase, such as `nP.mlin()` and `nP.mclin()`.
 - Put ideal component source files in `src/np-nport/src/idealComponents/` and name the files to match the public constructor casing.
-- Use `nP.Tee()` for ideal junctions. Do not reintroduce a separate series-tee helper; connect series two-port components directly in `nP.nodal(...)`.
+- Use `nP.Tee()` for ordinary ideal shunt junctions. Use `nP.seriesTee()` when a one-port network must be inserted as a floating series branch; ports 1 and 2 form the through path and port 3 connects the one-port branch.
 
 ## Core Object Model
 
@@ -193,6 +193,8 @@ Shared microstrip constants live in `src/np-nport/src/mlin/constants.js`. Use th
 
 Do not create alternate spellings for the same physical constant in nearby constructors. If a paper uses a different symbol, map it to the shared nP name in comments or raw notes, for example `eta_0 = VACUUM_IMPEDANCE`.
 
+Physical-model constructors use canonical options objects with lower-camel-case, complete engineering names and SI units. `resistivity` always means absolute ohm-meters. Preserve documented legacy positional calls and property aliases, reject conflicting aliases and unknown properties, and expose canonical `.physicalModel` metadata. Follow `developmentDocs/physical-model-api.md` for microstrip and future stripline, coaxial-line, and waveguide constructors.
+
 ## Diode Model Pattern
 
 Diode-related constructors live in `src/np-diodes`. These models are expected to support both RF and DC behavior:
@@ -228,8 +230,8 @@ Diode-related constructors live in `src/np-diodes`. These models are expected to
 - `scripts/extensionless-loader.mjs`: test-only Node loader for the repo's extensionless relative imports.
 - `test/`: Node tests for math, global settings, and nPort behavior.
 - `dev/`: local browser development and verification pages. These files are manual harnesses, not source of truth.
-  - `dev/lineChartDevelopment.html`, `dev/lineTableDevelopment.html`, and `dev/smithChartDevelopment.html` load `../dist/nP.js` and exercise the built chart/table APIs.
-  - `dev/mlinDevelopment.html`, `dev/mclinDevelopment.html`, `dev/mteeDevelopment.html`, `dev/mteePowerDividerDevelopment.html`, `dev/mtfrDevelopment.html`, `dev/matrixDevelopment.html`, and `dev/nodeDevelopment.html` are manual development pages for focused RF/math workflows.
+  - `dev/visualizationDevelopment.html` loads `../dist/nP.js` and exercises the built line-chart, line-table, and Smith-chart APIs.
+  - `dev/microstripDevelopment.html`, `dev/matrixDevelopment.html`, and `dev/nodeDevelopment.html` are manual development pages for focused RF/math workflows.
   - `dev/raw/` holds raw technical source material, equation notes, and early derivations for work such as `mtee()`.
 
 The old subpackage-level build artifacts under `src/np-*` have been removed. Treat the root package and root Rollup config as the only current build path.

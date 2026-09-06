@@ -1,4 +1,4 @@
-<!-- Modified: 2026-07-15 -->
+<!-- Modified: 2026-09-06 -->
 # Microstrip Development Notes
 
 The physical microstrip constructors live in `src/np-nport/src/mlin/`. They turn geometry, material properties, loss parameters, and frequency into n-port-compatible S-parameter rows.
@@ -27,28 +27,29 @@ Most models use some subset of:
 
 | Name | Meaning and unit |
 | --- | --- |
-| `Width` or named width | Conductor width in meters. |
-| `Space` | Edge-to-edge coupled-line spacing in meters. |
-| `Height` | Substrate or connection height in meters. |
-| `Length` | Physical propagation length in meters. |
-| `Thickness` | Conductor thickness in meters. |
-| `er` | Relative dielectric constant; dimensionless. |
-| `tand` | Dielectric loss tangent; dimensionless. |
+| `width` or named width | Conductor width in meters. |
+| `spacing` | Edge-to-edge coupled-line spacing in meters. |
+| `height` | Substrate or connection height in meters. |
+| `length` | Physical propagation length in meters. |
+| `thickness` | Conductor thickness in meters. |
+| `relativePermittivity` | Relative dielectric constant; dimensionless. |
+| `resistivity` | Absolute bulk resistivity in ohm-meters. |
+| `lossTangent` | Dielectric loss tangent; dimensionless. |
 | `roughnessRms` | RMS conductor roughness in meters. |
 | `Ro` | Reference impedance taken from `global.Ro`, in ohms. |
 
-The name `rho` is not yet uniform across all microstrip constructors:
+The canonical object API and compatibility rules are defined in [`../physical-model-api.md`](../physical-model-api.md). Legacy `rho` remains constructor-specific only so existing scripts keep their numerical behavior:
 
 - In `mlin()` and `mclin()`, default `rho = 1` acts as a multiplier on `COPPER_RESISTIVITY`; `rho = 0` disables conductor loss.
 - In `mvgnd()` and `mvia()`, default `rho = COPPER_RESISTIVITY` is an absolute resistivity in ohm-meters.
 - Some discontinuity option objects retain `rho`, `tand`, and `roughnessRms` for a common physical interface even where the current junction equivalent circuit does not apply those losses directly.
 
-Do not assume these meanings are interchangeable. A future API cleanup should use an intentional compatibility plan and explicit names such as `resistivityScale` and `resistivityOhmMeter`.
+New code must use absolute `resistivity`. Supplying both names is an error.
 
 ## Uniform line: `mlin()`
 
 ```js
-nP.mlin(Width, Height, Length, Thickness, er, rho, tand, roughnessRms)
+nP.mlin({ width, height, length, thickness, relativePermittivity, resistivity, lossTangent, roughnessRms })
 ```
 
 The implementation performs:
@@ -67,7 +68,7 @@ The returned `.microstrip` object contains geometry, material inputs, quasi-stat
 ## Coupled line: `mclin()`
 
 ```js
-nP.mclin(Width, Space, Height, Thickness, Length, er, rho, tand, roughnessRms)
+nP.mclin({ width, spacing, height, thickness, length, relativePermittivity, resistivity, lossTangent, roughnessRms })
 ```
 
 `mclin()` uses the Kirschning/Jansen equal-width coupled-microstrip equation family, with Qucs used as a cross-check. It computes quasi-static and dispersive even- and odd-mode quantities:
@@ -96,11 +97,11 @@ nP.mtee({
     commonWidth,
     branch1Width,
     branch2Width,
-    Height,
-    Thickness,
-    er,
-    rho,
-    tand,
+    height,
+    thickness,
+    relativePermittivity,
+    resistivity,
+    lossTangent,
     roughnessRms
 })
 ```
@@ -145,7 +146,7 @@ half microstrip line → series resistor → half microstrip line
 
 Automatic segmentation is bounded between 10 and 200 sections. The returned `.filmResistor` metadata records sheet resistance, geometry, segmentation, total resistance, and temperature inputs.
 
-Temperature scale is a current audit item: `global.Temp` defaults to `293`, while `temperatureReference` defaults to `25`. Do not rely on temperature correction until the intended units are made explicit and tested.
+`global.Temp` and canonical `referenceTemperature` are absolute temperatures in kelvin; `referenceTemperature` defaults to `298.15`. The legacy `temperatureReference` alias retains its historical behavior of using the same scale as `global.Temp` so existing Celsius-based calls remain compatible.
 
 ## Via models
 

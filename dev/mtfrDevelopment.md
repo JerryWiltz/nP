@@ -1,7 +1,7 @@
-<!-- Modified: 2026-07-14 -->
+<!-- Modified: 2026-09-06 -->
 # Microstrip Thin-Film Resistor Development
 
-This analysis compares ideal resistance, thin-film resistance, and microstrip transmission behavior. It is converted from `dev/mtfrDevelopment.html`.
+This analysis compares ideal resistance, thin-film resistance, and microstrip transmission behavior. Its executable harness is the `mtfr` section of `dev/microstripDevelopment.html`.
 
 ```npjs
 var g = nP.global;
@@ -13,22 +13,22 @@ var length = 34.5e-3 * 0.0254;
 var r75 = nP.R(75);
 var film75 = nP.mtfr({
     ohmsPerSquare: 50,
-    Width: width,
-    Length: length
-});
-var line = nP.mlin(
     width,
-    0.025 * 0.0254,
+    length
+});
+var line = nP.mlin({
+    width,
+    height: 0.025 * 0.0254,
     length,
-    0.0000125 * 0.0254,
-    10,
-    0,
-    0
-);
+    thickness: 0.0000125 * 0.0254,
+    relativePermittivity: 10,
+    resistivity: 0,
+    lossTangent: 0
+});
 var film0 = nP.mtfr({
     ohmsPerSquare: 0,
-    Width: width,
-    Length: length
+    width,
+    length
 });
 
 var r75Out = r75.out('s21mag');

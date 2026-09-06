@@ -5818,8 +5818,8 @@ function smithChart(options = {}) {
 	};
 }
 
-// Modified: 2026-07-13
-const version = '0.0.47';
+// Modified: 2026-08-18
+const version = '0.0.48';
 
 function CplxToCell(complexNumber) {
 	return complexNumber.x.toPrecision(4) + (complexNumber.y.toPrecision(4) >= 0 ? " +j" + complexNumber.y.toPrecision(4) : " -j" + (-complexNumber.y).toPrecision(4));
@@ -7002,6 +7002,34 @@ function Tee5() { // a 4-port dummy connection
 	return Tee5;
 }
 
+// Modified: 2026-08-12
+
+// Ideal three-port junction for attaching a one-port network in series.
+// Ports 1 and 2 form the through path; port 3 is the series branch.
+function seriesTee() {
+	var junction = new nPort;
+	var frequencyList = global.fList;
+	var e = 1e-7;
+	var sparsArray = [];
+
+	for (var freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		var oneThird = complex(e + 1 / 3, 0);
+		var twoThirds = complex(e + 2 / 3, 0);
+		var negativeTwoThirds = complex(e - 2 / 3, 0);
+
+		sparsArray[freqCount] = [
+			frequencyList[freqCount],
+			oneThird, twoThirds, negativeTwoThirds,
+			twoThirds, oneThird, twoThirds,
+			negativeTwoThirds, twoThirds, oneThird
+		];
+	}
+
+	junction.setspars(sparsArray);
+	junction.setglobal(global);
+	return junction;
+}
+
 function nodal( ... nPortsAndNodes) { //nPortsAndNodes = [[nPort1, n1, n2 ...], [nPort2, n1, n2 ...], ... ['out', n1, nn2, ...] ]
 	var i = 0, j = 0, k = 0, row = 0, col = 0, offset = 0, base = 0;
 	var spars = function () { // creates spars table with frequencies only [ [freq1], [freq2], ... [freqN] ]
@@ -7230,7 +7258,94 @@ const VACUUM_IMPEDANCE = 120 * Math.PI;
 
 const COPPER_RESISTIVITY = 1.72e-8;
 
-// Modified: 2026-07-01
+// Modified: 2026-09-06
+var hasOwn = function (object, key) {
+	return Object.prototype.hasOwnProperty.call(object, key);
+};
+
+var isOptionsObject = function (value) {
+	return value !== null && typeof value === 'object' && !Array.isArray(value);
+};
+
+var normalizePhysicalModelOptions = function (constructorName, input, definitions) {
+	if (!isOptionsObject(input)) {
+		throw new TypeError('nP.' + constructorName + '() requires an options object.');
+	}
+
+	var known = new Set;
+	var normalized = {};
+	definitions.forEach(function (definition) {
+		known.add(definition.name);
+		(definition.aliases || []).forEach(function (alias) { known.add(alias); });
+
+		var supplied = [definition.name].concat(definition.aliases || []).filter(function (name) {
+			return hasOwn(input, name);
+		});
+		if (supplied.length > 1) {
+			throw new Error('nP.' + constructorName + '(): use only one of ' + supplied.join(', ') + '.');
+		}
+		var source = supplied[0];
+		normalized[definition.name] = source === undefined ? definition.defaultValue : input[source];
+	});
+
+	Object.keys(input).forEach(function (key) {
+		if (!known.has(key)) {
+			throw new Error('nP.' + constructorName + '(): unknown option "' + key + '".');
+		}
+	});
+	return normalized;
+};
+
+var requireFinite = function (constructorName, name, value) {
+	if (typeof value !== 'number' || !Number.isFinite(value)) {
+		throw new TypeError('nP.' + constructorName + '(): ' + name + ' must be a finite number.');
+	}
+	return value;
+};
+
+var requirePositive = function (constructorName, name, value) {
+	requireFinite(constructorName, name, value);
+	if (value <= 0) throw new RangeError('nP.' + constructorName + '(): ' + name + ' must be greater than zero.');
+	return value;
+};
+
+var requireNonnegative = function (constructorName, name, value) {
+	requireFinite(constructorName, name, value);
+	if (value < 0) throw new RangeError('nP.' + constructorName + '(): ' + name + ' must not be negative.');
+	return value;
+};
+
+var resistivityScale = function (constructorName, options, legacyScale, referenceResistivity) {
+	if (hasOwn(options, 'resistivity') && hasOwn(options, 'rho')) {
+		throw new Error('nP.' + constructorName + '(): use resistivity or legacy rho, not both.');
+	}
+	if (hasOwn(options, 'resistivity')) {
+		return requireNonnegative(constructorName, 'resistivity', options.resistivity) / referenceResistivity;
+	}
+	return legacyScale;
+};
+
+var absoluteResistivity = function (constructorName, options, legacyValue) {
+	if (hasOwn(options, 'resistivity') && hasOwn(options, 'rho')) {
+		throw new Error('nP.' + constructorName + '(): use resistivity or legacy rho, not both.');
+	}
+	return hasOwn(options, 'resistivity')
+		? requireNonnegative(constructorName, 'resistivity', options.resistivity)
+		: legacyValue;
+};
+
+var physicalModelMetadata = function (family, model, geometry, material, analysis, extra = {}) {
+	return {
+		family,
+		model,
+		geometry: {...geometry},
+		material: {...material},
+		analysis,
+		...extra
+	};
+};
+
+// Modified: 2026-09-06
 
 var pi$7 = Math.PI;
 
@@ -7306,6 +7421,27 @@ var singleLineDispersion$1 = function (u, er, erEff0, z0, frequency, Height) {
 };
 
 function mlin(Width = 0.023 * INCH_TO_METER, Height = 0.025 * INCH_TO_METER, Length = 0.5 * INCH_TO_METER, Thickness = 0.0000125 * INCH_TO_METER, er = 10, rho = 1, tand = 0.001, roughnessRms = 0) {
+	var inputOptions = isOptionsObject(Width) ? Width : null;
+	if (inputOptions) {
+		var options = normalizePhysicalModelOptions('mlin', inputOptions, [
+			{name: 'width', aliases: ['Width'], defaultValue: 0.023 * INCH_TO_METER},
+			{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
+			{name: 'length', aliases: ['Length'], defaultValue: 0.5 * INCH_TO_METER},
+			{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
+			{name: 'relativePermittivity', aliases: ['er'], defaultValue: 10},
+			{name: 'rho', defaultValue: 1},
+			{name: 'resistivity', defaultValue: undefined},
+			{name: 'lossTangent', aliases: ['tand'], defaultValue: 0.001},
+			{name: 'roughnessRms', defaultValue: 0}
+		]);
+		Width = options.width; Height = options.height; Length = options.length; Thickness = options.thickness;
+		er = options.relativePermittivity; rho = resistivityScale('mlin', inputOptions, options.rho, COPPER_RESISTIVITY);
+		tand = options.lossTangent; roughnessRms = options.roughnessRms;
+	}
+	requirePositive('mlin', 'width', Width); requirePositive('mlin', 'height', Height);
+	requireNonnegative('mlin', 'length', Length); requireNonnegative('mlin', 'thickness', Thickness);
+	requirePositive('mlin', 'relativePermittivity', er); requireNonnegative('mlin', 'resistivity', rho * COPPER_RESISTIVITY);
+	requireNonnegative('mlin', 'lossTangent', tand); requireNonnegative('mlin', 'roughnessRms', roughnessRms);
 	var mlin = new nPort;
 	var frequencyList = global.fList, Ro = global.Ro;
 	var Zo = complex(Ro, 0), two = complex(2, 0), freqCount = 0, s11, s12, s21, s22, sparsArray = [];
@@ -7382,10 +7518,18 @@ function mlin(Width = 0.023 * INCH_TO_METER, Height = 0.025 * INCH_TO_METER, Len
 		ereQuasiStatic: ere,
 		analysis
 	};
+	mlin.physicalModel = physicalModelMetadata('microstrip', 'uniform-line', {
+		width: Width, height: Height, length: Length, thickness: Thickness
+	}, {
+		relativePermittivity: er,
+		resistivity: rho * COPPER_RESISTIVITY,
+		lossTangent: tand,
+		roughnessRms
+	}, analysis);
 	return mlin;
 }
 
-// Modified: 2026-06-30
+// Modified: 2026-09-06
 
 var pi$6 = Math.PI;
 
@@ -7597,6 +7741,27 @@ var modeLosses = function (Width, Height, Thickness, Length, er, rho, tand, freq
 };
 
 function mclin(Width = 19.1155 * MIL_TO_METER, Space = 5.82185 * MIL_TO_METER, Height = 25 * MIL_TO_METER, Thickness = 0.0000125 * INCH_TO_METER, Length = 719.794 * MIL_TO_METER, er = 10, rho = 1, tand = 0.001, roughnessRms = 0) {
+	var inputOptions = isOptionsObject(Width) ? Width : null;
+	if (inputOptions) {
+		var options = normalizePhysicalModelOptions('mclin', inputOptions, [
+			{name: 'width', aliases: ['Width'], defaultValue: 19.1155 * MIL_TO_METER},
+			{name: 'spacing', aliases: ['Space'], defaultValue: 5.82185 * MIL_TO_METER},
+			{name: 'height', aliases: ['Height'], defaultValue: 25 * MIL_TO_METER},
+			{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
+			{name: 'length', aliases: ['Length'], defaultValue: 719.794 * MIL_TO_METER},
+			{name: 'relativePermittivity', aliases: ['er'], defaultValue: 10},
+			{name: 'rho', defaultValue: 1}, {name: 'resistivity', defaultValue: undefined},
+			{name: 'lossTangent', aliases: ['tand'], defaultValue: 0.001},
+			{name: 'roughnessRms', defaultValue: 0}
+		]);
+		Width = options.width; Space = options.spacing; Height = options.height; Thickness = options.thickness;
+		Length = options.length; er = options.relativePermittivity; rho = resistivityScale('mclin', inputOptions, options.rho, COPPER_RESISTIVITY);
+		tand = options.lossTangent; roughnessRms = options.roughnessRms;
+	}
+	requirePositive('mclin', 'width', Width); requirePositive('mclin', 'spacing', Space); requirePositive('mclin', 'height', Height);
+	requireNonnegative('mclin', 'length', Length); requireNonnegative('mclin', 'thickness', Thickness);
+	requirePositive('mclin', 'relativePermittivity', er); requireNonnegative('mclin', 'resistivity', rho * COPPER_RESISTIVITY);
+	requireNonnegative('mclin', 'lossTangent', tand); requireNonnegative('mclin', 'roughnessRms', roughnessRms);
 	var ctlin = new nPort;
 	var frequencyList = global.fList, Ro = global.Ro;
 	var Zo = complex(Ro, 0), two = complex(2, 0), freqCount = 0, Zoemclin = [], Zoomclin = [];
@@ -7700,12 +7865,21 @@ function mclin(Width = 19.1155 * MIL_TO_METER, Space = 5.82185 * MIL_TO_METER, H
 		ereooQuasiStatic: quasiStatic.ereoo,
 		dispersion
 	};
+	ctlin.physicalModel = physicalModelMetadata('microstrip', 'coupled-line', {
+		width: Width, spacing: Space, height: Height, thickness: Thickness, length: Length
+	}, {
+		relativePermittivity: er, resistivity: rho * COPPER_RESISTIVITY,
+		lossTangent: tand, roughnessRms
+	}, dispersion);
 	return ctlin;
 }
 
-// Modified: 2026-07-08
+// Modified: 2026-09-06
 
 var pi$5 = Math.PI;
+var DEFAULT_WIDTH = 0.023 * INCH_TO_METER;
+var DEFAULT_HEIGHT = 0.025 * INCH_TO_METER;
+var DEFAULT_THICKNESS = 0.0000125 * INCH_TO_METER;
 
 var square$2 = function (x) { return x * x; };
 var cube$2 = function (x) { return x * x * x; };
@@ -7757,17 +7931,39 @@ var microstripLine$2 = function (width, Height, Thickness, er) {
 	};
 };
 
-function mtee({
-	commonWidth = 0.023 * INCH_TO_METER,
-	branch1Width = 0.023 * INCH_TO_METER,
-	branch2Width = 0.023 * INCH_TO_METER,
-	Height = 0.025 * INCH_TO_METER,
-	Thickness = 0.0000125 * INCH_TO_METER,
+function mtee(
+	commonWidth = DEFAULT_WIDTH,
+	branch1Width = DEFAULT_WIDTH,
+	branch2Width = DEFAULT_WIDTH,
+	Height = DEFAULT_HEIGHT,
+	Thickness = DEFAULT_THICKNESS,
 	er = 10,
 	rho = 1,
 	tand = 0.001,
 	roughnessRms = 0
-} = {}) { // microstrip tee nPort object
+) { // microstrip tee nPort object
+	var inputOptions = isOptionsObject(commonWidth) ? commonWidth : null;
+	if (inputOptions) {
+		var options = normalizePhysicalModelOptions('mtee', inputOptions, [
+			{name: 'commonWidth', defaultValue: DEFAULT_WIDTH},
+			{name: 'branch1Width', defaultValue: DEFAULT_WIDTH},
+			{name: 'branch2Width', defaultValue: DEFAULT_WIDTH},
+			{name: 'height', aliases: ['Height'], defaultValue: DEFAULT_HEIGHT},
+			{name: 'thickness', aliases: ['Thickness'], defaultValue: DEFAULT_THICKNESS},
+			{name: 'relativePermittivity', aliases: ['er'], defaultValue: 10},
+			{name: 'rho', defaultValue: 1}, {name: 'resistivity', defaultValue: undefined},
+			{name: 'lossTangent', aliases: ['tand'], defaultValue: 0.001},
+			{name: 'roughnessRms', defaultValue: 0}
+		]);
+		commonWidth = options.commonWidth; branch1Width = options.branch1Width; branch2Width = options.branch2Width;
+		Height = options.height; Thickness = options.thickness; er = options.relativePermittivity;
+		rho = resistivityScale('mtee', inputOptions, options.rho, COPPER_RESISTIVITY); tand = options.lossTangent; roughnessRms = options.roughnessRms;
+	}
+	requirePositive('mtee', 'commonWidth', commonWidth); requirePositive('mtee', 'branch1Width', branch1Width);
+	requirePositive('mtee', 'branch2Width', branch2Width); requirePositive('mtee', 'height', Height);
+	requireNonnegative('mtee', 'thickness', Thickness); requirePositive('mtee', 'relativePermittivity', er);
+	requireNonnegative('mtee', 'resistivity', rho * COPPER_RESISTIVITY); requireNonnegative('mtee', 'lossTangent', tand);
+	requireNonnegative('mtee', 'roughnessRms', roughnessRms);
 	var mtee = new nPort;
 	var frequencyList = global.fList, Ro = global.Ro;
 	var freqCount = 0, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [];
@@ -7856,10 +8052,16 @@ function mtee({
 		},
 		analysis
 	};
+	mtee.physicalModel = physicalModelMetadata('microstrip', 'tee-junction', {
+		commonWidth, branch1Width, branch2Width, height: Height, thickness: Thickness
+	}, {
+		relativePermittivity: er, resistivity: rho * COPPER_RESISTIVITY,
+		lossTangent: tand, roughnessRms
+	}, analysis, {sources: [mtee.microstrip.source], validity: mtee.microstrip.validity});
 	return mtee;
 }
 
-// Modified: 2026-07-08
+// Modified: 2026-09-06
 
 var pi$4 = Math.PI;
 
@@ -8023,18 +8225,24 @@ var centerInductance = function (horizontalWidth, verticalWidth, Height) {
 	return 0.8 * L;
 };
 
-function mcross({
-	leftWidth = 0.023 * INCH_TO_METER,
-	topWidth = 0.023 * INCH_TO_METER,
-	rightWidth = 0.023 * INCH_TO_METER,
-	bottomWidth = 0.023 * INCH_TO_METER,
-	Height = 0.025 * INCH_TO_METER,
-	Thickness = 0.0000125 * INCH_TO_METER,
-	er = 10,
-	rho = 1,
-	tand = 0.001,
-	roughnessRms = 0
-} = {}) {
+function mcross(input = {}) {
+	var options = normalizePhysicalModelOptions('mcross', input, [
+		{name: 'leftWidth', defaultValue: 0.023 * INCH_TO_METER}, {name: 'topWidth', defaultValue: 0.023 * INCH_TO_METER},
+		{name: 'rightWidth', defaultValue: 0.023 * INCH_TO_METER}, {name: 'bottomWidth', defaultValue: 0.023 * INCH_TO_METER},
+		{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
+		{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
+		{name: 'relativePermittivity', aliases: ['er'], defaultValue: 10},
+		{name: 'rho', defaultValue: 1}, {name: 'resistivity', defaultValue: undefined},
+		{name: 'lossTangent', aliases: ['tand'], defaultValue: 0.001}, {name: 'roughnessRms', defaultValue: 0}
+	]);
+	var leftWidth = options.leftWidth, topWidth = options.topWidth, rightWidth = options.rightWidth, bottomWidth = options.bottomWidth;
+	var Height = options.height, Thickness = options.thickness, er = options.relativePermittivity;
+	var rho = resistivityScale('mcross', input, options.rho, COPPER_RESISTIVITY), tand = options.lossTangent, roughnessRms = options.roughnessRms;
+	[leftWidth, topWidth, rightWidth, bottomWidth].forEach(function (value, index) {
+		requirePositive('mcross', ['leftWidth', 'topWidth', 'rightWidth', 'bottomWidth'][index], value);
+	});
+	requirePositive('mcross', 'height', Height); requireNonnegative('mcross', 'thickness', Thickness); requirePositive('mcross', 'relativePermittivity', er);
+	requireNonnegative('mcross', 'resistivity', rho * COPPER_RESISTIVITY); requireNonnegative('mcross', 'lossTangent', tand); requireNonnegative('mcross', 'roughnessRms', roughnessRms);
 	var cross = new nPort;
 	var frequencyList = global.fList, Ro = global.Ro;
 	var widths = [leftWidth, topWidth, rightWidth, bottomWidth];
@@ -8122,10 +8330,14 @@ function mcross({
 		},
 		analysis
 	};
+	cross.physicalModel = physicalModelMetadata('microstrip', 'cross-junction', {
+		leftWidth, topWidth, rightWidth, bottomWidth, height: Height, thickness: Thickness
+	}, {relativePermittivity: er, resistivity: rho * COPPER_RESISTIVITY, lossTangent: tand, roughnessRms}, analysis,
+	{sources: [cross.microstrip.source], validity: cross.microstrip.validity});
 	return cross;
 }
 
-// Modified: 2026-07-08
+// Modified: 2026-09-06
 
 var pi$3 = Math.PI;
 
@@ -8236,16 +8448,22 @@ var stepInductanceNh = function (wideWidth, narrowWidth, Height) {
 	return Height * (ratioMinusOne * (40.5 + 0.2 * ratioMinusOne) - 75 * Math.log10(ratio));
 };
 
-function mstep({
-	width1 = 0.046 * INCH_TO_METER,
-	width2 = 0.023 * INCH_TO_METER,
-	Height = 0.025 * INCH_TO_METER,
-	Thickness = 0.0000125 * INCH_TO_METER,
-	er = 10,
-	rho = 1,
-	tand = 0.001,
-	roughnessRms = 0
-} = {}) {
+function mstep(input = {}) {
+	var options = normalizePhysicalModelOptions('mstep', input, [
+		{name: 'inputWidth', aliases: ['width1'], defaultValue: 0.046 * INCH_TO_METER},
+		{name: 'outputWidth', aliases: ['width2'], defaultValue: 0.023 * INCH_TO_METER},
+		{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
+		{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
+		{name: 'relativePermittivity', aliases: ['er'], defaultValue: 10},
+		{name: 'rho', defaultValue: 1}, {name: 'resistivity', defaultValue: undefined},
+		{name: 'lossTangent', aliases: ['tand'], defaultValue: 0.001}, {name: 'roughnessRms', defaultValue: 0}
+	]);
+	var width1 = options.inputWidth, width2 = options.outputWidth, Height = options.height, Thickness = options.thickness;
+	var er = options.relativePermittivity, rho = resistivityScale('mstep', input, options.rho, COPPER_RESISTIVITY);
+	var tand = options.lossTangent, roughnessRms = options.roughnessRms;
+	requirePositive('mstep', 'inputWidth', width1); requirePositive('mstep', 'outputWidth', width2); requirePositive('mstep', 'height', Height);
+	requireNonnegative('mstep', 'thickness', Thickness); requirePositive('mstep', 'relativePermittivity', er);
+	requireNonnegative('mstep', 'resistivity', rho * COPPER_RESISTIVITY); requireNonnegative('mstep', 'lossTangent', tand); requireNonnegative('mstep', 'roughnessRms', roughnessRms);
 	var step = new nPort;
 	var frequencyList = global.fList, Ro = global.Ro;
 	var port1Line = microstripLine(width1, Height, Thickness, er);
@@ -8309,10 +8527,13 @@ function mstep({
 		},
 		analysis
 	};
+	step.physicalModel = physicalModelMetadata('microstrip', 'step-discontinuity', {
+		inputWidth: width1, outputWidth: width2, height: Height, thickness: Thickness
+	}, {relativePermittivity: er, resistivity: rho * COPPER_RESISTIVITY, lossTangent: tand, roughnessRms}, analysis);
 	return step;
 }
 
-// Modified: 2026-07-02
+// Modified: 2026-09-06
 
 var pi$2 = Math.PI;
 
@@ -8352,16 +8573,22 @@ var edwardsSteerBend = function (Width, Height, er) {
 	};
 };
 
-function mbend({
-	Width = 0.023 * INCH_TO_METER,
-	miterLength,
-	Height = 0.025 * INCH_TO_METER,
-	Thickness = 0.0000125 * INCH_TO_METER,
-	er = 10,
-	rho = 1,
-	tand = 0.001,
-	roughnessRms = 0
-} = {}) {
+function mbend(input = {}) {
+	var options = normalizePhysicalModelOptions('mbend', input, [
+		{name: 'width', aliases: ['Width'], defaultValue: 0.023 * INCH_TO_METER}, {name: 'miterLength', defaultValue: undefined},
+		{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
+		{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
+		{name: 'relativePermittivity', aliases: ['er'], defaultValue: 10},
+		{name: 'rho', defaultValue: 1}, {name: 'resistivity', defaultValue: undefined},
+		{name: 'lossTangent', aliases: ['tand'], defaultValue: 0.001}, {name: 'roughnessRms', defaultValue: 0}
+	]);
+	var Width = options.width, miterLength = options.miterLength, Height = options.height, Thickness = options.thickness;
+	var er = options.relativePermittivity, rho = resistivityScale('mbend', input, options.rho, COPPER_RESISTIVITY);
+	var tand = options.lossTangent, roughnessRms = options.roughnessRms;
+	requirePositive('mbend', 'width', Width); requirePositive('mbend', 'height', Height); requireNonnegative('mbend', 'thickness', Thickness);
+	if (miterLength !== undefined) requireNonnegative('mbend', 'miterLength', miterLength);
+	requirePositive('mbend', 'relativePermittivity', er); requireNonnegative('mbend', 'resistivity', rho * COPPER_RESISTIVITY);
+	requireNonnegative('mbend', 'lossTangent', tand); requireNonnegative('mbend', 'roughnessRms', roughnessRms);
 	var bend = new nPort;
 	var frequencyList = global.fList, Ro = global.Ro;
 	var recommendedMiterFraction = 0.6;
@@ -8418,23 +8645,37 @@ function mbend({
 		},
 		analysis
 	};
+	bend.physicalModel = physicalModelMetadata('microstrip', 'bend-discontinuity', {
+		width: Width, miterLength: actualMiterLength, height: Height, thickness: Thickness
+	}, {relativePermittivity: er, resistivity: rho * COPPER_RESISTIVITY, lossTangent: tand, roughnessRms}, analysis,
+	{validity: bend.microstrip.validity});
 	return bend;
 }
 
-// Modified: 2026-07-03
+// Modified: 2026-09-06
 
-function mtfr({
-	ohmsPerSquare = 50,
-	Width = 10 * MIL_TO_METER,
-	Length = 10 * MIL_TO_METER,
-	Height = 0.025 * INCH_TO_METER,
-	Thickness = 0.0000125 * INCH_TO_METER,
-	er = 10,
-	tand = 0.001,
-	temperatureCoefficient = 0,
-	temperatureReference = 25,
-	sections
-} = {}) {
+function mtfr(input = {}) {
+	var options = normalizePhysicalModelOptions('mtfr', input, [
+		{name: 'ohmsPerSquare', defaultValue: 50}, {name: 'width', aliases: ['Width'], defaultValue: 10 * MIL_TO_METER},
+		{name: 'length', aliases: ['Length'], defaultValue: 10 * MIL_TO_METER},
+		{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
+		{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
+		{name: 'relativePermittivity', aliases: ['er'], defaultValue: 10},
+		{name: 'lossTangent', aliases: ['tand'], defaultValue: 0.001},
+		{name: 'temperatureCoefficient', defaultValue: 0}, {name: 'referenceTemperature', aliases: ['temperatureReference'], defaultValue: 298.15},
+		{name: 'sections', defaultValue: undefined}
+	]);
+	var ohmsPerSquare = options.ohmsPerSquare, Width = options.width, Length = options.length, Height = options.height;
+	var Thickness = options.thickness, er = options.relativePermittivity, tand = options.lossTangent;
+	var temperatureCoefficient = options.temperatureCoefficient, temperatureReference = options.referenceTemperature, sections = options.sections;
+	var usesLegacyTemperatureReference = Object.prototype.hasOwnProperty.call(input, 'temperatureReference');
+	var temperatureUnit = usesLegacyTemperatureReference ? 'legacy global.Temp scale' : 'kelvin';
+	requireNonnegative('mtfr', 'ohmsPerSquare', ohmsPerSquare); requirePositive('mtfr', 'width', Width); requireNonnegative('mtfr', 'length', Length);
+	requirePositive('mtfr', 'height', Height); requireNonnegative('mtfr', 'thickness', Thickness); requirePositive('mtfr', 'relativePermittivity', er);
+	requireNonnegative('mtfr', 'lossTangent', tand); requireFinite('mtfr', 'temperatureCoefficient', temperatureCoefficient);
+	if (usesLegacyTemperatureReference) requireFinite('mtfr', 'temperatureReference', temperatureReference);
+	else requirePositive('mtfr', 'referenceTemperature', temperatureReference);
+	if (sections !== undefined && (!Number.isInteger(sections) || sections < 1)) throw new RangeError('nP.mtfr(): sections must be a positive integer.');
 	var Temp = global.Temp;
 	var squares = Length / Width;
 	var resistanceAtReference = ohmsPerSquare * squares;
@@ -8471,13 +8712,20 @@ function mtfr({
 		halfLineLength,
 		temperatureCoefficient,
 		temperatureReference,
+		temperatureUnit,
 		temperature: Temp,
 		model: 'distributed film resistor: cascaded mlin half-sections with sheet-resistance sections'
 	};
+	filmResistor.physicalModel = physicalModelMetadata('microstrip', 'thin-film-resistor', {
+		width: Width, length: Length, height: Height, thickness: Thickness
+	}, {relativePermittivity: er, lossTangent: tand}, [], {
+		ohmsPerSquare, temperatureCoefficient, referenceTemperature: temperatureReference,
+		temperatureUnit, sections: sectionCount
+	});
 	return filmResistor;
 }
 
-// Modified: 2026-07-02
+// Modified: 2026-09-06
 
 var pi$1 = Math.PI;
 
@@ -8494,12 +8742,18 @@ var viaResistanceDc$1 = function (Height, radius, Thickness, rho) {
 	return rho * Height / metalArea;
 };
 
-function mvgnd({
-	Diameter = 100e-6,
-	Height = 0.025 * INCH_TO_METER,
-	Thickness = 0.0000125 * INCH_TO_METER,
-	rho = COPPER_RESISTIVITY
-} = {}) {
+function mvgnd(input = {}) {
+	var options = normalizePhysicalModelOptions('mvgnd', input, [
+		{name: 'diameter', aliases: ['Diameter'], defaultValue: 100e-6},
+		{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
+		{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
+		{name: 'rho', defaultValue: COPPER_RESISTIVITY}, {name: 'resistivity', defaultValue: undefined}
+	]);
+	var Diameter = options.diameter, Height = options.height, Thickness = options.thickness;
+	var rho = absoluteResistivity('mvgnd', input, options.rho);
+	requirePositive('mvgnd', 'diameter', Diameter); requirePositive('mvgnd', 'height', Height);
+	requirePositive('mvgnd', 'thickness', Thickness); requireNonnegative('mvgnd', 'resistivity', rho);
+	if (Thickness > Diameter / 2) throw new RangeError('nP.mvgnd(): thickness must not exceed the via radius.');
 	var via = new nPort;
 	var frequencyList = global.fList, Ro = global.Ro;
 	var radius = Diameter / 2;
@@ -8538,10 +8792,13 @@ function mvgnd({
 		validity: 'Goldfarb/Pucel via model stated for Height < 0.03 * lambda0',
 		analysis
 	};
+	via.physicalModel = physicalModelMetadata('microstrip', 'via-to-ground', {
+		diameter: Diameter, height: Height, thickness: Thickness
+	}, {resistivity: rho}, analysis, {validity: via.microstrip.validity});
 	return via;
 }
 
-// Modified: 2026-07-02
+// Modified: 2026-09-06
 
 var pi = Math.PI;
 
@@ -8606,19 +8863,29 @@ var abcdToS = function (abcd, Ro) {
 	return {s11, s12, s21, s22};
 };
 
-function mvia({
-	Diameter = 100e-6,
-	connectionHeight = 0.025 * INCH_TO_METER,
-	Thickness = 0.0000125 * INCH_TO_METER,
-	rho = COPPER_RESISTIVITY,
-	er = 10,
-	padDiameter = 0,
-	antipadDiameter = 0,
-	topPadHeight = 0,
-	bottomPadHeight = 0,
-	topStubLength = 0,
-	bottomStubLength = 0
-} = {}) {
+function mvia(input = {}) {
+	var options = normalizePhysicalModelOptions('mvia', input, [
+		{name: 'diameter', aliases: ['Diameter'], defaultValue: 100e-6},
+		{name: 'connectionHeight', defaultValue: 0.025 * INCH_TO_METER},
+		{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
+		{name: 'rho', defaultValue: COPPER_RESISTIVITY}, {name: 'resistivity', defaultValue: undefined},
+		{name: 'relativePermittivity', aliases: ['er'], defaultValue: 10},
+		{name: 'padDiameter', defaultValue: 0}, {name: 'antipadDiameter', defaultValue: 0},
+		{name: 'topPadHeight', defaultValue: 0}, {name: 'bottomPadHeight', defaultValue: 0},
+		{name: 'topStubLength', defaultValue: 0}, {name: 'bottomStubLength', defaultValue: 0}
+	]);
+	var Diameter = options.diameter, connectionHeight = options.connectionHeight, Thickness = options.thickness;
+	var rho = absoluteResistivity('mvia', input, options.rho), er = options.relativePermittivity;
+	var padDiameter = options.padDiameter, antipadDiameter = options.antipadDiameter;
+	var topPadHeight = options.topPadHeight, bottomPadHeight = options.bottomPadHeight;
+	var topStubLength = options.topStubLength, bottomStubLength = options.bottomStubLength;
+	requirePositive('mvia', 'diameter', Diameter); requirePositive('mvia', 'connectionHeight', connectionHeight);
+	requirePositive('mvia', 'thickness', Thickness); requireNonnegative('mvia', 'resistivity', rho); requirePositive('mvia', 'relativePermittivity', er);
+	['padDiameter', 'antipadDiameter', 'topPadHeight', 'bottomPadHeight', 'topStubLength', 'bottomStubLength'].forEach(function (name) {
+		requireNonnegative('mvia', name, options[name]);
+	});
+	if (Thickness > Diameter / 2) throw new RangeError('nP.mvia(): thickness must not exceed the via radius.');
+	if (antipadDiameter > 0 && padDiameter > 0 && antipadDiameter <= padDiameter) throw new RangeError('nP.mvia(): antipadDiameter must be greater than padDiameter.');
 	var via = new nPort;
 	var frequencyList = global.fList, Ro = global.Ro;
 	var radius = Diameter / 2;
@@ -8681,6 +8948,10 @@ function mvia({
 		validity: 'Barrel R/L follows the Goldfarb/Pucel via model; pad and stub capacitances are first-order coaxial approximations.',
 		analysis
 	};
+	via.physicalModel = physicalModelMetadata('microstrip', 'via-transition', {
+		diameter: Diameter, connectionHeight, thickness: Thickness, padDiameter, antipadDiameter,
+		topPadHeight, bottomPadHeight, topStubLength, bottomStubLength
+	}, {relativePermittivity: er, resistivity: rho}, analysis, {validity: via.microstrip.validity});
 	return via;
 }
 
@@ -8861,4 +9132,4 @@ function diode1N4148(options = {}) {
 	return diodePort;
 }
 
-export { C, L, Load, Open, R, Shift90, Short, Tclin, Tee, Tee4, Tee5, Tlin, cascade, chebyLPLCs, chebyLPNsec, chebyLPgk, complex, dim, diode1N4148, dup, global, lineChart, lineTable, log, lpfGen, matrix, mbend, mclin, mcross, mlin, mstep, mtee, mtfr, mvgnd, mvia, nodal, paC, paL, paPaLC, paPaRC, paPaRL, paPaRLC, paR, paSeLC, paSeRC, paSeRL, paSeRLC, seC, seL, sePaLC, sePaRC, sePaRL, sePaRLC, seR, seSeLC, seSeRC, seSeRL, seSeRLC, smithChart, trf, trf4Port, version };
+export { C, L, Load, Open, R, Shift90, Short, Tclin, Tee, Tee4, Tee5, Tlin, cascade, chebyLPLCs, chebyLPNsec, chebyLPgk, complex, dim, diode1N4148, dup, global, lineChart, lineTable, log, lpfGen, matrix, mbend, mclin, mcross, mlin, mstep, mtee, mtfr, mvgnd, mvia, nodal, paC, paL, paPaLC, paPaRC, paPaRL, paPaRLC, paR, paSeLC, paSeRC, paSeRL, paSeRLC, seC, seL, sePaLC, sePaRC, sePaRL, sePaRLC, seR, seSeLC, seSeRC, seSeRL, seSeRLC, seriesTee, smithChart, trf, trf4Port, version };

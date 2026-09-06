@@ -1,7 +1,7 @@
-<!-- Modified: 2026-07-14 -->
+<!-- Modified: 2026-09-06 -->
 # Microstrip Tee Power Divider Development
 
-This analysis compares an ideal Wilkinson-style divider with a physical implementation using microstrip tees, lines, and a thin-film resistor. It is converted from `dev/mteePowerDividerDevelopment.html`.
+This analysis compares an ideal Wilkinson-style divider with a physical implementation using microstrip tees, lines, and a thin-film resistor. Its executable harness is the `power-divider` section of `dev/microstripDevelopment.html`.
 
 ```npjs
 var g = nP.global;
@@ -24,42 +24,44 @@ var wilkinson = nP.nodal(
 );
 
 // create a matching comparison divider using mtee() and mlin() for all junctions
-var mteeIn = nP.mtee({ // widths are 23, 10, 10
+var mteeIn = nP.mtee({
     commonWidth: 0.023 * 0.0254,
     branch1Width: 0.010 * 0.0254,
     branch2Width: 0.010 * 0.0254,
-    Height: 0.025 * 0.0254,
-    Thickness: 0.0000125 * 0.0254,
-    er: 10,
-    rho: 0,
-    tand: 0
+    height: 0.025 * 0.0254,
+    thickness: 0.0000125 * 0.0254,
+    relativePermittivity: 10,
+    resistivity: 0,
+    lossTangent: 0,
+    roughnessRms: 0
 });
 
-var mlin10 = nP.mlin(
-    10e-3 * 0.0254,
-    0.025 * 0.0254,
-    190e-3 * 0.0254, // tuned from ideal 197 mil to recenter mtee divider near 6 GHz
-    0.0000125 * 0.0254,
-    10,
-    0,
-    0
-);
+var mlin10 = nP.mlin({
+    width: 10e-3 * 0.0254,
+    height: 0.025 * 0.0254,
+    length: 190e-3 * 0.0254, // tuned from ideal 197 mil to recenter mtee divider near 6 GHz
+    thickness: 0.0000125 * 0.0254,
+    relativePermittivity: 10,
+    resistivity: 0,
+    lossTangent: 0
+});
 
-var mteeRes = nP.mtee({ // widths are 23, 23, 10
+var mteeRes = nP.mtee({
     commonWidth: 0.023 * 0.0254,
     branch1Width: 0.023 * 0.0254,
     branch2Width: 0.010 * 0.0254,
-    Height: 0.025 * 0.0254,
-    Thickness: 0.0000125 * 0.0254,
-    er: 10,
-    rho: 0,
-    tand: 0
+    height: 0.025 * 0.0254,
+    thickness: 0.0000125 * 0.0254,
+    relativePermittivity: 10,
+    resistivity: 0,
+    lossTangent: 0,
+    roughnessRms: 0
 });
 
 var rFilm100 = nP.mtfr({
     ohmsPerSquare: 50,
-    Width: 23e-3 * 0.0254,
-    Length: 46e-3 * 0.0254
+    width: 23e-3 * 0.0254,
+    length: 46e-3 * 0.0254
 });
 
 var wilkinsonMtee = nP.nodal(

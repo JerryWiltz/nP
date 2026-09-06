@@ -32,6 +32,7 @@ export {lpfGen} from './rlc/lpfGen';
 export {Tee} from './idealComponents/Tee';
 export {Tee4} from './idealComponents/Tee4';
 export {Tee5} from './idealComponents/Tee5';
+export {seriesTee} from './idealComponents/seriesTee';
 
 export {nodal} from './combining/nodal';
 export {cascade} from './combining/cascade';

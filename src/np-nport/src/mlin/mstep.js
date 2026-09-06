@@ -1,9 +1,10 @@
-// Modified: 2026-07-08
+// Modified: 2026-09-06
 import {complex} from '../../../np-math/src/complex';
 import {matrix, dim} from '../../../np-math/src/matrix';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
-import {C0, INCH_TO_METER, VACUUM_IMPEDANCE} from './constants';
+import {C0, COPPER_RESISTIVITY, INCH_TO_METER, VACUUM_IMPEDANCE} from './constants';
+import {normalizePhysicalModelOptions, physicalModelMetadata, requireNonnegative, requirePositive, resistivityScale} from '../physicalModels/options';
 
 var pi = Math.PI;
 
@@ -114,16 +115,22 @@ var stepInductanceNh = function (wideWidth, narrowWidth, Height) {
 	return Height * (ratioMinusOne * (40.5 + 0.2 * ratioMinusOne) - 75 * Math.log10(ratio));
 };
 
-export function mstep({
-	width1 = 0.046 * INCH_TO_METER,
-	width2 = 0.023 * INCH_TO_METER,
-	Height = 0.025 * INCH_TO_METER,
-	Thickness = 0.0000125 * INCH_TO_METER,
-	er = 10,
-	rho = 1,
-	tand = 0.001,
-	roughnessRms = 0
-} = {}) {
+export function mstep(input = {}) {
+	var options = normalizePhysicalModelOptions('mstep', input, [
+		{name: 'inputWidth', aliases: ['width1'], defaultValue: 0.046 * INCH_TO_METER},
+		{name: 'outputWidth', aliases: ['width2'], defaultValue: 0.023 * INCH_TO_METER},
+		{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
+		{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
+		{name: 'relativePermittivity', aliases: ['er'], defaultValue: 10},
+		{name: 'rho', defaultValue: 1}, {name: 'resistivity', defaultValue: undefined},
+		{name: 'lossTangent', aliases: ['tand'], defaultValue: 0.001}, {name: 'roughnessRms', defaultValue: 0}
+	]);
+	var width1 = options.inputWidth, width2 = options.outputWidth, Height = options.height, Thickness = options.thickness;
+	var er = options.relativePermittivity, rho = resistivityScale('mstep', input, options.rho, COPPER_RESISTIVITY);
+	var tand = options.lossTangent, roughnessRms = options.roughnessRms;
+	requirePositive('mstep', 'inputWidth', width1); requirePositive('mstep', 'outputWidth', width2); requirePositive('mstep', 'height', Height);
+	requireNonnegative('mstep', 'thickness', Thickness); requirePositive('mstep', 'relativePermittivity', er);
+	requireNonnegative('mstep', 'resistivity', rho * COPPER_RESISTIVITY); requireNonnegative('mstep', 'lossTangent', tand); requireNonnegative('mstep', 'roughnessRms', roughnessRms);
 	var step = new nPort;
 	var frequencyList = global.fList, Ro = global.Ro;
 	var port1Line = microstripLine(width1, Height, Thickness, er);
@@ -187,5 +194,8 @@ export function mstep({
 		},
 		analysis
 	};
+	step.physicalModel = physicalModelMetadata('microstrip', 'step-discontinuity', {
+		inputWidth: width1, outputWidth: width2, height: Height, thickness: Thickness
+	}, {relativePermittivity: er, resistivity: rho * COPPER_RESISTIVITY, lossTangent: tand, roughnessRms}, analysis);
 	return step;
 };

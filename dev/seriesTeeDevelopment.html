@@ -1,0 +1,146 @@
+<!doctype html>
+<!-- Modified: 2026-08-12 -->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>seriesTee Development</title>
+    <script src="../dist/nP.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 2rem;
+            color: #202020;
+            background: #f4f4f4;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        #status {
+            margin: 1rem 0;
+            padding: 0.75rem 1rem;
+            border: 1px solid #b8b8b8;
+            background: white;
+        }
+
+        #status.pass {
+            border-color: #16803c;
+            color: #0e642d;
+        }
+
+        #status.fail {
+            border-color: #b42318;
+            color: #b42318;
+        }
+
+        #tableDiv {
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <h1>Transmission Line, Tee, and seriesTee</h1>
+        <p>
+            This recreates the archived Medley transmission-line example at
+            its original single analysis frequency of 2 GHz and compares a
+            bare line with parallel and series open/short stubs.
+        </p>
+        <div id="status">Running…</div>
+        <div id="tableDiv"></div>
+    </main>
+
+    <script>
+        var statusEl = document.getElementById('status');
+
+        try {
+            var g = nP.global;
+            g.fList = [2e9];
+
+            var line = nP.Tlin();
+            var open = nP.Open();
+            var short = nP.Short();
+            var tee = nP.Tee();
+            var seriesTee = nP.seriesTee();
+
+            var outputSelections = ['s11mag', 's11ang', 's21mag', 's21ang'];
+            function medleyOutput(network) {
+                return network.out.apply(network, outputSelections);
+            }
+
+            var bareLine = medleyOutput(line);
+
+            var openParallelStub = medleyOutput(nP.nodal(
+                [tee, 2, 1, 3],
+                [line, 2, 4],
+                [open, 4],
+                ['out', 1, 3]
+            ));
+
+            var openSeriesStub = medleyOutput(nP.nodal(
+                [seriesTee, 1, 2, 3],
+                [line, 3, 4],
+                [open, 4],
+                ['out', 1, 2]
+            ));
+
+            var shortParallelStub = medleyOutput(nP.nodal(
+                [tee, 2, 1, 3],
+                [line, 2, 4],
+                [short, 4],
+                ['out', 1, 3]
+            ));
+
+            var shortSeriesStub = medleyOutput(nP.nodal(
+                [seriesTee, 1, 2, 3],
+                [line, 3, 4],
+                [short, 4],
+                ['out', 1, 2]
+            ));
+
+            var outputs = [
+                ['bare line', bareLine],
+                ['parallel open stub', openParallelStub],
+                ['series open stub', openSeriesStub],
+                ['parallel short stub', shortParallelStub],
+                ['series short stub', shortSeriesStub]
+            ];
+
+            outputs.forEach(function (entry) {
+                outputSelections.forEach(function (selection, index) {
+                    entry[1][0][index + 1] = entry[0] + ' ' + selection;
+                });
+            });
+
+            nP.lineTable({
+                inputTable: outputs.map(function (entry) { return entry[1]; }),
+                mount: '#tableDiv',
+                title: 'Transmission Line and Stub Comparison',
+                metricPrefix: 'giga',
+                columnWidth: 180,
+                backgroundColor: 'white'
+            });
+
+            var allFinite = outputs.every(function (entry) {
+                return entry[1].slice(1).every(function (row) {
+                    return row.slice(1).every(Number.isFinite);
+                });
+            });
+
+            if (!allFinite) throw new Error('One or more output values are not finite.');
+
+            statusEl.textContent =
+                'PASS: nP.seriesTee() produced finite two-port results for both series stubs.';
+            statusEl.className = 'pass';
+        } catch (error) {
+            statusEl.textContent = 'FAIL: ' + error.message;
+            statusEl.className = 'fail';
+            console.error(error);
+        }
+    </script>
+</body>
+</html>

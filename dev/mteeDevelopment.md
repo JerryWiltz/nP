@@ -1,7 +1,7 @@
-<!-- Modified: 2026-07-14 -->
+<!-- Modified: 2026-09-06 -->
 # Microstrip Tee Development
 
-This analysis evaluates the three-port physical microstrip tee and displays its S-parameters in three forms. It is converted from `dev/mteeDevelopment.html`.
+This analysis evaluates the three-port physical microstrip tee and displays its S-parameters in three forms. Its executable harness is the `mtee` section of `dev/microstripDevelopment.html`.
 
 ```npjs
 var g = nP.global;

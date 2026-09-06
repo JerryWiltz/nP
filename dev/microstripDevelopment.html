@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<!-- Modified: 2026-09-06 -->
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>Microstrip Development</title>
+    <script src="../dist/nP.js"></script>
+    <style>
+        body { font-family: sans-serif; margin: 1rem; }
+        nav a { margin-right: 1rem; }
+        section { border-top: 1px solid #ccc; margin-top: 2rem; padding-top: 1rem; }
+    </style>
+</head>
+
+<body>
+    <h1>Microstrip Development</h1>
+    <nav>
+        <a href="#mlin">Line</a>
+        <a href="#mclin">Coupled line</a>
+        <a href="#mtee">Tee</a>
+        <a href="#power-divider">Power divider</a>
+        <a href="#mtfr">Thin-film resistor</a>
+    </nav>
+
+    <section id="mlin">
+        <h2>Microstrip Line</h2>
+        <div id="mlinTable"></div>
+        <div id="mlinChart"></div>
+        <div id="mlinSmith"></div>
+    </section>
+
+    <section id="mclin">
+        <h2>Coupled Microstrip Line</h2>
+        <div id="mclinTable"></div>
+        <div id="mclinChart"></div>
+        <div id="mclinSmith"></div>
+    </section>
+
+    <section id="mtee">
+        <h2>Microstrip Tee</h2>
+        <div id="mteeTable"></div>
+        <div id="mteeChart"></div>
+        <div id="mteeSmith"></div>
+    </section>
+
+    <section id="power-divider">
+        <h2>Wilkinson Power Divider</h2>
+        <div id="powerDividerChart"></div>
+    </section>
+
+    <section id="mtfr">
+        <h2>Microstrip Thin-Film Resistor</h2>
+        <div id="mtfrTable"></div>
+    </section>
+
+    <script>
+        (function () {
+            nP.global.fList = [10e9];
+
+            var mil = 0.001 * 0.0254;
+            var line = nP.mlin({
+                width: 0.023 * 0.0254,
+                height: 25 * mil,
+                length: 0.5 * 0.0254,
+                thickness: mil,
+                relativePermittivity: 10,
+                resistivity: 1.72e-8,
+                lossTangent: 0.001
+            });
+            var network = nP.nodal(
+                [line, 1, 2],
+                ['out', 1, 2]
+            );
+            var transmission = network.out('s21dB');
+            var reflection = network.out('s11Re', 's11Im');
+
+            nP.lineTable({
+                inputTable: [transmission],
+                title: 'Microstrip Line',
+                mount: '#mlinTable',
+                metricPrefix: 'giga',
+                fontFamily: 'sans-serif',
+                fontSize: 14
+            });
+            nP.lineChart({
+                inputTable: [transmission],
+                title: 'Microstrip Line',
+                mount: '#mlinChart',
+                metricPrefix: 'giga',
+                xAxisTitle: 'Frequency, GHz',
+                yAxisTitle: 's21, dB',
+                fontFamily: 'sans-serif',
+                fontSize: 14
+            });
+            nP.smithChart({
+                inputTable: [reflection],
+                title: 'Microstrip Line Smith Chart',
+                mount: '#mlinSmith',
+                metricPrefix: 'giga',
+                fontFamily: 'sans-serif',
+                fontSize: 14
+            });
+        }());
+
+        (function () {
+            nP.global.fList = [1.8e9];
+
+            var mil = 0.001 * 0.0254;
+            var coupledLine = nP.mclin({
+                width: 19.1155 * mil,
+                spacing: 5.82185 * mil,
+                height: 25 * mil,
+                thickness: 0.0000125 * 0.0254,
+                length: 719.794 * mil,
+                relativePermittivity: 10,
+                resistivity: 1.72e-8,
+                lossTangent: 0.001
+            });
+            var coupler = nP.nodal(
+                [coupledLine, 1, 2, 3, 4],
+                ['out', 1, 2, 3, 4]
+            );
+            var responses = coupler.out('s21dB', 's41dB', 's11dB', 's31dB');
+            var reflection = coupler.out('s11Re', 's11Im');
+
+            nP.lineTable({
+                inputTable: [responses],
+                title: 'Coupled Microstrip Line',
+                mount: '#mclinTable',
+                metricPrefix: 'giga',
+                fontFamily: 'sans-serif',
+                fontSize: 14
+            });
+            nP.lineChart({
+                inputTable: [responses],
+                title: 'Coupled Microstrip Line',
+                mount: '#mclinChart',
+                metricPrefix: 'giga',
+                fontFamily: 'sans-serif',
+                fontSize: 14
+            });
+            nP.smithChart({
+                inputTable: [reflection],
+                title: 'Coupled Microstrip Line S11',
+                mount: '#mclinSmith',
+                fontFamily: 'sans-serif',
+                fontSize: 14
+            });
+        }());
+
+        (function () {
+            nP.global.fList = nP.global.fGen(1e9, 10e9, 101);
+
+            var tee = nP.mtee({});
+            var network = nP.nodal(
+                [tee, 1, 2, 3],
+                ['out', 1, 2, 3]
+            );
+            var responses = network.out('s11dB', 's21dB', 's31dB');
+            var reflections = network.out('s11Re', 's11Im', 's22Re', 's22Im', 's33Re', 's33Im');
+
+            nP.lineTable({
+                inputTable: [responses],
+                title: 'Microstrip Tee',
+                mount: '#mteeTable',
+                metricPrefix: 'giga',
+                backgroundColor: 'white',
+                fontFamily: 'sans-serif',
+                fontSize: 14
+            });
+            nP.lineChart({
+                inputTable: [responses],
+                title: 'Microstrip Tee',
+                mount: '#mteeChart',
+                metricPrefix: 'giga',
+                backgroundColor: 'white',
+                fontFamily: 'sans-serif',
+                fontSize: 14
+            });
+            nP.smithChart({
+                inputTable: [reflections],
+                title: 'Microstrip Tee Smith Chart',
+                mount: '#mteeSmith',
+                metricPrefix: 'giga',
+                backgroundColor: 'white',
+                fontFamily: 'sans-serif',
+                fontSize: 14
+            });
+        }());
+
+        (function () {
+            nP.global.fList = nP.global.fGen(1000e6, 12000e6, 51);
+
+            var idealTee = nP.Tee();
+            var idealLine = nP.Tlin(70, 2.997925e8 / (4 * 6e9));
+            var idealResistor = nP.R(100);
+            var idealDivider = nP.nodal(
+                [idealTee, 1, 2, 3],
+                [idealLine, 3, 5],
+                [idealLine, 2, 4],
+                [idealTee, 9, 5, 7],
+                [idealTee, 8, 6, 4],
+                [idealResistor, 8, 9],
+                ['out', 1, 7, 6]
+            );
+
+            var dividerTee = nP.mtee({
+                commonWidth: 0.023 * 0.0254,
+                branch1Width: 0.010 * 0.0254,
+                branch2Width: 0.010 * 0.0254,
+                height: 0.025 * 0.0254,
+                thickness: 0.0000125 * 0.0254,
+                relativePermittivity: 10,
+                resistivity: 0,
+                lossTangent: 0,
+                roughnessRms: 0
+            });
+            var dividerLine = nP.mlin({
+                width: 10e-3 * 0.0254,
+                height: 0.025 * 0.0254,
+                length: 190e-3 * 0.0254,
+                thickness: 0.0000125 * 0.0254,
+                relativePermittivity: 10,
+                resistivity: 0,
+                lossTangent: 0
+            });
+            var resistorTee = nP.mtee({
+                commonWidth: 0.023 * 0.0254,
+                branch1Width: 0.023 * 0.0254,
+                branch2Width: 0.010 * 0.0254,
+                height: 0.025 * 0.0254,
+                thickness: 0.0000125 * 0.0254,
+                relativePermittivity: 10,
+                resistivity: 0,
+                lossTangent: 0,
+                roughnessRms: 0
+            });
+            var filmResistor = nP.mtfr({
+                ohmsPerSquare: 50,
+                width: 23e-3 * 0.0254,
+                length: 46e-3 * 0.0254
+            });
+            var physicalDivider = nP.nodal(
+                [dividerTee, 1, 2, 3],
+                [dividerLine, 3, 5],
+                [dividerLine, 2, 4],
+                [resistorTee, 9, 5, 7],
+                [resistorTee, 8, 6, 4],
+                [filmResistor, 8, 9],
+                ['out', 1, 7, 6]
+            );
+
+            var idealOut = idealDivider.out('s11dB', 's21dB');
+            idealOut[0][1] = 'ideal Tee s11dB';
+            idealOut[0][2] = 'ideal Tee s21dB';
+            var physicalOut = physicalDivider.out('s11dB', 's21dB');
+            physicalOut[0][1] = 'mtee s11dB';
+            physicalOut[0][2] = 'mtee s21dB';
+
+            nP.lineChart({
+                inputTable: [idealOut, physicalOut],
+                title: 'Wilkinson Power Divider Comparison',
+                mount: '#powerDividerChart',
+                metricPrefix: 'mega',
+                xAxisTitle: 'Frequency, MHz',
+                yAxisTitle: 'dB',
+                backgroundColor: 'white',
+                fontFamily: 'sans-serif',
+                fontSize: 14
+            });
+        }());
+
+        (function () {
+            nP.global.fList = nP.global.fGen(100e6, 20e9, 100);
+
+            var width = 23e-3 * 0.0254;
+            var length = 34.5e-3 * 0.0254;
+            var idealResistor = nP.R(75);
+            var filmResistor = nP.mtfr({
+                ohmsPerSquare: 50,
+                width,
+                length
+            });
+            var line = nP.mlin({
+                width,
+                height: 0.025 * 0.0254,
+                length,
+                thickness: 0.0000125 * 0.0254,
+                relativePermittivity: 10,
+                resistivity: 0,
+                lossTangent: 0
+            });
+            var zeroOhmFilm = nP.mtfr({
+                ohmsPerSquare: 0,
+                width,
+                length
+            });
+
+            var idealOut = idealResistor.out('s21mag');
+            var filmOut = filmResistor.out('s21mag');
+            var lineOut = line.out('s21mag');
+            var zeroOhmOut = zeroOhmFilm.out('s21mag');
+            var lineAngleOut = line.out('s21ang');
+            var zeroOhmAngleOut = zeroOhmFilm.out('s21ang');
+            var comparison = [[
+                'Frequency',
+                'R 75 ohm s21mag',
+                'mtfr 75 ohm s21mag',
+                'mlin s21mag',
+                'mtfr 0 ohm/sq s21mag',
+                'mlin s21ang',
+                'mtfr 0 ohm/sq s21ang'
+            ]];
+            for (var i = 1; i < idealOut.length; i++) {
+                comparison[i] = [
+                    idealOut[i][0],
+                    idealOut[i][1],
+                    filmOut[i][1],
+                    lineOut[i][1],
+                    zeroOhmOut[i][1],
+                    lineAngleOut[i][1],
+                    zeroOhmAngleOut[i][1]
+                ];
+            }
+
+            nP.lineTable({
+                inputTable: [comparison],
+                title: 'R vs mtfr',
+                mount: '#mtfrTable',
+                metricPrefix: 'giga',
+                backgroundColor: 'white',
+                fontFamily: 'sans-serif',
+                fontSize: 14
+            });
+        }());
+    </script>
+</body>
+
+</html>

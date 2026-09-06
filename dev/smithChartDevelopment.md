@@ -1,7 +1,7 @@
-<!-- Modified: 2026-07-14 -->
+<!-- Modified: 2026-09-06 -->
 # Smith Chart Development
 
-This note builds the Compact Manual diplexer and plots the three port reflections on a Smith chart. It is converted from `dev/smithChartDevelopment.html`.
+This note builds the Compact Manual diplexer and plots the three port reflections on a Smith chart. Its executable harness is the `smith-chart` section of `dev/visualizationDevelopment.html`.
 
 ```npjs
 // from Compact Manual example #1 p27

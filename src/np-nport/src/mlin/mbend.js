@@ -1,9 +1,10 @@
-// Modified: 2026-07-02
+// Modified: 2026-09-06
 import {complex} from '../../../np-math/src/complex';
 import {matrix, dim} from '../../../np-math/src/matrix';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
-import {INCH_TO_METER} from './constants';
+import {COPPER_RESISTIVITY, INCH_TO_METER} from './constants';
+import {normalizePhysicalModelOptions, physicalModelMetadata, requireNonnegative, requirePositive, resistivityScale} from '../physicalModels/options';
 
 var pi = Math.PI;
 
@@ -43,16 +44,22 @@ var edwardsSteerBend = function (Width, Height, er) {
 	};
 };
 
-export function mbend({
-	Width = 0.023 * INCH_TO_METER,
-	miterLength,
-	Height = 0.025 * INCH_TO_METER,
-	Thickness = 0.0000125 * INCH_TO_METER,
-	er = 10,
-	rho = 1,
-	tand = 0.001,
-	roughnessRms = 0
-} = {}) {
+export function mbend(input = {}) {
+	var options = normalizePhysicalModelOptions('mbend', input, [
+		{name: 'width', aliases: ['Width'], defaultValue: 0.023 * INCH_TO_METER}, {name: 'miterLength', defaultValue: undefined},
+		{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
+		{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
+		{name: 'relativePermittivity', aliases: ['er'], defaultValue: 10},
+		{name: 'rho', defaultValue: 1}, {name: 'resistivity', defaultValue: undefined},
+		{name: 'lossTangent', aliases: ['tand'], defaultValue: 0.001}, {name: 'roughnessRms', defaultValue: 0}
+	]);
+	var Width = options.width, miterLength = options.miterLength, Height = options.height, Thickness = options.thickness;
+	var er = options.relativePermittivity, rho = resistivityScale('mbend', input, options.rho, COPPER_RESISTIVITY);
+	var tand = options.lossTangent, roughnessRms = options.roughnessRms;
+	requirePositive('mbend', 'width', Width); requirePositive('mbend', 'height', Height); requireNonnegative('mbend', 'thickness', Thickness);
+	if (miterLength !== undefined) requireNonnegative('mbend', 'miterLength', miterLength);
+	requirePositive('mbend', 'relativePermittivity', er); requireNonnegative('mbend', 'resistivity', rho * COPPER_RESISTIVITY);
+	requireNonnegative('mbend', 'lossTangent', tand); requireNonnegative('mbend', 'roughnessRms', roughnessRms);
 	var bend = new nPort;
 	var frequencyList = global.fList, Ro = global.Ro;
 	var recommendedMiterFraction = 0.6;
@@ -109,5 +116,9 @@ export function mbend({
 		},
 		analysis
 	};
+	bend.physicalModel = physicalModelMetadata('microstrip', 'bend-discontinuity', {
+		width: Width, miterLength: actualMiterLength, height: Height, thickness: Thickness
+	}, {relativePermittivity: er, resistivity: rho * COPPER_RESISTIVITY, lossTangent: tand, roughnessRms}, analysis,
+	{validity: bend.microstrip.validity});
 	return bend;
 };
