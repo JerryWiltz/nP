@@ -1,0 +1,14 @@
+/* Modified: 2026-09-07 */
+
+/* Give the nPort wordmark a larger hero presence on desktop. */
+@media (min-width: 960px) {
+  .VPHero .image-container {
+    width: 440px;
+    height: 440px;
+  }
+
+  .VPHero .image-src {
+    max-width: 440px;
+    max-height: 440px;
+  }
+}

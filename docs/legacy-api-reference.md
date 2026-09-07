@@ -72,17 +72,17 @@ The source entry point is `src/index.js`. The versioned browser bundle is `dist/
 
 ## API Reference
 
-* [nP-global](#nP-global)
-* [nP-nport](#nP-nport)
-* [nP-RLC](#nP-RLC)
-* [nP-Transformers](#nP-Transformers)
-* [nP-Lowpass](#nP-Lowpass)
-* [nP-Open-Short-Load](#nP-Open-Short-Load)
-* [nP-Connections](#nP-Connections)
-* [nP-Transmission-Lines](#nP-Transmission-Lines)
-* [nP-Microstrip](#nP-Microstrip)
-* [nP-math](#nP-math)
-* [nP-chart](#nP-chart)
+* [nP-global](#np-global)
+* [nP-nPort](#np-nport)
+* [nP-RLC](#np-rlc)
+* [nP-Transformers](#np-transformers)
+* [nP-Lowpass](#np-lowpass)
+* [nP-Ideal-Components](#np-ideal-components)
+* [nP-Connections](#np-connections)
+* [nP-Transmission-Lines](#np-transmission-lines)
+* [nP-Microstrip](#np-microstrip)
+* [nP-math](#np-math)
+* [nP-chart](#np-chart)
 
 ---
 ## nP-global
@@ -221,7 +221,7 @@ nP.lineChart({inputTable: [plot], yRange: [-60, 5], chartTitle: 'Wilkinson Power
 ```
 ### Here is the schematic and output plot for a Wilkinson power divider.
 
-<a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/HTMLs/readme-image/wilkinson.png></a>
+<a href="https://github.com/JerryWiltz/nP/blob/master/docs/_archive/documentation/readme-image/wilkinson.png"><img src="https://raw.githubusercontent.com/JerryWiltz/nP/master/docs/_archive/documentation/readme-image/wilkinson.png" alt="Wilkinson divider example"></a>
 
 
 ### An nPort functions example: a low-pass filter solved four ways
@@ -295,7 +295,7 @@ nP.lineChart({inputTable: [filter4.out('s11dB','s21dB')], chartID: 'chart4',char
 ```
 ### Here are the schematic and output plots for the low-pass filter.
 
-<a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/HTMLs/readme-image/lpf4ways.png></a>
+<a href="https://github.com/JerryWiltz/nP/blob/master/docs/_archive/documentation/readme-image/lpf4ways.png"><img src="https://raw.githubusercontent.com/JerryWiltz/nP/master/docs/_archive/documentation/readme-image/lpf4ways.png" alt="Low-pass filter comparison"></a>
 
 ---
 
@@ -329,7 +329,7 @@ The names may sound cryptic, but here is how to interpret them. The first two le
 // paSeRL reads, "parallel, resistor inductor in series"
 ```
 
-<a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/HTMLs/readme-image/seSeRL_paSeRL.png></a>
+<a href="https://github.com/JerryWiltz/nP/blob/master/docs/_archive/documentation/readme-image/seSeRL_paSeRL.png"><img src="https://raw.githubusercontent.com/JerryWiltz/nP/master/docs/_archive/documentation/readme-image/seSeRL_paSeRL.png" alt="Series and parallel RLC comparison"></a>
 
 nP.<b>seSeRL</b>(<i> R = 75, L = 5e-9 </i>) [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/rlc/seR.js "Source") A series, series resistor-inductor. Creates and returns a new nPort Object. If no arguments, the default values are 75 Ohms and 5e-9 Henries.
 
@@ -507,7 +507,7 @@ nP.lineTable(table);
 ```
 ### Here is the schematic and output plots for the edge coupled filter.
 
-<a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/HTMLs/readme-image/edgeCoupledFilter.png></a>
+<a href="https://github.com/JerryWiltz/nP/blob/master/docs/_archive/documentation/readme-image/edgeCoupledFilter.png"><img src="https://raw.githubusercontent.com/JerryWiltz/nP/master/docs/_archive/documentation/readme-image/edgeCoupledFilter.png" alt="Edge-coupled filter example"></a>
 
 ---
 
@@ -778,7 +778,7 @@ nP.lineChart();
 
 ### Here is the default nP.lineChart output
 
-<a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/HTMLs/readme-image/lineChartDefault.png></a>
+<a href="https://github.com/JerryWiltz/nP/blob/master/docs/_archive/documentation/readme-image/lineChartDefault.png"><img src="https://raw.githubusercontent.com/JerryWiltz/nP/master/docs/_archive/documentation/readme-image/lineChartDefault.png" alt="Default line chart"></a>
 
 ### nP.lineTable
 
@@ -837,7 +837,7 @@ Unlike lineChart, where you can set the size in advance, lineTable does not know
 
 ### Here is the default nP.lineTable output
 
-<a href="https://github.com"><img src=https://github.com/JerryWiltz/nP/blob/master/HTMLs/readme-image/lineTableDefault.png></a>
+<a href="https://github.com/JerryWiltz/nP/blob/master/docs/_archive/documentation/readme-image/lineTableDefault.png"><img src="https://raw.githubusercontent.com/JerryWiltz/nP/master/docs/_archive/documentation/readme-image/lineTableDefault.png" alt="Default line table"></a>
 
 ### nP.log
 
