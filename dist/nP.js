@@ -6405,13 +6405,51 @@
 
 		}
 
-	function nPort() {}
+	// Modified: 2026-09-08
+
+	var conjugate$2 = function (value) { return complex(value.getR(), -value.getI()); };
+
+	// Passive Bosma noise covariance: C = kBT(I - S S†).
+	function passiveNoiseCovariance(sparsRow, portCount, temperature) {
+		var scale = complex(1.380649e-23 * temperature, 0);
+		var covariance = [];
+		for (var row = 0; row < portCount; row++) {
+			covariance[row] = [];
+			for (var col = 0; col < portCount; col++) {
+				var value = row === col ? complex(1, 0) : complex(0, 0);
+				for (var port = 0; port < portCount; port++) {
+					value = value.sub(sparsRow[1 + row * portCount + port].mul(conjugate$2(sparsRow[1 + col * portCount + port])));
+				}
+				var scaled = value.mul(scale);
+				// Remove round-off residuals from mathematically lossless models.
+				covariance[row][col] = scaled.mag() < 1e-35 ? complex(0, 0) : scaled;
+			}
+		}
+		return covariance;
+	}
+
+	// Modified: 2026-09-08
+	var conjugate$1 = function (value) { return complex(value.getR(), -value.getI()); };
+
+	// Modified: 2026-09-08
+	function nPort() { this._noise = undefined; }
+	var derivePassiveNoise = function (nPortObject) {
+		if (!nPortObject.spars) return undefined;
+		var temperature = nPortObject.global && nPortObject.global.Temp !== undefined ? nPortObject.global.Temp : 293;
+		var portCount = Math.sqrt(nPortObject.spars[0].length - 1);
+		return nPortObject.spars.map(function (row) {
+			return {frequency: row[0], C: passiveNoiseCovariance(row, portCount, temperature)};
+		});
+	};
+
 	nPort.prototype = {
 		constructor: nPort,
 		setglobal: function (global) { this.global = global; },
 		getglobal: function () {return this.global;},
 		setspars: function (sparsArray) { this.spars = sparsArray; },
 		getspars: function () { return this.spars; },
+		get noise() { return this._noise === undefined ? derivePassiveNoise(this) : this._noise; },
+		set noise (noiseData) { this._noise = noiseData; },
 		cas: function cas (n2) { // cascade two 2-ports along with method chaining since it returns an nPort
 			var freqCount = 0, one = complex(1,0),
 				sparsA = this.getspars(),
@@ -6426,9 +6464,44 @@
 				s22 = s22b.add (( s21b.mul(s22a).mul(s12b) ).div( (one.sub( s22a.mul(s11b) ) ) ) );
 				s21 =           ( s21a.mul(s21b)           ).div( (one.sub( s22a.mul(s11b) ) ) )  ;
 				sparsArray[freqCount] =	[sparsA[freqCount][0],s11, s12, s21, s22];
-			}		var casOut = new nPort();
+			}		var noiseCovariance = [];
+			var noiseA = this.noise && this.noise.covariance ? this.noise.covariance : this.noise;
+			var noiseB = n2.noise && n2.noise.covariance ? n2.noise.covariance : n2.noise;
+			for (freqCount = 0; freqCount < this.spars.length; freqCount++) {
+				sparsA[freqCount][1]; var a12 = sparsA[freqCount][2]; sparsA[freqCount][3]; var a22 = sparsA[freqCount][4];
+				var b11 = sparsB[freqCount][1], b21 = sparsB[freqCount][3];
+				var denominator = one.sub(a22.mul(b11));
+				var transferA = [
+					[one, a12.mul(b11).div(denominator)],
+					[complex(0, 0), b21.div(denominator)]
+				];
+				var transferB = [
+					[a12.div(denominator), complex(0, 0)],
+					[b21.mul(a22).div(denominator), one]
+				];
+				var covarianceA = noiseA && noiseA[freqCount] ? noiseA[freqCount].C : [[complex(0, 0), complex(0, 0)], [complex(0, 0), complex(0, 0)]];
+				var covarianceB = noiseB && noiseB[freqCount] ? noiseB[freqCount].C : [[complex(0, 0), complex(0, 0)], [complex(0, 0), complex(0, 0)]];
+				var outputCovariance = [];
+				for (var outputRow = 0; outputRow < 2; outputRow++) {
+					outputCovariance[outputRow] = [];
+					for (var outputCol = 0; outputCol < 2; outputCol++) {
+						var covariance = complex(0, 0);
+						for (var sourceRow = 0; sourceRow < 2; sourceRow++) {
+							for (var sourceCol = 0; sourceCol < 2; sourceCol++) {
+								covariance = covariance
+									.add(transferA[outputRow][sourceRow].mul(covarianceA[sourceRow][sourceCol]).mul(conjugate$1(transferA[outputCol][sourceCol])))
+									.add(transferB[outputRow][sourceRow].mul(covarianceB[sourceRow][sourceCol]).mul(conjugate$1(transferB[outputCol][sourceCol])));
+							}
+						}
+						outputCovariance[outputRow][outputCol] = covariance;
+					}
+				}
+				noiseCovariance[freqCount] = {frequency: sparsA[freqCount][0], C: outputCovariance};
+			}
+			var casOut = new nPort();
 			casOut.setspars(sparsArray);
 			casOut.setglobal(this.global);
+			casOut.noise = {covariance: noiseCovariance};
 			return casOut;
 		},
 		out : function out (...sparsArguments) {
@@ -6449,6 +6522,37 @@
 			sparsArguments.unshift('Freq');
 			copy.unshift(sparsArguments);
 			return copy;
+		},
+		noiseOut : function noiseOut (...noiseArguments) {
+			if (noiseArguments.length === 0) throw new TypeError('nPort.noiseOut() requires at least one covariance selector.');
+			var noiseRows = this.noise && this.noise.covariance ? this.noise.covariance : this.noise;
+			var spars = this.getspars();
+			var portCount = Math.sqrt(spars[0].length - 1);
+			var output = [noiseArguments.slice()];
+			output[0].unshift('Freq');
+			var selectors = noiseArguments.map(function (selector) {
+				var match = /^c(\d+)(\d+)(Re|Im|mag|dB)?$/i.exec(selector);
+				if (!match) throw new TypeError('nPort.noiseOut(): invalid covariance selector "' + selector + '".');
+				var row = parseInt(match[1], 10) - 1;
+				var col = parseInt(match[2], 10) - 1;
+				if (row < 0 || col < 0 || row >= portCount || col >= portCount) throw new RangeError('nPort.noiseOut(): covariance selector "' + selector + '" is outside the n-port dimensions.');
+				return {row, col, format: (match[3] || 'Re').toLowerCase()};
+			});
+			for (var frequencyIndex = 0; frequencyIndex < spars.length; frequencyIndex++) {
+				var covariance = noiseRows && noiseRows[frequencyIndex] ? noiseRows[frequencyIndex].C : null;
+				var inner = [spars[frequencyIndex][0]];
+				selectors.forEach(function (selector) {
+					var value = covariance && covariance[selector.row] && covariance[selector.row][selector.col]
+						? covariance[selector.row][selector.col]
+						: complex(0, 0);
+					if (selector.format === 'im') inner.push(value.getI());
+					else if (selector.format === 'mag') inner.push(value.mag());
+					else if (selector.format === 'db') inner.push(10 * Math.log10(value.mag()));
+					else inner.push(value.getR());
+				});
+				output.push(inner);
+			}
+			return output;
 		},
 		outTable : function out (...sparsArguments) {
 			var spars = this.getspars();
@@ -6471,10 +6575,17 @@
 		},
 	};
 
-	function seR(R = 75) { // series resistor nPort object
+	// Modified: 2026-09-08
+	const kB$2 = 1.380649e-23;
+
+	function seR(R = 75, temperature = global.Temp) { // series resistor nPort object
+		if (typeof R === 'object') {
+			temperature = R.temperature === undefined ? global.Temp : R.temperature;
+			R = R.resistance === undefined ? 75 : R.resistance;
+		}
 		var seR = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
-		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [], noiseArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			Z[freqCount] = complex(R, 0);
 			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
@@ -6482,16 +6593,32 @@
 			s12 = s21;
 			s22 = s11;
 			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+			var noise = kB$2 * temperature * 4 * R * Ro / ((R + 2 * Ro) ** 2);
+			noiseArray[freqCount] = {
+				frequency: frequencyList[freqCount],
+				C: [
+					[complex(noise, 0), complex(-noise, 0)],
+					[complex(-noise, 0), complex(noise, 0)]
+				]
+			};
 		}	
 		seR.setspars(sparsArray);
+		seR.noise = noiseArray;
 		seR.setglobal(global);
 		return seR;
 	}
 
-	function R(R = 75) { // series resistor nPort object
+	// Modified: 2026-09-08
+	const kB$1 = 1.380649e-23;
+
+	function R(R = 75, temperature = global.Temp) { // series resistor nPort object
+		if (typeof R === 'object') {
+			temperature = R.temperature === undefined ? global.Temp : R.temperature;
+			R = R.resistance === undefined ? 75 : R.resistance;
+		}
 		var rPort = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
-		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [], noiseArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			Z[freqCount] = complex(R, 0);
 			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
@@ -6499,16 +6626,32 @@
 			s12 = s21;
 			s22 = s11;
 			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+			var noise = kB$1 * temperature * 4 * R * Ro / ((R + 2 * Ro) ** 2);
+			noiseArray[freqCount] = {
+				frequency: frequencyList[freqCount],
+				C: [
+					[complex(noise, 0), complex(-noise, 0)],
+					[complex(-noise, 0), complex(noise, 0)]
+				]
+			};
 		}	
 		rPort.setspars(sparsArray);
+		rPort.noise = noiseArray;
 		rPort.setglobal(global);
 		return rPort;
 	}
 
-	function paR(R = 75) { // parallel resistor nPort object
+	// Modified: 2026-09-08
+	const kB = 1.380649e-23;
+
+	function paR(R = 75, temperature = global.Temp) { // parallel resistor nPort object
+		if (typeof R === 'object') {
+			temperature = R.temperature === undefined ? global.Temp : R.temperature;
+			R = R.resistance === undefined ? 75 : R.resistance;
+		}
 		var paR = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
-		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [], noiseArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			Z[freqCount] = complex(R, 0);
 			Y[freqCount] = Z[freqCount].inv();
@@ -6517,8 +6660,17 @@
 			s12 = s21;
 			s22 = s11;
 			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+			var noise = kB * temperature * 4 * R * Ro / ((Ro + 2 * R) ** 2);
+			noiseArray[freqCount] = {
+				frequency: frequencyList[freqCount],
+				C: [
+					[complex(noise, 0), complex(noise, 0)],
+					[complex(noise, 0), complex(noise, 0)]
+				]
+			};
 		}
 		paR.setspars(sparsArray);
+		paR.noise = noiseArray;
 		paR.setglobal(global);	
 		return paR;
 	}
@@ -7036,6 +7188,10 @@
 		return junction;
 	}
 
+	// Modified: 2026-09-08
+	var conjugate = function (value) { return complex(value.getR(), -value.getI()); };
+
+
 	function nodal( ... nPortsAndNodes) { //nPortsAndNodes = [[nPort1, n1, n2 ...], [nPort2, n1, n2 ...], ... ['out', n1, nn2, ...] ]
 		var i = 0, j = 0, k = 0, row = 0, col = 0, offset = 0, base = 0;
 		var spars = function () { // creates spars table with frequencies only [ [freq1], [freq2], ... [freqN] ]
@@ -7048,6 +7204,7 @@
 		}();
 		var numOfFreqs = nPortsAndNodes[0][0].spars.length; //determine the number of iterations based on number of frequencies
 		var numOfnPorts = nPortsAndNodes.length;
+		var numOfComponents = numOfnPorts - 1;
 		var rowCol = function (nPortsAndNodes) { //determine the number of rows and columns
 			var size = 0;
 			for (i = 0; i < numOfnPorts; i++) { 
@@ -7057,6 +7214,8 @@
 			//return size + nPortsAndNodes[numOfnPorts-1].length - 1;
 			return size;
 		}(nPortsAndNodes);	
+		var outputPortCount = nPortsAndNodes[numOfnPorts - 1].length - 1;
+		var componentPortCount = rowCol - outputPortCount;
 		(function () { return dim(rowCol, rowCol, complex(0,0)); })();
 		const gammaArray = function () {
 			var outArray = dim(rowCol, rowCol, complex(0,0));
@@ -7079,6 +7238,7 @@
 		}();
 		var gammaMatrix = matrix(gammaArray);
 		var nodalOut = new nPort();
+		var noiseCovariance = [];
 		for ( i = 0; i < numOfFreqs; i++) { // i is number of frequencies
 			offset = 0;
 			gammaMatrix.m = dup(gammaArray);
@@ -7088,13 +7248,45 @@
 					gammaMatrix.m[offset + Math.floor(k/base)][offset + k % base] = nPortsAndNodes[j][0].spars[i][1 + k].neg();
 				}
 				offset += base;
-			}		gammaMatrix = gammaMatrix.invertCplx();
-			for ( j = 0; j < nPortsAndNodes[nPortsAndNodes.length-1].length-1; j++) { //
-				for ( k = 0; k < nPortsAndNodes[nPortsAndNodes.length-1].length-1; k++) {
-					spars[i].push(gammaMatrix.m[offset +j][offset + k]);
+			}		var solvedMatrix = gammaMatrix.invertCplx();
+			for ( j = 0; j < outputPortCount; j++) { //
+				for ( k = 0; k < outputPortCount; k++) {
+					spars[i].push(solvedMatrix.m[componentPortCount +j][componentPortCount + k]);
 				}		}
+			// Each component noise-wave entry is a source column in the same
+			// linear system.  Keep this propagation internal to nodal().
+			var componentCovariance = dim(componentPortCount, componentPortCount, complex(0, 0));
+			var covarianceOffset = 0;
+			for (var component = 0; component < numOfComponents; component++) {
+				var componentPorts = nPortsAndNodes[component].length - 1;
+				var componentNoise = nPortsAndNodes[component][0].noise;
+				if (componentNoise && componentNoise[i] && componentNoise[i].C) {
+					for (var covarianceRow = 0; covarianceRow < componentPorts; covarianceRow++) {
+						for (var covarianceCol = 0; covarianceCol < componentPorts; covarianceCol++) {
+							componentCovariance[covarianceOffset + covarianceRow][covarianceOffset + covarianceCol] = componentNoise[i].C[covarianceRow][covarianceCol];
+						}
+					}
+				}
+				covarianceOffset += componentPorts;
+			}
+			var outputNoise = [];
+			for (j = 0; j < outputPortCount; j++) {
+				outputNoise[j] = [];
+				for (k = 0; k < outputPortCount; k++) {
+					var sum = complex(0, 0);
+					for (var sourceRow = 0; sourceRow < componentPortCount; sourceRow++) {
+						for (var sourceCol = 0; sourceCol < componentPortCount; sourceCol++) {
+							var transfer = solvedMatrix.m[componentPortCount +j][sourceRow];
+							var transferConjugate = conjugate(solvedMatrix.m[componentPortCount +k][sourceCol]);
+							sum = sum.add(transfer.mul(componentCovariance[sourceRow][sourceCol]).mul(transferConjugate));
+						}
+					}
+					outputNoise[j][k] = sum;
+				}		}		noiseCovariance[i] = {frequency: spars[i][0], C: outputNoise};
+
 		}	nodalOut.setspars(spars);
 		nodalOut.setglobal(nPortsAndNodes[0][0].global); // use the first nPort for global data
+		nodalOut.noise = {covariance: noiseCovariance};
 		return nodalOut;
 	}
 
@@ -7351,7 +7543,7 @@
 		};
 	};
 
-	// Modified: 2026-09-06
+	// Modified: 2026-09-08
 
 	var pi$7 = Math.PI;
 
@@ -7426,7 +7618,7 @@
 		return {erEff, z0Frequency};
 	};
 
-	function mlin(Width = 0.023 * INCH_TO_METER, Height = 0.025 * INCH_TO_METER, Length = 0.5 * INCH_TO_METER, Thickness = 0.0000125 * INCH_TO_METER, er = 10, rho = 1, tand = 0.001, roughnessRms = 0) {
+	function mlin(Width = 0.023 * INCH_TO_METER, Height = 0.025 * INCH_TO_METER, Length = 0.5 * INCH_TO_METER, Thickness = 0.0000125 * INCH_TO_METER, er = 10, rho = 1, tand = 0.001, roughnessRms = 0, temperature = global.Temp) {
 		var inputOptions = isOptionsObject(Width) ? Width : null;
 		if (inputOptions) {
 			var options = normalizePhysicalModelOptions('mlin', inputOptions, [
@@ -7438,19 +7630,20 @@
 				{name: 'rho', defaultValue: 1},
 				{name: 'resistivity', defaultValue: undefined},
 				{name: 'lossTangent', aliases: ['tand'], defaultValue: 0.001},
-				{name: 'roughnessRms', defaultValue: 0}
+				{name: 'roughnessRms', defaultValue: 0},
+				{name: 'temperature', defaultValue: global.Temp}
 			]);
 			Width = options.width; Height = options.height; Length = options.length; Thickness = options.thickness;
 			er = options.relativePermittivity; rho = resistivityScale('mlin', inputOptions, options.rho, COPPER_RESISTIVITY);
-			tand = options.lossTangent; roughnessRms = options.roughnessRms;
+			tand = options.lossTangent; roughnessRms = options.roughnessRms; temperature = options.temperature;
 		}
 		requirePositive('mlin', 'width', Width); requirePositive('mlin', 'height', Height);
 		requireNonnegative('mlin', 'length', Length); requireNonnegative('mlin', 'thickness', Thickness);
 		requirePositive('mlin', 'relativePermittivity', er); requireNonnegative('mlin', 'resistivity', rho * COPPER_RESISTIVITY);
-		requireNonnegative('mlin', 'lossTangent', tand); requireNonnegative('mlin', 'roughnessRms', roughnessRms);
+		requireNonnegative('mlin', 'lossTangent', tand); requireNonnegative('mlin', 'roughnessRms', roughnessRms); requireNonnegative('mlin', 'temperature', temperature);
 		var mlin = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
-		var Zo = complex(Ro, 0), two = complex(2, 0), freqCount = 0, s11, s12, s21, s22, sparsArray = [];
+		var Zo = complex(Ro, 0), two = complex(2, 0), freqCount = 0, s11, s12, s21, s22, sparsArray = [], noiseArray = [];
 		var Atlin = {}, Btlin = {}, Ctlin = {}, Zmlin = {}, Ds = {}, alpha = 0, beta = 0, gamma = {};
 
 		var wOverH = Width / Height;
@@ -7507,7 +7700,9 @@
 			s21 = s12;
 			s22 = s11;
 			sparsArray[freqCount] = [frequencyList[freqCount], s11, s12, s21, s22];
+			noiseArray[freqCount] = {frequency: frequencyList[freqCount], C: passiveNoiseCovariance(sparsArray[freqCount], 2, temperature)};
 		}	mlin.setspars(sparsArray);
+		mlin.noise = noiseArray;
 		mlin.setglobal(global);
 		mlin.microstrip = {
 			Width,
@@ -7535,7 +7730,7 @@
 		return mlin;
 	}
 
-	// Modified: 2026-09-06
+	// Modified: 2026-09-08
 
 	var pi$6 = Math.PI;
 
@@ -7746,7 +7941,7 @@
 		return {conductorDb, dielectricDb, alphaNepers: (conductorDb + dielectricDb) / 8.68588};
 	};
 
-	function mclin(Width = 19.1155 * MIL_TO_METER, Space = 5.82185 * MIL_TO_METER, Height = 25 * MIL_TO_METER, Thickness = 0.0000125 * INCH_TO_METER, Length = 719.794 * MIL_TO_METER, er = 10, rho = 1, tand = 0.001, roughnessRms = 0) {
+	function mclin(Width = 19.1155 * MIL_TO_METER, Space = 5.82185 * MIL_TO_METER, Height = 25 * MIL_TO_METER, Thickness = 0.0000125 * INCH_TO_METER, Length = 719.794 * MIL_TO_METER, er = 10, rho = 1, tand = 0.001, roughnessRms = 0, temperature = global.Temp) {
 		var inputOptions = isOptionsObject(Width) ? Width : null;
 		if (inputOptions) {
 			var options = normalizePhysicalModelOptions('mclin', inputOptions, [
@@ -7758,23 +7953,23 @@
 				{name: 'relativePermittivity', aliases: ['er'], defaultValue: 10},
 				{name: 'rho', defaultValue: 1}, {name: 'resistivity', defaultValue: undefined},
 				{name: 'lossTangent', aliases: ['tand'], defaultValue: 0.001},
-				{name: 'roughnessRms', defaultValue: 0}
+				{name: 'roughnessRms', defaultValue: 0}, {name: 'temperature', defaultValue: global.Temp}
 			]);
 			Width = options.width; Space = options.spacing; Height = options.height; Thickness = options.thickness;
 			Length = options.length; er = options.relativePermittivity; rho = resistivityScale('mclin', inputOptions, options.rho, COPPER_RESISTIVITY);
-			tand = options.lossTangent; roughnessRms = options.roughnessRms;
+			tand = options.lossTangent; roughnessRms = options.roughnessRms; temperature = options.temperature;
 		}
 		requirePositive('mclin', 'width', Width); requirePositive('mclin', 'spacing', Space); requirePositive('mclin', 'height', Height);
 		requireNonnegative('mclin', 'length', Length); requireNonnegative('mclin', 'thickness', Thickness);
 		requirePositive('mclin', 'relativePermittivity', er); requireNonnegative('mclin', 'resistivity', rho * COPPER_RESISTIVITY);
-		requireNonnegative('mclin', 'lossTangent', tand); requireNonnegative('mclin', 'roughnessRms', roughnessRms);
+		requireNonnegative('mclin', 'lossTangent', tand); requireNonnegative('mclin', 'roughnessRms', roughnessRms); requireNonnegative('mclin', 'temperature', temperature);
 		var ctlin = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
 		var Zo = complex(Ro, 0), two = complex(2, 0), freqCount = 0, Zoemclin = [], Zoomclin = [];
 		var s11oe, s12oe, s21oe, s22oe;
 		var s11oo, s12oo, s21oo, s22oo;
 		var s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44;
-		var sparsArray = [];
+		var sparsArray = [], noiseArray = [];
 		var Aoe = {}, Boe = {}, Coe = {}, Dsoe = {};
 		var Aoo = {}, Boo = {}, Coo = {}, Dsoo = {};
 		var alphaOe = 0, alphaOo = 0, betaOe = 0, betaOo = 0, gammaOe = {}, gammaOo = {};
@@ -7846,9 +8041,11 @@
 			s23 = s32 = (s22oe.sub(s22oo)).mul(complex(0.5, 0));
 
 			sparsArray[freqCount] = [frequencyList[freqCount], s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44];
+			noiseArray[freqCount] = {frequency: frequencyList[freqCount], C: passiveNoiseCovariance(sparsArray[freqCount], 4, temperature)};
 		}
 
 		ctlin.setspars(sparsArray);
+		ctlin.noise = noiseArray;
 		ctlin.setglobal(global);
 		var firstDispersion = dispersion[0] || {Zoe: quasiStatic.Zoe, Zoo: quasiStatic.Zoo, ereoe: quasiStatic.ereoe, ereoo: quasiStatic.ereoo};
 		ctlin.microstrip = {
@@ -7880,7 +8077,7 @@
 		return ctlin;
 	}
 
-	// Modified: 2026-09-06
+	// Modified: 2026-09-08
 
 	var pi$5 = Math.PI;
 	var DEFAULT_WIDTH = 0.023 * INCH_TO_METER;
@@ -7946,7 +8143,8 @@
 		er = 10,
 		rho = 1,
 		tand = 0.001,
-		roughnessRms = 0
+		roughnessRms = 0,
+		temperature = global.Temp
 	) { // microstrip tee nPort object
 		var inputOptions = isOptionsObject(commonWidth) ? commonWidth : null;
 		if (inputOptions) {
@@ -7959,20 +8157,20 @@
 				{name: 'relativePermittivity', aliases: ['er'], defaultValue: 10},
 				{name: 'rho', defaultValue: 1}, {name: 'resistivity', defaultValue: undefined},
 				{name: 'lossTangent', aliases: ['tand'], defaultValue: 0.001},
-				{name: 'roughnessRms', defaultValue: 0}
+				{name: 'roughnessRms', defaultValue: 0}, {name: 'temperature', defaultValue: global.Temp}
 			]);
 			commonWidth = options.commonWidth; branch1Width = options.branch1Width; branch2Width = options.branch2Width;
 			Height = options.height; Thickness = options.thickness; er = options.relativePermittivity;
-			rho = resistivityScale('mtee', inputOptions, options.rho, COPPER_RESISTIVITY); tand = options.lossTangent; roughnessRms = options.roughnessRms;
+			rho = resistivityScale('mtee', inputOptions, options.rho, COPPER_RESISTIVITY); tand = options.lossTangent; roughnessRms = options.roughnessRms; temperature = options.temperature;
 		}
 		requirePositive('mtee', 'commonWidth', commonWidth); requirePositive('mtee', 'branch1Width', branch1Width);
 		requirePositive('mtee', 'branch2Width', branch2Width); requirePositive('mtee', 'height', Height);
 		requireNonnegative('mtee', 'thickness', Thickness); requirePositive('mtee', 'relativePermittivity', er);
 		requireNonnegative('mtee', 'resistivity', rho * COPPER_RESISTIVITY); requireNonnegative('mtee', 'lossTangent', tand);
-		requireNonnegative('mtee', 'roughnessRms', roughnessRms);
+		requireNonnegative('mtee', 'roughnessRms', roughnessRms); requireNonnegative('mtee', 'temperature', temperature);
 		var mtee = new nPort;
 		var frequencyList = global.fList, Ro = global.Ro;
-		var freqCount = 0, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [];
+		var freqCount = 0, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [], noiseArray = [];
 		var WidthA = branch1Width, WidthB = branch2Width, WidthSide = commonWidth;
 		var analysis = [];
 
@@ -8020,6 +8218,7 @@
 			s32 = Sba;
 			s33 = Sbb;
 			sparsArray[freqCount] = [frequencyList[freqCount], s11, s12, s13, s21, s22, s23, s31, s32, s33];
+			noiseArray[freqCount] = {frequency: frequencyList[freqCount], C: passiveNoiseCovariance(sparsArray[freqCount], 3, temperature)};
 			analysis[freqCount] = {
 				frequency: freq,
 				R: R,
@@ -8035,6 +8234,7 @@
 			};
 		}	
 		mtee.setspars(sparsArray);
+		mtee.noise = noiseArray;
 		mtee.setglobal(global);
 		mtee.Ct = (100 / Math.tanh(0.0072 * armSide.Z) + 0.64 * armSide.Z - 261) * WidthSide * 1e-12;
 		mtee.microstrip = {

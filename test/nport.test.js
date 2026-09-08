@@ -1,11 +1,18 @@
-// Modified: 2026-09-06
+// Modified: 2026-09-08
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { global } from '../src/np-global/index.js';
-import { seR, Open, Short, Load, Shift90, Tee, seriesTee, Tlin, Tclin, nodal, cascade, trf, mlin, mclin, mtee, mcross, mstep, mbend, mtfr, mvgnd, mvia } from '../src/np-nport/index.js';
+import { seR, R, paR, L, C, Open, Short, Load, Shift90, Tee, seriesTee, Tlin, Tclin, nodal, cascade, trf, mlin, mclin, mtee, mcross, mstep, mbend, mtfr, mvgnd, mvia } from '../src/np-nport/index.js';
 
 const closeTo = (actual, expected, tolerance = 1e-12) => {
+	assert.ok(
+		Math.abs(actual - expected) <= tolerance,
+		`${actual} not within ${tolerance} of ${expected}`
+	);
+};
+
+const closeNoise = (actual, expected, tolerance = 1e-30) => {
 	assert.ok(
 		Math.abs(actual - expected) <= tolerance,
 		`${actual} not within ${tolerance} of ${expected}`
@@ -133,6 +140,141 @@ test('series resistor at 50 ohms has expected two-port S-parameters with 50 ohm 
 	});
 });
 
+test('series R includes the analytical thermal-noise covariance', () => {
+	withGlobal({ fList: [1e9], Ro: 50, Temp: 293 }, () => {
+		const resistor = R(75);
+		const expected = (24 / 49) * 1.380649e-23 * global.Temp;
+		const covariance = resistor.noise[0].C;
+
+		closeNoise(covariance[0][0].getR(), expected);
+		closeNoise(covariance[0][1].getR(), -expected);
+		closeNoise(covariance[1][0].getR(), -expected);
+		closeNoise(covariance[1][1].getR(), expected);
+	});
+});
+
+test('all nPorts expose noiseOut covariance tables', () => {
+	withGlobal({ fList: [1e9], Ro: 50, Temp: 293 }, () => {
+		const resistor = R(75);
+		const resistorTable = resistor.noiseOut('c11', 'c12');
+		assert.deepEqual(resistorTable[0], ['Freq', 'c11', 'c12']);
+		closeNoise(resistorTable[1][1], resistor.noise[0].C[0][0].getR());
+		closeNoise(resistorTable[1][2], resistor.noise[0].C[0][1].getR());
+
+		const network = nodal([R(75), 1, 2], ['out', 1, 2]);
+		assert.equal(network.noiseOut('c11', 'c22').length, 2);
+		assert.equal(cascade(R(75), R(75)).noiseOut('c11').length, 2);
+		assert.equal(Tlin().noiseOut('c11')[1][1], 0);
+		assert.throws(() => resistor.noiseOut('c33'), /outside the n-port dimensions/);
+	});
+});
+
+test('passive covariance is Hermitian and scales with temperature', () => {
+	withGlobal({ fList: [1e9], Ro: 50, Temp: 293 }, () => {
+		const cold = mlin({temperature: 293});
+		const hot = mlin({temperature: 586});
+		const covariance = cold.noise[0].C;
+		for (let row = 0; row < covariance.length; row++) {
+			for (let col = 0; col < covariance.length; col++) {
+				closeNoise(covariance[row][col].getR(), covariance[col][row].getR(), 1e-30);
+				closeNoise(covariance[row][col].getI(), -covariance[col][row].getI(), 1e-30);
+			}
+		}
+		closeNoise(hot.noise[0].C[0][0].getR(), 2 * cold.noise[0].C[0][0].getR(), 1e-30);
+	});
+});
+
+test('legacy seR carries the same thermal-noise covariance as R', () => {
+	withGlobal({ fList: [1e9], Ro: 50, Temp: 293 }, () => {
+		const modern = R(75);
+		const legacy = seR(75);
+		for (let index = 1; index < 5; index++) {
+			closeTo(legacy.getspars()[0][index].getR(), modern.getspars()[0][index].getR());
+		}
+		for (let row = 0; row < 2; row++) {
+			for (let col = 0; col < 2; col++) {
+				closeNoise(legacy.noise[0].C[row][col].getR(), modern.noise[0].C[row][col].getR());
+			}
+		}
+	});
+});
+
+test('parallel paR includes the analytical thermal-noise covariance', () => {
+	withGlobal({ fList: [1e9], Ro: 50, Temp: 293 }, () => {
+		const resistor = paR(75);
+		const expected = 0.375 * 1.380649e-23 * global.Temp;
+		const covariance = resistor.noise[0].C;
+
+		for (const row of covariance) {
+			for (const value of row) closeNoise(value.getR(), expected);
+		}
+		const spars = resistor.getspars()[0];
+		closeTo(spars[1].getR(), -0.25);
+		closeTo(spars[2].getR(), 0.75);
+		closeTo(spars[3].getR(), 0.75);
+		closeTo(spars[4].getR(), -0.25);
+	});
+});
+
+test('Tee, series R, and Short nodal network matches paR noise analysis', () => {
+	withGlobal({ fList: [1e9], Ro: 50, Temp: 293 }, () => {
+		const network = nodal(
+			[Tee(), 3, 1, 2],
+			[R(75), 3, 4],
+			[Short(), 4],
+			['out', 1, 2]
+		);
+		const reference = paR(75);
+		const networkSpars = network.getspars()[0];
+		const referenceSpars = reference.getspars()[0];
+
+		for (let index = 1; index < 5; index++) {
+			closeTo(networkSpars[index].getR(), referenceSpars[index].getR(), 2e-7);
+		}
+		const networkC = network.noise.covariance[0].C;
+		const referenceC = reference.noise[0].C;
+		for (let row = 0; row < 2; row++) {
+			for (let col = 0; col < 2; col++) {
+				closeNoise(networkC[row][col].getR(), referenceC[row][col].getR(), 1e-26);
+			}
+		}
+	});
+});
+
+test('cascaded paR(150) pair matches direct paR(75) noise analysis', () => {
+	withGlobal({ fList: [1e9], Ro: 50, Temp: 293 }, () => {
+		const cascaded = cascade(paR(150), paR(150));
+		const reference = paR(75);
+		const cascadedSpars = cascaded.getspars()[0];
+		const referenceSpars = reference.getspars()[0];
+
+		for (let index = 1; index < 5; index++) {
+			closeTo(cascadedSpars[index].getR(), referenceSpars[index].getR());
+		}
+		const cascadedC = cascaded.noise.covariance[0].C;
+		const referenceC = reference.noise[0].C;
+		for (let row = 0; row < 2; row++) {
+			for (let col = 0; col < 2; col++) {
+				closeNoise(cascadedC[row][col].getR(), referenceC[row][col].getR());
+			}
+		}
+	});
+});
+
+test('ideal lossless nodal networks have zero noise covariance', () => {
+	withGlobal({ fList: [1e9], Ro: 50, Temp: 293 }, () => {
+		for (const component of [Tlin(), L(5e-9), C(1e-12)]) {
+			const network = nodal(
+				[component, 1, 2],
+				['out', 1, 2]
+			);
+			for (const row of network.noise.covariance[0].C) {
+				for (const value of row) assert.equal(value.getR(), 0);
+			}
+		}
+	});
+});
+
 test('method cascade and cascade helper agree for simple two-port chains', () => {
 	withGlobal({ fList: [1e9, 2e9], Ro: 50 }, () => {
 		const r1 = seR(25);
@@ -256,6 +398,81 @@ test('mclin loss parameters reduce through magnitude', () => {
 		const lossyOut = lossy.out('s21dB');
 
 		assert.ok(lossyOut[1][1] < losslessOut[1][1]);
+	});
+});
+
+test('mlin derives frequency-aligned passive noise covariance from its S-parameters', () => {
+	withGlobal({ fList: [1e9, 10e9], Ro: 50, Temp: 293 }, () => {
+		const line = mlin();
+		assert.equal(line.noise.length, 2);
+		for (let index = 0; index < line.noise.length; index++) {
+			const covariance = line.noise[index].C;
+			assert.equal(line.noise[index].frequency, global.fList[index]);
+			for (let row = 0; row < 2; row++) {
+				for (let col = 0; col < 2; col++) {
+					assert.ok(Number.isFinite(covariance[row][col].getR()));
+					assert.ok(Number.isFinite(covariance[row][col].getI()));
+				}
+			}
+			assert.ok(covariance[0][0].getR() > 0);
+		}
+	});
+});
+
+test('lossless mlin contributes only numerical-zero thermal noise', () => {
+	withGlobal({ fList: [1e9], Ro: 50, Temp: 293 }, () => {
+		const line = mlin({resistivity: 0, lossTangent: 0});
+		for (const row of line.noise[0].C) {
+			for (const value of row) assert.ok(value.mag() < 1e-32);
+		}
+	});
+});
+
+test('mclin exposes a frequency-aligned 4x4 passive noise covariance', () => {
+	withGlobal({ fList: [1e9, 10e9], Ro: 50, Temp: 293 }, () => {
+		const line = mclin();
+		assert.equal(line.noise.length, 2);
+		for (let index = 0; index < line.noise.length; index++) {
+			const covariance = line.noise[index].C;
+			assert.equal(covariance.length, 4);
+			assert.equal(covariance[0].length, 4);
+			assert.ok(covariance[0][0].getR() > 0);
+			for (const row of covariance) {
+				for (const value of row) {
+					assert.ok(Number.isFinite(value.getR()));
+					assert.ok(Number.isFinite(value.getI()));
+				}
+			}
+		}
+	});
+});
+
+test('mtee exposes a frequency-aligned 3x3 passive noise covariance', () => {
+	withGlobal({ fList: [1e9, 10e9], Ro: 50, Temp: 293 }, () => {
+		const tee = mtee();
+		assert.equal(tee.noise.length, 2);
+		for (const row of tee.noise[0].C) {
+			assert.equal(row.length, 3);
+			for (const value of row) {
+				assert.ok(Number.isFinite(value.getR()));
+				assert.ok(Number.isFinite(value.getI()));
+			}
+		}
+	});
+});
+
+test('mclin noise covariance propagates through a 4-port nodal output', () => {
+	withGlobal({ fList: [1e9], Ro: 50, Temp: 293 }, () => {
+		const network = nodal(
+			[mclin(), 1, 2, 3, 4],
+			['out', 1, 2, 3, 4]
+		);
+		const covariance = network.noise.covariance[0].C;
+		assert.equal(covariance.length, 4);
+		for (const row of covariance) {
+			assert.equal(row.length, 4);
+			for (const value of row) assert.ok(Number.isFinite(value.getR()) && Number.isFinite(value.getI()));
+		}
 	});
 });
 

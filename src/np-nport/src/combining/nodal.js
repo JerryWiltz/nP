@@ -4,6 +4,9 @@ import {dim} from '../../../np-math/src/matrix';
 import {dup} from '../../../np-math/src/matrix';
 import {complex} from '../../../np-math/src/complex';
 
+// Modified: 2026-09-08
+var conjugate = function (value) { return complex(value.getR(), -value.getI()); };
+
 
 export function nodal( ... nPortsAndNodes) { //nPortsAndNodes = [[nPort1, n1, n2 ...], [nPort2, n1, n2 ...], ... ['out', n1, nn2, ...] ]
 	var i = 0, j = 0, k = 0, m = 0, row = 0, col = 0, nPortCount = 0, offset = 0, base = 0;
@@ -17,6 +20,7 @@ export function nodal( ... nPortsAndNodes) { //nPortsAndNodes = [[nPort1, n1, n2
 	}();
 	var numOfFreqs = nPortsAndNodes[0][0].spars.length; //determine the number of iterations based on number of frequencies
 	var numOfnPorts = nPortsAndNodes.length;
+	var numOfComponents = numOfnPorts - 1;
 	var rowCol = function (nPortsAndNodes) { //determine the number of rows and columns
 		var size = 0;
 		for (i = 0; i < numOfnPorts; i++) { 
@@ -26,6 +30,8 @@ export function nodal( ... nPortsAndNodes) { //nPortsAndNodes = [[nPort1, n1, n2
 		//return size + nPortsAndNodes[numOfnPorts-1].length - 1;
 		return size;
 	}(nPortsAndNodes);	
+	var outputPortCount = nPortsAndNodes[numOfnPorts - 1].length - 1;
+	var componentPortCount = rowCol - outputPortCount;
 	var zeroArray = function () { return dim(rowCol, rowCol, complex(0,0)); }();
 	const gammaArray = function () {
 		var outArray = dim(rowCol, rowCol, complex(0,0));
@@ -55,6 +61,7 @@ export function nodal( ... nPortsAndNodes) { //nPortsAndNodes = [[nPort1, n1, n2
 	}();
 	var gammaMatrix = matrix(gammaArray);
 	var nodalOut = new nPort();
+	var noiseCovariance = [];
 	for ( i = 0; i < numOfFreqs; i++) { // i is number of frequencies
 		offset = 0;
 		gammaMatrix.m = dup(gammaArray);
@@ -65,15 +72,49 @@ export function nodal( ... nPortsAndNodes) { //nPortsAndNodes = [[nPort1, n1, n2
 			}
 			offset += base;
 		};
-		gammaMatrix = gammaMatrix.invertCplx();
-		for ( j = 0; j < nPortsAndNodes[nPortsAndNodes.length-1].length-1; j++) { //
-			for ( k = 0; k < nPortsAndNodes[nPortsAndNodes.length-1].length-1; k++) {
-				spars[i].push(gammaMatrix.m[offset +j][offset + k]);
+		var solvedMatrix = gammaMatrix.invertCplx();
+		for ( j = 0; j < outputPortCount; j++) { //
+			for ( k = 0; k < outputPortCount; k++) {
+				spars[i].push(solvedMatrix.m[componentPortCount +j][componentPortCount + k]);
 			};
 		};
+
+		// Each component noise-wave entry is a source column in the same
+		// linear system.  Keep this propagation internal to nodal().
+		var componentCovariance = dim(componentPortCount, componentPortCount, complex(0, 0));
+		var covarianceOffset = 0;
+		for (var component = 0; component < numOfComponents; component++) {
+			var componentPorts = nPortsAndNodes[component].length - 1;
+			var componentNoise = nPortsAndNodes[component][0].noise;
+			if (componentNoise && componentNoise[i] && componentNoise[i].C) {
+				for (var covarianceRow = 0; covarianceRow < componentPorts; covarianceRow++) {
+					for (var covarianceCol = 0; covarianceCol < componentPorts; covarianceCol++) {
+						componentCovariance[covarianceOffset + covarianceRow][covarianceOffset + covarianceCol] = componentNoise[i].C[covarianceRow][covarianceCol];
+					}
+				}
+			}
+			covarianceOffset += componentPorts;
+		}
+		var outputNoise = [];
+		for (j = 0; j < outputPortCount; j++) {
+			outputNoise[j] = [];
+			for (k = 0; k < outputPortCount; k++) {
+				var sum = complex(0, 0);
+				for (var sourceRow = 0; sourceRow < componentPortCount; sourceRow++) {
+					for (var sourceCol = 0; sourceCol < componentPortCount; sourceCol++) {
+						var transfer = solvedMatrix.m[componentPortCount +j][sourceRow];
+						var transferConjugate = conjugate(solvedMatrix.m[componentPortCount +k][sourceCol]);
+						sum = sum.add(transfer.mul(componentCovariance[sourceRow][sourceCol]).mul(transferConjugate));
+					}
+				}
+				outputNoise[j][k] = sum;
+			};
+		};
+		noiseCovariance[i] = {frequency: spars[i][0], C: outputNoise};
 
 	};
 	nodalOut.setspars(spars);
 	nodalOut.setglobal(nPortsAndNodes[0][0].global); // use the first nPort for global data
+	nodalOut.noise = {covariance: noiseCovariance};
 	return nodalOut;
 };

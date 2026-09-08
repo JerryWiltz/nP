@@ -1,8 +1,9 @@
-// Modified: 2026-09-06
+// Modified: 2026-09-08
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
 import {C0, COPPER_RESISTIVITY, INCH_TO_METER, MIL_TO_METER, MU0, VACUUM_IMPEDANCE} from './constants';
+import {passiveNoiseCovariance} from './noise';
 import {isOptionsObject, normalizePhysicalModelOptions, physicalModelMetadata, requireNonnegative, requirePositive, resistivityScale} from '../physicalModels/options';
 
 var pi = Math.PI;
@@ -214,7 +215,7 @@ var modeLosses = function (Width, Height, Thickness, Length, er, rho, tand, freq
 	return {conductorDb, dielectricDb, alphaNepers: (conductorDb + dielectricDb) / 8.68588};
 };
 
-export function mclin(Width = 19.1155 * MIL_TO_METER, Space = 5.82185 * MIL_TO_METER, Height = 25 * MIL_TO_METER, Thickness = 0.0000125 * INCH_TO_METER, Length = 719.794 * MIL_TO_METER, er = 10, rho = 1, tand = 0.001, roughnessRms = 0) {
+export function mclin(Width = 19.1155 * MIL_TO_METER, Space = 5.82185 * MIL_TO_METER, Height = 25 * MIL_TO_METER, Thickness = 0.0000125 * INCH_TO_METER, Length = 719.794 * MIL_TO_METER, er = 10, rho = 1, tand = 0.001, roughnessRms = 0, temperature = global.Temp) {
 	var inputOptions = isOptionsObject(Width) ? Width : null;
 	if (inputOptions) {
 		var options = normalizePhysicalModelOptions('mclin', inputOptions, [
@@ -226,23 +227,23 @@ export function mclin(Width = 19.1155 * MIL_TO_METER, Space = 5.82185 * MIL_TO_M
 			{name: 'relativePermittivity', aliases: ['er'], defaultValue: 10},
 			{name: 'rho', defaultValue: 1}, {name: 'resistivity', defaultValue: undefined},
 			{name: 'lossTangent', aliases: ['tand'], defaultValue: 0.001},
-			{name: 'roughnessRms', defaultValue: 0}
+			{name: 'roughnessRms', defaultValue: 0}, {name: 'temperature', defaultValue: global.Temp}
 		]);
 		Width = options.width; Space = options.spacing; Height = options.height; Thickness = options.thickness;
 		Length = options.length; er = options.relativePermittivity; rho = resistivityScale('mclin', inputOptions, options.rho, COPPER_RESISTIVITY);
-		tand = options.lossTangent; roughnessRms = options.roughnessRms;
+		tand = options.lossTangent; roughnessRms = options.roughnessRms; temperature = options.temperature;
 	}
 	requirePositive('mclin', 'width', Width); requirePositive('mclin', 'spacing', Space); requirePositive('mclin', 'height', Height);
 	requireNonnegative('mclin', 'length', Length); requireNonnegative('mclin', 'thickness', Thickness);
 	requirePositive('mclin', 'relativePermittivity', er); requireNonnegative('mclin', 'resistivity', rho * COPPER_RESISTIVITY);
-	requireNonnegative('mclin', 'lossTangent', tand); requireNonnegative('mclin', 'roughnessRms', roughnessRms);
+	requireNonnegative('mclin', 'lossTangent', tand); requireNonnegative('mclin', 'roughnessRms', roughnessRms); requireNonnegative('mclin', 'temperature', temperature);
 	var ctlin = new nPort;
 	var frequencyList = global.fList, Ro = global.Ro;
 	var Zo = complex(Ro, 0), two = complex(2, 0), freqCount = 0, Zoemclin = [], Zoomclin = [];
 	var s11oe, s12oe, s21oe, s22oe;
 	var s11oo, s12oo, s21oo, s22oo;
 	var s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44;
-	var sparsArray = [];
+	var sparsArray = [], noiseArray = [];
 	var Aoe = {}, Boe = {}, Coe = {}, Dsoe = {};
 	var Aoo = {}, Boo = {}, Coo = {}, Dsoo = {};
 	var alphaOe = 0, alphaOo = 0, betaOe = 0, betaOo = 0, gammaOe = {}, gammaOo = {};
@@ -314,9 +315,11 @@ export function mclin(Width = 19.1155 * MIL_TO_METER, Space = 5.82185 * MIL_TO_M
 		s23 = s32 = (s22oe.sub(s22oo)).mul(complex(0.5, 0));
 
 		sparsArray[freqCount] = [frequencyList[freqCount], s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44];
+		noiseArray[freqCount] = {frequency: frequencyList[freqCount], C: passiveNoiseCovariance(sparsArray[freqCount], 4, temperature)};
 	}
 
 	ctlin.setspars(sparsArray);
+	ctlin.noise = noiseArray;
 	ctlin.setglobal(global);
 	var firstDispersion = dispersion[0] || {Zoe: quasiStatic.Zoe, Zoo: quasiStatic.Zoo, ereoe: quasiStatic.ereoe, ereoo: quasiStatic.ereoo};
 	ctlin.microstrip = {

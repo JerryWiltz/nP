@@ -1,4 +1,4 @@
-<!-- Modified: 2026-09-06 -->
+<!-- Modified: 2026-09-08 -->
 # nP
 
 JavaScript tools for RF and microwave network analysis.
@@ -113,6 +113,14 @@ Every S-parameter entry inside an n-port is a complex value. Common `.out()` sel
 - `s21ang` — angle in degrees
 - `s21Re` — real part
 - `s21Im` — imaginary part
+
+Passive n-ports also carry frequency-aligned thermal-noise covariance data. Use `.noiseOut()` to extract selected covariance entries without handling the internal noise propagation matrices:
+
+```js
+var noiseTable = lowPass.noiseOut('c11', 'c22', 'c12Re');
+```
+
+Selectors include `c11`/`c11Re` (real part), `c12Im` (imaginary part), `c11mag` (magnitude), and `c11dB` (power spectral density in decibels). Ideal components contribute zero covariance; active models must provide an explicit noise model.
 
 ## Physical models
 
