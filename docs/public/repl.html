@@ -123,22 +123,15 @@
       { title: 'Microstrip line', code: `var g = nP.global;\ng.fList = g.fGen(1e9, 10e9, 21);\n\nvar line = nP.mlin({\n  width: 0.5842e-3,\n  height: 0.635e-3,\n  length: 12.7e-3,\n  thickness: 25.4e-6,\n  relativePermittivity: 10,\n  resistivity: 1.72e-8,\n  lossTangent: 0.001,\n  roughnessRms: 0\n});\nnP.log(line.out('s11dB', 's21dB'));` },
       { title: 'Complex arithmetic', code: `var a = nP.complex(3, 4);\nvar b = nP.complex(2, -1);\nnP.log(a.mul(b));\nnP.log(a.div(b));\nnP.log(a.mag());\nnP.log(a.ang());` },
       { title: 'Matrix arithmetic', code: `var m1 = nP.matrix([[1, 2], [3, 4]]);\nvar m2 = nP.matrix([[4, 3], [2, 1]]);\nnP.log(m1.add(m2).m);\nnP.log(m1.mul(m2).m);` },
-      { title: 'Line chart', code: `var g = nP.global;\ng.fList = g.fGen(1e9, 5e9, 41);\nvar line1 = nP.Tlin(50, 0.0127);\nvar line2 = nP.Tlin(60, 0.0254);\nvar network = nP.cascade(line1, line2);\nvar table = network.out('s21dB');\nvar mount = document.createElement('div');\ndocument.body.appendChild(mount);\nnP.lineChart({\n  inputTable: [table],\n  mount: mount,\n  title: 'Cascaded transmission',\n  metricPrefix: 'giga',\n  width: Math.max(240, Math.min(700, document.documentElement.clientWidth - 24)),\n  height: Math.round(Math.max(240, Math.min(700, document.documentElement.clientWidth - 24)) * 0.6),\n  showPoints: false\n});` }
+      { title: 'Line chart', code: `var g = nP.global;\ng.fList = g.fGen(1e9, 5e9, 41);\nvar line1 = nP.Tlin(50, 0.0127);\nvar line2 = nP.Tlin(60, 0.0254);\nvar network = nP.cascade(line1, line2);\nvar table = network.out('s21dB');\nvar mount = document.createElement('div');\ndocument.body.appendChild(mount);\nnP.lineChart({\n  inputTable: [table],\n  mount: mount,\n  title: 'Cascaded transmission',\n  metricPrefix: 'giga',\n  showPoints: false\n});` }
     ];
 
-    // Keep the starter visualizations useful on both desktop and phone-sized frames.
-    function responsiveChartWidth(maxWidth) {
-      return `Math.max(240, Math.min(${maxWidth}, document.documentElement.clientWidth - 24))`;
-    }
-
     function addLineChart(example, networkName, fields, title) {
-      const width = responsiveChartWidth(700);
-      example.code += `\n\nvar chartTable = ${networkName}.out(${fields});\nvar chartMount = document.createElement('div');\ndocument.body.appendChild(chartMount);\nnP.lineChart({\n  inputTable: [chartTable],\n  mount: chartMount,\n  title: '${title}',\n  metricPrefix: 'giga',\n  width: ${width},\n  height: Math.round(${width} * 0.6),\n  showPoints: false\n});`;
+      example.code += `\n\nvar chartTable = ${networkName}.out(${fields});\nvar chartMount = document.createElement('div');\ndocument.body.appendChild(chartMount);\nnP.lineChart({\n  inputTable: [chartTable],\n  mount: chartMount,\n  title: '${title}',\n  metricPrefix: 'giga',\n  showPoints: false\n});`;
     }
 
     function addSmithChart(example, networkName, title) {
-      const width = responsiveChartWidth(560);
-      example.code += `\n\nvar smithTable = ${networkName}.out('s11Re', 's11Im');\nvar smithMount = document.createElement('div');\ndocument.body.appendChild(smithMount);\nnP.smithChart({\n  inputTable: [smithTable],\n  mount: smithMount,\n  title: '${title}',\n  metricPrefix: 'giga',\n  width: ${width},\n  height: ${width},\n  margin: { top: 35, right: 35, bottom: 35, left: 35 },\n  showPoints: false\n});`;
+      example.code += `\n\nvar smithTable = ${networkName}.out('s11Re', 's11Im');\nvar smithMount = document.createElement('div');\ndocument.body.appendChild(smithMount);\nnP.smithChart({\n  inputTable: [smithTable],\n  mount: smithMount,\n  title: '${title}',\n  metricPrefix: 'giga',\n  margin: { top: 35, right: 35, bottom: 35, left: 35 },\n  showPoints: false\n});`;
     }
 
     addSmithChart(examples[0], 'resistor', 'Resistor reflection');

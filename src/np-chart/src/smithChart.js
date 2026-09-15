@@ -28,8 +28,8 @@ export function smithChart(options = {}) {
 		pointRadius = 3,
 		labelFontSize = 11,
 		labelColor,
-		width = 600,
-		height = 600,
+		width: requestedWidth = 600,
+		height: requestedHeight = 600,
 		margin = { top: 40, right: 40, bottom: 40, left: 40 },
 		unitCircleColor = 'black',
 		unitCircleWidth = 1.5,
@@ -44,6 +44,15 @@ export function smithChart(options = {}) {
 	const effectiveFontSize = containerFontSizePx ?? fontSize;
 	const effectiveBackgroundColor = backgroundColor ?? pngBackground;
 	const isNarrowViewport = typeof document !== 'undefined' && document.documentElement.clientWidth < 420;
+	const availableWidth = typeof document !== 'undefined'
+		? document.documentElement.clientWidth - 24
+		: 0;
+	const width = availableWidth > 0 && requestedWidth > availableWidth
+		? Math.max(240, availableWidth)
+		: requestedWidth;
+	const height = width === requestedWidth
+		? requestedHeight
+		: Math.round(requestedHeight * width / requestedWidth);
 	let txtLabels = d3.selectAll([]);
 
 	const pickScale = {

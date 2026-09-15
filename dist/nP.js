@@ -4891,8 +4891,8 @@
 	                pointRadius = 3,
 	                labelFontSize = 11,
 	                labelColor,
-	                width = 700,
-	                height = 450,
+	                width: requestedWidth = 700,
+	                height: requestedHeight = 450,
 	                margin = { top: 35, right: 80, bottom: 55, left: 75 },
 	                plotBorderColor = 'black',
 	                plotBorderWidth = 1,
@@ -4916,6 +4916,15 @@
 	            const effectiveTitle = chartTitle ?? title;
 	            const effectiveFontSize = containerFontSizePx ?? fontSize;
 	            const effectiveBackgroundColor = backgroundColor ?? pngBackground;
+	            const availableWidth = typeof document !== 'undefined'
+	                ? document.documentElement.clientWidth - 24
+	                : 0;
+	            const width = availableWidth > 0 && requestedWidth > availableWidth
+	                ? Math.max(240, availableWidth)
+	                : requestedWidth;
+	            const height = width === requestedWidth
+	                ? requestedHeight
+	                : Math.round(requestedHeight * width / requestedWidth);
 	            const layoutMargin = width < 420
 	                ? { ...margin, top: Math.min(margin.top, 30), right: Math.min(margin.right, 35), bottom: Math.min(margin.bottom, 45), left: Math.min(margin.left, 45) }
 	                : margin;
@@ -5447,8 +5456,8 @@
 			pointRadius = 3,
 			labelFontSize = 11,
 			labelColor,
-			width = 600,
-			height = 600,
+			width: requestedWidth = 600,
+			height: requestedHeight = 600,
 			margin = { top: 40, right: 40, bottom: 40, left: 40 },
 			unitCircleColor = 'black',
 			unitCircleWidth = 1.5,
@@ -5463,6 +5472,15 @@
 		const effectiveFontSize = containerFontSizePx ?? fontSize;
 		const effectiveBackgroundColor = backgroundColor ?? pngBackground;
 		const isNarrowViewport = typeof document !== 'undefined' && document.documentElement.clientWidth < 420;
+		const availableWidth = typeof document !== 'undefined'
+			? document.documentElement.clientWidth - 24
+			: 0;
+		const width = availableWidth > 0 && requestedWidth > availableWidth
+			? Math.max(240, availableWidth)
+			: requestedWidth;
+		const height = width === requestedWidth
+			? requestedHeight
+			: Math.round(requestedHeight * width / requestedWidth);
 		let txtLabels = selectAll([]);
 
 		const pickScale = {
