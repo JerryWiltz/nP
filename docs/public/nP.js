@@ -5015,7 +5015,9 @@
 	            // chart can still be wider than the physical viewport when a
 	            // browser emulates a device, so use a generous breakpoint based
 	            // on the rendered chart width rather than only CSS phone widths.
-	            const isCompact = width < 650;
+	            // The default chart is 700px wide, which is already too narrow
+	            // for the text control once it is embedded in a phone-sized page.
+	            const isCompact = width < 800;
 	            const layoutMargin = isCompact
 	                ? { ...margin, top: Math.min(margin.top, 30), right: Math.min(margin.right, 35), bottom: Math.min(margin.bottom, 45), left: Math.min(margin.left, 45) }
 	                : margin;
