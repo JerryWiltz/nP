@@ -103,7 +103,7 @@ export function lineChart(options = {}) {
                     left: Math.max(margin.left, 75)
                 }
                 : margin;
-            const tickCount = Math.max(3, Math.min(10, Math.floor((width - layoutMargin.left - layoutMargin.right) / 55)));
+            const tickCount = Math.max(5, Math.min(10, Math.floor((width - layoutMargin.left - layoutMargin.right) / 40)));
             const axisFontPx = effectiveFontSize;
             let txtLabels = d3.selectAll([]);
 
