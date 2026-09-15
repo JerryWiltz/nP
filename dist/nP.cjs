@@ -5387,7 +5387,7 @@ function lineChart(options = {}) {
                 txtLabels = groups.append('text')
                     .attr('x', d => {
                         const last = d.yValues[d.yValues.length - 1];
-                        return x(last.xValue) + 6;
+                        return Math.min(x(last.xValue) + 6, width - 6);
                     })
                     .attr('y', d => {
                         const last = d.yValues[d.yValues.length - 1];
@@ -5395,6 +5395,10 @@ function lineChart(options = {}) {
                     })
                     .attr('dy', '0.35em')
                     .attr('class', 'txtLabel')
+                    .attr('text-anchor', d => {
+                        const last = d.yValues[d.yValues.length - 1];
+                        return x(last.xValue) + 6 > width - 6 ? 'end' : 'start';
+                    })
                     .style('font-size', `${labelFontSize}px`)
                     .style('fill', labelColor || null)
                     .text(d => d.yName);
