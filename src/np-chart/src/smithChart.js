@@ -44,9 +44,10 @@ export function smithChart(options = {}) {
 	const effectiveFontSize = containerFontSizePx ?? fontSize;
 	const effectiveBackgroundColor = backgroundColor ?? pngBackground;
 	const isNarrowViewport = typeof document !== 'undefined' && document.documentElement.clientWidth < 420;
-	const availableWidth = typeof document !== 'undefined'
-		? document.documentElement.clientWidth - 24
-		: 0;
+	const mountElement = typeof mount === 'string' ? document.querySelector(mount) : mount;
+	const availableWidth = mountElement && mountElement.getBoundingClientRect
+		? mountElement.getBoundingClientRect().width - 10
+		: (typeof document !== 'undefined' ? document.documentElement.clientWidth - 24 : 0);
 	const width = availableWidth > 0 && requestedWidth > availableWidth
 		? Math.max(240, availableWidth)
 		: requestedWidth;
