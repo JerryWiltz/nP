@@ -143,6 +143,14 @@
     addLineChart(examples[5], 'divider', "'s11dB', 's21dB', 's31dB'", 'Tee power divider');
     addLineChart(examples[6], 'line', "'s11dB', 's21dB'", 'Microstrip line');
 
+    // RF examples use charts/tables as their output; retain nP.log only for
+    // the two deliberately console-oriented math examples.
+    examples.forEach((example, index) => {
+      if (index !== 7 && index !== 8) {
+        example.code = example.code.replace(/\nnP\.log\([^;]+;/g, '');
+      }
+    });
+
     const editor = CodeMirror.fromTextArea(document.getElementById('code'), {
       lineNumbers: true,
       mode: 'javascript',
