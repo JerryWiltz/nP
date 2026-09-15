@@ -4830,7 +4830,7 @@ Transform.prototype = {
 
 Transform.prototype;
 
-// Modified: 2026-06-27
+// Modified: 2026-09-15
 
 function lineChart(options = {}) {
             // ======== Options & defaults ========
@@ -4910,6 +4910,10 @@ function lineChart(options = {}) {
             const effectiveTitle = chartTitle ?? title;
             const effectiveFontSize = containerFontSizePx ?? fontSize;
             const effectiveBackgroundColor = backgroundColor ?? pngBackground;
+            const layoutMargin = width < 420
+                ? { ...margin, top: Math.min(margin.top, 30), right: Math.min(margin.right, 35), bottom: Math.min(margin.bottom, 45), left: Math.min(margin.left, 45) }
+                : margin;
+            const tickCount = Math.max(3, Math.min(10, Math.floor((width - layoutMargin.left - layoutMargin.right) / 55)));
             const axisFontPx = effectiveFontSize;
             let txtLabels = selectAll([]);
 
@@ -4943,8 +4947,8 @@ function lineChart(options = {}) {
             const yRange = rawYRange || extent(yValues);
 
             // Dimensions
-            const innerWidth = width - margin.left - margin.right;
-            const innerHeight = height - margin.top - margin.bottom;
+            const innerWidth = width - layoutMargin.left - layoutMargin.right;
+            const innerHeight = height - layoutMargin.top - layoutMargin.bottom;
 
             function makeScale(scaleType, domain, range, axisName) {
                 const effectiveScaleType = String(scaleType).toLowerCase();
@@ -4986,12 +4990,12 @@ function lineChart(options = {}) {
                     : 0;
 
             const xAxisGenerator = effectiveXAxisPosition === 'top'
-                ? axisTop(x).ticks(10)
-                : axisBottom(x).ticks(10);
+                ? axisTop(x).ticks(tickCount)
+                : axisBottom(x).ticks(tickCount);
 
             const yAxisGenerator = effectiveYAxisPosition === 'right'
-                ? axisRight(y).ticks(10)
-                : axisLeft(y).ticks(10);
+                ? axisRight(y).ticks(tickCount)
+                : axisLeft(y).ticks(tickCount);
 
 
             // color or gray plots
@@ -5123,14 +5127,14 @@ function lineChart(options = {}) {
 
             // Chart group
             const g = svg.append('g')
-                .attr('transform', `translate(${margin.left},${margin.top})`)
+                .attr('transform', `translate(${layoutMargin.left},${layoutMargin.top})`)
                 .attr('class', 'svgPlotAreaClass');
 
             const xGridGroup = g.append('g')
                 .attr('transform', `translate(0,${innerHeight})`)
                 .attr('class', 'xGrid')
                 .style('visibility', showGrid ? 'visible' : 'hidden')
-                .call(axisBottom(x).ticks(10).tickSize(-innerHeight).tickFormat(''));
+                .call(axisBottom(x).ticks(tickCount).tickSize(-innerHeight).tickFormat(''));
 
             xGridGroup.selectAll('path')
                 .attr('stroke', 'none');
@@ -5143,7 +5147,7 @@ function lineChart(options = {}) {
             const yGridGroup = g.append('g')
                 .attr('class', 'yGrid')
                 .style('visibility', showGrid ? 'visible' : 'hidden')
-                .call(axisLeft(y).ticks(10).tickSize(-innerWidth).tickFormat(''));
+                .call(axisLeft(y).ticks(tickCount).tickSize(-innerWidth).tickFormat(''));
 
             yGridGroup.selectAll('path')
                 .attr('stroke', 'none');
@@ -5186,7 +5190,7 @@ function lineChart(options = {}) {
                 .attr('class', 'yAxisLine');
 
             const txtXAxisTitle = svg.append('text')
-                .attr('x', margin.left + innerWidth / 2)
+                .attr('x', layoutMargin.left + innerWidth / 2)
                 .attr('y', height - 10)
                 .attr('text-anchor', 'middle')
                 .attr('class', 'txtXAxisTitle')
@@ -5194,7 +5198,7 @@ function lineChart(options = {}) {
                 .text(xAxisTitle);
 
             const txtYAxisTitle = svg.append('text')
-                .attr('x', -(margin.top + innerHeight / 2))
+                .attr('x', -(layoutMargin.top + innerHeight / 2))
                 .attr('y', 15)
                 .attr('text-anchor', 'middle')
                 .attr('transform', 'rotate(-90)')
