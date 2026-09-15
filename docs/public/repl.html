@@ -135,6 +135,7 @@
     }
 
     addSmithChart(examples[0], 'resistor', 'Resistor reflection');
+    examples[0].code = examples[0].code.replace('showPoints: false', 'showPoints: true');
     addLineChart(examples[1], 'lowPass', "'s11dB', 's21dB'", 'RC low-pass');
     addLineChart(examples[2], 'ladder', "'s11dB', 's21dB'", 'RLC ladder');
     addLineChart(examples[3], 'line', "'s11dB', 's21dB'", 'Ideal transmission line');
