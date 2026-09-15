@@ -5011,12 +5011,9 @@
 	            const height = width === requestedWidth
 	                ? requestedHeight
 	                : Math.round(requestedHeight * width / requestedWidth);
-	            // At phone/tablet widths the copy control must be icon-only.  The
-	            // chart can still be wider than the physical viewport when a
-	            // browser emulates a device, so use a generous breakpoint based
-	            // on the rendered chart width rather than only CSS phone widths.
-	            // The default chart is 700px wide, which is already too narrow
-	            // for the text control once it is embedded in a phone-sized page.
+	            // Keep the copy control unchanged; on narrow charts only move it
+	            // to the right edge so it can slide over the title as space gets
+	            // tight.
 	            const isCompact = width < 800;
 	            const layoutMargin = isCompact
 	                ? { ...margin, top: Math.min(margin.top, 30), right: Math.min(margin.right, 35), bottom: Math.min(margin.bottom, 45), left: Math.min(margin.left, 45) }
@@ -5181,12 +5178,12 @@
       </svg>Copy as png
     `);
 
-	            // Keep the title and copy control separate on narrow charts.
+	            // Let the unchanged control slide over the title area on narrow charts.
 	            button
 	                .style('right', isCompact ? '5px' : '100px')
-	                .style('width', isCompact ? '28px' : null)
-	                .style('overflow', isCompact ? 'hidden' : null)
-	                .style('padding', isCompact ? '4px' : '4px 8px');
+	                .style('width', null)
+	                .style('overflow', null)
+	                .style('padding', '4px 8px');
 
 	            // New button function fire
 	            button.on('click', copyPNG);
