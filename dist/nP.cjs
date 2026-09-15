@@ -5012,7 +5012,15 @@ function lineChart(options = {}) {
             // tight.
             const isCompact = width < 800;
             const layoutMargin = isCompact
-                ? { ...margin, top: Math.min(margin.top, 30), right: Math.min(margin.right, 35), bottom: Math.min(margin.bottom, 45), left: Math.min(margin.left, 45) }
+                ? {
+                    ...margin,
+                    // Reserve a title/control row above the plot and leave
+                    // room for the rotated y-axis title and end labels.
+                    top: Math.max(margin.top, 45),
+                    right: Math.max(margin.right, 60),
+                    bottom: Math.max(margin.bottom, 45),
+                    left: Math.max(margin.left, 75)
+                }
                 : margin;
             const tickCount = Math.max(3, Math.min(10, Math.floor((width - layoutMargin.left - layoutMargin.right) / 55)));
             const axisFontPx = effectiveFontSize;
