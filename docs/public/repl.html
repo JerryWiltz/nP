@@ -114,7 +114,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
   <script>
     const examples = [
-      { title: 'Resistor S-parameters', code: `var g = nP.global;\ng.fList = g.fGen(1e9, 10e9, 21);\n\nvar resistor = nP.R(50);\nnP.log(resistor.out('s11dB', 's21dB'));` },
+      { title: 'Series RC Smith chart', code: `var g = nP.global;\ng.fList = g.fGen(1e6, 10e9, 41);\n\nvar r1 = nP.R(50);\nvar c1 = nP.C(3.17e-12);\nvar seriesRC = nP.nodal(\n  [r1, 1, 2],\n  [c1, 2, 3],\n  ['out', 1, 3]\n);` },
       { title: 'RC low-pass', code: `var g = nP.global;\ng.fList = g.fGen(1e6, 1e9, 51);\n\nvar tee = nP.Tee();\nvar short = nP.Short();\nvar r1 = nP.R(50);\nvar c1 = nP.C(3.17e-12);\nvar lowPass = nP.nodal(\n  [r1, 1, 2],\n  [tee, 4, 2, 3],\n  [c1, 4, 5],\n  [short, 5],\n  ['out', 1, 3]\n);\nnP.log(lowPass.out('s11dB', 's21dB'));` },
       { title: 'RLC ladder', code: `var g = nP.global;\ng.fList = g.fGen(10e6, 2e9, 51);\n\nvar tee = nP.Tee();\nvar short = nP.Short();\nvar ladder = nP.nodal(\n  [nP.L(9.57e-9), 1, 2],\n  [tee, 4, 2, 3],\n  [nP.C(3.17e-12), 4, 5],\n  [short, 5],\n  [nP.L(9.57e-9), 3, 6],\n  ['out', 1, 6]\n);\nnP.log(ladder.out('s11dB', 's21dB'));` },
       { title: 'Ideal transmission line', code: `var g = nP.global;\ng.fList = g.fGen(1e9, 5e9, 21);\n\nvar line = nP.Tlin(50, 0.0254);\nnP.log(line.out('s11dB', 's21dB', 's21ang'));` },
@@ -134,7 +134,7 @@
       example.code += `\n\nvar smithTable = ${networkName}.out('s11Re', 's11Im');\nvar smithMount = document.createElement('div');\ndocument.body.appendChild(smithMount);\nnP.smithChart({\n  inputTable: [smithTable],\n  mount: smithMount,\n  title: '${title}',\n  metricPrefix: 'giga',\n  margin: { top: 35, right: 35, bottom: 35, left: 35 },\n  showPoints: false\n});`;
     }
 
-    addSmithChart(examples[0], 'resistor', 'Resistor reflection');
+    addSmithChart(examples[0], 'seriesRC', 'Series RC reflection');
     examples[0].code = examples[0].code.replace('showPoints: false', 'showPoints: true');
     addLineChart(examples[1], 'lowPass', "'s11dB', 's21dB'", 'RC low-pass');
     addLineChart(examples[2], 'ladder', "'s11dB', 's21dB'", 'RLC ladder');
