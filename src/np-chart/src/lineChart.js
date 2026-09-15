@@ -187,7 +187,11 @@ export function lineChart(options = {}) {
             const container = d3.select(mount)
                 .append('div')
                 .style('position', 'relative')
-                .style('display', 'inline-block')
+                .style('display', 'block')
+                .style('width', '100%')
+                .style('max-width', '100%')
+                .style('box-sizing', 'border-box')
+                .style('overflow', 'hidden')
                 .style('padding', '5px')
 	                .style('font-family', fontFamily)
 	                .style('font-size', `${effectiveFontSize}px`)
@@ -198,6 +202,12 @@ export function lineChart(options = {}) {
             const svg = container.append('svg')
 	                .attr('width', width)
 	                .attr('height', height)
+	                .attr('viewBox', `0 0 ${width} ${height}`)
+	                .attr('preserveAspectRatio', 'xMinYMin meet')
+	                .style('display', 'block')
+	                .style('width', '100%')
+	                .style('max-width', `${width}px`)
+	                .style('height', 'auto')
 	                .attr('id', svgId || null)
 	                .attr('class', 'svgContainerClass');
 
@@ -395,7 +405,8 @@ export function lineChart(options = {}) {
             // Line generator
             const line = d3.line()
                 .x(d => x(d.xValue))
-                .y(d => y(d.yValue));
+                .y(d => y(d.yValue))
+                .curve(d3.curveMonotoneX);
 
             // Draw Lines & Points
             const groups = g.selectAll('.lineGroup')
