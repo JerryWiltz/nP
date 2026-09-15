@@ -172,6 +172,22 @@
     appearance.addEventListener('click', () => setTheme(!document.documentElement.classList.contains('dark')));
 
     const exampleList = document.getElementById('examples');
+    const draftStorageKey = 'np-repl-example-drafts';
+    let exampleDrafts = {};
+    let activeExampleIndex = 0;
+    try {
+      exampleDrafts = JSON.parse(localStorage.getItem(draftStorageKey) || '{}');
+    } catch (error) {
+      exampleDrafts = {};
+    }
+    function saveActiveDraft() {
+      exampleDrafts[activeExampleIndex] = editor.getValue();
+      try {
+        localStorage.setItem(draftStorageKey, JSON.stringify(exampleDrafts));
+      } catch (error) {
+        // Storage may be disabled; the in-memory draft still survives switching.
+      }
+    }
     examples.forEach((example, index) => {
       const item = document.createElement('li');
       const button = document.createElement('button');
@@ -179,7 +195,9 @@
       button.type = 'button';
       button.textContent = example.title;
       button.addEventListener('click', () => {
-        editor.setValue(example.code);
+        saveActiveDraft();
+        activeExampleIndex = index;
+        editor.setValue(exampleDrafts[index] ?? example.code);
         editor.clearHistory();
         document.querySelectorAll('.example-button').forEach((entry) => entry.classList.remove('active'));
         button.classList.add('active');
@@ -188,7 +206,8 @@
       item.appendChild(button);
       exampleList.appendChild(item);
     });
-    editor.setValue(examples[0].code);
+    editor.setValue(exampleDrafts[0] ?? examples[0].code);
+    editor.on('change', saveActiveDraft);
 
     function run() {
       const source = editor.getValue();
