@@ -100,6 +100,7 @@
       <section>
         <div class="toolbar">
           <button id="run" type="button">Run</button>
+          <button id="reset" type="button">Reset example</button>
           <span id="status" class="status" role="status">Ready</span>
         </div>
         <textarea id="code" aria-label="JavaScript editor"></textarea>
@@ -208,6 +209,14 @@
     });
     editor.setValue(exampleDrafts[0] ?? examples[0].code);
     editor.on('change', saveActiveDraft);
+
+    document.getElementById('reset').addEventListener('click', () => {
+      delete exampleDrafts[activeExampleIndex];
+      editor.setValue(examples[activeExampleIndex].code);
+      saveActiveDraft();
+      editor.clearHistory();
+      status.textContent = 'Example reset';
+    });
 
     function run() {
       const source = editor.getValue();
