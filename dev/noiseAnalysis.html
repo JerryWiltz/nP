@@ -1,0 +1,162 @@
+<!-- Modified: 2026-09-28 -->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>Noise Analysis</title>
+    <script src="../dist/nP.js"></script>
+</head>
+
+<body>
+    <script>
+        nP.log("Matched 3 dB attenuator and a 20 dB gain 4 dB NF amp");
+
+        // Matched, reciprocal 3.00 dB attenuator with zero transmission phase.
+        var attenuationDB = 3;
+        var attenTransmission = Math.pow(10, -attenuationDB / 20);
+        var attS11 = 0;
+        var attS22 = 0;
+        var attS12 = attenTransmission;
+        var attS21 = attenTransmission;
+
+        // set up the 4 dB semi-ideal amplifier
+        var ts11 = 0.01;
+        var ts22 = 0.01;
+        var ts12 = 0.01;
+        var ts21 = 10;
+
+        // set up S
+        var S = nP.matrix([
+            [attS11, attS12, 0, 0, 0, 0],
+            [attS21, attS22, 0, 0, 0, 0],
+            [0, 0, ts11, ts12, 0, 0],
+            [0, 0, ts21, ts22, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0]
+        ]);
+        nP.log("Here is the major matrix S");
+        nP.log("Gupta page 346, eq (11.29)");
+        nP.log(S);
+
+        // set up gamma
+        var gamma = nP.matrix([
+            [0, 0, 0, 0, 1, 0],
+            [0, 0, 1, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0]
+        ]);
+        nP.log("Here is gamma, the connection matrix");
+        nP.log("Gupta page 346, eq (11.30)");
+        nP.log(gamma);
+
+        // set up W
+        var W = gamma.sub(S);
+        nP.log("Here is W, where W = gamma - S");
+        nP.log(W);
+
+        // invert W
+        var Winvert = W.invert();
+        nP.log("Here is W^-1, the inverted W matrix");
+        nP.log("Gupta page 347, eq (11.31)");
+        nP.log(Winvert);
+
+        // set up T
+        var T = gamma.mul(Winvert);
+        nP.log("Here is T = gamma * Winvert");
+        nP.log(T);
+
+        // set up c
+        var c = nP.matrix([
+            [0],
+            [0],
+            [0],
+            [0],
+            [1],
+            [0]
+        ]);
+        nP.log("Here is the c vector");
+        nP.log(c);
+
+        // set up b
+        var b = T.mul(c);
+        var b1out = b.m[0][0];
+        var b4out = b.m[3][0];
+
+        nP.log("b1 from T*c");
+        nP.log(b1out);
+
+        nP.log("b4 from T*c");
+        nP.log(b4out);
+
+        var s11 = b1out;
+        var s21 = b4out;
+
+        // Build Cc for the internal noise sources.
+        // c1,c2 belong to the attenuator; c3,c4 belong to the amplifier.
+        // c5,c6 are external source positions and remain zero here.
+        var kB = 1.380649e-23;
+        var T0 = 290;
+        var kT0 = kB * T0;
+
+        // Each attenuator output has thermal noise (1 - |S21|^2) kT0.
+        // Its two equivalent outgoing noise waves are uncorrelated.
+        var attenNoise = (1 - attenTransmission * attenTransmission) * kT0;
+
+        // Equivalent matched-source amplifier noise for the measured 4 dB NF.
+        // This sets the c4 noise power; noise-wave correlations are not added yet.
+        var Famp = Math.pow(10, 4 / 10);
+        var ampC22 = (Famp - 1) * ts21 * ts21 * kT0;
+
+        var Cc = nP.matrix([
+            [attenNoise, 0, 0, 0, 0, 0],
+            [0, attenNoise, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, ampC22, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0]
+        ]);
+        nP.log("Cc: noise-source covariance matrix");
+        nP.log(Cc);
+
+        // Propagate source covariance through b = T*c:
+        // Cb = T*Cc*T^H. All values in this example are real, so transpose()
+        // is the same as the conjugate transpose required for complex data.
+        var TH = T.transpose();
+        var Cb = T.mul(Cc).mul(TH);
+        nP.log("Cb: outgoing-wave covariance matrix");
+        nP.log(Cb);
+
+        // JavaScript uses zero-based indices: b1 is row 0 and b4 is row 3.
+        var noiseB1 = Cb.m[0][0];
+        var noiseB4 = Cb.m[3][3];
+        nP.log("Noise power at b1");
+        nP.log(noiseB1);
+        nP.log("Noise power at b4");
+        nP.log(noiseB4);
+
+        // Conventional NF with internal receiver noise only.
+        // c4 contains amplifier noise; c5 and c6 contain no external noise.
+        // The added output noise is referenced to the 290 K source noise that
+        // Friis assumes implicitly.
+        var signalGainPower = Math.pow(Math.abs(b4out), 2);
+        var sourceNoiseAtOutput = signalGainPower * kT0;
+        var Ftotal = 1 + noiseB4 / sourceNoiseAtOutput;
+        var NFdB = 10 * Math.log10(Ftotal);
+
+        nP.log("Total noise factor F");
+        nP.log(Ftotal);
+        nP.log("Total noise figure (dB)");
+        nP.log(NFdB);
+
+        nP.log("Procedure 1: Here is the b vector");
+        nP.log("Solving for b using T * c (11.31) and (11.30)");
+        nP.log(s11);
+
+    </script>
+</body>
+
+</html>
