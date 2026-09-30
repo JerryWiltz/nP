@@ -44,9 +44,9 @@ function complex(real, imaginary) {
 	return complexNumber;
 }
 
-// Modified: 2026-07-14
+// Modified: 2026-09-16
 
-function Matrix () {}
+function Matrix() { }
 
 function dim(rows, cols, initial) { // used by nodal()
 	var row = 0, col = 0, a = [], A = [];
@@ -55,24 +55,24 @@ function dim(rows, cols, initial) { // used by nodal()
 		for (col = 0; col < cols; col++) {
 			a[col] = initial;
 		}		A[row] = a;
-	}	return A;	
+	}	return A;
 }
 function dup(copied) { // used by nodal()
 	var row, col, B = dim(copied.length, copied[0].length, 0);
 	for (row = 0; row < copied.length; row++) {
 		for (col = 0; col < copied[0].length; col++) {
 			B[row][col] = copied[row][col];
-		}	}	return B;	
+		}	}	return B;
 }
 //pivotSort for maximizing the lower triangle pivot numbers
 function pivotSort(array, pivot) {
 
-	function maxKey (array, pivot) {
+	function maxKey(array, pivot) {
 		var key = 0, i = 0;
 		var current = 0, maximum = 0;
 		for (i = pivot; i < array.length; i++) {
 			current = Math.abs(array[i][pivot]);
-			if (current > maximum){
+			if (current > maximum) {
 				maximum = current;
 				key = i; // will be row
 			}
@@ -80,32 +80,32 @@ function pivotSort(array, pivot) {
 		return key;
 	}
 
-	function swapNumbers (array, key, pivot) {
+	function swapNumbers(array, key, pivot) {
 		// if Key === 0 do nothing
 		// if key does not === 0, swap it with key = 0
 
 		var temp0 = array[pivot];
 		var temp1 = array[key];
 
-		if ( key === pivot ) ;
+		if (key === pivot) ;
 		else {
 			array[pivot] = temp1;
-			array[key] = temp0;  
+			array[key] = temp0;
 		}
 
 	}
-	swapNumbers (array, maxKey(array, pivot), pivot);
+	swapNumbers(array, maxKey(array, pivot), pivot);
 
 }
 //pivotSortCplx for maximizing the lower triangle pivot numbers
 function pivotSortCplx(array, pivot) {
 
-	function maxKey (array, pivot) {
+	function maxKey(array, pivot) {
 		var key = 0, i = 0;
 		var current = 0, maximum = 0;
 		for (i = pivot; i < array.length; i++) {
 			current = array[i][pivot].mag();
-			if (current > maximum){
+			if (current > maximum) {
 				maximum = current;
 				key = i; // will be row
 			}
@@ -113,248 +113,272 @@ function pivotSortCplx(array, pivot) {
 		return key;
 	}
 
-	function swapNumbers (array, key, pivot) {
+	function swapNumbers(array, key, pivot) {
 		// if Key === 0 do nothing
 		// if key does not === 0, swap it with key = 0
 
 		var temp0 = array[pivot];
 		var temp1 = array[key];
 
-		if ( key === pivot ) ;
+		if (key === pivot) ;
 		else {
 			array[pivot] = temp1;
-			array[key] = temp0;  
+			array[key] = temp0;
 		}
 
 	}
-	swapNumbers (array, maxKey(array, pivot), pivot);
+	swapNumbers(array, maxKey(array, pivot), pivot);
 
 }
 Matrix.prototype = {
-	set : function (mat) {this.m = mat; return this;},
-	dimension : function (tableRow, tableCol, initial) {
+	set: function (mat) { this.m = mat; return this; },
+	dimension: function (tableRow, tableCol, initial) {
 		return matrix(dim(tableRow, tableCol, initial));
 	},
 
-	copyMatrix : function copyMatrix () {
-		return matrix(dup(this.m));	
+	copyMatrix: function copyMatrix() {
+		return matrix(dup(this.m));
 	},
 
-	add : function add (matrixB) {
+	transpose: function transpose() {
+		var A = this.m,
+			numRows = A.length,
+			numCols = A[0].length,
+			T = dim(numCols, numRows, 0),
+			row = 0, col = 0;
+		for (row = 0; row < numRows; row++) {
+			for (col = 0; col < numCols; col++) {
+				T[col][row] = A[row][col];
+			}		}		return matrix(T);
+	},
+
+	transposeCplx: function transposeCplx() {
+		var A = this.m,
+			numRows = A.length,
+			numCols = A[0].length,
+			T = dim(numCols, numRows, complex(0, 0)),
+			row = 0, col = 0;
+		for (row = 0; row < numRows; row++) {
+			for (col = 0; col < numCols; col++) {
+				T[col][row] = complex(A[row][col].getR(), -A[row][col].getI());
+			}		}		return matrix(T);
+	},
+
+	add: function add(matrixB) {
 		var A = this.m,
 			B = matrixB.m,
 			C = dim(A.length, A[0].length, 0),
 			numRows = A.length,
 			numCols = A[0].length,
 			row = 0, col = 0;
-		for(row = 0; row < numRows; row++) {
-			for(col = 0; col < numCols; col++) {
+		for (row = 0; row < numRows; row++) {
+			for (col = 0; col < numCols; col++) {
 				C[row][col] = A[row][col] + B[row][col];
 			}		}		return matrix(C);
 	},
 
-	addCplx : function addCplx (matrixB) {
+	addCplx: function addCplx(matrixB) {
 		var A = this.m,
 			B = matrixB.m,
-			C = dim(A.length, A[0].length, complex(0,0)),
+			C = dim(A.length, A[0].length, complex(0, 0)),
 			numRows = A.length,
 			numCols = A[0].length,
 			row = 0, col = 0;
-		for(row = 0; row < numRows; row++) {
-			for(col = 0; col < numCols; col++) {
+		for (row = 0; row < numRows; row++) {
+			for (col = 0; col < numCols; col++) {
 				C[row][col] = A[row][col].add(B[row][col]);
 			}		}		return matrix(C);
 	},
 
-	sub : function sub (matrixB) {
+	sub: function sub(matrixB) {
 		var A = this.m,
 			B = matrixB.m,
 			C = dim(A.length, A[0].length, 0),
 			numRows = A.length,
 			numCols = A[0].length,
 			row = 0, col = 0;
-		for(row = 0; row < numRows; row++) {
-			for(col = 0; col < numCols; col++) {
+		for (row = 0; row < numRows; row++) {
+			for (col = 0; col < numCols; col++) {
 				C[row][col] = A[row][col] - B[row][col];
 			}		}		return matrix(C);
 	},
 
-	subCplx : function subCplx (matrixB) {
+	subCplx: function subCplx(matrixB) {
 		var A = this.m,
 			B = matrixB.m,
-			C = dim(A.length, A[0].length, complex(0,0)),
+			C = dim(A.length, A[0].length, complex(0, 0)),
 			numRows = A.length,
 			numCols = A[0].length,
 			row = 0, col = 0;
-		for(row = 0; row < numRows; row++) {
-			for(col = 0; col < numCols; col++) {
+		for (row = 0; row < numRows; row++) {
+			for (col = 0; col < numCols; col++) {
 				C[row][col] = A[row][col].sub(B[row][col]);
 			}		}		return matrix(C);
 	},
 
-	mul : function mul (matrixB) {
+	mul: function mul(matrixB) {
 		var A = this.m,
 			B = matrixB.m,
-			C = dim(A.length, B[0].length,0);
+			C = dim(A.length, B[0].length, 0);
 			A[0].length;
 			B.length;
-			var row = 0, col = 0, n = 0;			
-		for(row = 0; row < A.length; row++) {
-			for(col = 0; col < B[0].length; col++) {
-				for(n = 0; n < B.length; n++) {
+			var row = 0, col = 0, n = 0;
+		for (row = 0; row < A.length; row++) {
+			for (col = 0; col < B[0].length; col++) {
+				for (n = 0; n < B.length; n++) {
 					C[row][col] += A[row][n] * B[n][col];
 				}			}		}		return matrix(C);
 	},
 
-	mulCplx : function mulCplx (matrixB) {
+	mulCplx: function mulCplx(matrixB) {
 		var A = this.m,
 			B = matrixB.m,
-			C = dim(A.length, B[0].length, complex(0,0));
+			C = dim(A.length, B[0].length, complex(0, 0));
 			A[0].length;
 			B.length;
-			var row = 0, col = 0, n = 0;			
-		for(row = 0; row < A.length; row++) {
-			for(col = 0; col < B[0].length; col++) {
-				for(n = 0; n < B.length; n++) {
+			var row = 0, col = 0, n = 0;
+		for (row = 0; row < A.length; row++) {
+			for (col = 0; col < B[0].length; col++) {
+				for (n = 0; n < B.length; n++) {
 					C[row][col] = C[row][col].add(A[row][n].mul(B[n][col]));
 				}			}		}		return matrix(C);
 	},
 
 
-	solveGaussFB : function solveGaussFB() {
+	solveGaussFB: function solveGaussFB() {
 		var A = dup(this.m),
 			a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
 			row = 0, col = 0, accum = 0;
 
-		for(constRow = 0; constRow < numRows; constRow++) { // FORWARD ELIMINATION - this row stays the same
+		for (constRow = 0; constRow < numRows; constRow++) { // FORWARD ELIMINATION - this row stays the same
 			pivotSort(A, constRow);
-			for(row = constRow+1; row < numRows; row++) { // this row moves down
-				a = -A[row][constRow]/A[constRow][constRow]; // this computes "a"
-				for(col = 0; col < numCols; col++) { // this sweeps across the columns
-					A[row][col] = A[row][col] + a*A[constRow][col];
+			for (row = constRow + 1; row < numRows; row++) { // this row moves down
+				a = -A[row][constRow] / A[constRow][constRow]; // this computes "a"
+				for (col = 0; col < numCols; col++) { // this sweeps across the columns
+					A[row][col] = A[row][col] + a * A[constRow][col];
 				}			}		}
-		for(row = numRows -1; row > -1; row--) { // BACK SUBSTITUTION
+		for (row = numRows - 1; row > -1; row--) { // BACK SUBSTITUTION
 			accum = 0;
-			for(col = numRows -1; col > row; col--) {
-				accum = accum + A[row][col]*A[col][numCols -1];
+			for (col = numRows - 1; col > row; col--) {
+				accum = accum + A[row][col] * A[col][numCols - 1];
 			}
-			A[row][numCols -1] = (1/A[row][row]) * (A[row][numCols -1] - accum);
+			A[row][numCols - 1] = (1 / A[row][row]) * (A[row][numCols - 1] - accum);
 		}
 
-		for(row = 0; row < numRows; row++) { // get to the right column of A				
-			for ( col = 0; col < numCols -1; col++) {
+		for (row = 0; row < numRows; row++) { // get to the right column of A
+			for (col = 0; col < numCols - 1; col++) {
 				A[row].shift();
 			}		}		return matrix(A);
 	},
 
 
-	solveGaussFBCplx : function solveGaussFBCplx() {
+	solveGaussFBCplx: function solveGaussFBCplx() {
 		var A = dup(this.m),
 			a = complex(0, 0), numRows = A.length, numCols = A[0].length, constRow = 0,
 			row = 0, col = 0, accum = complex(0, 0);
 
-		for(constRow = 0; constRow < numRows; constRow++) { // FORWARD ELIMINATION - this row stays the same
+		for (constRow = 0; constRow < numRows; constRow++) { // FORWARD ELIMINATION - this row stays the same
 			pivotSortCplx(A, constRow);
-			for(row = constRow+1; row < numRows; row++) { // this row moves down
+			for (row = constRow + 1; row < numRows; row++) { // this row moves down
 				a = A[row][constRow].div(A[constRow][constRow]).neg();
-				for(col = 0; col < numCols; col++) { // this sweeps across the columns
+				for (col = 0; col < numCols; col++) { // this sweeps across the columns
 					A[row][col] = A[row][col].add(a.mul(A[constRow][col]));
 				}			}		}
-		for(row = numRows -1; row > -1; row--) { // BACK SUBSTITUTION
-			accum = complex(0,0);
-			for(col = numRows -1; col > row; col--) { 
-				accum = accum.add(  A[row][col].mul( A[col][numCols -1]));
-			}			A[row][numCols -1] =  (complex(1, 0)).div(A[row][row]).mul( A[row][numCols -1].sub(accum));          
+		for (row = numRows - 1; row > -1; row--) { // BACK SUBSTITUTION
+			accum = complex(0, 0);
+			for (col = numRows - 1; col > row; col--) {
+				accum = accum.add(A[row][col].mul(A[col][numCols - 1]));
+			}			A[row][numCols - 1] = (complex(1, 0)).div(A[row][row]).mul(A[row][numCols - 1].sub(accum));
 		}
-		for(row = 0; row < numRows; row++) { // get to the right column of A
-			for ( col = 0; col < numCols -1; col++) {
+		for (row = 0; row < numRows; row++) { // get to the right column of A
+			for (col = 0; col < numCols - 1; col++) {
 				A[row].shift();
 			}		}		return matrix(A);
 	},
 
 
-	invert : function invert() {
+	invert: function invert() {
 		var A = dup(this.m),
 			a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
 			row = 0, col = 0;
 		//append a 0 Matrix to Matrix, A
-		for(row = 0; row < numRows; row++) {
-			for(col = numRows; col < 2*numRows; col++) {
+		for (row = 0; row < numRows; row++) {
+			for (col = numRows; col < 2 * numRows; col++) {
 				A[row][col] = 0;
 			}		}		//update numCols since Matrix, A is now wider;
 		numCols = A[0].length;
 		//add diagonal 1's to append array, A
-		for(row = 0; row < numRows; row++) {
+		for (row = 0; row < numRows; row++) {
 			A[row][row + numRows] = 1;
-		}		// Real variable forward lower Elimination routine  
-		for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
+		}		// Real variable forward lower Elimination routine
+		for (constRow = 0; constRow < numRows; constRow++) { // this row stays the same
 			pivotSort(A, constRow);
-			for(row = constRow+1; row < numRows; row++) { // this row moves down
-				a = -A[row][constRow]/A[constRow][constRow]; // this computes "a"
-				for(col = 0; col < numCols; col++) { // this sweeps across the columns
-					A[row][col] = A[row][col] + a*A[constRow][col];
-				}			}		}		// Real variable forward unity diagonal routine  
-		for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
-			a = 1/A[constRow][constRow];
-			for(row = constRow; row < numRows; row++) { // this row moves down
-				for(col = 0; col < numCols; col++) { // this sweeps across the columns
-					A[row][col] = a*A[row][col];
+			for (row = constRow + 1; row < numRows; row++) { // this row moves down
+				a = -A[row][constRow] / A[constRow][constRow]; // this computes "a"
+				for (col = 0; col < numCols; col++) { // this sweeps across the columns
+					A[row][col] = A[row][col] + a * A[constRow][col];
+				}			}		}		// Real variable forward unity diagonal routine
+		for (constRow = 0; constRow < numRows; constRow++) { // this row stays the same
+			a = 1 / A[constRow][constRow];
+			for (row = constRow; row < numRows; row++) { // this row moves down
+				for (col = 0; col < numCols; col++) { // this sweeps across the columns
+					A[row][col] = a * A[row][col];
 				}			}		}		// Real variable forward upper Elimination routine
-		for(constRow = numRows - 1; constRow > 0 ; constRow--) { // 2 , 1, 0 this row stays the same			
-			for(row = 0; row < constRow; row++) { // 0, 1  this row moves down
-				a = -A[row][constRow]/A[constRow][constRow];
-				for(col = 0; col < numCols; col++) { // this sweeps across the columns	
-					A[row][col] = A[row][col] + a*A[constRow][col];
-				}			}		}		for(row = 0; row < numRows; row++) { // get to the right column of A				
-			for ( col = 0; col < numCols/2; col++) {
+		for (constRow = numRows - 1; constRow > 0; constRow--) { // 2 , 1, 0 this row stays the same
+			for (row = 0; row < constRow; row++) { // 0, 1  this row moves down
+				a = -A[row][constRow] / A[constRow][constRow];
+				for (col = 0; col < numCols; col++) { // this sweeps across the columns
+					A[row][col] = A[row][col] + a * A[constRow][col];
+				}			}		}		for (row = 0; row < numRows; row++) { // get to the right column of A
+			for (col = 0; col < numCols / 2; col++) {
 				A[row].shift();
 			}		}		return matrix(A);
 	},
 
-	invertCplx : function invertCplx() {
+	invertCplx: function invertCplx() {
 		var A = dup(this.m),
 			a = complex(0, 0), numRows = A.length, numCols = A[0].length, constRow = 0,
 			row = 0, col = 0;
 		//append a 0 Matrix to Matrix, A
-		for(row = 0; row < numRows; row++) {
-			for(col = numRows; col < 2*numRows; col++) {
+		for (row = 0; row < numRows; row++) {
+			for (col = numRows; col < 2 * numRows; col++) {
 				A[row][col] = complex(0, 0);
 			}		}
 		//update numCols since Matrix, A is now wider;
 		numCols = A[0].length;
 
 		// add diagonal 1s to appended array, A
-		for(row = 0; row < numRows; row++) {
+		for (row = 0; row < numRows; row++) {
 			A[row][row + numRows] = complex(1, 0);
 		}
 
-		// Real variable forward lower Elimination routine  
-		for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
+		// Real variable forward lower Elimination routine
+		for (constRow = 0; constRow < numRows; constRow++) { // this row stays the same
 			pivotSortCplx(A, constRow);
-			for(row = constRow + 1; row < numRows; row++) { // this row moves down
+			for (row = constRow + 1; row < numRows; row++) { // this row moves down
 				a = A[row][constRow].div(A[constRow][constRow]).neg();
-				for(col = 0; col < numCols; col++) { // this sweeps across the columns
+				for (col = 0; col < numCols; col++) { // this sweeps across the columns
 					A[row][col] = A[row][col].add(a.mul(A[constRow][col]));
 				}			}		}
 		// Real variable forward unity diagonal routine
-		for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
-			a = A[constRow][constRow].inv(); 
-			for(row = constRow; row < numRows; row++) { // this row moves down
-				for(col = 0; col < numCols; col++) { // this sweeps across the columns
+		for (constRow = 0; constRow < numRows; constRow++) { // this row stays the same
+			a = A[constRow][constRow].inv();
+			for (row = constRow; row < numRows; row++) { // this row moves down
+				for (col = 0; col < numCols; col++) { // this sweeps across the columns
 					A[row][col] = a.mul(A[row][col]);
 				}			}		}
 		// Real variable forward upper Elimination routine
-		for(constRow = numRows - 1; constRow > 0 ; constRow--) { // 2 , 1, 0 this row stays the same
-			for(row = 0; row < constRow; row++) { // 0, 1  this row moves down
+		for (constRow = numRows - 1; constRow > 0; constRow--) { // 2 , 1, 0 this row stays the same
+			for (row = 0; row < constRow; row++) { // 0, 1  this row moves down
 				a = A[row][constRow].div(A[constRow][constRow]).neg();
-				for(col = 0; col < numCols; col++) { // this sweeps across the columns
-					A[row][col] = A[row][col].add(a.mul(A[constRow][col]));						
+				for (col = 0; col < numCols; col++) { // this sweeps across the columns
+					A[row][col] = A[row][col].add(a.mul(A[constRow][col]));
 				}			}		}
-		for(row = 0; row < numRows; row++) { // get to the right column of A				
-			for ( col = 0; col < numCols/2; col++) {
+		for (row = 0; row < numRows; row++) { // get to the right column of A
+			for (col = 0; col < numCols / 2; col++) {
 				A[row].shift();
 			}		}		return matrix(A);
-	},						
+	},
 };
 
 function matrix(mat) {
@@ -6744,7 +6768,7 @@ nPort.prototype = {
 };
 
 // Modified: 2026-09-08
-const kB$2 = 1.380649e-23;
+const kB$4 = 1.380649e-23;
 
 function seR(R = 75, temperature = global.Temp) { // series resistor nPort object
 	if (typeof R === 'object') {
@@ -6761,7 +6785,7 @@ function seR(R = 75, temperature = global.Temp) { // series resistor nPort objec
 		s12 = s21;
 		s22 = s11;
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
-		var noise = kB$2 * temperature * 4 * R * Ro / ((R + 2 * Ro) ** 2);
+		var noise = kB$4 * temperature * 4 * R * Ro / ((R + 2 * Ro) ** 2);
 		noiseArray[freqCount] = {
 			frequency: frequencyList[freqCount],
 			C: [
@@ -6777,7 +6801,7 @@ function seR(R = 75, temperature = global.Temp) { // series resistor nPort objec
 }
 
 // Modified: 2026-09-08
-const kB$1 = 1.380649e-23;
+const kB$3 = 1.380649e-23;
 
 function R(R = 75, temperature = global.Temp) { // series resistor nPort object
 	if (typeof R === 'object') {
@@ -6794,7 +6818,7 @@ function R(R = 75, temperature = global.Temp) { // series resistor nPort object
 		s12 = s21;
 		s22 = s11;
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
-		var noise = kB$1 * temperature * 4 * R * Ro / ((R + 2 * Ro) ** 2);
+		var noise = kB$3 * temperature * 4 * R * Ro / ((R + 2 * Ro) ** 2);
 		noiseArray[freqCount] = {
 			frequency: frequencyList[freqCount],
 			C: [
@@ -6810,7 +6834,7 @@ function R(R = 75, temperature = global.Temp) { // series resistor nPort object
 }
 
 // Modified: 2026-09-08
-const kB = 1.380649e-23;
+const kB$2 = 1.380649e-23;
 
 function paR(R = 75, temperature = global.Temp) { // parallel resistor nPort object
 	if (typeof R === 'object') {
@@ -6828,7 +6852,7 @@ function paR(R = 75, temperature = global.Temp) { // parallel resistor nPort obj
 		s12 = s21;
 		s22 = s11;
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
-		var noise = kB * temperature * 4 * R * Ro / ((Ro + 2 * R) ** 2);
+		var noise = kB$2 * temperature * 4 * R * Ro / ((Ro + 2 * R) ** 2);
 		noiseArray[freqCount] = {
 			frequency: frequencyList[freqCount],
 			C: [
@@ -7277,6 +7301,98 @@ function lpfGen( filt =[50, 1.641818746502858e-11, 4.565360855435164e-8, 1.64181
 	}	return filtTable[ filtTable.length-1 ];
 }
 
+// Modified: 2026-09-30
+
+const kB$1 = 1.380649e-23;
+
+// Matched, reciprocal attenuator. Noise is the covariance of its own outgoing waves.
+function Attn(attenuationDb = 3, temperature = global.Temp) {
+	if (attenuationDb !== null && typeof attenuationDb === 'object') {
+		var options = attenuationDb;
+		attenuationDb = options.attenuationDb === undefined ? 3 : options.attenuationDb;
+		temperature = options.temperature === undefined ? global.Temp : options.temperature;
+	}
+	if (!Number.isFinite(attenuationDb) || attenuationDb < 0) {
+		throw new RangeError('Attn attenuationDb must be a finite, nonnegative number of dB.');
+	}
+	if (!Number.isFinite(temperature) || temperature < 0) {
+		throw new RangeError('Attn temperature must be a finite, nonnegative number of kelvin.');
+	}
+
+	var transmission = 10 ** (-attenuationDb / 20);
+	var addedNoise = kB$1 * temperature * (1 - transmission * transmission);
+	var attenuator = new nPort();
+	var sparsArray = [];
+	var noiseArray = [];
+	for (var i = 0; i < global.fList.length; i++) {
+		var frequency = global.fList[i];
+		sparsArray[i] = [frequency, complex(0, 0), complex(transmission, 0), complex(transmission, 0), complex(0, 0)];
+		noiseArray[i] = {
+			frequency: frequency,
+			C: [
+				[complex(addedNoise, 0), complex(0, 0)],
+				[complex(0, 0), complex(addedNoise, 0)]
+			]
+		};
+	}
+	attenuator.setspars(sparsArray);
+	attenuator.noise = noiseArray;
+	attenuator.setglobal(global);
+	attenuator.temperature = temperature;
+	return attenuator;
+}
+
+// Modified: 2026-09-30
+
+const kB = 1.380649e-23;
+
+// Matched, unilateral amplifier with noise referred to its output port.
+// Its noise figure describes a matched source at referenceTemperature.
+function Amp(gainDb = 20, noiseFigureDb = 4, referenceTemperature = 290) {
+	if (gainDb !== null && typeof gainDb === 'object') {
+		var options = gainDb;
+		gainDb = options.gainDb === undefined ? 20 : options.gainDb;
+		noiseFigureDb = options.noiseFigureDb === undefined ? 4 : options.noiseFigureDb;
+		referenceTemperature = options.referenceTemperature === undefined ? 290 : options.referenceTemperature;
+	}
+	if (!Number.isFinite(gainDb)) {
+		throw new RangeError('Amp gainDb must be a finite number of dB.');
+	}
+	if (!Number.isFinite(noiseFigureDb) || noiseFigureDb < 0) {
+		throw new RangeError('Amp noiseFigureDb must be a finite, nonnegative number of dB.');
+	}
+	if (!Number.isFinite(referenceTemperature) || referenceTemperature <= 0) {
+		throw new RangeError('Amp referenceTemperature must be a finite, positive number of kelvin.');
+	}
+
+	var transmission = 10 ** (gainDb / 20);
+	var powerGain = transmission * transmission;
+	var noiseFactor = 10 ** (noiseFigureDb / 10);
+	var addedNoise = (noiseFactor - 1) * powerGain * kB * referenceTemperature;
+	if (!Number.isFinite(addedNoise)) {
+		throw new RangeError('Amp gain and noise figure produce nonfinite noise power.');
+	}
+	var amplifier = new nPort();
+	var sparsArray = [];
+	var noiseArray = [];
+	for (var i = 0; i < global.fList.length; i++) {
+		var frequency = global.fList[i];
+		sparsArray[i] = [frequency, complex(0, 0), complex(0, 0), complex(transmission, 0), complex(0, 0)];
+		noiseArray[i] = {
+			frequency: frequency,
+			C: [
+				[complex(0, 0), complex(0, 0)],
+				[complex(0, 0), complex(addedNoise, 0)]
+			]
+		};
+	}
+	amplifier.setspars(sparsArray);
+	amplifier.noise = noiseArray;
+	amplifier.setglobal(global);
+	amplifier.referenceTemperature = referenceTemperature;
+	return amplifier;
+}
+
 function Tee() { // a 3port dummy connection
 	var Tee = new nPort;
 	var frequencyList = global.fList, Ro = global.Ro;
@@ -7356,106 +7472,100 @@ function seriesTee() {
 	return junction;
 }
 
-// Modified: 2026-09-08
+// Modified: 2026-09-17
 var conjugate = function (value) { return complex(value.getR(), -value.getI()); };
 
 
-function nodal( ... nPortsAndNodes) { //nPortsAndNodes = [[nPort1, n1, n2 ...], [nPort2, n1, n2 ...], ... ['out', n1, nn2, ...] ]
+function nodal( ... componentConnections) { // componentConnections = [[nPort1, n1, n2 ...], ... ['out', n1, n2, ...] ]
 	var i = 0, j = 0, k = 0, row = 0, col = 0, offset = 0, base = 0;
-	var spars = function () { // creates spars table with frequencies only [ [freq1], [freq2], ... [freqN] ]
-		var sparsLength = nPortsAndNodes[0][0].global.fList.length; // use the first nPort for global data
+	var networkSpars = function () { // creates the output S-parameter table with frequencies only
+		var sparsLength = componentConnections[0][0].global.fList.length; // use the first nPort for global data
 		var sparsArray = dim(sparsLength,1,1);
 		for (i = 0; i< sparsLength; i++) {
-			sparsArray[i][0] = nPortsAndNodes[0][0].global.fList[i];
+			sparsArray[i][0] = componentConnections[0][0].global.fList[i];
 		}
 		return sparsArray;
 	}();
-	var numOfFreqs = nPortsAndNodes[0][0].spars.length; //determine the number of iterations based on number of frequencies
-	var numOfnPorts = nPortsAndNodes.length;
-	var numOfComponents = numOfnPorts - 1;
-	var rowCol = function (nPortsAndNodes) { //determine the number of rows and columns
+	var numOfFreqs = componentConnections[0][0].spars.length; // determine the number of frequency points
+	var networkEntryCount = componentConnections.length;
+	var m = networkEntryCount - 1; // Gupta's m: number of multiport components
+	var totalPortCount = function (connections) { // total component and external ports
 		var size = 0;
-		for (i = 0; i < numOfnPorts; i++) { 
-			//size += Math.sqrt(nPortsAndNodes[i][0].spars[0].length -1);
-			size += nPortsAndNodes[i].length -1;
+		for (i = 0; i < networkEntryCount; i++) {
+			size += connections[i].length - 1;
 		}
-		//return size + nPortsAndNodes[numOfnPorts-1].length - 1;
 		return size;
-	}(nPortsAndNodes);	
-	var outputPortCount = nPortsAndNodes[numOfnPorts - 1].length - 1;
-	var componentPortCount = rowCol - outputPortCount;
-	(function () { return dim(rowCol, rowCol, complex(0,0)); })();
-	const gammaArray = function () {
-		var outArray = dim(rowCol, rowCol, complex(0,0));
-		var outArrayReal = dim(rowCol, rowCol, 0); // for testing hookup
-		var expanded = dim(rowCol, 3, 0);
-		for (row = 0; row < rowCol; row++) {//put the b's here in the first column 
+	}(componentConnections);
+	var externalPortCount = componentConnections[networkEntryCount - 1].length - 1;
+	var interconnectedPortCount = totalPortCount - externalPortCount;
+	const GammaArray = function () {
+		var connectionArray = dim(totalPortCount, totalPortCount, complex(0,0));
+		var expanded = dim(totalPortCount, 3, 0);
+		for (row = 0; row < totalPortCount; row++) {// put the b indices in the first column
 			expanded[row][0] = row + 1;
-		}		for(i = 0, offset = 0; i < numOfnPorts; i++) {//put the nodes here in the second column
-			for( col = 0; col < nPortsAndNodes[i].length -1; col++) {
-				expanded[offset][1] = nPortsAndNodes[i][col + 1];
+		}		for(i = 0, offset = 0; i < networkEntryCount; i++) {// put node labels in the second column
+			for( col = 0; col < componentConnections[i].length -1; col++) {
+				expanded[offset][1] = componentConnections[i][col + 1];
 				offset++;
-			}		}		for (i = 0; i < rowCol; i++) {
-			for (row = 0; row < rowCol; row++) { // put the a's in the 3rd column
+			}		}		for (i = 0; i < totalPortCount; i++) {
+			for (row = 0; row < totalPortCount; row++) { // put the connected a index in the third column
 				if ( !(i === row) && (expanded[i][1] === expanded[row][1])   ) { //pivot row is not counted
 					expanded[row][2] = expanded[i][0];
-				}			}		}		for (row = 0; row < rowCol; row++) { // put 1's for the interconnects
-			outArray[row][expanded[row][2]-1] = complex(1,0);
-			outArrayReal[row][expanded[row][2]-1] = 1;
-		}		return outArray;
+				}			}		}		for (row = 0; row < totalPortCount; row++) { // put 1s for the interconnections
+			connectionArray[row][expanded[row][2]-1] = complex(1,0);
+		}		return connectionArray;
 	}();
-	var gammaMatrix = matrix(gammaArray);
-	var nodalOut = new nPort();
-	var noiseCovariance = [];
+	var network = new nPort();
+	var networkNoiseCovariance = [];
 	for ( i = 0; i < numOfFreqs; i++) { // i is number of frequencies
 		offset = 0;
-		gammaMatrix.m = dup(gammaArray);
-		for ( j = 0; j < nPortsAndNodes.length - 1; j++) { // j is the number of the current nPort except the last one
-			for ( k = 0; k < (nPortsAndNodes[j].length - 1)**2; k++){ // k is the the port number squared
-				base = nPortsAndNodes[j].length - 1;
-				gammaMatrix.m[offset + Math.floor(k/base)][offset + k % base] = nPortsAndNodes[j][0].spars[i][1 + k].neg();
+		var WMatrix = matrix(dup(GammaArray));
+		for ( j = 0; j < m; j++) { // insert each component's negative S-matrix into W
+			for ( k = 0; k < (componentConnections[j].length - 1)**2; k++){
+				base = componentConnections[j].length - 1;
+				WMatrix.m[offset + Math.floor(k/base)][offset + k % base] = componentConnections[j][0].spars[i][1 + k].neg();
 			}
 			offset += base;
-		}		var solvedMatrix = gammaMatrix.invertCplx();
-		for ( j = 0; j < outputPortCount; j++) { //
-			for ( k = 0; k < outputPortCount; k++) {
-				spars[i].push(solvedMatrix.m[componentPortCount +j][componentPortCount + k]);
+		}		var Winverse = WMatrix.invertCplx();
+		for ( j = 0; j < externalPortCount; j++) {
+			for ( k = 0; k < externalPortCount; k++) {
+				networkSpars[i].push(Winverse.m[interconnectedPortCount +j][interconnectedPortCount + k]);
 			}		}
 		// Each component noise-wave entry is a source column in the same
 		// linear system.  Keep this propagation internal to nodal().
-		var componentCovariance = dim(componentPortCount, componentPortCount, complex(0, 0));
+		var Cnoise = dim(interconnectedPortCount, interconnectedPortCount, complex(0, 0));
 		var covarianceOffset = 0;
-		for (var component = 0; component < numOfComponents; component++) {
-			var componentPorts = nPortsAndNodes[component].length - 1;
-			var componentNoise = nPortsAndNodes[component][0].noise;
+		for (var component = 0; component < m; component++) {
+			var componentPortCount = componentConnections[component].length - 1;
+			var componentNoise = componentConnections[component][0].noise;
 			if (componentNoise && componentNoise[i] && componentNoise[i].C) {
-				for (var covarianceRow = 0; covarianceRow < componentPorts; covarianceRow++) {
-					for (var covarianceCol = 0; covarianceCol < componentPorts; covarianceCol++) {
-						componentCovariance[covarianceOffset + covarianceRow][covarianceOffset + covarianceCol] = componentNoise[i].C[covarianceRow][covarianceCol];
+				for (var covarianceRow = 0; covarianceRow < componentPortCount; covarianceRow++) {
+					for (var covarianceCol = 0; covarianceCol < componentPortCount; covarianceCol++) {
+						Cnoise[covarianceOffset + covarianceRow][covarianceOffset + covarianceCol] = componentNoise[i].C[covarianceRow][covarianceCol];
 					}
 				}
 			}
-			covarianceOffset += componentPorts;
+			covarianceOffset += componentPortCount;
 		}
-		var outputNoise = [];
-		for (j = 0; j < outputPortCount; j++) {
-			outputNoise[j] = [];
-			for (k = 0; k < outputPortCount; k++) {
+		var Cout = [];
+		for (j = 0; j < externalPortCount; j++) {
+			Cout[j] = [];
+			for (k = 0; k < externalPortCount; k++) {
 				var sum = complex(0, 0);
-				for (var sourceRow = 0; sourceRow < componentPortCount; sourceRow++) {
-					for (var sourceCol = 0; sourceCol < componentPortCount; sourceCol++) {
-						var transfer = solvedMatrix.m[componentPortCount +j][sourceRow];
-						var transferConjugate = conjugate(solvedMatrix.m[componentPortCount +k][sourceCol]);
-						sum = sum.add(transfer.mul(componentCovariance[sourceRow][sourceCol]).mul(transferConjugate));
+				for (var sourceRow = 0; sourceRow < interconnectedPortCount; sourceRow++) {
+					for (var sourceCol = 0; sourceCol < interconnectedPortCount; sourceCol++) {
+						var transfer = Winverse.m[interconnectedPortCount +j][sourceRow];
+						var transferConjugate = conjugate(Winverse.m[interconnectedPortCount +k][sourceCol]);
+						sum = sum.add(transfer.mul(Cnoise[sourceRow][sourceCol]).mul(transferConjugate));
 					}
 				}
-				outputNoise[j][k] = sum;
-			}		}		noiseCovariance[i] = {frequency: spars[i][0], C: outputNoise};
+				Cout[j][k] = sum;
+			}		}		networkNoiseCovariance[i] = {frequency: networkSpars[i][0], C: Cout};
 
-	}	nodalOut.setspars(spars);
-	nodalOut.setglobal(nPortsAndNodes[0][0].global); // use the first nPort for global data
-	nodalOut.noise = {covariance: noiseCovariance};
-	return nodalOut;
+	}	network.setspars(networkSpars);
+	network.setglobal(componentConnections[0][0].global); // use the first component for global data
+	network.noise = {covariance: networkNoiseCovariance};
+	return network;
 }
 
 function cascade( ... nPorts) {
@@ -9548,6 +9658,8 @@ function bodyWidth () {
 	return width;
 }
 
+exports.Amp = Amp;
+exports.Attn = Attn;
 exports.C = C;
 exports.L = L;
 exports.Load = Load;

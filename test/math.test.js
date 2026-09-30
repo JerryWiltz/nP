@@ -85,6 +85,25 @@ test('real matrix add, subtract, and multiply', () => {
 	assert.deepEqual(a.add(b).m, [[6, 8], [10, 12]]);
 	assert.deepEqual(a.sub(b).m, [[-4, -4], [-4, -4]]);
 	assert.deepEqual(a.mul(b).m, [[19, 22], [43, 50]]);
+	assert.deepEqual(a.transpose().m, [[1, 3], [2, 4]]);
+});
+
+test('complex matrix transpose and conjugate transpose', () => {
+	const a = matrix([
+		[complex(1, 2), complex(3, 4), complex(5, 6)],
+		[complex(7, 8), complex(9, 10), complex(11, 12)]
+	]);
+
+	assert.deepEqual(a.transpose().m.map(row => row.map(value => [value.getR(), value.getI()])), [
+		[[1, 2], [7, 8]],
+		[[3, 4], [9, 10]],
+		[[5, 6], [11, 12]]
+	]);
+	assert.deepEqual(a.transposeCplx().m.map(row => row.map(value => [value.getR(), value.getI()])), [
+		[[1, -2], [7, -8]],
+		[[3, -4], [9, -10]],
+		[[5, -6], [11, -12]]
+	]);
 });
 
 test('real matrix inverse and Gaussian solve', () => {

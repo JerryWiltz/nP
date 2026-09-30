@@ -1,3 +1,4 @@
+// Modified: 2026-09-30
 export {seR} from './rlc/seR';
 export {R} from './rlc/R';
 export {paR} from './rlc/paR';
@@ -29,6 +30,8 @@ export {paPaRLC} from './rlc/paPaRLC';
 export {sePaRLC} from './rlc/sePaRLC';
 export {lpfGen} from './rlc/lpfGen';
 
+export {Attn} from './idealComponents/Attn';
+export {Amp} from './idealComponents/Amp';
 export {Tee} from './idealComponents/Tee';
 export {Tee4} from './idealComponents/Tee4';
 export {Tee5} from './idealComponents/Tee5';

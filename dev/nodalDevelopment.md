@@ -1,7 +1,7 @@
-<!-- Modified: 2026-07-14 -->
+<!-- Modified: 2026-09-30 -->
 # Nodal Connection Development
 
-This analysis compares series and parallel nodal connections of the same two-port component. It is converted from `dev/nodeDevelopment.html`.
+This analysis compares series and parallel nodal connections of the same two-port component. It is converted from `dev/nodalDevelopment.html`.
 
 ```npjs
 var g = nP.global;

@@ -1,315 +1,220 @@
-<!-- Modified: 2026-09-08 -->
-# Thermal noise in nP S-parameter networks
+<!-- Modified: 2026-09-09 -->
+# Thermal noise in nP: resistor, `nodal()`, and `cascade()`
 
-This note explains the first nP thermal-noise model using a 75 Ω resistor in a 50 Ω system. It gives the component S-parameter and noise matrices, then shows how `nodal()` and two-port cascade analysis determine the final matrices.
+## Purpose
 
-## 1. Port-wave model
+This note defines each mathematical term before using it, then works one
+75 Ω resistor numerically and connects two such resistors. It explains how
+`R.js` creates S-parameters and covariance, and how `nodal()` and `cascade()`
+propagate the result. `Gamma` is wiring only; covariance never enters it.
 
-At one frequency, a noisy n-port is represented by
+## 1. Terms
 
-$$
-\mathbf b = \mathbf S\mathbf a + \mathbf c
-$$
+An RF complex quantity has two real components:
 
-where `a` is the incident wave vector, `b` is the outgoing wave vector, and `c` is the internally generated noise-wave vector. The covariance matrix of the noise waves is
+$$z=x+j y.\tag{1}$$
 
-$$
-\mathbf C = E[\mathbf c\mathbf c^\dagger].
-$$
+`x` is in-phase, `y` is quadrature, and `j²=-1`. The imaginary part records
+phase; it is not imaginary physical power.
 
-`S` is dimensionless. `C` has units of W/Hz when the waves use power normalization. The dagger denotes conjugate transpose.
+A two-port noise column is:
 
-## What covariance means
+$$\mathbf c=\begin{bmatrix}c_1\\c_2\end{bmatrix}.\tag{2}$$
 
-Noise is not a single deterministic number. At each frequency it is a random fluctuation. If a noise-wave entry is written as `c₁`, its average value is normally zero, but its instantaneous value varies from one observation to the next. The quantity that describes the strength of that fluctuation is its **variance**:
+The conjugate changes `j` to `-j`. The conjugate transpose (`†`) also changes
+a column into a row:
 
-$$
-\operatorname{var}(c_1)=E[|c_1|^2].
-$$
+$$\mathbf c^\dagger=\begin{bmatrix}c_1^*&c_2^*\end{bmatrix}.\tag{3}$$
 
-For a real random quantity, variance is the familiar mean-square deviation from the average. For a complex noise wave, `|c₁|² = c₁c₁*`, so the variance is still a real, nonnegative power spectral density.
-
-**Covariance** describes how two fluctuations vary together. For two complex noise waves `c₁` and `c₂`, their covariance is
+An **outer product** is column times row. It creates a matrix:
 
 $$
-\operatorname{cov}(c_1,c_2)=E[c_1c_2^*].
+\mathbf c\mathbf c^\dagger=
+\begin{bmatrix}c_1c_1^*&c_1c_2^*\\c_2c_1^*&c_2c_2^*\end{bmatrix}.
+\tag{4}
 $$
 
-The conjugate is important. It makes the covariance matrix Hermitian and makes each diagonal entry a real nonnegative noise power. The magnitude of an off-diagonal covariance indicates how strongly the two port-noise waves are related; its phase describes their relative phase. A zero off-diagonal entry means the two noise waves are uncorrelated, not necessarily that they are numerically zero.
+`E{}` means expected value: average over possible noise outcomes. For two
+equally likely outcomes:
 
-For an n-port, collect all noise waves into a column vector:
+$$E\{X\}=\tfrac12X^{(A)}+\tfrac12X^{(B)}.\tag{5}$$
 
-$$
-\mathbf c=
-\begin{pmatrix}c_1\\c_2\\\vdots\\c_n\end{pmatrix}.
-$$
+The covariance matrix is the expected outer product:
 
-The **covariance matrix** is the expected outer product:
+$$\mathbf C=E\{\mathbf c\mathbf c^\dagger\}.\tag{6}$$
 
-$$
-\mathbf C=E[\mathbf c\mathbf c^\dagger].
-$$
+Thus:
 
-For a two-port this is:
+$$\mathbf C=\begin{bmatrix}C_{11}&C_{12}\\C_{21}&C_{22}\end{bmatrix},
+\qquad C_{ik}=E\{c_i c_k^*\}.\tag{7}$$
 
-$$
-\mathbf C=
-\begin{pmatrix}
-E[|c_1|^2] & E[c_1c_2^*]\\
-E[c_2c_1^*] & E[|c_2|^2]
-\end{pmatrix}.
-$$
+`C11` and `C22` are noise power spectral densities. `C12` and `C21` describe
+correlation. In nP's power-wave convention, they have units of W/Hz.
 
-Read the entries as follows:
+## 2. One resistor: what `R.js` creates
 
-| Entry | Meaning | Units |
-| --- | --- | --- |
-| `C11` | Noise power spectral density at port 1 | W/Hz |
-| `C22` | Noise power spectral density at port 2 | W/Hz |
-| `C12` | Correlation of port-1 noise with port-2 noise | W/Hz |
-| `C21` | Conjugate of `C12` for a valid covariance matrix | W/Hz |
-
-The matrix must be **Hermitian** (`C = C†`) and **positive semidefinite**. Positive semidefinite means that any physically formed combination of the noise waves has nonnegative power. For any complex weighting vector `w`:
-
-$$
-E[|\mathbf w^\dagger\mathbf c|^2]=\mathbf w^\dagger\mathbf C\mathbf w\ge 0.
-$$
-
-This is why nP preserves off-diagonal entries instead of keeping only `C11`, `C22`, and so on. A network can mix noise waves from several ports; discarding their covariance can give the wrong output noise.
-
-For the 75 Ω series resistor, nP obtains:
-
-$$
-\mathbf C_R=\frac{24}{49}k_BT
-\begin{pmatrix}1&-1\\-1&1\end{pmatrix}.
-$$
-
-The two diagonal entries are the individual port-noise powers. The negative off-diagonal entries mean the two outgoing noise waves are perfectly anticorrelated in this representation. If the entries had been positive instead, the waves would be perfectly correlated with the same phase. A complex off-diagonal entry would represent correlation with a phase shift.
-
-Covariance is a **spectral density**, not automatically a finite-band noise power. If the covariance is approximately constant over bandwidth `B`, multiply by `B` to obtain the integrated mean-square noise-wave power:
-
-$$
-\mathbf C_{\text{band}}\approx B\mathbf C.
-$$
-
-No random samples need to be generated for this analysis. nP propagates the covariance algebraically through the network.
-
-For a passive component at uniform temperature `T`, nP uses Bosma's relation:
-
-$$
-\boxed{\mathbf C = k_BT(\mathbf I - \mathbf S\mathbf S^\dagger)}
-$$
-
-where `kB = 1.380649 × 10⁻²³ J/K`. Lossless components have `C = 0`. Off-diagonal entries retain noise correlation between ports.
-
-## 2. A 75 Ω series resistor
-
-Let the resistor be `R = 75 Ω` and both port reference impedances be `Z0 = 50 Ω`. Its S-matrix is
-
-$$
-\mathbf S_R = \frac{1}{R+2Z_0}
-\begin{pmatrix}
-R & 2Z_0\\
-2Z_0 & R
-\end{pmatrix}
-=
-\begin{pmatrix}
-3/7 & 4/7\\
-4/7 & 3/7
-\end{pmatrix}.
-$$
-
-Numerically:
-
-$$
-\mathbf S_R \approx
-\begin{pmatrix}
-0.428571 & 0.571429\\
-0.571429 & 0.428571
-\end{pmatrix}.
-$$
-
-Using Bosma's relation:
-
-$$
-\mathbf C_R = \frac{24}{49}k_BT
-\begin{pmatrix}
-1 & -1\\
--1 & 1
-\end{pmatrix}.
-$$
-
-At `T = 293 K`, each diagonal entry is approximately `1.981e-21 W/Hz`. The negative off-diagonal entries indicate perfectly anticorrelated outgoing noise waves for this series-resistor representation.
-
-The constructor retains the existing S-parameter data and adds frequency-aligned covariance data:
+Set the analysis conditions and construct the resistor:
 
 ```js
-var resistor = nP.R(75);
-
-resistor.spars; // existing [frequency, s11, s12, s21, s22] rows
-resistor.noise; // [{frequency, C: [[c11, c12], [c21, c22]]}, ...]
+nP.global.Ro = 50;
+nP.global.Temp = 293;
+nP.global.fList = [1e9];
+var r = nP.R(75);
 ```
 
-`R(75)` and `seR(75)` preserve their legacy positional calls. An options form can specify temperature explicitly:
+`R.js` calculates:
+
+$$
+S_{11}=S_{22}=\frac{R}{R+2R_o},\qquad
+S_{12}=S_{21}=\frac{2R_o}{R+2R_o}.
+\tag{8}
+$$
+
+For 75 Ω and 50 Ω:
+
+$$
+\mathbf S_R=\frac1{175}\begin{bmatrix}75&100\\100&75\end{bmatrix}
+=\frac17\begin{bmatrix}3&4\\4&3\end{bmatrix}.
+\tag{9}
+$$
+
+The resistor noise scalar is:
+
+$$n_R=\frac{4k_BT R R_o}{(R+2R_o)^2}=1.9813722\times10^{-21}\ \mathrm{W/Hz}.
+\tag{10}$$
+
+`R.js` stores:
+
+$$\mathbf C_R=n_R\begin{bmatrix}1&-1\\-1&1\end{bmatrix}.\tag{11}$$
+
+Therefore `C11 = +nR`, `C12 = -nR`, `C21 = -nR`, and `C22 = +nR`.
+
+### Literal calculation of `E{}`
+
+Let `rN = sqrt(nR)`. Use two equally likely illustrative outcomes:
+
+$$\mathbf c^{(A)}=\begin{bmatrix}+r_N\\-r_N\end{bmatrix},\qquad
+\mathbf c^{(B)}=\begin{bmatrix}-r_N\\+r_N\end{bmatrix}.\tag{12}$$
+
+For outcome A:
+
+$$
+\mathbf c^{(A)}\mathbf c^{(A)\dagger}
+=\begin{bmatrix}r_N^2&-r_N^2\\-r_N^2&r_N^2\end{bmatrix}
+=n_R\begin{bmatrix}1&-1\\-1&1\end{bmatrix}.
+\tag{13}
+$$
+
+Outcome B gives the same matrix. Now apply the definition of expectation:
+
+$$
+\begin{aligned}
+\mathbf C_R
+&=E\{\mathbf c\mathbf c^\dagger\}\\
+&=\tfrac12\left(n_R\begin{bmatrix}1&-1\\-1&1\end{bmatrix}\right)
+ +\tfrac12\left(n_R\begin{bmatrix}1&-1\\-1&1\end{bmatrix}\right)\\
+&=n_R\begin{bmatrix}1&-1\\-1&1\end{bmatrix}.
+\end{aligned}
+\tag{14}
+$$
+
+This is exactly what `E{}` means: calculate `c c†` for each outcome, weight
+by its probability, and add. `R.js` stores the result directly instead of
+generating random samples.
+
+## 3. Two resistors with `nodal()`
 
 ```js
-var hotResistor = nP.R({
-    resistance: 75,
-    temperature: 350
-});
-```
-
-## 3. Two 75 Ω resistors in series with `nodal()`
-
-The series connection is written with one shared internal node:
-
-```js
-var r1 = nP.R(75);
-var r2 = nP.R(75);
-
 var series = nP.nodal(
-    [r1, 1, 2],
-    [r2, 2, 3],
+    [nP.R(75), 1, 2],
+    [nP.R(75), 2, 3],
     ['out', 1, 3]
 );
 ```
 
-There are six wave variables in the assembled system:
+There are four component wave positions and two external bookkeeping
+positions:
 
-```text
-2 ports from r1 + 2 ports from r2 + 2 output bookkeeping ports = 6
-```
+$$\mathbf a=\begin{bmatrix}a_1\\a_2\\a_3\\a_4\\a_5\\a_6\end{bmatrix},\quad
+\mathbf b=\begin{bmatrix}b_1\\b_2\\b_3\\b_4\\b_5\\b_6\end{bmatrix},\quad
+\mathbf c=\begin{bmatrix}c_1\\c_2\\c_3\\c_4\\0\\0\end{bmatrix}.\tag{15}$$
 
-Therefore `nodal()` assembles and solves a 6×6 complex matrix. The resulting external two-port is equivalent to a 150 Ω series resistor:
+The expanded component covariance is:
 
-$$
-\mathbf S_{\mathrm{series}} =
-\begin{pmatrix}
-0.6 & 0.4\\
-0.4 & 0.6
-\end{pmatrix}.
-$$
+$$\mathbf C_{\mathrm{components}}=n_R\begin{bmatrix}
+1&-1&0&0\\-1&1&0&0\\0&0&1&-1\\0&0&-1&1
+\end{bmatrix}.\tag{16}$$
 
-The two component covariance matrices are not simply added. Internal reflections load each resistor's noise. The transfer matrices are
+`Gamma` contains only wiring:
 
-$$
-\mathbf F_A=
-\begin{pmatrix}1&0.3\\0&0.7\end{pmatrix},
-\qquad
-\mathbf F_B=
-\begin{pmatrix}0.7&0\\0.3&1\end{pmatrix}.
-$$
+$$\boldsymbol\Gamma=\begin{bmatrix}
+0&0&0&0&1&0\\0&0&1&0&0&0\\0&1&0&0&0&0\\
+0&0&0&0&0&1\\1&0&0&0&0&0\\0&0&0&1&0&0
+\end{bmatrix}.\tag{17}$$
 
-The final covariance is
+The deterministic matrix is:
 
-$$
-\mathbf C_{\mathrm{series}}
-= \mathbf F_A\mathbf C_{r1}\mathbf F_A^\dagger
- + \mathbf F_B\mathbf C_{r2}\mathbf F_B^\dagger
-= 0.48k_BT
-\begin{pmatrix}
-1 & -1\\
--1 & 1
-\end{pmatrix}.
-$$
+$$\mathbf A=\boldsymbol\Gamma-\mathbf S_{\mathrm{global}}.\tag{18}$$
 
-This is exactly the passive covariance of a single 150 Ω series resistor. In code:
+`nodal()` computes `A⁻¹` once per frequency. It does not invert
+`C_components`. For S-parameters, both external excitations can be handled
+as right-hand-side columns:
+
+$$\mathbf Q=\begin{bmatrix}1&0\\0&1\end{bmatrix},\qquad
+\text{solutions}=\mathbf A^{-1}\mathbf Q.\tag{19}$$
+
+For noise, let `T` be the selected output rows of `A⁻¹`:
+
+$$\mathbf C_{\mathrm{out}}=\mathbf T\mathbf C_{\mathrm{components}}\mathbf T^\dagger.\tag{20}$$
+
+The same inverse is reused. `A⁻¹` transfers sources; `C_components` gives
+source strength and correlation; `C_out` is the result. No second inversion
+is required for another port or another source column.
+
+For two 75 Ω resistors, the result is an equivalent 150 Ω resistor:
+
+$$\mathbf S_{\mathrm{out}}=\begin{bmatrix}0.6&0.4\\0.4&0.6\end{bmatrix},\qquad
+\mathbf C_{\mathrm{out}}=0.48k_BT\begin{bmatrix}1&-1\\-1&1\end{bmatrix}.\tag{21}$$
+
+## 4. Two resistors with `cascade()`
+
+`cascade()` is the specialized two-port path. For components `A` and `B`:
+
+$$\mathbf b_A=\mathbf S_A\mathbf a_A+\mathbf c_A,\qquad
+\mathbf b_B=\mathbf S_B\mathbf a_B+\mathbf c_B.\tag{22}$$
+
+The internal waves satisfy:
+
+$$a_{A2}=b_{B1},\qquad a_{B1}=b_{A2}.\tag{23}$$
+
+The feedback denominator is:
+
+$$D=1-A_{22}B_{11}.\tag{24}$$
+
+The cascaded S-parameters are:
+
+$$\begin{aligned}
+S_{11}&=A_{11}+\frac{A_{12}B_{11}A_{21}}D,&S_{12}&=\frac{A_{12}B_{12}}D,\\
+S_{21}&=\frac{A_{21}B_{21}}D,&S_{22}&=B_{22}+\frac{B_{21}A_{22}B_{12}}D.
+\end{aligned}\tag{25}$$
+
+Noise from each component is transferred by:
+
+$$\mathbf F_A=\begin{bmatrix}1&A_{12}B_{11}/D\\0&B_{21}/D\end{bmatrix},\qquad
+\mathbf F_B=\begin{bmatrix}A_{12}/D&0\\B_{21}A_{22}/D&1\end{bmatrix}.\tag{26}$$
+
+For independent component noises:
+
+$$\mathbf C_C=\mathbf F_A\mathbf C_A\mathbf F_A^\dagger+
+\mathbf F_B\mathbf C_B\mathbf F_B^\dagger.\tag{27}$$
+
+The transfer matrices account for loading and reflection. Therefore one must
+not simply add `C_A + C_B`.
 
 ```js
-var noiseTable = series.noiseOut('c11', 'c22', 'c12Re');
-```
-
-The internal transfer matrix and component-source bookkeeping remain hidden inside `nodal()`.
-
-## 4. The same result through two-port cascade
-
-For two 2-port components, `cascade()` uses the same S-parameter cascade equations and propagates each component's covariance. For components `A` and `B`, with
-
-$$
-D = 1-A_{22}B_{11},
-$$
-
-the noise transfer matrices are
-
-$$
-\mathbf F_A=
-\begin{pmatrix}
-1 & A_{12}B_{11}/D\\
-0 & B_{21}/D
-\end{pmatrix},
-\qquad
-\mathbf F_B=
-\begin{pmatrix}
-A_{12}/D & 0\\
-B_{21}A_{22}/D & 1
-\end{pmatrix}.
-$$
-
-The cascade covariance is
-
-$$
-\boxed{\mathbf C_C = \mathbf F_A\mathbf C_A\mathbf F_A^\dagger + \mathbf F_B\mathbf C_B\mathbf F_B^\dagger.}
-$$
-
-For example:
-
-```js
-var cascaded = nP.cascade(
-    nP.R(75),
-    nP.R(75)
-);
-
-var sTable = cascaded.out('s11dB', 's21dB');
+var cascaded = nP.cascade(nP.R(75), nP.R(75));
 var cTable = cascaded.noiseOut('c11', 'c22');
 ```
 
-For compatible two-port networks, `cascade()` and an equivalent `nodal()` connection produce the same S and C matrices. `cascade()` is a specialized, efficient path; `nodal()` handles arbitrary interconnections and multiports.
-
-## 5. Parallel 75 Ω resistor
-
-The parallel resistor is represented by `paR(75)`, or by a Tee, series resistor, and short:
-
-```js
-var shunt = nP.nodal(
-    [nP.Tee(), 3, 1, 2],
-    [nP.R(75), 3, 4],
-    [nP.Short(), 4],
-    ['out', 1, 2]
-);
-```
-
-Its longhand S-matrix is
-
-$$
-\mathbf S_{pR} =
-\begin{pmatrix}
--0.25 & 0.75\\
-0.75 & -0.25
-\end{pmatrix},
-$$
-
-and its covariance is
-
-$$
-\mathbf C_{pR}=0.375k_BT
-\begin{pmatrix}
-1 & 1\\
-1 & 1
-\end{pmatrix}.
-$$
-
-The Tee constructor contains a small `1e-7` regularization, so the nodal result differs from the exact longhand values by approximately `1e-7` while remaining within the model's intended numerical tolerance.
-
-## 6. What the user needs to know
-
-Users continue to build circuits with `R()`, `Tee()`, `Short()`, `nodal()`, and `cascade()` exactly as before. Noise is an additional result; S-parameter row shapes and `.out()` behavior are unchanged.
-
-Use:
-
-```js
-network.noiseOut('c11', 'c22');
-```
-
-to obtain output-port noise power spectral densities. Use `c12Re`, `c12Im`, or `c12mag` when port-to-port noise correlation is needed. The raw covariance matrices are available as `network.noise.covariance` for advanced work.
-
-For active components, S-parameters and temperature alone do not determine noise. An active constructor must provide an explicit noise covariance model; `nodal()` can then propagate it using the same equations.
+`cascade()` and the equivalent `nodal()` connection produce the same S and C
+matrices for compatible two-port networks.

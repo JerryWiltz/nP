@@ -1,4 +1,4 @@
-# Modified: 2026-09-07
+# Modified: 2026-09-30
 
 # ========================
 # Node & build artifacts
@@ -6,6 +6,9 @@
 
 # Node dependencies (auto-installed via npm install)
 node_modules/
+
+# Local Obsidian vault settings and recent-file state
+.obsidian/
 
 # Local Node.js package smoke-test project
 np-node-example/

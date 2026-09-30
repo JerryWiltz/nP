@@ -34,7 +34,8 @@
     "docs:preview": "vitepress preview docs",
     "deploy": "./scripts/deploy.sh",
     "clean": "bash scripts/cleanup-gitignore.sh",
-    "dev:new": "node scripts/create-dev-html.mjs"
+    "dev:new": "node scripts/create-dev-html.mjs",
+    "dev:smoke": "node scripts/dev-smoke.mjs"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^16.0.1",
