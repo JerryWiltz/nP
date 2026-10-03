@@ -1,7 +1,7 @@
-<!-- Modified: 2026-09-30 -->
+<!-- Modified: 2026-10-03 -->
 # Gupta connection-scattering noise analysis
 
-This note is the mathematical companion to `dev/noiseAnalysis.html`. Sections 3–6 work through a matched 3 dB attenuator at 290 K and a semi-ideal amplifier with 0.01 input reflection, output reflection, and reverse transmission. Section 6 reverses their order. The current HTML page runs both orders using `nP.Attn()` and the fully matched, unilateral `nP.Amp()`, whose $S_{11}=S_{12}=S_{22}=0$. The attenuator-first gain and noise figure are the same in both models; the reversed order loses the small reflection correction in equation (6.17). Here 3 dB means exactly 3.00 dB, so the voltage-wave transmission is $10^{-3/20}\approx0.708$ and the power transmission is $10^{-3/10}\approx0.501$.
+Sections 3–6 work through a matched 3 dB attenuator at 290 K and a semi-ideal amplifier with 0.01 input reflection, output reflection, and reverse transmission. Section 6 reverses their order. The implemented `nP.Amp(20, 4)` is fully matched and unilateral, with $S_{11}=S_{12}=S_{22}=0$; the semi-ideal amplifier is retained in the worked matrices to show the small reflection correction in equation (6.17). Here 3 dB means exactly 3.00 dB, so the voltage-wave transmission is $10^{-3/20}\approx0.708$ and the power transmission is $10^{-3/10}\approx0.501$.
 
 The symbols below keep Gupta's names:
 
@@ -422,7 +422,7 @@ $\mathbf I_2$ is the 2 × 2 identity matrix. Because the S-parameters are real h
 
 Positions 1 and 2 hold the attenuator waves $u$ and $v$. Positions 3 and 4 belong to the amplifier. Positions 5 and 6 represent the external source and load, which this calculation treats as noiseless.
 
-Position 4 is the amplifier's output port, as the port-order table in section 3 shows. Both this worked example and the HTML page represent all amplifier-added noise as one equivalent wave leaving that port. This is an output-referred model; it does not say the amplifier physically generates noise only there.
+Position 4 is the amplifier's output port, as the port-order table in section 3 shows. This worked example represents all amplifier-added noise as one equivalent wave leaving that port. This is an output-referred model; it does not say the amplifier physically generates noise only there.
 
 With a matched source and load, source noise $k_B T_0$ at the amplifier input produces $|S^{\mathrm{amp}}_{21}|^2 k_B T_0$ at its output. A 4 dB noise figure means the amplifier adds $(F_{\mathrm{amp}}-1)$ times that output noise. The amplifier's output-wave variance is therefore
 
@@ -431,7 +431,7 @@ F_{\mathrm{amp}}=10^{4/10},\qquad
 N_{\mathrm{amp}}=(F_{\mathrm{amp}}-1)|S^{\mathrm{amp}}_{21}|^2 k_B T_0. \tag{4.8}
 $$
 
-The HTML constructor stores $N_{\mathrm{amp}}$ in its output-port covariance entry `C[1][1]`. It sets the amplifier's position-3 noise and its position-3/position-4 correlation to zero. The complete source covariance is
+This output-referred model puts $N_{\mathrm{amp}}$ in the amplifier's output-port covariance entry `C[1][1]`. It sets the amplifier's position-3 noise and its position-3/position-4 correlation to zero. The complete source covariance is
 
 $$
 \mathbf C_c=
@@ -505,7 +505,7 @@ N_{\mathrm{amp}}
 \end{aligned} \tag{5.5}
 $$
 
-This is the number stored at `amplifier.noise[0].C[1][1]` in the current HTML and placed at position 4 of equation (4.9). The preceding matched attenuator presents a matched source to this amplifier when the external source is matched.
+This number is placed at position 4 of equation (4.9). The preceding matched attenuator presents a matched source to this amplifier when the external source is matched.
 
 Section 4 assigned the attenuator two uncorrelated noise waves $u$ and $v$. Let $q$ be the amplifier's independent output-referred noise wave. The internal-noise source column is
 
@@ -636,7 +636,7 @@ $$
 \end{aligned} \tag{5.16}
 $$
 
-The HTML reads these as `Cb.m[0][0]` and `Cb.m[3][3]`. The deterministic calculation in section 3 gave $S_{21}\approx7.079457844$, so its power gain is $|S_{21}|^2\approx50.118723363$. Use the standard 290 K source-noise reference to get the conventional noise factor:
+In a zero-based JavaScript matrix, these entries are `[0][0]` and `[3][3]`. The deterministic calculation in section 3 gave $S_{21}\approx7.079457844$, so its power gain is $|S_{21}|^2\approx50.118723363$. Use the standard 290 K source-noise reference to get the conventional noise factor:
 
 $$
 \begin{aligned}
@@ -910,271 +910,177 @@ $$
 
 Here $\Delta F$ is the correction in (6.17). If the amplifier output is ideally matched, $S^{\mathrm{amp}}_{22}=0$, then $\Delta F=0$ and the usual Friis equation equals the covariance result exactly. The example above keeps the amplifier parameters unchanged so the comparison also shows where the usual Friis assumption matters.
 
-## 7. What is still needed for noise figure
+## 7. From output noise to noise figure
 
-`Cb` gives output noise-wave power. A noise figure additionally requires a defined available input signal/noise reference. In a complete calculation, include the source and load conventions explicitly:
-
-$$
-F=\frac{\text{available input SNR}}{\text{available output SNR}}. \tag{7.1}
-$$
-
-In the matrix method this means:
-
-1. use a deterministic source column to calculate the desired signal output;
-2. use `Cc` to calculate the output noise covariance;
-3. include source noise in `Cc` when the source is noisy;
-4. form the output signal-to-noise ratio using the same wave normalization;
-5. divide by the available input signal-to-noise ratio.
-
-The current HTML page calculates the unit-signal gain, internal output noise, and a 290 K referenced noise figure for both stage orders using the ideal amplifier. Its output-only amplifier covariance has no input-wave or cross-correlation terms, so the page does not claim a general measured-amplifier noise figure for arbitrary source mismatch.
-
-## 8. Internal-noise-only case
-
-The current HTML calculation uses a noiseless external source and load:
+Sections 5 and 6 calculate noise generated inside the two-stage network. Noise figure also needs a source reference. At $T_0=290\,\mathrm K$, a source supplies $k_BT_0$ W/Hz of available thermal noise. Noise factor compares the signal-to-noise ratios before and after the network:
 
 $$
-(C_c)_{55}=0,\qquad(C_c)_{66}=0. \tag{8.1}
+F=\frac{\mathrm{SNR}_{\mathrm{in}}}{\mathrm{SNR}_{\mathrm{out}}},\qquad NF_{\mathrm{dB}}=10\log_{10}F. \tag{7.1}
 $$
 
-For the attenuator-first HTML arrangement in section 5, the upper-left 2 × 2 block of $\mathbf C_c$ contains the attenuator noise, and $(C_c)_{44}$ contains the amplifier noise. In the amplifier-first arrangement of section 6, equation (6.8) shows the shifted noise-source positions.
-
-The deterministic unit input signal is still applied at `c5`:
+For fixed source and termination conditions, calculate the output noise from the source alone and then the total output noise. The signal follows the same path in both calculations, so
 
 $$
-\mathbf c_{\mathrm{signal}}=\mathbf e_5,\qquad
-\mathbf b_{\mathrm{signal}}=\mathbf T\mathbf c_{\mathrm{signal}}. \tag{8.2}
+F=\frac{P_{N,\mathrm{total}}}{P_{N,\mathrm{source\ only}}}. \tag{7.2}
 $$
 
-The resulting output noise from equation (5.14), or from (6.12) for the reversed order, is therefore added receiver noise. At output $b_4$:
+The leading `1` in equations (5.17) and (6.15) accounts for the source-only noise. For a matched two-port with a cold output termination, equation (7.2) becomes
 
 $$
-N_{\mathrm{added}}=(C_b)_{44},\qquad
-G_{\mathrm{signal}}=|(b_{\mathrm{signal}})_4|^2. \tag{8.3}
+F=1+\frac{C_{22}}{|S_{21}|^2k_BT_0}. \tag{7.3}
 $$
 
-The conventional noise factor uses the standard 290 K source reference even though that source noise is not placed in `Cc`:
+For a multiport or a mismatched source, reflections and noise entering other ports also matter. The selected $S_{21}$ and $C_{22}$ alone are then insufficient.
 
-$$
-F=1+\frac{N_{\mathrm{added}}}{G_{\mathrm{signal}}k_B T_0},\qquad
-NF_{\mathrm{dB}}=10\log_{10}F. \tag{8.4}
-$$
+## 8. Noise data carried by an `nPort`
 
-The leading `1` represents the source-only noise that Friis assumes implicitly. This is equivalent to adding `kB*T0` at the input and then dividing total output noise by the source-only output noise, but it keeps the matrix `Cc` focused on noise generated inside the receiver.
-
-This internal-noise-only case can also report an output SNR for a noiseless input:
-
-$$
-\mathrm{SNR}_{\mathrm{out}}=\frac{G_{\mathrm{signal}}}{N_{\mathrm{added}}}. \tag{8.5}
-$$
-
-That SNR describes the receiver's internally generated noise. It is not by itself a conventional noise figure, because a truly noiseless input has infinite input SNR. The noise figure is obtained only after applying the `kB*T0` reference normalization above.
-
-## 9. Correspondence with the current HTML
+An `nPort` carries S-parameter rows and noise covariance rows at the same frequencies and in the same port order:
 
 ```js
-var attenuator = nP.Attn(3, 290);
-var amplifier = nP.Amp(20, 4, 290);
-var attenuatorFirst = nP.nodal(
+network.spars[i] = [frequency, s11, s12, s21, s22];
+network.noise[i] = {
+    frequency: frequency,
+    C: [[c11, c12], [c21, c22]]
+};
+```
+
+The entries are complex. For an $n$-port, both the S-matrix and the noise covariance are $n\times n$. A diagonal covariance entry is outgoing noise power at one port, in W/Hz. An off-diagonal entry records correlation between two outgoing noise waves. In symbols,
+
+$$
+\mathbf C=\mathbb E\{\mathbf c\mathbf c^{\mathrm H}\}. \tag{8.1}
+$$
+
+`nP.Attn()` constructs covariance from attenuation and temperature. `nP.Amp()` converts its two-port noise parameters into covariance when constructed. A passive nPort without explicitly supplied covariance can derive it from S-parameters and its stored temperature:
+
+$$
+\mathbf C=k_BT(\mathbf I-\mathbf S\mathbf S^{\mathrm H}). \tag{8.2}
+$$
+
+$F_{\min}$, $\Gamma_{\mathrm{opt}}$, and $R_n$ describe a two-port amplifier but are not themselves a covariance matrix. Propagation uses the covariance. An nPort returned by `nodal()`, `cas()`, or `cascade()` has the same S and noise row shapes, so it can be reused in a larger network.
+
+## 9. How `nodal()` propagates noise
+
+At each frequency, `nodal()` puts every component S-matrix into its block of the full $\mathbf S$ matrix. It puts that component's covariance into the matching block of $\mathbf C_c$. The blocks between independent components start at zero. The connection labels build $\boldsymbol\Gamma$, as in sections 3–6, and the scattering solve uses
+
+$$
+\mathbf W=\boldsymbol\Gamma-\mathbf S,\qquad \mathbf a=\mathbf W^{-1}\mathbf c. \tag{9.1}
+$$
+
+The external-port rows of $\mathbf W^{-1}$ show how each component noise wave reaches each output. Let $\mathbf L$ contain those rows and the columns for component noise waves. Then `nodal()` calculates
+
+$$
+\mathbf C_{\mathrm{out}}=\mathbf L\mathbf C_c\mathbf L^{\mathrm H}. \tag{9.2}
+$$
+
+This is the same propagation worked through for six positions in sections 5 and 6. The resulting covariance and S-parameters are stored at the external ports. Source and termination noise are measurement conditions, added later when noise figure is requested. That lets one combined network be measured under several source reflections or termination temperatures without rebuilding it.
+
+## 10. How `cas()` combines two two-ports
+
+`first.cas(second)` connects port 2 of the first two-port to port 1 of the second. For their S-parameters, the internal-reflection denominator is
+
+$$
+D=1-S^A_{22}S^B_{11}. \tag{10.1}
+$$
+
+`cas()` also transfers each component's *full* covariance to the two remaining external ports. Its transfer matrices are
+
+$$
+\begin{aligned}
+\mathbf F_A&=\begin{bmatrix}1&S^A_{12}S^B_{11}/D\\0&S^B_{21}/D\end{bmatrix},\\[6pt]
+\mathbf F_B&=\begin{bmatrix}S^A_{12}/D&0\\S^B_{21}S^A_{22}/D&1\end{bmatrix}.
+\end{aligned} \tag{10.2}
+$$
+
+Each column shows where one component noise wave appears at the two external ports. Independent component noises add after being transferred:
+
+$$
+\mathbf C_{AB}=\mathbf F_A\mathbf C_A\mathbf F_A^{\mathrm H}
++\mathbf F_B\mathbf C_B\mathbf F_B^{\mathrm H}. \tag{10.3}
+$$
+
+The off-diagonal correlations *within* each component are preserved. Directly adding $\mathbf C_A+\mathbf C_B$ would miss gain and reflections. `cas()` returns a new two-port with combined S-parameters and covariance at each frequency.
+
+## 11. How `cascade()` uses `cas()`
+
+`nP.cascade(a, b, c)` starts with `a`, calls `a.cas(b)`, and then calls the resulting nPort's `.cas(c)`. It has no separate noise formula: every intermediate result already contains the noise of its preceding stages. For two two-ports, these three operations should give the same S-parameters and covariance:
+
+```js
+var viaMethod = attenuator.cas(amplifier);
+var viaCascade = nP.cascade(attenuator, amplifier);
+var viaNodal = nP.nodal(
     [attenuator, 1, 2],
     [amplifier, 2, 3],
     ['out', 1, 3]
 );
-var amplifierFirst = nP.nodal(
-    [amplifier, 1, 2],
-    [attenuator, 2, 3],
-    ['out', 1, 3]
-);
 ```
 
-The HTML obtains each component's S-matrix and covariance from its constructor. It also assembles the six-position $S$, $\Gamma$, and $C_c$ matrices, forms $W=\Gamma-S$ and $T=\Gamma W^{-1}$, and checks $C_b=TC_cT^{\mathrm H}$ against `nodal()`'s output covariance. The page reports 17 dB forward gain for either order, 7 dB noise figure with the attenuator first, and about 4.017 dB with the amplifier first. Its ideal amplifier makes Friis agree exactly in both orders. Sections 3–6 retain the earlier semi-ideal amplifier so that their displayed matrices and the small correction in (6.17) remain internally consistent.
+For `nP.Attn(3, 290)` and the fully matched `nP.Amp(20, 4)`, attenuator first gives 17 dB gain and 7 dB NF. Reversing the stages gives 17 dB gain and about 4.017 dB NF. The small correction in equation (6.17) comes from the semi-ideal amplifier used in the earlier hand calculation; it vanishes for the fully matched amplifier. Use `cas()` and `cascade()` for series chains of two-ports; `nodal()` handles tees, branches, feedback, and arbitrary multiports.
 
-## 10. Required noise inputs for `nodal()`
+## 12. How `noiseFigure.js` calculates NF and output noise floor
 
-To fold this method into `nodal()`, every component must provide noise data that is aligned with its S-parameter data. At each frequency, `nodal()` needs:
+`noiseFigure.js` contains the internal `noiseAnalysis()` helper called by `nPort.out()`. It does not construct an nPort. It receives one frequency's S-matrix and covariance, the selected input and output ports, and the measurement conditions. It returns both the noise factor and the total output noise density. For `NF31dB` or `noiseFloor31dBmHz`, port 1 is the input and port 3 is the output.
 
-```text
-1. the component S-matrix S(f)
-2. the component port order
-3. the component noise covariance Cc(f), or enough data to derive it
-4. the reference impedance used by the wave normalization
-5. the component temperature when thermal noise is derived
-```
+The conditions are source reflection, each other port's termination reflection and temperature, and the NF reference temperature $T_0$. Defaults are a matched source, matched terminations, $T_0=290\,\mathrm K$, 290 K at unused ports, and a cold termination at the selected output. Reflections may be complex; their phase matters when noise waves are correlated.
 
-The covariance is the universal simulation input. It must be an `n x n` Hermitian matrix for an `n`-port component:
+An outgoing wave can reflect and reenter the network. With the reflection coefficients on the diagonal of $\boldsymbol\Gamma$, the helper solves
 
 $$
-\mathbf C_{\mathrm{component}}(f)
-=\mathbb E\{\mathbf c_{\mathrm{component}}(f)
-\mathbf c_{\mathrm{component}}(f)^{\mathrm H}\}. \tag{10.1}
+\mathbf b=\mathbf S\mathbf a+\mathbf c,\qquad
+\mathbf a=\boldsymbol\Gamma\mathbf b+\mathbf u,\qquad
+\mathbf H=(\mathbf I-\mathbf S\boldsymbol\Gamma)^{-1}. \tag{12.1}
 $$
 
-There are three practical ways to supply it. For a passive component, derive covariance from its S-matrix and temperature:
+$\mathbf u$ is a test signal or noise supplied from outside; $\mathbf c$ is noise generated inside. Thus $\mathbf H\mathbf S$ transfers external waves and $\mathbf H$ transfers component noise. For input $i$ and output $o$, let $A=(\mathbf H\mathbf S)_{oi}$. With one unit of available input signal power in a 1 Hz bandwidth, the output signal and source-only noise are
 
 $$
-\mathbf C=k_B T\left(\mathbf I-\mathbf S\mathbf S^{\mathrm H}\right). \tag{10.2}
+P_{S,\mathrm{out}}=|A|^2(1-|\Gamma_i|^2),\qquad
+P_{N,\mathrm{source\ only}}=|A|^2(1-|\Gamma_i|^2)k_BT_0. \tag{12.2}
 $$
 
-For a measured or modeled active component, supply the covariance directly, including complex cross-correlations. For a two-port amplifier specified by noise parameters, supply `Fmin`, `Gamma_opt`, `Rn`, `Z0`, and temperature, then convert those parameters to covariance before propagation.
-
-`Fmin`, `Gamma_opt`, and `Rn` are not themselves a covariance matrix. They are a compact two-port amplifier description that must be converted into the four entries of:
+The helper adds component noise at the selected output and noise from every other terminated port $j$:
 
 $$
-\mathbf C_A=\begin{bmatrix}
-C^A_{11}&C^A_{12}\\
-C^A_{21}&C^A_{22}
-\end{bmatrix}. \tag{10.3}
+P_{N,\mathrm{component}}=(\mathbf H\mathbf C\mathbf H^{\mathrm H})_{oo}, \tag{12.3}
 $$
 
-The conversion must preserve:
-
 $$
-C^A_{12}=(C^A_{21})^*. \tag{10.4}
+P_{N,j}=|(\mathbf H\mathbf S)_{oj}|^2 k_BT_j(1-|\Gamma_j|^2). \tag{12.4}
 $$
 
-and the resulting covariance must use the same reference impedance and wave normalization as the S-matrix.
+It sums these powers and applies equation (7.2):
 
-For each frequency, `nodal()` then performs the following work:
+$$
+F=\frac{P_{N,\mathrm{source\ only}}+P_{N,\mathrm{component}}+
+\sum_{j\ne i}P_{N,j}}{P_{N,\mathrm{source\ only}}}. \tag{12.5}
+$$
 
-1. Assemble the block-diagonal component S-matrix.
-2. Assemble the block-diagonal component covariance $\mathbf C_c$.
-3. Build $\boldsymbol\Gamma$ from the connection labels.
-4. Form $\mathbf W=\boldsymbol\Gamma-\mathbf S$.
-5. Solve or invert $\mathbf W$.
-6. Transfer source waves to external outputs.
-7. Calculate the output covariance with the transfer rule in equation (5.11).
+The same summed output noise gives the output noise floor in a 1 Hz bandwidth:
 
-The block placement in step 2 must follow the same local port order used in step 1. A covariance matrix from one component cannot be placed in another component's block merely because both components have the same number of ports.
+$$
+N_{\mathrm{out,dBm/Hz}}=10\log_{10}\!\left(\frac{P_{N,\mathrm{total}}}{10^{-3}\,\mathrm W}\right). \tag{12.6}
+$$
 
-`Ctotal` may contain more than component-generated noise. If an external source or load is noisy, its covariance is added at the corresponding external source positions. For the internal-noise-only case, those external blocks are zero and `Ctotal` contains only component noise. A deterministic signal is handled separately with its own source column; it is not placed in the noise covariance.
+For a matched two-port with a cold output measurement load, this reduces to
 
-## 11. Noise data carried by an `nPort`
+$$
+N_{\mathrm{out,dBm/Hz}}=10\log_{10}\!\left(\frac{k_BT_0}{10^{-3}\,\mathrm W}\right)
++G_{21,\mathrm{dB}}+\mathrm{NF}_{21,\mathrm{dB}}. \tag{12.7}
+$$
 
-An `nPort` must carry its noise data alongside its frequency-aligned S rows. The existing nP implementation already has a `.noise` property and stores frequency-indexed covariance records of this form:
+A chosen input signal level is unnecessary because it cancels in the SNR ratio. `nPort.out()` converts $F$ to decibels for a selector ending in `dB` and returns a frequency table:
 
 ```js
-nPort.noise = [
-    {
-        frequency: frequency,
-        C: [
-            [nP.complex(...), nP.complex(...)],
-            [nP.complex(...), nP.complex(...)]
-        ]
-    }
-];
+var matched = network.out('s21dB', 'NF21dB');
+var floor = network.out('noiseFloor');
+var multiport = network.out('NF31dB', {
+    source: {reflection: nP.complex(0.2, 0.1)},
+    terminations: {
+        2: {reflection: 0.3, temperature: 310},
+        3: {temperature: 0}
+    },
+    referenceTemperature: 290
+});
+var multiportFloor = network.out('noiseFloor31dBmHz');
 ```
 
-For a general `n`-port, `C` is `n x n`. The frequency at each covariance row must match the frequency at the corresponding `.spars` row. A network returned by `nodal()` or `cascade()` carries its propagated output covariance in the same frequency order.
-
-For long-term API clarity, the noise payload should distinguish the universal covariance used by simulation from optional source metadata:
-
-```js
-nPort.noise = {
-    covariance: [
-        { frequency: f, C: covarianceMatrix }
-    ],
-    parameters: [
-        {
-            frequency: f,
-            fmin: Fmin,
-            gammaOpt: GammaOpt,
-            rn: Rn,
-            referenceImpedance: Z0,
-            temperature: T0
-        }
-    ]
-};
-```
-
-`covariance` is the required propagation form for a noise-capable component. `parameters` is optional metadata or an input representation for a two-port amplifier. If both are present, the covariance is the form used by `nodal()` and the parameters document how it was obtained. Passive components can carry covariance without carrying amplifier noise parameters. Ideal noiseless components can carry a zero covariance.
-
-This keeps the public nPort relationship explicit:
-
-```text
-nPort.spars  -> deterministic scattering data versus frequency
-nPort.noise  -> stochastic noise data versus the same frequency list
-```
-
-The two arrays must never silently use different frequency grids, reference impedances, port orders, or temperatures.
-
-## 12. The same calculation for `cascade()`
-
-Both the attenuator–amplifier chain in section 5 and the amplifier–attenuator chain in section 6 are simple two-port cascades. Either can be simulated with `nP.cascade()` as well as with `nP.nodal()`. The specialized cascade path eliminates the one internal connection analytically instead of constructing the full `Gamma` and `W` matrices for an arbitrary topology.
-
-For two two-port components `A` and `B`, let $S^A_{ij}$ and $S^B_{ij}$ denote their individual S-parameters. Each component obeys
-
-$$
-\mathbf b_A=\mathbf S_A\mathbf a_A+\mathbf c_A,\qquad
-\mathbf b_B=\mathbf S_B\mathbf a_B+\mathbf c_B. \tag{12.1}
-$$
-
-The internal connection is:
-
-$$
-a^A_2=b^B_1,\qquad a^B_1=b^A_2. \tag{12.2}
-$$
-
-Let:
-
-$$
-D=1-S^A_{22}S^B_{11}. \tag{12.3}
-$$
-
-The resulting S-parameters are:
-
-$$
-\begin{aligned}
-S_{11}&=S^A_{11}+\frac{S^A_{12}S^B_{11}S^A_{21}}{D},\\
-S_{12}&=\frac{S^A_{12}S^B_{12}}{D},\\
-S_{21}&=\frac{S^A_{21}S^B_{21}}{D},\\
-S_{22}&=S^B_{22}+\frac{S^B_{21}S^A_{22}S^B_{12}}{D}.
-\end{aligned} \tag{12.4}
-$$
-
-Noise from the two components is transferred by two 2 × 2 matrices:
-
-$$
-\begin{aligned}
-\mathbf F_A&=\begin{bmatrix}
-1&S^A_{12}S^B_{11}/D\\
-0&S^B_{21}/D
-\end{bmatrix},\\[6pt]
-\mathbf F_B&=\begin{bmatrix}
-S^A_{12}/D&0\\
-S^B_{21}S^A_{22}/D&1
-\end{bmatrix}.
-\end{aligned} \tag{12.5}
-$$
-
-If the component noises are independent, the output covariance is:
-
-$$
-\mathbf C_C
-=\mathbf F_A\mathbf C_A\mathbf F_A^{\mathrm H}
-+\mathbf F_B\mathbf C_B\mathbf F_B^{\mathrm H}. \tag{12.6}
-$$
-
-The transfer matrices include the loading and reflection caused by the internal connection. Therefore the component covariances cannot simply be added as $\mathbf C_A+\mathbf C_B$.
-
-For the internal-noise-only case, the external source and load noise remain zero. Apply a unit available signal at the input, read the cascaded forward wave, and use the output noise covariance:
-
-$$
-\begin{aligned}
-b_{\mathrm{signal,out}}&=S_{21},\\
-N_{\mathrm{added}}&=(C_C)_{22},\\
-F&=1+\frac{N_{\mathrm{added}}}{|S_{21}|^2 k_B T_0},\\
-NF_{\mathrm{dB}}&=10\log_{10}F.
-\end{aligned} \tag{12.7}
-$$
-
-The one-based $(C_C)_{22}$ entry is the output-port noise power; a JavaScript matrix object uses `.m[1][1]`. The leading `1` again supplies the implicit 290 K source-noise reference used by the conventional noise figure definition.
-
-The public nP operation is:
-
-```js
-var chain = nP.cascade(attenuator, amplifier);
-var reversedChain = nP.cascade(amplifier, attenuator);
-```
-
-Each input must be a two-port with frequency-aligned S-parameters and noise covariance. The returned two-port carries both the cascaded S rows and the propagated covariance rows, so `noiseOut()` can inspect the resulting `C11`, `C12`, `C21`, or `C22` values. A two-port amplifier may carry its covariance directly or carry `Fmin`, `Gamma_opt`, and `Rn` as metadata from which its covariance was derived.
-
-`cascade()` and `nodal()` should agree for both component orders. `nodal()` is still required when the circuit contains tees, branches, multiports, feedback connections, or other connections that are not a simple series chain.
+`NF31` returns a linear noise factor. `noiseFloor` is the port-2-from-port-1 shorthand and returns dBm/Hz. The parenthesized forms, such as `NF(11,2)dB` and `noiseFloor(11,2)dBmHz`, support larger port numbers. These selectors work on nPorts returned by `nodal()`, `cas()`, or `cascade()`. A three-port test checks source mismatch, reflecting terminations at different temperatures, and component noise against a direct solution of the port equations.

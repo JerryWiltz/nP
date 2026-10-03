@@ -1,204 +1,68 @@
-<!-- Modified: 2026-09-30 -->
 <!DOCTYPE html>
+<!-- Modified: 2026-10-03 -->
 <html lang="en">
 
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width">
-    <title>Ideal Attenuator and Amplifier Noise Analysis</title>
+    <title>Noise Analysis</title>
     <script src="../dist/nP.js"></script>
-    <style>
-        body { max-width: 1100px; margin: 2rem auto; padding: 0 1rem; font: 16px/1.5 system-ui, sans-serif; }
-        table { border-collapse: collapse; margin: 1rem 0; }
-        th, td { border: 1px solid #888; padding: 0.4rem 0.7rem; text-align: right; }
-        th:first-child, td:first-child { text-align: left; }
-        pre { overflow-x: auto; padding: 1rem; background: #f4f4f4; }
-        section { border-top: 1px solid #aaa; margin-top: 2rem; }
-        details { margin: 1rem 0; }
-        summary { cursor: pointer; }
-    </style>
 </head>
 
 <body>
-    <h1>Ideal 3 dB attenuator and 20 dB amplifier</h1>
-    <p>Both components are matched two-ports. The amplifier is unilateral:
-        S11 = S12 = S22 = 0, S21 = 10. Its noise figure is 4 dB. The attenuator
-        and the noise-figure reference are both at 290 K.</p>
-    <p>This page uses the ideal amplifier constructor. The worked matrices in
-        <a href="noiseAnalysis.md">noiseAnalysis.md</a> use an earlier semi-ideal
-        amplifier with small 0.01 reflections and reverse transmission.</p>
-
-    <h2>Results at 2 GHz</h2>
-    <table>
-        <thead><tr><th>Order</th><th>20 log10 |S21|</th><th>Covariance NF</th><th>Friis NF</th></tr></thead>
-        <tbody id="results"></tbody>
-    </table>
-
-    <section>
-        <h2>1. Attenuator → amplifier</h2>
-        <p>The attenuator reduces the signal and adds thermal noise before amplification.</p>
-        <pre id="atten-amp-steps"></pre>
-        <details><summary>Show the component and six-position matrices</summary><pre id="atten-amp-matrices"></pre></details>
-    </section>
-
-    <section>
-        <h2>2. Amplifier → attenuator</h2>
-        <p>The amplifier raises the signal before the attenuator adds its thermal noise.</p>
-        <pre id="amp-atten-steps"></pre>
-        <details><summary>Show the component and six-position matrices</summary><pre id="amp-atten-matrices"></pre></details>
-    </section>
-
     <script>
-        var kB = 1.380649e-23;
-        var T0 = 290;
-        nP.global.fList = [2e9];
+        nP.global.fList = [1e9, 2e9];
         nP.global.Ro = 50;
-        nP.global.Temp = T0;
+        nP.global.Temp = 290;
 
-        // S and C are supplied by these two nPort constructors at each frequency.
-        var attenuator = nP.Attn(3, T0);
-        var amplifier = nP.Amp(20, 4, T0);
+        var attenuator = nP.Attn(3, 290);
 
-        function zeroMatrix(size) {
-            return Array.from({length: size}, function () {
-                return Array.from({length: size}, function () { return nP.complex(0, 0); });
-            });
-        }
+        var defaultAmp = nP.Amp();
+        var defaultViaNodal = nP.nodal(
+            [defaultAmp, 1, 2],
+            [attenuator, 2, 3],
+            ['out', 1, 3]
+        );
+        var defaultViaCascade = nP.cascade(defaultAmp, attenuator);
 
-        function conjugateTranspose(entries) {
-            return entries[0].map(function (_, col) {
-                return entries.map(function (row) {
-                    return nP.complex(row[col].getR(), -row[col].getI());
-                });
-            });
-        }
+        nP.log('Amp() via nodal');
+        nP.log(defaultViaNodal.out('NF21dB'));
+        nP.log('Amp() via cascade');
+        nP.log(defaultViaCascade.out('NF21dB'));
 
-        function showMatrix(entries, noise) {
-            return entries.map(function (row) {
-                return '[ ' + row.map(function (value) {
-                    var real = noise ? value.getR().toExponential(3) : value.getR().toFixed(3);
-                    var imaginary = value.getI();
-                    return imaginary === 0 ? real : real + (imaginary < 0 ? ' - ' : ' + ')
-                        + Math.abs(imaginary).toExponential(3) + 'i';
-                }).join('  ') + ' ]';
-            }).join('\n');
-        }
+        var positionalAmp = nP.Amp(20, 4);
+        var positionalViaNodal = nP.nodal(
+            [positionalAmp, 1, 2],
+            [attenuator, 2, 3],
+            ['out', 1, 3]
+        );
+        var positionalViaCascade = nP.cascade(positionalAmp, attenuator);
 
-        function blockMatrices(first, second) {
-            // Positions 1-2: first component; 3-4: second component;
-            // 5: matched source; 6: matched load.
-            var s = zeroMatrix(6);
-            var cc = zeroMatrix(6);
-            [first, second].forEach(function (component, block) {
-                var offset = 2 * block;
-                var spars = component.spars[0];
-                var covariance = component.noise[0].C;
-                for (var row = 0; row < 2; row++) {
-                    for (var col = 0; col < 2; col++) {
-                        s[offset + row][offset + col] = spars[1 + 2 * row + col];
-                        cc[offset + row][offset + col] = covariance[row][col];
-                    }
-                }
-            });
+        nP.log('Amp(20, 4) via nodal');
+        nP.log(positionalViaNodal.out('NF21dB'));
+        nP.log('Amp(20, 4) via cascade');
+        nP.log(positionalViaCascade.out('NF21dB'));
 
-            var gamma = zeroMatrix(6);
-            [[0, 4], [1, 2], [3, 5]].forEach(function (pair) {
-                gamma[pair[0]][pair[1]] = nP.complex(1, 0);
-                gamma[pair[1]][pair[0]] = nP.complex(1, 0);
-            });
+        var objectAmp = nP.Amp({
+            spars: [
+                nP.complex(0, 0), nP.complex(0, 0),
+                nP.complex(10, 0), nP.complex(0, 0)
+            ],
+            fMinDb: 4,
+            gammaOpt: nP.complex(0, 0),
+            noiseResistanceOhms: 25,
+            referenceTemperature: 290
+        });
+        var objectViaNodal = nP.nodal(
+            [objectAmp, 1, 2],
+            [attenuator, 2, 3],
+            ['out', 1, 3]
+        );
+        var objectViaCascade = nP.cascade(objectAmp, attenuator);
 
-            var S = nP.matrix(s);
-            var Gamma = nP.matrix(gamma);
-            var Cc = nP.matrix(cc);
-            var W = Gamma.subCplx(S);
-            var transfer = Gamma.mulCplx(W.invertCplx());
-            var source = nP.matrix([[nP.complex(0, 0)], [nP.complex(0, 0)],
-                [nP.complex(0, 0)], [nP.complex(0, 0)],
-                [nP.complex(1, 0)], [nP.complex(0, 0)]]);
-            var signal = transfer.mulCplx(source);
-            var Cb = transfer.mulCplx(Cc).mulCplx(nP.matrix(conjugateTranspose(transfer.m)));
-            return {S: S, Gamma: Gamma, W: W, T: transfer, Cc: Cc, Cb: Cb, signal: signal};
-        }
-
-        function stageFactor(component) {
-            var gain = component.spars[0][3].mag() ** 2;
-            var addedNoise = component.noise[0].C[1][1].getR();
-            return 1 + addedNoise / (gain * kB * T0);
-        }
-
-        function checkClose(label, actual, expected) {
-            var tolerance = Math.max(1e-30, Math.abs(expected) * 1e-10);
-            if (Math.abs(actual - expected) > tolerance) {
-                throw new Error(label + ': ' + actual + ' differs from ' + expected);
-            }
-        }
-
-        function analyze(id, label, first, second) {
-            // nodal() combines the component S matrices and propagates their C matrices.
-            var network = nP.nodal(
-                [first, 1, 2],
-                [second, 2, 3],
-                ['out', 1, 3]
-            );
-            var matrices = blockMatrices(first, second);
-            var s21 = network.spars[0][3];
-            var gain = s21.mag() ** 2;
-            var addedNoise = network.noise.covariance[0].C[1][1].getR();
-            var factor = 1 + addedNoise / (gain * kB * T0);
-            var firstGain = first.spars[0][3].mag() ** 2;
-            var friisFactor = stageFactor(first) + (stageFactor(second) - 1) / firstGain;
-            var gainDb = 20 * Math.log10(s21.mag());
-            var noiseFigureDb = 10 * Math.log10(factor);
-            var friisDb = 10 * Math.log10(friisFactor);
-
-            // The displayed six-position calculation must agree with nodal()'s two-port.
-            checkClose('S21', matrices.signal.m[3][0].getR(), s21.getR());
-            checkClose('output noise', matrices.Cb.m[3][3].getR(), addedNoise);
-            checkClose('Friis factor', factor, friisFactor);
-            checkClose('forward gain', gainDb, 17);
-
-            document.getElementById(id + '-steps').textContent =
-                "nP.nodal([first, 1, 2], [second, 2, 3], ['out', 1, 3])\n" +
-                'S21 = ' + s21.getR().toFixed(9) + '\n' +
-                '20 log10 |S21| = ' + gainDb.toFixed(3) + ' dB\n' +
-                'Power gain |S21|^2 = ' + gain.toFixed(9) + '\n' +
-                'Added output noise C22 = ' + addedNoise.toExponential(9) + ' W/Hz\n' +
-                '290 K source noise after gain = |S21|^2 kB T0 = ' +
-                    (gain * kB * T0).toExponential(9) + ' W/Hz\n' +
-                'Covariance: F = 1 + C22 / (|S21|^2 kB T0) = ' + factor.toFixed(9) + '\n' +
-                'NF = 10 log10(F) = ' + noiseFigureDb.toFixed(6) + ' dB\n' +
-                'Friis: F1 + (F2 - 1) / G1 = ' + friisFactor.toFixed(9) +
-                    '  (' + friisDb.toFixed(6) + ' dB)';
-
-            document.getElementById(id + '-matrices').textContent =
-                'First component S:\n' + showMatrix([
-                    first.spars[0].slice(1, 3), first.spars[0].slice(3, 5)
-                ], false) +
-                '\nFirst component C:\n' + showMatrix(first.noise[0].C, true) +
-                '\n\nSecond component S:\n' + showMatrix([
-                    second.spars[0].slice(1, 3), second.spars[0].slice(3, 5)
-                ], false) +
-                '\nSecond component C:\n' + showMatrix(second.noise[0].C, true) +
-                '\n\nS (positions 1-6):\n' + showMatrix(matrices.S.m, false) +
-                '\n\nGamma:\n' + showMatrix(matrices.Gamma.m, false) +
-                '\n\nW = Gamma - S:\n' + showMatrix(matrices.W.m, false) +
-                '\n\nT = Gamma W^-1:\n' + showMatrix(matrices.T.m, false) +
-                '\n\nCc (component noise at positions 1-4; source and load zero):\n' +
-                    showMatrix(matrices.Cc.m, true) +
-                '\n\nCb = T Cc T^H:\n' + showMatrix(matrices.Cb.m, true);
-
-            var row = document.createElement('tr');
-            [label, gainDb.toFixed(3) + ' dB', noiseFigureDb.toFixed(6) + ' dB',
-                friisDb.toFixed(6) + ' dB'].forEach(function (value) {
-                var cell = document.createElement('td');
-                cell.textContent = value;
-                row.appendChild(cell);
-            });
-            document.getElementById('results').appendChild(row);
-        }
-
-        analyze('atten-amp', 'Attenuator → amplifier', attenuator, amplifier);
-        analyze('amp-atten', 'Amplifier → attenuator', amplifier, attenuator);
+        nP.log('Amp({...}) via nodal');
+        nP.log(objectViaNodal.out('NF21dB'));
+        nP.log('Amp({...}) via cascade');
+        nP.log(objectViaCascade.out('NF21dB'));
     </script>
 </body>
 

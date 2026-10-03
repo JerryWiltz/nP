@@ -1,5 +1,7 @@
+// Modified: 2026-10-03
 export var global = {
 	fList:	[2e9],//[2e9, 4e9, 6e9, 8e9],
+	twoTone: undefined,
 	Ro:	50,
 	Temp:	293,
 	fGen: function fGen (fStart, fStop, points) {

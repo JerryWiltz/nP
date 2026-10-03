@@ -1,8 +1,9 @@
-// Modified: 2026-09-30
+// Modified: 2026-10-01
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {global} from '../src/np-global/index.js';
+import {complex} from '../src/np-math/src/complex.js';
 import {Attn, Amp, cascade, nodal} from '../src/np-nport/index.js';
 
 const kB = 1.380649e-23;
@@ -65,12 +66,100 @@ test('Amp sets its output noise from matched-source noise figure', () => {
 		close(s[2].getR(), 0);
 		close(s[3].getR(), 10);
 		close(s[4].getR(), 0);
-		close(C[0][0].getR(), 0);
+		close(C[0][0].getR(), kB * 290 * (4 * 25 / global.Ro - (noiseFactor - 1)));
 		close(C[0][1].getR(), 0);
 		close(C[1][0].getR(), 0);
 		close(C[1][1].getR(), (noiseFactor - 1) * gain * kB * 290);
-		for (const entry of [...s.slice(1), ...C.flat()]) assert.equal(entry.getI(), 0);
+		for (const entry of [...s.slice(1), ...C.flat()]) close(entry.getI(), 0);
 		close(Amp(20, 0).noise[0].C[1][1].getR(), 0);
+	});
+});
+
+test('Amp defaults to the specified 20 dB two-port and full noise parameters', () => {
+	withGlobal({fList: [1e9, 2e9], Temp: 290}, () => {
+		const amplifier = Amp();
+		const positional = Amp(20, 4);
+		const emptyOptions = Amp({});
+		const explicit = Amp({
+			spars: [complex(0, 0), complex(0, 0), complex(10, 0), complex(0, 0)],
+			fMinDb: 4,
+			gammaOpt: complex(0, 0),
+			noiseResistanceOhms: 25,
+			referenceTemperature: 290
+		});
+		for (const row of amplifier.out('s21dB', 'NF21dB')) {
+			if (row[0] === 'Freq') continue;
+			close(row[1], 20);
+			close(row[2], 4);
+		}
+		for (let index = 0; index < amplifier.noise.length; index++) {
+			for (let entry = 1; entry <= 4; entry++) {
+				close(amplifier.spars[index][entry].sub(explicit.spars[index][entry]).mag(), 0);
+			}
+			for (let row = 0; row < 2; row++) {
+				for (let col = 0; col < 2; col++) {
+					close(amplifier.noise[index].C[row][col]
+						.sub(explicit.noise[index].C[row][col]).mag(), 0);
+					close(amplifier.noise[index].C[row][col]
+						.sub(positional.noise[index].C[row][col]).mag(), 0);
+					close(amplifier.noise[index].C[row][col]
+						.sub(emptyOptions.noise[index].C[row][col]).mag(), 0);
+				}
+			}
+		}
+	});
+});
+
+test('Amp object overrides only supplied defaults and rejects invalid covariance', () => {
+	withGlobal({fList: [1e9, 2e9], Temp: 290}, () => {
+		const baseline = Amp();
+		const adjustedNoise = Amp({fMinDb: 4.5});
+		close(adjustedNoise.out('s21dB', 'NF21dB')[1][1], 20);
+		close(adjustedNoise.out('s21dB', 'NF21dB')[1][2], 4.5);
+		close(adjustedNoise.spars[0][3].sub(baseline.spars[0][3]).mag(), 0);
+		close(adjustedNoise.noise[0].C[0][1].mag(), 0);
+		const sevenDb = Amp({fMinDb: 7, noiseResistanceOhms: 51});
+		close(sevenDb.out('NF21dB')[1][1], 7);
+		const smaller = Amp(12, 2.3);
+		close(smaller.out('s21dB', 'NF21dB')[1][1], 12);
+		close(smaller.out('s21dB', 'NF21dB')[1][2], 2.3);
+		assert.throws(() => Amp({fMinDb: 7}), /invalid noise covariance/);
+		assert.throws(() => Amp({fMinDb: 7, gammaOpt: complex(0.1, 0.2),
+			noiseResistanceOhms: 1}), /invalid noise covariance/);
+	});
+});
+
+test('Amp converts constant two-port noise parameters into complex covariance', () => {
+	withGlobal({fList: [1e9, 2e9], Temp: 290}, () => {
+		const fMinDb = 2;
+		const gammaOpt = complex(0.2, 0.1);
+		const noiseResistanceOhms = 25;
+		const spars = [complex(0.1, 0.05), complex(0, 0.01),
+			complex(9, 3), complex(0.2, 0)];
+		const amplifier = Amp({spars, fMinDb, gammaOpt, noiseResistanceOhms});
+		const slope = 4 * (noiseResistanceOhms / global.Ro) /
+			((1 + gammaOpt.getR()) ** 2 + gammaOpt.getI() ** 2);
+		for (const gamma of [complex(0, 0), gammaOpt, complex(-0.3, 0.25)]) {
+			const distance = gamma.sub(gammaOpt).mag() ** 2;
+			const expected = 10 ** (fMinDb / 10) +
+				slope * distance / (1 - gamma.mag() ** 2);
+			const output = amplifier.out('NF21', {source: {reflection: gamma}});
+			close(output[1][1], expected);
+			close(output[2][1], expected);
+		}
+		const matchedNoiseFigureDb = 10 * Math.log10(
+			10 ** (fMinDb / 10) + slope * gammaOpt.mag() ** 2);
+		close(Amp({spars, fMinDb, gammaOpt, noiseResistanceOhms,
+			noiseFigureDb: matchedNoiseFigureDb}).out('NF21dB')[1][1], matchedNoiseFigureDb);
+		assert.throws(() => Amp({spars, fMinDb, gammaOpt, noiseResistanceOhms,
+			noiseFigureDb: matchedNoiseFigureDb + 1}), RangeError);
+		assert.ok(amplifier.noise[0].C[0][1].mag() > 0);
+		assert.notEqual(amplifier.noise[0].C[0][1].getI(), 0);
+		assert.notEqual(amplifier.noise[0].C[0][1], amplifier.noise[1].C[0][1]);
+		for (let index = 0; index < spars.length; index++) {
+			close(amplifier.spars[0][index + 1].getR(), spars[index].getR());
+			close(amplifier.spars[0][index + 1].getI(), spars[index].getI());
+		}
 	});
 });
 
@@ -103,4 +192,14 @@ test('ideal noise constructors reject invalid parameters', () => {
 	assert.throws(() => Amp(Infinity), RangeError);
 	assert.throws(() => Amp(20, -1), RangeError);
 	assert.throws(() => Amp(20, 4, 0), RangeError);
+	assert.doesNotThrow(() => Amp({fMinDb: 2}));
+	assert.throws(() => Amp({spars: [complex(0, 0)]}), TypeError);
+	assert.throws(() => Amp({
+		spars: [complex(0, 0), complex(0, 0), complex(10, 0), complex(0, 0)],
+		fMinDb: 2, gammaOpt: complex(1, 0), noiseResistanceOhms: 25
+	}), RangeError);
+	assert.throws(() => Amp({
+		spars: [complex(0, 0), complex(0, 0), complex(10, 0), complex(0, 0)],
+		fMinDb: 4, gammaOpt: complex(0, 0), noiseResistanceOhms: 0
+	}), RangeError);
 });

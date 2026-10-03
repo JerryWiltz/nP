@@ -1,4 +1,4 @@
-<!-- Modified: 2026-09-24 -->
+<!-- Modified: 2026-10-03 -->
 <!DOCTYPE html>
 <html>
 
@@ -10,128 +10,107 @@
 </head>
 
 <body>
+    <div id="nodalChart"></div>
+    <div id="nodalTable"></div>
+    <div id="cascadeChart"></div>
+    <div id="cascadeTable"></div>
+    <div id="noiseFloorChart"></div>
+    <div id="noiseFloorTable"></div>
+    <div id="cascadeNoiseFloorChart"></div>
+    <div id="cascadeNoiseFloorTable"></div>
+
     <script>
-        nP.log("Gupta six-variable resistor-amplifier intermodulation example");
+        // Sweep f1 from 1 to 2 GHz. f2 is always 1 MHz above f1.
+        nP.global.fList = nP.global.fGen(1e9, 2e9, 11);
+        nP.global.twoTone = {spacingHz: 1e6, p1dBm: -30, p2dBm: -25};
 
-        // The six-variable ordering is:
-        // 1,2: resistor ports; 3,4: amplifier ports; 5,6: external ports.
-        // Your stage-local b1 is represented here by xAmp = a3 = b2.
-        // The amplifier forward wave is b4 = 10*xAmp + 0.001*xAmp^2.
-        var rs11 = 3 / 7;
-        var rs12 = 4 / 7;
-        var rs21 = 4 / 7;
-        var rs22 = 3 / 7;
+        var amp = nP.Amp({
+            gainDb: 20,
+            noiseFigureDb: 4,
+            oip2dBm: 42,
+            oip3dBm: 30
+        });
+        var attenuator = nP.Attn(3);
 
-        var ts11 = 0.01;
-        var ts12 = 0.01;
-        var ts21 = 10;
-        var ts22 = 0.01;
-        var alpha2 = 0.001;
+        var ampThenAtten = nP.nodal(
+            [amp, 1, 2],
+            [attenuator, 2, 3],
+            ['out', 1, 3]
+        );
 
-        // Gupta's block-diagonal component S matrix.
-        var S = nP.matrix([
-            [rs11, rs12, 0, 0, 0, 0],
-            [rs21, rs22, 0, 0, 0, 0],
-            [0, 0, ts11, ts12, 0, 0],
-            [0, 0, ts21, ts22, 0, 0],
-            [0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0]
-        ]);
+        var nodalResults = ampThenAtten.out('OIP3lower21dBm', 'NF21dB');
+        nP.lineChart({
+            inputTable: [nodalResults],
+            title: 'IP3 from nodal',
+            mount: '#nodalChart',
+            xAxisTitle: 'Frequency (GHz)',
+            yAxisTitle: 'Output IP3 (dBm) / NF (dB)',
+            yRange: [0, 30],
+            metricPrefix: 'giga'
+        });
+        nP.lineTable({
+            inputTable: [nodalResults],
+            title: 'IP3 and NF from nodal',
+            mount: '#nodalTable',
+            metricPrefix: 'giga',
+            columnWidth: 170
+        });
 
-        // Gupta's connection matrix for the resistor-amplifier topology.
-        var gamma = nP.matrix([
-            [0, 0, 0, 0, 1, 0],
-            [0, 0, 1, 0, 0, 0],
-            [0, 1, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 1, 0, 0]
-        ]);
+        var ampThenAttenCascade = nP.cascade(amp, attenuator);
+        var cascadeResults = ampThenAttenCascade.out('OIP3lower21dBm', 'NF21dB');
+        nP.lineChart({
+            inputTable: [cascadeResults],
+            title: 'IP3 from cascade',
+            mount: '#cascadeChart',
+            xAxisTitle: 'Frequency (GHz)',
+            yAxisTitle: 'Output IP3 (dBm) / NF (dB)',
+            yRange: [0, 30],
+            metricPrefix: 'giga'
+        });
+        nP.lineTable({
+            inputTable: [cascadeResults],
+            title: 'IP3 and NF from cascade',
+            mount: '#cascadeTable',
+            metricPrefix: 'giga',
+            columnWidth: 170
+        });
 
-        var W = gamma.sub(S);
-        var Winvert = W.invert();
+        var outputNoiseFloor = ampThenAtten.out('noiseFloor');
 
-        nP.log("S");
-        nP.log(S);
-        nP.log("Gamma");
-        nP.log(gamma);
-        nP.log("W = Gamma - S");
-        nP.log(W);
-        nP.log("W^-1");
-        nP.log(Winvert);
+        nP.lineChart({
+            inputTable: [outputNoiseFloor],
+            title: 'Output noise floor (dBm/Hz) from nodal',
+            mount: '#noiseFloorChart',
+            xAxisTitle: 'Frequency (GHz)',
+            yAxisTitle: 'Output noise floor (dBm/Hz)',
+            yRange: [-200, -140],
+            metricPrefix: 'giga'
+        });
+        nP.lineTable({
+            inputTable: [outputNoiseFloor],
+            title: 'Output noise floor (dBm/Hz) from nodal',
+            mount: '#noiseFloorTable',
+            metricPrefix: 'giga',
+            columnWidth: 220
+        });
 
-        // T maps an impressed source column to the outgoing-wave column.
-        var T = gamma.mul(Winvert);
-        nP.log("T = Gamma * W^-1");
-        nP.log(T);
-
-        function sourceAtExternalPort5(value) {
-            return nP.matrix([
-                [0],
-                [0],
-                [0],
-                [0],
-                [value],
-                [0]
-            ]);
-        }
-
-        function sourceAtAmplifierOutput(value) {
-            // c4 is the equivalent nonlinear impressed source at the
-            // amplifier output-wave position.
-            return nP.matrix([
-                [0],
-                [0],
-                [0],
-                [value],
-                [0],
-                [0]
-            ]);
-        }
-
-        function solveSource(c) {
-            var a = Winvert.mul(c);
-            var b = gamma.mul(a);
-            return {a: a, b: b};
-        }
-
-        // Two equal-amplitude tones enter at c5. The first-order solution at
-        // each fundamental uses the linear Gupta solve.
-        var f1 = 1.000e9;
-        var f2 = 1.001e9;
-        var tone1 = solveSource(sourceAtExternalPort5(1));
-        var tone2 = solveSource(sourceAtExternalPort5(1));
-        var xAmpF1 = tone1.a.m[2][0];
-        var xAmpF2 = tone2.a.m[2][0];
-
-        // A quadratic term produces sum and difference products. The factor 2
-        // is from the two ordered products x1*x2 and x2*x1.
-        var sumProduct = 2 * alpha2 * xAmpF1 * xAmpF2;
-        var differenceProduct = 2 * alpha2 * xAmpF1 * xAmpF2;
-        var sumResponse = solveSource(sourceAtAmplifierOutput(sumProduct));
-        var differenceResponse = solveSource(sourceAtAmplifierOutput(differenceProduct));
-
-        var resultTable = [
-            ['Frequency', 'Input source', 'Amp input xAmp', 'Output b4', 'Product']
-        ];
-        resultTable.push([f1, 1, xAmpF1, tone1.b.m[3][0], 'fundamental f1']);
-        resultTable.push([f2, 1, xAmpF2, tone2.b.m[3][0], 'fundamental f2']);
-        resultTable.push([f1 + f2, 0, 0, sumResponse.b.m[3][0], 'second-order f1 + f2']);
-        resultTable.push([f2 - f1, 0, 0, differenceResponse.b.m[3][0], 'second-order f2 - f1']);
-
-        nP.log("Two-tone intermodulation results");
-        nP.log(resultTable);
-        nP.log("Linear output b4 at f1");
-        nP.log(tone1.b.m[3][0]);
-        nP.log("Linear output b4 at f2");
-        nP.log(tone2.b.m[3][0]);
-        nP.log("Quadratic output b4 at f1 + f2");
-        nP.log(sumResponse.b.m[3][0]);
-        nP.log("Quadratic output b4 at f2 - f1");
-        nP.log(differenceResponse.b.m[3][0]);
-
-        nP.log("This is a second-order weak-nonlinearity calculation.");
-        nP.log("A full harmonic-balance solve would iterate c4 at every retained frequency.");
+        var cascadeNoiseFloor = ampThenAttenCascade.out('noiseFloor');
+        nP.lineChart({
+            inputTable: [cascadeNoiseFloor],
+            title: 'Output noise floor (dBm/Hz) from cascade',
+            mount: '#cascadeNoiseFloorChart',
+            xAxisTitle: 'Frequency (GHz)',
+            yAxisTitle: 'Output noise floor (dBm/Hz)',
+            yRange: [-200, -140],
+            metricPrefix: 'giga'
+        });
+        nP.lineTable({
+            inputTable: [cascadeNoiseFloor],
+            title: 'Output noise floor (dBm/Hz) from cascade',
+            mount: '#cascadeNoiseFloorTable',
+            metricPrefix: 'giga',
+            columnWidth: 220
+        });
     </script>
 </body>
 

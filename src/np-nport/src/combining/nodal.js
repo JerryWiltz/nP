@@ -3,24 +3,27 @@ import {matrix} from '../../../np-math/src/matrix';
 import {dim} from '../../../np-math/src/matrix';
 import {dup} from '../../../np-math/src/matrix';
 import {complex} from '../../../np-math/src/complex';
+import {connectionModel} from '../intermod';
 
-// Modified: 2026-09-17
+// Modified: 2026-10-03
 var conjugate = function (value) { return complex(value.getR(), -value.getI()); };
 
 
 export function nodal( ... componentConnections) { // componentConnections = [[nPort1, n1, n2 ...], ... ['out', n1, n2, ...] ]
 	var i = 0, j = 0, k = 0, row = 0, col = 0, offset = 0, base = 0;
-	var networkSpars = function () { // creates the output S-parameter table with frequencies only
-		var sparsLength = componentConnections[0][0].global.fList.length; // use the first nPort for global data
-		var sparsArray = dim(sparsLength,1,1)
-		for (i = 0; i< sparsLength; i++) {
-			sparsArray[i][0] = componentConnections[0][0].global.fList[i];
-		}
-		return sparsArray;
-	}();
+	var networkSpars = componentConnections[0][0].spars.map(function (row) {
+		return [row[0]];
+	});
 	var numOfFreqs = componentConnections[0][0].spars.length; // determine the number of frequency points
 	var networkEntryCount = componentConnections.length;
 	var m = networkEntryCount - 1; // Gupta's m: number of multiport components
+	for (var componentIndex = 1; componentIndex < m; componentIndex++) {
+		var componentSpars = componentConnections[componentIndex][0].spars;
+		if (componentSpars.length !== numOfFreqs ||
+			componentSpars.some(function (row, index) { return row[0] !== networkSpars[index][0]; })) {
+			throw new RangeError('nodal components must have matching frequency rows.');
+		}
+	}
 	var totalPortCount = function (connections) { // total component and external ports
 		var size = 0;
 		for (i = 0; i < networkEntryCount; i++) {
@@ -109,6 +112,16 @@ export function nodal( ... componentConnections) { // componentConnections = [[n
 	};
 	network.setspars(networkSpars);
 	network.setglobal(componentConnections[0][0].global); // use the first component for global data
-	network.noise = {covariance: networkNoiseCovariance};
+	network.noise = networkNoiseCovariance;
+	var displayComponent = componentConnections.slice(0, m).find(function (entry) {
+		return entry[0]._displayFrequencies;
+	});
+	network._displayFrequencies = displayComponent && displayComponent[0]._displayFrequencies;
+	network._intermod = connectionModel(
+		componentConnections.slice(0, m).map(function (entry) { return entry[0]; }),
+		GammaArray.map(function (connectionRow) {
+			return connectionRow.findIndex(function (value) { return value.getR() === 1; });
+		})
+	);
 	return network;
 };

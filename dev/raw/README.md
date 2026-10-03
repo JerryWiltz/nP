@@ -1,9 +1,15 @@
 # Raw Technical Notes
-<!-- Modified: 2026-06-27 -->
+<!-- Modified: 2026-10-03 -->
 
 This folder collects raw research material for future RF/microwave model work.
 
-Immediate target: improve `nP.mtee()` so it can take physical dimensions, physical constants, and frequency, then produce S-parameters from the model rather than using the current placeholder-style ideal Tee behavior.
+## Noise analysis references
+
+- `keysight_noise_figure_measurement.pdf` — Keysight Technologies, *High-Accuracy Noise Figure Measurements with Network Analyzers*, application note 5990-5800. See p. 13, Figure 6 and the noise-parameter equation for Fmin, optimum source reflection, and noise resistance. Source: https://www.keysight.com/content/dam/keysight/en/doc/gate/application-notes/5990-5800.pdf
+- `randa_multiport_noise_2001.pdf` — J. Randa, *Noise Characterization of Multiport Amplifiers*, IEEE Transactions on Microwave Theory and Techniques 49(10), 2001, pp. 1757-1763. See Section II for the multiport noise-matrix definitions and equations. Source: https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=5219
+- `touchstone_ver2_1.pdf` — IBIS Open Forum, *Touchstone File Format Specification*, version 2.1, ratified January 26, 2024. See pp. 24-25 for `[Noise Data]` and the five noise-parameter fields. Source: https://www.ibis.org/touchstone_ver2.1/touchstone_ver2_1.pdf
+
+The physical `nP.mtee()` model is implemented under `src/np-nport/src/mlin/`; its selected equations and limits are summarized in `developmentDocs/microstrip/README.md`. Keep source captures and competing equations here for future model checks.
 
 For each paper or source, capture:
 

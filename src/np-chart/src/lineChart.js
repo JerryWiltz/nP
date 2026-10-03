@@ -1,4 +1,4 @@
-// Modified: 2026-09-15
+// Modified: 2026-10-03
 import * as d3 from 'd3';
 
 export function lineChart(options = {}) {
@@ -95,17 +95,26 @@ export function lineChart(options = {}) {
             // to the right edge so it can slide over the title as space gets
             // tight.
             const isCompact = width < 800;
+            const labelNames = showLabels
+                ? inputTable.flatMap(table => table[0].slice(1))
+                : [];
+            const labelContext = document.createElement('canvas').getContext('2d');
+            labelContext.font = `${labelFontSize}px ${fontFamily}`;
+            const labelRightMargin = labelNames.length
+                ? Math.ceil(Math.max(...labelNames.map(name =>
+                    labelContext.measureText(String(name)).width)) + 12)
+                : 0;
             const layoutMargin = isCompact
                 ? {
                     ...margin,
                     // Reserve a title/control row above the plot and leave
                     // room for the rotated y-axis title and end labels.
                     top: Math.max(margin.top, 45),
-                    right: Math.max(margin.right, 60),
+                    right: Math.max(margin.right, 60, labelRightMargin),
                     bottom: Math.max(margin.bottom, 45),
                     left: Math.max(margin.left, 75)
                 }
-                : margin;
+                : {...margin, right: Math.max(margin.right, labelRightMargin)};
             const tickCount = Math.max(5, Math.min(10, Math.floor((width - layoutMargin.left - layoutMargin.right) / 40)));
             const axisFontPx = effectiveFontSize;
             let txtLabels = d3.selectAll([]);
@@ -203,7 +212,7 @@ export function lineChart(options = {}) {
                 .append('div')
                 .style('position', 'relative')
                 .style('display', 'block')
-                .style('width', '100%')
+                .style('width', `${width + 10}px`)
                 .style('max-width', '100%')
                 .style('box-sizing', 'border-box')
                 .style('overflow', 'hidden')
@@ -497,7 +506,15 @@ export function lineChart(options = {}) {
                     })
                     .style('font-size', `${labelFontSize}px`)
                     .style('fill', labelColor || null)
-                    .text(d => d.yName);
+                    .text(d => d.yName)
+                    .each(function () {
+                        const label = d3.select(this);
+                        const rightEdge = width - layoutMargin.left - 6;
+                        if (label.attr('text-anchor') === 'start' &&
+                            Number(label.attr('x')) + this.getComputedTextLength() > rightEdge) {
+                            label.attr('x', rightEdge).attr('text-anchor', 'end');
+                        }
+                    });
             }
 
             // Returned API methods 

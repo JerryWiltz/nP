@@ -2,7 +2,7 @@ sudo npm install -g @openai/codex
 Read all applicable AGENTS.md files before working. Inspect the current Git status and latest commits, then continue from the repository’s current state.
 
 # AGENTS.md
-<!-- Modified: 2026-09-30 -->
+<!-- Modified: 2026-10-03 -->
 
 Repository guide for agents working in the `nP` repo.
 
@@ -55,7 +55,7 @@ Primary domains:
 
 The normal browser/example workflow is hierarchical:
 
-1. Set the analysis frequencies first, usually with `nP.global.fList = nP.global.fGen(start, stop, points)`.
+1. Set the analysis frequencies first, usually with `nP.global.fList = nP.global.fGen(start, stop, points)`. For two-tone intermodulation, also set `nP.global.twoTone` before constructing components.
 2. Create electrical components and fixtures as n-port objects, such as `nP.R()`, `nP.L()`, `nP.C()`, `nP.Tee()`, `nP.Short()`, `nP.Open()`, `nP.Load()`, `nP.Tlin()`, or `nP.mlin()`.
 3. Combine smaller n-port objects into larger n-port objects with helpers such as `nP.nodal()` or `nP.cascade()`.
 4. Reuse those combined n-port objects as building blocks in larger circuits when useful.
@@ -102,9 +102,11 @@ The main internal objects are `complex`, `matrix`, and `nPort`. Keep their exist
 - n-port constructors return objects with `.spars` and `.global` managed through `setspars()`, `getspars()`, `setglobal()`, and `getglobal()`.
 - `.spars` is an array of rows. Each row is `[frequency, s11, s12, s21, s22, ...]`; every S-parameter entry is a `complex()` object.
 - The number of ports is inferred as `Math.sqrt(row.length - 1)`. Keep S-parameter row shapes square.
-- `nPort.out('s21dB', 's11Re', ...)` extracts numeric tables with a header row. Valid suffixes are `mag`, `dB`, `ang`, `Re`, and `Im`.
+- `.noise` contains frequency-aligned `{frequency, C}` rows with a full complex covariance matrix. Active models must supply their own noise covariance; passive fallback noise follows the component temperature captured by the nPort.
+- `nPort.out(...)` extracts numeric tables with a header row. Besides S selectors such as `s21dB`, it accepts covariance, NF, output noise-floor, IM, and OIP selectors. `noiseFloor` means output port 2 from input port 1 in dBm/Hz; use a port-specific selector such as `noiseFloor31dBmHz` for another pair.
+- `nP.Amp()` and `nP.Attn()` expand their S and noise rows to the two-tone product frequencies when `global.twoTone` is set. All components combined in one analysis must have matching frequency rows. `.out()` still displays the configured `fList` points for these components and their combinations.
 - `cas()` and `nP.cascade()` are for 2-port cascades. Use `nP.nodal()` for arbitrary interconnections and multiport circuits.
-- Any nPort can be reused as a component in a larger `nP.nodal(...)` call.
+- Returned nPorts retain combined noise covariance and known internal amplifier intermodulation sources when reused in `nP.nodal()` or `nP.cascade()`.
 
 ## Ladder Network Pattern
 
@@ -232,6 +234,7 @@ Diode-related constructors live in `src/np-diodes`. These models are expected to
 - `dev/`: local browser development and verification pages. These files are manual harnesses, not source of truth.
   - `dev/visualizationDevelopment.html` loads `../dist/nP.js` and exercises the built line-chart, line-table, and Smith-chart APIs.
   - `dev/microstripDevelopment.html`, `dev/matrixDevelopment.html`, and `dev/nodalDevelopment.html` are manual development pages for focused RF/math workflows.
+  - `dev/noiseAnalysis.html` and `dev/intermodAnalysis.html` exercise amplifier and attenuator noise, intermodulation, nodal, and cascade behavior.
   - `dev/raw/` holds raw technical source material, equation notes, and early derivations for work such as `mtee()`.
 
 The old subpackage-level build artifacts under `src/np-*` have been removed. Treat the root package and root Rollup config as the only current build path.
@@ -240,7 +243,8 @@ The old subpackage-level build artifacts under `src/np-*` have been removed. Tre
 
 Use these commands from the repo root:
 
-- `npm run build`: bundle `src/index.js` to `dist/nP.js`.
+- `npm run build`: bundle `src/index.js` to `dist/nP.js`, `dist/nP.esm.js`, and `dist/nP.cjs`.
+- `npm run dev:smoke`: open the `dev/*.html` harnesses in Playwright and report browser errors.
 - `npm run docs:dev`: run the VitePress docs dev server.
 - `npm run docs:build`: build the docs.
 - `npm run docs:serve` or `npm run docs:preview`: serve built docs.
@@ -269,7 +273,7 @@ The test command uses `scripts/extensionless-loader.mjs` so Node can run source 
 - Preserve the public API exported from `src/index.js` and subpackage indexes unless the user explicitly requests a breaking change.
 - Many functions depend on the shared mutable `global` object from `src/np-global/src/global.js`. Be careful with changes that affect `global.fList`, `global.Ro`, or object-level `setglobal/getglobal` behavior.
 - S-parameter rows are represented as `[frequency, s11, s12, s21, s22, ...]`, where complex entries are `complex()` objects.
-- `nPort.out()` returns a table with a header row followed by numeric data rows. `lineChart()` and `lineTable()` consume this table shape.
+- `nPort.out()` returns a table with a header row followed by numeric data rows. `lineChart()` and `lineTable()` consume this table shape. Use `out('noiseFloor')` for the default matched 290 K, 1 Hz output noise density in dBm/Hz.
 - Preserve the public `.x`/`.y` fields on complex objects, `.m` on matrix objects, and `.spars`/`.global` on nPort objects.
 - In `dev/` HTML files, format `nP.nodal(...)` calls with one connection argument per line so circuit connections are easy to read.
 - `lineChart()`, `smithChart()`, and `lineTable()` share common option names where possible: `inputTable`, `mount`, `title`, `containerId`, `svgId`, `metricPrefix`, `fontFamily`, `fontSize`, `containerFontSizePx`, and `backgroundColor`. Keep older aliases such as `pngBackground`, `chartTitle`, `tableTitle`, and `headColor` working unless the user explicitly requests a breaking cleanup.
@@ -277,7 +281,7 @@ The test command uses `scripts/extensionless-loader.mjs` so Node can run source 
 - `smithChart()` consumes paired real/imaginary columns such as `s11Re`, `s11Im`, `s22Re`, and `s22Im`. It draws a square Smith chart with SVG resistance/reactance circles, trace labels, hover values for frequency/Re/Im/magnitude/angle, and PNG copy.
 - `lineTable()` consumes the same table shape returned by `nPort.out(...)`, renders SVG tables, and includes clipboard-based PNG and TSV copy behavior.
 - Browser rendering code in `src/np-chart` and `src/np-misc` assumes `document`, `window`, and sometimes clipboard APIs. Do not make those modules server-only without preserving browser behavior.
-- Do not add large dependencies unless they are clearly justified. Current root dev dependencies are Rollup, D3, VitePress, and the Rollup node resolver plugin.
+- Do not add large dependencies unless they are clearly justified. The current root development tooling includes Rollup, D3, VitePress, Playwright, and the Rollup node resolver plugin.
 
 ## Generated And Dirty Files
 
@@ -355,4 +359,4 @@ Follow this plan for substantive work in this repo:
 - `lineTable()` includes clipboard-based PNG and TSV copy behavior; browser support and secure-context requirements can affect it.
 - `nP.log()` writes HTML directly into the document. Be cautious about passing unsanitized user content.
 - Matrix and nodal algorithms use custom complex arithmetic and mutable arrays. Small shape or indexing changes can affect RF results broadly.
-- `cascade()` mutates its local `nPortsTable` reference while reducing. Be careful if changing it to avoid altering observable behavior unexpectedly.
+- `cascade()` reduces with `nPort.cas()` without modifying its input nPorts. Preserve the combined S rows, noise covariance, and intermodulation source model in the returned nPort.

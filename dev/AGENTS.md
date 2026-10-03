@@ -1,5 +1,5 @@
 # AGENTS.md
-<!-- Modified: 2026-09-06 -->
+<!-- Modified: 2026-10-03 -->
 
 Instructions for files in `dev/`.
 
@@ -28,6 +28,7 @@ Write dev examples in this order so the circuit logic is easy to follow:
 6. Send the output table to `nP.lineChart()`, `nP.lineTable()`, or `nP.smithChart()`.
 
 This pattern is preferred over putting unrelated chart/table data directly into a dev page unless the page is specifically testing chart or table behavior.
+For two-tone examples, set `nP.global.twoTone` before constructing the components, and keep the actual `nP.nodal()` or `nP.cascade()` calls visible in the script. Use the same `.out()` table for a chart and its corresponding table. `out('noiseFloor')` supplies the matched 290 K output noise density in dBm/Hz; `out('NF21dB')` and intermodulation selectors can share the same nPort.
 
 ## Ideal Component Naming
 

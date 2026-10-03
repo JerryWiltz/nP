@@ -1,4 +1,4 @@
-<!-- Modified: 2026-09-24 -->
+<!-- Modified: 2026-10-03 -->
 # nP Development Documentation
 
 This directory contains internal engineering knowledge for developing nP. It records RF mathematics, equation-to-code translations, implementation decisions, data contracts, assumptions, units, references, and worked examples.
@@ -15,6 +15,132 @@ The intended information flow is:
 ```text
 raw research → development documentation → AGENTS rules → source code and tests
 ```
+
+## Source layout
+
+This tree lists every JavaScript file under `src/`, including all constructor files:
+
+```text
+src/
+├── np-chart/
+│   ├── src/
+│   │   ├── lineChart.js
+│   │   ├── lineTable.js
+│   │   ├── log.js
+│   │   ├── smithChart.js
+│   │   └── version.js
+│   └── index.js
+├── np-diodes/
+│   ├── src/
+│   │   └── diode1N4148.js
+│   └── index.js
+├── np-global/
+│   ├── src/
+│   │   └── global.js
+│   └── index.js
+├── np-lowpass-prototype/
+│   ├── src/
+│   │   ├── archive/
+│   │   │   └── chebyshev.js
+│   │   ├── chebyLPgk.js
+│   │   ├── chebyLPLCs.js
+│   │   └── chebyLPNsec.js
+│   └── index.js
+├── np-math/
+│   ├── src/
+│   │   ├── complex.js
+│   │   └── matrix.js
+│   └── index.js
+├── np-misc/
+│   ├── src/
+│   │   ├── getCircuitTitle.js
+│   │   └── htmlSupport.js
+│   └── index.js
+├── np-nport/
+│   ├── src/
+│   │   ├── combining/
+│   │   │   ├── cascade.js
+│   │   │   └── nodal.js
+│   │   ├── idealComponents/
+│   │   │   ├── Amp.js
+│   │   │   ├── Attn.js
+│   │   │   ├── Load.js
+│   │   │   ├── Open.js
+│   │   │   ├── seriesTee.js
+│   │   │   ├── Shift90.js
+│   │   │   ├── Short.js
+│   │   │   ├── Tclin.js
+│   │   │   ├── Tee.js
+│   │   │   ├── Tee4.js
+│   │   │   ├── Tee5.js
+│   │   │   └── Tlin.js
+│   │   ├── mlin/
+│   │   │   ├── constants.js
+│   │   │   ├── mbend.js
+│   │   │   ├── mclin.js
+│   │   │   ├── mcross.js
+│   │   │   ├── mlin.js
+│   │   │   ├── mstep.js
+│   │   │   ├── mtee.js
+│   │   │   ├── mtfr.js
+│   │   │   ├── mvgnd.js
+│   │   │   ├── mvia.js
+│   │   │   └── noise.js
+│   │   ├── physicalModels/
+│   │   │   └── options.js
+│   │   ├── rlc/
+│   │   │   ├── C.js
+│   │   │   ├── L.js
+│   │   │   ├── lpfGen.js
+│   │   │   ├── paC.js
+│   │   │   ├── paL.js
+│   │   │   ├── paPaLC.js
+│   │   │   ├── paPaRC.js
+│   │   │   ├── paPaRL.js
+│   │   │   ├── paPaRLC.js
+│   │   │   ├── paR.js
+│   │   │   ├── paSeLC.js
+│   │   │   ├── paSeRC.js
+│   │   │   ├── paSeRL.js
+│   │   │   ├── paSeRLC.js
+│   │   │   ├── R.js
+│   │   │   ├── seC.js
+│   │   │   ├── seL.js
+│   │   │   ├── sePaLC.js
+│   │   │   ├── sePaRC.js
+│   │   │   ├── sePaRL.js
+│   │   │   ├── sePaRLC.js
+│   │   │   ├── seR.js
+│   │   │   ├── seSeLC.js
+│   │   │   ├── seSeRC.js
+│   │   │   ├── seSeRL.js
+│   │   │   ├── seSeRLC.js
+│   │   │   ├── trf.js
+│   │   │   └── trf4Port.js
+│   │   ├── index.js
+│   │   ├── intermod.js
+│   │   ├── noiseFigure.js
+│   │   └── nPort.js
+│   └── index.js
+├── index.js
+└── plugin.js
+```
+
+`src/index.js` exports the public nP API. Each `np-*` package also has an `index.js` entry point. The package directories in the index below explain the implementation in more detail.
+
+### `nPort` object
+
+[`src/np-nport/src/nPort.js`](../src/np-nport/src/nPort.js) defines the `nPort()` constructor. Its instances carry frequency-aligned S-parameters and noise covariance. Combined nPorts also retain known internal amplifier intermodulation sources for reuse in later connections.
+
+| Member | Purpose |
+| --- | --- |
+| `setglobal(global)`, `getglobal()` | Store and retrieve analysis settings. |
+| `setspars(rows)`, `getspars()` | Store and retrieve S-parameter rows. |
+| `noise` getter and setter | Read or assign the frequency-aligned noise covariance. |
+| `cas(other)` | Cascade two 2-ports and return a new nPort with S-parameters, noise covariance, and known intermodulation sources. |
+| `out(...selectors)` | Return a frequency table of S-parameters, covariance, NF, output noise floor, or intermodulation results. |
+| `noiseOut(...selectors)` | Return a frequency table of selected covariance entries. |
+| `outTable(...selectors)` | Return a frequency table of selected S-parameters. |
 
 ## Index
 

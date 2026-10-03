@@ -1,7 +1,8 @@
-// Modified: 2026-09-30
+// Modified: 2026-10-03
 import {complex} from '../../../np-math/src/complex';
 import {global} from '../../../np-global/src/global';
 import {nPort} from '../nPort';
+import {analysisFrequencies} from '../intermod';
 
 const kB = 1.380649e-23;
 
@@ -24,8 +25,9 @@ export function Attn(attenuationDb = 3, temperature = global.Temp) {
 	var attenuator = new nPort();
 	var sparsArray = [];
 	var noiseArray = [];
-	for (var i = 0; i < global.fList.length; i++) {
-		var frequency = global.fList[i];
+	var frequencies = analysisFrequencies(global);
+	for (var i = 0; i < frequencies.length; i++) {
+		var frequency = frequencies[i];
 		sparsArray[i] = [frequency, complex(0, 0), complex(transmission, 0), complex(transmission, 0), complex(0, 0)];
 		noiseArray[i] = {
 			frequency: frequency,
@@ -39,5 +41,6 @@ export function Attn(attenuationDb = 3, temperature = global.Temp) {
 	attenuator.noise = noiseArray;
 	attenuator.setglobal(global);
 	attenuator.temperature = temperature;
+	attenuator._displayFrequencies = global.fList.slice();
 	return attenuator;
 }
