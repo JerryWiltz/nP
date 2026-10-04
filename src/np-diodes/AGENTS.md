@@ -1,5 +1,5 @@
 # AGENTS.md
-<!-- Modified: 2026-07-09 -->
+<!-- Modified: 2026-10-04 -->
 
 Instructions for diode and nonlinear-device models in `src/np-diodes/`.
 
@@ -15,6 +15,8 @@ Diode components should be practical RF circuit models, not only isolated ideal 
 - Use diode equations for DC and nonlinear behavior.
 - Emit RF S-parameters as nPort-compatible objects when used in frequency-domain analysis.
 - Expose DC I-V curve data as table data that can be displayed with `nP.lineChart()` or `nP.lineTable()`.
+- Build S and noise rows at `analysisFrequencies(global)` so the diode can join two-tone networks.
+- Supply bias-dependent noise covariance and a weak nonlinear source model when the RF S-parameters represent a biased junction. Do not rely on passive equilibrium noise or infinite IP for a biased diode.
 
 ## Examples And Tests
 

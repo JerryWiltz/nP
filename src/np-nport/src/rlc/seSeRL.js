@@ -1,10 +1,12 @@
+// Modified: 2026-10-04
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
+import {analysisFrequencies} from '../intermod';
 
 export function seSeRL(R = 75, L = 5e-9) { // series inductor nPort object
 	var seSeRL = new nPort;
-	var frequencyList = global.fList, Ro = global.Ro;
+	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(R, 2*Math.PI*L*frequencyList[freqCount]);	

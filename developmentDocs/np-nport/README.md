@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-03 -->
+<!-- Modified: 2026-10-04 -->
 # np-nport Development Notes
 
 `src/np-nport/` contains the common n-port object, lumped components, ideal fixtures, transmission lines, physical microstrip models, noise and intermodulation helpers, and network-composition functions.
@@ -23,7 +23,7 @@ A new public constructor must be exported through this path and covered by a dir
 
 Every constructor returns an object based on `nPort` with:
 
-- S-parameter rows at every frequency required by the selected analysis. `Amp()` and `Attn()` add two-tone product frequencies when `global.twoTone` is set.
+- S-parameter rows at every frequency required by the selected analysis. All built-in n-port constructors use `analysisFrequencies(global)` to add two-tone product frequencies when `global.twoTone` is set.
 - Row-major square S matrices made of `complex()` values.
 - Frequency-aligned full noise covariance, including for combined nPorts.
 - A reference to the shared global settings.
@@ -85,7 +85,7 @@ S21 = S12 = 2 Y0 / (Y + 2 Y0)
 
 Ideal public names begin with an uppercase letter. Physical microstrip constructors remain lowercase.
 
-The ideal Tee-family matrices contain a small `1e-7` offset. This is a numerical regularization detail, not a modeled physical loss.
+The ideal Tee-family matrices are lossless and use exact junction coefficients without a numerical offset.
 
 ### Transformers
 
@@ -117,7 +117,7 @@ See [`../nodal-analysis.md`](../nodal-analysis.md) for its calling and connectio
 
 ### Noise and two-tone outputs
 
-Set `global.fList` and, for intermodulation, `global.twoTone` before creating components. `Amp()` and `Attn()` then supply S and noise rows at the fundamentals and product frequencies. Other constructors need matching rows to join the same two-tone network.
+Set `global.fList` and, for intermodulation, `global.twoTone` before creating components. Every built-in constructor then supplies S and noise rows at the fundamentals and product frequencies. Custom nPorts need matching rows to join the same two-tone network.
 
 ```js
 nP.global.fList = [1e9];
@@ -129,7 +129,7 @@ var chain = nP.cascade(amp, attenuator);
 var result = chain.out('s21dB', 'NF21dB', 'noiseFloor', 'OIP3lower21dBm');
 ```
 
-`noiseFloor` reports output noise density in dBm/Hz for input port 1 and output port 2, using matched 290 K measurement defaults. Port-specific forms such as `noiseFloor31dBmHz` work on larger nPorts. `nodal()`, `cas()`, and `cascade()` return nPorts that can be reused without losing their combined noise or known amplifier intermodulation sources. The current intermodulation model propagates generated products once through the linear network; it does not model compression or nonlinear remixing.
+`noiseFloor` reports output noise density in dBm/Hz for input port 1 and output port 2, using matched 290 K measurement defaults. Port-specific forms such as `noiseFloor31dBmHz` work on larger nPorts. `nodal()`, `cas()`, and `cascade()` return nPorts that can be reused without losing their combined noise or known nonlinear sources. Passive components contribute their thermal noise at their captured temperature; ideal lossless parts add none. The diode model has bias-dependent noise and weak junction-current and junction-charge nonlinear sources. The intermodulation solver propagates generated products once through the linear network; it does not model compression or nonlinear remixing.
 
 ## Public port conventions
 
@@ -162,9 +162,9 @@ With excitation at port 1, port 2 is through, port 4 is coupled, and port 3 is i
 
 1. Choose the owning subdirectory and canonical public name.
 2. Document physical reference planes, port order, units, equation source, and validity range.
-3. Read `global.fList` and `global.Ro` after the caller has configured them.
+3. Read `analysisFrequencies(global)` and `global.Ro` after the caller has configured `global.fList` and, when applicable, `global.twoTone`.
 4. Generate a complete row-major S matrix at every required frequency.
-5. Set `.spars` and `.global` on a new `nPort`; provide explicit covariance for active noise models and a component temperature for lossy passive models.
+5. Set `.spars` and `.global` on a new `nPort`; provide explicit covariance for active or biased noise models and a component temperature for lossy passive models. A nonlinear model must provide its own generated-wave source rather than treating a physical diode as intrinsically linear.
 6. Attach engineering metadata where it improves auditability.
 7. Export the constructor through `src/np-nport/src/index.js`.
 8. Add direct numerical tests and at least one composition test.

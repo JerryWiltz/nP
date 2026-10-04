@@ -1,7 +1,8 @@
-// Modified: 2026-09-08
+// Modified: 2026-10-04
 import { complex } from '../../../np-math/src/complex';
 import { nPort } from '../nPort';
 import { global } from '../../../np-global/src/global';
+import {analysisFrequencies} from '../intermod';
 import { C0, COPPER_RESISTIVITY, INCH_TO_METER, MU0, VACUUM_IMPEDANCE } from './constants';
 import {passiveNoiseCovariance} from './noise';
 import {isOptionsObject, normalizePhysicalModelOptions, physicalModelMetadata, requireNonnegative, requirePositive, resistivityScale} from '../physicalModels/options';
@@ -103,7 +104,7 @@ export function mlin(Width = 0.023 * INCH_TO_METER, Height = 0.025 * INCH_TO_MET
 	requirePositive('mlin', 'relativePermittivity', er); requireNonnegative('mlin', 'resistivity', rho * COPPER_RESISTIVITY);
 	requireNonnegative('mlin', 'lossTangent', tand); requireNonnegative('mlin', 'roughnessRms', roughnessRms); requireNonnegative('mlin', 'temperature', temperature);
 	var mlin = new nPort;
-	var frequencyList = global.fList, Ro = global.Ro;
+	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 	var Zo = complex(Ro, 0), two = complex(2, 0), freqCount = 0, s11, s12, s21, s22, sparsArray = [], noiseArray = [];
 	var Atlin = {}, Btlin = {}, Ctlin = {}, Zmlin = {}, Ds = {}, alpha = 0, beta = 0, gamma = {};
 
@@ -166,6 +167,9 @@ export function mlin(Width = 0.023 * INCH_TO_METER, Height = 0.025 * INCH_TO_MET
 	mlin.setspars(sparsArray);
 	mlin.noise = noiseArray;
 	mlin.setglobal(global);
+	var firstDisplayAnalysis = analysis.find(function (point) {
+		return point.frequency === global.fList[0];
+	});
 	mlin.microstrip = {
 		Width,
 		Height,
@@ -175,8 +179,8 @@ export function mlin(Width = 0.023 * INCH_TO_METER, Height = 0.025 * INCH_TO_MET
 		rho,
 		tand,
 		roughnessRms,
-		Z: analysis[0] ? analysis[0].Z : Z,
-		ere: analysis[0] ? analysis[0].ere : ere,
+		Z: firstDisplayAnalysis ? firstDisplayAnalysis.Z : Z,
+		ere: firstDisplayAnalysis ? firstDisplayAnalysis.ere : ere,
 		ZQuasiStatic: Z,
 		ereQuasiStatic: ere,
 		analysis

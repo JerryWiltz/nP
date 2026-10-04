@@ -1,5 +1,5 @@
 # Raw Technical Notes
-<!-- Modified: 2026-10-03 -->
+<!-- Modified: 2026-10-04 -->
 
 This folder collects raw research material for future RF/microwave model work.
 
@@ -10,6 +10,10 @@ This folder collects raw research material for future RF/microwave model work.
 - `touchstone_ver2_1.pdf` — IBIS Open Forum, *Touchstone File Format Specification*, version 2.1, ratified January 26, 2024. See pp. 24-25 for `[Noise Data]` and the five noise-parameter fields. Source: https://www.ibis.org/touchstone_ver2.1/touchstone_ver2_1.pdf
 
 The physical `nP.mtee()` model is implemented under `src/np-nport/src/mlin/`; its selected equations and limits are summarized in `developmentDocs/microstrip/README.md`. Keep source captures and competing equations here for future model checks.
+
+## Amplifier references
+
+- Watkins-Johnson Company, *Application Information for Thin Film Cascadable Amplifiers*. This 15-page scan is numbered pp. 442-456. A separate citation places the same title in the 1993-1994 *RF and Microwave Designer's Handbook*, pp. 724-739; this scan does not establish that it is the same edition. [Archived PDF](https://datasheet.datasheetarchive.com/originals/scans/Scans-068/DSA2IH00223110.pdf); [1993-1994 citation](https://fileserver-az.core.ac.uk/download/37342817.pdf).
 
 For each paper or source, capture:
 

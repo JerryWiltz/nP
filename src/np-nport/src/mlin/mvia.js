@@ -1,7 +1,8 @@
-// Modified: 2026-09-06
+// Modified: 2026-10-04
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
+import {analysisFrequencies} from '../intermod';
 import {C0, COPPER_RESISTIVITY, EPSILON0, INCH_TO_METER, MU0} from './constants';
 import {absoluteResistivity, normalizePhysicalModelOptions, physicalModelMetadata, requireNonnegative, requirePositive} from '../physicalModels/options';
 
@@ -92,7 +93,7 @@ export function mvia(input = {}) {
 	if (Thickness > Diameter / 2) throw new RangeError('nP.mvia(): thickness must not exceed the via radius.');
 	if (antipadDiameter > 0 && padDiameter > 0 && antipadDiameter <= padDiameter) throw new RangeError('nP.mvia(): antipadDiameter must be greater than padDiameter.');
 	var via = new nPort;
-	var frequencyList = global.fList, Ro = global.Ro;
+	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 	var radius = Diameter / 2;
 	var Lbarrel = viaInductance(connectionHeight, radius);
 	var Rdc = viaResistanceDc(connectionHeight, radius, Thickness, rho);

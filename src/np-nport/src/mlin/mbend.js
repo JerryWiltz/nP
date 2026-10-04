@@ -1,8 +1,9 @@
-// Modified: 2026-09-06
+// Modified: 2026-10-04
 import {complex} from '../../../np-math/src/complex';
 import {matrix, dim} from '../../../np-math/src/matrix';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
+import {analysisFrequencies} from '../intermod';
 import {COPPER_RESISTIVITY, INCH_TO_METER} from './constants';
 import {normalizePhysicalModelOptions, physicalModelMetadata, requireNonnegative, requirePositive, resistivityScale} from '../physicalModels/options';
 
@@ -61,7 +62,7 @@ export function mbend(input = {}) {
 	requirePositive('mbend', 'relativePermittivity', er); requireNonnegative('mbend', 'resistivity', rho * COPPER_RESISTIVITY);
 	requireNonnegative('mbend', 'lossTangent', tand); requireNonnegative('mbend', 'roughnessRms', roughnessRms);
 	var bend = new nPort;
-	var frequencyList = global.fList, Ro = global.Ro;
+	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 	var recommendedMiterFraction = 0.6;
 	var defaultMiterLength = 0;
 	var actualMiterLength = miterLength === undefined ? defaultMiterLength : miterLength;

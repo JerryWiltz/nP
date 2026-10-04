@@ -2,7 +2,7 @@ sudo npm install -g @openai/codex
 Read all applicable AGENTS.md files before working. Inspect the current Git status and latest commits, then continue from the repository’s current state.
 
 # AGENTS.md
-<!-- Modified: 2026-10-03 -->
+<!-- Modified: 2026-10-04 -->
 
 Repository guide for agents working in the `nP` repo.
 
@@ -104,7 +104,7 @@ The main internal objects are `complex`, `matrix`, and `nPort`. Keep their exist
 - The number of ports is inferred as `Math.sqrt(row.length - 1)`. Keep S-parameter row shapes square.
 - `.noise` contains frequency-aligned `{frequency, C}` rows with a full complex covariance matrix. Active models must supply their own noise covariance; passive fallback noise follows the component temperature captured by the nPort.
 - `nPort.out(...)` extracts numeric tables with a header row. Besides S selectors such as `s21dB`, it accepts covariance, NF, output noise-floor, IM, and OIP selectors. `noiseFloor` means output port 2 from input port 1 in dBm/Hz; use a port-specific selector such as `noiseFloor31dBmHz` for another pair.
-- `nP.Amp()` and `nP.Attn()` expand their S and noise rows to the two-tone product frequencies when `global.twoTone` is set. All components combined in one analysis must have matching frequency rows. `.out()` still displays the configured `fList` points for these components and their combinations.
+- All built-in n-port constructors use `analysisFrequencies(global)` for two-tone S and noise rows when `global.twoTone` is set. All components combined in one analysis must have matching frequency rows. `.out()` still displays the configured `fList` points for these components and their combinations.
 - `cas()` and `nP.cascade()` are for 2-port cascades. Use `nP.nodal()` for arbitrary interconnections and multiport circuits.
 - Returned nPorts retain combined noise covariance and known internal amplifier intermodulation sources when reused in `nP.nodal()` or `nP.cascade()`.
 

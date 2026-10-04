@@ -1,4 +1,4 @@
-// Modified: 2026-10-03
+// Modified: 2026-10-04
 import {complex} from '../../np-math/src/complex';
 import {matrix, dim} from '../../np-math/src/matrix';
 
@@ -21,7 +21,7 @@ export function analysisFrequencies(settings) {
 			throw new RangeError('Two-tone sweep frequencies must be positive.');
 		}
 		var f2 = f1 + spacing;
-		[f1, f2, f2 - f1, f1 + f2, 2 * f1 - f2, 2 * f2 - f1]
+		[f1, f2, f2 - f1, f1 + f2, 2 * f1 - f2, 2 * f2 - f1, 2 * f1, 2 * f2]
 			.forEach(function (frequency) {
 				if (frequency > 0) frequencies.add(frequency);
 			});
@@ -126,6 +126,49 @@ var prepare = function (nport, f1, f2, input1, input2) {
 	return {children: children};
 };
 
+var diodeJunctionVoltage = function (nport, frequency, incident, model) {
+	var reflected = linearOutput(nport, frequency, incident);
+	var current = incident[0].sub(reflected[0]).div(complex(Math.sqrt(model.referenceImpedance), 0));
+	var junctionImpedance = complex(model.conductance, 2 * Math.PI * frequency * model.capacitance).inv();
+	return current.mul(junctionImpedance);
+};
+
+var diodeProducts = function (nport, frequency, context, tones, model) {
+	var output = zeroVector(2);
+	var v1 = diodeJunctionVoltage(nport, tones.f1, context.input1, model);
+	var v2 = diodeJunctionVoltage(nport, tones.f2, context.input2, model);
+	// dI/dV supplies conduction products; dQ/dt adds the junction-capacitance products.
+	var second = complex(model.secondDerivative, 2 * Math.PI * frequency * model.capacitanceDerivative);
+	var third = complex(model.thirdDerivative, 2 * Math.PI * frequency * model.capacitanceSecondDerivative);
+	var productCurrent = zero();
+	if (frequency === tones.f1 + tones.f2) {
+		productCurrent = productCurrent.add(v1.mul(v2).mul(second).mul(complex(1 / Math.sqrt(2), 0)));
+	}
+	if (frequency === tones.f2 - tones.f1) {
+		productCurrent = productCurrent.add(v2.mul(conjugate(v1)).mul(second).mul(complex(1 / Math.sqrt(2), 0)));
+	}
+	if (frequency === 2 * tones.f1) {
+		productCurrent = productCurrent.add(v1.mul(v1).mul(second).mul(complex(1 / (2 * Math.sqrt(2)), 0)));
+	}
+	if (frequency === 2 * tones.f2) {
+		productCurrent = productCurrent.add(v2.mul(v2).mul(second).mul(complex(1 / (2 * Math.sqrt(2)), 0)));
+	}
+	if (frequency === 2 * tones.f1 - tones.f2) {
+		productCurrent = productCurrent.add(v1.mul(v1).mul(conjugate(v2)).mul(third).mul(complex(1 / 4, 0)));
+	}
+	if (frequency === 2 * tones.f2 - tones.f1) {
+		productCurrent = productCurrent.add(v2.mul(v2).mul(conjugate(v1)).mul(third).mul(complex(1 / 4, 0)));
+	}
+	if (power(productCurrent) === 0) return output;
+	var junctionImpedance = complex(model.conductance, 2 * Math.PI * frequency * model.capacitance).inv();
+	var seriesImpedance = junctionImpedance.add(complex(model.seriesResistance + 2 * model.referenceImpedance, 0));
+	var outgoing = productCurrent.mul(junctionImpedance)
+		.mul(complex(Math.sqrt(model.referenceImpedance), 0)).div(seriesImpedance);
+	output[0] = outgoing.neg();
+	output[1] = outgoing;
+	return output;
+};
+
 var generated = function (nport, frequency, context, tones) {
 	var model = nport._intermod;
 	var count = portCount(nport);
@@ -139,6 +182,7 @@ var generated = function (nport, frequency, context, tones) {
 		})) return zeroVector(count);
 		return solveConnection(model, frequency, zeroVector(count), childSources).outgoing;
 	}
+	if (model.type === 'diode') return diodeProducts(nport, frequency, context, tones, model);
 	if (model.type !== 'amp') return zeroVector(count);
 	var output = zeroVector(count);
 	var b1 = rowAt(nport, tones.f1)[3].mul(context.input1[0]);
@@ -148,6 +192,12 @@ var generated = function (nport, frequency, context, tones) {
 	}
 	if (model.p2 && frequency === tones.f2 - tones.f1) {
 		output[1] = output[1].add(b2.mul(conjugate(b1)).mul(model.phase2).mul(complex(1 / Math.sqrt(model.p2), 0)));
+	}
+	if (model.p2Harmonic && frequency === 2 * tones.f1) {
+		output[1] = output[1].add(b1.mul(b1).mul(model.phase2Harmonic).mul(complex(1 / Math.sqrt(model.p2Harmonic), 0)));
+	}
+	if (model.p2Harmonic && frequency === 2 * tones.f2) {
+		output[1] = output[1].add(b2.mul(b2).mul(model.phase2Harmonic).mul(complex(1 / Math.sqrt(model.p2Harmonic), 0)));
 	}
 	if (model.p3 && frequency === 2 * tones.f1 - tones.f2) {
 		output[1] = output[1].sub(b1.mul(b1).mul(conjugate(b2)).mul(model.phase3).mul(complex(1 / model.p3, 0)));
@@ -184,7 +234,9 @@ export function intermodAt(nport, f1, inputPort, settings) {
 		fund1: f1,
 		fund2: f2,
 		im3upper: 2 * f2 - f1,
-		im2sum: f1 + f2
+		im2sum: f1 + f2,
+		harm1: 2 * f1,
+		harm2: 2 * f2
 	};
 	var waves = {};
 	var waveByFrequency = new Map();
@@ -227,7 +279,11 @@ export function oipDbm(result, product, outputPort) {
 	var firstPower = power(result.waves.fund1[outputPort]);
 	var secondPower = power(result.waves.fund2[outputPort]);
 	var intercept;
-	if (product === 'im2sum' || product === 'im2diff') {
+	if (product === 'harm1') {
+		intercept = firstPower ** 2 / productPower;
+	} else if (product === 'harm2') {
+		intercept = secondPower ** 2 / productPower;
+	} else if (product === 'im2sum' || product === 'im2diff') {
 		intercept = firstPower * secondPower / productPower;
 	} else if (product === 'im3lower') {
 		intercept = Math.sqrt(firstPower ** 2 * secondPower / productPower);

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-03 -->
+<!-- Modified: 2026-10-04 -->
 # nP
 
 JavaScript tools for RF and microwave network analysis.
@@ -169,7 +169,7 @@ nP.global.fList = [1e9];
 nP.global.twoTone = {spacingHz: 1e8, p1dBm: -30, p2dBm: -25};
 
 var amp = nP.Amp({gainDb: 20, noiseFigureDb: 4,
-    oip2dBm: 42, oip3dBm: 30});
+    oip2dBm: 42, harmonicOip2dBm: 40, oip3dBm: 30});
 var attenuator = nP.Attn(3);
 var chain = nP.nodal(
     [amp, 1, 2],
@@ -177,15 +177,33 @@ var chain = nP.nodal(
     ['out', 1, 3]
 );
 
-var result = chain.out('s21dB', 'IM2sum21dBm',
-    'IM3lower21dBm', 'OIP3lower21dBm');
+var result = chain.out('s21dB', 'IM2sum21dBm', 'H2f121dBm',
+    'H2f221dBm', 'OIP2f121dBm', 'IM3lower21dBm');
 ```
 
-`fList` contains the displayed first-tone frequencies. `Amp()` and `Attn()` also create S and noise rows at the second tone and four IM product frequencies; `.out()` still returns one row per `fList` point. With the values above, these frequencies are 0.1, 0.9, 1.0, 1.1, 1.2, and 2.1 GHz. Other component constructors must also provide matching rows before they can be used in the same two-tone network.
+`fList` contains the displayed first-tone frequencies. All built-in n-port constructors also create S and noise rows at the second tone, four IM product frequencies, and both second harmonics; `.out()` still returns one row per `fList` point. With the values above, these frequencies are 0.1, 0.9, 1.0, 1.1, 1.2, 2.0, 2.1, and 2.2 GHz. For a sweep from 1 to 2 GHz with 11 first-tone points and 1 MHz spacing, this gives 75 unique internal frequency rows and 11 output rows. Each sweep point is a separate two-tone experiment, even if its product frequency equals a frequency at another point. Custom nPorts must supply the same frequency rows to join the network.
 
-The optional `oip2dBm` and `oip3dBm` values are output-referred, matched, equal-tone intercept specifications. Omitting either value means no products of that order. The first model generates products at the output of a matched, unilateral `Amp`; nonzero reflection or reverse-gain S-parameters with OIP inputs are rejected. Optional `im2PhaseDeg` and `im3PhaseDeg` adjust its product phases. Input phases can be set with `phase1Deg` and `phase2Deg` in `global.twoTone`.
+The optional `oip2dBm` and `oip3dBm` values are output-referred, matched, equal-tone two-tone intercept specifications. `harmonicOip2dBm` is a separate, output-referred second-harmonic intercept for either input tone. Omitting one of these values means its corresponding products have zero generated power. No numerical relationship between two-tone and harmonic IP2 is assumed. The model generates products at the output of a matched, unilateral `Amp`; nonzero reflection or reverse-gain S-parameters with OIP inputs are rejected. Optional `im2PhaseDeg`, `harmonic2PhaseDeg`, and `im3PhaseDeg` adjust product phases. Input phases can be set with `phase1Deg` and `phase2Deg` in `global.twoTone`.
 
-Selectors `IM2diff21dBm`, `IM2sum21dBm`, `IM3lower21dBm`, and `IM3upper21dBm` report output product power for input port 1 and output port 2. Matching `OIP...` selectors report extrapolated output intercepts. For another port pair, change the two digits; for ports numbered 10 or higher, use parentheses such as `IM3lower(10,1)dBm`. `nodal()`, `cascade()`, and `nPort.cas()` preserve known internal Amp models through nested combinations. The calculation propagates generated waves once through the linear S-parameter network. It does not calculate compression, nonlinear remixing, or time averaging. When a product coincides with another product or a fundamental, the reported IM power is their coherent combined power; an OIP selector for that frequency raises an error because the separate intercept cannot be recovered.
+Selectors `IM2diff21dBm`, `IM2sum21dBm`, `IM3lower21dBm`, and `IM3upper21dBm` report output product power for input port 1 and output port 2. `H2f121dBm` and `H2f221dBm` report the harmonics at 2f₁ and 2f₂; `OIP2f121dBm` and `OIP2f221dBm` report their output-referred harmonic intercepts. Other `OIP...` selectors report two-tone intercepts. For another port pair, change the two port digits; for ports numbered 10 or higher, use parentheses such as `H2f1(10,1)dBm`. `nodal()`, `cascade()`, and `nPort.cas()` preserve known internal nonlinear sources through nested combinations. Linear passive constructors add no IP2/IP3 products of their own, but propagate each product through their S-parameters at that frequency. The calculation propagates generated waves once through the linear S-parameter network at each product frequency. It does not calculate compression, nonlinear remixing, or time averaging. When a product coincides with another product or a fundamental, the reported product power is their coherent combined power; an OIP selector for that frequency raises an error because the separate intercept cannot be recovered.
+
+`nP.diode1N4148()` uses its DC bias point to generate a small-signal noise covariance and one-pass IM2, IM3, and second-harmonic sources. The noise model includes series-resistance thermal noise and an approximate junction-current noise level. The nonlinear source uses local current and junction-charge derivatives, so it is a weak-signal estimate around the selected bias, not a large-signal diode simulation or a datasheet-calibrated intercept model.
+
+For a two-stage IP2 check, use the 15 dB A5 gain from Table 1 and its 40 dBm second-harmonic IP2 from Table 3 of Watkins-Johnson's [*Application Information for Thin Film Cascadable Amplifiers*](https://datasheet.datasheetarchive.com/originals/scans/Scans-068/DSA2IH00223110.pdf). The note says two-tone IP2 is approximately equal to second-harmonic IP2, so the 40 dBm `oip2dBm` inputs here are estimates. With matched stages and coherent IM2 addition, its general intercept rule gives 38.578 dBm for the cascade. The input tones may have different powers:
+
+```js
+nP.global.fList = [100e6];
+nP.global.twoTone = {spacingHz: 1e6, p1dBm: -40, p2dBm: -35};
+
+var firstA5 = nP.Amp({gainDb: 15, oip2dBm: 40});
+var secondA5 = nP.Amp({gainDb: 15, oip2dBm: 40});
+var twoA5s = nP.cascade(firstA5, secondA5);
+
+var ip2Result = twoA5s.out('s21dB', 'IM2diff21dBm', 'IM2sum21dBm',
+    'OIP2diff21dBm', 'OIP2sum21dBm');
+// At 100 MHz: gain 30 dB; both IM2 products -53.578 dBm;
+// both output IP2 values 38.578 dBm.
+```
 
 ## Physical models
 

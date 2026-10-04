@@ -15,6 +15,9 @@ hero:
       text: Get started
       link: /legacy-api-reference
     - theme: alt
+      text: Noise and IP guide
+      link: /noise-and-intermodulation
+    - theme: alt
       text: View on GitHub
       link: https://github.com/JerryWiltz/nP
 
@@ -39,6 +42,11 @@ features:
     details: Connect components with nodal interconnection or two-port cascade analysis.
     link: /legacy-api-reference#np-connections
     linkText: Connect components
+  - icon: 📡
+    title: Noise figure and intercepts
+    details: Analyze gain, noise floor, IP2, IP3, and harmonics in connected RF chains.
+    link: /noise-and-intermodulation
+    linkText: Analyze an RF chain
   - icon: ➕
     title: Math included
     details: Use complex-number and real or complex matrix operations directly from nP.
@@ -51,7 +59,7 @@ features:
     linkText: View chart APIs
 ---
 
-<!-- Modified: 2026-09-07 -->
+<!-- Modified: 2026-10-04 -->
 
 ## Start here
 
@@ -78,3 +86,5 @@ The browser bundle is also available as `dist/nP.js` and exposes the global `nP`
 5. Display the result with `nP.lineChart()`, `nP.lineTable()`, or `nP.smithChart()`.
 
 The [API reference](./legacy-api-reference.md) preserves the detailed constructor and function reference. Physical-model design notes and equation provenance are maintained in the repository's [`developmentDocs/`](https://github.com/JerryWiltz/nP/tree/master/developmentDocs) directory.
+
+For gain, noise figure, noise floor, IP2, IP3, and harmonics, see the [noise and intermodulation guide](./noise-and-intermodulation.md).

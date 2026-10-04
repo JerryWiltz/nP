@@ -1,7 +1,8 @@
-// Modified: 2026-09-08
+// Modified: 2026-10-04
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
+import {analysisFrequencies} from '../intermod';
 import {C0, COPPER_RESISTIVITY, INCH_TO_METER, MIL_TO_METER, MU0, VACUUM_IMPEDANCE} from './constants';
 import {passiveNoiseCovariance} from './noise';
 import {isOptionsObject, normalizePhysicalModelOptions, physicalModelMetadata, requireNonnegative, requirePositive, resistivityScale} from '../physicalModels/options';
@@ -238,7 +239,7 @@ export function mclin(Width = 19.1155 * MIL_TO_METER, Space = 5.82185 * MIL_TO_M
 	requirePositive('mclin', 'relativePermittivity', er); requireNonnegative('mclin', 'resistivity', rho * COPPER_RESISTIVITY);
 	requireNonnegative('mclin', 'lossTangent', tand); requireNonnegative('mclin', 'roughnessRms', roughnessRms); requireNonnegative('mclin', 'temperature', temperature);
 	var ctlin = new nPort;
-	var frequencyList = global.fList, Ro = global.Ro;
+	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 	var Zo = complex(Ro, 0), two = complex(2, 0), freqCount = 0, Zoemclin = [], Zoomclin = [];
 	var s11oe, s12oe, s21oe, s22oe;
 	var s11oo, s12oo, s21oo, s22oo;
@@ -321,7 +322,9 @@ export function mclin(Width = 19.1155 * MIL_TO_METER, Space = 5.82185 * MIL_TO_M
 	ctlin.setspars(sparsArray);
 	ctlin.noise = noiseArray;
 	ctlin.setglobal(global);
-	var firstDispersion = dispersion[0] || {Zoe: quasiStatic.Zoe, Zoo: quasiStatic.Zoo, ereoe: quasiStatic.ereoe, ereoo: quasiStatic.ereoo};
+	var firstDispersion = dispersion.find(function (point) {
+		return point.frequency === global.fList[0];
+	}) || {Zoe: quasiStatic.Zoe, Zoo: quasiStatic.Zoo, ereoe: quasiStatic.ereoe, ereoo: quasiStatic.ereoo};
 	ctlin.microstrip = {
 		Width,
 		Space,

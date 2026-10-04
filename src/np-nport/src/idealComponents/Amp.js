@@ -1,4 +1,4 @@
-// Modified: 2026-10-03
+// Modified: 2026-10-04
 import {complex} from '../../../np-math/src/complex';
 import {global} from '../../../np-global/src/global';
 import {nPort} from '../nPort';
@@ -71,14 +71,18 @@ export function Amp(gainDb = 20, noiseFigureDb = 4, referenceTemperature = 290) 
 	var noiseParameters = defaults;
 	var options;
 	var oip2dBm;
+	var harmonicOip2dBm;
 	var oip3dBm;
 	var im2PhaseDeg = 0;
+	var harmonic2PhaseDeg = 0;
 	var im3PhaseDeg = 0;
 	if (gainDb !== null && typeof gainDb === 'object') {
 		options = gainDb;
 		oip2dBm = options.oip2dBm;
+		harmonicOip2dBm = options.harmonicOip2dBm;
 		oip3dBm = options.oip3dBm;
 		if (options.im2PhaseDeg !== undefined) im2PhaseDeg = options.im2PhaseDeg;
+		if (options.harmonic2PhaseDeg !== undefined) harmonic2PhaseDeg = options.harmonic2PhaseDeg;
 		if (options.im3PhaseDeg !== undefined) im3PhaseDeg = options.im3PhaseDeg;
 		if (options.spars !== undefined && options.gainDb !== undefined) {
 			throw new TypeError('Amp gainDb is determined by spars when both are supplied.');
@@ -114,19 +118,22 @@ export function Amp(gainDb = 20, noiseFigureDb = 4, referenceTemperature = 290) 
 		throw new RangeError('Amp referenceTemperature must be a finite, positive number of kelvin.');
 	}
 	if ((oip2dBm !== undefined && !Number.isFinite(oip2dBm)) ||
+		(harmonicOip2dBm !== undefined && !Number.isFinite(harmonicOip2dBm)) ||
 		(oip3dBm !== undefined && !Number.isFinite(oip3dBm))) {
-		throw new RangeError('Amp oip2dBm and oip3dBm must be finite dBm values when supplied.');
+		throw new RangeError('Amp output intercepts must be finite dBm values when supplied.');
 	}
-	if (!Number.isFinite(im2PhaseDeg) || !Number.isFinite(im3PhaseDeg)) {
+	if (!Number.isFinite(im2PhaseDeg) || !Number.isFinite(harmonic2PhaseDeg) || !Number.isFinite(im3PhaseDeg)) {
 		throw new RangeError('Amp IM phases must be finite degrees.');
 	}
 	var ip2Watts = oip2dBm === undefined ? null : 10 ** ((oip2dBm - 30) / 10);
+	var harmonicIp2Watts = harmonicOip2dBm === undefined ? null : 10 ** ((harmonicOip2dBm - 30) / 10);
 	var ip3Watts = oip3dBm === undefined ? null : 10 ** ((oip3dBm - 30) / 10);
 	if ((ip2Watts !== null && (!Number.isFinite(ip2Watts) || ip2Watts <= 0)) ||
+		(harmonicIp2Watts !== null && (!Number.isFinite(harmonicIp2Watts) || harmonicIp2Watts <= 0)) ||
 		(ip3Watts !== null && (!Number.isFinite(ip3Watts) || ip3Watts <= 0))) {
 		throw new RangeError('Amp output intercept powers must be representable as positive watts.');
 	}
-	if ((oip2dBm !== undefined || oip3dBm !== undefined) &&
+	if ((oip2dBm !== undefined || harmonicOip2dBm !== undefined || oip3dBm !== undefined) &&
 		(magnitudeSquared(specifiedSpars[0]) !== 0 || magnitudeSquared(specifiedSpars[1]) !== 0 ||
 		magnitudeSquared(specifiedSpars[3]) !== 0 || specifiedSpars[2].getI() !== 0 ||
 		specifiedSpars[2].getR() <= 0)) {
@@ -168,8 +175,10 @@ export function Amp(gainDb = 20, noiseFigureDb = 4, referenceTemperature = 290) 
 	amplifier._intermod = {
 		type: 'amp',
 		p2: ip2Watts,
+		p2Harmonic: harmonicIp2Watts,
 		p3: ip3Watts,
 		phase2: complex(Math.cos(im2PhaseDeg * Math.PI / 180), Math.sin(im2PhaseDeg * Math.PI / 180)),
+		phase2Harmonic: complex(Math.cos(harmonic2PhaseDeg * Math.PI / 180), Math.sin(harmonic2PhaseDeg * Math.PI / 180)),
 		phase3: complex(Math.cos(im3PhaseDeg * Math.PI / 180), Math.sin(im3PhaseDeg * Math.PI / 180))
 	};
 	return amplifier;

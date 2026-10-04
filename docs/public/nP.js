@@ -48,9 +48,9 @@
 		return complexNumber;
 	}
 
-	// Modified: 2026-07-14
+	// Modified: 2026-09-16
 
-	function Matrix () {}
+	function Matrix() { }
 
 	function dim(rows, cols, initial) { // used by nodal()
 		var row = 0, col = 0, a = [], A = [];
@@ -59,24 +59,24 @@
 			for (col = 0; col < cols; col++) {
 				a[col] = initial;
 			}		A[row] = a;
-		}	return A;	
+		}	return A;
 	}
 	function dup(copied) { // used by nodal()
 		var row, col, B = dim(copied.length, copied[0].length, 0);
 		for (row = 0; row < copied.length; row++) {
 			for (col = 0; col < copied[0].length; col++) {
 				B[row][col] = copied[row][col];
-			}	}	return B;	
+			}	}	return B;
 	}
 	//pivotSort for maximizing the lower triangle pivot numbers
 	function pivotSort(array, pivot) {
 
-		function maxKey (array, pivot) {
+		function maxKey(array, pivot) {
 			var key = 0, i = 0;
 			var current = 0, maximum = 0;
 			for (i = pivot; i < array.length; i++) {
 				current = Math.abs(array[i][pivot]);
-				if (current > maximum){
+				if (current > maximum) {
 					maximum = current;
 					key = i; // will be row
 				}
@@ -84,32 +84,32 @@
 			return key;
 		}
 
-		function swapNumbers (array, key, pivot) {
+		function swapNumbers(array, key, pivot) {
 			// if Key === 0 do nothing
 			// if key does not === 0, swap it with key = 0
 
 			var temp0 = array[pivot];
 			var temp1 = array[key];
 
-			if ( key === pivot ) ;
+			if (key === pivot) ;
 			else {
 				array[pivot] = temp1;
-				array[key] = temp0;  
+				array[key] = temp0;
 			}
 
 		}
-		swapNumbers (array, maxKey(array, pivot), pivot);
+		swapNumbers(array, maxKey(array, pivot), pivot);
 
 	}
 	//pivotSortCplx for maximizing the lower triangle pivot numbers
 	function pivotSortCplx(array, pivot) {
 
-		function maxKey (array, pivot) {
+		function maxKey(array, pivot) {
 			var key = 0, i = 0;
 			var current = 0, maximum = 0;
 			for (i = pivot; i < array.length; i++) {
 				current = array[i][pivot].mag();
-				if (current > maximum){
+				if (current > maximum) {
 					maximum = current;
 					key = i; // will be row
 				}
@@ -117,248 +117,272 @@
 			return key;
 		}
 
-		function swapNumbers (array, key, pivot) {
+		function swapNumbers(array, key, pivot) {
 			// if Key === 0 do nothing
 			// if key does not === 0, swap it with key = 0
 
 			var temp0 = array[pivot];
 			var temp1 = array[key];
 
-			if ( key === pivot ) ;
+			if (key === pivot) ;
 			else {
 				array[pivot] = temp1;
-				array[key] = temp0;  
+				array[key] = temp0;
 			}
 
 		}
-		swapNumbers (array, maxKey(array, pivot), pivot);
+		swapNumbers(array, maxKey(array, pivot), pivot);
 
 	}
 	Matrix.prototype = {
-		set : function (mat) {this.m = mat; return this;},
-		dimension : function (tableRow, tableCol, initial) {
+		set: function (mat) { this.m = mat; return this; },
+		dimension: function (tableRow, tableCol, initial) {
 			return matrix(dim(tableRow, tableCol, initial));
 		},
 
-		copyMatrix : function copyMatrix () {
-			return matrix(dup(this.m));	
+		copyMatrix: function copyMatrix() {
+			return matrix(dup(this.m));
 		},
 
-		add : function add (matrixB) {
+		transpose: function transpose() {
+			var A = this.m,
+				numRows = A.length,
+				numCols = A[0].length,
+				T = dim(numCols, numRows, 0),
+				row = 0, col = 0;
+			for (row = 0; row < numRows; row++) {
+				for (col = 0; col < numCols; col++) {
+					T[col][row] = A[row][col];
+				}		}		return matrix(T);
+		},
+
+		transposeCplx: function transposeCplx() {
+			var A = this.m,
+				numRows = A.length,
+				numCols = A[0].length,
+				T = dim(numCols, numRows, complex(0, 0)),
+				row = 0, col = 0;
+			for (row = 0; row < numRows; row++) {
+				for (col = 0; col < numCols; col++) {
+					T[col][row] = complex(A[row][col].getR(), -A[row][col].getI());
+				}		}		return matrix(T);
+		},
+
+		add: function add(matrixB) {
 			var A = this.m,
 				B = matrixB.m,
 				C = dim(A.length, A[0].length, 0),
 				numRows = A.length,
 				numCols = A[0].length,
 				row = 0, col = 0;
-			for(row = 0; row < numRows; row++) {
-				for(col = 0; col < numCols; col++) {
+			for (row = 0; row < numRows; row++) {
+				for (col = 0; col < numCols; col++) {
 					C[row][col] = A[row][col] + B[row][col];
 				}		}		return matrix(C);
 		},
 
-		addCplx : function addCplx (matrixB) {
+		addCplx: function addCplx(matrixB) {
 			var A = this.m,
 				B = matrixB.m,
-				C = dim(A.length, A[0].length, complex(0,0)),
+				C = dim(A.length, A[0].length, complex(0, 0)),
 				numRows = A.length,
 				numCols = A[0].length,
 				row = 0, col = 0;
-			for(row = 0; row < numRows; row++) {
-				for(col = 0; col < numCols; col++) {
+			for (row = 0; row < numRows; row++) {
+				for (col = 0; col < numCols; col++) {
 					C[row][col] = A[row][col].add(B[row][col]);
 				}		}		return matrix(C);
 		},
 
-		sub : function sub (matrixB) {
+		sub: function sub(matrixB) {
 			var A = this.m,
 				B = matrixB.m,
 				C = dim(A.length, A[0].length, 0),
 				numRows = A.length,
 				numCols = A[0].length,
 				row = 0, col = 0;
-			for(row = 0; row < numRows; row++) {
-				for(col = 0; col < numCols; col++) {
+			for (row = 0; row < numRows; row++) {
+				for (col = 0; col < numCols; col++) {
 					C[row][col] = A[row][col] - B[row][col];
 				}		}		return matrix(C);
 		},
 
-		subCplx : function subCplx (matrixB) {
+		subCplx: function subCplx(matrixB) {
 			var A = this.m,
 				B = matrixB.m,
-				C = dim(A.length, A[0].length, complex(0,0)),
+				C = dim(A.length, A[0].length, complex(0, 0)),
 				numRows = A.length,
 				numCols = A[0].length,
 				row = 0, col = 0;
-			for(row = 0; row < numRows; row++) {
-				for(col = 0; col < numCols; col++) {
+			for (row = 0; row < numRows; row++) {
+				for (col = 0; col < numCols; col++) {
 					C[row][col] = A[row][col].sub(B[row][col]);
 				}		}		return matrix(C);
 		},
 
-		mul : function mul (matrixB) {
+		mul: function mul(matrixB) {
 			var A = this.m,
 				B = matrixB.m,
-				C = dim(A.length, B[0].length,0);
+				C = dim(A.length, B[0].length, 0);
 				A[0].length;
 				B.length;
-				var row = 0, col = 0, n = 0;			
-			for(row = 0; row < A.length; row++) {
-				for(col = 0; col < B[0].length; col++) {
-					for(n = 0; n < B.length; n++) {
+				var row = 0, col = 0, n = 0;
+			for (row = 0; row < A.length; row++) {
+				for (col = 0; col < B[0].length; col++) {
+					for (n = 0; n < B.length; n++) {
 						C[row][col] += A[row][n] * B[n][col];
 					}			}		}		return matrix(C);
 		},
 
-		mulCplx : function mulCplx (matrixB) {
+		mulCplx: function mulCplx(matrixB) {
 			var A = this.m,
 				B = matrixB.m,
-				C = dim(A.length, B[0].length, complex(0,0));
+				C = dim(A.length, B[0].length, complex(0, 0));
 				A[0].length;
 				B.length;
-				var row = 0, col = 0, n = 0;			
-			for(row = 0; row < A.length; row++) {
-				for(col = 0; col < B[0].length; col++) {
-					for(n = 0; n < B.length; n++) {
+				var row = 0, col = 0, n = 0;
+			for (row = 0; row < A.length; row++) {
+				for (col = 0; col < B[0].length; col++) {
+					for (n = 0; n < B.length; n++) {
 						C[row][col] = C[row][col].add(A[row][n].mul(B[n][col]));
 					}			}		}		return matrix(C);
 		},
 
 
-		solveGaussFB : function solveGaussFB() {
+		solveGaussFB: function solveGaussFB() {
 			var A = dup(this.m),
 				a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
 				row = 0, col = 0, accum = 0;
 
-			for(constRow = 0; constRow < numRows; constRow++) { // FORWARD ELIMINATION - this row stays the same
+			for (constRow = 0; constRow < numRows; constRow++) { // FORWARD ELIMINATION - this row stays the same
 				pivotSort(A, constRow);
-				for(row = constRow+1; row < numRows; row++) { // this row moves down
-					a = -A[row][constRow]/A[constRow][constRow]; // this computes "a"
-					for(col = 0; col < numCols; col++) { // this sweeps across the columns
-						A[row][col] = A[row][col] + a*A[constRow][col];
+				for (row = constRow + 1; row < numRows; row++) { // this row moves down
+					a = -A[row][constRow] / A[constRow][constRow]; // this computes "a"
+					for (col = 0; col < numCols; col++) { // this sweeps across the columns
+						A[row][col] = A[row][col] + a * A[constRow][col];
 					}			}		}
-			for(row = numRows -1; row > -1; row--) { // BACK SUBSTITUTION
+			for (row = numRows - 1; row > -1; row--) { // BACK SUBSTITUTION
 				accum = 0;
-				for(col = numRows -1; col > row; col--) {
-					accum = accum + A[row][col]*A[col][numCols -1];
+				for (col = numRows - 1; col > row; col--) {
+					accum = accum + A[row][col] * A[col][numCols - 1];
 				}
-				A[row][numCols -1] = (1/A[row][row]) * (A[row][numCols -1] - accum);
+				A[row][numCols - 1] = (1 / A[row][row]) * (A[row][numCols - 1] - accum);
 			}
 
-			for(row = 0; row < numRows; row++) { // get to the right column of A				
-				for ( col = 0; col < numCols -1; col++) {
+			for (row = 0; row < numRows; row++) { // get to the right column of A
+				for (col = 0; col < numCols - 1; col++) {
 					A[row].shift();
 				}		}		return matrix(A);
 		},
 
 
-		solveGaussFBCplx : function solveGaussFBCplx() {
+		solveGaussFBCplx: function solveGaussFBCplx() {
 			var A = dup(this.m),
 				a = complex(0, 0), numRows = A.length, numCols = A[0].length, constRow = 0,
 				row = 0, col = 0, accum = complex(0, 0);
 
-			for(constRow = 0; constRow < numRows; constRow++) { // FORWARD ELIMINATION - this row stays the same
+			for (constRow = 0; constRow < numRows; constRow++) { // FORWARD ELIMINATION - this row stays the same
 				pivotSortCplx(A, constRow);
-				for(row = constRow+1; row < numRows; row++) { // this row moves down
+				for (row = constRow + 1; row < numRows; row++) { // this row moves down
 					a = A[row][constRow].div(A[constRow][constRow]).neg();
-					for(col = 0; col < numCols; col++) { // this sweeps across the columns
+					for (col = 0; col < numCols; col++) { // this sweeps across the columns
 						A[row][col] = A[row][col].add(a.mul(A[constRow][col]));
 					}			}		}
-			for(row = numRows -1; row > -1; row--) { // BACK SUBSTITUTION
-				accum = complex(0,0);
-				for(col = numRows -1; col > row; col--) { 
-					accum = accum.add(  A[row][col].mul( A[col][numCols -1]));
-				}			A[row][numCols -1] =  (complex(1, 0)).div(A[row][row]).mul( A[row][numCols -1].sub(accum));          
+			for (row = numRows - 1; row > -1; row--) { // BACK SUBSTITUTION
+				accum = complex(0, 0);
+				for (col = numRows - 1; col > row; col--) {
+					accum = accum.add(A[row][col].mul(A[col][numCols - 1]));
+				}			A[row][numCols - 1] = (complex(1, 0)).div(A[row][row]).mul(A[row][numCols - 1].sub(accum));
 			}
-			for(row = 0; row < numRows; row++) { // get to the right column of A
-				for ( col = 0; col < numCols -1; col++) {
+			for (row = 0; row < numRows; row++) { // get to the right column of A
+				for (col = 0; col < numCols - 1; col++) {
 					A[row].shift();
 				}		}		return matrix(A);
 		},
 
 
-		invert : function invert() {
+		invert: function invert() {
 			var A = dup(this.m),
 				a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
 				row = 0, col = 0;
 			//append a 0 Matrix to Matrix, A
-			for(row = 0; row < numRows; row++) {
-				for(col = numRows; col < 2*numRows; col++) {
+			for (row = 0; row < numRows; row++) {
+				for (col = numRows; col < 2 * numRows; col++) {
 					A[row][col] = 0;
 				}		}		//update numCols since Matrix, A is now wider;
 			numCols = A[0].length;
 			//add diagonal 1's to append array, A
-			for(row = 0; row < numRows; row++) {
+			for (row = 0; row < numRows; row++) {
 				A[row][row + numRows] = 1;
-			}		// Real variable forward lower Elimination routine  
-			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
+			}		// Real variable forward lower Elimination routine
+			for (constRow = 0; constRow < numRows; constRow++) { // this row stays the same
 				pivotSort(A, constRow);
-				for(row = constRow+1; row < numRows; row++) { // this row moves down
-					a = -A[row][constRow]/A[constRow][constRow]; // this computes "a"
-					for(col = 0; col < numCols; col++) { // this sweeps across the columns
-						A[row][col] = A[row][col] + a*A[constRow][col];
-					}			}		}		// Real variable forward unity diagonal routine  
-			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
-				a = 1/A[constRow][constRow];
-				for(row = constRow; row < numRows; row++) { // this row moves down
-					for(col = 0; col < numCols; col++) { // this sweeps across the columns
-						A[row][col] = a*A[row][col];
+				for (row = constRow + 1; row < numRows; row++) { // this row moves down
+					a = -A[row][constRow] / A[constRow][constRow]; // this computes "a"
+					for (col = 0; col < numCols; col++) { // this sweeps across the columns
+						A[row][col] = A[row][col] + a * A[constRow][col];
+					}			}		}		// Real variable forward unity diagonal routine
+			for (constRow = 0; constRow < numRows; constRow++) { // this row stays the same
+				a = 1 / A[constRow][constRow];
+				for (row = constRow; row < numRows; row++) { // this row moves down
+					for (col = 0; col < numCols; col++) { // this sweeps across the columns
+						A[row][col] = a * A[row][col];
 					}			}		}		// Real variable forward upper Elimination routine
-			for(constRow = numRows - 1; constRow > 0 ; constRow--) { // 2 , 1, 0 this row stays the same			
-				for(row = 0; row < constRow; row++) { // 0, 1  this row moves down
-					a = -A[row][constRow]/A[constRow][constRow];
-					for(col = 0; col < numCols; col++) { // this sweeps across the columns	
-						A[row][col] = A[row][col] + a*A[constRow][col];
-					}			}		}		for(row = 0; row < numRows; row++) { // get to the right column of A				
-				for ( col = 0; col < numCols/2; col++) {
+			for (constRow = numRows - 1; constRow > 0; constRow--) { // 2 , 1, 0 this row stays the same
+				for (row = 0; row < constRow; row++) { // 0, 1  this row moves down
+					a = -A[row][constRow] / A[constRow][constRow];
+					for (col = 0; col < numCols; col++) { // this sweeps across the columns
+						A[row][col] = A[row][col] + a * A[constRow][col];
+					}			}		}		for (row = 0; row < numRows; row++) { // get to the right column of A
+				for (col = 0; col < numCols / 2; col++) {
 					A[row].shift();
 				}		}		return matrix(A);
 		},
 
-		invertCplx : function invertCplx() {
+		invertCplx: function invertCplx() {
 			var A = dup(this.m),
 				a = complex(0, 0), numRows = A.length, numCols = A[0].length, constRow = 0,
 				row = 0, col = 0;
 			//append a 0 Matrix to Matrix, A
-			for(row = 0; row < numRows; row++) {
-				for(col = numRows; col < 2*numRows; col++) {
+			for (row = 0; row < numRows; row++) {
+				for (col = numRows; col < 2 * numRows; col++) {
 					A[row][col] = complex(0, 0);
 				}		}
 			//update numCols since Matrix, A is now wider;
 			numCols = A[0].length;
 
 			// add diagonal 1s to appended array, A
-			for(row = 0; row < numRows; row++) {
+			for (row = 0; row < numRows; row++) {
 				A[row][row + numRows] = complex(1, 0);
 			}
 
-			// Real variable forward lower Elimination routine  
-			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
+			// Real variable forward lower Elimination routine
+			for (constRow = 0; constRow < numRows; constRow++) { // this row stays the same
 				pivotSortCplx(A, constRow);
-				for(row = constRow + 1; row < numRows; row++) { // this row moves down
+				for (row = constRow + 1; row < numRows; row++) { // this row moves down
 					a = A[row][constRow].div(A[constRow][constRow]).neg();
-					for(col = 0; col < numCols; col++) { // this sweeps across the columns
+					for (col = 0; col < numCols; col++) { // this sweeps across the columns
 						A[row][col] = A[row][col].add(a.mul(A[constRow][col]));
 					}			}		}
 			// Real variable forward unity diagonal routine
-			for(constRow = 0; constRow < numRows; constRow++) { // this row stays the same
-				a = A[constRow][constRow].inv(); 
-				for(row = constRow; row < numRows; row++) { // this row moves down
-					for(col = 0; col < numCols; col++) { // this sweeps across the columns
+			for (constRow = 0; constRow < numRows; constRow++) { // this row stays the same
+				a = A[constRow][constRow].inv();
+				for (row = constRow; row < numRows; row++) { // this row moves down
+					for (col = 0; col < numCols; col++) { // this sweeps across the columns
 						A[row][col] = a.mul(A[row][col]);
 					}			}		}
 			// Real variable forward upper Elimination routine
-			for(constRow = numRows - 1; constRow > 0 ; constRow--) { // 2 , 1, 0 this row stays the same
-				for(row = 0; row < constRow; row++) { // 0, 1  this row moves down
+			for (constRow = numRows - 1; constRow > 0; constRow--) { // 2 , 1, 0 this row stays the same
+				for (row = 0; row < constRow; row++) { // 0, 1  this row moves down
 					a = A[row][constRow].div(A[constRow][constRow]).neg();
-					for(col = 0; col < numCols; col++) { // this sweeps across the columns
-						A[row][col] = A[row][col].add(a.mul(A[constRow][col]));						
+					for (col = 0; col < numCols; col++) { // this sweeps across the columns
+						A[row][col] = A[row][col].add(a.mul(A[constRow][col]));
 					}			}		}
-			for(row = 0; row < numRows; row++) { // get to the right column of A				
-				for ( col = 0; col < numCols/2; col++) {
+			for (row = 0; row < numRows; row++) { // get to the right column of A
+				for (col = 0; col < numCols / 2; col++) {
 					A[row].shift();
 				}		}		return matrix(A);
-		},						
+		},
 	};
 
 	function matrix(mat) {
@@ -426,8 +450,10 @@
 		return chebyLPNsecout;
 	}
 
+	// Modified: 2026-10-03
 	var global = {
 		fList:	[2e9],//[2e9, 4e9, 6e9, 8e9],
+		twoTone: undefined,
 		Ro:	50,
 		Temp:	293,
 		fGen: function fGen (fStart, fStop, points) {
@@ -467,7 +493,7 @@
 	    compare2 = (d, x) => ascending$1(f(d), x);
 	    delta = (d, x) => f(d) - x;
 	  } else {
-	    compare1 = f === ascending$1 || f === descending ? f : zero$1;
+	    compare1 = f === ascending$1 || f === descending ? f : zero$3;
 	    compare2 = f;
 	    delta = f;
 	  }
@@ -504,7 +530,7 @@
 	  return {left, center, right};
 	}
 
-	function zero$1() {
+	function zero$3() {
 	  return 0;
 	}
 
@@ -2420,7 +2446,7 @@
 	var reA = /[-+]?(?:\d+\.?\d*|\.?\d+)(?:[eE][-+]?\d+)?/g,
 	    reB = new RegExp(reA.source, "g");
 
-	function zero(b) {
+	function zero$2(b) {
 	  return function() {
 	    return b;
 	  };
@@ -2473,7 +2499,7 @@
 	  // Otherwise, interpolate each of the numbers and rejoin the string.
 	  return s.length < 2 ? (q[0]
 	      ? one(q[0].x)
-	      : zero(b))
+	      : zero$2(b))
 	      : (b = q.length, function(t) {
 	          for (var i = 0, o; i < b; ++i) s[(o = q[i]).i] = o.x(t);
 	          return s.join("");
@@ -4922,7 +4948,7 @@
 
 	Transform.prototype;
 
-	// Modified: 2026-09-15
+	// Modified: 2026-10-03
 
 	function lineChart(options = {}) {
 	            // ======== Options & defaults ========
@@ -5018,17 +5044,26 @@
 	            // to the right edge so it can slide over the title as space gets
 	            // tight.
 	            const isCompact = width < 800;
+	            const labelNames = showLabels
+	                ? inputTable.flatMap(table => table[0].slice(1))
+	                : [];
+	            const labelContext = document.createElement('canvas').getContext('2d');
+	            labelContext.font = `${labelFontSize}px ${fontFamily}`;
+	            const labelRightMargin = labelNames.length
+	                ? Math.ceil(Math.max(...labelNames.map(name =>
+	                    labelContext.measureText(String(name)).width)) + 12)
+	                : 0;
 	            const layoutMargin = isCompact
 	                ? {
 	                    ...margin,
 	                    // Reserve a title/control row above the plot and leave
 	                    // room for the rotated y-axis title and end labels.
 	                    top: Math.max(margin.top, 45),
-	                    right: Math.max(margin.right, 60),
+	                    right: Math.max(margin.right, 60, labelRightMargin),
 	                    bottom: Math.max(margin.bottom, 45),
 	                    left: Math.max(margin.left, 75)
 	                }
-	                : margin;
+	                : {...margin, right: Math.max(margin.right, labelRightMargin)};
 	            const tickCount = Math.max(5, Math.min(10, Math.floor((width - layoutMargin.left - layoutMargin.right) / 40)));
 	            const axisFontPx = effectiveFontSize;
 	            let txtLabels = selectAll([]);
@@ -5126,7 +5161,7 @@
 	                .append('div')
 	                .style('position', 'relative')
 	                .style('display', 'block')
-	                .style('width', '100%')
+	                .style('width', `${width + 10}px`)
 	                .style('max-width', '100%')
 	                .style('box-sizing', 'border-box')
 	                .style('overflow', 'hidden')
@@ -5420,7 +5455,15 @@
 	                    })
 	                    .style('font-size', `${labelFontSize}px`)
 	                    .style('fill', labelColor || null)
-	                    .text(d => d.yName);
+	                    .text(d => d.yName)
+	                    .each(function () {
+	                        const label = select(this);
+	                        const rightEdge = width - layoutMargin.left - 6;
+	                        if (label.attr('text-anchor') === 'start' &&
+	                            Number(label.attr('x')) + this.getComputedTextLength() > rightEdge) {
+	                            label.attr('x', rightEdge).attr('text-anchor', 'end');
+	                        }
+	                    });
 	            }
 
 	            // Returned API methods 
@@ -6579,7 +6622,7 @@
 
 	// Modified: 2026-09-08
 
-	var conjugate$2 = function (value) { return complex(value.getR(), -value.getI()); };
+	var conjugate$5 = function (value) { return complex(value.getR(), -value.getI()); };
 
 	// Passive Bosma noise covariance: C = kBT(I - S S†).
 	function passiveNoiseCovariance(sparsRow, portCount, temperature) {
@@ -6590,7 +6633,7 @@
 			for (var col = 0; col < portCount; col++) {
 				var value = row === col ? complex(1, 0) : complex(0, 0);
 				for (var port = 0; port < portCount; port++) {
-					value = value.sub(sparsRow[1 + row * portCount + port].mul(conjugate$2(sparsRow[1 + col * portCount + port])));
+					value = value.sub(sparsRow[1 + row * portCount + port].mul(conjugate$5(sparsRow[1 + col * portCount + port])));
 				}
 				var scaled = value.mul(scale);
 				// Remove round-off residuals from mathematically lossless models.
@@ -6600,33 +6643,482 @@
 		return covariance;
 	}
 
-	// Modified: 2026-09-08
-	var conjugate$1 = function (value) { return complex(value.getR(), -value.getI()); };
+	// Modified: 2026-10-03
 
-	// Modified: 2026-09-08
+	var kB$5 = 1.380649e-23;
+	var zero$1 = function () { return complex(0, 0); };
+	var conjugate$4 = function (value) { return complex(value.getR(), -value.getI()); };
+
+	function reflection(value, label) {
+		var result = value === undefined ? zero$1() :
+			typeof value === 'number' ? complex(value, 0) : value;
+		if (!result || typeof result.getR !== 'function' || typeof result.getI !== 'function' ||
+			typeof result.mag !== 'function' ||
+			!Number.isFinite(result.getR()) || !Number.isFinite(result.getI()) ||
+			!Number.isFinite(result.mag()) || result.mag() > 1) {
+			throw new RangeError(label + ' must be a passive reflection coefficient with magnitude at most 1.');
+		}
+		return result;
+	}
+
+	function conditions(portCount, inputPort, outputPort, options) {
+		var referenceTemperature = options.referenceTemperature === undefined ?
+			290 : options.referenceTemperature;
+		if (!Number.isFinite(referenceTemperature) || referenceTemperature <= 0) {
+			throw new RangeError('referenceTemperature must be a positive number of kelvin.');
+		}
+		if (inputPort === outputPort || inputPort < 1 || outputPort < 1 ||
+			inputPort > portCount || outputPort > portCount) {
+			throw new RangeError('Noise figure requires distinct input and output ports in the nPort.');
+		}
+		var source = options.source || {};
+		var terminations = options.terminations || {};
+		Object.keys(terminations).forEach(function (key) {
+			var port = Number(key);
+			if (!Number.isInteger(port) || port < 1 || port > portCount || port === inputPort) {
+				throw new RangeError('Termination ports must be valid nPort ports other than the source.');
+			}
+		});
+		var gammas = [];
+		var temperatures = [];
+		for (var port = 1; port <= portCount; port++) {
+			if (port === inputPort) {
+				gammas.push(reflection(source.reflection, 'source.reflection'));
+				temperatures.push(referenceTemperature);
+			} else {
+				var termination = terminations[port] || {};
+				gammas.push(reflection(termination.reflection, 'termination ' + port + ' reflection'));
+				var temperature = termination.temperature === undefined ?
+					(port === outputPort ? 0 : referenceTemperature) : termination.temperature;
+				if (!Number.isFinite(temperature) || temperature < 0) {
+					throw new RangeError('termination ' + port + ' temperature must be nonnegative kelvin.');
+				}
+				temperatures.push(temperature);
+			}
+		}
+		if (gammas[inputPort - 1].mag() >= 1) {
+			throw new RangeError('A lossless reflecting source has no available thermal-noise reference.');
+		}
+		return {gammas: gammas, temperatures: temperatures, referenceTemperature: referenceTemperature};
+	}
+
+	// b = S a + c, a = Gamma b + u, so b = (I - S Gamma)^-1 (S u + c).
+	// The selected output's unit-signal and source-noise responses share one transfer.
+	function noiseAnalysis(sparsRow, covariance, inputPort, outputPort, options = {}) {
+		var portCount = Math.sqrt(sparsRow.length - 1);
+		var setup = conditions(portCount, inputPort, outputPort, options);
+		var S = [];
+		var system = [];
+		for (var row = 0; row < portCount; row++) {
+			S[row] = [];
+			system[row] = [];
+			for (var col = 0; col < portCount; col++) {
+				var value = sparsRow[1 + row * portCount + col];
+				S[row][col] = value;
+				system[row][col] = (row === col ? complex(1, 0) : zero$1())
+					.sub(value.mul(setup.gammas[col]));
+			}
+		}
+		var H = matrix(system).invertCplx().m;
+		var output = outputPort - 1;
+		var source = inputPort - 1;
+		var transfers = [];
+		for (var port = 0; port < portCount; port++) {
+			var transfer = zero$1();
+			for (var index = 0; index < portCount; index++) {
+				transfer = transfer.add(H[output][index].mul(S[index][port]));
+			}
+			transfers[port] = transfer;
+		}
+		// Source noise in a 1 Hz band experiences the same transfer as a signal.
+		var inputNoise = kB$5 * setup.referenceTemperature;
+		var sourceCoupling = 1 - setup.gammas[source].mag() ** 2;
+		var sourceNoise = transfers[source].mag() ** 2 * sourceCoupling * inputNoise;
+		var addedNoise = zero$1();
+		for (var noiseRow = 0; noiseRow < portCount; noiseRow++) {
+			for (var noiseCol = 0; noiseCol < portCount; noiseCol++) {
+				addedNoise = addedNoise.add(H[output][noiseRow]
+					.mul(covariance[noiseRow][noiseCol])
+					.mul(conjugate$4(H[output][noiseCol])));
+			}
+		}
+		var totalNoise = sourceNoise + addedNoise.getR();
+		for (var terminationPort = 0; terminationPort < portCount; terminationPort++) {
+			if (terminationPort !== source) {
+				totalNoise += transfers[terminationPort].mag() ** 2 * kB$5 *
+					setup.temperatures[terminationPort] *
+					(1 - setup.gammas[terminationPort].mag() ** 2);
+			}
+		}
+		if (totalNoise < 0 || !Number.isFinite(totalNoise)) {
+			throw new RangeError('Noise analysis requires nonnegative finite output noise.');
+		}
+		return {
+			factor: sourceNoise > 0 && totalNoise > 0 ? totalNoise / sourceNoise : NaN,
+			outputNoiseDensity: totalNoise
+		};
+	}
+
+	// Modified: 2026-10-04
+
+	var zero = function () { return complex(0, 0); };
+	var conjugate$3 = function (value) { return complex(value.getR(), -value.getI()); };
+	var power = function (value) { return value.getR() ** 2 + value.getI() ** 2; };
+	var zeroVector = function (count) {
+		return Array.from({length: count}, zero);
+	};
+
+	function analysisFrequencies(settings) {
+		if (!settings.twoTone) return settings.fList;
+		var spacing = settings.twoTone.spacingHz;
+		if (!Number.isFinite(spacing) || spacing <= 0) {
+			throw new RangeError('global.twoTone.spacingHz must be a positive frequency.');
+		}
+		var frequencies = new Set();
+		settings.fList.forEach(function (f1) {
+			if (!Number.isFinite(f1) || f1 <= 0) {
+				throw new RangeError('Two-tone sweep frequencies must be positive.');
+			}
+			var f2 = f1 + spacing;
+			[f1, f2, f2 - f1, f1 + f2, 2 * f1 - f2, 2 * f2 - f1, 2 * f1, 2 * f2]
+				.forEach(function (frequency) {
+					if (frequency > 0) frequencies.add(frequency);
+				});
+		});
+		return Array.from(frequencies).sort(function (a, b) { return a - b; });
+	}
+
+	var rowAt = function (nport, frequency) {
+		var row = nport.spars.find(function (item) { return item[0] === frequency; });
+		if (!row) throw new RangeError('nPort has no S-parameters at ' + frequency + ' Hz. Set two-tone frequencies before constructing components.');
+		return row;
+	};
+
+	var portCount = function (nport) {
+		return Math.sqrt(nport.spars[0].length - 1);
+	};
+
+	var linearOutput = function (nport, frequency, incident) {
+		var row = rowAt(nport, frequency);
+		var count = portCount(nport);
+		var output = zeroVector(count);
+		for (var i = 0; i < count; i++) {
+			for (var j = 0; j < count; j++) {
+				output[i] = output[i].add(row[1 + i * count + j].mul(incident[j]));
+			}
+		}
+		return output;
+	};
+
+	// A connection model has component ports first and external bookkeeping
+	// ports last, just like nodal's Gupta matrix.
+	function connectionModel(components, connectionMap) {
+		return {type: 'connection', components: components, connectionMap: connectionMap};
+	}
+
+	var solveConnection = function (model, frequency, externalIncident, componentSources) {
+		var componentPorts = model.components.reduce(function (total, component) {
+			return total + portCount(component);
+		}, 0);
+		var externalPorts = externalIncident.length;
+		var count = componentPorts + externalPorts;
+		if (model.connectionMap.length !== count) {
+			throw new RangeError('Intermod connection port count does not match the nPort components.');
+		}
+		var W = dim(count, count, zero());
+		for (var row = 0; row < count; row++) {
+			W[row][model.connectionMap[row]] = complex(1, 0);
+		}
+		var offset = 0;
+		for (var componentIndex = 0; componentIndex < model.components.length; componentIndex++) {
+			var component = model.components[componentIndex];
+			var spars = rowAt(component, frequency);
+			var size = portCount(component);
+			for (var i = 0; i < size; i++) {
+				for (var j = 0; j < size; j++) {
+					W[offset + i][offset + j] = spars[1 + i * size + j].neg();
+				}
+			}
+			offset += size;
+		}
+		var sources = zeroVector(count);
+		if (componentSources) {
+			offset = 0;
+			for (var child = 0; child < model.components.length; child++) {
+				for (var port = 0; port < componentSources[child].length; port++) {
+					sources[offset + port] = componentSources[child][port];
+				}
+				offset += portCount(model.components[child]);
+			}
+		}
+		for (var external = 0; external < externalPorts; external++) {
+			sources[componentPorts + external] = externalIncident[external];
+		}
+		var inverse = matrix(W).invertCplx().m;
+		var incident = zeroVector(count);
+		for (var outputRow = 0; outputRow < count; outputRow++) {
+			for (var source = 0; source < count; source++) {
+				incident[outputRow] = incident[outputRow].add(inverse[outputRow][source].mul(sources[source]));
+			}
+		}
+		var childIncidents = [];
+		offset = 0;
+		for (var childIndex = 0; childIndex < model.components.length; childIndex++) {
+			var childPorts = portCount(model.components[childIndex]);
+			childIncidents.push(incident.slice(offset, offset + childPorts));
+			offset += childPorts;
+		}
+		return {outgoing: incident.slice(componentPorts), childIncidents: childIncidents};
+	};
+
+	var prepare = function (nport, f1, f2, input1, input2) {
+		var model = nport._intermod;
+		if (!model || model.type !== 'connection') {
+			return {input1: input1, input2: input2};
+		}
+		var atFirst = solveConnection(model, f1, input1);
+		var atSecond = solveConnection(model, f2, input2);
+		var children = model.components.map(function (component, index) {
+			return prepare(component, f1, f2,
+				atFirst.childIncidents[index], atSecond.childIncidents[index]);
+		});
+		return {children: children};
+	};
+
+	var diodeJunctionVoltage = function (nport, frequency, incident, model) {
+		var reflected = linearOutput(nport, frequency, incident);
+		var current = incident[0].sub(reflected[0]).div(complex(Math.sqrt(model.referenceImpedance), 0));
+		var junctionImpedance = complex(model.conductance, 2 * Math.PI * frequency * model.capacitance).inv();
+		return current.mul(junctionImpedance);
+	};
+
+	var diodeProducts = function (nport, frequency, context, tones, model) {
+		var output = zeroVector(2);
+		var v1 = diodeJunctionVoltage(nport, tones.f1, context.input1, model);
+		var v2 = diodeJunctionVoltage(nport, tones.f2, context.input2, model);
+		// dI/dV supplies conduction products; dQ/dt adds the junction-capacitance products.
+		var second = complex(model.secondDerivative, 2 * Math.PI * frequency * model.capacitanceDerivative);
+		var third = complex(model.thirdDerivative, 2 * Math.PI * frequency * model.capacitanceSecondDerivative);
+		var productCurrent = zero();
+		if (frequency === tones.f1 + tones.f2) {
+			productCurrent = productCurrent.add(v1.mul(v2).mul(second).mul(complex(1 / Math.sqrt(2), 0)));
+		}
+		if (frequency === tones.f2 - tones.f1) {
+			productCurrent = productCurrent.add(v2.mul(conjugate$3(v1)).mul(second).mul(complex(1 / Math.sqrt(2), 0)));
+		}
+		if (frequency === 2 * tones.f1) {
+			productCurrent = productCurrent.add(v1.mul(v1).mul(second).mul(complex(1 / (2 * Math.sqrt(2)), 0)));
+		}
+		if (frequency === 2 * tones.f2) {
+			productCurrent = productCurrent.add(v2.mul(v2).mul(second).mul(complex(1 / (2 * Math.sqrt(2)), 0)));
+		}
+		if (frequency === 2 * tones.f1 - tones.f2) {
+			productCurrent = productCurrent.add(v1.mul(v1).mul(conjugate$3(v2)).mul(third).mul(complex(1 / 4, 0)));
+		}
+		if (frequency === 2 * tones.f2 - tones.f1) {
+			productCurrent = productCurrent.add(v2.mul(v2).mul(conjugate$3(v1)).mul(third).mul(complex(1 / 4, 0)));
+		}
+		if (power(productCurrent) === 0) return output;
+		var junctionImpedance = complex(model.conductance, 2 * Math.PI * frequency * model.capacitance).inv();
+		var seriesImpedance = junctionImpedance.add(complex(model.seriesResistance + 2 * model.referenceImpedance, 0));
+		var outgoing = productCurrent.mul(junctionImpedance)
+			.mul(complex(Math.sqrt(model.referenceImpedance), 0)).div(seriesImpedance);
+		output[0] = outgoing.neg();
+		output[1] = outgoing;
+		return output;
+	};
+
+	var generated = function (nport, frequency, context, tones) {
+		var model = nport._intermod;
+		var count = portCount(nport);
+		if (!model) return zeroVector(count);
+		if (model.type === 'connection') {
+			var childSources = model.components.map(function (component, index) {
+				return generated(component, frequency, context.children[index], tones);
+			});
+			if (childSources.every(function (waves) {
+				return waves.every(function (wave) { return power(wave) === 0; });
+			})) return zeroVector(count);
+			return solveConnection(model, frequency, zeroVector(count), childSources).outgoing;
+		}
+		if (model.type === 'diode') return diodeProducts(nport, frequency, context, tones, model);
+		if (model.type !== 'amp') return zeroVector(count);
+		var output = zeroVector(count);
+		var b1 = rowAt(nport, tones.f1)[3].mul(context.input1[0]);
+		var b2 = rowAt(nport, tones.f2)[3].mul(context.input2[0]);
+		if (model.p2 && frequency === tones.f1 + tones.f2) {
+			output[1] = output[1].add(b1.mul(b2).mul(model.phase2).mul(complex(1 / Math.sqrt(model.p2), 0)));
+		}
+		if (model.p2 && frequency === tones.f2 - tones.f1) {
+			output[1] = output[1].add(b2.mul(conjugate$3(b1)).mul(model.phase2).mul(complex(1 / Math.sqrt(model.p2), 0)));
+		}
+		if (model.p2Harmonic && frequency === 2 * tones.f1) {
+			output[1] = output[1].add(b1.mul(b1).mul(model.phase2Harmonic).mul(complex(1 / Math.sqrt(model.p2Harmonic), 0)));
+		}
+		if (model.p2Harmonic && frequency === 2 * tones.f2) {
+			output[1] = output[1].add(b2.mul(b2).mul(model.phase2Harmonic).mul(complex(1 / Math.sqrt(model.p2Harmonic), 0)));
+		}
+		if (model.p3 && frequency === 2 * tones.f1 - tones.f2) {
+			output[1] = output[1].sub(b1.mul(b1).mul(conjugate$3(b2)).mul(model.phase3).mul(complex(1 / model.p3, 0)));
+		}
+		if (model.p3 && frequency === 2 * tones.f2 - tones.f1) {
+			output[1] = output[1].sub(b2.mul(b2).mul(conjugate$3(b1)).mul(model.phase3).mul(complex(1 / model.p3, 0)));
+		}
+		return output;
+	};
+
+	var sourceWave = function (dBm, phaseDegrees) {
+		if (!Number.isFinite(dBm)) throw new RangeError('Two-tone input powers must be finite dBm values.');
+		if (!Number.isFinite(phaseDegrees)) throw new RangeError('Two-tone phases must be finite degrees.');
+		var magnitude = Math.sqrt(10 ** ((dBm - 30) / 10));
+		var radians = phaseDegrees * Math.PI / 180;
+		return complex(magnitude * Math.cos(radians), magnitude * Math.sin(radians));
+	};
+
+	function intermodAt(nport, f1, inputPort, settings) {
+		var tone = settings.twoTone;
+		if (!tone || !Number.isFinite(tone.spacingHz) || tone.spacingHz <= 0) {
+			throw new RangeError('Set global.twoTone.spacingHz before intermod analysis.');
+		}
+		var f2 = f1 + tone.spacingHz;
+		var count = portCount(nport);
+		var input1 = zeroVector(count);
+		var input2 = zeroVector(count);
+		input1[inputPort] = sourceWave(tone.p1dBm, tone.phase1Deg === undefined ? 0 : tone.phase1Deg);
+		input2[inputPort] = sourceWave(tone.p2dBm, tone.phase2Deg === undefined ? 0 : tone.phase2Deg);
+		var context = prepare(nport, f1, f2, input1, input2);
+		var frequencies = {
+			im2diff: f2 - f1,
+			im3lower: 2 * f1 - f2,
+			fund1: f1,
+			fund2: f2,
+			im3upper: 2 * f2 - f1,
+			im2sum: f1 + f2,
+			harm1: 2 * f1,
+			harm2: 2 * f2
+		};
+		var waves = {};
+		var waveByFrequency = new Map();
+		Object.keys(frequencies).forEach(function (key) {
+			var frequency = frequencies[key];
+			if (frequency <= 0) {
+				waves[key] = null;
+				return;
+			}
+			if (waveByFrequency.has(frequency)) {
+				waves[key] = waveByFrequency.get(frequency);
+				return;
+			}
+			var incident = zeroVector(count);
+			if (frequency === f1) incident = incident.map(function (value, index) { return value.add(input1[index]); });
+			if (frequency === f2) incident = incident.map(function (value, index) { return value.add(input2[index]); });
+			var linear = linearOutput(nport, frequency, incident);
+			var nonlinear = generated(nport, frequency, context, {f1: f1, f2: f2});
+			waves[key] = linear.map(function (value, index) { return value.add(nonlinear[index]); });
+			waveByFrequency.set(frequency, waves[key]);
+		});
+		return {frequencies: frequencies, waves: waves};
+	}
+
+	function waveDbm(value) {
+		return value ? 10 * Math.log10(power(value) / 1e-3) : NaN;
+	}
+
+	function oipDbm(result, product, outputPort) {
+		var frequency = result.frequencies[product];
+		if (frequency <= 0) return NaN;
+		var coincidences = Object.keys(result.frequencies).filter(function (name) {
+			return result.frequencies[name] === frequency;
+		});
+		if (coincidences.length > 1) {
+			throw new RangeError('An OIP cannot be separated when products or fundamentals coincide.');
+		}
+		var productPower = power(result.waves[product][outputPort]);
+		if (productPower === 0) return Infinity;
+		var firstPower = power(result.waves.fund1[outputPort]);
+		var secondPower = power(result.waves.fund2[outputPort]);
+		var intercept;
+		if (product === 'harm1') {
+			intercept = firstPower ** 2 / productPower;
+		} else if (product === 'harm2') {
+			intercept = secondPower ** 2 / productPower;
+		} else if (product === 'im2sum' || product === 'im2diff') {
+			intercept = firstPower * secondPower / productPower;
+		} else if (product === 'im3lower') {
+			intercept = Math.sqrt(firstPower ** 2 * secondPower / productPower);
+		} else {
+			intercept = Math.sqrt(secondPower ** 2 * firstPower / productPower);
+		}
+		return 10 * Math.log10(intercept / 1e-3);
+	}
+
+	// Modified: 2026-10-04
+	var conjugate$2 = function (value) { return complex(value.getR(), -value.getI()); };
+
 	function nPort() { this._noise = undefined; }
 	var derivePassiveNoise = function (nPortObject) {
 		if (!nPortObject.spars) return undefined;
-		var temperature = nPortObject.global && nPortObject.global.Temp !== undefined ? nPortObject.global.Temp : 293;
+		var temperature = nPortObject._noiseTemperature === undefined ? 293 : nPortObject._noiseTemperature;
 		var portCount = Math.sqrt(nPortObject.spars[0].length - 1);
 		return nPortObject.spars.map(function (row) {
 			return {frequency: row[0], C: passiveNoiseCovariance(row, portCount, temperature)};
 		});
 	};
 
+	// The canonical noise shape is an array of {frequency, C} rows.  Retain
+	// .covariance as a read-only alias for older callers of combined nPorts.
+	var normalizeNoise = function (noiseData, spars) {
+		var rows = Array.isArray(noiseData) ? noiseData : noiseData && noiseData.covariance;
+		if (!Array.isArray(rows)) throw new TypeError('nPort noise must contain frequency-aligned covariance rows.');
+		if (spars && rows.length !== spars.length) throw new RangeError('Noise and S-parameter frequency counts differ.');
+		for (var i = 0; i < rows.length; i++) {
+			var portCount = spars ? Math.sqrt(spars[i].length - 1) : rows[i] && rows[i].C && rows[i].C.length;
+			if (!rows[i] || (spars && rows[i].frequency !== spars[i][0]) ||
+				!Array.isArray(rows[i].C) || rows[i].C.length !== portCount ||
+				rows[i].C.some(function (row) {
+					return !Array.isArray(row) || row.length !== portCount ||
+						row.some(function (value) {
+							return !value || typeof value.getR !== 'function' || typeof value.getI !== 'function';
+						});
+				})) {
+				throw new RangeError('Noise covariance must match the S-parameter frequency and port count.');
+			}
+		}
+		if (!Object.prototype.hasOwnProperty.call(rows, 'covariance')) {
+			Object.defineProperty(rows, 'covariance', {value: rows});
+		}
+		return rows;
+	};
+
 	nPort.prototype = {
 		constructor: nPort,
-		setglobal: function (global) { this.global = global; },
+		setglobal: function (global) {
+			this.global = global;
+			this._noiseTemperature = global.Temp;
+			if (global.twoTone) this._displayFrequencies = global.fList.slice();
+		},
 		getglobal: function () {return this.global;},
-		setspars: function (sparsArray) { this.spars = sparsArray; },
+		setspars: function (sparsArray) {
+			if (this._noise !== undefined) normalizeNoise(this._noise, sparsArray);
+			this.spars = sparsArray;
+		},
 		getspars: function () { return this.spars; },
-		get noise() { return this._noise === undefined ? derivePassiveNoise(this) : this._noise; },
-		set noise (noiseData) { this._noise = noiseData; },
+		get noise() {
+			if (this._noise === undefined && this.spars) {
+				this._noise = normalizeNoise(derivePassiveNoise(this), this.spars);
+			}
+			return this._noise;
+		},
+		set noise (noiseData) { this._noise = normalizeNoise(noiseData, this.spars); },
 		cas: function cas (n2) { // cascade two 2-ports along with method chaining since it returns an nPort
 			var freqCount = 0, one = complex(1,0),
 				sparsA = this.getspars(),
 				sparsB = n2.getspars(),
 				s11, s12, s21, s22, s11a, s12a, s21a, s22a, s11b, s12b, s21b, s22b, sparsArray = [];
+			if (sparsA.length !== sparsB.length ||
+				sparsA.some(function (row, index) { return row[0] !== sparsB[index][0]; })) {
+				throw new RangeError('Cascaded nPorts must have matching frequency rows.');
+			}
 			for (freqCount = 0; freqCount < this.spars.length; freqCount++) {
 				s11a = sparsA[freqCount][1]; s12a = sparsA[freqCount][2]; s21a = sparsA[freqCount][3]; s22a = sparsA[freqCount][4];			
 				s11b = sparsB[freqCount][1]; s12b = sparsB[freqCount][2]; s21b = sparsB[freqCount][3]; s22b = sparsB[freqCount][4];
@@ -6637,8 +7129,8 @@
 				s21 =           ( s21a.mul(s21b)           ).div( (one.sub( s22a.mul(s11b) ) ) )  ;
 				sparsArray[freqCount] =	[sparsA[freqCount][0],s11, s12, s21, s22];
 			}		var noiseCovariance = [];
-			var noiseA = this.noise && this.noise.covariance ? this.noise.covariance : this.noise;
-			var noiseB = n2.noise && n2.noise.covariance ? n2.noise.covariance : n2.noise;
+			var noiseA = this.noise;
+			var noiseB = n2.noise;
 			for (freqCount = 0; freqCount < this.spars.length; freqCount++) {
 				sparsA[freqCount][1]; var a12 = sparsA[freqCount][2]; sparsA[freqCount][3]; var a22 = sparsA[freqCount][4];
 				var b11 = sparsB[freqCount][1], b21 = sparsB[freqCount][3];
@@ -6661,8 +7153,8 @@
 						for (var sourceRow = 0; sourceRow < 2; sourceRow++) {
 							for (var sourceCol = 0; sourceCol < 2; sourceCol++) {
 								covariance = covariance
-									.add(transferA[outputRow][sourceRow].mul(covarianceA[sourceRow][sourceCol]).mul(conjugate$1(transferA[outputCol][sourceCol])))
-									.add(transferB[outputRow][sourceRow].mul(covarianceB[sourceRow][sourceCol]).mul(conjugate$1(transferB[outputCol][sourceCol])));
+									.add(transferA[outputRow][sourceRow].mul(covarianceA[sourceRow][sourceCol]).mul(conjugate$2(transferA[outputCol][sourceCol])))
+									.add(transferB[outputRow][sourceRow].mul(covarianceB[sourceRow][sourceCol]).mul(conjugate$2(transferB[outputCol][sourceCol])));
 							}
 						}
 						outputCovariance[outputRow][outputCol] = covariance;
@@ -6673,27 +7165,98 @@
 			var casOut = new nPort();
 			casOut.setspars(sparsArray);
 			casOut.setglobal(this.global);
-			casOut.noise = {covariance: noiseCovariance};
+			casOut.noise = noiseCovariance;
+			casOut._displayFrequencies = this._displayFrequencies || n2._displayFrequencies;
+			casOut._intermod = connectionModel([this, n2], [4, 2, 1, 5, 0, 3]);
 			return casOut;
 		},
-		out : function out (...sparsArguments) {
+		out : function out (...selectors) {
 			var spars = this.getspars();
-			var n = Math.sqrt(spars[0].length - 1); 
-			var copy = spars.map(function (element,index,spars) {
-				var inner = [element[0]];
-				sparsArguments.forEach(function (sparsArgument,index1,array) {
-					var row = parseInt(sparsArgument.match(/\d/g)[0]);
-					var col = parseInt(sparsArgument.match(/\d/g)[1]);
-					var sparIndex = (row - 1) * n + col;
-					var sparsTo = sparsArgument.match(/dB|mag|ang|Re|Im/).toString();
-					if(sparsTo === 'mag') {inner.push(element[sparIndex].mag());}				if(sparsTo === 'dB')  {inner.push(element[sparIndex].mag20dB());}				if(sparsTo === 'ang') {inner.push(element[sparIndex].ang());}				if(sparsTo === 'Re')  {inner.push(element[sparIndex].getR());}
-					if(sparsTo === 'Im')  {inner.push(element[sparIndex].getI());}
-				});  // end of forEach
-				return inner;
-			}); // end of map
-			sparsArguments.unshift('Freq');
-			copy.unshift(sparsArguments);
-			return copy;
+			var portCount = Math.sqrt(spars[0].length - 1);
+			var options = selectors.length && typeof selectors[selectors.length - 1] === 'object' ?
+				selectors.pop() : {};
+			var parsed = selectors.map(function (selector) {
+				var match = /^s([1-9])([1-9])(dB|mag|ang|Re|Im)$/.exec(selector);
+				if (match) return {kind: 's', row: Number(match[1]) - 1, col: Number(match[2]) - 1, format: match[3]};
+				match = /^c([1-9])([1-9])(Re|Im|mag|dB)?$/.exec(selector);
+				if (match) return {kind: 'c', row: Number(match[1]) - 1, col: Number(match[2]) - 1, format: match[3] || 'Re'};
+				match = /^NF([1-9])([1-9])(dB)?$/.exec(selector);
+				if (!match) match = /^NF\(([1-9]\d*),([1-9]\d*)\)(dB)?$/.exec(selector);
+				if (match) return {kind: 'NF', row: Number(match[1]) - 1, col: Number(match[2]) - 1, format: match[3] || 'factor'};
+				if (selector === 'noiseFloor') return {kind: 'noiseFloor', row: 1, col: 0};
+				match = /^noiseFloor([1-9])([1-9])dBmHz$/.exec(selector);
+				if (!match) match = /^noiseFloor\(([1-9]\d*),([1-9]\d*)\)dBmHz$/.exec(selector);
+				if (match) return {kind: 'noiseFloor', row: Number(match[1]) - 1, col: Number(match[2]) - 1};
+				match = /^IM(2sum|2diff|3lower|3upper)([1-9])([1-9])dBm$/.exec(selector);
+				if (!match) match = /^IM(2sum|2diff|3lower|3upper)\(([1-9]\d*),([1-9]\d*)\)dBm$/.exec(selector);
+				if (match) return {kind: 'IM', product: 'im' + match[1], row: Number(match[2]) - 1, col: Number(match[3]) - 1};
+				match = /^H2f([12])([1-9])([1-9])dBm$/.exec(selector);
+				if (!match) match = /^H2f([12])\(([1-9]\d*),([1-9]\d*)\)dBm$/.exec(selector);
+				if (match) return {kind: 'IM', product: 'harm' + match[1], row: Number(match[2]) - 1, col: Number(match[3]) - 1};
+				match = /^OIP(2sum|2diff|3lower|3upper)([1-9])([1-9])dBm$/.exec(selector);
+				if (!match) match = /^OIP(2sum|2diff|3lower|3upper)\(([1-9]\d*),([1-9]\d*)\)dBm$/.exec(selector);
+				if (match) return {kind: 'OIP', product: 'im' + match[1], row: Number(match[2]) - 1, col: Number(match[3]) - 1};
+				match = /^OIP2f([12])([1-9])([1-9])dBm$/.exec(selector);
+				if (!match) match = /^OIP2f([12])\(([1-9]\d*),([1-9]\d*)\)dBm$/.exec(selector);
+				if (match) return {kind: 'OIP', product: 'harm' + match[1], row: Number(match[2]) - 1, col: Number(match[3]) - 1};
+				throw new TypeError('nPort.out(): invalid selector "' + selector + '".');
+			});
+			parsed.forEach(function (selection) {
+				if (selection.row >= portCount || selection.col >= portCount) {
+					throw new RangeError('nPort.out(): selected port is outside the n-port dimensions.');
+				}
+			});
+			var output = [['Freq'].concat(selectors)];
+			for (var frequencyIndex = 0; frequencyIndex < spars.length; frequencyIndex++) {
+				var sparsRow = spars[frequencyIndex];
+				if (this._displayFrequencies && !this._displayFrequencies.includes(sparsRow[0])) continue;
+				var noiseRow = null;
+				var noiseResults = {};
+				var intermodRows = {};
+				var row = [sparsRow[0]];
+				for (var selectionIndex = 0; selectionIndex < parsed.length; selectionIndex++) {
+					var selection = parsed[selectionIndex];
+					if ((selection.kind === 'c' || selection.kind === 'NF' ||
+						selection.kind === 'noiseFloor') && noiseRow === null) noiseRow = this.noise[frequencyIndex];
+					if (selection.kind === 'NF' || selection.kind === 'noiseFloor') {
+						var noiseKey = selection.row + ',' + selection.col;
+						if (!noiseResults[noiseKey]) {
+							noiseResults[noiseKey] = noiseAnalysis(sparsRow, noiseRow.C,
+								selection.col + 1, selection.row + 1, options);
+						}
+						var noiseResult = noiseResults[noiseKey];
+						if (selection.kind === 'noiseFloor') {
+							row.push(10 * Math.log10(noiseResult.outputNoiseDensity / 1e-3));
+						} else {
+							if (!Number.isFinite(noiseResult.factor) || noiseResult.factor <= 0) {
+								throw new RangeError('Noise figure requires positive source and output noise.');
+							}
+							row.push(selection.format === 'dB' ? 10 * Math.log10(noiseResult.factor) : noiseResult.factor);
+						}
+					} else if (selection.kind === 'IM' || selection.kind === 'OIP') {
+						if (!intermodRows[selection.col]) {
+							intermodRows[selection.col] = intermodAt(this, sparsRow[0], selection.col,
+								{twoTone: options.twoTone || this.global.twoTone});
+						}
+						row.push(selection.kind === 'IM' ?
+							waveDbm(intermodRows[selection.col].waves[selection.product] &&
+								intermodRows[selection.col].waves[selection.product][selection.row]) :
+							oipDbm(intermodRows[selection.col], selection.product, selection.row));
+					} else {
+						var value = selection.kind === 's' ?
+							sparsRow[1 + selection.row * portCount + selection.col] :
+							noiseRow.C[selection.row][selection.col];
+						if (selection.format === 'mag') row.push(value.mag());
+						else if (selection.format === 'dB') row.push(selection.kind === 's' ?
+							value.mag20dB() : 10 * Math.log10(value.mag()));
+						else if (selection.format === 'ang') row.push(value.ang());
+						else if (selection.format === 'Im') row.push(value.getI());
+						else row.push(value.getR());
+					}
+				}
+				output.push(row);
+			}
+			return output;
 		},
 		noiseOut : function noiseOut (...noiseArguments) {
 			if (noiseArguments.length === 0) throw new TypeError('nPort.noiseOut() requires at least one covariance selector.');
@@ -6747,8 +7310,9 @@
 		},
 	};
 
-	// Modified: 2026-09-08
-	const kB$2 = 1.380649e-23;
+	// Modified: 2026-10-04
+
+	const kB$4 = 1.380649e-23;
 
 	function seR(R = 75, temperature = global.Temp) { // series resistor nPort object
 		if (typeof R === 'object') {
@@ -6756,7 +7320,7 @@
 			R = R.resistance === undefined ? 75 : R.resistance;
 		}
 		var seR = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [], noiseArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			Z[freqCount] = complex(R, 0);
@@ -6765,7 +7329,7 @@
 			s12 = s21;
 			s22 = s11;
 			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
-			var noise = kB$2 * temperature * 4 * R * Ro / ((R + 2 * Ro) ** 2);
+			var noise = kB$4 * temperature * 4 * R * Ro / ((R + 2 * Ro) ** 2);
 			noiseArray[freqCount] = {
 				frequency: frequencyList[freqCount],
 				C: [
@@ -6780,8 +7344,9 @@
 		return seR;
 	}
 
-	// Modified: 2026-09-08
-	const kB$1 = 1.380649e-23;
+	// Modified: 2026-10-04
+
+	const kB$3 = 1.380649e-23;
 
 	function R(R = 75, temperature = global.Temp) { // series resistor nPort object
 		if (typeof R === 'object') {
@@ -6789,7 +7354,7 @@
 			R = R.resistance === undefined ? 75 : R.resistance;
 		}
 		var rPort = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [], noiseArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			Z[freqCount] = complex(R, 0);
@@ -6798,7 +7363,7 @@
 			s12 = s21;
 			s22 = s11;
 			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
-			var noise = kB$1 * temperature * 4 * R * Ro / ((R + 2 * Ro) ** 2);
+			var noise = kB$3 * temperature * 4 * R * Ro / ((R + 2 * Ro) ** 2);
 			noiseArray[freqCount] = {
 				frequency: frequencyList[freqCount],
 				C: [
@@ -6813,8 +7378,9 @@
 		return rPort;
 	}
 
-	// Modified: 2026-09-08
-	const kB = 1.380649e-23;
+	// Modified: 2026-10-04
+
+	const kB$2 = 1.380649e-23;
 
 	function paR(R = 75, temperature = global.Temp) { // parallel resistor nPort object
 		if (typeof R === 'object') {
@@ -6822,7 +7388,7 @@
 			R = R.resistance === undefined ? 75 : R.resistance;
 		}
 		var paR = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [], noiseArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			Z[freqCount] = complex(R, 0);
@@ -6832,7 +7398,7 @@
 			s12 = s21;
 			s22 = s11;
 			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
-			var noise = kB * temperature * 4 * R * Ro / ((Ro + 2 * R) ** 2);
+			var noise = kB$2 * temperature * 4 * R * Ro / ((Ro + 2 * R) ** 2);
 			noiseArray[freqCount] = {
 				frequency: frequencyList[freqCount],
 				C: [
@@ -6847,9 +7413,11 @@
 		return paR;
 	}
 
+	// Modified: 2026-10-04
+
 	function seL(L = 5e-9) { // series inductor nPort object
 		var seL = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount]);	
@@ -6863,9 +7431,11 @@
 		return seL;
 	}
 
+	// Modified: 2026-10-04
+
 	function L(L = 5e-9) { // series inductor nPort object
 		var lPort = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount]);	
@@ -6879,9 +7449,11 @@
 		return lPort;
 	}
 
+	// Modified: 2026-10-04
+
 	function paL(L = 5e-9) { // parallel capacitor nPort object   
 		var paL = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount]);
@@ -6897,9 +7469,11 @@
 		return paL;
 	}
 
+	// Modified: 2026-10-04
+
 	function seC(C = 1e-12) { // series capacitor nPort object
 		var seC = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			Z[freqCount] = complex(0, -1/(2*Math.PI*C*frequencyList[freqCount]));	
@@ -6913,9 +7487,11 @@
 		return seC;
 	}
 
+	// Modified: 2026-10-04
+
 	function C(C = 1e-12) { // series inductor nPort object
 		var cPort = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			Z[freqCount] = complex(0, -1/(2*Math.PI*C*frequencyList[freqCount]));	
@@ -6929,9 +7505,11 @@
 		return cPort;
 	}
 
+	// Modified: 2026-10-04
+
 	function paC(C = 1e-12) { // parallel capacitor nPort object   
 		var paC = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			Z[freqCount] = complex(0, -1/(2*Math.PI*C*frequencyList[freqCount]));
@@ -6947,11 +7525,11 @@
 		return paC;
 	}
 
-	// Modified: 2026-06-27
+	// Modified: 2026-10-04
 
 	function trf(N = 0.5) { // ideal transformer nPort object
 		var trf = new nPort;
-		var frequencyList = global.fList; global.Ro;
+		var frequencyList = analysisFrequencies(global); global.Ro;
 		var freqCount = 0, s11, s12, s21, s22, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			s11 = complex((N ** 2 - 1) / (N ** 2 + 1), 0);
@@ -6965,9 +7543,11 @@
 		return trf;
 	}
 
+	// Modified: 2026-10-04
+
 	function trf4Port(N = 0.5) { // parallel resistor nPort object
 		var trf4Port = new nPort;
-		var frequencyList = global.fList; global.Ro;
+		var frequencyList = analysisFrequencies(global); global.Ro;
 		var freqCount = 0, sparsArray = [];
 		var s11, s12, s13, s14,
 			s21, s22, s23, s24,
@@ -6992,9 +7572,11 @@
 	S13 = S22 = S31 = S44 =  1 / (1 + N2)  //     1/1.25 = 0.8
 	*/
 
+	// Modified: 2026-10-04
+
 	function seSeRL(R = 75, L = 5e-9) { // series inductor nPort object
 		var seSeRL = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			Z[freqCount] = complex(R, 2*Math.PI*L*frequencyList[freqCount]);	
@@ -7008,9 +7590,11 @@
 		return seSeRL;
 	}
 
+	// Modified: 2026-10-04
+
 	function paSeRL(R = 75, L = 5e-9) { // parallel capacitor nPort object   
 		var paSeRL = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			Z[freqCount] = complex(R, 2*Math.PI*L*frequencyList[freqCount]);
@@ -7026,9 +7610,11 @@
 		return paSeRL;
 	}
 
+	// Modified: 2026-10-04
+
 	function seSeRC(R = 75, C = 1e-12) { // series inductor nPort object
 		var seSeRC = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			Z[freqCount] = complex(R, -1/(2*Math.PI*C*frequencyList[freqCount]));	
@@ -7042,11 +7628,11 @@
 		return seSeRC;
 	}
 
-	// Modified: 2026-07-14
+	// Modified: 2026-10-04
 
 	function paSeRC(R = 75, C = 1e-12) { // parallel series-RC nPort object
 		var paSeRC = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			Z[freqCount] = complex(R, -1/(2*Math.PI*C*frequencyList[freqCount]));
@@ -7062,9 +7648,11 @@
 		return paSeRC;
 	}
 
+	// Modified: 2026-10-04
+
 	function seSeLC(L = 5e-9, C = 1e-12) { // series inductor nPort object
 		var seSeLC = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount] -1/(2*Math.PI*C*frequencyList[freqCount]));	
@@ -7078,9 +7666,11 @@
 		return seSeLC;
 	}
 
+	// Modified: 2026-10-04
+
 	function paSeLC(L = 5e-9, C = 1e-12) { // parallel capacitor nPort object   
 		var paSeLC = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount] -1/(2*Math.PI*C*frequencyList[freqCount]));
@@ -7096,9 +7686,11 @@
 		return paSeLC;
 	}
 
+	// Modified: 2026-10-04
+
 	function seSeRLC(R = 75, L = 5e-9, C = 1e-12) { // series inductor nPort object
 		var seSeRLC = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			Z[freqCount] = complex(R, 2*Math.PI*L*frequencyList[freqCount] -1/(2*Math.PI*C*frequencyList[freqCount]));	
@@ -7112,9 +7704,11 @@
 		return seSeRLC;
 	}
 
+	// Modified: 2026-10-04
+
 	function paSeRLC(R = 75, L = 5e-9, C = 1e-12) { // parallel capacitor nPort object   
 		var paSeRLC = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			Z[freqCount] = complex(R, 2*Math.PI*L*frequencyList[freqCount] -1/(2*Math.PI*C*frequencyList[freqCount]));
@@ -7130,9 +7724,11 @@
 		return paSeRLC;
 	}
 
+	// Modified: 2026-10-04
+
 	function paPaRL(R = 75, L = 5e-9) { // parallel capacitor nPort object   
 		var paPaRL = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			Z[freqCount] = (  (complex(R,0).inv()).add(complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv())  ).inv();
@@ -7148,9 +7744,11 @@
 		return paPaRL;
 	}
 
+	// Modified: 2026-10-04
+
 	function sePaRL(R = 75, L = 5e-9) { // parallel capacitor nPort object   
 		var sePaRL = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			Z[freqCount] = (  (complex(R,0).inv()).add(complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv())  ).inv();
@@ -7165,9 +7763,11 @@
 		return sePaRL;
 	}
 
+	// Modified: 2026-10-04
+
 	function paPaRC(R = 75, C = 1e-12) { // parallel capacitor nPort object   
 		var paPaRC = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			Z[freqCount] = (  (complex(R,0).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
@@ -7183,9 +7783,11 @@
 		return paPaRC;
 	}
 
+	// Modified: 2026-10-04
+
 	function sePaRC(R = 75, C = 1e-12) { // parallel capacitor nPort object   
 		var sePaRC = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			Z[freqCount] = (  (complex(R,0).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
@@ -7200,9 +7802,11 @@
 		return sePaRC;
 	}
 
+	// Modified: 2026-10-04
+
 	function paPaLC(L = 5e-9, C = 1e-12) { // parallel capacitor nPort object   
 		var paPaLC = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			Z[freqCount] = (  (complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
@@ -7218,9 +7822,11 @@
 		return paPaLC;
 	}
 
+	// Modified: 2026-10-04
+
 	function sePaLC(L = 5e-9, C = 1e-12) { // parallel capacitor nPort object   
 		var sePaLC = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			Z[freqCount] = (  (complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
@@ -7235,9 +7841,11 @@
 		return sePaLC;
 	}
 
+	// Modified: 2026-10-04
+
 	function paPaRLC(R = 75, L = 5e-9, C = 1e-12) { // parallel capacitor nPort object   
 		var paPaRLC = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			Z[freqCount] = ( (complex(R,0).inv()).add (complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
@@ -7253,9 +7861,11 @@
 		return paPaRLC;
 	}
 
+	// Modified: 2026-10-04
+
 	function sePaRLC(R = 75, L = 5e-9, C = 1e-12) { // parallel capacitor nPort object   
 		var sePaRLC = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			Z[freqCount] = ( (complex(R,0).inv()).add (complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
@@ -7281,13 +7891,240 @@
 		}	return filtTable[ filtTable.length-1 ];
 	}
 
+	// Modified: 2026-10-03
+
+	const kB$1 = 1.380649e-23;
+
+	// Matched, reciprocal attenuator. Noise is the covariance of its own outgoing waves.
+	function Attn(attenuationDb = 3, temperature = global.Temp) {
+		if (attenuationDb !== null && typeof attenuationDb === 'object') {
+			var options = attenuationDb;
+			attenuationDb = options.attenuationDb === undefined ? 3 : options.attenuationDb;
+			temperature = options.temperature === undefined ? global.Temp : options.temperature;
+		}
+		if (!Number.isFinite(attenuationDb) || attenuationDb < 0) {
+			throw new RangeError('Attn attenuationDb must be a finite, nonnegative number of dB.');
+		}
+		if (!Number.isFinite(temperature) || temperature < 0) {
+			throw new RangeError('Attn temperature must be a finite, nonnegative number of kelvin.');
+		}
+
+		var transmission = 10 ** (-attenuationDb / 20);
+		var addedNoise = kB$1 * temperature * (1 - transmission * transmission);
+		var attenuator = new nPort();
+		var sparsArray = [];
+		var noiseArray = [];
+		var frequencies = analysisFrequencies(global);
+		for (var i = 0; i < frequencies.length; i++) {
+			var frequency = frequencies[i];
+			sparsArray[i] = [frequency, complex(0, 0), complex(transmission, 0), complex(transmission, 0), complex(0, 0)];
+			noiseArray[i] = {
+				frequency: frequency,
+				C: [
+					[complex(addedNoise, 0), complex(0, 0)],
+					[complex(0, 0), complex(addedNoise, 0)]
+				]
+			};
+		}
+		attenuator.setspars(sparsArray);
+		attenuator.noise = noiseArray;
+		attenuator.setglobal(global);
+		attenuator.temperature = temperature;
+		attenuator._displayFrequencies = global.fList.slice();
+		return attenuator;
+	}
+
+	// Modified: 2026-10-04
+
+	const kB = 1.380649e-23;
+
+	var conjugate$1 = function (value) { return complex(value.getR(), -value.getI()); };
+	var magnitudeSquared = function (value) { return value.getR() ** 2 + value.getI() ** 2; };
+	var finiteComplex = function (value) {
+		return value && typeof value.getR === 'function' && typeof value.getI === 'function' &&
+			Number.isFinite(value.getR()) && Number.isFinite(value.getI());
+	};
+
+	// Convert frequency-flat two-port noise parameters to intrinsic wave covariance.
+	// The conversion uses F(Gamma) at a matched output and C = E[c c^H].
+	function covarianceFromNoiseParameters(spars, fMinDb, gammaOpt, noiseResistanceOhms,
+		referenceTemperature) {
+		if (!Array.isArray(spars) || spars.length !== 4 || !spars.every(finiteComplex)) {
+			throw new TypeError('Amp spars must be four finite complex values [s11, s12, s21, s22].');
+		}
+		if (!Number.isFinite(fMinDb) || fMinDb < 0 || !finiteComplex(gammaOpt) ||
+			magnitudeSquared(gammaOpt) >= 1 ||
+			!Number.isFinite(noiseResistanceOhms) || noiseResistanceOhms < 0) {
+			throw new RangeError('Amp requires nonnegative fMinDb and noiseResistanceOhms, and |gammaOpt| < 1.');
+		}
+		if (!Number.isFinite(global.Ro) || global.Ro <= 0) {
+			throw new RangeError('Amp requires a positive reference impedance.');
+		}
+		var s11 = spars[0];
+		var s21 = spars[2];
+		var gain = magnitudeSquared(s21);
+		if (!(gain > 0)) throw new RangeError('Amp s21 must be nonzero to define noise figure.');
+		var minFactor = 10 ** (fMinDb / 10);
+		var normalizedResistance = noiseResistanceOhms / global.Ro;
+		var slope = 4 * normalizedResistance /
+			magnitudeSquared(complex(1, 0).add(gammaOpt));
+		var constant = minFactor - 1 + slope * magnitudeSquared(gammaOpt);
+		var quadratic = slope - (minFactor - 1);
+		var scale = kB * referenceTemperature * gain;
+		var c22 = scale * constant;
+		var c12 = s11.mul(complex(c22, 0))
+			.sub(conjugate$1(gammaOpt).mul(complex(scale * slope, 0))).div(s21);
+		var c11 = (scale * quadratic - magnitudeSquared(s11) * c22 +
+				2 * s21.mul(conjugate$1(s11)).mul(c12).getR()) / gain;
+		var determinant = c11 * c22 - magnitudeSquared(c12);
+		var covarianceScale = kB * referenceTemperature;
+		if (![c11, c22, c12.getR(), c12.getI()].every(Number.isFinite) ||
+			c11 < -1e-12 * covarianceScale || c22 < -1e-12 * covarianceScale ||
+			determinant < -1e-12 * covarianceScale ** 2) {
+			throw new RangeError('Amp spars, fMinDb, gammaOpt, and noiseResistanceOhms imply an invalid noise covariance.');
+		}
+		return [
+			[complex(Math.max(0, c11), 0), c12],
+			[conjugate$1(c12), complex(Math.max(0, c22), 0)]
+		];
+	}
+
+	// Every form starts with the same frequency-flat S and noise parameters.
+	// Object options replace only the named defaults; the positional form sets S21 and Fmin.
+	function Amp(gainDb = 20, noiseFigureDb = 4, referenceTemperature = 290) {
+		var defaults = {
+			spars: [complex(0, 0), complex(0, 0), complex(10, 0), complex(0, 0)],
+			fMinDb: 4,
+			gammaOpt: complex(0, 0),
+			noiseResistanceOhms: 25,
+			referenceTemperature: 290
+		};
+		var specifiedSpars = defaults.spars;
+		var noiseParameters = defaults;
+		var options;
+		var oip2dBm;
+		var harmonicOip2dBm;
+		var oip3dBm;
+		var im2PhaseDeg = 0;
+		var harmonic2PhaseDeg = 0;
+		var im3PhaseDeg = 0;
+		if (gainDb !== null && typeof gainDb === 'object') {
+			options = gainDb;
+			oip2dBm = options.oip2dBm;
+			harmonicOip2dBm = options.harmonicOip2dBm;
+			oip3dBm = options.oip3dBm;
+			if (options.im2PhaseDeg !== undefined) im2PhaseDeg = options.im2PhaseDeg;
+			if (options.harmonic2PhaseDeg !== undefined) harmonic2PhaseDeg = options.harmonic2PhaseDeg;
+			if (options.im3PhaseDeg !== undefined) im3PhaseDeg = options.im3PhaseDeg;
+			if (options.spars !== undefined && options.gainDb !== undefined) {
+				throw new TypeError('Amp gainDb is determined by spars when both are supplied.');
+			}
+			if (options.spars !== undefined) specifiedSpars = options.spars;
+			if (options.gainDb !== undefined) {
+				if (!Number.isFinite(options.gainDb)) {
+					throw new RangeError('Amp gainDb must be a finite number of dB.');
+				}
+				specifiedSpars[2] = complex(10 ** (options.gainDb / 20), 0);
+			}
+			if (options.fMinDb !== undefined) noiseParameters.fMinDb = options.fMinDb;
+			if (options.gammaOpt !== undefined) noiseParameters.gammaOpt = options.gammaOpt;
+			if (options.noiseResistanceOhms !== undefined) {
+				noiseParameters.noiseResistanceOhms = options.noiseResistanceOhms;
+			}
+			if (options.noiseFigureDb !== undefined && options.fMinDb === undefined) {
+				noiseParameters.fMinDb = options.noiseFigureDb;
+			}
+			referenceTemperature = options.referenceTemperature === undefined ? defaults.referenceTemperature :
+				options.referenceTemperature;
+		} else {
+			if (!Number.isFinite(gainDb)) {
+				throw new RangeError('Amp gainDb must be a finite number of dB.');
+			}
+			if (!Number.isFinite(noiseFigureDb) || noiseFigureDb < 0) {
+				throw new RangeError('Amp noiseFigureDb must be a finite, nonnegative number of dB.');
+			}
+			specifiedSpars[2] = complex(10 ** (gainDb / 20), 0);
+			noiseParameters.fMinDb = noiseFigureDb;
+		}
+		if (!Number.isFinite(referenceTemperature) || referenceTemperature <= 0) {
+			throw new RangeError('Amp referenceTemperature must be a finite, positive number of kelvin.');
+		}
+		if ((oip2dBm !== undefined && !Number.isFinite(oip2dBm)) ||
+			(harmonicOip2dBm !== undefined && !Number.isFinite(harmonicOip2dBm)) ||
+			(oip3dBm !== undefined && !Number.isFinite(oip3dBm))) {
+			throw new RangeError('Amp output intercepts must be finite dBm values when supplied.');
+		}
+		if (!Number.isFinite(im2PhaseDeg) || !Number.isFinite(harmonic2PhaseDeg) || !Number.isFinite(im3PhaseDeg)) {
+			throw new RangeError('Amp IM phases must be finite degrees.');
+		}
+		var ip2Watts = oip2dBm === undefined ? null : 10 ** ((oip2dBm - 30) / 10);
+		var harmonicIp2Watts = harmonicOip2dBm === undefined ? null : 10 ** ((harmonicOip2dBm - 30) / 10);
+		var ip3Watts = oip3dBm === undefined ? null : 10 ** ((oip3dBm - 30) / 10);
+		if ((ip2Watts !== null && (!Number.isFinite(ip2Watts) || ip2Watts <= 0)) ||
+			(harmonicIp2Watts !== null && (!Number.isFinite(harmonicIp2Watts) || harmonicIp2Watts <= 0)) ||
+			(ip3Watts !== null && (!Number.isFinite(ip3Watts) || ip3Watts <= 0))) {
+			throw new RangeError('Amp output intercept powers must be representable as positive watts.');
+		}
+		if ((oip2dBm !== undefined || harmonicOip2dBm !== undefined || oip3dBm !== undefined) &&
+			(magnitudeSquared(specifiedSpars[0]) !== 0 || magnitudeSquared(specifiedSpars[1]) !== 0 ||
+			magnitudeSquared(specifiedSpars[3]) !== 0 || specifiedSpars[2].getI() !== 0 ||
+			specifiedSpars[2].getR() <= 0)) {
+			throw new RangeError('Amp OIP calibration currently requires matched, unilateral, positive real gain S-parameters.');
+		}
+		var specifiedCovariance = covarianceFromNoiseParameters(specifiedSpars,
+			noiseParameters.fMinDb, noiseParameters.gammaOpt,
+			noiseParameters.noiseResistanceOhms, referenceTemperature);
+		if (options && options.noiseFigureDb !== undefined) {
+			var matchedFactor = 10 ** (noiseParameters.fMinDb / 10) +
+				4 * (noiseParameters.noiseResistanceOhms / global.Ro) *
+				magnitudeSquared(noiseParameters.gammaOpt) /
+				magnitudeSquared(complex(1, 0).add(noiseParameters.gammaOpt));
+			if (!Number.isFinite(options.noiseFigureDb) ||
+				Math.abs(10 ** (options.noiseFigureDb / 10) - matchedFactor) >
+				1e-10 * matchedFactor) {
+				throw new RangeError('Amp noiseFigureDb disagrees with the matched-source noise parameters.');
+			}
+		}
+		var amplifier = new nPort();
+		var sparsArray = [];
+		var noiseArray = [];
+		var frequencies = analysisFrequencies(global);
+		for (var i = 0; i < frequencies.length; i++) {
+			var frequency = frequencies[i];
+			sparsArray[i] = [frequency].concat(specifiedSpars.map(function (s) { return s.copy(); }));
+			noiseArray[i] = {
+				frequency: frequency,
+				C: specifiedCovariance.map(function (row) {
+					return row.map(function (value) { return value.copy(); });
+				})
+			};
+		}
+		amplifier.setspars(sparsArray);
+		amplifier.noise = noiseArray;
+		amplifier.setglobal(global);
+		amplifier.referenceTemperature = referenceTemperature;
+		amplifier._displayFrequencies = global.fList.slice();
+		amplifier._intermod = {
+			type: 'amp',
+			p2: ip2Watts,
+			p2Harmonic: harmonicIp2Watts,
+			p3: ip3Watts,
+			phase2: complex(Math.cos(im2PhaseDeg * Math.PI / 180), Math.sin(im2PhaseDeg * Math.PI / 180)),
+			phase2Harmonic: complex(Math.cos(harmonic2PhaseDeg * Math.PI / 180), Math.sin(harmonic2PhaseDeg * Math.PI / 180)),
+			phase3: complex(Math.cos(im3PhaseDeg * Math.PI / 180), Math.sin(im3PhaseDeg * Math.PI / 180))
+		};
+		return amplifier;
+	}
+
+	// Modified: 2026-10-04
+
 	function Tee() { // a 3port dummy connection
 		var Tee = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro,0); Zo.inv(); complex(2,0); var freqCount = 0, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
-			s11 = complex(1e-7 + -1/3,0);
-			s12 = complex(1e-7 + 2/3,0);
+			s11 = complex(-1/3,0);
+			s12 = complex(2/3,0);
 			s13 = s12;
 			s21 = s12;
 			s22 = s11;
@@ -7302,13 +8139,15 @@
 		return Tee;
 	}
 
+	// Modified: 2026-10-04
+
 	function Tee4() { // a 4-port dummy connection
 		var Tee4 = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro,0); Zo.inv(); complex(2,0); var freqCount = 0, s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
-			s11 = s22 = s33 = s44 = complex(1e-7 + -1/2,0);
-			s12 = s13 = s14 = s21 = s23 = s24 = s31 = s32 = s34 = s41 = s42 = s43 = complex(1e-7 + 1/2,0);
+			s11 = s22 = s33 = s44 = complex(-1/2,0);
+			s12 = s13 = s14 = s21 = s23 = s24 = s31 = s32 = s34 = s41 = s42 = s43 = complex(1/2,0);
 			
 			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44];
 		}	
@@ -7317,13 +8156,15 @@
 		return Tee4;
 	}
 
-	function Tee5() { // a 4-port dummy connection
+	// Modified: 2026-10-04
+
+	function Tee5() { // an ideal five-port junction
 		var Tee5 = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro,0); Zo.inv(); complex(2,0); var freqCount = 0, s11, s12, s13, s14, s15, s21, s22, s23, s24, s25, s31, s32, s33, s34, s35, s41, s42, s43, s44, s45, s51, s52, s53, s54, s55, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
-			s11 = s22 = s33 = s44 = s55 = complex(1e-7 + -0.6,0);
-			s12 = s13 = s14 = s15 = s21 = s23 = s24 = s25 = s31 = s32 = s34 = s35 = s41 = s42 = s43 = s45 = s51 = s52 = s53 = s54 = complex(1e-7 + 0.4,0);
+			s11 = s22 = s33 = s44 = s55 = complex(-0.6,0);
+			s12 = s13 = s14 = s15 = s21 = s23 = s24 = s25 = s31 = s32 = s34 = s35 = s41 = s42 = s43 = s45 = s51 = s52 = s53 = s54 = complex(0.4,0);
 			
 			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s14, s15, s21, s22, s23, s24, s25, s31, s32, s33, s34, s35, s41, s42, s43, s44, s45, s51, s52, s53, s54, s55];
 		}	
@@ -7332,20 +8173,19 @@
 		return Tee5;
 	}
 
-	// Modified: 2026-08-12
+	// Modified: 2026-10-04
 
 	// Ideal three-port junction for attaching a one-port network in series.
 	// Ports 1 and 2 form the through path; port 3 is the series branch.
 	function seriesTee() {
 		var junction = new nPort;
-		var frequencyList = global.fList;
-		var e = 1e-7;
+		var frequencyList = analysisFrequencies(global);
 		var sparsArray = [];
 
 		for (var freqCount = 0; freqCount < frequencyList.length; freqCount++) {
-			var oneThird = complex(e + 1 / 3, 0);
-			var twoThirds = complex(e + 2 / 3, 0);
-			var negativeTwoThirds = complex(e - 2 / 3, 0);
+			var oneThird = complex(1 / 3, 0);
+			var twoThirds = complex(2 / 3, 0);
+			var negativeTwoThirds = complex(-2 / 3, 0);
 
 			sparsArray[freqCount] = [
 				frequencyList[freqCount],
@@ -7360,119 +8200,131 @@
 		return junction;
 	}
 
-	// Modified: 2026-09-08
+	// Modified: 2026-10-03
 	var conjugate = function (value) { return complex(value.getR(), -value.getI()); };
 
 
-	function nodal( ... nPortsAndNodes) { //nPortsAndNodes = [[nPort1, n1, n2 ...], [nPort2, n1, n2 ...], ... ['out', n1, nn2, ...] ]
+	function nodal( ... componentConnections) { // componentConnections = [[nPort1, n1, n2 ...], ... ['out', n1, n2, ...] ]
 		var i = 0, j = 0, k = 0, row = 0, col = 0, offset = 0, base = 0;
-		var spars = function () { // creates spars table with frequencies only [ [freq1], [freq2], ... [freqN] ]
-			var sparsLength = nPortsAndNodes[0][0].global.fList.length; // use the first nPort for global data
-			var sparsArray = dim(sparsLength,1,1);
-			for (i = 0; i< sparsLength; i++) {
-				sparsArray[i][0] = nPortsAndNodes[0][0].global.fList[i];
+		var networkSpars = componentConnections[0][0].spars.map(function (row) {
+			return [row[0]];
+		});
+		var numOfFreqs = componentConnections[0][0].spars.length; // determine the number of frequency points
+		var networkEntryCount = componentConnections.length;
+		var m = networkEntryCount - 1; // Gupta's m: number of multiport components
+		for (var componentIndex = 1; componentIndex < m; componentIndex++) {
+			var componentSpars = componentConnections[componentIndex][0].spars;
+			if (componentSpars.length !== numOfFreqs ||
+				componentSpars.some(function (row, index) { return row[0] !== networkSpars[index][0]; })) {
+				throw new RangeError('nodal components must have matching frequency rows.');
 			}
-			return sparsArray;
-		}();
-		var numOfFreqs = nPortsAndNodes[0][0].spars.length; //determine the number of iterations based on number of frequencies
-		var numOfnPorts = nPortsAndNodes.length;
-		var numOfComponents = numOfnPorts - 1;
-		var rowCol = function (nPortsAndNodes) { //determine the number of rows and columns
+		}
+		var totalPortCount = function (connections) { // total component and external ports
 			var size = 0;
-			for (i = 0; i < numOfnPorts; i++) { 
-				//size += Math.sqrt(nPortsAndNodes[i][0].spars[0].length -1);
-				size += nPortsAndNodes[i].length -1;
+			for (i = 0; i < networkEntryCount; i++) {
+				size += connections[i].length - 1;
 			}
-			//return size + nPortsAndNodes[numOfnPorts-1].length - 1;
 			return size;
-		}(nPortsAndNodes);	
-		var outputPortCount = nPortsAndNodes[numOfnPorts - 1].length - 1;
-		var componentPortCount = rowCol - outputPortCount;
-		(function () { return dim(rowCol, rowCol, complex(0,0)); })();
-		const gammaArray = function () {
-			var outArray = dim(rowCol, rowCol, complex(0,0));
-			var outArrayReal = dim(rowCol, rowCol, 0); // for testing hookup
-			var expanded = dim(rowCol, 3, 0);
-			for (row = 0; row < rowCol; row++) {//put the b's here in the first column 
+		}(componentConnections);
+		var externalPortCount = componentConnections[networkEntryCount - 1].length - 1;
+		var interconnectedPortCount = totalPortCount - externalPortCount;
+		const GammaArray = function () {
+			var connectionArray = dim(totalPortCount, totalPortCount, complex(0,0));
+			var expanded = dim(totalPortCount, 3, 0);
+			for (row = 0; row < totalPortCount; row++) {// put the b indices in the first column
 				expanded[row][0] = row + 1;
-			}		for(i = 0, offset = 0; i < numOfnPorts; i++) {//put the nodes here in the second column
-				for( col = 0; col < nPortsAndNodes[i].length -1; col++) {
-					expanded[offset][1] = nPortsAndNodes[i][col + 1];
+			}		for(i = 0, offset = 0; i < networkEntryCount; i++) {// put node labels in the second column
+				for( col = 0; col < componentConnections[i].length -1; col++) {
+					expanded[offset][1] = componentConnections[i][col + 1];
 					offset++;
-				}		}		for (i = 0; i < rowCol; i++) {
-				for (row = 0; row < rowCol; row++) { // put the a's in the 3rd column
+				}		}		for (i = 0; i < totalPortCount; i++) {
+				for (row = 0; row < totalPortCount; row++) { // put the connected a index in the third column
 					if ( !(i === row) && (expanded[i][1] === expanded[row][1])   ) { //pivot row is not counted
 						expanded[row][2] = expanded[i][0];
-					}			}		}		for (row = 0; row < rowCol; row++) { // put 1's for the interconnects
-				outArray[row][expanded[row][2]-1] = complex(1,0);
-				outArrayReal[row][expanded[row][2]-1] = 1;
-			}		return outArray;
+					}			}		}		for (row = 0; row < totalPortCount; row++) { // put 1s for the interconnections
+				connectionArray[row][expanded[row][2]-1] = complex(1,0);
+			}		return connectionArray;
 		}();
-		var gammaMatrix = matrix(gammaArray);
-		var nodalOut = new nPort();
-		var noiseCovariance = [];
+		var network = new nPort();
+		var networkNoiseCovariance = [];
 		for ( i = 0; i < numOfFreqs; i++) { // i is number of frequencies
 			offset = 0;
-			gammaMatrix.m = dup(gammaArray);
-			for ( j = 0; j < nPortsAndNodes.length - 1; j++) { // j is the number of the current nPort except the last one
-				for ( k = 0; k < (nPortsAndNodes[j].length - 1)**2; k++){ // k is the the port number squared
-					base = nPortsAndNodes[j].length - 1;
-					gammaMatrix.m[offset + Math.floor(k/base)][offset + k % base] = nPortsAndNodes[j][0].spars[i][1 + k].neg();
+			var WMatrix = matrix(dup(GammaArray));
+			for ( j = 0; j < m; j++) { // insert each component's negative S-matrix into W
+				for ( k = 0; k < (componentConnections[j].length - 1)**2; k++){
+					base = componentConnections[j].length - 1;
+					WMatrix.m[offset + Math.floor(k/base)][offset + k % base] = componentConnections[j][0].spars[i][1 + k].neg();
 				}
 				offset += base;
-			}		var solvedMatrix = gammaMatrix.invertCplx();
-			for ( j = 0; j < outputPortCount; j++) { //
-				for ( k = 0; k < outputPortCount; k++) {
-					spars[i].push(solvedMatrix.m[componentPortCount +j][componentPortCount + k]);
+			}		var Winverse = WMatrix.invertCplx();
+			for ( j = 0; j < externalPortCount; j++) {
+				for ( k = 0; k < externalPortCount; k++) {
+					networkSpars[i].push(Winverse.m[interconnectedPortCount +j][interconnectedPortCount + k]);
 				}		}
 			// Each component noise-wave entry is a source column in the same
 			// linear system.  Keep this propagation internal to nodal().
-			var componentCovariance = dim(componentPortCount, componentPortCount, complex(0, 0));
+			var Cnoise = dim(interconnectedPortCount, interconnectedPortCount, complex(0, 0));
 			var covarianceOffset = 0;
-			for (var component = 0; component < numOfComponents; component++) {
-				var componentPorts = nPortsAndNodes[component].length - 1;
-				var componentNoise = nPortsAndNodes[component][0].noise;
+			for (var component = 0; component < m; component++) {
+				var componentPortCount = componentConnections[component].length - 1;
+				var componentNoise = componentConnections[component][0].noise;
 				if (componentNoise && componentNoise[i] && componentNoise[i].C) {
-					for (var covarianceRow = 0; covarianceRow < componentPorts; covarianceRow++) {
-						for (var covarianceCol = 0; covarianceCol < componentPorts; covarianceCol++) {
-							componentCovariance[covarianceOffset + covarianceRow][covarianceOffset + covarianceCol] = componentNoise[i].C[covarianceRow][covarianceCol];
+					for (var covarianceRow = 0; covarianceRow < componentPortCount; covarianceRow++) {
+						for (var covarianceCol = 0; covarianceCol < componentPortCount; covarianceCol++) {
+							Cnoise[covarianceOffset + covarianceRow][covarianceOffset + covarianceCol] = componentNoise[i].C[covarianceRow][covarianceCol];
 						}
 					}
 				}
-				covarianceOffset += componentPorts;
+				covarianceOffset += componentPortCount;
 			}
-			var outputNoise = [];
-			for (j = 0; j < outputPortCount; j++) {
-				outputNoise[j] = [];
-				for (k = 0; k < outputPortCount; k++) {
+			var Cout = [];
+			for (j = 0; j < externalPortCount; j++) {
+				Cout[j] = [];
+				for (k = 0; k < externalPortCount; k++) {
 					var sum = complex(0, 0);
-					for (var sourceRow = 0; sourceRow < componentPortCount; sourceRow++) {
-						for (var sourceCol = 0; sourceCol < componentPortCount; sourceCol++) {
-							var transfer = solvedMatrix.m[componentPortCount +j][sourceRow];
-							var transferConjugate = conjugate(solvedMatrix.m[componentPortCount +k][sourceCol]);
-							sum = sum.add(transfer.mul(componentCovariance[sourceRow][sourceCol]).mul(transferConjugate));
+					for (var sourceRow = 0; sourceRow < interconnectedPortCount; sourceRow++) {
+						for (var sourceCol = 0; sourceCol < interconnectedPortCount; sourceCol++) {
+							var transfer = Winverse.m[interconnectedPortCount +j][sourceRow];
+							var transferConjugate = conjugate(Winverse.m[interconnectedPortCount +k][sourceCol]);
+							sum = sum.add(transfer.mul(Cnoise[sourceRow][sourceCol]).mul(transferConjugate));
 						}
 					}
-					outputNoise[j][k] = sum;
-				}		}		noiseCovariance[i] = {frequency: spars[i][0], C: outputNoise};
+					Cout[j][k] = sum;
+				}		}		networkNoiseCovariance[i] = {frequency: networkSpars[i][0], C: Cout};
 
-		}	nodalOut.setspars(spars);
-		nodalOut.setglobal(nPortsAndNodes[0][0].global); // use the first nPort for global data
-		nodalOut.noise = {covariance: noiseCovariance};
-		return nodalOut;
+		}	network.setspars(networkSpars);
+		network.setglobal(componentConnections[0][0].global); // use the first component for global data
+		network.noise = networkNoiseCovariance;
+		var displayComponent = componentConnections.slice(0, m).find(function (entry) {
+			return entry[0]._displayFrequencies;
+		});
+		network._displayFrequencies = displayComponent && displayComponent[0]._displayFrequencies;
+		network._intermod = connectionModel(
+			componentConnections.slice(0, m).map(function (entry) { return entry[0]; }),
+			GammaArray.map(function (connectionRow) {
+				return connectionRow.findIndex(function (value) { return value.getR() === 1; });
+			})
+		);
+		return network;
 	}
 
-	function cascade( ... nPorts) {
-		var i = 0;
-		var nPortsTable = nPorts;
-		for (i = 0; i < nPortsTable.length - 1; i++) {
-			nPortsTable[i+1] = nPortsTable[i].cas(nPortsTable[i+1]);
-		}	return nPortsTable[ nPortsTable.length-1 ];
+	// Modified: 2026-10-03
+
+	function cascade(...nPorts) {
+		if (nPorts.length === 0) throw new TypeError('cascade() requires at least one nPort.');
+		var combined = nPorts[0];
+		for (var i = 1; i < nPorts.length; i++) {
+			// cas() combines S-parameters and noise, and keeps both nonlinear stages.
+			combined = combined.cas(nPorts[i]);
+		}
+		return combined;
 	}
+
+	// Modified: 2026-10-04
 
 	function Open() { // one port, open
 		var Open = new nPort;
-		var frequencyList = global.fList; global.Ro;
+		var frequencyList = analysisFrequencies(global); global.Ro;
 		var freqCount = 0, s11, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			s11 = complex(1,0);
@@ -7483,9 +8335,11 @@
 		return Open;
 	}
 
+	// Modified: 2026-10-04
+
 	function Short() { //  one port, Short
 		var Short = new nPort;
-		var frequencyList = global.fList; global.Ro;
+		var frequencyList = analysisFrequencies(global); global.Ro;
 		var freqCount = 0, s11, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			s11 = complex(-1,0);
@@ -7496,9 +8350,11 @@
 		return Short;
 	}
 
+	// Modified: 2026-10-04
+
 	function Load() { // one port, load
 		var Load = new nPort;
-		var frequencyList = global.fList; global.Ro;
+		var frequencyList = analysisFrequencies(global); global.Ro;
 		var freqCount = 0, s11, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			s11 = complex(0,0);
@@ -7509,11 +8365,11 @@
 		return Load;
 	}
 
-	// Modified: 2026-07-01
+	// Modified: 2026-10-04
 
 	function Shift90() { // lossless matched two-port with +90 degree through phase
 		var Shift90 = new nPort;
-		var frequencyList = global.fList; global.Ro;
+		var frequencyList = analysisFrequencies(global); global.Ro;
 		var freqCount = 0, s11, s12, s21, s22, sparsArray = [];
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			s11 = complex(0,0);
@@ -7527,9 +8383,11 @@
 		return Shift90;
 	}
 
+	// Modified: 2026-10-04
+
 	function Tlin(Z = 60, Length = 0.5 * 0.0254) { // Z is in ohms and Length is in meters, sparameters of a physical transmission line
 		var Tlin = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro,0); Zo.inv(); complex(1,0); var two = complex(2,0), freqCount = 0, Ztlin = [], s11, s12, s21, s22, sparsArray = [];
 		var Atlin = {}, Btlin = {}, Ctlin = {}, Ds = {}, alpha = 0, beta = 0, gamma = {};
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
@@ -7555,9 +8413,11 @@
 		return Tlin;
 	}
 
+	// Modified: 2026-10-04
+
 	function Tclin(Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254) { // 1.4732 is the quarter wavelength at 2GHz, (1.3412 at 2.2 GHz)
 		var ctlin = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro,0); Zo.inv(); complex(1,0); var two = complex(2,0), freqCount = 0, Zoetclin = [], Zootclin = [];
 		var s11oe, s12oe, s21oe, s22oe;
 		var s11oo, s12oo, s21oo, s22oo;
@@ -7715,7 +8575,7 @@
 		};
 	};
 
-	// Modified: 2026-09-08
+	// Modified: 2026-10-04
 
 	var pi$7 = Math.PI;
 
@@ -7814,7 +8674,7 @@
 		requirePositive('mlin', 'relativePermittivity', er); requireNonnegative('mlin', 'resistivity', rho * COPPER_RESISTIVITY);
 		requireNonnegative('mlin', 'lossTangent', tand); requireNonnegative('mlin', 'roughnessRms', roughnessRms); requireNonnegative('mlin', 'temperature', temperature);
 		var mlin = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro, 0), two = complex(2, 0), freqCount = 0, s11, s12, s21, s22, sparsArray = [], noiseArray = [];
 		var Atlin = {}, Btlin = {}, Ctlin = {}, Zmlin = {}, Ds = {}, alpha = 0, beta = 0, gamma = {};
 
@@ -7876,6 +8736,9 @@
 		}	mlin.setspars(sparsArray);
 		mlin.noise = noiseArray;
 		mlin.setglobal(global);
+		var firstDisplayAnalysis = analysis.find(function (point) {
+			return point.frequency === global.fList[0];
+		});
 		mlin.microstrip = {
 			Width,
 			Height,
@@ -7885,8 +8748,8 @@
 			rho,
 			tand,
 			roughnessRms,
-			Z: analysis[0] ? analysis[0].Z : Z,
-			ere: analysis[0] ? analysis[0].ere : ere,
+			Z: firstDisplayAnalysis ? firstDisplayAnalysis.Z : Z,
+			ere: firstDisplayAnalysis ? firstDisplayAnalysis.ere : ere,
 			ZQuasiStatic: Z,
 			ereQuasiStatic: ere,
 			analysis
@@ -7902,7 +8765,7 @@
 		return mlin;
 	}
 
-	// Modified: 2026-09-08
+	// Modified: 2026-10-04
 
 	var pi$6 = Math.PI;
 
@@ -8136,7 +8999,7 @@
 		requirePositive('mclin', 'relativePermittivity', er); requireNonnegative('mclin', 'resistivity', rho * COPPER_RESISTIVITY);
 		requireNonnegative('mclin', 'lossTangent', tand); requireNonnegative('mclin', 'roughnessRms', roughnessRms); requireNonnegative('mclin', 'temperature', temperature);
 		var ctlin = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var Zo = complex(Ro, 0), two = complex(2, 0), freqCount = 0, Zoemclin = [], Zoomclin = [];
 		var s11oe, s12oe, s21oe, s22oe;
 		var s11oo, s12oo, s21oo, s22oo;
@@ -8219,7 +9082,9 @@
 		ctlin.setspars(sparsArray);
 		ctlin.noise = noiseArray;
 		ctlin.setglobal(global);
-		var firstDispersion = dispersion[0] || {Zoe: quasiStatic.Zoe, Zoo: quasiStatic.Zoo, ereoe: quasiStatic.ereoe, ereoo: quasiStatic.ereoo};
+		var firstDispersion = dispersion.find(function (point) {
+			return point.frequency === global.fList[0];
+		}) || {Zoe: quasiStatic.Zoe, Zoo: quasiStatic.Zoo, ereoe: quasiStatic.ereoe, ereoo: quasiStatic.ereoo};
 		ctlin.microstrip = {
 			Width,
 			Space,
@@ -8249,7 +9114,7 @@
 		return ctlin;
 	}
 
-	// Modified: 2026-09-08
+	// Modified: 2026-10-04
 
 	var pi$5 = Math.PI;
 	var DEFAULT_WIDTH = 0.023 * INCH_TO_METER;
@@ -8341,7 +9206,7 @@
 		requireNonnegative('mtee', 'resistivity', rho * COPPER_RESISTIVITY); requireNonnegative('mtee', 'lossTangent', tand);
 		requireNonnegative('mtee', 'roughnessRms', roughnessRms); requireNonnegative('mtee', 'temperature', temperature);
 		var mtee = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var freqCount = 0, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [], noiseArray = [];
 		var WidthA = branch1Width, WidthB = branch2Width, WidthSide = commonWidth;
 		var analysis = [];
@@ -8439,7 +9304,7 @@
 		return mtee;
 	}
 
-	// Modified: 2026-09-06
+	// Modified: 2026-10-04
 
 	var pi$4 = Math.PI;
 
@@ -8622,7 +9487,7 @@
 		requirePositive('mcross', 'height', Height); requireNonnegative('mcross', 'thickness', Thickness); requirePositive('mcross', 'relativePermittivity', er);
 		requireNonnegative('mcross', 'resistivity', rho * COPPER_RESISTIVITY); requireNonnegative('mcross', 'lossTangent', tand); requireNonnegative('mcross', 'roughnessRms', roughnessRms);
 		var cross = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var widths = [leftWidth, topWidth, rightWidth, bottomWidth];
 		var arms = widths.map(function (width) { return microstripLine$1(width, Height, Thickness, er); });
 		var sparsArray = [];
@@ -8715,7 +9580,7 @@
 		return cross;
 	}
 
-	// Modified: 2026-09-06
+	// Modified: 2026-10-04
 
 	var pi$3 = Math.PI;
 
@@ -8843,7 +9708,7 @@
 		requireNonnegative('mstep', 'thickness', Thickness); requirePositive('mstep', 'relativePermittivity', er);
 		requireNonnegative('mstep', 'resistivity', rho * COPPER_RESISTIVITY); requireNonnegative('mstep', 'lossTangent', tand); requireNonnegative('mstep', 'roughnessRms', roughnessRms);
 		var step = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var port1Line = microstripLine(width1, Height, Thickness, er);
 		var port2Line = microstripLine(width2, Height, Thickness, er);
 		var wideWidth = Math.max(width1, width2);
@@ -8911,7 +9776,7 @@
 		return step;
 	}
 
-	// Modified: 2026-09-06
+	// Modified: 2026-10-04
 
 	var pi$2 = Math.PI;
 
@@ -8968,7 +9833,7 @@
 		requirePositive('mbend', 'relativePermittivity', er); requireNonnegative('mbend', 'resistivity', rho * COPPER_RESISTIVITY);
 		requireNonnegative('mbend', 'lossTangent', tand); requireNonnegative('mbend', 'roughnessRms', roughnessRms);
 		var bend = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var recommendedMiterFraction = 0.6;
 		var defaultMiterLength = 0;
 		var actualMiterLength = miterLength === undefined ? defaultMiterLength : miterLength;
@@ -9103,7 +9968,7 @@
 		return filmResistor;
 	}
 
-	// Modified: 2026-09-06
+	// Modified: 2026-10-04
 
 	var pi$1 = Math.PI;
 
@@ -9133,7 +9998,7 @@
 		requirePositive('mvgnd', 'thickness', Thickness); requireNonnegative('mvgnd', 'resistivity', rho);
 		if (Thickness > Diameter / 2) throw new RangeError('nP.mvgnd(): thickness must not exceed the via radius.');
 		var via = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var radius = Diameter / 2;
 		var L = viaInductance$1(Height, radius);
 		var Rdc = viaResistanceDc$1(Height, radius, Thickness, rho);
@@ -9176,7 +10041,7 @@
 		return via;
 	}
 
-	// Modified: 2026-09-06
+	// Modified: 2026-10-04
 
 	var pi = Math.PI;
 
@@ -9265,7 +10130,7 @@
 		if (Thickness > Diameter / 2) throw new RangeError('nP.mvia(): thickness must not exceed the via radius.');
 		if (antipadDiameter > 0 && padDiameter > 0 && antipadDiameter <= padDiameter) throw new RangeError('nP.mvia(): antipadDiameter must be greater than padDiameter.');
 		var via = new nPort;
-		var frequencyList = global.fList, Ro = global.Ro;
+		var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 		var radius = Diameter / 2;
 		var Lbarrel = viaInductance(connectionHeight, radius);
 		var Rdc = viaResistanceDc(connectionHeight, radius, Thickness, rho);
@@ -9333,7 +10198,7 @@
 		return via;
 	}
 
-	// Modified: 2026-07-09
+	// Modified: 2026-10-04
 
 	const Q = 1.602176634e-19;
 	const K = 1.380649e-23;
@@ -9446,19 +10311,47 @@
 	function diode1N4148(options = {}) {
 		var p = normalizeOptions(options);
 		var diodePort = new nPort();
-		var frequencyList = global.fList;
+		var frequencyList = analysisFrequencies(global);
 		var ro = global.Ro;
+		var twoZo = complex(2 * ro, 0);
 		var dc = diodeAdmittanceAtBias(p);
 		var cj = junctionCapacitance(dc.junctionVoltage, p.cj0, p.vj, p.m);
 		var diffusionCapacitance = p.tt * dc.conductance;
 		var capacitance = cj + diffusionCapacitance;
 		var sparsArray = [];
+		var noiseArray = [];
 		var freqCount;
 		var frequency;
 		var omega;
 		var admittance;
 		var junctionImpedance;
 		var totalImpedance;
+		var thermalEnergy = K * p.temperatureK;
+		var diodeCurrent = p.is * Math.expm1(Math.min(dc.junctionVoltage / (p.n * thermalVoltage(p.temperatureK)), 80));
+		var avalanche = breakdownCurrent(dc.junctionVoltage, p);
+		// A linearized junction has equilibrium conductance noise at zero bias.
+		// At finite bias, use the larger of that level and a weak shot-noise estimate.
+		var junctionNoiseCurrent = Math.max(
+			4 * thermalEnergy * Math.max(0, dc.conductance - 1 / p.leakageResistance),
+			2 * Q * (Math.abs(diodeCurrent) + Math.abs(avalanche))
+		) + 4 * thermalEnergy / p.leakageResistance;
+		var junctionVoltageScale = p.n * thermalVoltage(p.temperatureK);
+		var exponentialCurrent = p.is * Math.exp(Math.min(dc.junctionVoltage / junctionVoltageScale, 80));
+		var secondDerivative = exponentialCurrent / junctionVoltageScale ** 2;
+		var thirdDerivative = exponentialCurrent / junctionVoltageScale ** 3;
+		if (-dc.junctionVoltage > p.breakdownVoltage) {
+			var avalancheSlope = p.breakdownCurrent *
+				Math.exp((-dc.junctionVoltage - p.breakdownVoltage) / p.breakdownSoftness);
+			secondDerivative -= avalancheSlope / p.breakdownSoftness ** 2;
+			thirdDerivative += avalancheSlope / p.breakdownSoftness ** 3;
+		}
+		var capacitanceDerivative = p.tt * secondDerivative;
+		var capacitanceSecondDerivative = p.tt * thirdDerivative;
+		if (dc.junctionVoltage < p.vj) {
+			capacitanceDerivative += p.m * cj / (p.vj - dc.junctionVoltage);
+			capacitanceSecondDerivative += p.m * (p.m + 1) * cj /
+				(p.vj - dc.junctionVoltage) ** 2;
+		}
 
 		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 			frequency = frequencyList[freqCount];
@@ -9467,10 +10360,30 @@
 			junctionImpedance = admittance.inv();
 			totalImpedance = complex(p.rs, 0).add(junctionImpedance);
 			sparsArray[freqCount] = seriesTwoPortFromImpedance(frequency, totalImpedance, ro);
+			var impedanceMagnitudeSquared = junctionImpedance.mag() ** 2;
+			var denominatorMagnitudeSquared = totalImpedance.add(twoZo).mag() ** 2;
+			var noise = (4 * thermalEnergy * p.rs + junctionNoiseCurrent * impedanceMagnitudeSquared) *
+				ro / denominatorMagnitudeSquared;
+			noiseArray[freqCount] = {frequency: frequency, C: [
+				[complex(noise, 0), complex(-noise, 0)],
+				[complex(-noise, 0), complex(noise, 0)]
+			]};
 		}
 
 		diodePort.setspars(sparsArray);
+		diodePort.noise = noiseArray;
 		diodePort.setglobal(global);
+		diodePort._intermod = {
+			type: 'diode',
+			conductance: dc.conductance,
+			capacitance: capacitance,
+			seriesResistance: p.rs,
+			referenceImpedance: ro,
+			secondDerivative: secondDerivative,
+			thirdDerivative: thirdDerivative,
+			capacitanceDerivative: capacitanceDerivative,
+			capacitanceSecondDerivative: capacitanceSecondDerivative
+		};
 		diodePort.diode = {
 			partNumber: '1N4148',
 			model: 'small-signal RF series diode with Shockley DC I-V',
@@ -9552,6 +10465,8 @@
 		return width;
 	}
 
+	exports.Amp = Amp;
+	exports.Attn = Attn;
 	exports.C = C;
 	exports.L = L;
 	exports.Load = Load;

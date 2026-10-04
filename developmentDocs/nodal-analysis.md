@@ -1,4 +1,4 @@
-<!-- Modified: 2026-07-15 -->
+<!-- Modified: 2026-10-04 -->
 # Nodal Analysis
 
 `nP.nodal()` combines arbitrary one-port and multiport S-parameter objects into a new n-port. It is the general composition tool for circuit topologies that are not a simple two-port cascade.
@@ -140,7 +140,7 @@ This keeps complicated circuits readable and lets each subnetwork be tested inde
 
 - Matrix size equals the total number of component ports plus output ports; inversion cost grows rapidly with circuit size.
 - Singular or nearly singular connection systems are not currently reported with a specialized error.
-- Ideal junctions use very small numerical offsets in their S entries to avoid exact singular behavior in some combinations.
+- Ideal junctions use lossless S entries. Some ideal connections can still make the connection matrix singular.
 - Reusing one n-port object is safe when its S rows and global settings are appropriate for every occurrence.
 - A finite answer should still be checked for reciprocity, symmetry, expected match, transmission, isolation, and passivity.
 

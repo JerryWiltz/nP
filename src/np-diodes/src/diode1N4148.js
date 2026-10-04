@@ -1,6 +1,7 @@
-// Modified: 2026-07-09
+// Modified: 2026-10-04
 import {complex} from '../../np-math/src/complex';
 import {global} from '../../np-global/src/global';
+import {analysisFrequencies} from '../../np-nport/src/intermod';
 import {nPort} from '../../np-nport/src/nPort';
 
 const Q = 1.602176634e-19;
@@ -114,19 +115,47 @@ function seriesTwoPortFromImpedance(frequency, impedance, ro) {
 export function diode1N4148(options = {}) {
 	var p = normalizeOptions(options);
 	var diodePort = new nPort();
-	var frequencyList = global.fList;
+	var frequencyList = analysisFrequencies(global);
 	var ro = global.Ro;
+	var twoZo = complex(2 * ro, 0);
 	var dc = diodeAdmittanceAtBias(p);
 	var cj = junctionCapacitance(dc.junctionVoltage, p.cj0, p.vj, p.m);
 	var diffusionCapacitance = p.tt * dc.conductance;
 	var capacitance = cj + diffusionCapacitance;
 	var sparsArray = [];
+	var noiseArray = [];
 	var freqCount;
 	var frequency;
 	var omega;
 	var admittance;
 	var junctionImpedance;
 	var totalImpedance;
+	var thermalEnergy = K * p.temperatureK;
+	var diodeCurrent = p.is * Math.expm1(Math.min(dc.junctionVoltage / (p.n * thermalVoltage(p.temperatureK)), 80));
+	var avalanche = breakdownCurrent(dc.junctionVoltage, p);
+	// A linearized junction has equilibrium conductance noise at zero bias.
+	// At finite bias, use the larger of that level and a weak shot-noise estimate.
+	var junctionNoiseCurrent = Math.max(
+		4 * thermalEnergy * Math.max(0, dc.conductance - 1 / p.leakageResistance),
+		2 * Q * (Math.abs(diodeCurrent) + Math.abs(avalanche))
+	) + 4 * thermalEnergy / p.leakageResistance;
+	var junctionVoltageScale = p.n * thermalVoltage(p.temperatureK);
+	var exponentialCurrent = p.is * Math.exp(Math.min(dc.junctionVoltage / junctionVoltageScale, 80));
+	var secondDerivative = exponentialCurrent / junctionVoltageScale ** 2;
+	var thirdDerivative = exponentialCurrent / junctionVoltageScale ** 3;
+	if (-dc.junctionVoltage > p.breakdownVoltage) {
+		var avalancheSlope = p.breakdownCurrent *
+			Math.exp((-dc.junctionVoltage - p.breakdownVoltage) / p.breakdownSoftness);
+		secondDerivative -= avalancheSlope / p.breakdownSoftness ** 2;
+		thirdDerivative += avalancheSlope / p.breakdownSoftness ** 3;
+	}
+	var capacitanceDerivative = p.tt * secondDerivative;
+	var capacitanceSecondDerivative = p.tt * thirdDerivative;
+	if (dc.junctionVoltage < p.vj) {
+		capacitanceDerivative += p.m * cj / (p.vj - dc.junctionVoltage);
+		capacitanceSecondDerivative += p.m * (p.m + 1) * cj /
+			(p.vj - dc.junctionVoltage) ** 2;
+	}
 
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		frequency = frequencyList[freqCount];
@@ -135,10 +164,30 @@ export function diode1N4148(options = {}) {
 		junctionImpedance = admittance.inv();
 		totalImpedance = complex(p.rs, 0).add(junctionImpedance);
 		sparsArray[freqCount] = seriesTwoPortFromImpedance(frequency, totalImpedance, ro);
+		var impedanceMagnitudeSquared = junctionImpedance.mag() ** 2;
+		var denominatorMagnitudeSquared = totalImpedance.add(twoZo).mag() ** 2;
+		var noise = (4 * thermalEnergy * p.rs + junctionNoiseCurrent * impedanceMagnitudeSquared) *
+			ro / denominatorMagnitudeSquared;
+		noiseArray[freqCount] = {frequency: frequency, C: [
+			[complex(noise, 0), complex(-noise, 0)],
+			[complex(-noise, 0), complex(noise, 0)]
+		]};
 	}
 
 	diodePort.setspars(sparsArray);
+	diodePort.noise = noiseArray;
 	diodePort.setglobal(global);
+	diodePort._intermod = {
+		type: 'diode',
+		conductance: dc.conductance,
+		capacitance: capacitance,
+		seriesResistance: p.rs,
+		referenceImpedance: ro,
+		secondDerivative: secondDerivative,
+		thirdDerivative: thirdDerivative,
+		capacitanceDerivative: capacitanceDerivative,
+		capacitanceSecondDerivative: capacitanceSecondDerivative
+	};
 	diodePort.diode = {
 		partNumber: '1N4148',
 		model: 'small-signal RF series diode with Shockley DC I-V',

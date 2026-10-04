@@ -3,7 +3,7 @@ import {passiveNoiseCovariance} from './mlin/noise';
 import {noiseAnalysis} from './noiseFigure';
 import {connectionModel, intermodAt, waveDbm, oipDbm} from './intermod';
 
-// Modified: 2026-10-03
+// Modified: 2026-10-04
 var conjugate = function (value) { return complex(value.getR(), -value.getI()); };
 
 export function nPort() { this._noise = undefined; }; // base class for nPort objects
@@ -47,6 +47,7 @@ nPort.prototype = {
 	setglobal: function (global) {
 		this.global = global;
 		this._noiseTemperature = global.Temp;
+		if (global.twoTone) this._displayFrequencies = global.fList.slice();
 	},
 	getglobal: function () {return this.global;},
 	setspars: function (sparsArray) {
@@ -142,9 +143,15 @@ nPort.prototype = {
 			match = /^IM(2sum|2diff|3lower|3upper)([1-9])([1-9])dBm$/.exec(selector);
 			if (!match) match = /^IM(2sum|2diff|3lower|3upper)\(([1-9]\d*),([1-9]\d*)\)dBm$/.exec(selector);
 			if (match) return {kind: 'IM', product: 'im' + match[1], row: Number(match[2]) - 1, col: Number(match[3]) - 1};
+			match = /^H2f([12])([1-9])([1-9])dBm$/.exec(selector);
+			if (!match) match = /^H2f([12])\(([1-9]\d*),([1-9]\d*)\)dBm$/.exec(selector);
+			if (match) return {kind: 'IM', product: 'harm' + match[1], row: Number(match[2]) - 1, col: Number(match[3]) - 1};
 			match = /^OIP(2sum|2diff|3lower|3upper)([1-9])([1-9])dBm$/.exec(selector);
 			if (!match) match = /^OIP(2sum|2diff|3lower|3upper)\(([1-9]\d*),([1-9]\d*)\)dBm$/.exec(selector);
 			if (match) return {kind: 'OIP', product: 'im' + match[1], row: Number(match[2]) - 1, col: Number(match[3]) - 1};
+			match = /^OIP2f([12])([1-9])([1-9])dBm$/.exec(selector);
+			if (!match) match = /^OIP2f([12])\(([1-9]\d*),([1-9]\d*)\)dBm$/.exec(selector);
+			if (match) return {kind: 'OIP', product: 'harm' + match[1], row: Number(match[2]) - 1, col: Number(match[3]) - 1};
 			throw new TypeError('nPort.out(): invalid selector "' + selector + '".');
 		});
 		parsed.forEach(function (selection) {

@@ -1,0 +1,91 @@
+<!-- Modified: 2026-10-04 -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>Watkins-Johnson Cascadable Amplifier Examples</title>
+    <script src="../dist/nP.js"></script>
+</head>
+<body>
+    <h1>Watkins-Johnson cascadable amplifier examples</h1>
+    <p>From <a href="https://datasheet.datasheetarchive.com/originals/scans/Scans-068/DSA2IH00223110.pdf">Application Information for Thin Film Cascadable Amplifiers</a>, pp. 445-450. The nP.Amp() objects below are matched, frequency-flat stand-ins built from the note's stated numbers. They are not measured WJ S-parameters or compression models.</p>
+    <p>Each example uses 50 ohms at 100 MHz. The input tones are 1 MHz apart. Cascade examples use -40 dBm per tone to stay in the small-signal region.</p>
+
+    <h2>1. Noise figure: A1 followed by A5s (p. 446, Table 1)</h2>
+    <p>At 15 dB first-stage gain, the table gives a 0.093 dB NF increase for A5 followed by A5 and a 0.146 dB increase for A1 followed by A5. A third A5 adds very little to the A1-first chain. The 30 ohm noise resistance below only completes the ideal A5 covariance model; it is not a measured A5 parameter.</p>
+    <script>
+        nP.global.Ro = 50;
+        nP.global.Temp = 290;
+        nP.global.fList = [100e6];
+        nP.global.twoTone = {spacingHz: 1e6, p1dBm: -40, p2dBm: -40};
+
+        // Table 1: matched gain/NF are stated; noise resistance is illustrative.
+        var a1 = nP.Amp(15, 3);
+        var a5 = nP.Amp({gainDb: 15, fMinDb: 5, noiseResistanceOhms: 30});
+        var a5ThenA5 = nP.cascade(a5, a5);
+        var a1ThenA5 = nP.cascade(a1, a5);
+        var a1ThenA5ThenA5 = nP.cascade(a1, a5, a5);
+        nP.log('A5 + A5: expected gain 30 dB, NF 5.093 dB');
+        nP.log(a5ThenA5.out('s21dB', 'NF21dB'));
+        nP.log('A1 + A5: expected gain 30 dB, NF 3.146 dB');
+        nP.log(a1ThenA5.out('s21dB', 'NF21dB'));
+        nP.log('A1 + A5 + A5: expected gain 45 dB, NF about 3.151 dB');
+        nP.log(a1ThenA5ThenA5.out('s21dB', 'NF21dB'));
+    </script>
+
+    <h2>2. A5-5 followed by PA3: output IP3 (p. 450, Fig. 26)</h2>
+    <p>The worked arithmetic uses first-stage OIP3 = 20.5 dBm, PA3 gain = 14.7 dB, and PA3 OIP3 = 36 dBm. Its result is 32.6 dBm; the text mentions a 33.0 dBm measurement. The figure rounds PA3 gain to 14 dB, so this example follows the worked arithmetic.</p>
+    <script>
+        // Fig. 26: first-stage gain and both NFs are unstated; use 10 and 4 dB.
+        var a5_5 = nP.Amp({gainDb: 10, noiseFigureDb: 4, oip3dBm: 20.5});
+        var pa3 = nP.Amp({gainDb: 14.7, noiseFigureDb: 4, oip3dBm: 36});
+        var a5_5ThenPa3 = nP.cascade(a5_5, pa3);
+        var a5_5ThenPa3Nodal = nP.nodal(
+            [a5_5, 1, 2],
+            [pa3, 2, 3],
+            ['out', 1, 3]
+        );
+        nP.log('Figure 26 via cascade: expected OIP3 about 32.6 dBm');
+        nP.log(a5_5ThenPa3.out('s21dB', 'OIP3lower21dBm'));
+        nP.log('Figure 26 via nodal: same gain and OIP3');
+        nP.log(a5_5ThenPa3Nodal.out('s21dB', 'OIP3lower21dBm'));
+    </script>
+
+    <h2>3. Three IP3 cascade comparisons (p. 450, Figs. 27-29)</h2>
+    <p>Figure 27: OIP3 values 28 and 38 dBm, second-stage gain 10 dB, combined OIP3 about 35 dBm. Figure 28: 30 and 36 dBm, gain 12 dB, result about 35 dBm. Figure 29 worked arithmetic: 19 and 35 dBm, gain 10 dB, result about 28 dBm. The Figure 29 label appears to give 17 dBm for the first stage, contrary to the worked arithmetic.</p>
+    <script>
+        // Figs. 27-29: first-stage gain/NF are unstated; use 10 and 4 dB.
+        var fig27First = nP.Amp({gainDb: 10, noiseFigureDb: 4, oip3dBm: 28});
+        var fig27Second = nP.Amp({gainDb: 10, noiseFigureDb: 4, oip3dBm: 38});
+        var fig27 = nP.cascade(fig27First, fig27Second);
+        nP.log('Figure 27: expected OIP3 about 35 dBm');
+        nP.log(fig27.out('s21dB', 'OIP3lower21dBm'));
+
+        var fig28First = nP.Amp({gainDb: 10, noiseFigureDb: 4, oip3dBm: 30});
+        var fig28Second = nP.Amp({gainDb: 12, noiseFigureDb: 4, oip3dBm: 36});
+        var fig28 = nP.cascade(fig28First, fig28Second);
+        nP.log('Figure 28: expected OIP3 about 35 dBm');
+        nP.log(fig28.out('s21dB', 'OIP3lower21dBm'));
+
+        var fig29First = nP.Amp({gainDb: 10, noiseFigureDb: 4, oip3dBm: 19});
+        var fig29Second = nP.Amp({gainDb: 10, noiseFigureDb: 4, oip3dBm: 35});
+        var fig29 = nP.cascade(fig29First, fig29Second);
+        nP.log('Figure 29 arithmetic: expected OIP3 about 28 dBm');
+        nP.log(fig29.out('s21dB', 'OIP3lower21dBm'));
+    </script>
+
+    <h2>4. A9 two-tone suppression (p. 449, Fig. 23 and Table 3)</h2>
+    <p>The note gives a +10 dBm fundamental and an IM3 product 52 dB below it, yielding OIP3 = +36 dBm. Table 3 lists +50 dBm second-harmonic IP2 and the text says two-tone IP2 is approximately equal. The stand-in uses 10 dB gain and 0 dBm input tones: IM3 is -42 dBm and the two-tone sum product is -30 dBm.</p>
+    <script>
+        // Fig. 23: set the new tone powers before constructing the A9 stand-in.
+        nP.global.twoTone = {spacingHz: 1e6, p1dBm: 0, p2dBm: 0};
+        var a9 = nP.Amp({gainDb: 10, noiseFigureDb: 4, oip2dBm: 50, oip3dBm: 36});
+        nP.log('A9 stand-in: +10 dBm fundamental, -30 dBm IM2, -42 dBm IM3');
+        nP.log(a9.out('s21dB', 'IM2sum21dBm', 'IM3lower21dBm',
+            'OIP2sum21dBm', 'OIP3lower21dBm'));
+    </script>
+
+
+</body>
+</html>

@@ -1,7 +1,8 @@
-// Modified: 2026-09-06
+// Modified: 2026-10-04
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
+import {analysisFrequencies} from '../intermod';
 import {COPPER_RESISTIVITY, INCH_TO_METER, MU0} from './constants';
 import {absoluteResistivity, normalizePhysicalModelOptions, physicalModelMetadata, requireNonnegative, requirePositive} from '../physicalModels/options';
 
@@ -33,7 +34,7 @@ export function mvgnd(input = {}) {
 	requirePositive('mvgnd', 'thickness', Thickness); requireNonnegative('mvgnd', 'resistivity', rho);
 	if (Thickness > Diameter / 2) throw new RangeError('nP.mvgnd(): thickness must not exceed the via radius.');
 	var via = new nPort;
-	var frequencyList = global.fList, Ro = global.Ro;
+	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 	var radius = Diameter / 2;
 	var L = viaInductance(Height, radius);
 	var Rdc = viaResistanceDc(Height, radius, Thickness, rho);
