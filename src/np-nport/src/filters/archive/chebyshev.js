@@ -1,4 +1,4 @@
-// Modified: 2026-07-14
+// Modified: 2026-10-07
 export default function chebyshev () { console.log('this is Chebyshev'); }
 /*
 // lowPassDesign.js

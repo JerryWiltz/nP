@@ -1,8 +1,8 @@
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
-import {analysisFrequencies} from '../intermod';
+import {analysisFrequencies} from '../analysisFrequencies';
 
 export function seC(C = 1e-12) { // series capacitor nPort object
 	var seC = new nPort;

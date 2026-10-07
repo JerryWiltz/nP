@@ -1,9 +1,9 @@
-// Modified: 2026-09-06
+// Modified: 2026-10-07
 import {cascade} from '../combining/cascade';
 import {global} from '../../../np-global/src/global';
 import {R} from '../rlc/R';
 import {mlin} from './mlin';
-import {INCH_TO_METER, MIL_TO_METER} from './constants';
+import {INCH_TO_METER, MIL_TO_METER} from '../physicalConstants';
 import {normalizePhysicalModelOptions, physicalModelMetadata, requireFinite, requireNonnegative, requirePositive} from '../physicalModels/options';
 
 export function mtfr(input = {}) {
@@ -36,7 +36,10 @@ export function mtfr(input = {}) {
 	var sectionCount = sections === undefined ? automaticSections : Math.max(1, Math.floor(sections));
 	var resistancePerSection = resistance / sectionCount;
 	var halfLineLength = Length / (2 * sectionCount);
-	var halfLine = mlin(Width, Height, halfLineLength, Thickness, er, 0, tand, 0);
+	var halfLine = mlin({
+		width: Width, height: Height, length: halfLineLength, thickness: Thickness,
+		relativePermittivity: er, resistivity: 0, lossTangent: tand, roughnessRms: 0
+	});
 	var resistorSection = R(resistancePerSection);
 	var nPorts = [];
 

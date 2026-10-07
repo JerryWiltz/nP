@@ -387,65 +387,6 @@ function matrix(mat) {
 	return matrixObject;
 }
 
-// Modified: 2026-07-14
-// Generates an array of Chebyshev values based on the number of sections and ripple
-function chebyLPgk (n = 3, ripple = 0.1) { // Returns gk's shown in formula 4.05-2 on page 99 of MYJ
-	var	chebyLPgkin = new Array(1 + 1 + n + 1),  // Table title row, go row, gk's (n rows), and g(k+1)
-		chebyLPgkout = [],
-		i = 0, row = 0;
-
-	// The function, gk() Fills in the variable table above called "chebyLPgkin" to hold ak, bk, and gk's based on the n
-	for(i = 0; i < chebyLPgkin.length; i++) {chebyLPgkin[i] = new Array(4); }
-	// Table for complete display of values
-	chebyLPgkin[0][0] = 'ak'; chebyLPgkin[0][1] = 'bk'; chebyLPgkin[0][2] = 'gk'; chebyLPgkin[0][3] = 'R,C,L';
-
-	function coth(x) {return (Math.exp(x) + Math.exp(-x))/(Math.exp(x) - Math.exp(-x));}	function B() {return Math.log(coth(ripple/17.37));}	function sinh(x) {return (Math.exp(x) - Math.exp(-x))/2;}	function G() {return sinh(B()/(2 * n));} // Compute G() on page 99 of MYJ
-
-	chebyLPgkin[1][2] = 1; // Initialize the lowPassFilter array for g0=1;
-
-	for(row = 2; row < chebyLPgkin.length -1; row++) { chebyLPgkin[row][0] = Math.sin(((2*(row -1) -1) * Math.PI)/(2 * n)); }
-	for(row = 2; row < chebyLPgkin.length -1; row++) { // Populate the bk column on page 99 of MYJ
-		chebyLPgkin[row][1] = Math.pow(G(),2) + Math.pow(Math.sin(  (row-1) * Math.PI/n),2);    
-	}
-	chebyLPgkin[2][2] = 2*chebyLPgkin[2][0]/G(); // Populate the first q1 in the cell
-
-	for(row = 3; row < chebyLPgkin.length -1; row++) { // Populate the gk column from g2 onward to gk
-		chebyLPgkin[row][2] = (4 * chebyLPgkin[row-1][0] * chebyLPgkin[row][0])/(chebyLPgkin[row-1][1] * chebyLPgkin[row-1][2]);    
-	}
-	chebyLPgkin[ n+2][2] = (n % 2 === 0 ) ? Math.pow(coth(B()/4),2) : 1 ; // Populate the last g(k+1) in the cell
-
-	// Populate chebyLPgkout
-	for(row = 1; row < chebyLPgkin.length; row++) { chebyLPgkout[row - 1] = chebyLPgkin[row][2]; }
-	return chebyLPgkout;
-}
-
-// Modified: 2026-07-14
-// Generates an array of parallel capacitors and series inductors based on Chebyshev values
-function chebyLPLCs ( cheby = [1, 1.0315851425078764, 1.1474003299537219, 1.0315851425078761, 1], maxPassFrequency = 0.2e9, zo = 50) { 
-	var	chebyLPLCsout = new Array(cheby.length),
-		i = 0;
-
-	chebyLPLCsout[0] = cheby[0] * zo; // Populate the first resistor in the array
-
-	for(i = 1; i < cheby.length -1; i++) { // Populate the C's and L's
-		chebyLPLCsout[i] = ( (i) % 2 === 0 ) ? cheby[i] * zo * (1/(2*Math.PI)) * (1/(maxPassFrequency )) : cheby[i] * 1/zo * (1/(2*Math.PI)) * (1/(maxPassFrequency));
-	}
-	chebyLPLCsout[cheby.length-1] = cheby[cheby.length-1] * zo; // Populate the last resistor in the array
-
-	return chebyLPLCsout;
-}
-
-// Modified: 2026-07-14
-// Computes the number of sections in a Chebyshev low-pass filter
-function chebyLPNsec (passFreq = .2, rejFreq = 1.5, ripple = 0.1, rejection = 30) { // Formula 4.03-4 for n on page 86 of MYJ
-	var chebyLPNsecout = 0;
-	function normalizedBandwidth() { return rejFreq/passFreq; }// Computes the w/w1 in MYJ on page 86 of MYJ
-	function epsilon() { return Math.pow(10,(ripple/10))-1;} // Formula 4.03-5 on page 87 on MYJ
-	function arcCosh(x) {return Math.log(x + Math.sqrt((x * x)-1));}
-	chebyLPNsecout = Math.ceil(arcCosh(Math.sqrt((Math.pow(10,(rejection/10))-1)/epsilon()))/arcCosh(normalizedBandwidth()));
-	return chebyLPNsecout;
-}
-
 // Modified: 2026-10-03
 var global = {
 	fList:	[2e9],//[2e9, 4e9, 6e9, 8e9],
@@ -4944,7 +4885,95 @@ Transform.prototype = {
 
 Transform.prototype;
 
-// Modified: 2026-10-03
+// Modified: 2026-10-06
+
+// Accept either one table or an array of tables. A table is a header row
+// followed by data rows; a collection has tables as its first-level entries.
+function normalizeInputTables(inputTable, chartName, dataKind) {
+    if (!Array.isArray(inputTable) || inputTable.length === 0) {
+        throw new TypeError(`${chartName}: inputTable must be a table or a nonempty array of tables.`);
+    }
+
+    const tables = Array.isArray(inputTable[0]) && !Array.isArray(inputTable[0][0])
+        ? [inputTable]
+        : inputTable;
+
+    tables.forEach((table, tableIndex) => {
+        const location = `${chartName}: inputTable table ${tableIndex + 1}`;
+        if (!Array.isArray(table) || !Array.isArray(table[0]) || table[0].length < 2) {
+            throw new TypeError(`${location} needs a header row with at least two columns.`);
+        }
+
+        const headers = table[0];
+        if (headers.some(header => typeof header !== 'string' || header.trim() === '')) {
+            throw new TypeError(`${location} headers must be nonempty strings.`);
+        }
+
+        if (dataKind !== 'table' && table.length < 2) {
+            throw new TypeError(`${location} needs at least one data row.`);
+        }
+
+        table.slice(1).forEach((row, rowIndex) => {
+            if (!Array.isArray(row) || row.length !== headers.length) {
+                throw new TypeError(`${location} row ${rowIndex + 2} must have ${headers.length} columns.`);
+            }
+            if (dataKind === 'table') {
+                if (row.some(value => typeof value !== 'string' && !Number.isFinite(value))) {
+                    throw new TypeError(`${location} row ${rowIndex + 2} needs text or finite numbers.`);
+                }
+            } else if (row.some(value => !Number.isFinite(value))) {
+                throw new TypeError(`${location} row ${rowIndex + 2} needs finite numbers.`);
+            }
+        });
+
+        if (dataKind === 'line') {
+            if (new Set(headers.slice(1)).size !== headers.length - 1) {
+                throw new TypeError(`${location} trace headers must be unique.`);
+            }
+        } else if (dataKind === 'smith') {
+            if ((headers.length - 1) % 2 !== 0) {
+                throw new TypeError(`${location} needs a Re/Im column pair for each trace.`);
+            }
+            for (let column = 1; column < headers.length; column += 2) {
+                const match = headers[column].match(/^(.+)Re$/);
+                if (!match || headers[column + 1] !== `${match[1]}Im`) {
+                    throw new TypeError(`${location} columns ${column + 1} and ${column + 2} must be matching Re/Im headers.`);
+                }
+            }
+        }
+    });
+
+    return tables;
+}
+
+// Modified: 2026-10-06
+
+const CHART_FONT_FAMILY = 'sans-serif';
+const CHART_FONT_SIZE = 14;
+
+// Modified: 2026-10-06
+
+function formatTooltipNumber(value) {
+    return value.toPrecision(3);
+}
+
+function formatTooltipFrequency(value, metricPrefix) {
+    const units = {
+        tera: 'THz', giga: 'GHz', mega: 'MHz', kilo: 'kHz',
+        none: 'Hz', one: 'Hz', deci: 'dHz', centi: 'cHz',
+        milli: 'mHz', micro: 'µHz', nano: 'nHz', pico: 'pHz'
+    };
+    const unit = units[String(metricPrefix).toLowerCase()] || 'GHz';
+    return `${formatTooltipNumber(value)} ${unit}`;
+}
+
+function appendTooltipRows(tooltip, rows) {
+    rows.forEach(([label, value]) => {
+        tooltip.append('div').text(`${label}: ${value}`);
+    });
+}
+
+// Modified: 2026-10-06
 
 function lineChart(options = {}) {
             // ======== Options & defaults ========
@@ -4975,13 +5004,19 @@ function lineChart(options = {}) {
                     [12000000000, -3.52, -3.52]
                 ]],
 
-	                // Where to append the container. Defaults to <body>.
-	                mount = 'body',
-	                containerId,
-	                svgId,
+                // Shared display options
+                mount = 'body',
+                containerId,
+                svgId,
+                title,
+                metricPrefix = 'giga',
+                fontFamily = CHART_FONT_FAMILY,
+                fontSize = CHART_FONT_SIZE,
+                containerFontSizePx,
+                backgroundColor,
+                pngBackground = 'transparent',
 
-                // Default Settings
-                title = '',
+                // Line-chart options
                 chartTitle,
                 xAxisTitle = 'Frequency',
                 yAxisTitle = 'dB',
@@ -4989,7 +5024,6 @@ function lineChart(options = {}) {
                 yScale = 'linear',
                 xAxisPosition = 'bottom',
                 yAxisPosition = 'left',
-                metricPrefix = 'giga',
                 showPoints = true,
                 showLabels = true,
                 showGrid = true,
@@ -4997,32 +5031,24 @@ function lineChart(options = {}) {
                 traceColor = true, // true for color, false for gray
                 traceWidth = 2,
                 pointRadius = 3,
-                labelFontSize = 11,
+                labelFontSize,
                 labelColor,
                 width: requestedWidth = 700,
                 height: requestedHeight = 450,
                 margin = { top: 35, right: 80, bottom: 55, left: 75 },
                 plotBorderColor = 'black',
                 plotBorderWidth = 1,
-
-                // Raw ranges (may be undefined, handled later)
                 xRange: rawXRange,
-                yRange: rawYRange,
-
-                // Default Font Size
-                fontFamily = 'sans-serif',
-                fontSize = 14,
-                containerFontSizePx,
-
-                // Default background
-                backgroundColor,
-                pngBackground = 'transparent'
+                yRange: rawYRange
 
             } = options;
 
+            const tables = normalizeInputTables(inputTable, 'lineChart', 'line');
+
             // Starting font sizes since d3.axisBottom and d3.axisLeft will override the container styles
-            const effectiveTitle = chartTitle ?? title;
+            const effectiveTitle = title ?? chartTitle ?? '';
             const effectiveFontSize = containerFontSizePx ?? fontSize;
+            const effectiveLabelFontSize = labelFontSize ?? effectiveFontSize;
             const effectiveBackgroundColor = backgroundColor ?? pngBackground;
             const mountElement = typeof mount === 'string'
                 ? document.querySelector(mount)
@@ -5036,15 +5062,12 @@ function lineChart(options = {}) {
             const height = width === requestedWidth
                 ? requestedHeight
                 : Math.round(requestedHeight * width / requestedWidth);
-            // Keep the copy control unchanged; on narrow charts only move it
-            // to the right edge so it can slide over the title as space gets
-            // tight.
-            const isCompact = width < 800;
+            const isCompact = width < 420;
             const labelNames = showLabels
-                ? inputTable.flatMap(table => table[0].slice(1))
+                ? tables.flatMap(table => table[0].slice(1))
                 : [];
             const labelContext = document.createElement('canvas').getContext('2d');
-            labelContext.font = `${labelFontSize}px ${fontFamily}`;
+            labelContext.font = `${effectiveLabelFontSize}px ${fontFamily}`;
             const labelRightMargin = labelNames.length
                 ? Math.ceil(Math.max(...labelNames.map(name =>
                     labelContext.measureText(String(name)).width)) + 12)
@@ -5072,13 +5095,13 @@ function lineChart(options = {}) {
             }[metricPrefix] || 1e9;
 
             // Format Data
-            const formattedData = inputTable.map(table => {
+            const formattedData = tables.map(table => {
                 const headers = table[0];
-                return headers.slice(1).map(yName => ({
+                return headers.slice(1).map((yName, column) => ({
                     yName,
                     yValues: table.slice(1).map(row => ({
                         xValue: row[0] / pickScale,
-                        yValue: row[headers.indexOf(yName)]
+                        yValue: row[column + 1]
                     }))
                 }));
             }).flat();
@@ -5162,6 +5185,7 @@ function lineChart(options = {}) {
                 .style('box-sizing', 'border-box')
                 .style('overflow', 'hidden')
                 .style('padding', '5px')
+	                .style('padding-top', '5px')
 	                .style('font-family', fontFamily)
 	                .style('font-size', `${effectiveFontSize}px`)
 	                .attr('id', containerId || null)
@@ -5177,6 +5201,8 @@ function lineChart(options = {}) {
 	                .style('width', '100%')
 	                .style('max-width', `${width}px`)
 	                .style('height', 'auto')
+	                .style('font-family', fontFamily)
+	                .style('font-size', `${effectiveFontSize}px`)
 	                .attr('id', svgId || null)
 	                .attr('class', 'svgContainerClass');
 
@@ -5194,10 +5220,10 @@ function lineChart(options = {}) {
 
             // Button
             const button = container.append('button')
-                .attr('aria-label', 'Copy')
+                .attr('aria-label', 'Copy PNG')
                 .style('position', 'absolute')
                 .style('top', '5px')
-                .style('right', '100px')
+                .style('right', '5px')
                 .style('background', 'none')
                 .style('border', 'none')
                 .style('padding', '4px 8px')
@@ -5206,6 +5232,8 @@ function lineChart(options = {}) {
                 .style('align-items', 'center')
                 .style('gap', '4px')
                 .style('border-radius', '6px')
+                .style('font-family', fontFamily)
+                .style('font-size', `${effectiveFontSize}px`)
                 .on('mouseover', function () { select(this).style('background', '#ccf2ff'); })  //#ccf2ff
                 .on('mouseout', function () { select(this).style('background', 'none'); })
                 .on('mousedown', function () { select(this).style('background', '#00ace6'); }) //#00ace6
@@ -5220,12 +5248,11 @@ function lineChart(options = {}) {
       </svg>Copy as png
     `);
 
-            // Let the unchanged control slide over the title area on narrow charts.
             button
-                .style('right', isCompact ? '5px' : '100px')
-                .style('width', null)
-                .style('overflow', null)
-                .style('padding', '4px 8px');
+                .style('width', isCompact ? '28px' : null)
+                .style('overflow', isCompact ? 'hidden' : null)
+                .style('white-space', 'nowrap')
+                .style('padding', isCompact ? '4px' : '4px 8px');
 
             // New button function fire
             button.on('click', copyPNG);
@@ -5286,7 +5313,7 @@ function lineChart(options = {}) {
             const txtChartTitle = svg.append('text')
                 .attr('x', 10)
                 .attr('y', 15)
-                .style('font-size', isCompact ? '11px' : `${effectiveFontSize}px`)
+                .style('font-size', `${effectiveFontSize}px`)
                 .style('visibility', effectiveTitle ? 'visible' : 'hidden')
                 .text(effectiveTitle);
 
@@ -5408,6 +5435,7 @@ function lineChart(options = {}) {
                         // ensure only one tooltip
                         container.select('.tooltip').remove();
 
+                        const trace = select(event.currentTarget.parentNode).datum();
                         const [px, py] = pointer(event, container.node());
                         tooltip = container.append('div')
                             .attr('class', 'tooltip')
@@ -5419,8 +5447,16 @@ function lineChart(options = {}) {
                             .style('pointer-events', 'none')
                             .style('z-index', 10)
                             .style('left', `${px + 10}px`)
-                            .style('top', `${py - 20}px`)
-                            .html(`${xAxisTitle}: ${d.xValue.toPrecision(3)}<br>${yAxisTitle}: ${d.yValue.toPrecision(3)}`);
+                            .style('top', `${py - 20}px`);
+                        const frequencyAxis = /^freq(?:uency)?$/i.test(String(xAxisTitle).trim());
+                        appendTooltipRows(tooltip, [
+                            ['Trace', trace.yName],
+                            [frequencyAxis ? 'Frequency' : xAxisTitle,
+                                frequencyAxis
+                                    ? formatTooltipFrequency(d.xValue, metricPrefix)
+                                    : formatTooltipNumber(d.xValue)],
+                            ['Value', `${formatTooltipNumber(d.yValue)}${yAxisTitle ? ` ${yAxisTitle}` : ''}`]
+                        ]);
                     })
                     .on('mousemove', (event) => {
                         if (!tooltip) return;
@@ -5434,22 +5470,47 @@ function lineChart(options = {}) {
 
             // Labels
             if (showLabels) {
+                const labelPositions = new Map();
+                const labelPadding = effectiveLabelFontSize / 2;
+                const minLabelY = labelPadding;
+                const maxLabelY = Math.max(minLabelY, innerHeight - labelPadding);
+                const sortedLabels = formattedData.map((trace, index) => ({
+                    trace,
+                    index,
+                    desiredY: y(trace.yValues[trace.yValues.length - 1].yValue)
+                })).sort((a, b) => a.desiredY - b.desiredY || a.index - b.index);
+                const labelSpacing = sortedLabels.length > 1
+                    ? Math.min(effectiveLabelFontSize + 2,
+                        (maxLabelY - minLabelY) / (sortedLabels.length - 1))
+                    : 0;
+
+                sortedLabels.forEach((label, index) => {
+                    const desiredY = Math.max(minLabelY, Math.min(maxLabelY, label.desiredY));
+                    label.positionY = index === 0
+                        ? desiredY
+                        : Math.max(desiredY, sortedLabels[index - 1].positionY + labelSpacing);
+                });
+                for (let index = sortedLabels.length - 1; index >= 0; index--) {
+                    const nextY = index === sortedLabels.length - 1
+                        ? maxLabelY
+                        : sortedLabels[index + 1].positionY - labelSpacing;
+                    sortedLabels[index].positionY = Math.min(sortedLabels[index].positionY, nextY);
+                    labelPositions.set(sortedLabels[index].trace, sortedLabels[index].positionY);
+                }
+
                 txtLabels = groups.append('text')
                     .attr('x', d => {
                         const last = d.yValues[d.yValues.length - 1];
                         return Math.min(x(last.xValue) + 6, width - 6);
                     })
-                    .attr('y', d => {
-                        const last = d.yValues[d.yValues.length - 1];
-                        return y(last.yValue);
-                    })
+                    .attr('y', d => labelPositions.get(d))
                     .attr('dy', '0.35em')
                     .attr('class', 'txtLabel')
                     .attr('text-anchor', d => {
                         const last = d.yValues[d.yValues.length - 1];
                         return x(last.xValue) + 6 > width - 6 ? 'end' : 'start';
                     })
-                    .style('font-size', `${labelFontSize}px`)
+                    .style('font-size', `${effectiveLabelFontSize}px`)
                     .style('fill', labelColor || null)
                     .text(d => d.yName)
                     .each(function () {
@@ -5548,12 +5609,16 @@ function lineChart(options = {}) {
             // Either will work
 
             return {
-                // return elements
+                // Shared elements
                 container: container.node(),
                 svg: svg.node(),
+                background: chartBackground.node(),
+                title: txtChartTitle.node(),
+
+                // Existing chart elements
                 chartBackground: chartBackground.node(),
-                plotBorder: plotBorder.node(),
                 txtChartTitle: txtChartTitle.node(),
+                plotBorder: plotBorder.node(),
                 txtXAxisTitle: txtXAxisTitle.node(),
                 txtYAxisTitle: txtYAxisTitle.node(),
                 txtChartLabels: txtLabels.nodes(),
@@ -5562,7 +5627,11 @@ function lineChart(options = {}) {
                 xGridGroup: xGridGroup.node(),
                 yGridGroup: yGridGroup.node(),
 
-                // return setters
+                // Shared style setters
+                setBackgroundStyle: setChartBackgroundStyle,
+                setTitleStyle: setTxtChartTitleStyle,
+
+                // Existing chart style setters
                 setTxtChartTitleStyle: setTxtChartTitleStyle,
                 setChartBackgroundStyle: setChartBackgroundStyle,
                 setPlotBorderStyle: setPlotBorderStyle,
@@ -5582,7 +5651,7 @@ function lineChart(options = {}) {
 
         }
 
-// Modified: 2026-09-15
+// Modified: 2026-10-06
 
 function smithChart(options = {}) {
 	// ======== Options & defaults ========
@@ -5596,37 +5665,42 @@ function smithChart(options = {}) {
 			[500000000, 0.35, 0.1],
 			[600000000, 0.45, -0.15]
 		]],
+		// Shared display options
 		mount = 'body',
 		containerId,
 		svgId,
-		title = '',
-		chartTitle,
+		title,
 		metricPrefix = 'giga',
+		fontFamily = CHART_FONT_FAMILY,
+		fontSize = CHART_FONT_SIZE,
+		containerFontSizePx,
+		backgroundColor,
+		pngBackground = 'transparent',
+
+		// Smith-chart options
+		chartTitle,
 		showPoints = true,
 		showLabels = true,
 		showGrid = true,
-		gridColor = '#b8b8b8',
+		gridColor = '#e0e0e0',
 		traceColor = true,
 		traceWidth = 2,
 		pointRadius = 3,
-		labelFontSize = 11,
+		labelFontSize,
 		labelColor,
 		width: requestedWidth = 600,
 		height: requestedHeight = 600,
 		margin = { top: 40, right: 40, bottom: 40, left: 40 },
 		unitCircleColor = 'black',
-		unitCircleWidth = 1.5,
-		fontFamily = 'sans-serif',
-		fontSize = 14,
-		containerFontSizePx,
-		backgroundColor,
-		pngBackground = 'transparent'
+		unitCircleWidth = 1.5
 	} = options;
 
-	const effectiveTitle = chartTitle ?? title;
+	const tables = normalizeInputTables(inputTable, 'smithChart', 'smith');
+
+	const effectiveTitle = title ?? chartTitle ?? '';
 	const effectiveFontSize = containerFontSizePx ?? fontSize;
+	const effectiveLabelFontSize = labelFontSize ?? effectiveFontSize;
 	const effectiveBackgroundColor = backgroundColor ?? pngBackground;
-	const isNarrowViewport = typeof document !== 'undefined' && document.documentElement.clientWidth < 420;
 	const mountElement = typeof mount === 'string' ? document.querySelector(mount) : mount;
 	const availableWidth = mountElement && mountElement.getBoundingClientRect
 		? mountElement.getBoundingClientRect().width - 10
@@ -5637,6 +5711,7 @@ function smithChart(options = {}) {
 	const height = width === requestedWidth
 		? requestedHeight
 		: Math.round(requestedHeight * width / requestedWidth);
+	const isNarrowViewport = width < 420;
 	let txtLabels = selectAll([]);
 
 	const pickScale = {
@@ -5676,7 +5751,7 @@ function smithChart(options = {}) {
 		});
 	}
 
-	const formattedData = formatData(inputTable);
+	const formattedData = formatData(tables);
 	const n = Math.max(3, Math.min(9, formattedData.length));
 	const color = traceColor
 		? ordinal(category10)
@@ -5706,7 +5781,10 @@ function smithChart(options = {}) {
 		.append('div')
 		.style('position', 'relative')
 		.style('display', 'inline-block')
+		.style('max-width', '100%')
+		.style('box-sizing', 'border-box')
 		.style('padding', '5px')
+		.style('padding-top', '5px')
 		.style('font-family', fontFamily)
 		.style('font-size', `${effectiveFontSize}px`)
 		.attr('id', containerId || null)
@@ -5715,6 +5793,14 @@ function smithChart(options = {}) {
 	const svg = container.append('svg')
 		.attr('width', width)
 		.attr('height', height)
+		.attr('viewBox', `0 0 ${width} ${height}`)
+		.attr('preserveAspectRatio', 'xMinYMin meet')
+		.style('display', 'block')
+		.style('width', '100%')
+		.style('max-width', `${width}px`)
+		.style('height', 'auto')
+		.style('font-family', fontFamily)
+		.style('font-size', `${effectiveFontSize}px`)
 		.attr('id', svgId || null)
 		.attr('class', 'smith-chart-svg');
 
@@ -5729,10 +5815,10 @@ function smithChart(options = {}) {
 	container.style('position', 'relative');
 
 	const button = container.append('button')
-		.attr('aria-label', 'Copy')
+		.attr('aria-label', 'Copy PNG')
 		.style('position', 'absolute')
 		.style('top', '5px')
-		.style('right', '100px')
+		.style('right', '5px')
 		.style('background', 'none')
 		.style('border', 'none')
 		.style('padding', '4px 8px')
@@ -5741,6 +5827,8 @@ function smithChart(options = {}) {
 		.style('align-items', 'center')
 		.style('gap', '4px')
 		.style('border-radius', '6px')
+		.style('font-family', fontFamily)
+		.style('font-size', `${effectiveFontSize}px`)
 		.on('mouseover', function () { select(this).style('background', '#ccf2ff'); })
 		.on('mouseout', function () { select(this).style('background', 'none'); })
 		.on('mousedown', function () { select(this).style('background', '#00ace6'); })
@@ -5755,9 +5843,9 @@ function smithChart(options = {}) {
 	    `);
 
 	button
-		.style('right', isNarrowViewport ? '5px' : '100px')
 		.style('width', isNarrowViewport ? '28px' : null)
 		.style('overflow', isNarrowViewport ? 'hidden' : null)
+		.style('white-space', 'nowrap')
 		.style('padding', isNarrowViewport ? '4px' : '4px 8px');
 
 	// New button function fire
@@ -5817,7 +5905,7 @@ function smithChart(options = {}) {
 	const txtChartTitle = svg.append('text')
 		.attr('x', 10)
 		.attr('y', 18)
-		.style('font-size', isNarrowViewport ? '11px' : `${effectiveFontSize}px`)
+		.style('font-size', `${effectiveFontSize}px`)
 		.style('visibility', effectiveTitle ? 'visible' : 'hidden')
 		.text(effectiveTitle);
 
@@ -5920,8 +6008,15 @@ function smithChart(options = {}) {
 					.style('pointer-events', 'none')
 					.style('z-index', 10)
 					.style('left', `${px + 10}px`)
-					.style('top', `${py - 20}px`)
-					.html(`${d.traceName}<br>Freq: ${d.frequency.toPrecision(3)}<br>Re: ${d.re.toPrecision(3)}<br>Im: ${d.im.toPrecision(3)}<br>Mag: ${Math.hypot(d.re, d.im).toPrecision(3)}<br>Ang: ${(Math.atan2(d.im, d.re) * 180 / Math.PI).toPrecision(3)} deg`);
+					.style('top', `${py - 20}px`);
+				appendTooltipRows(tooltip, [
+					['Trace', d.traceName],
+					['Frequency', formatTooltipFrequency(d.frequency, metricPrefix)],
+					['Re', formatTooltipNumber(d.re)],
+					['Im', formatTooltipNumber(d.im)],
+					['Magnitude', formatTooltipNumber(Math.hypot(d.re, d.im))],
+					['Angle', `${formatTooltipNumber(Math.atan2(d.im, d.re) * 180 / Math.PI)}°`]
+				]);
 			})
 			.on('mousemove', (event) => {
 				if (!tooltip) return;
@@ -5947,7 +6042,7 @@ function smithChart(options = {}) {
 			})
 			.attr('dy', '0.35em')
 			.attr('class', 'txtLabel')
-			.style('font-size', `${labelFontSize}px`)
+			.style('font-size', `${effectiveLabelFontSize}px`)
 			.style('fill', labelColor || null)
 			.text(d => d.traceName);
 	}
@@ -5998,9 +6093,13 @@ function smithChart(options = {}) {
 	}
 
 	return {
-		// return elements
+		// Shared elements
 		container: container.node(),
 		svg: svg.node(),
+		background: chartBackground.node(),
+		title: txtChartTitle.node(),
+
+		// Existing Smith-chart elements
 		chartBackground: chartBackground.node(),
 		txtChartTitle: txtChartTitle.node(),
 		unitCircle: unitCircle.node(),
@@ -6009,7 +6108,11 @@ function smithChart(options = {}) {
 		labelGroup: labelGroup.node(),
 		txtChartLabels: txtLabels.nodes(),
 
-		// return setters
+		// Shared style setters
+		setBackgroundStyle: setChartBackgroundStyle,
+		setTitleStyle: setTxtChartTitleStyle,
+
+		// Existing Smith-chart style setters
 		setTxtChartTitleStyle: setTxtChartTitleStyle,
 		setChartBackgroundStyle: setChartBackgroundStyle,
 		setUnitCircleStyle: setUnitCircleStyle,
@@ -6135,7 +6238,7 @@ function log(input) {
 	outputBox === undefined ? document.body.appendChild(pre) : outputBox.appendChild(pre);
 }
 
-// Modified: 2026-09-15
+// Modified: 2026-10-06
 
 function lineTable(options = {}) {
 		// ======== Options & defaults ========
@@ -6165,36 +6268,37 @@ function lineTable(options = {}) {
 				[11400000000, -3.50832, -4.28704],
 				[12000000000, -3.52176, -3.52571]
 			]],
-			// Where to append the container. Defaults to <body>.
+			// Shared display options
 			mount = 'body',
-			// Optional explicit IDs
 			containerId,
 			svgId,
-			// Visuals / behavior
+			title,
 			metricPrefix = 'giga',
-			title = '',
+			fontFamily = CHART_FONT_FAMILY,
+			fontSize = CHART_FONT_SIZE,
+			containerFontSizePx,
+			backgroundColor,
+			pngBackground = 'transparent',
+
+			// Line-table options
 			tableTitle,
 			headColor = 'color', // 'color' (blue) | 'gray'
 			headerColor,
 			headerFill,
-			cellFill = 'white',
+			cellFill = 'transparent',
 			cellBorderColor = 'black',
 			cellBorderWidth = 1,
 			tableBorderColor = 'none',
 			tableBorderWidth = 1,
 			showWHAlert = false, // true => alert width/height
-			// Sizing
 			columnWidth = 100,
 			rowHeight = 20,
-			margin = { left: 20, top: 36, right: 20, bottom: 20 },
-			fontFamily = 'sans-serif',
-			fontSize = 14,
-			containerFontSizePx,
-			backgroundColor,
-			pngBackground = 'white'
+			margin = { top: 72, right: 20, bottom: 20, left: 20 }
 		} = options;
 
-		const effectiveTitle = tableTitle ?? title;
+		const tables = normalizeInputTables(inputTable, 'lineTable', 'table');
+
+		const effectiveTitle = title ?? tableTitle ?? '';
 		const effectiveFontSize = containerFontSizePx ?? fontSize;
 		const effectiveBackgroundColor = backgroundColor ?? pngBackground;
 		const effectiveHeaderColor = headerColor ?? headColor;
@@ -6202,7 +6306,7 @@ function lineTable(options = {}) {
 		const measuredMountWidth = mountElement && mountElement.getBoundingClientRect
 			? mountElement.getBoundingClientRect().width
 			: (typeof document !== 'undefined' ? document.documentElement.clientWidth : 0);
-		const isNarrowViewport = measuredMountWidth > 0 ? measuredMountWidth < 800 : (typeof document !== 'undefined' && document.documentElement.clientWidth < 420);
+		const isNarrowViewport = measuredMountWidth > 0 ? measuredMountWidth < 420 : (typeof document !== 'undefined' && document.documentElement.clientWidth < 420);
 
 		// ======== Helpers ========
 		const pickScale = (p) => ({
@@ -6216,10 +6320,10 @@ function lineTable(options = {}) {
 			tera: 'tera', giga: 'giga', mega: 'mega', kilo: 'kilo',
 			deci: 'deci', centi: 'centi', milli: 'milli',
 			micro: 'micro', nano: 'nano', pico: 'pico'
-		}[String(p).toLowerCase()] ?? 'giga');
+		}[String(p).toLowerCase()] ?? (['none', 'one'].includes(String(p).toLowerCase()) ? '' : 'giga'));
 
 		// Copy tables and rows before scaling the frequency column.
-		const data = inputTable.map(table =>
+		const data = tables.map(table =>
 			table.map(row => row.slice())
 		);
 		const freqScale = pickScale(metricPrefix);
@@ -6245,10 +6349,11 @@ function lineTable(options = {}) {
 		const tableWidth = totalCols * (columnWidth + 3) + 1;
 		const tableHeight = totalRows * (rowHeight + 1) + (tablesCount - 1) + 1;
 		const titleWidth = effectiveTitle ? effectiveTitle.length * effectiveFontSize * 0.65 : 0;
-		const controlsWidth = isNarrowViewport ? 56 : 280;
-		const minOuterWidth = Math.ceil(titleWidth + controlsWidth);
+		const controlsWidth = isNarrowViewport ? 40 : 130;
+		const minOuterWidth = Math.ceil(titleWidth + controlsWidth + 10);
 		const outerWidth = Math.max(margin.left + tableWidth + margin.right, minOuterWidth);
-		const outerHeight = margin.top + tableHeight + margin.bottom;
+		const layoutTop = Math.max(margin.top, 72);
+		const outerHeight = layoutTop + tableHeight + margin.bottom;
 
 		if (showWHAlert) {
 			// eslint-disable-next-line no-alert
@@ -6265,7 +6370,7 @@ function lineTable(options = {}) {
 			const prev = i === 0 ? 0 : yOffsets[i - 1] + rowsPerTable[i - 1] * (rowHeight + 1) + 1;
 			yOffsets.push(prev);
 		}
-		const y0 = margin.top;
+		const y0 = layoutTop;
 
 		// ======== Mount points & elements ========
 
@@ -6275,6 +6380,8 @@ function lineTable(options = {}) {
 				.attr('class', 'line-table-container')
 				.style('display', 'inline-block')
 				.style('position', 'relative')        // anchor for absolute button
+				.style('max-width', '100%')
+				.style('box-sizing', 'border-box')
 				.style('font-family', fontFamily)
 				.style('font-size', `${effectiveFontSize}px`)
 				.style('padding-top', '0');
@@ -6337,14 +6444,14 @@ function lineTable(options = {}) {
 			}
 		}
 
-		function tsvEscape(val) {
+		function csvEscape(val) {
 			const s = (val ?? '').toString();
-			return s.replace(/\t/g, ' ').replace(/[\n\r]/g, ' ');
+			return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 		}
 
-		async function copyTSV() {
+		async function copyCSV() {
 			try {
-				const tsvChunks = data.map(tbl => {
+				const csvChunks = data.map(tbl => {
 					const cols = Math.max(...tbl.map(r => r.length));
 					const lines = [];
 					for (let r = 0; r < tbl.length; r++) {
@@ -6354,20 +6461,20 @@ function lineTable(options = {}) {
 							const formatted = (typeof val === 'string')
 								? val
 								: Number.isFinite(val) ? val.toFixed(5) : '';
-							row.push(tsvEscape(formatted));
+						row.push(csvEscape(formatted));
 						}
-						lines.push(row.join('\t'));
+						lines.push(row.join(','));
 					}
 					return lines.join('\n');
 				});
 
-				const tsvText = tsvChunks.join('\n\n'); // blank line between tables
+				const csvText = csvChunks.join('\n\n'); // blank line between tables
 
 				if (!navigator.clipboard || !navigator.clipboard.writeText) {
 					throw new Error('Clipboard text API not available.');
 				}
 
-				await navigator.clipboard.writeText(tsvText);
+				await navigator.clipboard.writeText(csvText);
 
 				//console.log("copied to clipboard");
 
@@ -6380,10 +6487,10 @@ function lineTable(options = {}) {
 		// ======== Button (direct child of container) ========
 		const button = container.append('button')
 			//.attr('id', 'copyImage')
-			.attr('aria-label', 'Copy')
+			.attr('aria-label', 'Copy PNG')
 			.style('position', 'absolute')
-			.style('top', '0')
-			.style('right', '10px')
+			.style('top', '5px')
+			.style('right', '5px')
 			.style('background', 'none')
 			.style('border', 'none')
 			.style('padding', '4px 8px')
@@ -6392,6 +6499,8 @@ function lineTable(options = {}) {
 			.style('align-items', 'center')
 			.style('gap', '4px')
 			.style('border-radius', '6px')
+			.style('font-family', fontFamily)
+			.style('font-size', `${effectiveFontSize}px`)
 			.on('mouseover', function () { select(this).style('background', '#ccf2ff'); })  //#ccf2ff
 			.on('mouseout', function () { select(this).style('background', 'none'); })
 			.on('mousedown', function () { select(this).style('background', '#00ace6'); })  //#00ace6
@@ -6407,41 +6516,42 @@ function lineTable(options = {}) {
 	    `);
 
 		button
-			.style('right', isNarrowViewport ? '5px' : '10px')
 			.style('width', isNarrowViewport ? '28px' : null)
 			.style('overflow', isNarrowViewport ? 'hidden' : null)
+			.style('white-space', 'nowrap')
 			.style('padding', isNarrowViewport ? '4px' : '4px 8px');
 
-		const tsvBtn = container.append('button')
-			//.attr('id', 'copyTsv')
-			.attr('aria-label', 'Copy TSV')
+		const csvBtn = container.append('button')
+			.attr('aria-label', 'Copy CSV')
 			.style('position', 'absolute')
-			.style('top', '0')
-			.style('right', '150px')  // adjust so it doesn’t overlap your PNG button
+			.style('top', '37px')
+			.style('right', '5px')
 			.style('background', 'none')
 			.style('border', 'none')
 			.style('padding', '4px 8px')
 			.style('cursor', 'pointer')
 			.style('display', 'inline-flex')
 			.style('align-items', 'center')
+			.style('font-family', fontFamily)
+			.style('font-size', `${effectiveFontSize}px`)
 			.style('gap', '4px')
 			.style('border-radius', '6px')
 			.on('mouseover', function () { select(this).style('background', '#ccf2ff'); })
 			.on('mouseout', function () { select(this).style('background', 'none'); })
 			.on('mousedown', function () { select(this).style('background', '#00ace6'); })
 			.on('mouseup', function () { select(this).style('background', '#ccf2ff'); })
-			.on('click', copyTSV);
+			.on('click', copyCSV);
 
-		tsvBtn.html([
+		csvBtn.html([
 			'<svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">',
 			'  <path d="M12.668 10.667C12.668 9.95614 12.668 9.46258 12.6367 9.0791C12.6137 8.79732 12.5758 8.60761 12.5244 8.46387L12.4688 8.33399C12.3148 8.03193 12.0803 7.77885 11.793 7.60254L11.666 7.53125C11.508 7.45087 11.2963 7.39395 10.9209 7.36328C10.5374 7.33197 10.0439 7.33203 9.33301 7.33203H6.5C5.78896 7.33203 5.29563 7.33195 4.91211 7.36328C4.63016 7.38632 4.44065 7.42413 4.29688 7.47559L4.16699 7.53125C3.86488 7.68518 3.61186 7.9196 3.43555 8.20703L3.36524 8.33399C3.28478 8.49198 3.22795 8.70352 3.19727 9.0791C3.16595 9.46259 3.16504 9.95611 3.16504 10.667V13.5C3.16504 14.211 3.16593 14.7044 3.19727 15.0879C3.22797 15.4636 3.28473 15.675 3.36524 15.833L3.43555 15.959C3.61186 16.2466 3.86474 16.4807 4.16699 16.6348L4.29688 16.6914C4.44063 16.7428 4.63025 16.7797 4.91211 16.8027C5.29563 16.8341 5.78896 16.835 6.5 16.835H9.33301C10.0439 16.835 10.5374 16.8341 10.9209 16.8027C11.2965 16.772 11.508 16.7152 11.666 16.6348L11.793 16.5645C12.0804 16.3881 12.3148 16.1351 12.4688 15.833L12.5244 15.7031C12.5759 15.5594 12.6137 15.3698 12.6367 15.0879C12.6681 14.7044 12.668 14.211 12.668 13.5V10.667ZM13.998 12.665C14.4528 12.6634 14.8011 12.6602 15.0879 12.6367C15.4635 12.606 15.675 12.5492 15.833 12.4688L15.959 12.3975C16.2466 12.2211 16.4808 11.9682 16.6348 11.666L16.6914 11.5361C16.7428 11.3924 16.7797 11.2026 16.8027 10.9209C16.8341 10.5374 16.835 10.0439 16.835 9.33301V6.5C16.835 5.78896 16.8341 5.29563 16.8027 4.91211C16.7797 4.63025 16.7428 4.44063 16.6914 4.29688L16.6348 4.16699C16.4807 3.86474 16.2466 3.61186 15.959 3.43555L15.833 3.36524C15.675 3.28473 15.4636 3.22797 15.0879 3.19727C14.7044 3.16593 14.211 3.16504 13.5 3.16504H10.667C9.9561 3.16504 9.46259 3.16595 9.0791 3.19727C8.79739 3.22028 8.6076 3.2572 8.46387 3.30859L8.33399 3.36524C8.03176 3.51923 7.77886 3.75343 7.60254 4.04102L7.53125 4.16699C7.4508 4.32498 7.39397 4.53655 7.36328 4.91211C7.33985 5.19893 7.33562 5.54719 7.33399 6.00195H9.33301C10.022 6.00195 10.5791 6.00131 11.0293 6.03809C11.4873 6.07551 11.8937 6.15471 12.2705 6.34668L12.4883 6.46875C12.984 6.7728 13.3878 7.20854 13.6533 7.72949L13.7197 7.87207C13.8642 8.20859 13.9292 8.56974 13.9619 8.9707C13.9987 9.42092 13.998 9.97799 13.998 10.667V12.665ZM18.165 9.33301C18.165 10.022 18.1657 10.5791 18.1289 11.0293C18.0961 11.4302 18.0311 11.7914 17.8867 12.1279L17.8203 12.2705C17.5549 12.7914 17.1509 13.2272 16.6553 13.5313L16.4365 13.6533C16.0599 13.8452 15.6541 13.9245 15.1963 13.9619C14.8593 13.9895 14.4624 13.9935 13.9951 13.9951C13.9935 14.4624 13.9895 14.8593 13.9619 15.1963C13.9292 15.597 13.864 15.9576 13.7197 16.2939L13.6533 16.4365C13.3878 16.9576 12.9841 17.3941 12.4883 17.6982L12.2705 17.8203C11.8937 18.0123 11.4873 18.0915 11.0293 18.1289C10.5791 18.1657 10.022 18.165 9.33301 18.165H6.5C5.81091 18.165 5.25395 18.1657 4.80371 18.1289C4.40306 18.0962 4.04235 18.031 3.70606 17.8867L3.56348 17.8203C3.04244 17.5548 2.60585 17.151 2.30176 16.6553L2.17969 16.4365C1.98788 16.0599 1.90851 15.6541 1.87109 15.1963C1.83431 14.746 1.83496 14.1891 1.83496 13.5V10.667C1.83496 9.978 1.83432 9.42091 1.87109 8.9707C1.90851 8.5127 1.98772 8.10625 2.17969 7.72949L2.30176 7.51172C2.60586 7.0159 3.04236 6.6122 3.56348 6.34668L3.70606 6.28027C4.04237 6.136 4.40303 6.07083 4.80371 6.03809C5.14051 6.01057 5.53708 6.00551 6.00391 6.00391C6.00551 5.53708 6.01057 5.14051 6.03809 4.80371C6.0755 4.34588 6.15483 3.94012 6.34668 3.56348L6.46875 3.34473C6.77282 2.84912 7.20856 2.44514 7.72949 2.17969L7.87207 2.11328C8.20855 1.96886 8.56979 1.90385 8.9707 1.87109C9.42091 1.83432 9.978 1.83496 10.667 1.83496H13.5C14.1891 1.83496 14.746 1.83431 15.1963 1.87109C15.6541 1.90851 16.0599 1.98788 16.4365 2.17969L16.6553 2.30176C17.151 2.60585 17.5548 3.04244 17.8203 3.56348L17.8867 3.70606C18.031 4.04235 18.0962 4.40306 18.1289 4.80371C18.1657 5.25395 18.165 5.81091 18.165 6.5V9.33301Z"></path>',
-			'</svg>Copy as tsv'
+			'</svg>Copy as csv'
 		].join(''));
 
-		tsvBtn
-			.style('right', isNarrowViewport ? '40px' : '150px')
+		csvBtn
 			.style('width', isNarrowViewport ? '28px' : null)
 			.style('overflow', isNarrowViewport ? 'hidden' : null)
+			.style('white-space', 'nowrap')
 			.style('padding', isNarrowViewport ? '4px' : '4px 8px');
 
 
@@ -6454,6 +6564,14 @@ function lineTable(options = {}) {
 				.attr('class', 'line-table-svg')
 				.attr('width', outerWidth)
 				.attr('height', outerHeight)
+				.attr('viewBox', `0 0 ${outerWidth} ${outerHeight}`)
+				.attr('preserveAspectRatio', 'xMinYMin meet')
+				.style('display', 'block')
+				.style('width', '100%')
+				.style('max-width', `${outerWidth}px`)
+				.style('height', 'auto')
+				.style('font-family', fontFamily)
+				.style('font-size', `${effectiveFontSize}px`)
 				.style('background-color', effectiveBackgroundColor === 'transparent' ? 'transparent' : effectiveBackgroundColor);
 
 			const tableBackground = svg.insert('rect', ':first-child')
@@ -6478,7 +6596,7 @@ function lineTable(options = {}) {
 				.attr('x', 2)
 				.attr('y', 18)
 				.style('visibility', titleVisible)
-				.style('font', `${isNarrowViewport ? 11 : effectiveFontSize}px ${fontFamily}`)
+				.style('font', `${effectiveFontSize}px ${fontFamily}`)
 				.style('user-select', 'none')
 				.style('-webkit-user-select', 'none')
 				.style('-ms-user-select', 'none')
@@ -6597,16 +6715,24 @@ function lineTable(options = {}) {
 		// Either will work
 
 		return {
-			// return elements
+			// Shared elements
 			container: container.node(),
 			svg: svg.node(),
+			background: tableBackground.node(),
+			title: txtTableTitle.node(),
+
+			// Existing table elements
 			tableBackground: tableBackground.node(),
-			tableBorder: tableBorder.node(),
 			txtTableTitle: txtTableTitle.node(),
+			tableBorder: tableBorder.node(),
 			txtHeaders: txtHeaders,
 			txtData: txtData,
 
-			// return setters
+			// Shared style setters
+			setBackgroundStyle: setTableBackgroundStyle,
+			setTitleStyle: setTxtTableTitleStyle,
+
+			// Existing table style setters
 			setTxtTableTitleStyle: setTxtTableTitleStyle,
 			setTableBackgroundStyle: setTableBackgroundStyle,
 			setTableBorderStyle: setTableBorderStyle,
@@ -6616,7 +6742,88 @@ function lineTable(options = {}) {
 
 	}
 
-// Modified: 2026-09-08
+// Modified: 2026-10-07
+// Generates an array of Chebyshev values based on the number of sections and ripple
+function chebyLPgk (n = 3, ripple = 0.1) { // Returns gk's shown in formula 4.05-2 on page 99 of MYJ
+	var	chebyLPgkin = new Array(1 + 1 + n + 1),  // Table title row, go row, gk's (n rows), and g(k+1)
+		chebyLPgkout = [],
+		i = 0, row = 0;
+
+	// The function, gk() Fills in the variable table above called "chebyLPgkin" to hold ak, bk, and gk's based on the n
+	for(i = 0; i < chebyLPgkin.length; i++) {chebyLPgkin[i] = new Array(4); }
+	// Table for complete display of values
+	chebyLPgkin[0][0] = 'ak'; chebyLPgkin[0][1] = 'bk'; chebyLPgkin[0][2] = 'gk'; chebyLPgkin[0][3] = 'R,C,L';
+
+	function coth(x) {return (Math.exp(x) + Math.exp(-x))/(Math.exp(x) - Math.exp(-x));}	function B() {return Math.log(coth(ripple/17.37));}	function sinh(x) {return (Math.exp(x) - Math.exp(-x))/2;}	function G() {return sinh(B()/(2 * n));} // Compute G() on page 99 of MYJ
+
+	chebyLPgkin[1][2] = 1; // Initialize the lowPassFilter array for g0=1;
+
+	for(row = 2; row < chebyLPgkin.length -1; row++) { chebyLPgkin[row][0] = Math.sin(((2*(row -1) -1) * Math.PI)/(2 * n)); }
+	for(row = 2; row < chebyLPgkin.length -1; row++) { // Populate the bk column on page 99 of MYJ
+		chebyLPgkin[row][1] = Math.pow(G(),2) + Math.pow(Math.sin(  (row-1) * Math.PI/n),2);
+	}
+	chebyLPgkin[2][2] = 2*chebyLPgkin[2][0]/G(); // Populate the first q1 in the cell
+
+	for(row = 3; row < chebyLPgkin.length -1; row++) { // Populate the gk column from g2 onward to gk
+		chebyLPgkin[row][2] = (4 * chebyLPgkin[row-1][0] * chebyLPgkin[row][0])/(chebyLPgkin[row-1][1] * chebyLPgkin[row-1][2]);
+	}
+	chebyLPgkin[ n+2][2] = (n % 2 === 0 ) ? Math.pow(coth(B()/4),2) : 1 ; // Populate the last g(k+1) in the cell
+
+	// Populate chebyLPgkout
+	for(row = 1; row < chebyLPgkin.length; row++) { chebyLPgkout[row - 1] = chebyLPgkin[row][2]; }
+	return chebyLPgkout;
+}
+
+// Modified: 2026-10-07
+// Generates an array of parallel capacitors and series inductors based on Chebyshev values
+function chebyLPLCs ( cheby = [1, 1.0315851425078764, 1.1474003299537219, 1.0315851425078761, 1], maxPassFrequency = 0.2e9, zo = 50) {
+	var	chebyLPLCsout = new Array(cheby.length),
+		i = 0;
+
+	chebyLPLCsout[0] = cheby[0] * zo; // Populate the first resistor in the array
+
+	for(i = 1; i < cheby.length -1; i++) { // Populate the C's and L's
+		chebyLPLCsout[i] = ( (i) % 2 === 0 ) ? cheby[i] * zo * (1/(2*Math.PI)) * (1/(maxPassFrequency )) : cheby[i] * 1/zo * (1/(2*Math.PI)) * (1/(maxPassFrequency));
+	}
+	chebyLPLCsout[cheby.length-1] = cheby[cheby.length-1] * zo; // Populate the last resistor in the array
+
+	return chebyLPLCsout;
+}
+
+// Modified: 2026-10-07
+// Computes the number of sections in a Chebyshev low-pass filter
+function chebyLPNsec (passFreq = .2, rejFreq = 1.5, ripple = 0.1, rejection = 30) { // Formula 4.03-4 for n on page 86 of MYJ
+	var chebyLPNsecout = 0;
+	function normalizedBandwidth() { return rejFreq/passFreq; }// Computes the w/w1 in MYJ on page 86 of MYJ
+	function epsilon() { return Math.pow(10,(ripple/10))-1;} // Formula 4.03-5 on page 87 on MYJ
+	function arcCosh(x) {return Math.log(x + Math.sqrt((x * x)-1));}
+	chebyLPNsecout = Math.ceil(arcCosh(Math.sqrt((Math.pow(10,(rejection/10))-1)/epsilon()))/arcCosh(normalizedBandwidth()));
+	return chebyLPNsecout;
+}
+
+// Modified: 2026-10-07
+
+function analysisFrequencies(settings) {
+	if (!settings.twoTone) return settings.fList;
+	var spacing = settings.twoTone.spacingHz;
+	if (!Number.isFinite(spacing) || spacing <= 0) {
+		throw new RangeError('global.twoTone.spacingHz must be a positive frequency.');
+	}
+	var frequencies = new Set();
+	settings.fList.forEach(function (f1) {
+		if (!Number.isFinite(f1) || f1 <= 0) {
+			throw new RangeError('Two-tone sweep frequencies must be positive.');
+		}
+		var f2 = f1 + spacing;
+		[f1, f2, f2 - f1, f1 + f2, 2 * f1 - f2, 2 * f2 - f1, 2 * f1, 2 * f2]
+			.forEach(function (frequency) {
+				if (frequency > 0) frequencies.add(frequency);
+			});
+	});
+	return Array.from(frequencies).sort(function (a, b) { return a - b; });
+}
+
+// Modified: 2026-10-07
 
 var conjugate$5 = function (value) { return complex(value.getR(), -value.getI()); };
 
@@ -6755,7 +6962,7 @@ function noiseAnalysis(sparsRow, covariance, inputPort, outputPort, options = {}
 	};
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 var zero = function () { return complex(0, 0); };
 var conjugate$3 = function (value) { return complex(value.getR(), -value.getI()); };
@@ -6763,26 +6970,6 @@ var power = function (value) { return value.getR() ** 2 + value.getI() ** 2; };
 var zeroVector = function (count) {
 	return Array.from({length: count}, zero);
 };
-
-function analysisFrequencies(settings) {
-	if (!settings.twoTone) return settings.fList;
-	var spacing = settings.twoTone.spacingHz;
-	if (!Number.isFinite(spacing) || spacing <= 0) {
-		throw new RangeError('global.twoTone.spacingHz must be a positive frequency.');
-	}
-	var frequencies = new Set();
-	settings.fList.forEach(function (f1) {
-		if (!Number.isFinite(f1) || f1 <= 0) {
-			throw new RangeError('Two-tone sweep frequencies must be positive.');
-		}
-		var f2 = f1 + spacing;
-		[f1, f2, f2 - f1, f1 + f2, 2 * f1 - f2, 2 * f2 - f1, 2 * f1, 2 * f2]
-			.forEach(function (frequency) {
-				if (frequency > 0) frequencies.add(frequency);
-			});
-	});
-	return Array.from(frequencies).sort(function (a, b) { return a - b; });
-}
 
 var rowAt = function (nport, frequency) {
 	var row = nport.spars.find(function (item) { return item[0] === frequency; });
@@ -7048,7 +7235,7 @@ function oipDbm(result, product, outputPort) {
 	return 10 * Math.log10(intercept / 1e-3);
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 var conjugate$2 = function (value) { return complex(value.getR(), -value.getI()); };
 
 function nPort() { this._noise = undefined; }
@@ -7306,7 +7493,232 @@ nPort.prototype = {
 	},
 };
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
+
+const Q = 1.602176634e-19;
+const K = 1.380649e-23;
+
+function thermalVoltage(temperatureK) {
+	return K * temperatureK / Q;
+}
+
+function normalizeOptions(options) {
+	return {
+		is: options.is ?? 2.75e-11,
+		n: options.n ?? 2,
+		rs: options.rs ?? 0.568,
+		cj0: options.cj0 ?? 4e-12,
+		vj: options.vj ?? 0.75,
+		m: options.m ?? 0.5,
+		tt: options.tt ?? 4e-9,
+		leakageResistance: options.leakageResistance ?? 4e9,
+		breakdownVoltage: options.breakdownVoltage ?? 100,
+		breakdownCurrent: options.breakdownCurrent ?? 100e-6,
+		breakdownSoftness: options.breakdownSoftness ?? 2,
+		biasVoltage: options.biasVoltage ?? 0,
+		temperatureK: options.temperatureK ?? global.Temp,
+		ivStart: options.ivStart ?? -110,
+		ivStop: options.ivStop ?? 1,
+		ivPoints: options.ivPoints ?? 401
+	};
+}
+
+function junctionCapacitance(voltage, cj0, vj, m) {
+	if (voltage < vj) {
+		return cj0 / Math.pow(1 - voltage / vj, m);
+	}
+
+	return cj0 / Math.pow(1e-12, m);
+}
+
+function breakdownCurrent(junctionVoltage, p) {
+	var excessVoltage = Math.max(-junctionVoltage - p.breakdownVoltage, 0);
+
+	return -p.breakdownCurrent * (Math.exp(excessVoltage / p.breakdownSoftness) - 1);
+}
+
+function breakdownConductance(junctionVoltage, p) {
+	if (-junctionVoltage <= p.breakdownVoltage) {
+		return 0;
+	}
+
+	return p.breakdownCurrent * Math.exp((-junctionVoltage - p.breakdownVoltage) / p.breakdownSoftness) / p.breakdownSoftness;
+}
+
+function diodeCurrentAtVoltage(voltage, p) {
+	var vt = thermalVoltage(p.temperatureK);
+	var current = voltage >= 0 ? voltage / Math.max(p.rs + p.n * vt / p.is, 1) : -p.is;
+	var iteration;
+	var limitedExp;
+	var junctionVoltage;
+	var expTerm;
+	var f;
+	var df;
+	var next;
+	var avalancheCurrent;
+	var avalancheConductance;
+
+	for (iteration = 0; iteration < 60; iteration++) {
+		junctionVoltage = voltage - current * p.rs;
+		limitedExp = Math.min(junctionVoltage / (p.n * vt), 80);
+		expTerm = Math.exp(limitedExp);
+		avalancheCurrent = breakdownCurrent(junctionVoltage, p);
+		avalancheConductance = breakdownConductance(junctionVoltage, p);
+		f = current - p.is * (expTerm - 1) - junctionVoltage / p.leakageResistance - avalancheCurrent;
+		df = 1 + p.rs * p.is * expTerm / (p.n * vt) + p.rs / p.leakageResistance + p.rs * avalancheConductance;
+		next = current - f / df;
+
+		if (Math.abs(next - current) <= Math.max(1e-15, Math.abs(next) * 1e-12)) {
+			return next;
+		}
+
+		current = next;
+	}
+
+	return current;
+}
+
+function diodeAdmittanceAtBias(p) {
+	var vt = thermalVoltage(p.temperatureK);
+	var current = diodeCurrentAtVoltage(p.biasVoltage, p);
+	var junctionVoltage = p.biasVoltage - current * p.rs;
+	var limitedExp = Math.min(junctionVoltage / (p.n * vt), 80);
+	var conductance = p.is * Math.exp(limitedExp) / (p.n * vt) + 1 / p.leakageResistance + breakdownConductance(junctionVoltage, p);
+
+	return {
+		current,
+		junctionVoltage,
+		conductance,
+		resistance: conductance > 0 ? 1 / conductance : Number.POSITIVE_INFINITY
+	};
+}
+
+function seriesTwoPortFromImpedance(frequency, impedance, ro) {
+	complex(ro, 0);
+	var twoZo = complex(2 * ro, 0);
+	var denominator = impedance.add(twoZo);
+	var s11 = impedance.div(denominator);
+	var s21 = twoZo.div(denominator);
+
+	return [frequency, s11, s21, s21, s11];
+}
+
+function diode1N4148(options = {}) {
+	var p = normalizeOptions(options);
+	var diodePort = new nPort();
+	var frequencyList = analysisFrequencies(global);
+	var ro = global.Ro;
+	var twoZo = complex(2 * ro, 0);
+	var dc = diodeAdmittanceAtBias(p);
+	var cj = junctionCapacitance(dc.junctionVoltage, p.cj0, p.vj, p.m);
+	var diffusionCapacitance = p.tt * dc.conductance;
+	var capacitance = cj + diffusionCapacitance;
+	var sparsArray = [];
+	var noiseArray = [];
+	var freqCount;
+	var frequency;
+	var omega;
+	var admittance;
+	var junctionImpedance;
+	var totalImpedance;
+	var thermalEnergy = K * p.temperatureK;
+	var diodeCurrent = p.is * Math.expm1(Math.min(dc.junctionVoltage / (p.n * thermalVoltage(p.temperatureK)), 80));
+	var avalanche = breakdownCurrent(dc.junctionVoltage, p);
+	// A linearized junction has equilibrium conductance noise at zero bias.
+	// At finite bias, use the larger of that level and a weak shot-noise estimate.
+	var junctionNoiseCurrent = Math.max(
+		4 * thermalEnergy * Math.max(0, dc.conductance - 1 / p.leakageResistance),
+		2 * Q * (Math.abs(diodeCurrent) + Math.abs(avalanche))
+	) + 4 * thermalEnergy / p.leakageResistance;
+	var junctionVoltageScale = p.n * thermalVoltage(p.temperatureK);
+	var exponentialCurrent = p.is * Math.exp(Math.min(dc.junctionVoltage / junctionVoltageScale, 80));
+	var secondDerivative = exponentialCurrent / junctionVoltageScale ** 2;
+	var thirdDerivative = exponentialCurrent / junctionVoltageScale ** 3;
+	if (-dc.junctionVoltage > p.breakdownVoltage) {
+		var avalancheSlope = p.breakdownCurrent *
+			Math.exp((-dc.junctionVoltage - p.breakdownVoltage) / p.breakdownSoftness);
+		secondDerivative -= avalancheSlope / p.breakdownSoftness ** 2;
+		thirdDerivative += avalancheSlope / p.breakdownSoftness ** 3;
+	}
+	var capacitanceDerivative = p.tt * secondDerivative;
+	var capacitanceSecondDerivative = p.tt * thirdDerivative;
+	if (dc.junctionVoltage < p.vj) {
+		capacitanceDerivative += p.m * cj / (p.vj - dc.junctionVoltage);
+		capacitanceSecondDerivative += p.m * (p.m + 1) * cj /
+			(p.vj - dc.junctionVoltage) ** 2;
+	}
+
+	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		frequency = frequencyList[freqCount];
+		omega = 2 * Math.PI * frequency;
+		admittance = complex(dc.conductance, omega * capacitance);
+		junctionImpedance = admittance.inv();
+		totalImpedance = complex(p.rs, 0).add(junctionImpedance);
+		sparsArray[freqCount] = seriesTwoPortFromImpedance(frequency, totalImpedance, ro);
+		var impedanceMagnitudeSquared = junctionImpedance.mag() ** 2;
+		var denominatorMagnitudeSquared = totalImpedance.add(twoZo).mag() ** 2;
+		var noise = (4 * thermalEnergy * p.rs + junctionNoiseCurrent * impedanceMagnitudeSquared) *
+			ro / denominatorMagnitudeSquared;
+		noiseArray[freqCount] = {frequency: frequency, C: [
+			[complex(noise, 0), complex(-noise, 0)],
+			[complex(-noise, 0), complex(noise, 0)]
+		]};
+	}
+
+	diodePort.setspars(sparsArray);
+	diodePort.noise = noiseArray;
+	diodePort.setglobal(global);
+	diodePort._intermod = {
+		type: 'diode',
+		conductance: dc.conductance,
+		capacitance: capacitance,
+		seriesResistance: p.rs,
+		referenceImpedance: ro,
+		secondDerivative: secondDerivative,
+		thirdDerivative: thirdDerivative,
+		capacitanceDerivative: capacitanceDerivative,
+		capacitanceSecondDerivative: capacitanceSecondDerivative
+	};
+	diodePort.diode = {
+		partNumber: '1N4148',
+		model: 'small-signal RF series diode with Shockley DC I-V',
+		source: 'Vishay 1N4148 Rev. 1.6, 07-Nov-2024; onsemi 1N91x, 1N4x48 Rev. 6, September 2024',
+		parameters: p,
+		bias: {
+			voltage: p.biasVoltage,
+			current: dc.current,
+			junctionVoltage: dc.junctionVoltage,
+			dynamicResistance: dc.resistance,
+			junctionCapacitance: cj,
+			diffusionCapacitance,
+			totalCapacitance: capacitance
+		},
+		datasheetAnchors: {
+			forwardVoltage: 'VF <= 1 V at IF = 10 mA',
+			capacitance: 'CD/CT = 4 pF at VR = 0 V, f = 1 MHz',
+			reverseRecovery: 'trr = 4 ns under listed switching test',
+			reverseLeakage: 'IR = 25 nA at VR = 20 V; IR = 5 uA at VR = 75 V',
+			breakdownVoltage: 'VBR >= 100 V at IR = 100 uA'
+		}
+	};
+	diodePort.ivTable = function ivTable(start = p.ivStart, stop = p.ivStop, points = p.ivPoints) {
+		var table = [['vD', 'iD']];
+		var step = points > 1 ? (stop - start) / (points - 1) : 0;
+		var index;
+		var voltage;
+
+		for (index = 0; index < points; index++) {
+			voltage = start + step * index;
+			table.push([voltage, diodeCurrentAtVoltage(voltage, p)]);
+		}
+
+		return table;
+	};
+
+	return diodePort;
+}
+
+// Modified: 2026-10-07
 
 const kB$4 = 1.380649e-23;
 
@@ -7340,7 +7752,7 @@ function seR(R = 75, temperature = global.Temp) { // series resistor nPort objec
 	return seR;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 const kB$3 = 1.380649e-23;
 
@@ -7374,7 +7786,7 @@ function R(R = 75, temperature = global.Temp) { // series resistor nPort object
 	return rPort;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 const kB$2 = 1.380649e-23;
 
@@ -7409,7 +7821,7 @@ function paR(R = 75, temperature = global.Temp) { // parallel resistor nPort obj
 	return paR;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 function seL(L = 5e-9) { // series inductor nPort object
 	var seL = new nPort;
@@ -7427,7 +7839,7 @@ function seL(L = 5e-9) { // series inductor nPort object
 	return seL;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 function L(L = 5e-9) { // series inductor nPort object
 	var lPort = new nPort;
@@ -7445,7 +7857,7 @@ function L(L = 5e-9) { // series inductor nPort object
 	return lPort;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 function paL(L = 5e-9) { // parallel capacitor nPort object   
 	var paL = new nPort;
@@ -7465,7 +7877,7 @@ function paL(L = 5e-9) { // parallel capacitor nPort object
 	return paL;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 function seC(C = 1e-12) { // series capacitor nPort object
 	var seC = new nPort;
@@ -7483,9 +7895,9 @@ function seC(C = 1e-12) { // series capacitor nPort object
 	return seC;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
-function C(C = 1e-12) { // series inductor nPort object
+function C(C = 1e-12) { // series capacitor nPort object
 	var cPort = new nPort;
 	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
@@ -7501,7 +7913,7 @@ function C(C = 1e-12) { // series inductor nPort object
 	return cPort;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 function paC(C = 1e-12) { // parallel capacitor nPort object   
 	var paC = new nPort;
@@ -7521,7 +7933,7 @@ function paC(C = 1e-12) { // parallel capacitor nPort object
 	return paC;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 function trf(N = 0.5) { // ideal transformer nPort object
 	var trf = new nPort;
@@ -7539,7 +7951,7 @@ function trf(N = 0.5) { // ideal transformer nPort object
 	return trf;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 function trf4Port(N = 0.5) { // parallel resistor nPort object
 	var trf4Port = new nPort;
@@ -7568,7 +7980,7 @@ S12 = S21 = S34 = S43 =  N / (1 + N2)  //   0.5/1.25 = 0.4
 S13 = S22 = S31 = S44 =  1 / (1 + N2)  //     1/1.25 = 0.8
 */
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 function seSeRL(R = 75, L = 5e-9) { // series inductor nPort object
 	var seSeRL = new nPort;
@@ -7586,7 +7998,7 @@ function seSeRL(R = 75, L = 5e-9) { // series inductor nPort object
 	return seSeRL;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 function paSeRL(R = 75, L = 5e-9) { // parallel capacitor nPort object   
 	var paSeRL = new nPort;
@@ -7606,7 +8018,7 @@ function paSeRL(R = 75, L = 5e-9) { // parallel capacitor nPort object
 	return paSeRL;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 function seSeRC(R = 75, C = 1e-12) { // series inductor nPort object
 	var seSeRC = new nPort;
@@ -7624,7 +8036,7 @@ function seSeRC(R = 75, C = 1e-12) { // series inductor nPort object
 	return seSeRC;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 function paSeRC(R = 75, C = 1e-12) { // parallel series-RC nPort object
 	var paSeRC = new nPort;
@@ -7644,7 +8056,7 @@ function paSeRC(R = 75, C = 1e-12) { // parallel series-RC nPort object
 	return paSeRC;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 function seSeLC(L = 5e-9, C = 1e-12) { // series inductor nPort object
 	var seSeLC = new nPort;
@@ -7662,7 +8074,7 @@ function seSeLC(L = 5e-9, C = 1e-12) { // series inductor nPort object
 	return seSeLC;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 function paSeLC(L = 5e-9, C = 1e-12) { // parallel capacitor nPort object   
 	var paSeLC = new nPort;
@@ -7682,7 +8094,7 @@ function paSeLC(L = 5e-9, C = 1e-12) { // parallel capacitor nPort object
 	return paSeLC;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 function seSeRLC(R = 75, L = 5e-9, C = 1e-12) { // series inductor nPort object
 	var seSeRLC = new nPort;
@@ -7700,7 +8112,7 @@ function seSeRLC(R = 75, L = 5e-9, C = 1e-12) { // series inductor nPort object
 	return seSeRLC;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 function paSeRLC(R = 75, L = 5e-9, C = 1e-12) { // parallel capacitor nPort object   
 	var paSeRLC = new nPort;
@@ -7720,7 +8132,7 @@ function paSeRLC(R = 75, L = 5e-9, C = 1e-12) { // parallel capacitor nPort obje
 	return paSeRLC;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 function paPaRL(R = 75, L = 5e-9) { // parallel capacitor nPort object   
 	var paPaRL = new nPort;
@@ -7740,7 +8152,7 @@ function paPaRL(R = 75, L = 5e-9) { // parallel capacitor nPort object
 	return paPaRL;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 function sePaRL(R = 75, L = 5e-9) { // parallel capacitor nPort object   
 	var sePaRL = new nPort;
@@ -7759,7 +8171,7 @@ function sePaRL(R = 75, L = 5e-9) { // parallel capacitor nPort object
 	return sePaRL;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 function paPaRC(R = 75, C = 1e-12) { // parallel capacitor nPort object   
 	var paPaRC = new nPort;
@@ -7779,7 +8191,7 @@ function paPaRC(R = 75, C = 1e-12) { // parallel capacitor nPort object
 	return paPaRC;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 function sePaRC(R = 75, C = 1e-12) { // parallel capacitor nPort object   
 	var sePaRC = new nPort;
@@ -7798,7 +8210,7 @@ function sePaRC(R = 75, C = 1e-12) { // parallel capacitor nPort object
 	return sePaRC;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 function paPaLC(L = 5e-9, C = 1e-12) { // parallel capacitor nPort object   
 	var paPaLC = new nPort;
@@ -7818,7 +8230,7 @@ function paPaLC(L = 5e-9, C = 1e-12) { // parallel capacitor nPort object
 	return paPaLC;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 function sePaLC(L = 5e-9, C = 1e-12) { // parallel capacitor nPort object   
 	var sePaLC = new nPort;
@@ -7837,7 +8249,7 @@ function sePaLC(L = 5e-9, C = 1e-12) { // parallel capacitor nPort object
 	return sePaLC;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 function paPaRLC(R = 75, L = 5e-9, C = 1e-12) { // parallel capacitor nPort object   
 	var paPaRLC = new nPort;
@@ -7857,7 +8269,7 @@ function paPaRLC(R = 75, L = 5e-9, C = 1e-12) { // parallel capacitor nPort obje
 	return paPaRLC;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 function sePaRLC(R = 75, L = 5e-9, C = 1e-12) { // parallel capacitor nPort object   
 	var sePaRLC = new nPort;
@@ -7876,6 +8288,8 @@ function sePaRLC(R = 75, L = 5e-9, C = 1e-12) { // parallel capacitor nPort obje
 	return sePaRLC;
 }
 
+// Modified: 2026-10-07
+
 function lpfGen( filt =[50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50]) { // returns a table of spars for a low Pass Filter
 	var i = 0;
 	var filtTable = [];
@@ -7887,7 +8301,7 @@ function lpfGen( filt =[50, 1.641818746502858e-11, 4.565360855435164e-8, 1.64181
 	}	return filtTable[ filtTable.length-1 ];
 }
 
-// Modified: 2026-10-03
+// Modified: 2026-10-07
 
 const kB$1 = 1.380649e-23;
 
@@ -7930,7 +8344,7 @@ function Attn(attenuationDb = 3, temperature = global.Temp) {
 	return attenuator;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 const kB = 1.380649e-23;
 
@@ -8112,7 +8526,7 @@ function Amp(gainDb = 20, noiseFigureDb = 4, referenceTemperature = 290) {
 	return amplifier;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 function Tee() { // a 3port dummy connection
 	var Tee = new nPort;
@@ -8135,7 +8549,7 @@ function Tee() { // a 3port dummy connection
 	return Tee;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 function Tee4() { // a 4-port dummy connection
 	var Tee4 = new nPort;
@@ -8152,7 +8566,7 @@ function Tee4() { // a 4-port dummy connection
 	return Tee4;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 function Tee5() { // an ideal five-port junction
 	var Tee5 = new nPort;
@@ -8169,7 +8583,7 @@ function Tee5() { // an ideal five-port junction
 	return Tee5;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 // Ideal three-port junction for attaching a one-port network in series.
 // Ports 1 and 2 form the through path; port 3 is the series branch.
@@ -8316,7 +8730,7 @@ function cascade(...nPorts) {
 	return combined;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 function Open() { // one port, open
 	var Open = new nPort;
@@ -8331,7 +8745,7 @@ function Open() { // one port, open
 	return Open;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 function Short() { //  one port, Short
 	var Short = new nPort;
@@ -8346,7 +8760,7 @@ function Short() { //  one port, Short
 	return Short;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 function Load() { // one port, load
 	var Load = new nPort;
@@ -8361,7 +8775,7 @@ function Load() { // one port, load
 	return Load;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 function Shift90() { // lossless matched two-port with +90 degree through phase
 	var Shift90 = new nPort;
@@ -8379,7 +8793,19 @@ function Shift90() { // lossless matched two-port with +90 degree through phase
 	return Shift90;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
+
+const INCH_TO_METER = 0.0254;
+const MIL_TO_METER = 0.001 * INCH_TO_METER;
+
+const C0 = 2.99792458e8;
+const EPSILON0 = 8.854187817e-12;
+const MU0 = 4 * Math.PI * 1e-7;
+const VACUUM_IMPEDANCE = 120 * Math.PI;
+
+const COPPER_RESISTIVITY = 1.72e-8;
+
+// Modified: 2026-10-07
 
 function Tlin(Z = 60, Length = 0.5 * 0.0254) { // Z is in ohms and Length is in meters, sparameters of a physical transmission line
 	var Tlin = new nPort;
@@ -8394,7 +8820,7 @@ function Tlin(Z = 60, Length = 0.5 * 0.0254) { // Z is in ohms and Length is in 
 		Ctlin = two.mul(Ztlin).mul(Zo);
 		
 		alpha = 0;
-		beta = 2*Math.PI*frequencyList[freqCount]/2.997925e8;
+		beta = 2*Math.PI*frequencyList[freqCount]/C0;
 		gamma = complex(alpha * Length, beta * Length);
 
 		Ds = Ctlin.mul(gamma.coshCplx()).add(Btlin.mul(gamma.sinhCplx()));
@@ -8409,7 +8835,7 @@ function Tlin(Z = 60, Length = 0.5 * 0.0254) { // Z is in ohms and Length is in 
 	return Tlin;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 function Tclin(Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254) { // 1.4732 is the quarter wavelength at 2GHz, (1.3412 at 2.2 GHz)
 	var ctlin = new nPort;
@@ -8425,7 +8851,7 @@ function Tclin(Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254) { // 1.4732 is the q
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		// alpha beta gamma section
 		alpha = 0;
-		beta = 2*Math.PI*frequencyList[freqCount]/2.997925e8;
+		beta = 2*Math.PI*frequencyList[freqCount]/C0;
 		gamma = complex(alpha * Length, beta * Length);
 
 		// Zoe section
@@ -8471,18 +8897,6 @@ function Tclin(Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254) { // 1.4732 is the q
 	ctlin.setglobal(global);	
 	return ctlin;
 }
-
-// Modified: 2026-06-27
-
-const INCH_TO_METER = 0.0254;
-const MIL_TO_METER = 0.001 * INCH_TO_METER;
-
-const C0 = 2.99792458e8;
-const EPSILON0 = 8.854187817e-12;
-const MU0 = 4 * Math.PI * 1e-7;
-const VACUUM_IMPEDANCE = 120 * Math.PI;
-
-const COPPER_RESISTIVITY = 1.72e-8;
 
 // Modified: 2026-09-06
 var hasOwn = function (object, key) {
@@ -8571,7 +8985,7 @@ var physicalModelMetadata = function (family, model, geometry, material, analysi
 	};
 };
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 var pi$7 = Math.PI;
 
@@ -8646,10 +9060,9 @@ var singleLineDispersion$1 = function (u, er, erEff0, z0, frequency, Height) {
 	return {erEff, z0Frequency};
 };
 
-function mlin(Width = 0.023 * INCH_TO_METER, Height = 0.025 * INCH_TO_METER, Length = 0.5 * INCH_TO_METER, Thickness = 0.0000125 * INCH_TO_METER, er = 10, rho = 1, tand = 0.001, roughnessRms = 0, temperature = global.Temp) {
-	var inputOptions = isOptionsObject(Width) ? Width : null;
-	if (inputOptions) {
-		var options = normalizePhysicalModelOptions('mlin', inputOptions, [
+function mlin(input = {}) {
+	if (arguments.length > 1) throw new TypeError('nP.mlin() accepts one options object.');
+	var options = normalizePhysicalModelOptions('mlin', input, [
 			{name: 'width', aliases: ['Width'], defaultValue: 0.023 * INCH_TO_METER},
 			{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
 			{name: 'length', aliases: ['Length'], defaultValue: 0.5 * INCH_TO_METER},
@@ -8660,11 +9073,10 @@ function mlin(Width = 0.023 * INCH_TO_METER, Height = 0.025 * INCH_TO_METER, Len
 			{name: 'lossTangent', aliases: ['tand'], defaultValue: 0.001},
 			{name: 'roughnessRms', defaultValue: 0},
 			{name: 'temperature', defaultValue: global.Temp}
-		]);
-		Width = options.width; Height = options.height; Length = options.length; Thickness = options.thickness;
-		er = options.relativePermittivity; rho = resistivityScale('mlin', inputOptions, options.rho, COPPER_RESISTIVITY);
-		tand = options.lossTangent; roughnessRms = options.roughnessRms; temperature = options.temperature;
-	}
+	]);
+	var Width = options.width, Height = options.height, Length = options.length, Thickness = options.thickness;
+	var er = options.relativePermittivity, rho = resistivityScale('mlin', input, options.rho, COPPER_RESISTIVITY);
+	var tand = options.lossTangent, roughnessRms = options.roughnessRms, temperature = options.temperature;
 	requirePositive('mlin', 'width', Width); requirePositive('mlin', 'height', Height);
 	requireNonnegative('mlin', 'length', Length); requireNonnegative('mlin', 'thickness', Thickness);
 	requirePositive('mlin', 'relativePermittivity', er); requireNonnegative('mlin', 'resistivity', rho * COPPER_RESISTIVITY);
@@ -8761,7 +9173,7 @@ function mlin(Width = 0.023 * INCH_TO_METER, Height = 0.025 * INCH_TO_METER, Len
 	return mlin;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 var pi$6 = Math.PI;
 
@@ -8972,24 +9384,23 @@ var modeLosses = function (Width, Height, Thickness, Length, er, rho, tand, freq
 	return {conductorDb, dielectricDb, alphaNepers: (conductorDb + dielectricDb) / 8.68588};
 };
 
-function mclin(Width = 19.1155 * MIL_TO_METER, Space = 5.82185 * MIL_TO_METER, Height = 25 * MIL_TO_METER, Thickness = 0.0000125 * INCH_TO_METER, Length = 719.794 * MIL_TO_METER, er = 10, rho = 1, tand = 0.001, roughnessRms = 0, temperature = global.Temp) {
-	var inputOptions = isOptionsObject(Width) ? Width : null;
-	if (inputOptions) {
-		var options = normalizePhysicalModelOptions('mclin', inputOptions, [
+function mclin(input = {}) {
+	if (arguments.length > 1) throw new TypeError('nP.mclin() accepts one options object.');
+	var options = normalizePhysicalModelOptions('mclin', input, [
 			{name: 'width', aliases: ['Width'], defaultValue: 19.1155 * MIL_TO_METER},
 			{name: 'spacing', aliases: ['Space'], defaultValue: 5.82185 * MIL_TO_METER},
 			{name: 'height', aliases: ['Height'], defaultValue: 25 * MIL_TO_METER},
-			{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
 			{name: 'length', aliases: ['Length'], defaultValue: 719.794 * MIL_TO_METER},
+			{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
 			{name: 'relativePermittivity', aliases: ['er'], defaultValue: 10},
 			{name: 'rho', defaultValue: 1}, {name: 'resistivity', defaultValue: undefined},
 			{name: 'lossTangent', aliases: ['tand'], defaultValue: 0.001},
 			{name: 'roughnessRms', defaultValue: 0}, {name: 'temperature', defaultValue: global.Temp}
-		]);
-		Width = options.width; Space = options.spacing; Height = options.height; Thickness = options.thickness;
-		Length = options.length; er = options.relativePermittivity; rho = resistivityScale('mclin', inputOptions, options.rho, COPPER_RESISTIVITY);
-		tand = options.lossTangent; roughnessRms = options.roughnessRms; temperature = options.temperature;
-	}
+	]);
+	var Width = options.width, Space = options.spacing, Height = options.height, Length = options.length;
+	var Thickness = options.thickness, er = options.relativePermittivity;
+	var rho = resistivityScale('mclin', input, options.rho, COPPER_RESISTIVITY);
+	var tand = options.lossTangent, roughnessRms = options.roughnessRms, temperature = options.temperature;
 	requirePositive('mclin', 'width', Width); requirePositive('mclin', 'spacing', Space); requirePositive('mclin', 'height', Height);
 	requireNonnegative('mclin', 'length', Length); requireNonnegative('mclin', 'thickness', Thickness);
 	requirePositive('mclin', 'relativePermittivity', er); requireNonnegative('mclin', 'resistivity', rho * COPPER_RESISTIVITY);
@@ -9110,7 +9521,7 @@ function mclin(Width = 19.1155 * MIL_TO_METER, Space = 5.82185 * MIL_TO_METER, H
 	return ctlin;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 var pi$5 = Math.PI;
 var DEFAULT_WIDTH = 0.023 * INCH_TO_METER;
@@ -9167,21 +9578,9 @@ var microstripLine$2 = function (width, Height, Thickness, er) {
 	};
 };
 
-function mtee(
-	commonWidth = DEFAULT_WIDTH,
-	branch1Width = DEFAULT_WIDTH,
-	branch2Width = DEFAULT_WIDTH,
-	Height = DEFAULT_HEIGHT,
-	Thickness = DEFAULT_THICKNESS,
-	er = 10,
-	rho = 1,
-	tand = 0.001,
-	roughnessRms = 0,
-	temperature = global.Temp
-) { // microstrip tee nPort object
-	var inputOptions = isOptionsObject(commonWidth) ? commonWidth : null;
-	if (inputOptions) {
-		var options = normalizePhysicalModelOptions('mtee', inputOptions, [
+function mtee(input = {}) { // microstrip tee nPort object
+	if (arguments.length > 1) throw new TypeError('nP.mtee() accepts one options object.');
+	var options = normalizePhysicalModelOptions('mtee', input, [
 			{name: 'commonWidth', defaultValue: DEFAULT_WIDTH},
 			{name: 'branch1Width', defaultValue: DEFAULT_WIDTH},
 			{name: 'branch2Width', defaultValue: DEFAULT_WIDTH},
@@ -9191,11 +9590,11 @@ function mtee(
 			{name: 'rho', defaultValue: 1}, {name: 'resistivity', defaultValue: undefined},
 			{name: 'lossTangent', aliases: ['tand'], defaultValue: 0.001},
 			{name: 'roughnessRms', defaultValue: 0}, {name: 'temperature', defaultValue: global.Temp}
-		]);
-		commonWidth = options.commonWidth; branch1Width = options.branch1Width; branch2Width = options.branch2Width;
-		Height = options.height; Thickness = options.thickness; er = options.relativePermittivity;
-		rho = resistivityScale('mtee', inputOptions, options.rho, COPPER_RESISTIVITY); tand = options.lossTangent; roughnessRms = options.roughnessRms; temperature = options.temperature;
-	}
+	]);
+	var commonWidth = options.commonWidth, branch1Width = options.branch1Width, branch2Width = options.branch2Width;
+	var Height = options.height, Thickness = options.thickness, er = options.relativePermittivity;
+	var rho = resistivityScale('mtee', input, options.rho, COPPER_RESISTIVITY);
+	var tand = options.lossTangent, roughnessRms = options.roughnessRms, temperature = options.temperature;
 	requirePositive('mtee', 'commonWidth', commonWidth); requirePositive('mtee', 'branch1Width', branch1Width);
 	requirePositive('mtee', 'branch2Width', branch2Width); requirePositive('mtee', 'height', Height);
 	requireNonnegative('mtee', 'thickness', Thickness); requirePositive('mtee', 'relativePermittivity', er);
@@ -9300,7 +9699,7 @@ function mtee(
 	return mtee;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 var pi$4 = Math.PI;
 
@@ -9576,7 +9975,7 @@ function mcross(input = {}) {
 	return cross;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 var pi$3 = Math.PI;
 
@@ -9772,7 +10171,7 @@ function mstep(input = {}) {
 	return step;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 var pi$2 = Math.PI;
 
@@ -9891,7 +10290,7 @@ function mbend(input = {}) {
 	return bend;
 }
 
-// Modified: 2026-09-06
+// Modified: 2026-10-07
 
 function mtfr(input = {}) {
 	var options = normalizePhysicalModelOptions('mtfr', input, [
@@ -9923,7 +10322,10 @@ function mtfr(input = {}) {
 	var sectionCount = sections === undefined ? automaticSections : Math.max(1, Math.floor(sections));
 	var resistancePerSection = resistance / sectionCount;
 	var halfLineLength = Length / (2 * sectionCount);
-	var halfLine = mlin(Width, Height, halfLineLength, Thickness, er, 0, tand, 0);
+	var halfLine = mlin({
+		width: Width, height: Height, length: halfLineLength, thickness: Thickness,
+		relativePermittivity: er, resistivity: 0, lossTangent: tand, roughnessRms: 0
+	});
 	var resistorSection = R(resistancePerSection);
 	var nPorts = [];
 
@@ -9964,7 +10366,7 @@ function mtfr(input = {}) {
 	return filmResistor;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 var pi$1 = Math.PI;
 
@@ -10037,7 +10439,7 @@ function mvgnd(input = {}) {
 	return via;
 }
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 
 var pi = Math.PI;
 
@@ -10192,231 +10594,6 @@ function mvia(input = {}) {
 		topPadHeight, bottomPadHeight, topStubLength, bottomStubLength
 	}, {relativePermittivity: er, resistivity: rho}, analysis, {validity: via.microstrip.validity});
 	return via;
-}
-
-// Modified: 2026-10-04
-
-const Q = 1.602176634e-19;
-const K = 1.380649e-23;
-
-function thermalVoltage(temperatureK) {
-	return K * temperatureK / Q;
-}
-
-function normalizeOptions(options) {
-	return {
-		is: options.is ?? 2.75e-11,
-		n: options.n ?? 2,
-		rs: options.rs ?? 0.568,
-		cj0: options.cj0 ?? 4e-12,
-		vj: options.vj ?? 0.75,
-		m: options.m ?? 0.5,
-		tt: options.tt ?? 4e-9,
-		leakageResistance: options.leakageResistance ?? 4e9,
-		breakdownVoltage: options.breakdownVoltage ?? 100,
-		breakdownCurrent: options.breakdownCurrent ?? 100e-6,
-		breakdownSoftness: options.breakdownSoftness ?? 2,
-		biasVoltage: options.biasVoltage ?? 0,
-		temperatureK: options.temperatureK ?? global.Temp,
-		ivStart: options.ivStart ?? -110,
-		ivStop: options.ivStop ?? 1,
-		ivPoints: options.ivPoints ?? 401
-	};
-}
-
-function junctionCapacitance(voltage, cj0, vj, m) {
-	if (voltage < vj) {
-		return cj0 / Math.pow(1 - voltage / vj, m);
-	}
-
-	return cj0 / Math.pow(1e-12, m);
-}
-
-function breakdownCurrent(junctionVoltage, p) {
-	var excessVoltage = Math.max(-junctionVoltage - p.breakdownVoltage, 0);
-
-	return -p.breakdownCurrent * (Math.exp(excessVoltage / p.breakdownSoftness) - 1);
-}
-
-function breakdownConductance(junctionVoltage, p) {
-	if (-junctionVoltage <= p.breakdownVoltage) {
-		return 0;
-	}
-
-	return p.breakdownCurrent * Math.exp((-junctionVoltage - p.breakdownVoltage) / p.breakdownSoftness) / p.breakdownSoftness;
-}
-
-function diodeCurrentAtVoltage(voltage, p) {
-	var vt = thermalVoltage(p.temperatureK);
-	var current = voltage >= 0 ? voltage / Math.max(p.rs + p.n * vt / p.is, 1) : -p.is;
-	var iteration;
-	var limitedExp;
-	var junctionVoltage;
-	var expTerm;
-	var f;
-	var df;
-	var next;
-	var avalancheCurrent;
-	var avalancheConductance;
-
-	for (iteration = 0; iteration < 60; iteration++) {
-		junctionVoltage = voltage - current * p.rs;
-		limitedExp = Math.min(junctionVoltage / (p.n * vt), 80);
-		expTerm = Math.exp(limitedExp);
-		avalancheCurrent = breakdownCurrent(junctionVoltage, p);
-		avalancheConductance = breakdownConductance(junctionVoltage, p);
-		f = current - p.is * (expTerm - 1) - junctionVoltage / p.leakageResistance - avalancheCurrent;
-		df = 1 + p.rs * p.is * expTerm / (p.n * vt) + p.rs / p.leakageResistance + p.rs * avalancheConductance;
-		next = current - f / df;
-
-		if (Math.abs(next - current) <= Math.max(1e-15, Math.abs(next) * 1e-12)) {
-			return next;
-		}
-
-		current = next;
-	}
-
-	return current;
-}
-
-function diodeAdmittanceAtBias(p) {
-	var vt = thermalVoltage(p.temperatureK);
-	var current = diodeCurrentAtVoltage(p.biasVoltage, p);
-	var junctionVoltage = p.biasVoltage - current * p.rs;
-	var limitedExp = Math.min(junctionVoltage / (p.n * vt), 80);
-	var conductance = p.is * Math.exp(limitedExp) / (p.n * vt) + 1 / p.leakageResistance + breakdownConductance(junctionVoltage, p);
-
-	return {
-		current,
-		junctionVoltage,
-		conductance,
-		resistance: conductance > 0 ? 1 / conductance : Number.POSITIVE_INFINITY
-	};
-}
-
-function seriesTwoPortFromImpedance(frequency, impedance, ro) {
-	complex(ro, 0);
-	var twoZo = complex(2 * ro, 0);
-	var denominator = impedance.add(twoZo);
-	var s11 = impedance.div(denominator);
-	var s21 = twoZo.div(denominator);
-
-	return [frequency, s11, s21, s21, s11];
-}
-
-function diode1N4148(options = {}) {
-	var p = normalizeOptions(options);
-	var diodePort = new nPort();
-	var frequencyList = analysisFrequencies(global);
-	var ro = global.Ro;
-	var twoZo = complex(2 * ro, 0);
-	var dc = diodeAdmittanceAtBias(p);
-	var cj = junctionCapacitance(dc.junctionVoltage, p.cj0, p.vj, p.m);
-	var diffusionCapacitance = p.tt * dc.conductance;
-	var capacitance = cj + diffusionCapacitance;
-	var sparsArray = [];
-	var noiseArray = [];
-	var freqCount;
-	var frequency;
-	var omega;
-	var admittance;
-	var junctionImpedance;
-	var totalImpedance;
-	var thermalEnergy = K * p.temperatureK;
-	var diodeCurrent = p.is * Math.expm1(Math.min(dc.junctionVoltage / (p.n * thermalVoltage(p.temperatureK)), 80));
-	var avalanche = breakdownCurrent(dc.junctionVoltage, p);
-	// A linearized junction has equilibrium conductance noise at zero bias.
-	// At finite bias, use the larger of that level and a weak shot-noise estimate.
-	var junctionNoiseCurrent = Math.max(
-		4 * thermalEnergy * Math.max(0, dc.conductance - 1 / p.leakageResistance),
-		2 * Q * (Math.abs(diodeCurrent) + Math.abs(avalanche))
-	) + 4 * thermalEnergy / p.leakageResistance;
-	var junctionVoltageScale = p.n * thermalVoltage(p.temperatureK);
-	var exponentialCurrent = p.is * Math.exp(Math.min(dc.junctionVoltage / junctionVoltageScale, 80));
-	var secondDerivative = exponentialCurrent / junctionVoltageScale ** 2;
-	var thirdDerivative = exponentialCurrent / junctionVoltageScale ** 3;
-	if (-dc.junctionVoltage > p.breakdownVoltage) {
-		var avalancheSlope = p.breakdownCurrent *
-			Math.exp((-dc.junctionVoltage - p.breakdownVoltage) / p.breakdownSoftness);
-		secondDerivative -= avalancheSlope / p.breakdownSoftness ** 2;
-		thirdDerivative += avalancheSlope / p.breakdownSoftness ** 3;
-	}
-	var capacitanceDerivative = p.tt * secondDerivative;
-	var capacitanceSecondDerivative = p.tt * thirdDerivative;
-	if (dc.junctionVoltage < p.vj) {
-		capacitanceDerivative += p.m * cj / (p.vj - dc.junctionVoltage);
-		capacitanceSecondDerivative += p.m * (p.m + 1) * cj /
-			(p.vj - dc.junctionVoltage) ** 2;
-	}
-
-	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
-		frequency = frequencyList[freqCount];
-		omega = 2 * Math.PI * frequency;
-		admittance = complex(dc.conductance, omega * capacitance);
-		junctionImpedance = admittance.inv();
-		totalImpedance = complex(p.rs, 0).add(junctionImpedance);
-		sparsArray[freqCount] = seriesTwoPortFromImpedance(frequency, totalImpedance, ro);
-		var impedanceMagnitudeSquared = junctionImpedance.mag() ** 2;
-		var denominatorMagnitudeSquared = totalImpedance.add(twoZo).mag() ** 2;
-		var noise = (4 * thermalEnergy * p.rs + junctionNoiseCurrent * impedanceMagnitudeSquared) *
-			ro / denominatorMagnitudeSquared;
-		noiseArray[freqCount] = {frequency: frequency, C: [
-			[complex(noise, 0), complex(-noise, 0)],
-			[complex(-noise, 0), complex(noise, 0)]
-		]};
-	}
-
-	diodePort.setspars(sparsArray);
-	diodePort.noise = noiseArray;
-	diodePort.setglobal(global);
-	diodePort._intermod = {
-		type: 'diode',
-		conductance: dc.conductance,
-		capacitance: capacitance,
-		seriesResistance: p.rs,
-		referenceImpedance: ro,
-		secondDerivative: secondDerivative,
-		thirdDerivative: thirdDerivative,
-		capacitanceDerivative: capacitanceDerivative,
-		capacitanceSecondDerivative: capacitanceSecondDerivative
-	};
-	diodePort.diode = {
-		partNumber: '1N4148',
-		model: 'small-signal RF series diode with Shockley DC I-V',
-		source: 'Vishay 1N4148 Rev. 1.6, 07-Nov-2024; onsemi 1N91x, 1N4x48 Rev. 6, September 2024',
-		parameters: p,
-		bias: {
-			voltage: p.biasVoltage,
-			current: dc.current,
-			junctionVoltage: dc.junctionVoltage,
-			dynamicResistance: dc.resistance,
-			junctionCapacitance: cj,
-			diffusionCapacitance,
-			totalCapacitance: capacitance
-		},
-		datasheetAnchors: {
-			forwardVoltage: 'VF <= 1 V at IF = 10 mA',
-			capacitance: 'CD/CT = 4 pF at VR = 0 V, f = 1 MHz',
-			reverseRecovery: 'trr = 4 ns under listed switching test',
-			reverseLeakage: 'IR = 25 nA at VR = 20 V; IR = 5 uA at VR = 75 V',
-			breakdownVoltage: 'VBR >= 100 V at IR = 100 uA'
-		}
-	};
-	diodePort.ivTable = function ivTable(start = p.ivStart, stop = p.ivStop, points = p.ivPoints) {
-		var table = [['vD', 'iD']];
-		var step = points > 1 ? (stop - start) / (points - 1) : 0;
-		var index;
-		var voltage;
-
-		for (index = 0; index < points; index++) {
-			voltage = start + step * index;
-			table.push([voltage, diodeCurrentAtVoltage(voltage, p)]);
-		}
-
-		return table;
-	};
-
-	return diodePort;
 }
 
 function getCircuitTitle() {

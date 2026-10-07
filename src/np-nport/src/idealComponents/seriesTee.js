@@ -1,8 +1,8 @@
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
-import {analysisFrequencies} from '../intermod';
+import {analysisFrequencies} from '../analysisFrequencies';
 
 // Ideal three-port junction for attaching a one-port network in series.
 // Ports 1 and 2 form the through path; port 3 is the series branch.

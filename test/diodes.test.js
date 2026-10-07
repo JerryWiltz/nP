@@ -1,9 +1,9 @@
-// Modified: 2026-07-09
+// Modified: 2026-10-07
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {global} from '../src/np-global/index.js';
-import {diode1N4148} from '../src/np-diodes/index.js';
+import {diode1N4148} from '../src/np-nport/index.js';
 
 const closeTo = (actual, expected, tolerance = 1e-12) => {
 	assert.ok(

@@ -1,7 +1,7 @@
-<!-- Modified: 2026-07-15 -->
+<!-- Modified: 2026-10-07 -->
 # Diode Development Notes
 
-Diode and nonlinear-device models live under `src/np-diodes/`. The current public model is `nP.diode1N4148()`.
+Diode and nonlinear-device models live under `src/np-nport/src/diodes/`. The current public model is `nP.diode1N4148()`.
 
 The design goal is to keep DC device behavior and small-signal RF behavior visibly connected. One constructor defines the physical and fitted parameters, calculates the operating point, emits an n-port-compatible RF result, and exposes a DC I-V table.
 
@@ -28,7 +28,7 @@ The development examples are:
 
 ## Current 1N4148 model
 
-`src/np-diodes/src/diode1N4148.js` returns a reciprocal series two-port. It combines:
+`src/np-nport/src/diodes/diode1N4148.js` returns a reciprocal series two-port. It combines:
 
 - Shockley forward current.
 - Series resistance.
@@ -133,7 +133,13 @@ S21 = S12 = 2 Ro / (Ztotal + 2 Ro)
 
 The returned rows are therefore compatible with `.out()`, `nP.nodal()`, `nP.cascade()`, and the chart/table renderers.
 
-This is a linearized small-signal RF model at one bias point. It is not a large-signal transient, harmonic-balance, switching-storage, or intermodulation simulation.
+This is a linearized small-signal RF model at one bias point. The same bias point also supplies approximate noise and weak-signal intermodulation sources. It is not a large-signal transient, harmonic-balance, or switching-storage simulation.
+
+## Noise and intermodulation
+
+The constructor creates a full two-port noise covariance at every analysis frequency. It combines series-resistance thermal noise with junction-current noise estimated from the larger of the equilibrium conductance noise and a weak shot-noise term, plus leakage noise. The noise level depends on the selected bias and temperature.
+
+When `global.twoTone` is set before construction, the S-parameter and noise rows include the second tone, IM2 and IM3 products, and second harmonics as well as the configured `fList` points. The diode's nonlinear source model uses current and junction-charge derivatives at the same DC bias point to estimate those products. The network solver propagates each generated product once through the linear S-parameter network; it does not calculate compression or nonlinear remixing. Use `.out(...)` on the diode or a containing network to inspect NF, noise floor, and intermodulation results.
 
 ## DC I-V table
 
@@ -167,7 +173,7 @@ Preserve this inspectable metadata when extending the model. If a parameter is f
 - Parameters are representative datasheet anchors, not a statistical production spread.
 - Temperature scaling is included through thermal voltage, but not every physical parameter has an independent temperature coefficient.
 - The model assumes one bias point for the entire frequency sweep.
-- Noise, charge conservation, transient recovery, and large-signal distortion are not modeled.
+- The noise and intermodulation estimates are weak-signal approximations, not measured device specifications. Charge conservation, transient recovery, compression, and large-signal distortion are not modeled.
 
 These limits should remain visible so the convenience of the model is not mistaken for greater physical fidelity.
 
@@ -178,15 +184,15 @@ These limits should remain visible so the convenience of the model is not mistak
 3. Define one normalized parameter object used by both DC and RF calculations.
 4. Add package and junction parasitics appropriate to the intended frequency range.
 5. Solve and expose the DC operating point.
-6. Build a square n-port S matrix at every configured frequency.
+6. Build a square n-port S matrix and noise covariance at every analysis frequency; add a nonlinear source model when the device is biased and nonlinear.
 7. Expose an I-V table and any other useful engineering curves.
 8. Attach bias, parameter, source, and validity metadata.
-9. Export the constructor through `src/np-diodes/index.js` and the root `src/index.js` path.
+9. Export the constructor through `src/np-nport/src/index.js` and the root `src/index.js` path.
 10. Add tests and browser/Obsidian development examples showing both RF and DC behavior.
 
 ## Verification checklist
 
-- S-row count follows `global.fList`.
+- S and noise rows follow `analysisFrequencies(global)`, which includes product frequencies when `global.twoTone` is set.
 - Every RF row has `1 + n²` entries.
 - Reciprocal terms agree when reciprocity is assumed.
 - DC current is monotonic over ordinary forward bias.

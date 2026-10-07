@@ -1,8 +1,8 @@
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort'
 import {global}  from '../../../np-global/src/global';
-import {analysisFrequencies} from '../intermod';
+import {analysisFrequencies} from '../analysisFrequencies';
 
 export function Tee5() { // an ideal five-port junction
 	var Tee5 = new nPort;

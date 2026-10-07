@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-04 -->
+<!-- Modified: 2026-10-07 -->
 # nP
 
 JavaScript tools for RF and microwave network analysis.
@@ -234,7 +234,7 @@ Current microstrip constructors include:
 - `mvgnd()` — grounded via
 - `mvia()` — via transition
 
-Existing positional `mlin()`, `mclin()`, and `mtee()` calls remain supported, but options objects are preferred.
+`mlin()`, `mclin()`, and `mtee()` accept no arguments for their defaults or one options object for custom values. Positional calls are no longer supported. Convert each old argument to its named property; for example, `mlin(width, height, length)` becomes `mlin({width, height, length})`. Use SI units and absolute `resistivity` in ohm-meters. Earlier property aliases inside an options object remain supported.
 
 ## Main API
 

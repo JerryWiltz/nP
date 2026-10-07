@@ -1,5 +1,7 @@
-// Modified: 2026-09-15
+// Modified: 2026-10-06
 import * as d3 from 'd3';
+import {normalizeInputTables} from './inputTables';
+import {CHART_FONT_FAMILY, CHART_FONT_SIZE} from './chartTypography';
 
 export function lineTable(options = {}) {
 		// ======== Options & defaults ========
@@ -29,36 +31,37 @@ export function lineTable(options = {}) {
 				[11400000000, -3.50832, -4.28704],
 				[12000000000, -3.52176, -3.52571]
 			]],
-			// Where to append the container. Defaults to <body>.
+			// Shared display options
 			mount = 'body',
-			// Optional explicit IDs
 			containerId,
 			svgId,
-			// Visuals / behavior
+			title,
 			metricPrefix = 'giga',
-			title = '',
+			fontFamily = CHART_FONT_FAMILY,
+			fontSize = CHART_FONT_SIZE,
+			containerFontSizePx,
+			backgroundColor,
+			pngBackground = 'transparent',
+
+			// Line-table options
 			tableTitle,
 			headColor = 'color', // 'color' (blue) | 'gray'
 			headerColor,
 			headerFill,
-			cellFill = 'white',
+			cellFill = 'transparent',
 			cellBorderColor = 'black',
 			cellBorderWidth = 1,
 			tableBorderColor = 'none',
 			tableBorderWidth = 1,
 			showWHAlert = false, // true => alert width/height
-			// Sizing
 			columnWidth = 100,
 			rowHeight = 20,
-			margin = { left: 20, top: 36, right: 20, bottom: 20 },
-			fontFamily = 'sans-serif',
-			fontSize = 14,
-			containerFontSizePx,
-			backgroundColor,
-			pngBackground = 'white'
+			margin = { top: 72, right: 20, bottom: 20, left: 20 }
 		} = options;
 
-		const effectiveTitle = tableTitle ?? title;
+		const tables = normalizeInputTables(inputTable, 'lineTable', 'table');
+
+		const effectiveTitle = title ?? tableTitle ?? '';
 		const effectiveFontSize = containerFontSizePx ?? fontSize;
 		const effectiveBackgroundColor = backgroundColor ?? pngBackground;
 		const effectiveHeaderColor = headerColor ?? headColor;
@@ -66,7 +69,7 @@ export function lineTable(options = {}) {
 		const measuredMountWidth = mountElement && mountElement.getBoundingClientRect
 			? mountElement.getBoundingClientRect().width
 			: (typeof document !== 'undefined' ? document.documentElement.clientWidth : 0);
-		const isNarrowViewport = measuredMountWidth > 0 ? measuredMountWidth < 800 : (typeof document !== 'undefined' && document.documentElement.clientWidth < 420);
+		const isNarrowViewport = measuredMountWidth > 0 ? measuredMountWidth < 420 : (typeof document !== 'undefined' && document.documentElement.clientWidth < 420);
 
 		// ======== Helpers ========
 		const pickScale = (p) => ({
@@ -80,10 +83,10 @@ export function lineTable(options = {}) {
 			tera: 'tera', giga: 'giga', mega: 'mega', kilo: 'kilo',
 			deci: 'deci', centi: 'centi', milli: 'milli',
 			micro: 'micro', nano: 'nano', pico: 'pico'
-		}[String(p).toLowerCase()] ?? 'giga');
+		}[String(p).toLowerCase()] ?? (['none', 'one'].includes(String(p).toLowerCase()) ? '' : 'giga'));
 
 		// Copy tables and rows before scaling the frequency column.
-		const data = inputTable.map(table =>
+		const data = tables.map(table =>
 			table.map(row => row.slice())
 		);
 		const freqScale = pickScale(metricPrefix);
@@ -109,10 +112,11 @@ export function lineTable(options = {}) {
 		const tableWidth = totalCols * (columnWidth + 3) + 1;
 		const tableHeight = totalRows * (rowHeight + 1) + (tablesCount - 1) + 1;
 		const titleWidth = effectiveTitle ? effectiveTitle.length * effectiveFontSize * 0.65 : 0;
-		const controlsWidth = isNarrowViewport ? 56 : 280;
-		const minOuterWidth = Math.ceil(titleWidth + controlsWidth);
+		const controlsWidth = isNarrowViewport ? 40 : 130;
+		const minOuterWidth = Math.ceil(titleWidth + controlsWidth + 10);
 		const outerWidth = Math.max(margin.left + tableWidth + margin.right, minOuterWidth);
-		const outerHeight = margin.top + tableHeight + margin.bottom;
+		const layoutTop = Math.max(margin.top, 72);
+		const outerHeight = layoutTop + tableHeight + margin.bottom;
 
 		if (showWHAlert) {
 			// eslint-disable-next-line no-alert
@@ -129,7 +133,7 @@ export function lineTable(options = {}) {
 			const prev = i === 0 ? 0 : yOffsets[i - 1] + rowsPerTable[i - 1] * (rowHeight + 1) + 1;
 			yOffsets.push(prev);
 		}
-		const y0 = margin.top;
+		const y0 = layoutTop;
 
 		// ======== Mount points & elements ========
 
@@ -139,6 +143,8 @@ export function lineTable(options = {}) {
 				.attr('class', 'line-table-container')
 				.style('display', 'inline-block')
 				.style('position', 'relative')        // anchor for absolute button
+				.style('max-width', '100%')
+				.style('box-sizing', 'border-box')
 				.style('font-family', fontFamily)
 				.style('font-size', `${effectiveFontSize}px`)
 				.style('padding-top', '0');
@@ -201,14 +207,14 @@ export function lineTable(options = {}) {
 			}
 		}
 
-		function tsvEscape(val) {
+		function csvEscape(val) {
 			const s = (val ?? '').toString();
-			return s.replace(/\t/g, ' ').replace(/[\n\r]/g, ' ');
+			return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 		}
 
-		async function copyTSV() {
+		async function copyCSV() {
 			try {
-				const tsvChunks = data.map(tbl => {
+				const csvChunks = data.map(tbl => {
 					const cols = Math.max(...tbl.map(r => r.length));
 					const lines = [];
 					for (let r = 0; r < tbl.length; r++) {
@@ -218,20 +224,20 @@ export function lineTable(options = {}) {
 							const formatted = (typeof val === 'string')
 								? val
 								: Number.isFinite(val) ? val.toFixed(5) : '';
-							row.push(tsvEscape(formatted));
+						row.push(csvEscape(formatted));
 						}
-						lines.push(row.join('\t'));
+						lines.push(row.join(','));
 					}
 					return lines.join('\n');
 				});
 
-				const tsvText = tsvChunks.join('\n\n'); // blank line between tables
+				const csvText = csvChunks.join('\n\n'); // blank line between tables
 
 				if (!navigator.clipboard || !navigator.clipboard.writeText) {
 					throw new Error('Clipboard text API not available.');
 				}
 
-				await navigator.clipboard.writeText(tsvText);
+				await navigator.clipboard.writeText(csvText);
 
 				//console.log("copied to clipboard");
 
@@ -244,10 +250,10 @@ export function lineTable(options = {}) {
 		// ======== Button (direct child of container) ========
 		const button = container.append('button')
 			//.attr('id', 'copyImage')
-			.attr('aria-label', 'Copy')
+			.attr('aria-label', 'Copy PNG')
 			.style('position', 'absolute')
-			.style('top', '0')
-			.style('right', '10px')
+			.style('top', '5px')
+			.style('right', '5px')
 			.style('background', 'none')
 			.style('border', 'none')
 			.style('padding', '4px 8px')
@@ -256,6 +262,8 @@ export function lineTable(options = {}) {
 			.style('align-items', 'center')
 			.style('gap', '4px')
 			.style('border-radius', '6px')
+			.style('font-family', fontFamily)
+			.style('font-size', `${effectiveFontSize}px`)
 			.on('mouseover', function () { d3.select(this).style('background', '#ccf2ff'); })  //#ccf2ff
 			.on('mouseout', function () { d3.select(this).style('background', 'none'); })
 			.on('mousedown', function () { d3.select(this).style('background', '#00ace6'); })  //#00ace6
@@ -271,41 +279,42 @@ export function lineTable(options = {}) {
 	    `);
 
 		button
-			.style('right', isNarrowViewport ? '5px' : '10px')
 			.style('width', isNarrowViewport ? '28px' : null)
 			.style('overflow', isNarrowViewport ? 'hidden' : null)
+			.style('white-space', 'nowrap')
 			.style('padding', isNarrowViewport ? '4px' : '4px 8px');
 
-		const tsvBtn = container.append('button')
-			//.attr('id', 'copyTsv')
-			.attr('aria-label', 'Copy TSV')
+		const csvBtn = container.append('button')
+			.attr('aria-label', 'Copy CSV')
 			.style('position', 'absolute')
-			.style('top', '0')
-			.style('right', '150px')  // adjust so it doesn’t overlap your PNG button
+			.style('top', '37px')
+			.style('right', '5px')
 			.style('background', 'none')
 			.style('border', 'none')
 			.style('padding', '4px 8px')
 			.style('cursor', 'pointer')
 			.style('display', 'inline-flex')
 			.style('align-items', 'center')
+			.style('font-family', fontFamily)
+			.style('font-size', `${effectiveFontSize}px`)
 			.style('gap', '4px')
 			.style('border-radius', '6px')
 			.on('mouseover', function () { d3.select(this).style('background', '#ccf2ff'); })
 			.on('mouseout', function () { d3.select(this).style('background', 'none'); })
 			.on('mousedown', function () { d3.select(this).style('background', '#00ace6'); })
 			.on('mouseup', function () { d3.select(this).style('background', '#ccf2ff'); })
-			.on('click', copyTSV);
+			.on('click', copyCSV);
 
-		tsvBtn.html([
+		csvBtn.html([
 			'<svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">',
 			'  <path d="M12.668 10.667C12.668 9.95614 12.668 9.46258 12.6367 9.0791C12.6137 8.79732 12.5758 8.60761 12.5244 8.46387L12.4688 8.33399C12.3148 8.03193 12.0803 7.77885 11.793 7.60254L11.666 7.53125C11.508 7.45087 11.2963 7.39395 10.9209 7.36328C10.5374 7.33197 10.0439 7.33203 9.33301 7.33203H6.5C5.78896 7.33203 5.29563 7.33195 4.91211 7.36328C4.63016 7.38632 4.44065 7.42413 4.29688 7.47559L4.16699 7.53125C3.86488 7.68518 3.61186 7.9196 3.43555 8.20703L3.36524 8.33399C3.28478 8.49198 3.22795 8.70352 3.19727 9.0791C3.16595 9.46259 3.16504 9.95611 3.16504 10.667V13.5C3.16504 14.211 3.16593 14.7044 3.19727 15.0879C3.22797 15.4636 3.28473 15.675 3.36524 15.833L3.43555 15.959C3.61186 16.2466 3.86474 16.4807 4.16699 16.6348L4.29688 16.6914C4.44063 16.7428 4.63025 16.7797 4.91211 16.8027C5.29563 16.8341 5.78896 16.835 6.5 16.835H9.33301C10.0439 16.835 10.5374 16.8341 10.9209 16.8027C11.2965 16.772 11.508 16.7152 11.666 16.6348L11.793 16.5645C12.0804 16.3881 12.3148 16.1351 12.4688 15.833L12.5244 15.7031C12.5759 15.5594 12.6137 15.3698 12.6367 15.0879C12.6681 14.7044 12.668 14.211 12.668 13.5V10.667ZM13.998 12.665C14.4528 12.6634 14.8011 12.6602 15.0879 12.6367C15.4635 12.606 15.675 12.5492 15.833 12.4688L15.959 12.3975C16.2466 12.2211 16.4808 11.9682 16.6348 11.666L16.6914 11.5361C16.7428 11.3924 16.7797 11.2026 16.8027 10.9209C16.8341 10.5374 16.835 10.0439 16.835 9.33301V6.5C16.835 5.78896 16.8341 5.29563 16.8027 4.91211C16.7797 4.63025 16.7428 4.44063 16.6914 4.29688L16.6348 4.16699C16.4807 3.86474 16.2466 3.61186 15.959 3.43555L15.833 3.36524C15.675 3.28473 15.4636 3.22797 15.0879 3.19727C14.7044 3.16593 14.211 3.16504 13.5 3.16504H10.667C9.9561 3.16504 9.46259 3.16595 9.0791 3.19727C8.79739 3.22028 8.6076 3.2572 8.46387 3.30859L8.33399 3.36524C8.03176 3.51923 7.77886 3.75343 7.60254 4.04102L7.53125 4.16699C7.4508 4.32498 7.39397 4.53655 7.36328 4.91211C7.33985 5.19893 7.33562 5.54719 7.33399 6.00195H9.33301C10.022 6.00195 10.5791 6.00131 11.0293 6.03809C11.4873 6.07551 11.8937 6.15471 12.2705 6.34668L12.4883 6.46875C12.984 6.7728 13.3878 7.20854 13.6533 7.72949L13.7197 7.87207C13.8642 8.20859 13.9292 8.56974 13.9619 8.9707C13.9987 9.42092 13.998 9.97799 13.998 10.667V12.665ZM18.165 9.33301C18.165 10.022 18.1657 10.5791 18.1289 11.0293C18.0961 11.4302 18.0311 11.7914 17.8867 12.1279L17.8203 12.2705C17.5549 12.7914 17.1509 13.2272 16.6553 13.5313L16.4365 13.6533C16.0599 13.8452 15.6541 13.9245 15.1963 13.9619C14.8593 13.9895 14.4624 13.9935 13.9951 13.9951C13.9935 14.4624 13.9895 14.8593 13.9619 15.1963C13.9292 15.597 13.864 15.9576 13.7197 16.2939L13.6533 16.4365C13.3878 16.9576 12.9841 17.3941 12.4883 17.6982L12.2705 17.8203C11.8937 18.0123 11.4873 18.0915 11.0293 18.1289C10.5791 18.1657 10.022 18.165 9.33301 18.165H6.5C5.81091 18.165 5.25395 18.1657 4.80371 18.1289C4.40306 18.0962 4.04235 18.031 3.70606 17.8867L3.56348 17.8203C3.04244 17.5548 2.60585 17.151 2.30176 16.6553L2.17969 16.4365C1.98788 16.0599 1.90851 15.6541 1.87109 15.1963C1.83431 14.746 1.83496 14.1891 1.83496 13.5V10.667C1.83496 9.978 1.83432 9.42091 1.87109 8.9707C1.90851 8.5127 1.98772 8.10625 2.17969 7.72949L2.30176 7.51172C2.60586 7.0159 3.04236 6.6122 3.56348 6.34668L3.70606 6.28027C4.04237 6.136 4.40303 6.07083 4.80371 6.03809C5.14051 6.01057 5.53708 6.00551 6.00391 6.00391C6.00551 5.53708 6.01057 5.14051 6.03809 4.80371C6.0755 4.34588 6.15483 3.94012 6.34668 3.56348L6.46875 3.34473C6.77282 2.84912 7.20856 2.44514 7.72949 2.17969L7.87207 2.11328C8.20855 1.96886 8.56979 1.90385 8.9707 1.87109C9.42091 1.83432 9.978 1.83496 10.667 1.83496H13.5C14.1891 1.83496 14.746 1.83431 15.1963 1.87109C15.6541 1.90851 16.0599 1.98788 16.4365 2.17969L16.6553 2.30176C17.151 2.60585 17.5548 3.04244 17.8203 3.56348L17.8867 3.70606C18.031 4.04235 18.0962 4.40306 18.1289 4.80371C18.1657 5.25395 18.165 5.81091 18.165 6.5V9.33301Z"></path>',
-			'</svg>Copy as tsv'
+			'</svg>Copy as csv'
 		].join(''));
 
-		tsvBtn
-			.style('right', isNarrowViewport ? '40px' : '150px')
+		csvBtn
 			.style('width', isNarrowViewport ? '28px' : null)
 			.style('overflow', isNarrowViewport ? 'hidden' : null)
+			.style('white-space', 'nowrap')
 			.style('padding', isNarrowViewport ? '4px' : '4px 8px');
 
 
@@ -318,6 +327,14 @@ export function lineTable(options = {}) {
 				.attr('class', 'line-table-svg')
 				.attr('width', outerWidth)
 				.attr('height', outerHeight)
+				.attr('viewBox', `0 0 ${outerWidth} ${outerHeight}`)
+				.attr('preserveAspectRatio', 'xMinYMin meet')
+				.style('display', 'block')
+				.style('width', '100%')
+				.style('max-width', `${outerWidth}px`)
+				.style('height', 'auto')
+				.style('font-family', fontFamily)
+				.style('font-size', `${effectiveFontSize}px`)
 				.style('background-color', effectiveBackgroundColor === 'transparent' ? 'transparent' : effectiveBackgroundColor);
 
 			const tableBackground = svg.insert('rect', ':first-child')
@@ -342,7 +359,7 @@ export function lineTable(options = {}) {
 				.attr('x', 2)
 				.attr('y', 18)
 				.style('visibility', titleVisible)
-				.style('font', `${isNarrowViewport ? 11 : effectiveFontSize}px ${fontFamily}`)
+				.style('font', `${effectiveFontSize}px ${fontFamily}`)
 				.style('user-select', 'none')
 				.style('-webkit-user-select', 'none')
 				.style('-ms-user-select', 'none')
@@ -461,16 +478,24 @@ export function lineTable(options = {}) {
 		// Either will work
 
 		return {
-			// return elements
+			// Shared elements
 			container: container.node(),
 			svg: svg.node(),
+			background: tableBackground.node(),
+			title: txtTableTitle.node(),
+
+			// Existing table elements
 			tableBackground: tableBackground.node(),
-			tableBorder: tableBorder.node(),
 			txtTableTitle: txtTableTitle.node(),
+			tableBorder: tableBorder.node(),
 			txtHeaders: txtHeaders,
 			txtData: txtData,
 
-			// return setters
+			// Shared style setters
+			setBackgroundStyle: setTableBackgroundStyle,
+			setTitleStyle: setTxtTableTitleStyle,
+
+			// Existing table style setters
 			setTxtTableTitleStyle: setTxtTableTitleStyle,
 			setTableBackgroundStyle: setTableBackgroundStyle,
 			setTableBorderStyle: setTableBorderStyle,

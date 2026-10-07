@@ -1,5 +1,8 @@
-// Modified: 2026-09-15
+// Modified: 2026-10-06
 import * as d3 from 'd3';
+import {normalizeInputTables} from './inputTables';
+import {CHART_FONT_FAMILY, CHART_FONT_SIZE} from './chartTypography';
+import {appendTooltipRows, formatTooltipFrequency, formatTooltipNumber} from './chartTooltip';
 
 export function smithChart(options = {}) {
 	// ======== Options & defaults ========
@@ -13,37 +16,42 @@ export function smithChart(options = {}) {
 			[500000000, 0.35, 0.1],
 			[600000000, 0.45, -0.15]
 		]],
+		// Shared display options
 		mount = 'body',
 		containerId,
 		svgId,
-		title = '',
-		chartTitle,
+		title,
 		metricPrefix = 'giga',
+		fontFamily = CHART_FONT_FAMILY,
+		fontSize = CHART_FONT_SIZE,
+		containerFontSizePx,
+		backgroundColor,
+		pngBackground = 'transparent',
+
+		// Smith-chart options
+		chartTitle,
 		showPoints = true,
 		showLabels = true,
 		showGrid = true,
-		gridColor = '#b8b8b8',
+		gridColor = '#e0e0e0',
 		traceColor = true,
 		traceWidth = 2,
 		pointRadius = 3,
-		labelFontSize = 11,
+		labelFontSize,
 		labelColor,
 		width: requestedWidth = 600,
 		height: requestedHeight = 600,
 		margin = { top: 40, right: 40, bottom: 40, left: 40 },
 		unitCircleColor = 'black',
-		unitCircleWidth = 1.5,
-		fontFamily = 'sans-serif',
-		fontSize = 14,
-		containerFontSizePx,
-		backgroundColor,
-		pngBackground = 'transparent'
+		unitCircleWidth = 1.5
 	} = options;
 
-	const effectiveTitle = chartTitle ?? title;
+	const tables = normalizeInputTables(inputTable, 'smithChart', 'smith');
+
+	const effectiveTitle = title ?? chartTitle ?? '';
 	const effectiveFontSize = containerFontSizePx ?? fontSize;
+	const effectiveLabelFontSize = labelFontSize ?? effectiveFontSize;
 	const effectiveBackgroundColor = backgroundColor ?? pngBackground;
-	const isNarrowViewport = typeof document !== 'undefined' && document.documentElement.clientWidth < 420;
 	const mountElement = typeof mount === 'string' ? document.querySelector(mount) : mount;
 	const availableWidth = mountElement && mountElement.getBoundingClientRect
 		? mountElement.getBoundingClientRect().width - 10
@@ -54,6 +62,7 @@ export function smithChart(options = {}) {
 	const height = width === requestedWidth
 		? requestedHeight
 		: Math.round(requestedHeight * width / requestedWidth);
+	const isNarrowViewport = width < 420;
 	let txtLabels = d3.selectAll([]);
 
 	const pickScale = {
@@ -93,7 +102,7 @@ export function smithChart(options = {}) {
 		});
 	}
 
-	const formattedData = formatData(inputTable);
+	const formattedData = formatData(tables);
 	const n = Math.max(3, Math.min(9, formattedData.length));
 	const color = traceColor
 		? d3.scaleOrdinal(d3.schemeCategory10)
@@ -123,7 +132,10 @@ export function smithChart(options = {}) {
 		.append('div')
 		.style('position', 'relative')
 		.style('display', 'inline-block')
+		.style('max-width', '100%')
+		.style('box-sizing', 'border-box')
 		.style('padding', '5px')
+		.style('padding-top', '5px')
 		.style('font-family', fontFamily)
 		.style('font-size', `${effectiveFontSize}px`)
 		.attr('id', containerId || null)
@@ -132,6 +144,14 @@ export function smithChart(options = {}) {
 	const svg = container.append('svg')
 		.attr('width', width)
 		.attr('height', height)
+		.attr('viewBox', `0 0 ${width} ${height}`)
+		.attr('preserveAspectRatio', 'xMinYMin meet')
+		.style('display', 'block')
+		.style('width', '100%')
+		.style('max-width', `${width}px`)
+		.style('height', 'auto')
+		.style('font-family', fontFamily)
+		.style('font-size', `${effectiveFontSize}px`)
 		.attr('id', svgId || null)
 		.attr('class', 'smith-chart-svg');
 
@@ -146,10 +166,10 @@ export function smithChart(options = {}) {
 	container.style('position', 'relative');
 
 	const button = container.append('button')
-		.attr('aria-label', 'Copy')
+		.attr('aria-label', 'Copy PNG')
 		.style('position', 'absolute')
 		.style('top', '5px')
-		.style('right', '100px')
+		.style('right', '5px')
 		.style('background', 'none')
 		.style('border', 'none')
 		.style('padding', '4px 8px')
@@ -158,6 +178,8 @@ export function smithChart(options = {}) {
 		.style('align-items', 'center')
 		.style('gap', '4px')
 		.style('border-radius', '6px')
+		.style('font-family', fontFamily)
+		.style('font-size', `${effectiveFontSize}px`)
 		.on('mouseover', function () { d3.select(this).style('background', '#ccf2ff'); })
 		.on('mouseout', function () { d3.select(this).style('background', 'none'); })
 		.on('mousedown', function () { d3.select(this).style('background', '#00ace6'); })
@@ -172,9 +194,9 @@ export function smithChart(options = {}) {
 	    `);
 
 	button
-		.style('right', isNarrowViewport ? '5px' : '100px')
 		.style('width', isNarrowViewport ? '28px' : null)
 		.style('overflow', isNarrowViewport ? 'hidden' : null)
+		.style('white-space', 'nowrap')
 		.style('padding', isNarrowViewport ? '4px' : '4px 8px');
 
 	// New button function fire
@@ -234,7 +256,7 @@ export function smithChart(options = {}) {
 	const txtChartTitle = svg.append('text')
 		.attr('x', 10)
 		.attr('y', 18)
-		.style('font-size', isNarrowViewport ? '11px' : `${effectiveFontSize}px`)
+		.style('font-size', `${effectiveFontSize}px`)
 		.style('visibility', effectiveTitle ? 'visible' : 'hidden')
 		.text(effectiveTitle);
 
@@ -337,8 +359,15 @@ export function smithChart(options = {}) {
 					.style('pointer-events', 'none')
 					.style('z-index', 10)
 					.style('left', `${px + 10}px`)
-					.style('top', `${py - 20}px`)
-					.html(`${d.traceName}<br>Freq: ${d.frequency.toPrecision(3)}<br>Re: ${d.re.toPrecision(3)}<br>Im: ${d.im.toPrecision(3)}<br>Mag: ${Math.hypot(d.re, d.im).toPrecision(3)}<br>Ang: ${(Math.atan2(d.im, d.re) * 180 / Math.PI).toPrecision(3)} deg`);
+					.style('top', `${py - 20}px`);
+				appendTooltipRows(tooltip, [
+					['Trace', d.traceName],
+					['Frequency', formatTooltipFrequency(d.frequency, metricPrefix)],
+					['Re', formatTooltipNumber(d.re)],
+					['Im', formatTooltipNumber(d.im)],
+					['Magnitude', formatTooltipNumber(Math.hypot(d.re, d.im))],
+					['Angle', `${formatTooltipNumber(Math.atan2(d.im, d.re) * 180 / Math.PI)}°`]
+				]);
 			})
 			.on('mousemove', (event) => {
 				if (!tooltip) return;
@@ -364,7 +393,7 @@ export function smithChart(options = {}) {
 			})
 			.attr('dy', '0.35em')
 			.attr('class', 'txtLabel')
-			.style('font-size', `${labelFontSize}px`)
+			.style('font-size', `${effectiveLabelFontSize}px`)
 			.style('fill', labelColor || null)
 			.text(d => d.traceName);
 	}
@@ -415,9 +444,13 @@ export function smithChart(options = {}) {
 	}
 
 	return {
-		// return elements
+		// Shared elements
 		container: container.node(),
 		svg: svg.node(),
+		background: chartBackground.node(),
+		title: txtChartTitle.node(),
+
+		// Existing Smith-chart elements
 		chartBackground: chartBackground.node(),
 		txtChartTitle: txtChartTitle.node(),
 		unitCircle: unitCircle.node(),
@@ -426,7 +459,11 @@ export function smithChart(options = {}) {
 		labelGroup: labelGroup.node(),
 		txtChartLabels: txtLabels.nodes(),
 
-		// return setters
+		// Shared style setters
+		setBackgroundStyle: setChartBackgroundStyle,
+		setTitleStyle: setTxtChartTitleStyle,
+
+		// Existing Smith-chart style setters
 		setTxtChartTitleStyle: setTxtChartTitleStyle,
 		setChartBackgroundStyle: setChartBackgroundStyle,
 		setUnitCircleStyle: setUnitCircleStyle,

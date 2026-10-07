@@ -1,8 +1,8 @@
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 import {complex} from '../../../np-math/src/complex';
 import {global} from '../../../np-global/src/global';
 import {nPort} from '../nPort';
-import {analysisFrequencies} from '../intermod';
+import {analysisFrequencies} from '../analysisFrequencies';
 
 const kB = 1.380649e-23;
 

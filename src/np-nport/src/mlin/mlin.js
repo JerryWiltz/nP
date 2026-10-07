@@ -1,11 +1,11 @@
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 import { complex } from '../../../np-math/src/complex';
 import { nPort } from '../nPort';
 import { global } from '../../../np-global/src/global';
-import {analysisFrequencies} from '../intermod';
-import { C0, COPPER_RESISTIVITY, INCH_TO_METER, MU0, VACUUM_IMPEDANCE } from './constants';
-import {passiveNoiseCovariance} from './noise';
-import {isOptionsObject, normalizePhysicalModelOptions, physicalModelMetadata, requireNonnegative, requirePositive, resistivityScale} from '../physicalModels/options';
+import {analysisFrequencies} from '../analysisFrequencies';
+import { C0, COPPER_RESISTIVITY, INCH_TO_METER, MU0, VACUUM_IMPEDANCE } from '../physicalConstants';
+import {passiveNoiseCovariance} from '../passiveNoise';
+import {normalizePhysicalModelOptions, physicalModelMetadata, requireNonnegative, requirePositive, resistivityScale} from '../physicalModels/options';
 
 var pi = Math.PI;
 
@@ -80,10 +80,9 @@ var singleLineDispersion = function (u, er, erEff0, z0, frequency, Height) {
 	return {erEff, z0Frequency};
 };
 
-export function mlin(Width = 0.023 * INCH_TO_METER, Height = 0.025 * INCH_TO_METER, Length = 0.5 * INCH_TO_METER, Thickness = 0.0000125 * INCH_TO_METER, er = 10, rho = 1, tand = 0.001, roughnessRms = 0, temperature = global.Temp) {
-	var inputOptions = isOptionsObject(Width) ? Width : null;
-	if (inputOptions) {
-		var options = normalizePhysicalModelOptions('mlin', inputOptions, [
+export function mlin(input = {}) {
+	if (arguments.length > 1) throw new TypeError('nP.mlin() accepts one options object.');
+	var options = normalizePhysicalModelOptions('mlin', input, [
 			{name: 'width', aliases: ['Width'], defaultValue: 0.023 * INCH_TO_METER},
 			{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
 			{name: 'length', aliases: ['Length'], defaultValue: 0.5 * INCH_TO_METER},
@@ -94,11 +93,10 @@ export function mlin(Width = 0.023 * INCH_TO_METER, Height = 0.025 * INCH_TO_MET
 			{name: 'lossTangent', aliases: ['tand'], defaultValue: 0.001},
 			{name: 'roughnessRms', defaultValue: 0},
 			{name: 'temperature', defaultValue: global.Temp}
-		]);
-		Width = options.width; Height = options.height; Length = options.length; Thickness = options.thickness;
-		er = options.relativePermittivity; rho = resistivityScale('mlin', inputOptions, options.rho, COPPER_RESISTIVITY);
-		tand = options.lossTangent; roughnessRms = options.roughnessRms; temperature = options.temperature;
-	}
+	]);
+	var Width = options.width, Height = options.height, Length = options.length, Thickness = options.thickness;
+	var er = options.relativePermittivity, rho = resistivityScale('mlin', input, options.rho, COPPER_RESISTIVITY);
+	var tand = options.lossTangent, roughnessRms = options.roughnessRms, temperature = options.temperature;
 	requirePositive('mlin', 'width', Width); requirePositive('mlin', 'height', Height);
 	requireNonnegative('mlin', 'length', Length); requireNonnegative('mlin', 'thickness', Thickness);
 	requirePositive('mlin', 'relativePermittivity', er); requireNonnegative('mlin', 'resistivity', rho * COPPER_RESISTIVITY);

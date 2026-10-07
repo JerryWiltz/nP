@@ -1,8 +1,9 @@
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
-import {analysisFrequencies} from '../intermod';
+import {analysisFrequencies} from '../analysisFrequencies';
+import {C0} from '../physicalConstants';
 
 export function Tclin(Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254) { // 1.4732 is the quarter wavelength at 2GHz, (1.3412 at 2.2 GHz)
 	var ctlin = new nPort;
@@ -18,7 +19,7 @@ export function Tclin(Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254) { // 1.4732 i
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		// alpha beta gamma section
 		alpha = 0;
-		beta = 2*Math.PI*frequencyList[freqCount]/2.997925e8;
+		beta = 2*Math.PI*frequencyList[freqCount]/C0;
 		gamma = complex(alpha * Length, beta * Length);
 
 		// Zoe section

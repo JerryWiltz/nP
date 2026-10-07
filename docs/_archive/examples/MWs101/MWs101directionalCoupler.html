@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Modified: 2026-06-27 -->
+<!-- Modified: 2026-10-07 -->
 <html>
 	<head>
 		<meta charset="utf-8">
@@ -45,7 +45,11 @@ var plot1 = {
 var chart1 = nP.lineChart(plot1);
 
 // set up the mclin directional coupler
-var mclin = nP.mclin( Width = .020 * 0.0254, Space = 0.0025 * 0.0254, Height = 0.025 * 0.0254, Thickness = 0.00 * 0.0254, Length = .3 * 0.0254, er = 9.9, rho = 1, tand = 0.001 );
+var mclin = nP.mclin({
+	width: .020 * 0.0254, spacing: 0.0025 * 0.0254,
+	height: 0.025 * 0.0254, length: .3 * 0.0254, thickness: 0,
+	relativePermittivity: 9.9, resistivity: 1.72e-8, lossTangent: 0.001
+});
 var q2 = nP.nodal(
 	[mclin, 1, 2, 3, 4],
 	['out', 1, 2, 3, 4]

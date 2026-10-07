@@ -1,4 +1,4 @@
-<!-- Modified: 2026-07-02 -->
+<!-- Modified: 2026-10-07 -->
 
 # Hammerstad/Jensen Equation Derivation Notes
 
@@ -444,7 +444,7 @@ Good implementation practice:
 - record the source, equation numbers, and validity range,
 - keep all dimensions in meters internally,
 - normalize geometry explicitly, such as `Width / Height`,
-- keep physical constants from `src/np-nport/src/mlin/constants.js`,
+- keep physical constants from `src/np-nport/src/physicalConstants.js`,
 - expose intermediate values such as `Zo`, `ereff`, `Zoe`, and `Zoo` when useful for debugging,
 - compare against at least one trusted calculator or published example,
 - avoid changing curve-fit constants unless a source or test case justifies it.

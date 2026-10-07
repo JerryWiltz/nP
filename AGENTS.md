@@ -2,7 +2,7 @@ sudo npm install -g @openai/codex
 Read all applicable AGENTS.md files before working. Inspect the current Git status and latest commits, then continue from the repository’s current state.
 
 # AGENTS.md
-<!-- Modified: 2026-10-04 -->
+<!-- Modified: 2026-10-07 -->
 
 Repository guide for agents working in the `nP` repo.
 
@@ -45,10 +45,10 @@ Primary domains:
 - RF n-port analysis, S-parameters, cascading, nodal interconnection, RLC components, ideal components, microstrip helpers, and fixtures in `src/np-nport`.
 - Complex arithmetic and matrix solving in `src/np-math`.
 - Global analysis settings such as frequency list, reference impedance, and temperature in `src/np-global`.
-- Chebyshev low-pass prototype helpers in `src/np-lowpass-prototype`.
+- Filter constructors and Chebyshev low-pass prototype helpers in `src/np-nport/src/filters`.
 - D3-based chart, Smith chart, and table rendering in `src/np-chart`.
 - Browser helper utilities in `src/np-misc`.
-- Diode and nonlinear-device model development in `src/np-diodes`.
+- Diode and nonlinear-device model development in `src/np-nport/src/diodes`.
 - User documentation in `README.md` and `docs/index.md`.
 
 ## nP Workflow Model
@@ -107,6 +107,7 @@ The main internal objects are `complex`, `matrix`, and `nPort`. Keep their exist
 - All built-in n-port constructors use `analysisFrequencies(global)` for two-tone S and noise rows when `global.twoTone` is set. All components combined in one analysis must have matching frequency rows. `.out()` still displays the configured `fList` points for these components and their combinations.
 - `cas()` and `nP.cascade()` are for 2-port cascades. Use `nP.nodal()` for arbitrary interconnections and multiport circuits.
 - Returned nPorts retain combined noise covariance and known internal amplifier intermodulation sources when reused in `nP.nodal()` or `nP.cascade()`.
+- When adding or changing an n-port constructor or method, public math helper, or low-pass prototype generator, update its arguments and defaults in `developmentDocs/np-nport/constructor-catalog.md` in the same change.
 
 ## Ladder Network Pattern
 
@@ -181,9 +182,9 @@ port 4  ---- coupled line ----  port 3
 
 With input at port 1, port 2 is the through port, port 4 is the coupled port, and port 3 is the isolated port. In `nP.nodal(...)`, connect these components in that same order, for example `[coupledLine, 1, 2, 3, 4]`.
 
-## Microstrip Physical Constants
+## Shared Physical Constants
 
-Shared microstrip constants live in `src/np-nport/src/mlin/constants.js`. Use those names consistently in `mlin()`, `mclin()`, `mtee()`, `mtfr()`, tests, dev notes, and future microstrip constructors.
+Shared physical constants live in `src/np-nport/src/physicalConstants.js`. Use those names consistently in `mlin()`, `mclin()`, `mtee()`, `mtfr()`, tests, dev notes, ideal lines, and future transmission-media constructors.
 
 - `INCH_TO_METER`
 - `MIL_TO_METER`
@@ -195,11 +196,11 @@ Shared microstrip constants live in `src/np-nport/src/mlin/constants.js`. Use th
 
 Do not create alternate spellings for the same physical constant in nearby constructors. If a paper uses a different symbol, map it to the shared nP name in comments or raw notes, for example `eta_0 = VACUUM_IMPEDANCE`.
 
-Physical-model constructors use canonical options objects with lower-camel-case, complete engineering names and SI units. `resistivity` always means absolute ohm-meters. Preserve documented legacy positional calls and property aliases, reject conflicting aliases and unknown properties, and expose canonical `.physicalModel` metadata. Follow `developmentDocs/physical-model-api.md` for microstrip and future stripline, coaxial-line, and waveguide constructors.
+Physical-model constructors use one canonical options object with lower-camel-case, complete engineering names and SI units. `mlin()`, `mclin()`, and `mtee()` accept no arguments for defaults or one options object; they do not accept positional values. `resistivity` always means absolute ohm-meters. Preserve documented property aliases, reject conflicting aliases and unknown properties, and expose canonical `.physicalModel` metadata. Follow `developmentDocs/physical-model-api.md` for microstrip and future stripline, coaxial-line, and waveguide constructors.
 
 ## Diode Model Pattern
 
-Diode-related constructors live in `src/np-diodes`. These models are expected to support both RF and DC behavior:
+Diode-related constructors live in `src/np-nport/src/diodes`. These models are expected to support both RF and DC behavior:
 
 - Emit S-parameters as nPort-compatible objects when the model is used in RF analysis.
 - Expose DC I-V curve data in an `inputTable`-style shape that can be passed to `nP.lineChart()` or `nP.lineTable()`.
@@ -222,7 +223,7 @@ Diode-related constructors live in `src/np-diodes`. These models are expected to
 - `src/np-*/index.js`: subpackage entry points.
 - `src/np-*/src/*.js`: implementation files.
 - `src/np-nport/src/idealComponents/`: ideal n-port components and fixtures such as `Open`, `Short`, `Load`, `Shift90`, `Tee`, `Tee4`, `Tee5`, `Tlin`, and `Tclin`.
-- `src/np-diodes/`: diode and nonlinear-device models that may produce both RF S-parameters and DC I-V curve tables.
+- `src/np-nport/src/diodes/`: diode and nonlinear-device models that may produce both RF S-parameters and DC I-V curve tables.
 - `dist/nP.js`: generated UMD browser bundle. It is versioned in this repo, so update it only when intentionally rebuilding for release or distribution.
 - `rollup.config.js`: root bundle config. Input is `src/index.js`; output is `dist/nP.js`; bundle name is `nP`.
 - `package.json`: root scripts and dev dependencies.
@@ -279,7 +280,7 @@ The test command uses `scripts/extensionless-loader.mjs` so Node can run source 
 - `lineChart()`, `smithChart()`, and `lineTable()` share common option names where possible: `inputTable`, `mount`, `title`, `containerId`, `svgId`, `metricPrefix`, `fontFamily`, `fontSize`, `containerFontSizePx`, and `backgroundColor`. Keep older aliases such as `pngBackground`, `chartTitle`, `tableTitle`, and `headColor` working unless the user explicitly requests a breaking cleanup.
 - `lineChart()` consumes numeric x/y tables, supports linear/log x and y scales, origin or edge axis placement, hover values, chart labels, plot border styling, and PNG copy.
 - `smithChart()` consumes paired real/imaginary columns such as `s11Re`, `s11Im`, `s22Re`, and `s22Im`. It draws a square Smith chart with SVG resistance/reactance circles, trace labels, hover values for frequency/Re/Im/magnitude/angle, and PNG copy.
-- `lineTable()` consumes the same table shape returned by `nPort.out(...)`, renders SVG tables, and includes clipboard-based PNG and TSV copy behavior.
+- `lineTable()` consumes the same table shape returned by `nPort.out(...)`, renders SVG tables, and includes clipboard-based PNG and CSV copy behavior.
 - Browser rendering code in `src/np-chart` and `src/np-misc` assumes `document`, `window`, and sometimes clipboard APIs. Do not make those modules server-only without preserving browser behavior.
 - Do not add large dependencies unless they are clearly justified. The current root development tooling includes Rollup, D3, VitePress, Playwright, and the Rollup node resolver plugin.
 
@@ -356,7 +357,7 @@ Follow this plan for substantive work in this repo:
 ## Known Cautions
 
 - `lineChart()` derives formatted chart data from `inputTable` without mutating caller-owned input; preserve that behavior.
-- `lineTable()` includes clipboard-based PNG and TSV copy behavior; browser support and secure-context requirements can affect it.
+- `lineTable()` includes clipboard-based PNG and CSV copy behavior; browser support and secure-context requirements can affect it.
 - `nP.log()` writes HTML directly into the document. Be cautious about passing unsanitized user content.
 - Matrix and nodal algorithms use custom complex arithmetic and mutable arrays. Small shape or indexing changes can affect RF results broadly.
 - `cascade()` reduces with `nPort.cas()` without modifying its input nPorts. Preserve the combined S rows, noise covariance, and intermodulation source model in the returned nPort.

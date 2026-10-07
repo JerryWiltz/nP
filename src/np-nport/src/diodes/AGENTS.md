@@ -1,11 +1,11 @@
 # AGENTS.md
-<!-- Modified: 2026-10-04 -->
+<!-- Modified: 2026-10-07 -->
 
-Instructions for diode and nonlinear-device models in `src/np-diodes/`.
+Instructions for diode and nonlinear-device models in `src/np-nport/src/diodes/`.
 
 ## Scope
 
-These instructions apply to `src/np-diodes/` and its subdirectories.
+These instructions apply to `src/np-nport/src/diodes/` and its subdirectories.
 
 ## Model Shape
 

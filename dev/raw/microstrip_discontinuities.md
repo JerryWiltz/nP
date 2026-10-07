@@ -1,4 +1,4 @@
-<!-- Modified: 2026-07-08 -->
+<!-- Modified: 2026-10-07 -->
 
 # Microstrip Discontinuities Derivation Notes
 
@@ -380,9 +380,9 @@ uniform line arm model
 
 Implementation guidance:
 
-- Use shared constants from `src/np-nport/src/mlin/constants.js`.
+- Use shared constants from `src/np-nport/src/physicalConstants.js`.
 - Keep physical dimensions in meters internally.
-- Keep argument names consistent with `mlin()` and `mclin()`: `Height`, `Thickness`, `er`, `rho`, `tand`, and `roughnessRms`.
+- Keep public options consistent with `mlin()` and `mclin()`: `height`, `thickness`, `relativePermittivity`, `resistivity`, `lossTangent`, and `roughnessRms`.
 - Use Hammerstad/Jensen-style line calculations for attached microstrip arms when appropriate.
 - Keep the discontinuity parasitic model separate from line loss.
 - Expose useful intermediate values for debugging, such as arm `Zo`, arm `ereff`, equivalent capacitance, and equivalent inductance.

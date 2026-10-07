@@ -1,4 +1,4 @@
-<!-- Modified: 2026-09-06 -->
+<!-- Modified: 2026-10-07 -->
 # Coupled Microstrip Line Development
 
 This analysis evaluates a four-port coupled microstrip line, including through, coupled, matched, and isolated responses. Its executable harness is the `mclin` section of `dev/microstripDevelopment.html`.
@@ -14,19 +14,19 @@ var height = 25 * mil;
 var thickness = 0.0000125 * 0.0254;
 var length = 719.794 * mil;
 var er = 10;
-var rho = 1;
+var resistivity = 1.72e-8;
 var tand = 0.001;
 
-var coupledLine = nP.mclin(
-    width,
-    space,
-    height,
-    thickness,
-    length,
-    er,
-    rho,
-    tand
-);
+var coupledLine = nP.mclin({
+    width: width,
+    spacing: space,
+    height: height,
+    length: length,
+    thickness: thickness,
+    relativePermittivity: er,
+    resistivity: resistivity,
+    lossTangent: tand
+});
 
 var coupler = nP.nodal(
     [coupledLine, 1, 2, 3, 4],

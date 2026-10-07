@@ -1,8 +1,9 @@
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
-import {analysisFrequencies} from '../intermod';
+import {analysisFrequencies} from '../analysisFrequencies';
+import {C0} from '../physicalConstants';
 
 export function Tlin(Z = 60, Length = 0.5 * 0.0254) { // Z is in ohms and Length is in meters, sparameters of a physical transmission line
 	var Tlin = new nPort;
@@ -17,7 +18,7 @@ export function Tlin(Z = 60, Length = 0.5 * 0.0254) { // Z is in ohms and Length
 		Ctlin = two.mul(Ztlin).mul(Zo);
 		
 		alpha = 0;
-		beta = 2*Math.PI*frequencyList[freqCount]/2.997925e8;
+		beta = 2*Math.PI*frequencyList[freqCount]/C0;
 		gamma = complex(alpha * Length, beta * Length);
 
 		Ds = Ctlin.mul(gamma.coshCplx()).add(Btlin.mul(gamma.sinhCplx()));

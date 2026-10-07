@@ -1,5 +1,8 @@
-// Modified: 2026-10-03
+// Modified: 2026-10-06
 import * as d3 from 'd3';
+import {normalizeInputTables} from './inputTables';
+import {CHART_FONT_FAMILY, CHART_FONT_SIZE} from './chartTypography';
+import {appendTooltipRows, formatTooltipFrequency, formatTooltipNumber} from './chartTooltip';
 
 export function lineChart(options = {}) {
             // ======== Options & defaults ========
@@ -30,13 +33,19 @@ export function lineChart(options = {}) {
                     [12000000000, -3.52, -3.52]
                 ]],
 
-	                // Where to append the container. Defaults to <body>.
-	                mount = 'body',
-	                containerId,
-	                svgId,
+                // Shared display options
+                mount = 'body',
+                containerId,
+                svgId,
+                title,
+                metricPrefix = 'giga',
+                fontFamily = CHART_FONT_FAMILY,
+                fontSize = CHART_FONT_SIZE,
+                containerFontSizePx,
+                backgroundColor,
+                pngBackground = 'transparent',
 
-                // Default Settings
-                title = '',
+                // Line-chart options
                 chartTitle,
                 xAxisTitle = 'Frequency',
                 yAxisTitle = 'dB',
@@ -44,7 +53,6 @@ export function lineChart(options = {}) {
                 yScale = 'linear',
                 xAxisPosition = 'bottom',
                 yAxisPosition = 'left',
-                metricPrefix = 'giga',
                 showPoints = true,
                 showLabels = true,
                 showGrid = true,
@@ -52,32 +60,24 @@ export function lineChart(options = {}) {
                 traceColor = true, // true for color, false for gray
                 traceWidth = 2,
                 pointRadius = 3,
-                labelFontSize = 11,
+                labelFontSize,
                 labelColor,
                 width: requestedWidth = 700,
                 height: requestedHeight = 450,
                 margin = { top: 35, right: 80, bottom: 55, left: 75 },
                 plotBorderColor = 'black',
                 plotBorderWidth = 1,
-
-                // Raw ranges (may be undefined, handled later)
                 xRange: rawXRange,
-                yRange: rawYRange,
-
-                // Default Font Size
-                fontFamily = 'sans-serif',
-                fontSize = 14,
-                containerFontSizePx,
-
-                // Default background
-                backgroundColor,
-                pngBackground = 'transparent'
+                yRange: rawYRange
 
             } = options;
 
+            const tables = normalizeInputTables(inputTable, 'lineChart', 'line');
+
             // Starting font sizes since d3.axisBottom and d3.axisLeft will override the container styles
-            const effectiveTitle = chartTitle ?? title;
+            const effectiveTitle = title ?? chartTitle ?? '';
             const effectiveFontSize = containerFontSizePx ?? fontSize;
+            const effectiveLabelFontSize = labelFontSize ?? effectiveFontSize;
             const effectiveBackgroundColor = backgroundColor ?? pngBackground;
             const mountElement = typeof mount === 'string'
                 ? document.querySelector(mount)
@@ -91,15 +91,12 @@ export function lineChart(options = {}) {
             const height = width === requestedWidth
                 ? requestedHeight
                 : Math.round(requestedHeight * width / requestedWidth);
-            // Keep the copy control unchanged; on narrow charts only move it
-            // to the right edge so it can slide over the title as space gets
-            // tight.
-            const isCompact = width < 800;
+            const isCompact = width < 420;
             const labelNames = showLabels
-                ? inputTable.flatMap(table => table[0].slice(1))
+                ? tables.flatMap(table => table[0].slice(1))
                 : [];
             const labelContext = document.createElement('canvas').getContext('2d');
-            labelContext.font = `${labelFontSize}px ${fontFamily}`;
+            labelContext.font = `${effectiveLabelFontSize}px ${fontFamily}`;
             const labelRightMargin = labelNames.length
                 ? Math.ceil(Math.max(...labelNames.map(name =>
                     labelContext.measureText(String(name)).width)) + 12)
@@ -127,13 +124,13 @@ export function lineChart(options = {}) {
             }[metricPrefix] || 1e9;
 
             // Format Data
-            const formattedData = inputTable.map(table => {
+            const formattedData = tables.map(table => {
                 const headers = table[0];
-                return headers.slice(1).map(yName => ({
+                return headers.slice(1).map((yName, column) => ({
                     yName,
                     yValues: table.slice(1).map(row => ({
                         xValue: row[0] / pickScale,
-                        yValue: row[headers.indexOf(yName)]
+                        yValue: row[column + 1]
                     }))
                 }));
             }).flat();
@@ -217,6 +214,7 @@ export function lineChart(options = {}) {
                 .style('box-sizing', 'border-box')
                 .style('overflow', 'hidden')
                 .style('padding', '5px')
+	                .style('padding-top', '5px')
 	                .style('font-family', fontFamily)
 	                .style('font-size', `${effectiveFontSize}px`)
 	                .attr('id', containerId || null)
@@ -232,6 +230,8 @@ export function lineChart(options = {}) {
 	                .style('width', '100%')
 	                .style('max-width', `${width}px`)
 	                .style('height', 'auto')
+	                .style('font-family', fontFamily)
+	                .style('font-size', `${effectiveFontSize}px`)
 	                .attr('id', svgId || null)
 	                .attr('class', 'svgContainerClass');
 
@@ -249,10 +249,10 @@ export function lineChart(options = {}) {
 
             // Button
             const button = container.append('button')
-                .attr('aria-label', 'Copy')
+                .attr('aria-label', 'Copy PNG')
                 .style('position', 'absolute')
                 .style('top', '5px')
-                .style('right', '100px')
+                .style('right', '5px')
                 .style('background', 'none')
                 .style('border', 'none')
                 .style('padding', '4px 8px')
@@ -261,6 +261,8 @@ export function lineChart(options = {}) {
                 .style('align-items', 'center')
                 .style('gap', '4px')
                 .style('border-radius', '6px')
+                .style('font-family', fontFamily)
+                .style('font-size', `${effectiveFontSize}px`)
                 .on('mouseover', function () { d3.select(this).style('background', '#ccf2ff'); })  //#ccf2ff
                 .on('mouseout', function () { d3.select(this).style('background', 'none'); })
                 .on('mousedown', function () { d3.select(this).style('background', '#00ace6'); }) //#00ace6
@@ -275,12 +277,11 @@ export function lineChart(options = {}) {
       </svg>Copy as png
     `);
 
-            // Let the unchanged control slide over the title area on narrow charts.
             button
-                .style('right', isCompact ? '5px' : '100px')
-                .style('width', null)
-                .style('overflow', null)
-                .style('padding', '4px 8px');
+                .style('width', isCompact ? '28px' : null)
+                .style('overflow', isCompact ? 'hidden' : null)
+                .style('white-space', 'nowrap')
+                .style('padding', isCompact ? '4px' : '4px 8px');
 
             // New button function fire
             button.on('click', copyPNG);
@@ -341,7 +342,7 @@ export function lineChart(options = {}) {
             const txtChartTitle = svg.append('text')
                 .attr('x', 10)
                 .attr('y', 15)
-                .style('font-size', isCompact ? '11px' : `${effectiveFontSize}px`)
+                .style('font-size', `${effectiveFontSize}px`)
                 .style('visibility', effectiveTitle ? 'visible' : 'hidden')
                 .text(effectiveTitle);
 
@@ -463,6 +464,7 @@ export function lineChart(options = {}) {
                         // ensure only one tooltip
                         container.select('.tooltip').remove();
 
+                        const trace = d3.select(event.currentTarget.parentNode).datum();
                         const [px, py] = d3.pointer(event, container.node());
                         tooltip = container.append('div')
                             .attr('class', 'tooltip')
@@ -474,8 +476,16 @@ export function lineChart(options = {}) {
                             .style('pointer-events', 'none')
                             .style('z-index', 10)
                             .style('left', `${px + 10}px`)
-                            .style('top', `${py - 20}px`)
-                            .html(`${xAxisTitle}: ${d.xValue.toPrecision(3)}<br>${yAxisTitle}: ${d.yValue.toPrecision(3)}`);
+                            .style('top', `${py - 20}px`);
+                        const frequencyAxis = /^freq(?:uency)?$/i.test(String(xAxisTitle).trim());
+                        appendTooltipRows(tooltip, [
+                            ['Trace', trace.yName],
+                            [frequencyAxis ? 'Frequency' : xAxisTitle,
+                                frequencyAxis
+                                    ? formatTooltipFrequency(d.xValue, metricPrefix)
+                                    : formatTooltipNumber(d.xValue)],
+                            ['Value', `${formatTooltipNumber(d.yValue)}${yAxisTitle ? ` ${yAxisTitle}` : ''}`]
+                        ]);
                     })
                     .on('mousemove', (event) => {
                         if (!tooltip) return;
@@ -489,22 +499,47 @@ export function lineChart(options = {}) {
 
             // Labels
             if (showLabels) {
+                const labelPositions = new Map();
+                const labelPadding = effectiveLabelFontSize / 2;
+                const minLabelY = labelPadding;
+                const maxLabelY = Math.max(minLabelY, innerHeight - labelPadding);
+                const sortedLabels = formattedData.map((trace, index) => ({
+                    trace,
+                    index,
+                    desiredY: y(trace.yValues[trace.yValues.length - 1].yValue)
+                })).sort((a, b) => a.desiredY - b.desiredY || a.index - b.index);
+                const labelSpacing = sortedLabels.length > 1
+                    ? Math.min(effectiveLabelFontSize + 2,
+                        (maxLabelY - minLabelY) / (sortedLabels.length - 1))
+                    : 0;
+
+                sortedLabels.forEach((label, index) => {
+                    const desiredY = Math.max(minLabelY, Math.min(maxLabelY, label.desiredY));
+                    label.positionY = index === 0
+                        ? desiredY
+                        : Math.max(desiredY, sortedLabels[index - 1].positionY + labelSpacing);
+                });
+                for (let index = sortedLabels.length - 1; index >= 0; index--) {
+                    const nextY = index === sortedLabels.length - 1
+                        ? maxLabelY
+                        : sortedLabels[index + 1].positionY - labelSpacing;
+                    sortedLabels[index].positionY = Math.min(sortedLabels[index].positionY, nextY);
+                    labelPositions.set(sortedLabels[index].trace, sortedLabels[index].positionY);
+                }
+
                 txtLabels = groups.append('text')
                     .attr('x', d => {
                         const last = d.yValues[d.yValues.length - 1];
                         return Math.min(x(last.xValue) + 6, width - 6);
                     })
-                    .attr('y', d => {
-                        const last = d.yValues[d.yValues.length - 1];
-                        return y(last.yValue);
-                    })
+                    .attr('y', d => labelPositions.get(d))
                     .attr('dy', '0.35em')
                     .attr('class', 'txtLabel')
                     .attr('text-anchor', d => {
                         const last = d.yValues[d.yValues.length - 1];
                         return x(last.xValue) + 6 > width - 6 ? 'end' : 'start';
                     })
-                    .style('font-size', `${labelFontSize}px`)
+                    .style('font-size', `${effectiveLabelFontSize}px`)
                     .style('fill', labelColor || null)
                     .text(d => d.yName)
                     .each(function () {
@@ -603,12 +638,16 @@ export function lineChart(options = {}) {
             // Either will work
 
             return {
-                // return elements
+                // Shared elements
                 container: container.node(),
                 svg: svg.node(),
+                background: chartBackground.node(),
+                title: txtChartTitle.node(),
+
+                // Existing chart elements
                 chartBackground: chartBackground.node(),
-                plotBorder: plotBorder.node(),
                 txtChartTitle: txtChartTitle.node(),
+                plotBorder: plotBorder.node(),
                 txtXAxisTitle: txtXAxisTitle.node(),
                 txtYAxisTitle: txtYAxisTitle.node(),
                 txtChartLabels: txtLabels.nodes(),
@@ -617,7 +656,11 @@ export function lineChart(options = {}) {
                 xGridGroup: xGridGroup.node(),
                 yGridGroup: yGridGroup.node(),
 
-                // return setters
+                // Shared style setters
+                setBackgroundStyle: setChartBackgroundStyle,
+                setTitleStyle: setTxtChartTitleStyle,
+
+                // Existing chart style setters
                 setTxtChartTitleStyle: setTxtChartTitleStyle,
                 setChartBackgroundStyle: setChartBackgroundStyle,
                 setPlotBorderStyle: setPlotBorderStyle,

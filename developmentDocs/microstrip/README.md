@@ -1,4 +1,4 @@
-<!-- Modified: 2026-09-06 -->
+<!-- Modified: 2026-10-07 -->
 # Microstrip Development Notes
 
 The physical microstrip constructors live in `src/np-nport/src/mlin/`. They turn geometry, material properties, loss parameters, and frequency into n-port-compatible S-parameter rows.
@@ -7,7 +7,7 @@ These are engineering closed-form and equivalent-circuit models, not full-wave e
 
 ## Shared constants
 
-Use the names exported by `src/np-nport/src/mlin/constants.js`:
+Use the names exported by `src/np-nport/src/physicalConstants.js`:
 
 | Constant | Meaning |
 | --- | --- |
@@ -38,7 +38,7 @@ Most models use some subset of:
 | `roughnessRms` | RMS conductor roughness in meters. |
 | `Ro` | Reference impedance taken from `global.Ro`, in ohms. |
 
-The canonical object API and compatibility rules are defined in [`../physical-model-api.md`](../physical-model-api.md). Legacy `rho` remains constructor-specific only so existing scripts keep their numerical behavior:
+The canonical object API and compatibility rules are defined in [`../physical-model-api.md`](../physical-model-api.md). Call `mlin()`, `mclin()`, and `mtee()` with no arguments for defaults or one options object for custom values. Positional values are unsupported. Legacy `rho` remains constructor-specific inside options objects so existing named calls keep their numerical behavior:
 
 - In `mlin()` and `mclin()`, default `rho = 1` acts as a multiplier on `COPPER_RESISTIVITY`; `rho = 0` disables conductor loss.
 - In `mvgnd()` and `mvia()`, default `rho = COPPER_RESISTIVITY` is an absolute resistivity in ohm-meters.
@@ -68,7 +68,7 @@ The returned `.microstrip` object contains geometry, material inputs, quasi-stat
 ## Coupled line: `mclin()`
 
 ```js
-nP.mclin({ width, spacing, height, thickness, length, relativePermittivity, resistivity, lossTangent, roughnessRms })
+nP.mclin({ width, spacing, height, length, thickness, relativePermittivity, resistivity, lossTangent, roughnessRms })
 ```
 
 `mclin()` uses the Kirschning/Jansen equal-width coupled-microstrip equation family, with Qucs used as a cross-check. It computes quasi-static and dispersive even- and odd-mode quantities:

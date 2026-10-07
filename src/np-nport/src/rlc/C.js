@@ -1,10 +1,10 @@
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
-import {analysisFrequencies} from '../intermod';
+import {analysisFrequencies} from '../analysisFrequencies';
 
-export function C(C = 1e-12) { // series inductor nPort object
+export function C(C = 1e-12) { // series capacitor nPort object
 	var cPort = new nPort;
 	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];

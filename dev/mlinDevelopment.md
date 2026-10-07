@@ -1,4 +1,4 @@
-<!-- Modified: 2026-09-06 -->
+<!-- Modified: 2026-10-07 -->
 # Microstrip Line Development
 
 This analysis evaluates a physical microstrip line and displays its output as a table, line chart, and Smith chart. Its executable harness is the `mlin` section of `dev/microstripDevelopment.html`.
@@ -13,18 +13,18 @@ var substrateHeight = 25 * mil;
 var lineLength = 0.5 * 0.0254;
 var conductorThickness = 1 * mil;
 var er = 10;
-var rho = 1;
+var resistivity = 1.72e-8;
 var tand = 0.001;
 
-const mlin1 = nP.mlin(
-    lineWidth,
-    substrateHeight,
-    lineLength,
-    conductorThickness,
-    er,
-    rho,
-    tand
-);
+const mlin1 = nP.mlin({
+    width: lineWidth,
+    height: substrateHeight,
+    length: lineLength,
+    thickness: conductorThickness,
+    relativePermittivity: er,
+    resistivity: resistivity,
+    lossTangent: tand
+});
 var test = nP.nodal(
     [mlin1, 1, 2],
     ['out', 1, 2]

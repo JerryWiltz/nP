@@ -1,8 +1,8 @@
-// Modified: 2026-10-04
-import {complex} from '../../np-math/src/complex';
-import {global} from '../../np-global/src/global';
-import {analysisFrequencies} from '../../np-nport/src/intermod';
-import {nPort} from '../../np-nport/src/nPort';
+// Modified: 2026-10-07
+import {complex} from '../../../np-math/src/complex';
+import {global} from '../../../np-global/src/global';
+import {analysisFrequencies} from '../analysisFrequencies';
+import {nPort} from '../nPort';
 
 const Q = 1.602176634e-19;
 const K = 1.380649e-23;

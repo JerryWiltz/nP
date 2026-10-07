@@ -1,4 +1,4 @@
-<!-- Modified: 2026-07-15 -->
+<!-- Modified: 2026-10-07 -->
 # RF Math Coding
 
 This document defines the working method for turning RF equations into maintainable nP code. The purpose is not to make Codex invent RF models. The purpose is to preserve the engineering decisions so Codex can perform the repetitive translation, testing, documentation, and consistency work without losing the intent of the model.
@@ -64,7 +64,7 @@ nP normally uses SI units internally:
 - Propagation phase used in complex exponent or hyperbolic functions: radians.
 - S-parameters: dimensionless complex voltage-wave ratios.
 
-Use explicit conversion constants instead of unexplained decimal factors. Shared microstrip constants live in `src/np-nport/src/mlin/constants.js`.
+Use explicit conversion constants instead of unexplained decimal factors. Shared physical constants live in `src/np-nport/src/physicalConstants.js`.
 
 ```js
 var width = 23 * MIL_TO_METER;

@@ -1,4 +1,4 @@
-// Modified: 2026-09-08
+// Modified: 2026-10-07
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -314,16 +314,16 @@ test('inverse ideal transformers cascade to a matched lossless through', () => {
 
 test('mclin creates a finite reciprocal four-port coupled microstrip line', () => {
 	withGlobal({ fList: [2e9, 10e9, 18e9], Ro: 50 }, () => {
-		const coupledLine = mclin(
-			0.020 * 0.0254,
-			0.0025 * 0.0254,
-			0.025 * 0.0254,
-			0.0 * 0.0254,
-			0.300 * 0.0254,
-			9.9,
-			1,
-			0.001
-		);
+		const coupledLine = mclin({
+			width: 0.020 * 0.0254,
+			spacing: 0.0025 * 0.0254,
+			height: 0.025 * 0.0254,
+			length: 0.300 * 0.0254,
+			thickness: 0,
+			relativePermittivity: 9.9,
+			resistivity: 1.72e-8,
+			lossTangent: 0.001
+		});
 		const spars = coupledLine.getspars();
 
 		assert.equal(spars.length, 3);
@@ -373,26 +373,13 @@ test('mclin default geometry matches a known coupled microstrip calculator case'
 
 test('mclin loss parameters reduce through magnitude', () => {
 	withGlobal({ fList: [10e9], Ro: 50 }, () => {
-		const lossless = mclin(
-			0.020 * 0.0254,
-			0.0025 * 0.0254,
-			0.025 * 0.0254,
-			1.0e-3 * 0.0254,
-			0.300 * 0.0254,
-			9.9,
-			0,
-			0
-		);
-		const lossy = mclin(
-			0.020 * 0.0254,
-			0.0025 * 0.0254,
-			0.025 * 0.0254,
-			1.0e-3 * 0.0254,
-			0.300 * 0.0254,
-			9.9,
-			1,
-			0.001
-		);
+		const geometry = {
+			width: 0.020 * 0.0254, spacing: 0.0025 * 0.0254,
+			height: 0.025 * 0.0254, length: 0.300 * 0.0254,
+			thickness: 1.0e-3 * 0.0254, relativePermittivity: 9.9
+		};
+		const lossless = mclin({...geometry, resistivity: 0, lossTangent: 0});
+		const lossy = mclin({...geometry, resistivity: 1.72e-8, lossTangent: 0.001});
 
 		const losslessOut = lossless.out('s21dB');
 		const lossyOut = lossy.out('s21dB');
@@ -478,26 +465,13 @@ test('mclin noise covariance propagates through a 4-port nodal output', () => {
 
 test('mlin roughness increases conductor loss', () => {
 	withGlobal({ fList: [10e9], Ro: 50 }, () => {
-		const smooth = mlin(
-			0.023 * 0.0254,
-			0.025 * 0.0254,
-			0.5 * 0.0254,
-			1.0e-3 * 0.0254,
-			10,
-			1,
-			0.001,
-			0
-		);
-		const rough = mlin(
-			0.023 * 0.0254,
-			0.025 * 0.0254,
-			0.5 * 0.0254,
-			1.0e-3 * 0.0254,
-			10,
-			1,
-			0.001,
-			2.0e-6
-		);
+		const geometry = {
+			width: 0.023 * 0.0254, height: 0.025 * 0.0254,
+			length: 0.5 * 0.0254, thickness: 1.0e-3 * 0.0254,
+			relativePermittivity: 10, resistivity: 1.72e-8, lossTangent: 0.001
+		};
+		const smooth = mlin({...geometry, roughnessRms: 0});
+		const rough = mlin({...geometry, roughnessRms: 2.0e-6});
 
 		assert.equal(smooth.microstrip.roughnessRms, 0);
 		closeTo(rough.microstrip.roughnessRms, 2.0e-6);
@@ -582,19 +556,14 @@ test('default microstrip constructors create finite n-port objects', () => {
 	});
 });
 
-test('mtee retains the legacy positional parameter list', () => {
+test('mtee accepts custom geometry through an options object', () => {
 	withGlobal({ fList: [1e9], Ro: 50 }, () => {
-		const tee = mtee(
-			0.030 * 0.0254,
-			0.020 * 0.0254,
-			0.025 * 0.0254,
-			0.025 * 0.0254,
-			0.0000125 * 0.0254,
-			10,
-			0,
-			0,
-			0
-		);
+		const tee = mtee({
+			commonWidth: 0.030 * 0.0254, branch1Width: 0.020 * 0.0254,
+			branch2Width: 0.025 * 0.0254, height: 0.025 * 0.0254,
+			thickness: 0.0000125 * 0.0254, relativePermittivity: 10,
+			resistivity: 0, lossTangent: 0, roughnessRms: 0
+		});
 
 		assert.equal(tee.getspars()[0].length, 10);
 		closeTo(tee.microstrip.commonWidth, 0.030 * 0.0254);
@@ -608,19 +577,14 @@ test('mtee retains the legacy positional parameter list', () => {
 	});
 });
 
-test('mtee canonical options match the legacy positional and property forms', () => {
+test('mtee canonical options match legacy property aliases', () => {
 	withGlobal({ fList: [1e9], Ro: 50 }, () => {
-		const positional = mtee(
-			0.030 * 0.0254,
-			0.020 * 0.0254,
-			0.025 * 0.0254,
-			0.025 * 0.0254,
-			0.0000125 * 0.0254,
-			10,
-			0,
-			0,
-			0
-		);
+		const canonical = mtee({
+			commonWidth: 0.030 * 0.0254, branch1Width: 0.020 * 0.0254,
+			branch2Width: 0.025 * 0.0254, height: 0.025 * 0.0254,
+			thickness: 0.0000125 * 0.0254, relativePermittivity: 10,
+			resistivity: 0, lossTangent: 0, roughnessRms: 0
+		});
 		const optionsObject = mtee({
 			commonWidth: 0.030 * 0.0254,
 			branch1Width: 0.020 * 0.0254,
@@ -633,31 +597,29 @@ test('mtee canonical options match the legacy positional and property forms', ()
 			roughnessRms: 0
 		});
 
-		assert.deepEqual(optionsObject.microstrip, positional.microstrip);
-		assert.deepEqual(optionsObject.getspars(), positional.getspars());
+		assert.deepEqual(optionsObject.microstrip, canonical.microstrip);
+		assert.deepEqual(optionsObject.getspars(), canonical.getspars());
 	});
 });
 
-test('physical microstrip constructors prefer canonical options objects without changing legacy results', () => {
+test('physical microstrip options expose canonical metadata and retain property aliases', () => {
 	withGlobal({ fList: [1e9], Ro: 50 }, () => {
 		const resistivity = 1.72e-8;
-		const lineLegacy = mlin(0.030 * 0.0254, 0.025 * 0.0254, 0.5 * 0.0254, 0.0000125 * 0.0254, 10, 1, 0.001, 0);
 		const lineCanonical = mlin({
 			width: 0.030 * 0.0254, height: 0.025 * 0.0254, length: 0.5 * 0.0254,
 			thickness: 0.0000125 * 0.0254, relativePermittivity: 10,
 			resistivity, lossTangent: 0.001, roughnessRms: 0
 		});
-		assert.deepEqual(lineCanonical.getspars(), lineLegacy.getspars());
 		assert.equal(lineCanonical.physicalModel.material.resistivity, resistivity);
+		assert.equal(lineCanonical.getspars()[0].length, 5);
 
-		const coupledLegacy = mclin(19.1155e-3 * 0.0254, 5.82185e-3 * 0.0254, 25e-3 * 0.0254,
-			0.0000125 * 0.0254, 719.794e-3 * 0.0254, 10, 1, 0.001, 0);
 		const coupledCanonical = mclin({
 			width: 19.1155e-3 * 0.0254, spacing: 5.82185e-3 * 0.0254, height: 25e-3 * 0.0254,
-			thickness: 0.0000125 * 0.0254, length: 719.794e-3 * 0.0254,
+			length: 719.794e-3 * 0.0254, thickness: 0.0000125 * 0.0254,
 			relativePermittivity: 10, resistivity, lossTangent: 0.001, roughnessRms: 0
 		});
-		assert.deepEqual(coupledCanonical.getspars(), coupledLegacy.getspars());
+		assert.equal(coupledCanonical.getspars()[0].length, 17);
+		assert.equal(coupledCanonical.physicalModel.material.resistivity, resistivity);
 
 		const teeCanonical = mtee({commonWidth: 0.030 * 0.0254, branch1Width: 0.020 * 0.0254,
 			branch2Width: 0.025 * 0.0254, height: 0.025 * 0.0254,
@@ -687,6 +649,10 @@ test('physical microstrip constructors prefer canonical options objects without 
 });
 
 test('physical model options reject ambiguous, unknown, and nonphysical input', () => {
+	for (const constructor of [mlin, mclin, mtee]) {
+		assert.throws(() => constructor(1), /requires an options object/);
+		assert.throws(() => constructor({}, 1), /accepts one options object/);
+	}
 	assert.throws(() => mlin({height: 1e-3, Height: 1e-3}), /use only one of height, Height/);
 	assert.throws(() => mlin({rho: 1, resistivity: 1.72e-8}), /resistivity or legacy rho/);
 	assert.throws(() => mlin({widht: 1e-3}), /unknown option "widht"/);

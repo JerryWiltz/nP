@@ -1,4 +1,4 @@
-// Modified: 2026-07-14
+// Modified: 2026-10-07
 // Computes the number of sections in a Chebyshev low-pass filter
 export function chebyLPNsec (passFreq = .2, rejFreq = 1.5, ripple = 0.1, rejection = 30) { // Formula 4.03-4 for n on page 86 of MYJ
 	var chebyLPNsecout = 0;

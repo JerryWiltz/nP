@@ -1,4 +1,4 @@
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -6,8 +6,8 @@ import {global} from '../src/np-global/index.js';
 import {complex} from '../src/np-math/src/complex.js';
 import {Amp, Attn, cascade, nodal} from '../src/np-nport/index.js';
 import {nPort} from '../src/np-nport/src/nPort.js';
-import {analysisFrequencies} from '../src/np-nport/src/intermod.js';
-import {passiveNoiseCovariance} from '../src/np-nport/src/mlin/noise.js';
+import {analysisFrequencies} from '../src/np-nport/src/analysisFrequencies.js';
+import {passiveNoiseCovariance} from '../src/np-nport/src/passiveNoise.js';
 import * as nP from '../src/index.js';
 
 function close(actual, expected, tolerance = 1e-9) {

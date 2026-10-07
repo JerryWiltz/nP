@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-04 -->
+<!-- Modified: 2026-10-05 -->
 # np-nport Development Notes
 
 `src/np-nport/` contains the common n-port object, lumped components, ideal fixtures, transmission lines, physical microstrip models, noise and intermodulation helpers, and network-composition functions.
@@ -18,6 +18,8 @@ dist/nP.js, dist/nP.esm.js, and dist/nP.cjs
 ```
 
 A new public constructor must be exported through this path and covered by a direct source test. Rebuild the root distribution when the browser or packaged library is expected to contain the change.
+
+The [constructor catalog](./constructor-catalog.md) lists public n-port constructors, the resulting `nPort` object and its methods, math helpers, and low-pass prototype generators. Update it whenever one of these APIs or defaults changes.
 
 ## Common component result
 

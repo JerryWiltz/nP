@@ -1,9 +1,9 @@
 import {complex} from '../../np-math/src/complex';
-import {passiveNoiseCovariance} from './mlin/noise';
+import {passiveNoiseCovariance} from './passiveNoise';
 import {noiseAnalysis} from './noiseFigure';
 import {connectionModel, intermodAt, waveDbm, oipDbm} from './intermod';
 
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 var conjugate = function (value) { return complex(value.getR(), -value.getI()); };
 
 export function nPort() { this._noise = undefined; }; // base class for nPort objects

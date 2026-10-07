@@ -1,10 +1,10 @@
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 import {complex} from '../../../np-math/src/complex';
 import {matrix, dim} from '../../../np-math/src/matrix';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
-import {analysisFrequencies} from '../intermod';
-import {COPPER_RESISTIVITY, INCH_TO_METER, VACUUM_IMPEDANCE} from './constants';
+import {analysisFrequencies} from '../analysisFrequencies';
+import {COPPER_RESISTIVITY, INCH_TO_METER, VACUUM_IMPEDANCE} from '../physicalConstants';
 import {normalizePhysicalModelOptions, physicalModelMetadata, requireNonnegative, requirePositive, resistivityScale} from '../physicalModels/options';
 
 var pi = Math.PI;

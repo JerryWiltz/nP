@@ -1,4 +1,4 @@
-<!-- Modified: 2026-09-06 -->
+<!-- Modified: 2026-10-07 -->
 # Physical-model API contract
 
 Physical transmission-media constructors use one canonical options object. This contract applies to microstrip now and to future stripline, coaxial-line, and waveguide families.
@@ -25,7 +25,7 @@ resistivity, lossTangent, roughnessRms
 
 ## Compatibility
 
-Existing positional `mlin()`, `mclin()`, and `mtee()` calls remain supported. Existing object spellings such as `Width`, `Height`, `Thickness`, `Space`, `Length`, `er`, `rho`, and `tand` remain accepted as legacy aliases.
+`mlin()`, `mclin()`, and `mtee()` accept no arguments for defaults or one options object. Positional values are rejected. Convert each old argument to a named property; the property order does not affect the calculation. Existing object spellings such as `Width`, `Height`, `Thickness`, `Space`, `Length`, `er`, `rho`, and `tand` remain accepted as legacy aliases.
 
 Legacy `rho` deliberately retains its historical constructor-specific meaning:
 
@@ -74,8 +74,8 @@ nP.mclin({
     width,
     spacing,
     height,
-    thickness,
     length,
+    thickness,
     relativePermittivity,
     resistivity,
     lossTangent,

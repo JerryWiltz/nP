@@ -1,5 +1,5 @@
 # AGENTS.md
-<!-- Modified: 2026-09-06 -->
+<!-- Modified: 2026-10-07 -->
 
 Instructions for files in `docs/` and its subdirectories.
 
@@ -108,7 +108,7 @@ With input at port 1, port 2 is through, port 4 is coupled, and port 3 is isolat
 
 - `nP.lineChart()` consumes numeric x/y tables. It supports linear/log x and y scales, origin or edge axis placement, hover values, chart labels, plot border styling, and PNG copy.
 - `nP.smithChart()` consumes paired real/imaginary columns such as `s11Re`, `s11Im`, `s22Re`, and `s22Im`. Keep its rendered area square.
-- `nP.lineTable()` consumes the same table shape returned by `nPort.out(...)` and provides PNG and TSV copy buttons.
+- `nP.lineTable()` consumes the same table shape returned by `nPort.out(...)` and provides PNG and CSV copy buttons.
 - Prefer `pngBackground: 'white'` in documentation examples when copied PNG behavior matters.
 - Prefer `metricPrefix` values that match the displayed frequency header.
 

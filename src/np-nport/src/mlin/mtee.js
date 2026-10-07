@@ -1,11 +1,11 @@
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global}  from '../../../np-global/src/global';
-import {analysisFrequencies} from '../intermod';
-import {C0, COPPER_RESISTIVITY, INCH_TO_METER, VACUUM_IMPEDANCE} from './constants';
-import {passiveNoiseCovariance} from './noise';
-import {isOptionsObject, normalizePhysicalModelOptions, physicalModelMetadata, requireNonnegative, requirePositive, resistivityScale} from '../physicalModels/options';
+import {analysisFrequencies} from '../analysisFrequencies';
+import {C0, COPPER_RESISTIVITY, INCH_TO_METER, VACUUM_IMPEDANCE} from '../physicalConstants';
+import {passiveNoiseCovariance} from '../passiveNoise';
+import {normalizePhysicalModelOptions, physicalModelMetadata, requireNonnegative, requirePositive, resistivityScale} from '../physicalModels/options';
 
 var pi = Math.PI;
 var DEFAULT_WIDTH = 0.023 * INCH_TO_METER;
@@ -62,21 +62,9 @@ var microstripLine = function (width, Height, Thickness, er) {
 	};
 };
 
-export function mtee(
-	commonWidth = DEFAULT_WIDTH,
-	branch1Width = DEFAULT_WIDTH,
-	branch2Width = DEFAULT_WIDTH,
-	Height = DEFAULT_HEIGHT,
-	Thickness = DEFAULT_THICKNESS,
-	er = 10,
-	rho = 1,
-	tand = 0.001,
-	roughnessRms = 0,
-	temperature = global.Temp
-) { // microstrip tee nPort object
-	var inputOptions = isOptionsObject(commonWidth) ? commonWidth : null;
-	if (inputOptions) {
-		var options = normalizePhysicalModelOptions('mtee', inputOptions, [
+export function mtee(input = {}) { // microstrip tee nPort object
+	if (arguments.length > 1) throw new TypeError('nP.mtee() accepts one options object.');
+	var options = normalizePhysicalModelOptions('mtee', input, [
 			{name: 'commonWidth', defaultValue: DEFAULT_WIDTH},
 			{name: 'branch1Width', defaultValue: DEFAULT_WIDTH},
 			{name: 'branch2Width', defaultValue: DEFAULT_WIDTH},
@@ -86,11 +74,11 @@ export function mtee(
 			{name: 'rho', defaultValue: 1}, {name: 'resistivity', defaultValue: undefined},
 			{name: 'lossTangent', aliases: ['tand'], defaultValue: 0.001},
 			{name: 'roughnessRms', defaultValue: 0}, {name: 'temperature', defaultValue: global.Temp}
-		]);
-		commonWidth = options.commonWidth; branch1Width = options.branch1Width; branch2Width = options.branch2Width;
-		Height = options.height; Thickness = options.thickness; er = options.relativePermittivity;
-		rho = resistivityScale('mtee', inputOptions, options.rho, COPPER_RESISTIVITY); tand = options.lossTangent; roughnessRms = options.roughnessRms; temperature = options.temperature;
-	}
+	]);
+	var commonWidth = options.commonWidth, branch1Width = options.branch1Width, branch2Width = options.branch2Width;
+	var Height = options.height, Thickness = options.thickness, er = options.relativePermittivity;
+	var rho = resistivityScale('mtee', input, options.rho, COPPER_RESISTIVITY);
+	var tand = options.lossTangent, roughnessRms = options.roughnessRms, temperature = options.temperature;
 	requirePositive('mtee', 'commonWidth', commonWidth); requirePositive('mtee', 'branch1Width', branch1Width);
 	requirePositive('mtee', 'branch2Width', branch2Width); requirePositive('mtee', 'height', Height);
 	requireNonnegative('mtee', 'thickness', Thickness); requirePositive('mtee', 'relativePermittivity', er);

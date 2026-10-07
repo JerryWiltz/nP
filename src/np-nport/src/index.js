@@ -1,4 +1,8 @@
-// Modified: 2026-09-30
+// Modified: 2026-10-07
+export {chebyLPgk} from './filters/chebyLPgk';
+export {chebyLPLCs} from './filters/chebyLPLCs';
+export {chebyLPNsec} from './filters/chebyLPNsec';
+export {diode1N4148} from './diodes/diode1N4148';
 export {seR} from './rlc/seR';
 export {R} from './rlc/R';
 export {paR} from './rlc/paR';
@@ -28,7 +32,7 @@ export {paPaLC} from './rlc/paPaLC';
 export {sePaLC} from './rlc/sePaLC';
 export {paPaRLC} from './rlc/paPaRLC';
 export {sePaRLC} from './rlc/sePaRLC';
-export {lpfGen} from './rlc/lpfGen';
+export {lpfGen} from './filters/lpfGen';
 
 export {Attn} from './idealComponents/Attn';
 export {Amp} from './idealComponents/Amp';

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-03 -->
+<!-- Modified: 2026-10-07 -->
 # nP Development Documentation
 
 This directory contains internal engineering knowledge for developing nP. It records RF mathematics, equation-to-code translations, implementation decisions, data contracts, assumptions, units, references, and worked examples.
@@ -24,27 +24,18 @@ This tree lists every JavaScript file under `src/`, including all constructor fi
 src/
 ├── np-chart/
 │   ├── src/
+│   │   ├── chartTooltip.js
+│   │   ├── chartTypography.js
+│   │   ├── inputTables.js
 │   │   ├── lineChart.js
 │   │   ├── lineTable.js
 │   │   ├── log.js
 │   │   ├── smithChart.js
 │   │   └── version.js
 │   └── index.js
-├── np-diodes/
-│   ├── src/
-│   │   └── diode1N4148.js
-│   └── index.js
 ├── np-global/
 │   ├── src/
 │   │   └── global.js
-│   └── index.js
-├── np-lowpass-prototype/
-│   ├── src/
-│   │   ├── archive/
-│   │   │   └── chebyshev.js
-│   │   ├── chebyLPgk.js
-│   │   ├── chebyLPLCs.js
-│   │   └── chebyLPNsec.js
 │   └── index.js
 ├── np-math/
 │   ├── src/
@@ -58,9 +49,12 @@ src/
 │   └── index.js
 ├── np-nport/
 │   ├── src/
+│   │   ├── physicalConstants.js
 │   │   ├── combining/
 │   │   │   ├── cascade.js
 │   │   │   └── nodal.js
+│   │   ├── diodes/
+│   │   │   └── diode1N4148.js
 │   │   ├── idealComponents/
 │   │   │   ├── Amp.js
 │   │   │   ├── Attn.js
@@ -75,7 +69,6 @@ src/
 │   │   │   ├── Tee5.js
 │   │   │   └── Tlin.js
 │   │   ├── mlin/
-│   │   │   ├── constants.js
 │   │   │   ├── mbend.js
 │   │   │   ├── mclin.js
 │   │   │   ├── mcross.js
@@ -84,14 +77,19 @@ src/
 │   │   │   ├── mtee.js
 │   │   │   ├── mtfr.js
 │   │   │   ├── mvgnd.js
-│   │   │   ├── mvia.js
-│   │   │   └── noise.js
+│   │   │   └── mvia.js
+│   │   ├── filters/
+│   │   │   ├── archive/
+│   │   │   │   └── chebyshev.js
+│   │   │   ├── chebyLPgk.js
+│   │   │   ├── chebyLPLCs.js
+│   │   │   ├── chebyLPNsec.js
+│   │   │   └── lpfGen.js
 │   │   ├── physicalModels/
 │   │   │   └── options.js
 │   │   ├── rlc/
 │   │   │   ├── C.js
 │   │   │   ├── L.js
-│   │   │   ├── lpfGen.js
 │   │   │   ├── paC.js
 │   │   │   ├── paL.js
 │   │   │   ├── paPaLC.js
@@ -117,10 +115,12 @@ src/
 │   │   │   ├── seSeRLC.js
 │   │   │   ├── trf.js
 │   │   │   └── trf4Port.js
+│   │   ├── analysisFrequencies.js
 │   │   ├── index.js
 │   │   ├── intermod.js
 │   │   ├── noiseFigure.js
-│   │   └── nPort.js
+│   │   ├── nPort.js
+│   │   └── passiveNoise.js
 │   └── index.js
 ├── index.js
 └── plugin.js
@@ -153,6 +153,7 @@ src/
 - [`kurokawa-power-waves-synopsis.md`](kurokawa-power-waves-synopsis.md): synopsis and equation-by-equation explanation of Kurokawa's power-wave and scattering-matrix paper.
 - [`npm-maintenance.md`](npm-maintenance.md): maintenance and release checks for the published npm package and its Obsidian-plugin bundle.
 - [`physical-model-api.md`](physical-model-api.md): canonical options, units, compatibility, validation, and metadata for physical transmission-media models.
+- [`chart-functions.md`](chart-functions.md): inputs, options, defaults, and return values for `lineChart()`, `lineTable()`, and `smithChart()`.
 - [`thePathOflineChart.md`](thePathOflineChart.md): the path from the nP chart source through the nPort RF Analysis Obsidian plugin.
 - [`np-math/`](np-math/): complex-number, matrix, and numerical-method documentation.
 - [`np-nport/`](np-nport/): n-port constructors, composition, fixtures, and port-convention documentation.

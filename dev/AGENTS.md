@@ -1,5 +1,5 @@
 # AGENTS.md
-<!-- Modified: 2026-10-03 -->
+<!-- Modified: 2026-10-07 -->
 
 Instructions for files in `dev/`.
 
@@ -38,16 +38,16 @@ Use uppercase-first public names for ideal components in dev pages, including `n
 
 - `nP.lineChart()` consumes numeric x/y tables. It supports linear/log x and y scales, origin or edge axis placement, hover values, chart labels, plot border styling, and PNG copy.
 - `nP.smithChart()` consumes paired real/imaginary columns such as `s11Re`, `s11Im`, `s22Re`, and `s22Im`. Keep its rendered area square. It draws SVG Smith-grid circles, trace labels, hover values for frequency/Re/Im/magnitude/angle, and PNG copy.
-- `nP.lineTable()` consumes the same table shape returned by `nPort.out(...)`, renders SVG tables, and provides PNG and TSV copy buttons.
+- `nP.lineTable()` consumes the same table shape returned by `nPort.out(...)`, renders SVG tables, and provides PNG and CSV copy buttons.
 - Use `backgroundColor: 'white'` in dev pages when a copied PNG should have an opaque white background. `pngBackground` is an older alias.
 - Prefer `metricPrefix` values that match the displayed frequency header. For example, `metricPrefix: 'giga'` displays frequencies scaled to GHz.
 
 ## Microstrip Dev Pages
 
-- Keep microstrip physical constant names consistent with `src/np-nport/src/mlin/constants.js` when writing source, tests, notes, or dev pages.
+- Keep microstrip physical constant names consistent with `src/np-nport/src/physicalConstants.js` when writing source, tests, notes, or dev pages.
 - Use `dev/raw/` for raw technical source material, equation notes, and early derivations for work such as `nP.mtee()`.
 - `nP.mtee()` is a three-port microstrip tee constructor. Its physical defaults should stay aligned with `nP.mlin()` unless the user intentionally changes the model.
-- In dev pages, use canonical options objects for physical models. Use lower-camel-case names, full engineering terms, SI units, and absolute `resistivity` in ohm-meters. Existing positional forms and abbreviated properties remain compatibility paths, not the preferred example style.
+- In dev pages, use canonical options objects for physical models. Use lower-camel-case names, full engineering terms, SI units, and absolute `resistivity` in ohm-meters. `mlin()`, `mclin()`, and `mtee()` accept no arguments for defaults or one options object; abbreviated property aliases remain compatibility paths.
 
 ## Math And nPort Objects In Dev Pages
 

@@ -1,5 +1,5 @@
-// Modified: 2026-09-08
-import {complex} from '../../../np-math/src/complex';
+// Modified: 2026-10-07
+import {complex} from '../../np-math/src/complex';
 
 var conjugate = function (value) { return complex(value.getR(), -value.getI()); };
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Modified: 2026-07-18 -->
+<!-- Modified: 2026-10-07 -->
 <html>
 
 <head>
@@ -50,8 +50,16 @@
 
 		// set up the rat race with mlins
 		var threeWay = nP.Tee();
-		var m3qtr = nP.mlin(0.196 * 0.0254, 0.125 * 0.0254, 0.685 * 3 * 0.0254, 0.0000125 * 0.0254, 2.55, 0, 0.00);
-		var m1qtr = nP.mlin(0.196 * 0.0254, 0.125 * 0.0254, 0.685 * 0.0254, 0.0000125 * 0.0254, 2.55, 0, 0.00);
+		var m3qtr = nP.mlin({
+			width: 0.196 * 0.0254, height: 0.125 * 0.0254,
+			length: 0.685 * 3 * 0.0254, thickness: 0.0000125 * 0.0254,
+			relativePermittivity: 2.55, resistivity: 0, lossTangent: 0
+		});
+		var m1qtr = nP.mlin({
+			width: 0.196 * 0.0254, height: 0.125 * 0.0254,
+			length: 0.685 * 0.0254, thickness: 0.0000125 * 0.0254,
+			relativePermittivity: 2.55, resistivity: 0, lossTangent: 0
+		});
 
 		var pwr = nP.nodal(
 			[threeWay, 1, 12, 2],

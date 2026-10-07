@@ -1,11 +1,11 @@
-// Modified: 2026-10-04
+// Modified: 2026-10-07
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
-import {analysisFrequencies} from '../intermod';
-import {C0, COPPER_RESISTIVITY, INCH_TO_METER, MIL_TO_METER, MU0, VACUUM_IMPEDANCE} from './constants';
-import {passiveNoiseCovariance} from './noise';
-import {isOptionsObject, normalizePhysicalModelOptions, physicalModelMetadata, requireNonnegative, requirePositive, resistivityScale} from '../physicalModels/options';
+import {analysisFrequencies} from '../analysisFrequencies';
+import {C0, COPPER_RESISTIVITY, INCH_TO_METER, MIL_TO_METER, MU0, VACUUM_IMPEDANCE} from '../physicalConstants';
+import {passiveNoiseCovariance} from '../passiveNoise';
+import {normalizePhysicalModelOptions, physicalModelMetadata, requireNonnegative, requirePositive, resistivityScale} from '../physicalModels/options';
 
 var pi = Math.PI;
 
@@ -216,24 +216,23 @@ var modeLosses = function (Width, Height, Thickness, Length, er, rho, tand, freq
 	return {conductorDb, dielectricDb, alphaNepers: (conductorDb + dielectricDb) / 8.68588};
 };
 
-export function mclin(Width = 19.1155 * MIL_TO_METER, Space = 5.82185 * MIL_TO_METER, Height = 25 * MIL_TO_METER, Thickness = 0.0000125 * INCH_TO_METER, Length = 719.794 * MIL_TO_METER, er = 10, rho = 1, tand = 0.001, roughnessRms = 0, temperature = global.Temp) {
-	var inputOptions = isOptionsObject(Width) ? Width : null;
-	if (inputOptions) {
-		var options = normalizePhysicalModelOptions('mclin', inputOptions, [
+export function mclin(input = {}) {
+	if (arguments.length > 1) throw new TypeError('nP.mclin() accepts one options object.');
+	var options = normalizePhysicalModelOptions('mclin', input, [
 			{name: 'width', aliases: ['Width'], defaultValue: 19.1155 * MIL_TO_METER},
 			{name: 'spacing', aliases: ['Space'], defaultValue: 5.82185 * MIL_TO_METER},
 			{name: 'height', aliases: ['Height'], defaultValue: 25 * MIL_TO_METER},
-			{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
 			{name: 'length', aliases: ['Length'], defaultValue: 719.794 * MIL_TO_METER},
+			{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
 			{name: 'relativePermittivity', aliases: ['er'], defaultValue: 10},
 			{name: 'rho', defaultValue: 1}, {name: 'resistivity', defaultValue: undefined},
 			{name: 'lossTangent', aliases: ['tand'], defaultValue: 0.001},
 			{name: 'roughnessRms', defaultValue: 0}, {name: 'temperature', defaultValue: global.Temp}
-		]);
-		Width = options.width; Space = options.spacing; Height = options.height; Thickness = options.thickness;
-		Length = options.length; er = options.relativePermittivity; rho = resistivityScale('mclin', inputOptions, options.rho, COPPER_RESISTIVITY);
-		tand = options.lossTangent; roughnessRms = options.roughnessRms; temperature = options.temperature;
-	}
+	]);
+	var Width = options.width, Space = options.spacing, Height = options.height, Length = options.length;
+	var Thickness = options.thickness, er = options.relativePermittivity;
+	var rho = resistivityScale('mclin', input, options.rho, COPPER_RESISTIVITY);
+	var tand = options.lossTangent, roughnessRms = options.roughnessRms, temperature = options.temperature;
 	requirePositive('mclin', 'width', Width); requirePositive('mclin', 'spacing', Space); requirePositive('mclin', 'height', Height);
 	requireNonnegative('mclin', 'length', Length); requireNonnegative('mclin', 'thickness', Thickness);
 	requirePositive('mclin', 'relativePermittivity', er); requireNonnegative('mclin', 'resistivity', rho * COPPER_RESISTIVITY);
