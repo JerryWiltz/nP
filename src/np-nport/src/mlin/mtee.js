@@ -1,8 +1,9 @@
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global}  from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
+import {componentSettings} from '../componentSettings';
 import {C0, COPPER_RESISTIVITY, INCH_TO_METER, VACUUM_IMPEDANCE} from '../physicalConstants';
 import {passiveNoiseCovariance} from '../passiveNoise';
 import {normalizePhysicalModelOptions, physicalModelMetadata, requireNonnegative, requirePositive, resistivityScale} from '../physicalModels/options';
@@ -65,6 +66,7 @@ var microstripLine = function (width, Height, Thickness, er) {
 export function mtee(input = {}) { // microstrip tee nPort object
 	if (arguments.length > 1) throw new TypeError('nP.mtee() accepts one options object.');
 	var options = normalizePhysicalModelOptions('mtee', input, [
+			{name: 'fList', defaultValue: global.fList},
 			{name: 'commonWidth', defaultValue: DEFAULT_WIDTH},
 			{name: 'branch1Width', defaultValue: DEFAULT_WIDTH},
 			{name: 'branch2Width', defaultValue: DEFAULT_WIDTH},
@@ -85,7 +87,8 @@ export function mtee(input = {}) { // microstrip tee nPort object
 	requireNonnegative('mtee', 'resistivity', rho * COPPER_RESISTIVITY); requireNonnegative('mtee', 'lossTangent', tand);
 	requireNonnegative('mtee', 'roughnessRms', roughnessRms); requireNonnegative('mtee', 'temperature', temperature);
 	var mtee = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var freqCount = 0, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [], noiseArray = [];
 	var WidthA = branch1Width, WidthB = branch2Width, WidthSide = commonWidth;
 	var analysis = [];
@@ -151,7 +154,7 @@ export function mtee(input = {}) { // microstrip tee nPort object
 	}	
 	mtee.setspars(sparsArray);
 	mtee.noise = noiseArray;
-	mtee.setglobal(global);
+	mtee.setglobal(settings);
 	mtee.Ct = (100 / Math.tanh(0.0072 * armSide.Z) + 0.64 * armSide.Z - 261) * WidthSide * 1e-12;
 	mtee.microstrip = {
 		commonWidth,

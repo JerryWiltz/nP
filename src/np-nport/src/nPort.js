@@ -2,11 +2,12 @@ import {complex} from '../../np-math/src/complex';
 import {passiveNoiseCovariance} from './passiveNoise';
 import {noiseAnalysis} from './noiseFigure';
 import {connectionModel, intermodAt, waveDbm, oipDbm} from './intermod';
+import {validateSignal, compatibleSignals, signalWithRows} from './signal';
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 var conjugate = function (value) { return complex(value.getR(), -value.getI()); };
 
-export function nPort() { this._noise = undefined; }; // base class for nPort objects
+export function nPort() { this._noise = undefined; this._signal = undefined; }; // base class for nPort objects
 
 var derivePassiveNoise = function (nPortObject) {
 	if (!nPortObject.spars) return undefined;
@@ -45,13 +46,16 @@ var normalizeNoise = function (noiseData, spars) {
 nPort.prototype = {
 	constructor: nPort,
 	setglobal: function (global) {
-		this.global = global;
+		this.global = {...global, fList: Array.isArray(global.fList) ? global.fList.slice() : global.fList,
+			tList: Array.isArray(global.tList) ? global.tList.slice() : global.tList,
+			twoTone: global.twoTone ? {...global.twoTone} : global.twoTone};
 		this._noiseTemperature = global.Temp;
 		if (global.twoTone) this._displayFrequencies = global.fList.slice();
 	},
 	getglobal: function () {return this.global;},
 	setspars: function (sparsArray) {
 		if (this._noise !== undefined) normalizeNoise(this._noise, sparsArray);
+		if (this._signal !== undefined) validateSignal(this._signal, sparsArray);
 		this.spars = sparsArray;
 	},
 	getspars: function () { return this.spars; },
@@ -62,6 +66,8 @@ nPort.prototype = {
 		return this._noise;
 	},
 	set noise (noiseData) { this._noise = normalizeNoise(noiseData, this.spars); },
+	get signal() { return this._signal; },
+	set signal(signalData) { this._signal = validateSignal(signalData, this.spars); },
 	cas: function cas (n2) { // cascade two 2-ports along with method chaining since it returns an nPort
 		var freqCount = 0, one = complex(1,0),
 			sparsA = this.getspars(),
@@ -84,6 +90,10 @@ nPort.prototype = {
 		var noiseCovariance = [];
 		var noiseA = this.noise;
 		var noiseB = n2.noise;
+		var signalA = this.signal;
+		var signalB = n2.signal;
+		var signalTemplate = compatibleSignals(signalA, signalB);
+		var signalRows = signalTemplate ? [] : undefined;
 		for (freqCount = 0; freqCount < this.spars.length; freqCount++) {
 			var a11 = sparsA[freqCount][1], a12 = sparsA[freqCount][2], a21 = sparsA[freqCount][3], a22 = sparsA[freqCount][4];
 			var b11 = sparsB[freqCount][1], b21 = sparsB[freqCount][3];
@@ -114,11 +124,26 @@ nPort.prototype = {
 				}
 			}
 			noiseCovariance[freqCount] = {frequency: sparsA[freqCount][0], C: outputCovariance};
+			if (signalRows) {
+				var wavesA = signalA ? signalA.rows[freqCount].waves : [complex(0, 0), complex(0, 0)];
+				var wavesB = signalB ? signalB.rows[freqCount].waves : [complex(0, 0), complex(0, 0)];
+				var outputWaves = [];
+				for (var wavePort = 0; wavePort < 2; wavePort++) {
+					outputWaves[wavePort] = complex(0, 0);
+					for (var sourcePort = 0; sourcePort < 2; sourcePort++) {
+						outputWaves[wavePort] = outputWaves[wavePort]
+							.add(transferA[wavePort][sourcePort].mul(wavesA[sourcePort]))
+							.add(transferB[wavePort][sourcePort].mul(wavesB[sourcePort]));
+					}
+				}
+				signalRows[freqCount] = {frequency: sparsA[freqCount][0], waves: outputWaves};
+			}
 		}
 		var casOut = new nPort();
 		casOut.setspars(sparsArray);
 		casOut.setglobal(this.global);
 		casOut.noise = noiseCovariance;
+		if (signalRows) casOut.signal = signalWithRows(signalTemplate, signalRows);
 		casOut._displayFrequencies = this._displayFrequencies || n2._displayFrequencies;
 		casOut._intermod = connectionModel([this, n2], [4, 2, 1, 5, 0, 3]);
 		return casOut;

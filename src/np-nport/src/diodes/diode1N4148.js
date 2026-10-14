@@ -1,7 +1,8 @@
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 import {complex} from '../../../np-math/src/complex';
 import {global} from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
+import {componentSettings} from '../componentSettings';
 import {nPort} from '../nPort';
 
 const Q = 1.602176634e-19;
@@ -115,7 +116,8 @@ function seriesTwoPortFromImpedance(frequency, impedance, ro) {
 export function diode1N4148(options = {}) {
 	var p = normalizeOptions(options);
 	var diodePort = new nPort();
-	var frequencyList = analysisFrequencies(global);
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings);
 	var ro = global.Ro;
 	var twoZo = complex(2 * ro, 0);
 	var dc = diodeAdmittanceAtBias(p);
@@ -176,7 +178,7 @@ export function diode1N4148(options = {}) {
 
 	diodePort.setspars(sparsArray);
 	diodePort.noise = noiseArray;
-	diodePort.setglobal(global);
+	diodePort.setglobal(settings);
 	diodePort._intermod = {
 		type: 'diode',
 		conductance: dc.conductance,

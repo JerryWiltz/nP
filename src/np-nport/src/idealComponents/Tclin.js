@@ -1,13 +1,15 @@
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
+import {componentSettings} from '../componentSettings';
 import {C0} from '../physicalConstants';
 
-export function Tclin(Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254) { // 1.4732 is the quarter wavelength at 2GHz, (1.3412 at 2.2 GHz)
+export function Tclin(Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254, options = {}) { // 1.4732 is the quarter wavelength at 2GHz, (1.3412 at 2.2 GHz)
 	var ctlin = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), one = complex(1,0), two = complex(2,0), freqCount = 0, Zoetclin = [], Zootclin = [], Y = [];
 	var s11oe, s12oe, s21oe, s22oe;
 	var s11oo, s12oo, s21oo, s22oo;
@@ -63,6 +65,6 @@ export function Tclin(Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254) { // 1.4732 i
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44];
 	};
 	ctlin.setspars(sparsArray);
-	ctlin.setglobal(global);	
+	ctlin.setglobal(settings);
 	return ctlin;
 };

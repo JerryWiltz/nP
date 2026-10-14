@@ -1,14 +1,16 @@
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
+import {componentSettings} from '../componentSettings';
 
 // Ideal three-port junction for attaching a one-port network in series.
 // Ports 1 and 2 form the through path; port 3 is the series branch.
-export function seriesTee() {
+export function seriesTee(options = {}) {
 	var junction = new nPort;
-	var frequencyList = analysisFrequencies(global);
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings);
 	var sparsArray = [];
 
 	for (var freqCount = 0; freqCount < frequencyList.length; freqCount++) {
@@ -25,6 +27,6 @@ export function seriesTee() {
 	}
 
 	junction.setspars(sparsArray);
-	junction.setglobal(global);
+	junction.setglobal(settings);
 	return junction;
 };

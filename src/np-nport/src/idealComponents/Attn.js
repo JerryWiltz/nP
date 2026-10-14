@@ -1,15 +1,16 @@
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 import {complex} from '../../../np-math/src/complex';
 import {global} from '../../../np-global/src/global';
 import {nPort} from '../nPort';
 import {analysisFrequencies} from '../analysisFrequencies';
+import {componentSettings} from '../componentSettings';
 
 const kB = 1.380649e-23;
 
 // Matched, reciprocal attenuator. Noise is the covariance of its own outgoing waves.
-export function Attn(attenuationDb = 3, temperature = global.Temp) {
+export function Attn(attenuationDb = 3, temperature = global.Temp, options = {}) {
 	if (attenuationDb !== null && typeof attenuationDb === 'object') {
-		var options = attenuationDb;
+		options = attenuationDb;
 		attenuationDb = options.attenuationDb === undefined ? 3 : options.attenuationDb;
 		temperature = options.temperature === undefined ? global.Temp : options.temperature;
 	}
@@ -25,7 +26,8 @@ export function Attn(attenuationDb = 3, temperature = global.Temp) {
 	var attenuator = new nPort();
 	var sparsArray = [];
 	var noiseArray = [];
-	var frequencies = analysisFrequencies(global);
+	var settings = componentSettings(global, options);
+	var frequencies = analysisFrequencies(settings);
 	for (var i = 0; i < frequencies.length; i++) {
 		var frequency = frequencies[i];
 		sparsArray[i] = [frequency, complex(0, 0), complex(transmission, 0), complex(transmission, 0), complex(0, 0)];
@@ -39,8 +41,8 @@ export function Attn(attenuationDb = 3, temperature = global.Temp) {
 	}
 	attenuator.setspars(sparsArray);
 	attenuator.noise = noiseArray;
-	attenuator.setglobal(global);
+	attenuator.setglobal(settings);
 	attenuator.temperature = temperature;
-	attenuator._displayFrequencies = global.fList.slice();
+	attenuator._displayFrequencies = settings.fList.slice();
 	return attenuator;
 }

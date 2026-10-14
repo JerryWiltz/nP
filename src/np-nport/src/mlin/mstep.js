@@ -1,9 +1,10 @@
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 import {complex} from '../../../np-math/src/complex';
 import {matrix, dim} from '../../../np-math/src/matrix';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
+import {componentSettings} from '../componentSettings';
 import {C0, COPPER_RESISTIVITY, INCH_TO_METER, VACUUM_IMPEDANCE} from '../physicalConstants';
 import {normalizePhysicalModelOptions, physicalModelMetadata, requireNonnegative, requirePositive, resistivityScale} from '../physicalModels/options';
 
@@ -118,6 +119,7 @@ var stepInductanceNh = function (wideWidth, narrowWidth, Height) {
 
 export function mstep(input = {}) {
 	var options = normalizePhysicalModelOptions('mstep', input, [
+		{name: 'fList', defaultValue: global.fList},
 		{name: 'inputWidth', aliases: ['width1'], defaultValue: 0.046 * INCH_TO_METER},
 		{name: 'outputWidth', aliases: ['width2'], defaultValue: 0.023 * INCH_TO_METER},
 		{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
@@ -133,7 +135,8 @@ export function mstep(input = {}) {
 	requireNonnegative('mstep', 'thickness', Thickness); requirePositive('mstep', 'relativePermittivity', er);
 	requireNonnegative('mstep', 'resistivity', rho * COPPER_RESISTIVITY); requireNonnegative('mstep', 'lossTangent', tand); requireNonnegative('mstep', 'roughnessRms', roughnessRms);
 	var step = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var port1Line = microstripLine(width1, Height, Thickness, er);
 	var port2Line = microstripLine(width2, Height, Thickness, er);
 	var wideWidth = Math.max(width1, width2);
@@ -170,7 +173,7 @@ export function mstep(input = {}) {
 	}
 
 	step.setspars(sparsArray);
-	step.setglobal(global);
+	step.setglobal(settings);
 	step.microstrip = {
 		width1,
 		width2,

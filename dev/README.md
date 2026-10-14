@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-03 -->
+<!-- Modified: 2026-10-13 -->
 # Development pages
 
 The HTML files in this directory are executable browser harnesses that load
@@ -11,6 +11,7 @@ source changes, then keep a changed harness and its companion note aligned.
 | `diodeDevelopment.html` | 1N4148 RF S-parameters and DC I-V | `diodeDevelopment.md` |
 | `matrixDevelopment.html` | Real and complex matrix operations | `matrixDevelopment.md` |
 | `nodalDevelopment.html` | Series and parallel nodal connections | `nodalDevelopment.md` |
+| [timeDomainDevelopment.html](timeDomainDevelopment.html) | ASCII BER comparison and clocked PN7 on a 200 MHz carrier through an attenuator and `demod` | [timeDomainDevelopment.md](timeDomainDevelopment.md) |
 | [noiseAnalysis.html](noiseAnalysis.html) | Three amplifier constructor forms compared through nodal and cascade NF | [noiseAnalysis.md](noiseAnalysis.md) |
 | [intermodAnalysis.html](intermodAnalysis.html) | Two-tone amplifier then attenuator sweep: IP3, NF, and output noise floor from nodal and cascade | [intermodAnalysis.md](intermodAnalysis.md) |
 | `seriesTeeDevelopment.html` | Series tee regression harness | — |

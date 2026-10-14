@@ -1,8 +1,9 @@
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
+import {componentSettings} from '../componentSettings';
 import {COPPER_RESISTIVITY, INCH_TO_METER, MU0} from '../physicalConstants';
 import {absoluteResistivity, normalizePhysicalModelOptions, physicalModelMetadata, requireNonnegative, requirePositive} from '../physicalModels/options';
 
@@ -23,6 +24,7 @@ var viaResistanceDc = function (Height, radius, Thickness, rho) {
 
 export function mvgnd(input = {}) {
 	var options = normalizePhysicalModelOptions('mvgnd', input, [
+		{name: 'fList', defaultValue: global.fList},
 		{name: 'diameter', aliases: ['Diameter'], defaultValue: 100e-6},
 		{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
 		{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
@@ -34,7 +36,8 @@ export function mvgnd(input = {}) {
 	requirePositive('mvgnd', 'thickness', Thickness); requireNonnegative('mvgnd', 'resistivity', rho);
 	if (Thickness > Diameter / 2) throw new RangeError('nP.mvgnd(): thickness must not exceed the via radius.');
 	var via = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var radius = Diameter / 2;
 	var L = viaInductance(Height, radius);
 	var Rdc = viaResistanceDc(Height, radius, Thickness, rho);
@@ -58,7 +61,7 @@ export function mvgnd(input = {}) {
 	}
 
 	via.setspars(sparsArray);
-	via.setglobal(global);
+	via.setglobal(settings);
 	via.microstrip = {
 		Diameter,
 		radius,

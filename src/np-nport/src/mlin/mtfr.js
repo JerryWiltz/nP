@@ -1,4 +1,4 @@
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 import {cascade} from '../combining/cascade';
 import {global} from '../../../np-global/src/global';
 import {R} from '../rlc/R';
@@ -8,6 +8,7 @@ import {normalizePhysicalModelOptions, physicalModelMetadata, requireFinite, req
 
 export function mtfr(input = {}) {
 	var options = normalizePhysicalModelOptions('mtfr', input, [
+		{name: 'fList', defaultValue: global.fList},
 		{name: 'ohmsPerSquare', defaultValue: 50}, {name: 'width', aliases: ['Width'], defaultValue: 10 * MIL_TO_METER},
 		{name: 'length', aliases: ['Length'], defaultValue: 10 * MIL_TO_METER},
 		{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
@@ -38,9 +39,10 @@ export function mtfr(input = {}) {
 	var halfLineLength = Length / (2 * sectionCount);
 	var halfLine = mlin({
 		width: Width, height: Height, length: halfLineLength, thickness: Thickness,
-		relativePermittivity: er, resistivity: 0, lossTangent: tand, roughnessRms: 0
+		relativePermittivity: er, resistivity: 0, lossTangent: tand, roughnessRms: 0,
+		fList: options.fList
 	});
-	var resistorSection = R(resistancePerSection);
+	var resistorSection = R({resistance: resistancePerSection, fList: options.fList});
 	var nPorts = [];
 
 	for (var section = 0; section < sectionCount; section++) {

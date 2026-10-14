@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-07 -->
+<!-- Modified: 2026-10-13 -->
 # nP
 
 JavaScript tools for RF and microwave network analysis.
@@ -63,6 +63,8 @@ The normal workflow is:
 4. Extract numeric results with `.out(...)`.
 5. Display those results with a chart or table.
 
+Constructors use the current `nP.global.fList` by default. `nP.global()` creates and selects a separate circuit context containing `fList`, `tList`, `twoTone`, `Ro`, and `Temp`; `nP.global(g)` selects a previously created context `g` again. Existing `nP.global.fList = ...` calls still set the selected context. You can also pass `{fList: frequencies}` to an individual component: `nP.R({resistance: 75, fList: frequencies})`, `nP.mlin({width: 23e-3, fList: frequencies})`, or `nP.Tee({fList: frequencies})`. Positional constructors accept a final options object, for example `nP.L(5e-9, {fList: frequencies})` or `nP.Amp(20, 4, 290, {fList: frequencies})`. All components combined in one circuit must use matching frequency rows. Existing components keep their own frequency lists when another context is selected.
+
 ## Module usage
 
 The npm package exposes the same named API from ESM and CommonJS.
@@ -82,6 +84,82 @@ Local bundle entry points are:
 - `dist/nP.esm.js` — ES module
 - `dist/nP.cjs` — CommonJS
 - `dist/nP.js` — UMD browser bundle exposing `nP`
+
+The math helpers also include `FFT()` and `invFFT()`. They accept a nonempty array of real numbers or `nP.complex()` values and return an array of complex values at the same length. The forward transform is unscaled; the inverse divides by the sample count. They work for arbitrary lengths, including the 768 samples in an eight-samples-per-bit, 96-bit ASCII message. They transform sample values only: with sample rate `Fs` and `N` samples, bin `k` is at `k * Fs / N` up to Nyquist; higher bins represent negative frequencies at `(k - N) * Fs / N`.
+
+```js
+var spectrum = nP.FFT([1, 0, 0, 0]);
+var samples = nP.invFFT(spectrum);
+var realSamples = samples.map(function (value) { return value.getR(); });
+// spectrum: four complex values, each 1 + 0i
+// realSamples: approximately [1, 0, 0, 0]
+```
+
+## Digital waveform through a circuit
+
+`mod()` and `demod()` provide a digital signal path alongside `digitalTx()` and `digitalRx()`. With `carrierHz: 0` (the default), `mod()` produces the same baseband signal as `digitalTx()` for matching settings, and `demod(chain)` uses `digitalRx()` processing. With a positive carrier below the sample Nyquist frequency, `mod()` multiplies the sampled voltage by a cosine before the FFT. `demod()` uses that known carrier frequency and zero phase to recover each bit level. This is coherent amplitude detection; carrier and clock recovery are not implemented. Use `tx.out('settings')` to inspect the carrier, bit rate, sample rate, FFT size, frequency count, and voltage levels. `tx.out('frequency count')` gives the number of FFT frequencies, and `tx.out('frequency table')` returns `[['Bin', 'Frequency (Hz)'], ...]` for inspection or `lineTable()`. Check the count before constructing components or running `nodal()` on a large grid. To compare BER, use `nP.bitErrorRate(tx, chain, {receptions: 100, receiver: nP.demod})`.
+
+For separate digital circuits, create a context for each circuit and set its `fList` to `[]`. `mod()` fills the selected context's frequency list; construct the components afterward. The constructors continue to use their usual defaults.
+
+```js
+var g = nP.global();
+g.fList = [];
+var firstTx = nP.mod({mode: 'PN7'});
+var firstStage = nP.Attn(3);
+var firstCircuit = nP.cascade(firstStage, {signal: firstTx});
+
+var h = nP.global();
+h.fList = [];
+var secondTx = nP.mod({mode: 'ASCII', message: 'hello'});
+var secondStage = nP.Thru();
+var secondCircuit = nP.cascade(secondStage, {signal: secondTx});
+
+nP.global(g); // select the first circuit again before constructing more parts for it
+```
+
+For a digital block before modulation, `tGen(start, stop, points)` returns a uniformly spaced time list in seconds and includes both endpoints. Each entry in `tList` is a **clock tick** for `PN()`; its register advances once per entry. Select `stages` from 2 through 16; the maximal-length period is `2 ** stages - 1` ticks, and `tList` must contain a whole number of periods. Seven stages is the default. `mod()` creates the finer FFT sampling grid, with eight samples per bit by default. `PN().out('waveform')` returns a chart-ready table of the voltage at each clock tick. For PN3, use `g.tList = g.tGen(0, 6e-9, 7)` and `nP.PN({stages: 3, time: g.tList})`.
+
+```js
+var g = nP.global();
+g.tList = g.tGen(0, 126e-9, 127); // 127 ticks, 1 ns apart
+g.fList = [];
+
+var pn = nP.PN({stages: 7, time: g.tList});
+var tx = nP.mod({input: pn, carrierHz: 200e6});
+var chain = nP.cascade(nP.Attn(3), {signal: tx});
+var rx = nP.demod(chain);
+
+nP.lineChart({inputTable: pn.out('waveform')});
+nP.lineChart({inputTable: rx.out('carrier waveform')});
+nP.lineChart({inputTable: rx.out('waveform')});
+```
+
+`mod({input: pn})` expands each PN bit to eight samples, applies the carrier when requested, transforms those samples, and fills `g.fList`. Use `mod({input: pn, samplesPerBit: 4})` to choose another FFT sampling density. The first clock tick is the FFT's zero-time reference; the PN period extends one clock interval beyond the last tick returned by `tGen()`. Direct shortcuts range from `mod({mode: 'PN2'})` through `mod({mode: 'PN16'})`; `PN7` remains the default. `mod().out('waveform')` returns its sampled transmit voltage. For a positive carrier, `demod().out('carrier waveform')` returns the received passband voltage, and `out('waveform')` returns the recovered bit levels. If `mod()` receives an explicit `fftList` array, it fills that array in place instead.
+
+`digitalTx()` returns a signal description with a repeating bit sequence, complex FFT spectrum, frequency list, and an `out()` method. Use `tx.out('mode')`, `tx.out('bit count')`, `tx.out('sample count')`, `tx.out('frequency count')`, `tx.out('frequencies')`, or `tx.out('spectrum')` to inspect it. It also fills `global.fList` so components constructed afterward have matching frequency rows. Supply the signal at the circuit input when connecting the components. The completed nPort carries the propagated signal, so `digitalRx()` needs only that nPort.
+
+```js
+var tx = nP.digitalTx({mode: 'ASCII', message: 'hello, world', bitRate: 1e9, samplesPerBit: 8});
+var thru = nP.Thru();
+var chain = nP.nodal(
+    [thru, 1, 2],
+    ['out', 1, 2],
+    {signal: tx, inputPort: 1}
+);
+var Rxout = nP.digitalRx(chain);
+var waveform = Rxout.out('waveform'); // time in ns, output voltage in V
+nP.lineChart({inputTable: waveform, title: 'hello, world through Thru'});
+```
+
+The example's ASCII message produces 96 bits. The default mode is `PN7`, with a 127-bit period, 1 Gbit/s, eight samples per bit, and 0/1 V levels. Use `{mode: 'bits', bits: '0101'}` for an explicit bit string or array. Set `lowVolts`, `highVolts`, `bitRate`, or `samplesPerBit` in the same options object. The sequence repeats periodically for the FFT calculation. `digitalRx(chain, {outputPort: 3})` selects another output on a multiport nPort; port 2 is the default. For two-port chains, use `nP.cascade(firstStage, secondStage, {signal: tx, inputPort: 1})`. The input port defaults to 1. Signal sources combined in one network need matching sample rates, sample counts, FFT frequency rows, and reference impedances.
+
+`digitalRx()` returns a receiver result with `.out('waveform')`, `.out('ASCII text')`, `.out('bits')`, `.out('bit count')`, `.out('sample count')`, `.out('frequency count')`, `.out('frequencies')`, and `.out('spectrum')`. For text, use `var text = Rxout.out('ASCII text')`, then `nP.log(text)` to display it in a browser. `digitalRx()` includes a new random noise waveform on every call, using the nPort's calculated source, termination, and component noise at each frequency. All outputs from the same receiver result use that same noise draw. The plotted `out('noiseFloor')` remains the repeatable average noise density. Use `{noise: false}` when an exact signal-only result is needed.
+
+`out('ASCII text')` uses the bit timing carried by `chain`, samples at each bit center, and estimates a threshold from the centers of the two received voltage levels. Pass `thresholdVolts` to `digitalRx()` to set the decision level explicitly. A noisy bit can change the returned character; a received byte outside seven-bit ASCII becomes `�`. ASCII decoding needs complete eight-bit bytes and does not perform clock recovery or error correction. The default noise conditions are a matched 290 K source, matched terminations at 290 K, and a 0 K output load. The input port defaults to 1 and can be selected with `inputPort`.
+
+The `referenceTemperature` option changes the source and unused-port termination noise temperature; pass the same option to `out('noiseFloor', {referenceTemperature: ...})` when comparing with the expected noise floor. Each reception draws new noise, so the received text can vary.
+
+For a BER measurement, `nP.bitErrorRate(tx, chain, {receptions: 100})` compares the known transmitted bits with 100 independent receiver decisions and returns the fraction in error. The receiver does not need the transmitter; the helper performs the comparison. See [the attenuator example](dev/timeDomainDevelopment.html) for a 290 K, 17.6 dB stage near $10^{-2}$ BER.
 
 ## Circuit example
 
@@ -240,13 +318,14 @@ Current microstrip constructors include:
 
 | Area | API |
 | --- | --- |
-| Analysis settings | `nP.global`, `fGen()` |
+| Analysis settings | `nP.global`, `fGen()`, `tGen()` |
 | Lumped components | `R()`, `L()`, `C()` |
-| Ideal fixtures | `Open()`, `Short()`, `Load()`, `Tee()`, `Tee4()`, `Tee5()`, `seriesTee()` |
+| Ideal fixtures | `Open()`, `Short()`, `Load()`, `Thru()`, `Tee()`, `Tee4()`, `Tee5()`, `seriesTee()` |
 | Ideal transmission lines | `Tlin()`, `Tclin()` |
 | Network assembly | `nodal()`, `cascade()`, `nPort.cas()` |
 | Data extraction | `nPort.out()` |
-| Mathematics | `complex()`, `matrix()`, `dim()`, `dup()` |
+| Digital waveforms | `PN()`, `mod()`, `demod()`, `digitalTx()`, `digitalRx()`, `bitErrorRate()` |
+| Mathematics | `complex()`, `matrix()`, `dim()`, `dup()`, `FFT()`, `invFFT()` |
 | Filter prototypes | `chebyLPNsec()`, `chebyLPgk()`, `chebyLPLCs()` |
 | Visualization | `lineChart()`, `lineTable()`, `smithChart()` |
 | Nonlinear devices | `diode1N4148()` |

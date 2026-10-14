@@ -1,12 +1,14 @@
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort'
 import {global}  from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
+import {componentSettings} from '../componentSettings';
 
-export function trf4Port(N = 0.5) { // parallel resistor nPort object
+export function trf4Port(N = 0.5, options = {}) { // parallel resistor nPort object
 	var trf4Port = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var freqCount = 0, sparsArray = [];
 	var s11, s12, s13, s14,
 		s21, s22, s23, s24,
@@ -20,7 +22,7 @@ export function trf4Port(N = 0.5) { // parallel resistor nPort object
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44];
 	}
 	trf4Port.setspars(sparsArray);
-	trf4Port.setglobal(global);	
+	trf4Port.setglobal(settings);
 	return trf4Port;
 };
 

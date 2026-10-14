@@ -1,12 +1,14 @@
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort'
 import {global}  from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
+import {componentSettings} from '../componentSettings';
 
-export function Shift90() { // lossless matched two-port with +90 degree through phase
+export function Shift90(options = {}) { // lossless matched two-port with +90 degree through phase
 	var Shift90 = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var freqCount = 0, s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		s11 = complex(0,0);
@@ -16,6 +18,6 @@ export function Shift90() { // lossless matched two-port with +90 degree through
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
 	Shift90.setspars(sparsArray);
-	Shift90.setglobal(global);
+	Shift90.setglobal(settings);
 	return Shift90;
 };

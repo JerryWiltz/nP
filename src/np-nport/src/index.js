@@ -1,4 +1,4 @@
-// Modified: 2026-10-07
+// Modified: 2026-10-08
 export {chebyLPgk} from './filters/chebyLPgk';
 export {chebyLPLCs} from './filters/chebyLPLCs';
 export {chebyLPNsec} from './filters/chebyLPNsec';
@@ -36,6 +36,7 @@ export {lpfGen} from './filters/lpfGen';
 
 export {Attn} from './idealComponents/Attn';
 export {Amp} from './idealComponents/Amp';
+export {Thru} from './idealComponents/Thru';
 export {Tee} from './idealComponents/Tee';
 export {Tee4} from './idealComponents/Tee4';
 export {Tee5} from './idealComponents/Tee5';

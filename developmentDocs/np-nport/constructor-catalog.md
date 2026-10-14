@@ -1,7 +1,7 @@
-<!-- Modified: 2026-10-07 -->
+<!-- Modified: 2026-10-13 -->
 # nP constructor catalog
 
-This catalog covers the 50 public functions that produce n-port objects, from `src/np-nport/src/index.js`, plus the exported math and low-pass prototype functions. Each JS call below spells out the **current defaults** where they exist. Each argument or property appears on its own line. Units are in comments. Each constructor has its own heading and code block.
+This catalog covers the 51 public functions that produce n-port objects from `src/np-nport/src/index.js`, the digital waveform functions from `src/np-digital`, and the exported math and low-pass prototype functions. Each JS call below spells out the **current defaults** where they exist. Each argument or property appears on its own line. Units are in comments. Each constructor has its own heading and code block.
 
 Parameter spelling follows the public API. Legacy positional names such as `R`, `N`, `Z`, and `Length` retain their source capitalization; physical options use `lowerCamelCase` property names. Positional argument order matters. Named object properties follow one presentation order: geometry, material and loss, then temperature.
 
@@ -10,6 +10,7 @@ Set the analysis frequencies before constructing components. The shared defaults
 ```js
 // Shared analysis defaults and length units
 nP.global.fList = [2e9]; // Hz
+nP.global.tList = [];    // s; time samples for digital sources
 nP.global.Ro = 50;       // Ω
 nP.global.Temp = 293;    // K
 
@@ -18,6 +19,21 @@ const inch = 0.0254;     // m
 ```
 
 If `nP.global.twoTone` is set, constructors also create S and noise rows at the required product frequencies.
+
+Every n-port constructor uses `nP.global.fList` by default. For an independent frequency grid, pass `{fList: frequencies}`. Constructors that already take an options object accept `fList` in that object. Positional constructors accept it in a final options object after their existing arguments. No-argument fixtures accept the options object as their first argument. `lpfGen()` accepts it after the filter array. The default for every optional `fList` is the current `nP.global.fList` when the component is created.
+
+```js
+var frequencies = [1e9, 1.5e9, 2e9];
+var resistor = nP.R({resistance: 75, fList: frequencies});
+var inductor = nP.L(5e-9, {fList: frequencies});
+var amplifier = nP.Amp({gainDb: 20, fList: frequencies});
+var attenuator = nP.Attn(3, nP.global.Temp, {fList: frequencies});
+var junction = nP.Tee({fList: frequencies});
+var line = nP.mlin({width: 23 * mil, fList: frequencies});
+var filter = nP.lpfGen(undefined, {fList: frequencies});
+```
+
+Each nPort stores a copy of its selected frequency list and analysis settings. Components in one `nodal()` or `cascade()` circuit must have matching frequency rows. Call `nP.global()` to create and select an independent circuit context. It holds its own `fList`, `tList`, `twoTone`, `Ro`, and `Temp`; `nP.global(g)` selects an earlier context `g` again. Existing `nP.global.fList` and related property calls use the selected context. `nP.global.tGen(start, stop, points)` returns a uniformly spaced time list in seconds, including both endpoints. Two-tone analysis still requires positive first-tone frequencies and a positive spacing.
 
 ## Lumped components
 
@@ -338,7 +354,7 @@ nP.trf4Port(
 
 ## Ideal components and fixtures
 
-The following constructors take no arguments.
+The following constructors use no arguments for defaults; each also accepts an optional `{fList}` object.
 
 ### `Open`
 
@@ -355,6 +371,16 @@ nP.Open();
 nP.Short();
 // returns an nPort object
 ```
+
+### `Thru`
+
+```js
+// Thru: Through connection
+nP.Thru();
+// returns an nPort object
+```
+
+`Thru()` is an ideal matched, lossless two-port with `s11 = s22 = 0` and `s12 = s21 = 1`, including at 0 Hz.
 
 ### `Load`
 
@@ -666,11 +692,11 @@ nP.mvia({
 // returns an nPort object
 ```
 
-For the physical object forms, use `resistivity` in Ω·m. Legacy `rho` defaults to **1** as a copper multiplier for `mlin`, `mclin`, `mtee`, `mstep`, `mbend`, and `mcross`; for `mvia` and `mvgnd` it defaults to **`1.72e-8 Ω·m`**. Do not supply `rho` and `resistivity` together. Other legacy property aliases are described in `developmentDocs/physical-model-api.md`.
+Every physical microstrip options object also accepts `fList`, an array of frequencies in hertz, defaulting to `nP.global.fList`. For the physical object forms, use `resistivity` in Ω·m. Legacy `rho` defaults to **1** as a copper multiplier for `mlin`, `mclin`, `mtee`, `mstep`, `mbend`, and `mcross`; for `mvia` and `mvgnd` it defaults to **`1.72e-8 Ω·m`**. Do not supply `rho` and `resistivity` together. Other legacy property aliases are described in `developmentDocs/physical-model-api.md`.
 
 ## Diode
 
-`diode1N4148` takes one options object. Its properties are JavaScript numbers; `ivPoints` is an integer.
+`diode1N4148` takes one options object. Its scalar properties are JavaScript numbers; `ivPoints` is an integer. It also accepts `fList`, an array of frequencies in hertz, defaulting to `nP.global.fList`.
 
 ### `diode1N4148`
 
@@ -699,6 +725,151 @@ nP.diode1N4148({
 
 The returned diode is a two-port with RF S-parameters, noise covariance, weak-signal nonlinear sources, and a DC I–V table.
 
+## Digital waveform functions
+
+### `PN`
+
+```js
+// PN: Pseudorandom Noise sequence driven by clock ticks
+var g = nP.global();
+g.tList = g.tGen(0, 126e-9, 127); // s; 127 clock ticks, 1 ns apart
+g.fList = [];
+var pn = nP.PN({
+    stages: 7, // integer from 2 through 16; defaults to 7
+    time: g.tList,
+    seed: 0x7f,
+    lowVolts: 0,
+    highVolts: 1
+});
+var tx = nP.mod({input: pn});
+// PN returns one bit per clock tick; mod samples the waveform for its FFT
+```
+
+`PN()` supports 2 through 16 stages, with a maximal-length period of `2 ** stages - 1` bits. Seven stages and the all-ones seed are defaults. Each entry in `time` clocks the shift register once, so a PN3 period needs 7 ticks and a PN7 period needs 127. `time` defaults to the selected context's `tList`; it must be uniformly spaced, increasing, and contain a whole number of periods. The time spacing determines bit rate. The PN period extends one clock interval beyond the last tick. `pn.out('bits')`, `pn.out('samples')`, and `pn.out('time')` return copies; each sample is the output voltage at a clock tick. `pn.out('waveform')` returns a chart-ready table in nanoseconds and volts. Other selectors are `bit count`, `sample count`, `bit rate`, `clock rate`, and `sample rate`. The PN object is a digital waveform, not an nPort; pass it to `mod({input: pn})` before constructing frequency-dependent components. `mod()` creates eight FFT samples per bit by default, or uses its optional `samplesPerBit` setting.
+
+For PN3, set `g.tList = g.tGen(0, 6e-9, 7)`, then use `var pn = nP.PN({stages: 3, time: g.tList})` and `var tx = nP.mod({input: pn})`. The shorter direct form is `nP.mod({mode: 'PN3'})`; direct modes run from `PN2` through `PN16`.
+
+### `mod`
+
+```js
+// mod: Modulator; baseband or real cosine carrier
+var tx = nP.mod({
+    mode: 'PN7',      // 'PN2' through 'PN16', 'ASCII', or 'bits'; defaults to 'PN7'
+    carrierHz: 0,    // Hz; zero for baseband, positive below sample Nyquist
+    bitRate: 1e9,    // bits per second
+    samplesPerBit: 8,// positive integer
+    lowVolts: 0,     // voltage for bit 0
+    highVolts: 1     // voltage for bit 1
+});
+// returns a signal description with an out() method, not an nPort object
+```
+
+`mod()` accepts the same data options as `digitalTx()`. For ASCII, supply `message`; for a custom bit sequence, use `mode: 'bits'` and `bits`. To transform a waveform from `PN()`, use `{input: pn}` with an optional `samplesPerBit`; the clock spacing determines bit rate. With no `fftList`, it sets the selected context's `fList`. At `carrierHz: 0`, it produces the same baseband spectrum as `digitalTx()` for matching settings. At a positive carrier below sample Nyquist, it multiplies the sampled voltage by a cosine before its FFT. `tx.out('settings')` reports the selected mode, carrier, bit rate, sample rate, sample and frequency counts, samples per bit, and voltage levels. `tx.out('waveform')` returns the sampled transmit voltage in a chart-ready table. `tx.out('frequency table')` returns `[['Bin', 'Frequency (Hz)'], ...]`, with one row per FFT frequency, including DC. Check `tx.out('frequency count')` before constructing components or running `nodal()` on a large grid. A carrier at or above Nyquist raises `RangeError`.
+
+The optional `fftList` property is an array of frequencies in hertz. `mod()` replaces its contents with the computed FFT frequencies while preserving the array itself. Without `fftList`, `mod()` replaces the selected context's `fList` with its computed frequencies. To build a circuit, create its context, set its `fList` to an empty array, call `mod()`, and then construct the components with their usual defaults:
+
+```js
+var g = nP.global();
+g.fList = [];
+var tx = nP.mod({mode: 'PN7', carrierHz: 0});
+var stage = nP.Attn(3);
+var chain = nP.cascade(stage, {signal: tx});
+```
+
+For another independent circuit, call `var h = nP.global()` and repeat the workflow with `h.fList`. Call `nP.global(g)` to select the first circuit again when constructing more components for it. The existing `nP.global.fList = ...` form continues to work for a single circuit. `digitalTx()` likewise sets the selected context's `fList`.
+
+### `demod`
+
+```js
+// demod: Demodulator; baseband or coherent cosine carrier
+var rx = nP.demod(chain, {noise: true}); // noise defaults to true
+var bits = rx.out('bits');
+// returns a receiver result with an out() method
+```
+
+`demod()` accepts the same receiver options and output selectors as `digitalRx()`. It draws a new noise realization by default and needs only the completed nPort. For a positive carrier, it reconstructs the received passband waveform, correlates each bit interval with a cosine at the transmitted carrier frequency and zero phase, then decides bits from the recovered levels. `out('carrier waveform')` and `out('carrier spectrum')` expose the received passband data; `out('waveform')` and `out('spectrum')` expose the recovered bit levels. This path assumes the carrier phase and bit timing are known; it does not recover either from the signal.
+
+### `digitalTx`
+
+```js
+// digitalTx: Digital Transmitter
+var tx = nP.digitalTx({
+    mode: 'PN7',       // 'PN2' through 'PN16', 'ASCII', or 'bits'
+    seed: 0x7f,       // nonzero seed; defaults to all ones for the selected PN length
+    bitRate: 1e9,     // bits per second
+    samplesPerBit: 8, // positive integer
+    lowVolts: 0,      // voltage for bit 0
+    highVolts: 1      // voltage for bit 1
+});
+// returns a signal description with an out() method, not an nPort object
+```
+
+`digitalTx()` also accepts no arguments for these defaults. In ASCII mode, add `message: 'hello, world'`; each character is encoded as eight bits, most-significant bit first. In bits mode, add `bits: '0101'` or an array of zeros and ones. The supplied sequence is treated as one repeating period. The function uses `FFT()` internally and fills `nP.global.fList` from DC through Nyquist. Its returned plain object has `fList`, complex `spectrum`, `bits`, `sampleCount`, `sampleRateHz`, `samplesPerBit`, and `referenceImpedanceOhms`. Construct components after `digitalTx()` so their S-parameter rows match. Supply the signal as the last connection argument: `nP.nodal([stage, 1, 2], ['out', 1, 2], {signal: tx, inputPort: 1})`, or `nP.cascade(stage, {signal: tx, inputPort: 1})`. Input port 1 is the default. `nP.global.twoTone` must be unset.
+
+The transmitter result also has a user-facing `out()` method:
+
+```js
+tx.out('mode');            // 'PN2' through 'PN16', 'ASCII', or 'bits'
+tx.out('bit count');       // number of bits in one repeated sequence
+tx.out('sample count');    // time samples in one repeated sequence
+tx.out('frequency count'); // number of FFT frequencies, including DC
+tx.out('frequencies');     // copy of the frequency array in Hz
+tx.out('spectrum');        // copy of the complex FFT values
+```
+
+For the 68-character ASCII message in `dev/timeDomainDevelopment.html`, `tx.out('frequency count')` returns `2177`. Unknown selectors raise `RangeError`.
+
+### `digitalRx`
+
+```js
+// digitalRx: Digital Receiver with a new noise realization by default
+var Rxout = nP.digitalRx(
+    chain,           // completed nPort with a digital signal
+    {outputPort: 2}  // selected output port; defaults to 2
+);
+var waveform = Rxout.out('waveform'); // noisy table: Time (ns), Output (V)
+```
+
+`digitalRx()` needs only the completed nPort because its `.signal` contains the complex output waves. It draws a new random noise spectrum from the nPort's calculated source, termination, and component noise on each call, then uses `invFFT()` to create a receiver result. The output port can be any valid port of that nPort. `inputPort` defaults to 1, and the noise calculation uses the same matched 290 K source and termination conditions as `out('noiseFloor')` unless measurement options specify otherwise. Set `noise: false` to recover the deterministic waveform.
+
+```js
+Rxout.out('bit count');       // received bit count, when bit timing is available
+Rxout.out('bits');            // decoded array of 0 and 1 decisions
+Rxout.out('sample count');    // received time samples
+Rxout.out('frequency count'); // frequency bins, including DC
+Rxout.out('frequencies');     // copy of the frequency array in Hz
+Rxout.out('spectrum');        // copy of the complex received voltage FFT bins
+Rxout.out('waveform');        // chart-ready Time (ns), Output (V) table
+Rxout.out('ASCII text');      // decoded JavaScript string
+```
+
+The spectrum, waveform, bits, and text use the same received noise realization. Unknown selectors raise `RangeError`. If combined signals have no common bit timing, `out('bit count')`, `out('bits')`, and `out('ASCII text')` are unavailable.
+
+```js
+// digitalRx: recover a JavaScript string from eight-bit ASCII
+var Rxout = nP.digitalRx(
+    chain,
+    {
+        outputPort: 2, // default output port
+        noise: true    // default; false removes random noise
+        // thresholdVolts: 0.5 // optional decision level in volts
+    }
+);
+var text = Rxout.out('ASCII text'); // returns a JavaScript string
+```
+
+`out('ASCII text')` uses `samplesPerBit` retained in the completed nPort. It samples the center of each bit and, by default, estimates the centers of two voltage clusters and puts the decision level between them. Use `thresholdVolts` for a known decision level. The bit count must form complete bytes. A received byte above seven-bit ASCII becomes `�`. This output does not recover a clock or correct errors. It returns a plain JavaScript string; a browser page can pass that string to `nP.log()` for display. A random noise draw changes the received string when enough bit decisions flip; no user-supplied seed is needed. Set `referenceTemperature` to alter the modeled source and unused-port termination noise temperature; use the same option in `out('noiseFloor', {referenceTemperature: ...})` for a matching average noise-density comparison. Calling both `.out()` selectors on one receiver result uses the same noise realization.
+
+### `bitErrorRate`
+
+```js
+// bitErrorRate: compare known transmitted bits with independent receiver decisions
+var ber = nP.bitErrorRate(tx, chain, {receptions: 100});
+// returns a number: bit errors divided by total received bits
+```
+
+The helper calls `digitalRx(chain)` once per reception and compares `out('bits')` with the known `tx.bits`. The receiver itself does not need the transmitter. `receptions` defaults to 100 and must be a positive integer. Pass `receiver: nP.demod` to measure the new receiver instead. Receiver options such as `outputPort`, `thresholdVolts`, and `referenceTemperature` can be passed in the same options object. At one percent BER, a 544-bit message produces only about five errors on average, so repeated receptions give a steadier estimate.
+
 ## The `nPort` object
 
 Every electrical constructor above returns an `nPort` object. `nP.nodal()`, `nP.cascade()`, and the instance method `.cas()` also return one. The base `nPort` constructor is internal; browser users create n-ports through the public component and combining functions.
@@ -712,6 +883,7 @@ var stage = nP.Attn();
 var sRows = stage.spars;       // same rows returned by stage.getspars()
 var settings = stage.global;   // same object returned by stage.getglobal()
 var noiseRows = stage.noise;   // frequency-aligned noise covariance rows
+var signal = stage.signal;     // deterministic waveform, when present
 ```
 
 Each `spars` row starts with frequency in hertz, followed by a complete **row-major** S matrix of `nP.complex()` values. For a two-port, one row has this shape:
@@ -740,7 +912,9 @@ var noiseRow = {
 };
 ```
 
-For an *n*-port, each S row contains `1 + n²` entries and each `C` has *n* rows and *n* columns. `C` describes the component's own outgoing noise waves in W/Hz; source and termination noise are added during an NF or noise-floor measurement. Passive parts without an explicit noise model derive thermal covariance from their S matrix and construction temperature when `.noise` is first read. Active parts such as `Amp()` and biased `diode1N4148()` provide their own covariance. The `.global` field refers to the shared settings object; the calculated S rows do not automatically change if `global.fList` or a physical parameter is changed later. Some constructors also attach model-specific metadata such as `.microstrip`, `.diode`, or `.physicalModel`.
+For an *n*-port, each S row contains `1 + n²` entries and each `C` has *n* rows and *n* columns. `C` describes the component's own outgoing noise waves in W/Hz; source and termination noise are added during an NF or noise-floor measurement. Passive parts without an explicit noise model derive thermal covariance from their S matrix and construction temperature when `.noise` is first read. Active parts such as `Amp()` and biased `diode1N4148()` provide their own covariance. The `.global` field is a snapshot of the settings used to build the nPort; changing `nP.global.fList` later does not change existing S rows or metadata. Some constructors also attach model-specific metadata such as `.microstrip`, `.diode`, or `.physicalModel`.
+
+When a digital transmitter is connected, `.signal` contains `sampleCount`, `sampleRateHz`, `samplesPerBit`, `referenceImpedanceOhms`, and `rows`. Each row has the same frequency as its S row and a `waves` array of one complex outgoing wave per port. `nodal()`, `cascade()`, and `.cas()` propagate these wave vectors and retain them on the resulting nPort. The sources must have matching sample grids and reference impedances. `digitalRx()` reads this data without referring back to the transmitter.
 
 ### Reading and setting S and global data
 
@@ -754,7 +928,7 @@ stage.setspars(
 );
 
 stage.setglobal(
-    nP.global // analysis settings object
+    nP.global // active analysis settings
 );
 ```
 
@@ -771,7 +945,7 @@ var chain = amp.cas(
 );
 ```
 
-`cas()` returns a **new** two-port. It combines the S matrices, noise covariance, and known internal intermodulation sources without changing either input object. Both inputs must have the same frequency rows. `nP.cascade(amp, attenuator)` performs the same two-port operation; `nP.nodal()` handles arbitrary multiport connections.
+`cas()` returns a **new** two-port. It combines the S matrices, noise covariance, deterministic signal waves when present, and known internal intermodulation sources without changing either input object. Both inputs must have the same frequency rows. `nP.cascade(amp, attenuator)` performs the same two-port operation; `nP.nodal()` handles arbitrary multiport connections.
 
 Here, `stage` is the single attenuator used in the earlier data examples. `chain` is the amplifier followed by the attenuator. Both `.out()` examples below measure `chain`: the first uses the default measurement conditions, and the second supplies a final options object to specify them.
 
@@ -787,7 +961,7 @@ var table = chain.out(
 );
 ```
 
-`out()` returns a chart-ready numeric table: `['Freq', ...selectors]` followed by one row per displayed `global.fList` frequency. The port digits are **output row, input column**; `NF31dB` means output port 3 from input port 1. Supported selector families are:
+`out()` returns a chart-ready numeric table: `['Freq', ...selectors]` followed by one row per frequency selected when the nPort was constructed. The port digits are **output row, input column**; `NF31dB` means output port 3 from input port 1. Supported selector families are:
 
 - `s21dB`, `s21mag`, `s21ang`, `s21Re`, `s21Im`: S-parameter magnitude in dB, linear magnitude, phase in degrees, real part, or imaginary part.
 - `c22`, `c12Re`, `c12Im`, `c12mag`, `c12dB`: intrinsic noise covariance entries; `c22` means the real part.
@@ -842,7 +1016,7 @@ Both methods still exist. `noiseOut()` extracts covariance entries only; `outTab
 
 ## Math constructors and array helpers
 
-These are all four public exports from `src/np-math`. The returned complex and matrix objects also have the methods listed below. **None of the four functions has a default argument.** The numbers below are example inputs, not defaults.
+These are all six public exports from `src/np-math`. The returned complex and matrix objects also have the methods listed below. **None of the six functions has a default argument.** The numbers below are example inputs, not defaults.
 
 ### `complex`
 
@@ -892,6 +1066,30 @@ var copiedCells = nP.dup(
 // returns a new outer array and new row arrays
 // Entries are copied by reference, so contained objects are shared.
 ```
+
+### `FFT`
+
+```js
+// FFT: fast Fourier transform
+var spectrum = nP.FFT(
+    [1, 0, 0, 0] // samples: nonempty array of numbers or nP.complex() values
+);
+// returns an array of nP.complex() values, in FFT-bin order
+```
+
+`FFT()` accepts any nonempty length, including 1,016 samples for one oversampled PN7 period. It uses the forward sign convention `exp(-i 2πkn/N)` and does not divide by `N`. It does not calculate a frequency list. At sample rate `Fs`, bin `k` is at `k * Fs / N` through Nyquist; higher bins represent negative frequencies at `(k - N) * Fs / N`.
+
+### `invFFT`
+
+```js
+// invFFT: inverse fast Fourier transform
+var samples = nP.invFFT(
+    spectrum // nonempty array of numbers or nP.complex() values
+);
+// returns an array of nP.complex() time samples
+```
+
+`invFFT()` uses `exp(+i 2πkn/N)` and divides by `N`, so `invFFT(FFT(samples))` recovers the original samples to floating-point precision. Real inputs may return tiny imaginary roundoff values.
 
 ### Complex object methods
 

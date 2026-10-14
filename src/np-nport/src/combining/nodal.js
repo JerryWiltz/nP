@@ -4,12 +4,15 @@ import {dim} from '../../../np-math/src/matrix';
 import {dup} from '../../../np-math/src/matrix';
 import {complex} from '../../../np-math/src/complex';
 import {connectionModel} from '../intermod';
+import {compatibleSignals, signalWithRows, applyInputSignal} from '../signal';
 
-// Modified: 2026-10-03
+// Modified: 2026-10-08
 var conjugate = function (value) { return complex(value.getR(), -value.getI()); };
 
 
 export function nodal( ... componentConnections) { // componentConnections = [[nPort1, n1, n2 ...], ... ['out', n1, n2, ...] ]
+	var signalOptions = !Array.isArray(componentConnections[componentConnections.length - 1]) ?
+		componentConnections.pop() : undefined;
 	var i = 0, j = 0, k = 0, row = 0, col = 0, offset = 0, base = 0;
 	var networkSpars = componentConnections[0][0].spars.map(function (row) {
 		return [row[0]];
@@ -59,6 +62,11 @@ export function nodal( ... componentConnections) { // componentConnections = [[n
 	}();
 	var network = new nPort();
 	var networkNoiseCovariance = [];
+	var signalTemplate;
+	for (var signalComponent = 0; signalComponent < m; signalComponent++) {
+		signalTemplate = compatibleSignals(signalTemplate, componentConnections[signalComponent][0].signal);
+	}
+	var networkSignalRows = signalTemplate ? [] : undefined;
 	for ( i = 0; i < numOfFreqs; i++) { // i is number of frequencies
 		offset = 0;
 		var WMatrix = matrix(dup(GammaArray));
@@ -108,11 +116,38 @@ export function nodal( ... componentConnections) { // componentConnections = [[n
 			};
 		};
 		networkNoiseCovariance[i] = {frequency: networkSpars[i][0], C: Cout};
+		if (networkSignalRows) {
+			var componentWaves = Array.from({length: interconnectedPortCount}, function () {
+				return complex(0, 0);
+			});
+			var signalOffset = 0;
+			for (var signalChild = 0; signalChild < m; signalChild++) {
+				var childPortCount = componentConnections[signalChild].length - 1;
+				var childSignal = componentConnections[signalChild][0].signal;
+				if (childSignal) {
+					for (var childPort = 0; childPort < childPortCount; childPort++) {
+						componentWaves[signalOffset + childPort] = childSignal.rows[i].waves[childPort];
+					}
+				}
+				signalOffset += childPortCount;
+			}
+			var externalWaves = [];
+			for (var externalPort = 0; externalPort < externalPortCount; externalPort++) {
+				var totalWave = complex(0, 0);
+				for (var sourcePort = 0; sourcePort < interconnectedPortCount; sourcePort++) {
+					totalWave = totalWave.add(Winverse.m[interconnectedPortCount + externalPort][sourcePort]
+						.mul(componentWaves[sourcePort]));
+				}
+				externalWaves[externalPort] = totalWave;
+			}
+			networkSignalRows[i] = {frequency: networkSpars[i][0], waves: externalWaves};
+		}
 
 	};
 	network.setspars(networkSpars);
 	network.setglobal(componentConnections[0][0].global); // use the first component for global data
 	network.noise = networkNoiseCovariance;
+	if (networkSignalRows) network.signal = signalWithRows(signalTemplate, networkSignalRows);
 	var displayComponent = componentConnections.slice(0, m).find(function (entry) {
 		return entry[0]._displayFrequencies;
 	});
@@ -123,5 +158,5 @@ export function nodal( ... componentConnections) { // componentConnections = [[n
 			return connectionRow.findIndex(function (value) { return value.getR() === 1; });
 		})
 	);
-	return network;
+	return applyInputSignal(network, signalOptions);
 };

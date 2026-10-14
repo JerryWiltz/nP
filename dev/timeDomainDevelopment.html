@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<!-- Modified: 2026-10-13 -->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Time Domain Development</title>
+    <script src="../dist/nP.js"></script>
+</head>
+<body>
+    <script>
+        var message = 'now is the time for all good men to come to the aid of their country';
+        var tx = nP.digitalTx({mode: 'ASCII', message: message, bitRate: 1e9, samplesPerBit: 8, highVolts: 1e-3});
+        var attenuationDb = 17.6;
+        var attenuator = nP.Attn(attenuationDb, 290);
+        var chain = nP.nodal(
+            [attenuator, 1, 2],
+            ['out', 1, 2],
+            {signal: tx, inputPort: 1}
+        );
+
+        nP.log('Transmitted: ' + message);
+        var Rxout = nP.digitalRx(chain);
+        var text = Rxout.out('ASCII text');
+        nP.log('Recieved: ' + text);
+        nP.log('Attenuation: ' + attenuationDb + ' dB');
+        var oldBer = nP.bitErrorRate(tx, chain, {receptions: 100});
+        nP.log('Measured BER with digitalRx: ' + oldBer.toExponential(2));
+    </script>
+
+    <h2>0 Hz carrier: mod() and demod()</h2>
+    <script>
+        var modTx = nP.mod({
+            mode: 'ASCII',
+            message: message,
+            carrierHz: 0,
+            bitRate: 1e9,
+            samplesPerBit: 8,
+            highVolts: 1e-3
+        });
+        var modChain = nP.nodal(
+            [attenuator, 1, 2],
+            ['out', 1, 2],
+            {signal: modTx, inputPort: 1}
+        );
+        var demodOut = nP.demod(modChain);
+        var modBer = nP.bitErrorRate(modTx, modChain, {
+            receptions: 100,
+            receiver: nP.demod
+        });
+
+        nP.log('Received with demod: ' + demodOut.out('ASCII text'));
+        nP.log('mod settings: ' + JSON.stringify(modTx.out('settings')));
+        nP.log('Measured BER with demod: ' + modBer.toExponential(2));
+        nP.log('BER difference: ' + (modBer - oldBer).toExponential(2));
+    </script>
+
+    <h2>PN7 on a 200 MHz carrier</h2>
+    <div id="pnChart"></div>
+    <div id="pnCarrierChart"></div>
+    <div id="pnReceivedChart"></div>
+    <script>
+        var pnCircuit = nP.global();
+        pnCircuit.tList = pnCircuit.tGen(0, 126e-9, 127);
+        pnCircuit.fList = [];
+
+        var pn = nP.PN({stages: 7, time: pnCircuit.tList});
+        var pnTx = nP.mod({input: pn, carrierHz: 200e6});
+        var pnAttenuator = nP.Attn(3, 0);
+        var pnChain = nP.cascade(pnAttenuator, {signal: pnTx});
+        var pnRx = nP.demod(pnChain, {noise: false});
+
+        nP.log('PN clock ticks: ' + pnCircuit.tList.length);
+        nP.log('PN carrier: ' + pnTx.out('settings').carrierHz / 1e6 + ' MHz');
+        nP.log('FFT samples: ' + pnTx.out('sample count'));
+        nP.log('FFT frequencies: ' + pnTx.out('frequency count'));
+        nP.log('Received PN bits: ' + pnRx.out('bits').join(''));
+
+        nP.lineChart({
+            inputTable: pn.out('waveform'),
+            title: 'PN output at clock ticks',
+            mount: '#pnChart'
+        });
+        nP.lineChart({
+            inputTable: pnRx.out('carrier waveform'),
+            title: 'Received 200 MHz carrier after 3 dB attenuation',
+            mount: '#pnCarrierChart'
+        });
+        nP.lineChart({
+            inputTable: pnRx.out('waveform'),
+            title: 'Demodulated PN waveform',
+            mount: '#pnReceivedChart'
+        });
+    </script>
+</body>
+</html>

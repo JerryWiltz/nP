@@ -1,9 +1,10 @@
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 import {complex} from '../../../np-math/src/complex';
 import {matrix, dim} from '../../../np-math/src/matrix';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
+import {componentSettings} from '../componentSettings';
 import {COPPER_RESISTIVITY, INCH_TO_METER, VACUUM_IMPEDANCE} from '../physicalConstants';
 import {normalizePhysicalModelOptions, physicalModelMetadata, requireNonnegative, requirePositive, resistivityScale} from '../physicalModels/options';
 
@@ -171,6 +172,7 @@ var centerInductance = function (horizontalWidth, verticalWidth, Height) {
 
 export function mcross(input = {}) {
 	var options = normalizePhysicalModelOptions('mcross', input, [
+		{name: 'fList', defaultValue: global.fList},
 		{name: 'leftWidth', defaultValue: 0.023 * INCH_TO_METER}, {name: 'topWidth', defaultValue: 0.023 * INCH_TO_METER},
 		{name: 'rightWidth', defaultValue: 0.023 * INCH_TO_METER}, {name: 'bottomWidth', defaultValue: 0.023 * INCH_TO_METER},
 		{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
@@ -188,7 +190,8 @@ export function mcross(input = {}) {
 	requirePositive('mcross', 'height', Height); requireNonnegative('mcross', 'thickness', Thickness); requirePositive('mcross', 'relativePermittivity', er);
 	requireNonnegative('mcross', 'resistivity', rho * COPPER_RESISTIVITY); requireNonnegative('mcross', 'lossTangent', tand); requireNonnegative('mcross', 'roughnessRms', roughnessRms);
 	var cross = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var widths = [leftWidth, topWidth, rightWidth, bottomWidth];
 	var arms = widths.map(function (width) { return microstripLine(width, Height, Thickness, er); });
 	var sparsArray = [];
@@ -246,7 +249,7 @@ export function mcross(input = {}) {
 	}
 
 	cross.setspars(sparsArray);
-	cross.setglobal(global);
+	cross.setglobal(settings);
 	cross.Ct = Ct;
 	cross.microstrip = {
 		leftWidth,

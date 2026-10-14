@@ -1,8 +1,9 @@
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
+import {componentSettings} from '../componentSettings';
 import {C0, COPPER_RESISTIVITY, INCH_TO_METER, MIL_TO_METER, MU0, VACUUM_IMPEDANCE} from '../physicalConstants';
 import {passiveNoiseCovariance} from '../passiveNoise';
 import {normalizePhysicalModelOptions, physicalModelMetadata, requireNonnegative, requirePositive, resistivityScale} from '../physicalModels/options';
@@ -219,6 +220,7 @@ var modeLosses = function (Width, Height, Thickness, Length, er, rho, tand, freq
 export function mclin(input = {}) {
 	if (arguments.length > 1) throw new TypeError('nP.mclin() accepts one options object.');
 	var options = normalizePhysicalModelOptions('mclin', input, [
+			{name: 'fList', defaultValue: global.fList},
 			{name: 'width', aliases: ['Width'], defaultValue: 19.1155 * MIL_TO_METER},
 			{name: 'spacing', aliases: ['Space'], defaultValue: 5.82185 * MIL_TO_METER},
 			{name: 'height', aliases: ['Height'], defaultValue: 25 * MIL_TO_METER},
@@ -238,7 +240,8 @@ export function mclin(input = {}) {
 	requirePositive('mclin', 'relativePermittivity', er); requireNonnegative('mclin', 'resistivity', rho * COPPER_RESISTIVITY);
 	requireNonnegative('mclin', 'lossTangent', tand); requireNonnegative('mclin', 'roughnessRms', roughnessRms); requireNonnegative('mclin', 'temperature', temperature);
 	var ctlin = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro, 0), two = complex(2, 0), freqCount = 0, Zoemclin = [], Zoomclin = [];
 	var s11oe, s12oe, s21oe, s22oe;
 	var s11oo, s12oo, s21oo, s22oo;
@@ -320,9 +323,9 @@ export function mclin(input = {}) {
 
 	ctlin.setspars(sparsArray);
 	ctlin.noise = noiseArray;
-	ctlin.setglobal(global);
+	ctlin.setglobal(settings);
 	var firstDispersion = dispersion.find(function (point) {
-		return point.frequency === global.fList[0];
+		return point.frequency === settings.fList[0];
 	}) || {Zoe: quasiStatic.Zoe, Zoo: quasiStatic.Zoo, ereoe: quasiStatic.ereoe, ereoo: quasiStatic.ereoo};
 	ctlin.microstrip = {
 		Width,

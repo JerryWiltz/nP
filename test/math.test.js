@@ -1,7 +1,8 @@
+// Modified: 2026-10-08
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { complex, matrix } from '../src/np-math/index.js';
+import { complex, matrix, FFT, invFFT } from '../src/np-math/index.js';
 
 const closeTo = (actual, expected, tolerance = 1e-12) => {
 	assert.ok(
@@ -9,6 +10,55 @@ const closeTo = (actual, expected, tolerance = 1e-12) => {
 		`${actual} not within ${tolerance} of ${expected}`
 	);
 };
+
+test('FFT uses complex bins and invFFT restores real samples', () => {
+	const impulse = [1, 0, 0, 0];
+	const spectrum = FFT(impulse);
+	assert.deepEqual(spectrum.map(value => [value.getR(), value.getI()]),
+		[[1, 0], [1, 0], [1, 0], [1, 0]]);
+	const restored = invFFT(spectrum);
+	for (let i = 0; i < impulse.length; i++) {
+		closeTo(restored[i].getR(), impulse[i]);
+		closeTo(restored[i].getI(), 0);
+	}
+	assert.deepEqual(impulse, [1, 0, 0, 0]);
+});
+
+test('FFT handles non-power-of-two complex inputs', () => {
+	const samples = [complex(1, 2), complex(0, -1), complex(3, 0), complex(-2, 1), complex(0.5, -0.5)];
+	const spectrum = FFT(samples);
+	for (let k = 0; k < samples.length; k++) {
+		let expectedReal = 0;
+		let expectedImaginary = 0;
+		for (let n = 0; n < samples.length; n++) {
+			const angle = -2 * Math.PI * k * n / samples.length;
+			expectedReal += samples[n].getR() * Math.cos(angle) - samples[n].getI() * Math.sin(angle);
+			expectedImaginary += samples[n].getR() * Math.sin(angle) + samples[n].getI() * Math.cos(angle);
+		}
+		closeTo(spectrum[k].getR(), expectedReal);
+		closeTo(spectrum[k].getI(), expectedImaginary);
+	}
+	const restored = invFFT(spectrum);
+	for (let n = 0; n < samples.length; n++) {
+		closeTo(restored[n].getR(), samples[n].getR());
+		closeTo(restored[n].getI(), samples[n].getI());
+	}
+});
+
+test('FFT round-trips one PN7-sized period', () => {
+	const samples = Array.from({length: 1016}, (_, i) => (i % 13 < 7 ? 1 : 0));
+	const restored = invFFT(FFT(samples));
+	for (let i = 0; i < samples.length; i++) {
+		closeTo(restored[i].getR(), samples[i], 1e-10);
+		closeTo(restored[i].getI(), 0, 1e-10);
+	}
+});
+
+test('FFT validates sample arrays', () => {
+	assert.throws(() => FFT([]), TypeError);
+	assert.throws(() => FFT([1, Infinity]), RangeError);
+	assert.throws(() => invFFT([complex(1, 0), null]), TypeError);
+});
 
 test('complex add, subtract, multiply, and divide', () => {
 	const a = complex(1, 2);

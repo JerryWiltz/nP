@@ -1,9 +1,9 @@
-// Modified: 2026-10-07
+// Modified: 2026-10-08
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { global } from '../src/np-global/index.js';
-import { seR, R, paR, L, C, Open, Short, Load, Shift90, Tee, seriesTee, Tlin, Tclin, nodal, cascade, trf, mlin, mclin, mtee, mcross, mstep, mbend, mtfr, mvgnd, mvia } from '../src/np-nport/index.js';
+import { seR, R, paR, L, C, Open, Short, Load, Thru, Shift90, Tee, seriesTee, Tlin, Tclin, nodal, cascade, trf, mlin, mclin, mtee, mcross, mstep, mbend, mtfr, mvgnd, mvia } from '../src/np-nport/index.js';
 
 const closeTo = (actual, expected, tolerance = 1e-12) => {
 	assert.ok(
@@ -49,6 +49,26 @@ test('Open, Short, and Load create expected one-port reflection coefficients', (
 
 		closeTo(Load().getspars()[0][1].getR(), 0);
 		closeTo(Load().getspars()[0][1].getI(), 0);
+	});
+});
+
+test('Thru and nodal preserve the ideal two-port S-matrix and zero noise at DC', () => {
+	withGlobal({ fList: [0], Ro: 50 }, () => {
+		const thru = Thru();
+		const network = nodal(
+			[thru, 1, 2],
+			['out', 1, 2]
+		);
+		for (const stage of [thru, network]) {
+			assert.deepEqual(stage.out('s11Re', 's12Re', 's21Re', 's22Re')[1], [0, 0, 1, 1, 0]);
+			assert.equal(stage.noise[0].frequency, 0);
+			for (const row of stage.noise[0].C) {
+				for (const value of row) {
+					closeTo(value.getR(), 0);
+					closeTo(value.getI(), 0);
+				}
+			}
+		}
 	});
 });
 

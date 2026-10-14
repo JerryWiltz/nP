@@ -1,12 +1,14 @@
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort'
 import {global}  from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
+import {componentSettings} from '../componentSettings';
 
-export function Tee5() { // an ideal five-port junction
+export function Tee5(options = {}) { // an ideal five-port junction
 	var Tee5 = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s13, s14, s15, s21, s22, s23, s24, s25, s31, s32, s33, s34, s35, s41, s42, s43, s44, s45, s51, s52, s53, s54, s55, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		s11 = s22 = s33 = s44 = s55 = complex(-0.6,0);
@@ -15,6 +17,6 @@ export function Tee5() { // an ideal five-port junction
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s14, s15, s21, s22, s23, s24, s25, s31, s32, s33, s34, s35, s41, s42, s43, s44, s45, s51, s52, s53, s54, s55];
 	}	
 	Tee5.setspars(sparsArray);
-	Tee5.setglobal(global);
+	Tee5.setglobal(settings);
 	return Tee5;
 };

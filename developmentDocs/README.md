@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-07 -->
+<!-- Modified: 2026-10-13 -->
 # nP Development Documentation
 
 This directory contains internal engineering knowledge for developing nP. It records RF mathematics, equation-to-code translations, implementation decisions, data contracts, assumptions, units, references, and worked examples.
@@ -33,6 +33,15 @@ src/
 │   │   ├── smithChart.js
 │   │   └── version.js
 │   └── index.js
+├── np-digital/
+│   ├── src/
+│   │   ├── bitErrorRate.js
+│   │   ├── demod.js
+│   │   ├── digitalRx.js
+│   │   ├── digitalTx.js
+│   │   ├── mod.js
+│   │   └── noiseWaveform.js
+│   └── index.js
 ├── np-global/
 │   ├── src/
 │   │   └── global.js
@@ -40,6 +49,7 @@ src/
 ├── np-math/
 │   ├── src/
 │   │   ├── complex.js
+│   │   ├── fft.js
 │   │   └── matrix.js
 │   └── index.js
 ├── np-misc/
@@ -67,6 +77,7 @@ src/
 │   │   │   ├── Tee.js
 │   │   │   ├── Tee4.js
 │   │   │   ├── Tee5.js
+│   │   │   ├── Thru.js
 │   │   │   └── Tlin.js
 │   │   ├── mlin/
 │   │   │   ├── mbend.js
@@ -120,7 +131,8 @@ src/
 │   │   ├── intermod.js
 │   │   ├── noiseFigure.js
 │   │   ├── nPort.js
-│   │   └── passiveNoise.js
+│   │   ├── passiveNoise.js
+│   │   └── signal.js
 │   └── index.js
 ├── index.js
 └── plugin.js
@@ -130,14 +142,15 @@ src/
 
 ### `nPort` object
 
-[`src/np-nport/src/nPort.js`](../src/np-nport/src/nPort.js) defines the `nPort()` constructor. Its instances carry frequency-aligned S-parameters and noise covariance. Combined nPorts also retain known internal amplifier intermodulation sources for reuse in later connections.
+[`src/np-nport/src/nPort.js`](../src/np-nport/src/nPort.js) defines the `nPort()` constructor. Its instances carry frequency-aligned S-parameters and noise covariance. A digital transmitter adds frequency-aligned complex signal waves. Combined nPorts retain those waves and known internal amplifier intermodulation sources for reuse in later connections. `digitalRx()` draws a fresh random waveform from the output noise density when reconstructing received samples. `bitErrorRate()` compares repeated receiver bit decisions with known transmitter bits.
 
 | Member | Purpose |
 | --- | --- |
 | `setglobal(global)`, `getglobal()` | Store and retrieve analysis settings. |
 | `setspars(rows)`, `getspars()` | Store and retrieve S-parameter rows. |
 | `noise` getter and setter | Read or assign the frequency-aligned noise covariance. |
-| `cas(other)` | Cascade two 2-ports and return a new nPort with S-parameters, noise covariance, and known intermodulation sources. |
+| `signal` getter and setter | Read or assign deterministic complex signal waves aligned with the S rows. |
+| `cas(other)` | Cascade two 2-ports and return a new nPort with S-parameters, noise covariance, signal waves, and known intermodulation sources. |
 | `out(...selectors)` | Return a frequency table of S-parameters, covariance, NF, output noise floor, or intermodulation results. |
 | `noiseOut(...selectors)` | Return a frequency table of selected covariance entries. |
 | `outTable(...selectors)` | Return a frequency table of selected S-parameters. |

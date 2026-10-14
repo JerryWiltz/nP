@@ -385,23 +385,191 @@ function matrix(mat) {
 	return matrixObject;
 }
 
-// Modified: 2026-10-03
-var global = {
-	fList:	[2e9],//[2e9, 4e9, 6e9, 8e9],
-	twoTone: undefined,
-	Ro:	50,
-	Temp:	293,
-	fGen: function fGen (fStart, fStop, points) {
-		var out = [];
-		var fStep = (fStop-fStart)/(points-1);
-		var fMax = fStart;
-		var i = 0; 
-		for (i = 0; i < points; i++, fMax += fStep ) {
-			out.push(fMax);
+// Modified: 2026-10-08
+
+// In-place radix-2 transform. Forward transforms are unscaled; inverse
+// transforms divide by the number of samples.
+function radix2(real, imaginary, inverse) {
+	var length = real.length;
+	for (var i = 1, j = 0; i < length; i++) {
+		var bit = length / 2;
+		while (j >= bit) {
+			j -= bit;
+			bit /= 2;
 		}
-		return out;
-	},
-};
+		j += bit;
+		if (i < j) {
+			var swap = real[i]; real[i] = real[j]; real[j] = swap;
+			swap = imaginary[i]; imaginary[i] = imaginary[j]; imaginary[j] = swap;
+		}
+	}
+	for (var size = 2; size <= length; size *= 2) {
+		var angle = (inverse ? 2 : -2) * Math.PI / size;
+		var stepReal = Math.cos(angle);
+		var stepImaginary = Math.sin(angle);
+		for (var start = 0; start < length; start += size) {
+			var factorReal = 1;
+			var factorImaginary = 0;
+			for (var offset = 0; offset < size / 2; offset++) {
+				var upper = start + offset;
+				var lower = upper + size / 2;
+				var productReal = factorReal * real[lower] - factorImaginary * imaginary[lower];
+				var productImaginary = factorReal * imaginary[lower] + factorImaginary * real[lower];
+				real[lower] = real[upper] - productReal;
+				imaginary[lower] = imaginary[upper] - productImaginary;
+				real[upper] += productReal;
+				imaginary[upper] += productImaginary;
+				var nextReal = factorReal * stepReal - factorImaginary * stepImaginary;
+				factorImaginary = factorReal * stepImaginary + factorImaginary * stepReal;
+				factorReal = nextReal;
+			}
+		}
+	}
+	if (inverse) {
+		for (var index = 0; index < length; index++) {
+			real[index] /= length;
+			imaginary[index] /= length;
+		}
+	}
+}
+
+// Bluestein's chirp convolution lets the radix-2 transform handle any length.
+function bluestein(real, imaginary) {
+	var length = real.length;
+	var convolutionLength = 1;
+	while (convolutionLength < 2 * length - 1) convolutionLength *= 2;
+	var aReal = new Float64Array(convolutionLength);
+	var aImaginary = new Float64Array(convolutionLength);
+	var bReal = new Float64Array(convolutionLength);
+	var bImaginary = new Float64Array(convolutionLength);
+	for (var index = 0; index < length; index++) {
+		var angle = Math.PI * ((index * index) % (2 * length)) / length;
+		var cosine = Math.cos(angle);
+		var sine = Math.sin(angle);
+		aReal[index] = real[index] * cosine + imaginary[index] * sine;
+		aImaginary[index] = imaginary[index] * cosine - real[index] * sine;
+		bReal[index] = cosine;
+		bImaginary[index] = sine;
+		if (index > 0) {
+			bReal[convolutionLength - index] = cosine;
+			bImaginary[convolutionLength - index] = sine;
+		}
+	}
+	radix2(aReal, aImaginary, false);
+	radix2(bReal, bImaginary, false);
+	for (var bin = 0; bin < convolutionLength; bin++) {
+		var productReal = aReal[bin] * bReal[bin] - aImaginary[bin] * bImaginary[bin];
+		aImaginary[bin] = aReal[bin] * bImaginary[bin] + aImaginary[bin] * bReal[bin];
+		aReal[bin] = productReal;
+	}
+	radix2(aReal, aImaginary, true);
+	for (var output = 0; output < length; output++) {
+		var outputAngle = Math.PI * ((output * output) % (2 * length)) / length;
+		var outputCosine = Math.cos(outputAngle);
+		var outputSine = Math.sin(outputAngle);
+		real[output] = aReal[output] * outputCosine + aImaginary[output] * outputSine;
+		imaginary[output] = aImaginary[output] * outputCosine - aReal[output] * outputSine;
+	}
+}
+
+function transform(samples, inverse) {
+	if (!Array.isArray(samples) || samples.length === 0) {
+		throw new TypeError('FFT and invFFT require a nonempty array of numbers or complex values.');
+	}
+	var length = samples.length;
+	var real = new Float64Array(length);
+	var imaginary = new Float64Array(length);
+	for (var index = 0; index < length; index++) {
+		var sample = samples[index];
+		var sampleReal;
+		var sampleImaginary;
+		if (typeof sample === 'number') {
+			sampleReal = sample;
+			sampleImaginary = 0;
+		} else if (sample && typeof sample.getR === 'function' && typeof sample.getI === 'function') {
+			sampleReal = sample.getR();
+			sampleImaginary = sample.getI();
+		} else {
+			throw new TypeError('FFT and invFFT samples must be numbers or nP.complex() values.');
+		}
+		if (!Number.isFinite(sampleReal) || !Number.isFinite(sampleImaginary)) {
+			throw new RangeError('FFT and invFFT samples must be finite.');
+		}
+		real[index] = sampleReal;
+		imaginary[index] = inverse ? -sampleImaginary : sampleImaginary;
+	}
+	if ((length & (length - 1)) === 0) radix2(real, imaginary, false);
+	else bluestein(real, imaginary);
+	var result = new Array(length);
+	for (var bin = 0; bin < length; bin++) {
+		result[bin] = complex(inverse ? real[bin] / length : real[bin],
+			inverse ? -imaginary[bin] / length : imaginary[bin]);
+	}
+	return result;
+}
+
+// X[k] = sum_n x[n] exp(-i 2πkn/N), with no forward scaling.
+function FFT(samples) {
+	return transform(samples, false);
+}
+
+// x[n] = (1/N) sum_k X[k] exp(+i 2πkn/N).
+function invFFT(spectrum) {
+	return transform(spectrum, true);
+}
+
+// Modified: 2026-10-13
+
+function fGen(fStart, fStop, points) {
+	var out = [];
+	var fStep = (fStop - fStart) / (points - 1);
+	var frequency = fStart;
+	for (var i = 0; i < points; i++, frequency += fStep) out.push(frequency);
+	return out;
+}
+
+function tGen(start, stop, points) {
+	if (!Number.isFinite(start) || !Number.isFinite(stop) ||
+		!Number.isInteger(points) || points < 2 || stop <= start) {
+		throw new RangeError('tGen needs a finite increasing interval and at least two points.');
+	}
+	var step = (stop - start) / (points - 1);
+	return Array.from({length: points}, function (_, index) { return start + index * step; });
+}
+
+function newContext() {
+	return {fList: [2e9], tList: [], twoTone: undefined, Ro: 50, Temp: 293,
+		fGen: fGen, tGen: tGen};
+}
+
+var contexts = new WeakSet();
+var activeContext = newContext();
+contexts.add(activeContext);
+
+// Calling global() creates and selects a circuit context. Calling it with a
+// previously returned context selects that circuit again.
+function global(context) {
+	if (arguments.length === 0) {
+		activeContext = newContext();
+		contexts.add(activeContext);
+	} else {
+		if (!context || typeof context !== 'object' || !contexts.has(context)) {
+			throw new TypeError('global expects a circuit context returned by global().');
+		}
+		activeContext = context;
+	}
+	return activeContext;
+}
+
+// Preserve the existing property calls and expose the selected context's time grid.
+// Enumerable accessors also let existing settings snapshots use {...global}.
+['fList', 'tList', 'twoTone', 'Ro', 'Temp', 'fGen', 'tGen'].forEach(function (key) {
+	Object.defineProperty(global, key, {
+		enumerable: true,
+		get: function () { return activeContext[key]; },
+		set: function (value) { activeContext[key] = value; }
+	});
+});
 
 function ascending$1(a, b) {
   return a == null || b == null ? NaN : a < b ? -1 : a > b ? 1 : a >= b ? 0 : NaN;
@@ -6821,6 +6989,21 @@ function analysisFrequencies(settings) {
 	return Array.from(frequencies).sort(function (a, b) { return a - b; });
 }
 
+// Modified: 2026-10-13
+
+// Capture the analysis settings when a component is constructed. An explicit
+// fList lets independent circuits use different grids without changing global.
+function componentSettings(global, options = {}) {
+	var fList = options.fList === undefined ? global.fList : options.fList;
+	if (!Array.isArray(fList)) throw new TypeError('fList must be an array of frequencies.');
+	return {
+		...global,
+		fList: fList.slice(),
+		tList: Array.isArray(global.tList) ? global.tList.slice() : global.tList,
+		twoTone: global.twoTone ? {...global.twoTone} : global.twoTone
+	};
+}
+
 // Modified: 2026-10-07
 
 var conjugate$5 = function (value) { return complex(value.getR(), -value.getI()); };
@@ -7233,10 +7416,107 @@ function oipDbm(result, product, outputPort) {
 	return 10 * Math.log10(intercept / 1e-3);
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
+
+// A deterministic signal uses one complex outgoing-wave vector per S row.
+function validateSignal(signal, spars) {
+	if (!signal || !Number.isInteger(signal.sampleCount) || signal.sampleCount < 1 ||
+		!Number.isFinite(signal.sampleRateHz) || signal.sampleRateHz <= 0 ||
+		!Number.isFinite(signal.referenceImpedanceOhms) || signal.referenceImpedanceOhms <= 0 ||
+		(signal.samplesPerBit !== undefined &&
+			(!Number.isInteger(signal.samplesPerBit) || signal.samplesPerBit < 1 ||
+				signal.sampleCount % signal.samplesPerBit !== 0)) ||
+		!Array.isArray(signal.rows) || (spars && signal.rows.length !== spars.length)) {
+		throw new RangeError('Digital signal metadata and frequency rows must match the nPort.');
+	}
+	for (var i = 0; i < signal.rows.length; i++) {
+		var row = signal.rows[i];
+		var portCount = spars ? Math.sqrt(spars[i].length - 1) : row && row.waves && row.waves.length;
+		if (!row || (spars && row.frequency !== spars[i][0]) ||
+			!Array.isArray(row.waves) || row.waves.length !== portCount ||
+			row.waves.some(function (wave) {
+				return !wave || typeof wave.getR !== 'function' || typeof wave.getI !== 'function' ||
+					!Number.isFinite(wave.getR()) || !Number.isFinite(wave.getI());
+			})) {
+			throw new RangeError('Digital signal waves must match the S-parameter frequency and port count.');
+		}
+	}
+	return signal;
+}
+
+function compatibleSignals(first, second) {
+	if (!first) return second;
+	if (!second) return first;
+	if (first.sampleCount !== second.sampleCount ||
+		first.sampleRateHz !== second.sampleRateHz ||
+		first.referenceImpedanceOhms !== second.referenceImpedanceOhms ||
+		(first.carrierHz || 0) !== (second.carrierHz || 0)) {
+		throw new RangeError('Digital sources must have matching sample counts, rates, carriers, and reference impedances.');
+	}
+	if (first.samplesPerBit !== second.samplesPerBit) {
+		return {...first, samplesPerBit: undefined};
+	}
+	return first;
+}
+
+function signalWithRows(template, rows) {
+	return {
+		sampleCount: template.sampleCount,
+		sampleRateHz: template.sampleRateHz,
+		referenceImpedanceOhms: template.referenceImpedanceOhms,
+		samplesPerBit: template.samplesPerBit,
+		carrierHz: template.carrierHz,
+		rows: rows
+	};
+}
+
+// Drive an external nPort input with a periodic, matched-source voltage spectrum.
+function applyInputSignal(network, options) {
+	if (!options || !options.signal) return network;
+	var source = options.signal;
+	var spars = network.getspars();
+	var portCount = Math.sqrt(spars[0].length - 1);
+	var inputPort = options.inputPort === undefined ? 1 : options.inputPort;
+	if (!Number.isInteger(inputPort) || inputPort < 1 || inputPort > portCount) {
+		throw new RangeError('Digital inputPort is outside the nPort dimensions.');
+	}
+	if (!Array.isArray(source.fList) || !Array.isArray(source.spectrum) ||
+		source.fList.length !== spars.length || source.spectrum.length !== spars.length ||
+		!Number.isInteger(source.sampleCount) || source.sampleCount < 1 ||
+		!Number.isInteger(source.samplesPerBit) || source.samplesPerBit < 1 ||
+		source.sampleCount % source.samplesPerBit !== 0 ||
+		spars.length !== Math.floor(source.sampleCount / 2) + 1 ||
+		!Number.isFinite(source.sampleRateHz) || source.sampleRateHz <= 0 ||
+		!Number.isFinite(source.referenceImpedanceOhms) || source.referenceImpedanceOhms <= 0 ||
+		source.fList.some(function (frequency, index) { return frequency !== spars[index][0]; }) ||
+		source.spectrum.some(function (value) {
+			return !value || typeof value.getR !== 'function' || typeof value.getI !== 'function' ||
+				!Number.isFinite(value.getR()) || !Number.isFinite(value.getI());
+		})) {
+		throw new RangeError('Digital input frequencies and spectrum must match the nPort.');
+	}
+	if (network.global && network.global.Ro !== source.referenceImpedanceOhms) {
+		throw new RangeError('Digital input reference impedance must match the nPort.');
+	}
+	var template = compatibleSignals(network.signal, source);
+	var scale = Math.sqrt(source.referenceImpedanceOhms);
+	var rows = spars.map(function (sRow, index) {
+		var waves = [];
+		for (var port = 0; port < portCount; port++) {
+			var existing = network.signal ? network.signal.rows[index].waves[port] : complex(0, 0);
+			var response = sRow[1 + port * portCount + inputPort - 1].mul(source.spectrum[index]).div(complex(scale, 0));
+			waves[port] = existing.add(response);
+		}
+		return {frequency: sRow[0], waves: waves};
+	});
+	network.signal = signalWithRows(template, rows);
+	return network;
+}
+
+// Modified: 2026-10-13
 var conjugate$2 = function (value) { return complex(value.getR(), -value.getI()); };
 
-function nPort() { this._noise = undefined; }
+function nPort() { this._noise = undefined; this._signal = undefined; }
 var derivePassiveNoise = function (nPortObject) {
 	if (!nPortObject.spars) return undefined;
 	var temperature = nPortObject._noiseTemperature === undefined ? 293 : nPortObject._noiseTemperature;
@@ -7274,13 +7554,16 @@ var normalizeNoise = function (noiseData, spars) {
 nPort.prototype = {
 	constructor: nPort,
 	setglobal: function (global) {
-		this.global = global;
+		this.global = {...global, fList: Array.isArray(global.fList) ? global.fList.slice() : global.fList,
+			tList: Array.isArray(global.tList) ? global.tList.slice() : global.tList,
+			twoTone: global.twoTone ? {...global.twoTone} : global.twoTone};
 		this._noiseTemperature = global.Temp;
 		if (global.twoTone) this._displayFrequencies = global.fList.slice();
 	},
 	getglobal: function () {return this.global;},
 	setspars: function (sparsArray) {
 		if (this._noise !== undefined) normalizeNoise(this._noise, sparsArray);
+		if (this._signal !== undefined) validateSignal(this._signal, sparsArray);
 		this.spars = sparsArray;
 	},
 	getspars: function () { return this.spars; },
@@ -7291,6 +7574,8 @@ nPort.prototype = {
 		return this._noise;
 	},
 	set noise (noiseData) { this._noise = normalizeNoise(noiseData, this.spars); },
+	get signal() { return this._signal; },
+	set signal(signalData) { this._signal = validateSignal(signalData, this.spars); },
 	cas: function cas (n2) { // cascade two 2-ports along with method chaining since it returns an nPort
 		var freqCount = 0, one = complex(1,0),
 			sparsA = this.getspars(),
@@ -7312,6 +7597,10 @@ nPort.prototype = {
 		}		var noiseCovariance = [];
 		var noiseA = this.noise;
 		var noiseB = n2.noise;
+		var signalA = this.signal;
+		var signalB = n2.signal;
+		var signalTemplate = compatibleSignals(signalA, signalB);
+		var signalRows = signalTemplate ? [] : undefined;
 		for (freqCount = 0; freqCount < this.spars.length; freqCount++) {
 			sparsA[freqCount][1]; var a12 = sparsA[freqCount][2]; sparsA[freqCount][3]; var a22 = sparsA[freqCount][4];
 			var b11 = sparsB[freqCount][1], b21 = sparsB[freqCount][3];
@@ -7342,11 +7631,26 @@ nPort.prototype = {
 				}
 			}
 			noiseCovariance[freqCount] = {frequency: sparsA[freqCount][0], C: outputCovariance};
+			if (signalRows) {
+				var wavesA = signalA ? signalA.rows[freqCount].waves : [complex(0, 0), complex(0, 0)];
+				var wavesB = signalB ? signalB.rows[freqCount].waves : [complex(0, 0), complex(0, 0)];
+				var outputWaves = [];
+				for (var wavePort = 0; wavePort < 2; wavePort++) {
+					outputWaves[wavePort] = complex(0, 0);
+					for (var sourcePort = 0; sourcePort < 2; sourcePort++) {
+						outputWaves[wavePort] = outputWaves[wavePort]
+							.add(transferA[wavePort][sourcePort].mul(wavesA[sourcePort]))
+							.add(transferB[wavePort][sourcePort].mul(wavesB[sourcePort]));
+					}
+				}
+				signalRows[freqCount] = {frequency: sparsA[freqCount][0], waves: outputWaves};
+			}
 		}
 		var casOut = new nPort();
 		casOut.setspars(sparsArray);
 		casOut.setglobal(this.global);
 		casOut.noise = noiseCovariance;
+		if (signalRows) casOut.signal = signalWithRows(signalTemplate, signalRows);
 		casOut._displayFrequencies = this._displayFrequencies || n2._displayFrequencies;
 		casOut._intermod = connectionModel([this, n2], [4, 2, 1, 5, 0, 3]);
 		return casOut;
@@ -7491,7 +7795,7 @@ nPort.prototype = {
 	},
 };
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
 const Q = 1.602176634e-19;
 const K = 1.380649e-23;
@@ -7604,7 +7908,8 @@ function seriesTwoPortFromImpedance(frequency, impedance, ro) {
 function diode1N4148(options = {}) {
 	var p = normalizeOptions(options);
 	var diodePort = new nPort();
-	var frequencyList = analysisFrequencies(global);
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings);
 	var ro = global.Ro;
 	var twoZo = complex(2 * ro, 0);
 	var dc = diodeAdmittanceAtBias(p);
@@ -7665,7 +7970,7 @@ function diode1N4148(options = {}) {
 
 	diodePort.setspars(sparsArray);
 	diodePort.noise = noiseArray;
-	diodePort.setglobal(global);
+	diodePort.setglobal(settings);
 	diodePort._intermod = {
 		type: 'diode',
 		conductance: dc.conductance,
@@ -7716,17 +8021,19 @@ function diode1N4148(options = {}) {
 	return diodePort;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
 const kB$4 = 1.380649e-23;
 
-function seR(R = 75, temperature = global.Temp) { // series resistor nPort object
+function seR(R = 75, temperature = global.Temp, options = {}) { // series resistor nPort object
 	if (typeof R === 'object') {
+		options = R;
 		temperature = R.temperature === undefined ? global.Temp : R.temperature;
 		R = R.resistance === undefined ? 75 : R.resistance;
 	}
 	var seR = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [], noiseArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(R, 0);
@@ -7746,21 +8053,23 @@ function seR(R = 75, temperature = global.Temp) { // series resistor nPort objec
 	}	
 	seR.setspars(sparsArray);
 	seR.noise = noiseArray;
-	seR.setglobal(global);
+	seR.setglobal(settings);
 	return seR;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
 const kB$3 = 1.380649e-23;
 
-function R(R = 75, temperature = global.Temp) { // series resistor nPort object
+function R(R = 75, temperature = global.Temp, options = {}) { // series resistor nPort object
 	if (typeof R === 'object') {
+		options = R;
 		temperature = R.temperature === undefined ? global.Temp : R.temperature;
 		R = R.resistance === undefined ? 75 : R.resistance;
 	}
 	var rPort = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [], noiseArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(R, 0);
@@ -7780,21 +8089,23 @@ function R(R = 75, temperature = global.Temp) { // series resistor nPort object
 	}	
 	rPort.setspars(sparsArray);
 	rPort.noise = noiseArray;
-	rPort.setglobal(global);
+	rPort.setglobal(settings);
 	return rPort;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
 const kB$2 = 1.380649e-23;
 
-function paR(R = 75, temperature = global.Temp) { // parallel resistor nPort object
+function paR(R = 75, temperature = global.Temp, options = {}) { // parallel resistor nPort object
 	if (typeof R === 'object') {
+		options = R;
 		temperature = R.temperature === undefined ? global.Temp : R.temperature;
 		R = R.resistance === undefined ? 75 : R.resistance;
 	}
 	var paR = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [], noiseArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(R, 0);
@@ -7815,15 +8126,16 @@ function paR(R = 75, temperature = global.Temp) { // parallel resistor nPort obj
 	}
 	paR.setspars(sparsArray);
 	paR.noise = noiseArray;
-	paR.setglobal(global);	
+	paR.setglobal(settings);
 	return paR;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function seL(L = 5e-9) { // series inductor nPort object
+function seL(L = 5e-9, options = {}) { // series inductor nPort object
 	var seL = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount]);	
@@ -7833,15 +8145,16 @@ function seL(L = 5e-9) { // series inductor nPort object
 		s22 = s11;
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}	seL.setspars(sparsArray);
-	seL.setglobal(global);	
+	seL.setglobal(settings);
 	return seL;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function L(L = 5e-9) { // series inductor nPort object
+function L(L = 5e-9, options = {}) { // series inductor nPort object
 	var lPort = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount]);	
@@ -7851,15 +8164,16 @@ function L(L = 5e-9) { // series inductor nPort object
 		s22 = s11;
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}	lPort.setspars(sparsArray);
-	lPort.setglobal(global);	
+	lPort.setglobal(settings);
 	return lPort;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function paL(L = 5e-9) { // parallel capacitor nPort object   
+function paL(L = 5e-9, options = {}) { // parallel capacitor nPort object
 	var paL = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount]);
@@ -7871,15 +8185,16 @@ function paL(L = 5e-9) { // parallel capacitor nPort object
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
 	paL.setspars(sparsArray);
-	paL.setglobal(global);				
+	paL.setglobal(settings);
 	return paL;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function seC(C = 1e-12) { // series capacitor nPort object
+function seC(C = 1e-12, options = {}) { // series capacitor nPort object
 	var seC = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(0, -1/(2*Math.PI*C*frequencyList[freqCount]));	
@@ -7889,15 +8204,16 @@ function seC(C = 1e-12) { // series capacitor nPort object
 		s22 = s11;
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}	seC.setspars(sparsArray);
-	seC.setglobal(global);	
+	seC.setglobal(settings);
 	return seC;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function C(C = 1e-12) { // series capacitor nPort object
+function C(C = 1e-12, options = {}) { // series capacitor nPort object
 	var cPort = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(0, -1/(2*Math.PI*C*frequencyList[freqCount]));	
@@ -7907,15 +8223,16 @@ function C(C = 1e-12) { // series capacitor nPort object
 		s22 = s11;
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}	cPort.setspars(sparsArray);
-	cPort.setglobal(global);	
+	cPort.setglobal(settings);
 	return cPort;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function paC(C = 1e-12) { // parallel capacitor nPort object   
+function paC(C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var paC = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(0, -1/(2*Math.PI*C*frequencyList[freqCount]));
@@ -7927,15 +8244,16 @@ function paC(C = 1e-12) { // parallel capacitor nPort object
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
 	paC.setspars(sparsArray);
-	paC.setglobal(global);				
+	paC.setglobal(settings);
 	return paC;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function trf(N = 0.5) { // ideal transformer nPort object
+function trf(N = 0.5, options = {}) { // ideal transformer nPort object
 	var trf = new nPort;
-	var frequencyList = analysisFrequencies(global); global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings); global.Ro;
 	var freqCount = 0, s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		s11 = complex((N ** 2 - 1) / (N ** 2 + 1), 0);
@@ -7945,15 +8263,16 @@ function trf(N = 0.5) { // ideal transformer nPort object
 		sparsArray[freqCount] = [frequencyList[freqCount], s11, s12, s21, s22];
 	}
 	trf.setspars(sparsArray);
-	trf.setglobal(global);
+	trf.setglobal(settings);
 	return trf;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function trf4Port(N = 0.5) { // parallel resistor nPort object
+function trf4Port(N = 0.5, options = {}) { // parallel resistor nPort object
 	var trf4Port = new nPort;
-	var frequencyList = analysisFrequencies(global); global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings); global.Ro;
 	var freqCount = 0, sparsArray = [];
 	var s11, s12, s13, s14,
 		s21, s22, s23, s24,
@@ -7967,7 +8286,7 @@ function trf4Port(N = 0.5) { // parallel resistor nPort object
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44];
 	}
 	trf4Port.setspars(sparsArray);
-	trf4Port.setglobal(global);	
+	trf4Port.setglobal(settings);
 	return trf4Port;
 }
 /*                Note: N2 = N**2 N = 0.5, N2 = 0.25
@@ -7978,11 +8297,12 @@ S12 = S21 = S34 = S43 =  N / (1 + N2)  //   0.5/1.25 = 0.4
 S13 = S22 = S31 = S44 =  1 / (1 + N2)  //     1/1.25 = 0.8
 */
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function seSeRL(R = 75, L = 5e-9) { // series inductor nPort object
+function seSeRL(R = 75, L = 5e-9, options = {}) { // series inductor nPort object
 	var seSeRL = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(R, 2*Math.PI*L*frequencyList[freqCount]);	
@@ -7992,15 +8312,16 @@ function seSeRL(R = 75, L = 5e-9) { // series inductor nPort object
 		s22 = s11;
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}	seSeRL.setspars(sparsArray);
-	seSeRL.setglobal(global);	
+	seSeRL.setglobal(settings);
 	return seSeRL;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function paSeRL(R = 75, L = 5e-9) { // parallel capacitor nPort object   
+function paSeRL(R = 75, L = 5e-9, options = {}) { // parallel capacitor nPort object
 	var paSeRL = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(R, 2*Math.PI*L*frequencyList[freqCount]);
@@ -8012,15 +8333,16 @@ function paSeRL(R = 75, L = 5e-9) { // parallel capacitor nPort object
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
 	paSeRL.setspars(sparsArray);
-	paSeRL.setglobal(global);				
+	paSeRL.setglobal(settings);
 	return paSeRL;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function seSeRC(R = 75, C = 1e-12) { // series inductor nPort object
+function seSeRC(R = 75, C = 1e-12, options = {}) { // series inductor nPort object
 	var seSeRC = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(R, -1/(2*Math.PI*C*frequencyList[freqCount]));	
@@ -8030,15 +8352,16 @@ function seSeRC(R = 75, C = 1e-12) { // series inductor nPort object
 		s22 = s11;
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}	seSeRC.setspars(sparsArray);
-	seSeRC.setglobal(global);	
+	seSeRC.setglobal(settings);
 	return seSeRC;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function paSeRC(R = 75, C = 1e-12) { // parallel series-RC nPort object
+function paSeRC(R = 75, C = 1e-12, options = {}) { // parallel series-RC nPort object
 	var paSeRC = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(R, -1/(2*Math.PI*C*frequencyList[freqCount]));
@@ -8050,15 +8373,16 @@ function paSeRC(R = 75, C = 1e-12) { // parallel series-RC nPort object
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
 	paSeRC.setspars(sparsArray);
-	paSeRC.setglobal(global);				
+	paSeRC.setglobal(settings);
 	return paSeRC;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function seSeLC(L = 5e-9, C = 1e-12) { // series inductor nPort object
+function seSeLC(L = 5e-9, C = 1e-12, options = {}) { // series inductor nPort object
 	var seSeLC = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount] -1/(2*Math.PI*C*frequencyList[freqCount]));	
@@ -8068,15 +8392,16 @@ function seSeLC(L = 5e-9, C = 1e-12) { // series inductor nPort object
 		s22 = s11;
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}	seSeLC.setspars(sparsArray);
-	seSeLC.setglobal(global);	
+	seSeLC.setglobal(settings);
 	return seSeLC;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function paSeLC(L = 5e-9, C = 1e-12) { // parallel capacitor nPort object   
+function paSeLC(L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var paSeLC = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount] -1/(2*Math.PI*C*frequencyList[freqCount]));
@@ -8088,15 +8413,16 @@ function paSeLC(L = 5e-9, C = 1e-12) { // parallel capacitor nPort object
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
 	paSeLC.setspars(sparsArray);
-	paSeLC.setglobal(global);				
+	paSeLC.setglobal(settings);
 	return paSeLC;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function seSeRLC(R = 75, L = 5e-9, C = 1e-12) { // series inductor nPort object
+function seSeRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // series inductor nPort object
 	var seSeRLC = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(R, 2*Math.PI*L*frequencyList[freqCount] -1/(2*Math.PI*C*frequencyList[freqCount]));	
@@ -8106,15 +8432,16 @@ function seSeRLC(R = 75, L = 5e-9, C = 1e-12) { // series inductor nPort object
 		s22 = s11;
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}	seSeRLC.setspars(sparsArray);
-	seSeRLC.setglobal(global);	
+	seSeRLC.setglobal(settings);
 	return seSeRLC;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function paSeRLC(R = 75, L = 5e-9, C = 1e-12) { // parallel capacitor nPort object   
+function paSeRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var paSeRLC = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(R, 2*Math.PI*L*frequencyList[freqCount] -1/(2*Math.PI*C*frequencyList[freqCount]));
@@ -8126,15 +8453,16 @@ function paSeRLC(R = 75, L = 5e-9, C = 1e-12) { // parallel capacitor nPort obje
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
 	paSeRLC.setspars(sparsArray);
-	paSeRLC.setglobal(global);				
+	paSeRLC.setglobal(settings);
 	return paSeRLC;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function paPaRL(R = 75, L = 5e-9) { // parallel capacitor nPort object   
+function paPaRL(R = 75, L = 5e-9, options = {}) { // parallel capacitor nPort object
 	var paPaRL = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = (  (complex(R,0).inv()).add(complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv())  ).inv();
@@ -8146,15 +8474,16 @@ function paPaRL(R = 75, L = 5e-9) { // parallel capacitor nPort object
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
 	paPaRL.setspars(sparsArray);
-	paPaRL.setglobal(global);				
+	paPaRL.setglobal(settings);
 	return paPaRL;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function sePaRL(R = 75, L = 5e-9) { // parallel capacitor nPort object   
+function sePaRL(R = 75, L = 5e-9, options = {}) { // parallel capacitor nPort object
 	var sePaRL = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = (  (complex(R,0).inv()).add(complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv())  ).inv();
@@ -8165,15 +8494,16 @@ function sePaRL(R = 75, L = 5e-9) { // parallel capacitor nPort object
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
 	sePaRL.setspars(sparsArray);
-	sePaRL.setglobal(global);				
+	sePaRL.setglobal(settings);
 	return sePaRL;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function paPaRC(R = 75, C = 1e-12) { // parallel capacitor nPort object   
+function paPaRC(R = 75, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var paPaRC = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = (  (complex(R,0).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
@@ -8185,15 +8515,16 @@ function paPaRC(R = 75, C = 1e-12) { // parallel capacitor nPort object
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
 	paPaRC.setspars(sparsArray);
-	paPaRC.setglobal(global);				
+	paPaRC.setglobal(settings);
 	return paPaRC;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function sePaRC(R = 75, C = 1e-12) { // parallel capacitor nPort object   
+function sePaRC(R = 75, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var sePaRC = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = (  (complex(R,0).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
@@ -8204,15 +8535,16 @@ function sePaRC(R = 75, C = 1e-12) { // parallel capacitor nPort object
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
 	sePaRC.setspars(sparsArray);
-	sePaRC.setglobal(global);				
+	sePaRC.setglobal(settings);
 	return sePaRC;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function paPaLC(L = 5e-9, C = 1e-12) { // parallel capacitor nPort object   
+function paPaLC(L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var paPaLC = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = (  (complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
@@ -8224,15 +8556,16 @@ function paPaLC(L = 5e-9, C = 1e-12) { // parallel capacitor nPort object
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
 	paPaLC.setspars(sparsArray);
-	paPaLC.setglobal(global);				
+	paPaLC.setglobal(settings);
 	return paPaLC;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function sePaLC(L = 5e-9, C = 1e-12) { // parallel capacitor nPort object   
+function sePaLC(L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var sePaLC = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = (  (complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
@@ -8243,15 +8576,16 @@ function sePaLC(L = 5e-9, C = 1e-12) { // parallel capacitor nPort object
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
 	sePaLC.setspars(sparsArray);
-	sePaLC.setglobal(global);				
+	sePaLC.setglobal(settings);
 	return sePaLC;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function paPaRLC(R = 75, L = 5e-9, C = 1e-12) { // parallel capacitor nPort object   
+function paPaRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var paPaRLC = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = ( (complex(R,0).inv()).add (complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
@@ -8263,15 +8597,16 @@ function paPaRLC(R = 75, L = 5e-9, C = 1e-12) { // parallel capacitor nPort obje
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
 	paPaRLC.setspars(sparsArray);
-	paPaRLC.setglobal(global);				
+	paPaRLC.setglobal(settings);
 	return paPaRLC;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function sePaRLC(R = 75, L = 5e-9, C = 1e-12) { // parallel capacitor nPort object   
+function sePaRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var sePaRLC = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = ( (complex(R,0).inv()).add (complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
@@ -8282,31 +8617,31 @@ function sePaRLC(R = 75, L = 5e-9, C = 1e-12) { // parallel capacitor nPort obje
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
 	sePaRLC.setspars(sparsArray);
-	sePaRLC.setglobal(global);				
+	sePaRLC.setglobal(settings);
 	return sePaRLC;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function lpfGen( filt =[50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50]) { // returns a table of spars for a low Pass Filter
+function lpfGen( filt =[50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50], options = {}) { // returns a table of spars for a low Pass Filter
 	var i = 0;
 	var filtTable = [];
 	filt.pop();
 	filt.shift();
 	for (i = 0; i < filt.length; i++) {
-		if (i % 2 === 0) {filtTable[i] = paC(filt[i]);}		if (i % 2 === 1) {filtTable[i] = seL(filt[i]);}	}	for (i = 0; i < filt.length - 1; i++) {
+		if (i % 2 === 0) {filtTable[i] = paC(filt[i], options);}		if (i % 2 === 1) {filtTable[i] = seL(filt[i], options);}	}	for (i = 0; i < filt.length - 1; i++) {
 		filtTable[i+1] = filtTable[i].cas(filtTable[i+1]);
 	}	return filtTable[ filtTable.length-1 ];
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
 const kB$1 = 1.380649e-23;
 
 // Matched, reciprocal attenuator. Noise is the covariance of its own outgoing waves.
-function Attn(attenuationDb = 3, temperature = global.Temp) {
+function Attn(attenuationDb = 3, temperature = global.Temp, options = {}) {
 	if (attenuationDb !== null && typeof attenuationDb === 'object') {
-		var options = attenuationDb;
+		options = attenuationDb;
 		attenuationDb = options.attenuationDb === undefined ? 3 : options.attenuationDb;
 		temperature = options.temperature === undefined ? global.Temp : options.temperature;
 	}
@@ -8322,7 +8657,8 @@ function Attn(attenuationDb = 3, temperature = global.Temp) {
 	var attenuator = new nPort();
 	var sparsArray = [];
 	var noiseArray = [];
-	var frequencies = analysisFrequencies(global);
+	var settings = componentSettings(global, options);
+	var frequencies = analysisFrequencies(settings);
 	for (var i = 0; i < frequencies.length; i++) {
 		var frequency = frequencies[i];
 		sparsArray[i] = [frequency, complex(0, 0), complex(transmission, 0), complex(transmission, 0), complex(0, 0)];
@@ -8336,13 +8672,13 @@ function Attn(attenuationDb = 3, temperature = global.Temp) {
 	}
 	attenuator.setspars(sparsArray);
 	attenuator.noise = noiseArray;
-	attenuator.setglobal(global);
+	attenuator.setglobal(settings);
 	attenuator.temperature = temperature;
-	attenuator._displayFrequencies = global.fList.slice();
+	attenuator._displayFrequencies = settings.fList.slice();
 	return attenuator;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
 const kB = 1.380649e-23;
 
@@ -8399,7 +8735,7 @@ function covarianceFromNoiseParameters(spars, fMinDb, gammaOpt, noiseResistanceO
 
 // Every form starts with the same frequency-flat S and noise parameters.
 // Object options replace only the named defaults; the positional form sets S21 and Fmin.
-function Amp(gainDb = 20, noiseFigureDb = 4, referenceTemperature = 290) {
+function Amp(gainDb = 20, noiseFigureDb = 4, referenceTemperature = 290, options = {}) {
 	var defaults = {
 		spars: [complex(0, 0), complex(0, 0), complex(10, 0), complex(0, 0)],
 		fMinDb: 4,
@@ -8409,7 +8745,6 @@ function Amp(gainDb = 20, noiseFigureDb = 4, referenceTemperature = 290) {
 	};
 	var specifiedSpars = defaults.spars;
 	var noiseParameters = defaults;
-	var options;
 	var oip2dBm;
 	var harmonicOip2dBm;
 	var oip3dBm;
@@ -8496,7 +8831,8 @@ function Amp(gainDb = 20, noiseFigureDb = 4, referenceTemperature = 290) {
 	var amplifier = new nPort();
 	var sparsArray = [];
 	var noiseArray = [];
-	var frequencies = analysisFrequencies(global);
+	var settings = componentSettings(global, options);
+	var frequencies = analysisFrequencies(settings);
 	for (var i = 0; i < frequencies.length; i++) {
 		var frequency = frequencies[i];
 		sparsArray[i] = [frequency].concat(specifiedSpars.map(function (s) { return s.copy(); }));
@@ -8509,9 +8845,9 @@ function Amp(gainDb = 20, noiseFigureDb = 4, referenceTemperature = 290) {
 	}
 	amplifier.setspars(sparsArray);
 	amplifier.noise = noiseArray;
-	amplifier.setglobal(global);
+	amplifier.setglobal(settings);
 	amplifier.referenceTemperature = referenceTemperature;
-	amplifier._displayFrequencies = global.fList.slice();
+	amplifier._displayFrequencies = settings.fList.slice();
 	amplifier._intermod = {
 		type: 'amp',
 		p2: ip2Watts,
@@ -8524,11 +8860,38 @@ function Amp(gainDb = 20, noiseFigureDb = 4, referenceTemperature = 290) {
 	return amplifier;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function Tee() { // a 3port dummy connection
+// Matched, lossless, zero-length two-port connection, including at DC.
+function Thru(options = {}) {
+	var thru = new nPort();
+	var sparsArray = [];
+	var noiseArray = [];
+	var settings = componentSettings(global, options);
+	var frequencies = analysisFrequencies(settings);
+	for (var i = 0; i < frequencies.length; i++) {
+		var frequency = frequencies[i];
+		sparsArray[i] = [frequency, complex(0, 0), complex(1, 0), complex(1, 0), complex(0, 0)];
+		noiseArray[i] = {
+			frequency: frequency,
+			C: [
+				[complex(0, 0), complex(0, 0)],
+				[complex(0, 0), complex(0, 0)]
+			]
+		};
+	}
+	thru.setspars(sparsArray);
+	thru.noise = noiseArray;
+	thru.setglobal(settings);
+	return thru;
+}
+
+// Modified: 2026-10-13
+
+function Tee(options = {}) { // a 3port dummy connection
 	var Tee = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); complex(2,0); var freqCount = 0, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		s11 = complex(-1/3,0);
@@ -8543,15 +8906,16 @@ function Tee() { // a 3port dummy connection
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s21, s22, s23, s31, s32, s33];
 	}	
 	Tee.setspars(sparsArray);
-	Tee.setglobal(global);
+	Tee.setglobal(settings);
 	return Tee;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function Tee4() { // a 4-port dummy connection
+function Tee4(options = {}) { // a 4-port dummy connection
 	var Tee4 = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); complex(2,0); var freqCount = 0, s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		s11 = s22 = s33 = s44 = complex(-1/2,0);
@@ -8560,15 +8924,16 @@ function Tee4() { // a 4-port dummy connection
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44];
 	}	
 	Tee4.setspars(sparsArray);
-	Tee4.setglobal(global);
+	Tee4.setglobal(settings);
 	return Tee4;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function Tee5() { // an ideal five-port junction
+function Tee5(options = {}) { // an ideal five-port junction
 	var Tee5 = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); complex(2,0); var freqCount = 0, s11, s12, s13, s14, s15, s21, s22, s23, s24, s25, s31, s32, s33, s34, s35, s41, s42, s43, s44, s45, s51, s52, s53, s54, s55, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		s11 = s22 = s33 = s44 = s55 = complex(-0.6,0);
@@ -8577,17 +8942,18 @@ function Tee5() { // an ideal five-port junction
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s14, s15, s21, s22, s23, s24, s25, s31, s32, s33, s34, s35, s41, s42, s43, s44, s45, s51, s52, s53, s54, s55];
 	}	
 	Tee5.setspars(sparsArray);
-	Tee5.setglobal(global);
+	Tee5.setglobal(settings);
 	return Tee5;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
 // Ideal three-port junction for attaching a one-port network in series.
 // Ports 1 and 2 form the through path; port 3 is the series branch.
-function seriesTee() {
+function seriesTee(options = {}) {
 	var junction = new nPort;
-	var frequencyList = analysisFrequencies(global);
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings);
 	var sparsArray = [];
 
 	for (var freqCount = 0; freqCount < frequencyList.length; freqCount++) {
@@ -8604,15 +8970,17 @@ function seriesTee() {
 	}
 
 	junction.setspars(sparsArray);
-	junction.setglobal(global);
+	junction.setglobal(settings);
 	return junction;
 }
 
-// Modified: 2026-10-03
+// Modified: 2026-10-08
 var conjugate = function (value) { return complex(value.getR(), -value.getI()); };
 
 
 function nodal( ... componentConnections) { // componentConnections = [[nPort1, n1, n2 ...], ... ['out', n1, n2, ...] ]
+	var signalOptions = !Array.isArray(componentConnections[componentConnections.length - 1]) ?
+		componentConnections.pop() : undefined;
 	var i = 0, j = 0, k = 0, row = 0, col = 0, offset = 0, base = 0;
 	var networkSpars = componentConnections[0][0].spars.map(function (row) {
 		return [row[0]];
@@ -8655,6 +9023,11 @@ function nodal( ... componentConnections) { // componentConnections = [[nPort1, 
 	}();
 	var network = new nPort();
 	var networkNoiseCovariance = [];
+	var signalTemplate;
+	for (var signalComponent = 0; signalComponent < m; signalComponent++) {
+		signalTemplate = compatibleSignals(signalTemplate, componentConnections[signalComponent][0].signal);
+	}
+	var networkSignalRows = signalTemplate ? [] : undefined;
 	for ( i = 0; i < numOfFreqs; i++) { // i is number of frequencies
 		offset = 0;
 		var WMatrix = matrix(dup(GammaArray));
@@ -8699,10 +9072,37 @@ function nodal( ... componentConnections) { // componentConnections = [[nPort1, 
 				}
 				Cout[j][k] = sum;
 			}		}		networkNoiseCovariance[i] = {frequency: networkSpars[i][0], C: Cout};
+		if (networkSignalRows) {
+			var componentWaves = Array.from({length: interconnectedPortCount}, function () {
+				return complex(0, 0);
+			});
+			var signalOffset = 0;
+			for (var signalChild = 0; signalChild < m; signalChild++) {
+				var childPortCount = componentConnections[signalChild].length - 1;
+				var childSignal = componentConnections[signalChild][0].signal;
+				if (childSignal) {
+					for (var childPort = 0; childPort < childPortCount; childPort++) {
+						componentWaves[signalOffset + childPort] = childSignal.rows[i].waves[childPort];
+					}
+				}
+				signalOffset += childPortCount;
+			}
+			var externalWaves = [];
+			for (var externalPort = 0; externalPort < externalPortCount; externalPort++) {
+				var totalWave = complex(0, 0);
+				for (var sourcePort = 0; sourcePort < interconnectedPortCount; sourcePort++) {
+					totalWave = totalWave.add(Winverse.m[interconnectedPortCount + externalPort][sourcePort]
+						.mul(componentWaves[sourcePort]));
+				}
+				externalWaves[externalPort] = totalWave;
+			}
+			networkSignalRows[i] = {frequency: networkSpars[i][0], waves: externalWaves};
+		}
 
 	}	network.setspars(networkSpars);
 	network.setglobal(componentConnections[0][0].global); // use the first component for global data
 	network.noise = networkNoiseCovariance;
+	if (networkSignalRows) network.signal = signalWithRows(signalTemplate, networkSignalRows);
 	var displayComponent = componentConnections.slice(0, m).find(function (entry) {
 		return entry[0]._displayFrequencies;
 	});
@@ -8713,71 +9113,86 @@ function nodal( ... componentConnections) { // componentConnections = [[nPort1, 
 			return connectionRow.findIndex(function (value) { return value.getR() === 1; });
 		})
 	);
-	return network;
+	return applyInputSignal(network, signalOptions);
 }
 
-// Modified: 2026-10-03
+// Modified: 2026-10-08
 
 function cascade(...nPorts) {
+	var signalOptions = nPorts.length && !nPorts[nPorts.length - 1].getspars ? nPorts.pop() : undefined;
 	if (nPorts.length === 0) throw new TypeError('cascade() requires at least one nPort.');
 	var combined = nPorts[0];
 	for (var i = 1; i < nPorts.length; i++) {
 		// cas() combines S-parameters and noise, and keeps both nonlinear stages.
 		combined = combined.cas(nPorts[i]);
 	}
-	return combined;
+	if (signalOptions && signalOptions.signal && nPorts.length === 1) {
+		var copy = new nPort();
+		copy.setspars(combined.getspars());
+		copy.setglobal(combined.getglobal());
+		copy.noise = combined.noise;
+		if (combined.signal) copy.signal = combined.signal;
+		copy._displayFrequencies = combined._displayFrequencies;
+		copy._intermod = combined._intermod;
+		combined = copy;
+	}
+	return applyInputSignal(combined, signalOptions);
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function Open() { // one port, open
+function Open(options = {}) { // one port, open
 	var Open = new nPort;
-	var frequencyList = analysisFrequencies(global); global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings); global.Ro;
 	var freqCount = 0, s11, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		s11 = complex(1,0);
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11];
 	}	
 	Open.setspars(sparsArray);
-	Open.setglobal(global);
+	Open.setglobal(settings);
 	return Open;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function Short() { //  one port, Short
+function Short(options = {}) { //  one port, Short
 	var Short = new nPort;
-	var frequencyList = analysisFrequencies(global); global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings); global.Ro;
 	var freqCount = 0, s11, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		s11 = complex(-1,0);
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11];
 	}	
 	Short.setspars(sparsArray);
-	Short.setglobal(global);
+	Short.setglobal(settings);
 	return Short;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function Load() { // one port, load
+function Load(options = {}) { // one port, load
 	var Load = new nPort;
-	var frequencyList = analysisFrequencies(global); global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings); global.Ro;
 	var freqCount = 0, s11, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		s11 = complex(0,0);
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11];
 	}	
 	Load.setspars(sparsArray);
-	Load.setglobal(global);
+	Load.setglobal(settings);
 	return Load;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function Shift90() { // lossless matched two-port with +90 degree through phase
+function Shift90(options = {}) { // lossless matched two-port with +90 degree through phase
 	var Shift90 = new nPort;
-	var frequencyList = analysisFrequencies(global); global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings); global.Ro;
 	var freqCount = 0, s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		s11 = complex(0,0);
@@ -8787,7 +9202,7 @@ function Shift90() { // lossless matched two-port with +90 degree through phase
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
 	Shift90.setspars(sparsArray);
-	Shift90.setglobal(global);
+	Shift90.setglobal(settings);
 	return Shift90;
 }
 
@@ -8803,11 +9218,12 @@ const VACUUM_IMPEDANCE = 120 * Math.PI;
 
 const COPPER_RESISTIVITY = 1.72e-8;
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function Tlin(Z = 60, Length = 0.5 * 0.0254) { // Z is in ohms and Length is in meters, sparameters of a physical transmission line
+function Tlin(Z = 60, Length = 0.5 * 0.0254, options = {}) { // Z is in ohms and Length is in meters, sparameters of a physical transmission line
 	var Tlin = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); complex(1,0); var two = complex(2,0), freqCount = 0, Ztlin = [], s11, s12, s21, s22, sparsArray = [];
 	var Atlin = {}, Btlin = {}, Ctlin = {}, Ds = {}, alpha = 0, beta = 0, gamma = {};
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
@@ -8829,15 +9245,16 @@ function Tlin(Z = 60, Length = 0.5 * 0.0254) { // Z is in ohms and Length is in 
 		s22 = s11;
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}	Tlin.setspars(sparsArray);
-	Tlin.setglobal(global);	
+	Tlin.setglobal(settings);
 	return Tlin;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function Tclin(Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254) { // 1.4732 is the quarter wavelength at 2GHz, (1.3412 at 2.2 GHz)
+function Tclin(Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254, options = {}) { // 1.4732 is the quarter wavelength at 2GHz, (1.3412 at 2.2 GHz)
 	var ctlin = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); complex(1,0); var two = complex(2,0), freqCount = 0, Zoetclin = [], Zootclin = [];
 	var s11oe, s12oe, s21oe, s22oe;
 	var s11oo, s12oo, s21oo, s22oo;
@@ -8892,7 +9309,7 @@ function Tclin(Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254) { // 1.4732 is the q
 
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44];
 	}	ctlin.setspars(sparsArray);
-	ctlin.setglobal(global);	
+	ctlin.setglobal(settings);
 	return ctlin;
 }
 
@@ -8983,7 +9400,7 @@ var physicalModelMetadata = function (family, model, geometry, material, analysi
 	};
 };
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
 var pi$7 = Math.PI;
 
@@ -9061,6 +9478,7 @@ var singleLineDispersion$1 = function (u, er, erEff0, z0, frequency, Height) {
 function mlin(input = {}) {
 	if (arguments.length > 1) throw new TypeError('nP.mlin() accepts one options object.');
 	var options = normalizePhysicalModelOptions('mlin', input, [
+			{name: 'fList', defaultValue: global.fList},
 			{name: 'width', aliases: ['Width'], defaultValue: 0.023 * INCH_TO_METER},
 			{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
 			{name: 'length', aliases: ['Length'], defaultValue: 0.5 * INCH_TO_METER},
@@ -9080,7 +9498,8 @@ function mlin(input = {}) {
 	requirePositive('mlin', 'relativePermittivity', er); requireNonnegative('mlin', 'resistivity', rho * COPPER_RESISTIVITY);
 	requireNonnegative('mlin', 'lossTangent', tand); requireNonnegative('mlin', 'roughnessRms', roughnessRms); requireNonnegative('mlin', 'temperature', temperature);
 	var mlin = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro, 0), two = complex(2, 0), freqCount = 0, s11, s12, s21, s22, sparsArray = [], noiseArray = [];
 	var Atlin = {}, Btlin = {}, Ctlin = {}, Zmlin = {}, Ds = {}, alpha = 0, beta = 0, gamma = {};
 
@@ -9141,9 +9560,9 @@ function mlin(input = {}) {
 		noiseArray[freqCount] = {frequency: frequencyList[freqCount], C: passiveNoiseCovariance(sparsArray[freqCount], 2, temperature)};
 	}	mlin.setspars(sparsArray);
 	mlin.noise = noiseArray;
-	mlin.setglobal(global);
+	mlin.setglobal(settings);
 	var firstDisplayAnalysis = analysis.find(function (point) {
-		return point.frequency === global.fList[0];
+		return point.frequency === settings.fList[0];
 	});
 	mlin.microstrip = {
 		Width,
@@ -9171,7 +9590,7 @@ function mlin(input = {}) {
 	return mlin;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
 var pi$6 = Math.PI;
 
@@ -9385,6 +9804,7 @@ var modeLosses = function (Width, Height, Thickness, Length, er, rho, tand, freq
 function mclin(input = {}) {
 	if (arguments.length > 1) throw new TypeError('nP.mclin() accepts one options object.');
 	var options = normalizePhysicalModelOptions('mclin', input, [
+			{name: 'fList', defaultValue: global.fList},
 			{name: 'width', aliases: ['Width'], defaultValue: 19.1155 * MIL_TO_METER},
 			{name: 'spacing', aliases: ['Space'], defaultValue: 5.82185 * MIL_TO_METER},
 			{name: 'height', aliases: ['Height'], defaultValue: 25 * MIL_TO_METER},
@@ -9404,7 +9824,8 @@ function mclin(input = {}) {
 	requirePositive('mclin', 'relativePermittivity', er); requireNonnegative('mclin', 'resistivity', rho * COPPER_RESISTIVITY);
 	requireNonnegative('mclin', 'lossTangent', tand); requireNonnegative('mclin', 'roughnessRms', roughnessRms); requireNonnegative('mclin', 'temperature', temperature);
 	var ctlin = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro, 0), two = complex(2, 0), freqCount = 0, Zoemclin = [], Zoomclin = [];
 	var s11oe, s12oe, s21oe, s22oe;
 	var s11oo, s12oo, s21oo, s22oo;
@@ -9486,9 +9907,9 @@ function mclin(input = {}) {
 
 	ctlin.setspars(sparsArray);
 	ctlin.noise = noiseArray;
-	ctlin.setglobal(global);
+	ctlin.setglobal(settings);
 	var firstDispersion = dispersion.find(function (point) {
-		return point.frequency === global.fList[0];
+		return point.frequency === settings.fList[0];
 	}) || {Zoe: quasiStatic.Zoe, Zoo: quasiStatic.Zoo, ereoe: quasiStatic.ereoe, ereoo: quasiStatic.ereoo};
 	ctlin.microstrip = {
 		Width,
@@ -9519,7 +9940,7 @@ function mclin(input = {}) {
 	return ctlin;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
 var pi$5 = Math.PI;
 var DEFAULT_WIDTH = 0.023 * INCH_TO_METER;
@@ -9579,6 +10000,7 @@ var microstripLine$2 = function (width, Height, Thickness, er) {
 function mtee(input = {}) { // microstrip tee nPort object
 	if (arguments.length > 1) throw new TypeError('nP.mtee() accepts one options object.');
 	var options = normalizePhysicalModelOptions('mtee', input, [
+			{name: 'fList', defaultValue: global.fList},
 			{name: 'commonWidth', defaultValue: DEFAULT_WIDTH},
 			{name: 'branch1Width', defaultValue: DEFAULT_WIDTH},
 			{name: 'branch2Width', defaultValue: DEFAULT_WIDTH},
@@ -9599,7 +10021,8 @@ function mtee(input = {}) { // microstrip tee nPort object
 	requireNonnegative('mtee', 'resistivity', rho * COPPER_RESISTIVITY); requireNonnegative('mtee', 'lossTangent', tand);
 	requireNonnegative('mtee', 'roughnessRms', roughnessRms); requireNonnegative('mtee', 'temperature', temperature);
 	var mtee = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var freqCount = 0, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [], noiseArray = [];
 	var WidthA = branch1Width, WidthB = branch2Width, WidthSide = commonWidth;
 	var analysis = [];
@@ -9665,7 +10088,7 @@ function mtee(input = {}) { // microstrip tee nPort object
 	}	
 	mtee.setspars(sparsArray);
 	mtee.noise = noiseArray;
-	mtee.setglobal(global);
+	mtee.setglobal(settings);
 	mtee.Ct = (100 / Math.tanh(0.0072 * armSide.Z) + 0.64 * armSide.Z - 261) * WidthSide * 1e-12;
 	mtee.microstrip = {
 		commonWidth,
@@ -9697,7 +10120,7 @@ function mtee(input = {}) { // microstrip tee nPort object
 	return mtee;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
 var pi$4 = Math.PI;
 
@@ -9863,6 +10286,7 @@ var centerInductance = function (horizontalWidth, verticalWidth, Height) {
 
 function mcross(input = {}) {
 	var options = normalizePhysicalModelOptions('mcross', input, [
+		{name: 'fList', defaultValue: global.fList},
 		{name: 'leftWidth', defaultValue: 0.023 * INCH_TO_METER}, {name: 'topWidth', defaultValue: 0.023 * INCH_TO_METER},
 		{name: 'rightWidth', defaultValue: 0.023 * INCH_TO_METER}, {name: 'bottomWidth', defaultValue: 0.023 * INCH_TO_METER},
 		{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
@@ -9880,7 +10304,8 @@ function mcross(input = {}) {
 	requirePositive('mcross', 'height', Height); requireNonnegative('mcross', 'thickness', Thickness); requirePositive('mcross', 'relativePermittivity', er);
 	requireNonnegative('mcross', 'resistivity', rho * COPPER_RESISTIVITY); requireNonnegative('mcross', 'lossTangent', tand); requireNonnegative('mcross', 'roughnessRms', roughnessRms);
 	var cross = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var widths = [leftWidth, topWidth, rightWidth, bottomWidth];
 	var arms = widths.map(function (width) { return microstripLine$1(width, Height, Thickness, er); });
 	var sparsArray = [];
@@ -9938,7 +10363,7 @@ function mcross(input = {}) {
 	}
 
 	cross.setspars(sparsArray);
-	cross.setglobal(global);
+	cross.setglobal(settings);
 	cross.Ct = Ct;
 	cross.microstrip = {
 		leftWidth,
@@ -9973,7 +10398,7 @@ function mcross(input = {}) {
 	return cross;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
 var pi$3 = Math.PI;
 
@@ -10086,6 +10511,7 @@ var stepInductanceNh = function (wideWidth, narrowWidth, Height) {
 
 function mstep(input = {}) {
 	var options = normalizePhysicalModelOptions('mstep', input, [
+		{name: 'fList', defaultValue: global.fList},
 		{name: 'inputWidth', aliases: ['width1'], defaultValue: 0.046 * INCH_TO_METER},
 		{name: 'outputWidth', aliases: ['width2'], defaultValue: 0.023 * INCH_TO_METER},
 		{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
@@ -10101,7 +10527,8 @@ function mstep(input = {}) {
 	requireNonnegative('mstep', 'thickness', Thickness); requirePositive('mstep', 'relativePermittivity', er);
 	requireNonnegative('mstep', 'resistivity', rho * COPPER_RESISTIVITY); requireNonnegative('mstep', 'lossTangent', tand); requireNonnegative('mstep', 'roughnessRms', roughnessRms);
 	var step = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var port1Line = microstripLine(width1, Height, Thickness, er);
 	var port2Line = microstripLine(width2, Height, Thickness, er);
 	var wideWidth = Math.max(width1, width2);
@@ -10138,7 +10565,7 @@ function mstep(input = {}) {
 	}
 
 	step.setspars(sparsArray);
-	step.setglobal(global);
+	step.setglobal(settings);
 	step.microstrip = {
 		width1,
 		width2,
@@ -10169,7 +10596,7 @@ function mstep(input = {}) {
 	return step;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
 var pi$2 = Math.PI;
 
@@ -10211,6 +10638,7 @@ var edwardsSteerBend = function (Width, Height, er) {
 
 function mbend(input = {}) {
 	var options = normalizePhysicalModelOptions('mbend', input, [
+		{name: 'fList', defaultValue: global.fList},
 		{name: 'width', aliases: ['Width'], defaultValue: 0.023 * INCH_TO_METER}, {name: 'miterLength', defaultValue: undefined},
 		{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
 		{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
@@ -10226,7 +10654,8 @@ function mbend(input = {}) {
 	requirePositive('mbend', 'relativePermittivity', er); requireNonnegative('mbend', 'resistivity', rho * COPPER_RESISTIVITY);
 	requireNonnegative('mbend', 'lossTangent', tand); requireNonnegative('mbend', 'roughnessRms', roughnessRms);
 	var bend = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var recommendedMiterFraction = 0.6;
 	var defaultMiterLength = 0;
 	var actualMiterLength = miterLength === undefined ? defaultMiterLength : miterLength;
@@ -10257,7 +10686,7 @@ function mbend(input = {}) {
 	}
 
 	bend.setspars(sparsArray);
-	bend.setglobal(global);
+	bend.setglobal(settings);
 	bend.microstrip = {
 		Width,
 		miterLength: actualMiterLength,
@@ -10288,10 +10717,11 @@ function mbend(input = {}) {
 	return bend;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
 function mtfr(input = {}) {
 	var options = normalizePhysicalModelOptions('mtfr', input, [
+		{name: 'fList', defaultValue: global.fList},
 		{name: 'ohmsPerSquare', defaultValue: 50}, {name: 'width', aliases: ['Width'], defaultValue: 10 * MIL_TO_METER},
 		{name: 'length', aliases: ['Length'], defaultValue: 10 * MIL_TO_METER},
 		{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
@@ -10322,9 +10752,10 @@ function mtfr(input = {}) {
 	var halfLineLength = Length / (2 * sectionCount);
 	var halfLine = mlin({
 		width: Width, height: Height, length: halfLineLength, thickness: Thickness,
-		relativePermittivity: er, resistivity: 0, lossTangent: tand, roughnessRms: 0
+		relativePermittivity: er, resistivity: 0, lossTangent: tand, roughnessRms: 0,
+		fList: options.fList
 	});
-	var resistorSection = R(resistancePerSection);
+	var resistorSection = R({resistance: resistancePerSection, fList: options.fList});
 	var nPorts = [];
 
 	for (var section = 0; section < sectionCount; section++) {
@@ -10364,7 +10795,7 @@ function mtfr(input = {}) {
 	return filmResistor;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
 var pi$1 = Math.PI;
 
@@ -10383,6 +10814,7 @@ var viaResistanceDc$1 = function (Height, radius, Thickness, rho) {
 
 function mvgnd(input = {}) {
 	var options = normalizePhysicalModelOptions('mvgnd', input, [
+		{name: 'fList', defaultValue: global.fList},
 		{name: 'diameter', aliases: ['Diameter'], defaultValue: 100e-6},
 		{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
 		{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
@@ -10394,7 +10826,8 @@ function mvgnd(input = {}) {
 	requirePositive('mvgnd', 'thickness', Thickness); requireNonnegative('mvgnd', 'resistivity', rho);
 	if (Thickness > Diameter / 2) throw new RangeError('nP.mvgnd(): thickness must not exceed the via radius.');
 	var via = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var radius = Diameter / 2;
 	var L = viaInductance$1(Height, radius);
 	var Rdc = viaResistanceDc$1(Height, radius, Thickness, rho);
@@ -10418,7 +10851,7 @@ function mvgnd(input = {}) {
 	}
 
 	via.setspars(sparsArray);
-	via.setglobal(global);
+	via.setglobal(settings);
 	via.microstrip = {
 		Diameter,
 		radius,
@@ -10437,7 +10870,7 @@ function mvgnd(input = {}) {
 	return via;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
 var pi = Math.PI;
 
@@ -10504,6 +10937,7 @@ var abcdToS = function (abcd, Ro) {
 
 function mvia(input = {}) {
 	var options = normalizePhysicalModelOptions('mvia', input, [
+		{name: 'fList', defaultValue: global.fList},
 		{name: 'diameter', aliases: ['Diameter'], defaultValue: 100e-6},
 		{name: 'connectionHeight', defaultValue: 0.025 * INCH_TO_METER},
 		{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
@@ -10526,7 +10960,8 @@ function mvia(input = {}) {
 	if (Thickness > Diameter / 2) throw new RangeError('nP.mvia(): thickness must not exceed the via radius.');
 	if (antipadDiameter > 0 && padDiameter > 0 && antipadDiameter <= padDiameter) throw new RangeError('nP.mvia(): antipadDiameter must be greater than padDiameter.');
 	var via = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var radius = Diameter / 2;
 	var Lbarrel = viaInductance(connectionHeight, radius);
 	var Rdc = viaResistanceDc(connectionHeight, radius, Thickness, rho);
@@ -10562,7 +10997,7 @@ function mvia(input = {}) {
 	}
 
 	via.setspars(sparsArray);
-	via.setglobal(global);
+	via.setglobal(settings);
 	via.microstrip = {
 		Diameter,
 		radius,
@@ -10592,6 +11027,583 @@ function mvia(input = {}) {
 		topPadHeight, bottomPadHeight, topStubLength, bottomStubLength
 	}, {relativePermittivity: er, resistivity: rho}, analysis, {validity: via.microstrip.validity});
 	return via;
+}
+
+// Modified: 2026-10-13
+
+
+// Feedback masks for maximal-length, left-shifting registers of 2–16 stages.
+var FEEDBACK_MASKS = {
+	2: 0x3, 3: 0x5, 4: 0x9, 5: 0x17, 6: 0x21,
+	7: 0x41, 8: 0x95, 9: 0x10d, 10: 0x20d, 11: 0x40b,
+	12: 0x829, 13: 0x100d, 14: 0x2015, 15: 0x4001, 16: 0x801f
+};
+
+function pnBits(stages = 7, seed = 2 ** stages - 1) {
+	if (!Number.isInteger(stages) || !FEEDBACK_MASKS[stages]) {
+		throw new RangeError('PN stages must be an integer from 2 through 16.');
+	}
+	var mask = 2 ** stages - 1;
+	if (!Number.isInteger(seed) || seed < 1 || seed > mask) {
+		throw new RangeError('PN' + stages + ' seed must be a nonzero ' + stages + '-bit integer.');
+	}
+	var bits = [];
+	var register = seed;
+	for (var i = 0; i < mask; i++) {
+		bits.push((register >> (stages - 1)) & 1);
+		var taps = register & FEEDBACK_MASKS[stages];
+		var feedback = 0;
+		while (taps) {
+			feedback ^= taps & 1;
+			taps >>= 1;
+		}
+		register = ((register << 1) | feedback) & mask;
+	}
+	if (register !== seed) throw new RangeError('PN' + stages + ' did not return to its seed.');
+	return bits;
+}
+
+// Advance the selected PN register once at each clock time.
+function PN(options = {}) {
+	if (!options || Array.isArray(options) || typeof options !== 'object') {
+		throw new TypeError('PN expects an options object.');
+	}
+	var stages = options.stages === undefined ? 7 : options.stages;
+	if (!Number.isInteger(stages) || !FEEDBACK_MASKS[stages]) {
+		throw new RangeError('PN stages must be an integer from 2 through 16.');
+	}
+	var periodLength = 2 ** stages - 1;
+	var time = options.time === undefined ? global.tList : options.time;
+	if (!Array.isArray(time) || time.length < periodLength || time.length % periodLength !== 0) {
+		throw new RangeError('PN time must contain a multiple of ' + periodLength + ' clock ticks.');
+	}
+	var step = time[1] - time[0];
+	if (!Number.isFinite(step) || step <= 0 || time.some(function (value, index) {
+		return !Number.isFinite(value) ||
+			Math.abs(value - (time[0] + index * step)) > Math.abs(step) * 1e-6;
+	})) {
+		throw new RangeError('PN time must be a uniformly spaced, increasing list in seconds.');
+	}
+	var lowVolts = options.lowVolts === undefined ? 0 : options.lowVolts;
+	var highVolts = options.highVolts === undefined ? 1 : options.highVolts;
+	if (!Number.isFinite(lowVolts) || !Number.isFinite(highVolts)) {
+		throw new RangeError('PN voltage levels must be finite.');
+	}
+	var period = pnBits(stages, options.seed === undefined ? periodLength : options.seed);
+	var bits = Array.from({length: time.length}, function (_, index) {
+		return period[index % period.length];
+	});
+	var samples = bits.map(function (bit) { return bit ? highVolts : lowVolts; });
+	var bitRate = 1 / step;
+	if (!Number.isFinite(bitRate)) {
+		throw new RangeError('PN clock spacing produces an invalid bit rate.');
+	}
+	var waveform = {
+		kind: 'PN', mode: 'PN' + stages, stages: stages, bits: bits, samples: samples,
+		time: time.slice(), samplesPerBit: 1, sampleRateHz: bitRate,
+		bitRate: bitRate, lowVolts: lowVolts, highVolts: highVolts
+	};
+	waveform.out = function (selector) {
+		if (selector === 'bits') return bits.slice();
+		if (selector === 'samples') return samples.slice();
+		if (selector === 'time') return waveform.time.slice();
+		if (selector === 'bit count') return bits.length;
+		if (selector === 'sample count') return samples.length;
+		if (selector === 'bit rate') return bitRate;
+		if (selector === 'sample rate' || selector === 'clock rate') return bitRate;
+		if (selector === 'waveform') {
+			return [['Time (ns)', 'Output (V)']].concat(waveform.time.map(function (value, index) {
+				return [value * 1e9, samples[index]];
+			}));
+		}
+		throw new RangeError('Unknown PN output: ' + selector);
+	};
+	return waveform;
+}
+
+// Modified: 2026-10-13
+
+function patternBits(options) {
+	var mode = options.mode === undefined ? 'PN7' : options.mode;
+	var bits = [];
+	if (typeof mode === 'string' && /^PN\d+$/.test(mode)) {
+		var stages = Number(mode.slice(2));
+		bits = pnBits(stages, options.seed === undefined ? 2 ** stages - 1 : options.seed);
+	} else if (mode === 'ASCII') {
+		if (typeof options.message !== 'string' || options.message.length === 0) {
+			throw new TypeError('ASCII mode requires a nonempty message.');
+		}
+		for (var character = 0; character < options.message.length; character++) {
+			var code = options.message.charCodeAt(character);
+			if (code > 127) throw new RangeError('ASCII mode accepts only characters U+0000 through U+007F.');
+			for (var shift = 7; shift >= 0; shift--) bits.push((code >> shift) & 1);
+		}
+	} else if (mode === 'bits') {
+		if (typeof options.bits === 'string') {
+			if (!/^[01]+$/.test(options.bits)) throw new TypeError('bits mode requires a nonempty 0/1 string.');
+			bits = options.bits.split('').map(Number);
+		} else if (Array.isArray(options.bits) && options.bits.length > 0 &&
+			options.bits.every(function (bit) { return bit === 0 || bit === 1; })) {
+			bits = options.bits.slice();
+		} else {
+			throw new TypeError('bits mode requires a nonempty array of 0s and 1s or a 0/1 string.');
+		}
+	} else {
+		throw new RangeError('digitalTx mode must be PN2 through PN16, ASCII, or bits.');
+	}
+	return {mode: mode, bits: bits};
+}
+
+// Describe an input waveform; the circuit itself remains an ordinary nPort.
+// mod() may fill a caller-owned list instead of replacing the global default.
+function createDigitalTx(options = {}, fftList) {
+	if (!options || Array.isArray(options) || typeof options !== 'object') {
+		throw new TypeError('digitalTx expects an options object.');
+	}
+	if (fftList !== undefined && !Array.isArray(fftList)) {
+		throw new TypeError('mod fftList must be an array.');
+	}
+	if (global.twoTone) throw new RangeError('Clear global.twoTone before digital waveform analysis.');
+	var input = options.input;
+	if (input !== undefined && (Object.keys(options).some(function (key) {
+		return key !== 'input' && key !== 'samplesPerBit';
+	}) || !input ||
+		input.kind !== 'PN' || !Number.isInteger(input.stages) ||
+		input.stages < 2 || input.stages > 16 || input.mode !== 'PN' + input.stages ||
+		!Array.isArray(input.bits) ||
+		!Array.isArray(input.samples) || !Array.isArray(input.time) ||
+		input.bits.length < 2 ** input.stages - 1 ||
+		input.bits.length % (2 ** input.stages - 1) !== 0 ||
+		input.samples.length !== input.time.length ||
+		input.samples.length !== input.bits.length ||
+		input.samples.some(function (sample) { return !Number.isFinite(sample); }))) {
+		throw new TypeError('digitalTx input must be a PN clock waveform with only an optional samplesPerBit setting.');
+	}
+	var bitRate = input ? input.bitRate : options.bitRate === undefined ? 1e9 : options.bitRate;
+	var samplesPerBit = options.samplesPerBit === undefined ? 8 : options.samplesPerBit;
+	var lowVolts = input ? input.lowVolts : options.lowVolts === undefined ? 0 : options.lowVolts;
+	var highVolts = input ? input.highVolts : options.highVolts === undefined ? 1 : options.highVolts;
+	if (!Number.isFinite(bitRate) || bitRate <= 0 ||
+		!Number.isInteger(samplesPerBit) || samplesPerBit < 1 ||
+		!Number.isFinite(lowVolts) || !Number.isFinite(highVolts) ||
+		!Number.isFinite(global.Ro) || global.Ro <= 0) {
+		throw new RangeError('digitalTx needs a positive bit rate, positive integer samples per bit, finite voltage levels, and positive global.Ro.');
+	}
+	var pattern = input ? {mode: input.mode, bits: input.bits.slice()} : patternBits(options);
+	var samples = input ? input.samples.flatMap(function (sample) {
+		return Array(samplesPerBit).fill(sample);
+	}) : pattern.bits.flatMap(function (bit) {
+		return Array(samplesPerBit).fill(bit ? highVolts : lowVolts);
+	});
+	var sampleCount = samples.length;
+	var sampleRateHz = bitRate * samplesPerBit;
+	if (!Number.isFinite(sampleRateHz)) throw new RangeError('digitalTx sample rate must be finite.');
+	var spectrum = FFT(samples);
+	var frequencyList = Array.from({length: Math.floor(sampleCount / 2) + 1}, function (_, bin) {
+		return bin * sampleRateHz / sampleCount;
+	});
+	if (fftList === undefined) {
+		global.fList = frequencyList;
+	} else {
+		fftList.length = 0;
+		for (var frequencyIndex = 0; frequencyIndex < frequencyList.length; frequencyIndex++) {
+			fftList.push(frequencyList[frequencyIndex]);
+		}
+	}
+	var tx = {
+		mode: pattern.mode,
+		bits: pattern.bits,
+		samples: samples,
+		fList: frequencyList,
+		spectrum: spectrum.slice(0, frequencyList.length),
+		sampleRateHz: sampleRateHz,
+		sampleCount: sampleCount,
+		samplesPerBit: samplesPerBit,
+		lowVolts: lowVolts,
+		highVolts: highVolts,
+		time: input ? input.time.flatMap(function (clockTime) {
+			return Array.from({length: samplesPerBit}, function (_, index) {
+				return clockTime + index / sampleRateHz;
+			});
+		}) : undefined,
+		referenceImpedanceOhms: global.Ro
+	};
+	tx.out = function (selector) {
+		if (selector === 'mode') return tx.mode;
+		if (selector === 'bit count') return tx.bits.length;
+		if (selector === 'sample count') return tx.sampleCount;
+		if (selector === 'frequency count') return tx.fList.length;
+		if (selector === 'frequencies') return tx.fList.slice();
+		if (selector === 'spectrum') return tx.spectrum.map(function (value) { return value.copy(); });
+		throw new RangeError('Unknown digitalTx output: ' + selector);
+	};
+	return tx;
+}
+
+function digitalTx(options = {}) {
+	return createDigitalTx(options);
+}
+
+// Modified: 2026-10-08
+
+// Two independent standard-normal samples per pair of uniform draws.
+function normalSampler() {
+	var spare;
+	return function () {
+		if (spare !== undefined) {
+			var result = spare;
+			spare = undefined;
+			return result;
+		}
+		var radius = Math.sqrt(-2 * Math.log(1 - Math.random()));
+		var angle = 2 * Math.PI * Math.random();
+		spare = radius * Math.sin(angle);
+		return radius * Math.cos(angle);
+	};
+}
+
+// Return one real-waveform-compatible FFT noise draw in volts. The noise
+// analysis includes source, termination, and component covariance in W/Hz.
+function noiseWaveformSpectrum(stage, signal, inputPort, outputPort, options) {
+	var count = signal.sampleCount;
+	var binWidth = signal.sampleRateHz / count;
+	var sampleNormal = normalSampler();
+	var noiseRows = stage.noise;
+	var spectrum = new Array(signal.rows.length);
+	for (var bin = 0; bin < spectrum.length; bin++) {
+		var density = noiseAnalysis(stage.spars[bin], noiseRows[bin].C,
+			inputPort, outputPort, options).outputNoiseDensity;
+		var voltageDensity = density * signal.referenceImpedanceOhms;
+		var selfConjugate = bin === 0 || (count % 2 === 0 && bin === count / 2);
+		if (selfConjugate) {
+			// DC and Nyquist each represent half a positive-frequency bin.
+			var endpointStd = count * Math.sqrt(voltageDensity * binWidth / 2);
+			spectrum[bin] = complex(endpointStd * sampleNormal(), 0);
+		} else {
+			// A positive bin and its negative-frequency conjugate share one bin's power.
+			var quadratureStd = count * Math.sqrt(voltageDensity * binWidth) / 2;
+			spectrum[bin] = complex(quadratureStd * sampleNormal(), quadratureStd * sampleNormal());
+		}
+	}
+	return spectrum;
+}
+
+// Modified: 2026-10-08
+
+// Reconstruct the output signal and one independent noise realization.
+function digitalRx(stage, options = {}) {
+	if (!stage || !stage.signal || !Array.isArray(stage.spars)) {
+		throw new TypeError('digitalRx requires an nPort containing a digital signal.');
+	}
+	if (!options || Array.isArray(options) || typeof options !== 'object') {
+		throw new TypeError('digitalRx options must be an object.');
+	}
+	if (options.mode !== undefined) {
+		throw new RangeError('Select digitalRx output with .out() instead of mode.');
+	}
+	if (options.noise !== undefined && typeof options.noise !== 'boolean') {
+		throw new TypeError('digitalRx noise must be true or false.');
+	}
+	var signal = stage.signal;
+	var portCount = Math.sqrt(stage.spars[0].length - 1);
+	var outputPort = options.outputPort === undefined ? 2 : options.outputPort;
+	var inputPort = options.inputPort === undefined ? 1 : options.inputPort;
+	if (!Number.isInteger(outputPort) || outputPort < 1 || outputPort > portCount) {
+		throw new RangeError('digitalRx outputPort is outside the nPort dimensions.');
+	}
+	if (!Number.isInteger(inputPort) || inputPort < 1 || inputPort > portCount) {
+		throw new RangeError('digitalRx inputPort is outside the nPort dimensions.');
+	}
+	var count = signal.sampleCount;
+	if (signal.rows.length !== Math.floor(count / 2) + 1) {
+		throw new RangeError('Digital signal rows do not cover DC through Nyquist.');
+	}
+	var spectrum = new Array(count);
+	var voltageScale = Math.sqrt(signal.referenceImpedanceOhms);
+	var noiseSpectrum = options.noise === false ? null :
+		noiseWaveformSpectrum(stage, signal, inputPort, outputPort, options);
+	for (var bin = 0; bin < signal.rows.length; bin++) {
+		var wave = signal.rows[bin].waves[outputPort - 1];
+		var voltage = complex(wave.getR() * voltageScale, wave.getI() * voltageScale);
+		if (noiseSpectrum) voltage = voltage.add(noiseSpectrum[bin]);
+		var selfConjugate = bin === 0 || (count % 2 === 0 && bin === count / 2);
+		if (selfConjugate) {
+			if (Math.abs(voltage.getI()) > 1e-9 * Math.max(1, Math.abs(voltage.getR()))) {
+				throw new RangeError('DC and Nyquist output bins must be real to reconstruct a real waveform.');
+			}
+			spectrum[bin] = complex(voltage.getR(), 0);
+		} else {
+			spectrum[bin] = voltage;
+			spectrum[count - bin] = complex(voltage.getR(), -voltage.getI());
+		}
+	}
+	var samples = invFFT(spectrum);
+	return {
+		out: function (selector = 'waveform') {
+			if (selector === 'sample count') return count;
+			if (selector === 'frequency count') return signal.rows.length;
+			if (selector === 'frequencies') {
+				return signal.rows.map(function (row) { return row.frequency; });
+			}
+			if (selector === 'spectrum') {
+				return spectrum.slice(0, signal.rows.length).map(function (value) { return value.copy(); });
+			}
+			if (selector === 'bit count') {
+				if (!Number.isInteger(signal.samplesPerBit) || signal.samplesPerBit < 1) {
+					throw new RangeError('Receiver bit count requires samplesPerBit metadata.');
+				}
+				return count / signal.samplesPerBit;
+			}
+			if (selector === 'bits' || selector === 'ASCII text') {
+				var samplesPerBit = signal.samplesPerBit;
+				if (!Number.isInteger(samplesPerBit) || samplesPerBit < 1 ||
+					count % samplesPerBit !== 0) {
+					throw new RangeError('Bit reception requires samplesPerBit metadata.');
+				}
+				var bitVoltages = [];
+				for (var bitStart = 0; bitStart < count; bitStart += samplesPerBit) {
+					bitVoltages.push(samples[bitStart + Math.floor(samplesPerBit / 2)].getR());
+				}
+				var threshold = options.thresholdVolts;
+				if (threshold === undefined) {
+					var sortedVoltages = bitVoltages.slice().sort(function (a, b) { return a - b; });
+					var lowCenter = sortedVoltages[Math.floor(sortedVoltages.length * 0.1)];
+					var highCenter = sortedVoltages[Math.floor(sortedVoltages.length * 0.9)];
+					if (lowCenter === highCenter) {
+						lowCenter = sortedVoltages[0];
+						highCenter = sortedVoltages[sortedVoltages.length - 1];
+					}
+					if (lowCenter === highCenter) {
+						throw new RangeError('ASCII reception needs two voltage levels or an explicit thresholdVolts.');
+					}
+					for (var iteration = 0; iteration < 12; iteration++) {
+						var split = (lowCenter + highCenter) / 2;
+						var lowSum = 0, lowCount = 0, highSum = 0, highCount = 0;
+						for (var voltageIndex = 0; voltageIndex < bitVoltages.length; voltageIndex++) {
+							if (bitVoltages[voltageIndex] <= split) {
+								lowSum += bitVoltages[voltageIndex];
+								lowCount++;
+							} else {
+								highSum += bitVoltages[voltageIndex];
+								highCount++;
+							}
+						}
+						if (lowCount === 0 || highCount === 0) break;
+						lowCenter = lowSum / lowCount;
+						highCenter = highSum / highCount;
+					}
+					threshold = (lowCenter + highCenter) / 2;
+				}
+				if (!Number.isFinite(threshold)) throw new RangeError('ASCII thresholdVolts must be finite.');
+				var bits = bitVoltages.map(function (voltage) { return voltage > threshold ? 1 : 0; });
+				if (selector === 'bits') return bits;
+				if (bits.length % 8 !== 0) {
+					throw new RangeError('ASCII reception requires complete eight-bit bytes.');
+				}
+				var message = '';
+				for (var byte = 0; byte < bits.length; byte += 8) {
+					var code = 0;
+					for (var bit = 0; bit < 8; bit++) {
+						code = (code << 1) | bits[byte + bit];
+					}
+					message += code > 127 ? '\uFFFD' : String.fromCharCode(code);
+				}
+				return message;
+			}
+			if (selector !== 'waveform') {
+				throw new RangeError('Unknown digitalRx output: ' + selector);
+			}
+			var output = [['Time (ns)', 'Output (V)']];
+			for (var index = 0; index < count; index++) {
+				output.push([index * 1e9 / signal.sampleRateHz, samples[index].getR()]);
+			}
+			return output;
+		}
+	};
+}
+
+// Modified: 2026-10-13
+
+// Compare independent receiver decisions with a known transmitted bit pattern.
+function bitErrorRate(tx, stage, options = {}) {
+	if (!tx || !Array.isArray(tx.bits) || tx.bits.length === 0 ||
+		tx.bits.some(function (bit) { return bit !== 0 && bit !== 1; })) {
+		throw new TypeError('bitErrorRate requires transmitted bits from digitalTx or mod.');
+	}
+	if (!options || Array.isArray(options) || typeof options !== 'object') {
+		throw new TypeError('bitErrorRate options must be an object.');
+	}
+	var receptions = options.receptions === undefined ? 100 : options.receptions;
+	if (!Number.isInteger(receptions) || receptions < 1) {
+		throw new RangeError('bitErrorRate receptions must be a positive integer.');
+	}
+	var receiverOptions = {...options};
+	delete receiverOptions.receptions;
+	var receiver = receiverOptions.receiver === undefined ? digitalRx : receiverOptions.receiver;
+	delete receiverOptions.receiver;
+	if (typeof receiver !== 'function') {
+		throw new TypeError('bitErrorRate receiver must be a function.');
+	}
+	var errors = 0;
+	for (var reception = 0; reception < receptions; reception++) {
+		var receivedBits = receiver(stage, receiverOptions).out('bits');
+		if (receivedBits.length !== tx.bits.length) {
+			throw new RangeError('Transmitted and received bit counts must match.');
+		}
+		for (var bit = 0; bit < receivedBits.length; bit++) {
+			if (receivedBits[bit] !== tx.bits[bit]) errors++;
+		}
+	}
+	return errors / (receptions * tx.bits.length);
+}
+
+// Modified: 2026-10-13
+
+// Prepare a real, cosine-modulated digital source for the nPort frequency grid.
+function mod(options = {}) {
+	if (!options || Array.isArray(options) || typeof options !== 'object') {
+		throw new TypeError('mod expects an options object.');
+	}
+	var carrierHz = options.carrierHz === undefined ? 0 : options.carrierHz;
+	if (!Number.isFinite(carrierHz) || carrierHz < 0) {
+		throw new RangeError('mod carrierHz must be a nonnegative finite frequency.');
+	}
+	var txOptions = {...options};
+	delete txOptions.carrierHz;
+	delete txOptions.fftList;
+	var tx = createDigitalTx(txOptions, options.fftList);
+	if (carrierHz >= tx.sampleRateHz / 2) {
+		throw new RangeError('mod carrierHz must be below the sample Nyquist frequency.');
+	}
+	if (carrierHz !== 0) {
+		tx.samples = tx.samples.map(function (voltage, index) {
+			return voltage * Math.cos(2 * Math.PI * carrierHz * index / tx.sampleRateHz);
+		});
+		tx.spectrum = FFT(tx.samples).slice(0, tx.fList.length);
+	}
+	var originalOut = tx.out;
+	tx.carrierHz = carrierHz;
+	tx.out = function (selector) {
+		if (selector === 'waveform') {
+			return [['Time (ns)', 'Output (V)']].concat(tx.samples.map(function (voltage, index) {
+				return [index * 1e9 / tx.sampleRateHz, voltage];
+			}));
+		}
+		if (selector === 'settings') {
+			return {
+				mode: tx.mode,
+				carrierHz: carrierHz,
+				bitRate: tx.sampleRateHz / tx.samplesPerBit,
+				samplesPerBit: tx.samplesPerBit,
+				sampleRateHz: tx.sampleRateHz,
+				sampleCount: tx.sampleCount,
+				frequencyCount: tx.fList.length,
+				lowVolts: tx.lowVolts,
+				highVolts: tx.highVolts
+			};
+		}
+		if (selector === 'frequency table') {
+			return [['Bin', 'Frequency (Hz)']].concat(tx.fList.map(function (frequency, bin) {
+				return [bin, frequency];
+			}));
+		}
+		return originalOut(selector);
+	};
+	return tx;
+}
+
+// Modified: 2026-10-13
+
+function decideBits(levels, threshold) {
+	if (threshold === undefined) {
+		var sorted = levels.slice().sort(function (a, b) { return a - b; });
+		var lowCenter = sorted[Math.floor(sorted.length * 0.1)];
+		var highCenter = sorted[Math.floor(sorted.length * 0.9)];
+		if (lowCenter === highCenter) {
+			lowCenter = sorted[0];
+			highCenter = sorted[sorted.length - 1];
+		}
+		if (lowCenter === highCenter) {
+			throw new RangeError('Bit reception needs two voltage levels or an explicit thresholdVolts.');
+		}
+		for (var iteration = 0; iteration < 12; iteration++) {
+			var split = (lowCenter + highCenter) / 2;
+			var lowSum = 0, lowCount = 0, highSum = 0, highCount = 0;
+			levels.forEach(function (level) {
+				if (level <= split) { lowSum += level; lowCount++; }
+				else { highSum += level; highCount++; }
+			});
+			if (!lowCount || !highCount) break;
+			lowCenter = lowSum / lowCount;
+			highCenter = highSum / highCount;
+		}
+		threshold = (lowCenter + highCenter) / 2;
+	}
+	if (!Number.isFinite(threshold)) throw new RangeError('demod thresholdVolts must be finite.');
+	return levels.map(function (level) { return level > threshold ? 1 : 0; });
+}
+
+// Recover baseband levels from a real carrier using the known carrier phase.
+function demod(stage, options = {}) {
+	var receiver = digitalRx(stage, options);
+	var signal = stage.signal;
+	var carrierHz = signal.carrierHz || 0;
+	if (carrierHz === 0) return receiver;
+	var samplesPerBit = signal.samplesPerBit;
+	if (!Number.isInteger(samplesPerBit) || samplesPerBit < 1 ||
+		signal.sampleCount % samplesPerBit !== 0) {
+		throw new RangeError('Carrier demodulation requires a whole number of samples per bit.');
+	}
+	var passband = receiver.out('waveform');
+	var sampleRateHz = signal.sampleRateHz;
+	var levels = [];
+	for (var bitStart = 0; bitStart < signal.sampleCount; bitStart += samplesPerBit) {
+		var numerator = 0, denominator = 0;
+		for (var offset = 0; offset < samplesPerBit; offset++) {
+			var index = bitStart + offset;
+			var reference = Math.cos(2 * Math.PI * carrierHz * index / sampleRateHz);
+			numerator += passband[index + 1][1] * reference;
+			denominator += reference * reference;
+		}
+		if (denominator < 1e-12) throw new RangeError('Carrier has insufficient energy in a bit interval.');
+		levels.push(numerator / denominator);
+	}
+	var baseband = levels.flatMap(function (level) {
+		return Array(samplesPerBit).fill(level);
+	});
+	var bits;
+	var receivedBits = function () {
+		if (bits === undefined) bits = decideBits(levels, options.thresholdVolts);
+		return bits;
+	};
+	return {
+		out: function (selector = 'waveform') {
+			if (selector === 'carrier waveform' || selector === 'passband waveform') {
+				return receiver.out('waveform');
+			}
+			if (selector === 'waveform') {
+				return [['Time (ns)', 'Output (V)']].concat(baseband.map(function (level, index) {
+					return [index * 1e9 / sampleRateHz, level];
+				}));
+			}
+			if (selector === 'bits') return receivedBits().slice();
+			if (selector === 'bit count') return levels.length;
+			if (selector === 'spectrum') return FFT(baseband).slice(0, signal.rows.length);
+			if (selector === 'carrier spectrum') return receiver.out('spectrum');
+			if (selector === 'ASCII text') {
+				var bits = receivedBits();
+				if (bits.length % 8 !== 0) throw new RangeError('ASCII reception requires complete eight-bit bytes.');
+				var text = '';
+				for (var byte = 0; byte < bits.length; byte += 8) {
+					var code = 0;
+					for (var bit = 0; bit < 8; bit++) code = (code << 1) | bits[byte + bit];
+					text += code > 127 ? '\uFFFD' : String.fromCharCode(code);
+				}
+				return text;
+			}
+			return receiver.out(selector);
+		}
+	};
 }
 
 function getCircuitTitle() {
@@ -10636,4 +11648,4 @@ function bodyWidth () {
 	return width;
 }
 
-export { Amp, Attn, C, L, Load, Open, R, Shift90, Short, Tclin, Tee, Tee4, Tee5, Tlin, bodyWidth, callCodemirror, cascade, chebyLPLCs, chebyLPNsec, chebyLPgk, complex, dim, diode1N4148, dup, editor, getCircuitTitle, global, lineChart, lineTable, log, lpfGen, matrix, mbend, mclin, mcross, mlin, mstep, mtee, mtfr, mvgnd, mvia, nodal, paC, paL, paPaLC, paPaRC, paPaRL, paPaRLC, paR, paSeLC, paSeRC, paSeRL, paSeRLC, run, runButton, seC, seL, sePaLC, sePaRC, sePaRL, sePaRLC, seR, seSeLC, seSeRC, seSeRL, seSeRLC, seriesTee, smithChart, trf, trf4Port, version };
+export { Amp, Attn, C, FFT, L, Load, Open, PN, R, Shift90, Short, Tclin, Tee, Tee4, Tee5, Thru, Tlin, bitErrorRate, bodyWidth, callCodemirror, cascade, chebyLPLCs, chebyLPNsec, chebyLPgk, complex, demod, digitalRx, digitalTx, dim, diode1N4148, dup, editor, getCircuitTitle, global, invFFT, lineChart, lineTable, log, lpfGen, matrix, mbend, mclin, mcross, mlin, mod, mstep, mtee, mtfr, mvgnd, mvia, nodal, paC, paL, paPaLC, paPaRC, paPaRL, paPaRLC, paR, paSeLC, paSeRC, paSeRL, paSeRLC, run, runButton, seC, seL, sePaLC, sePaRC, sePaRL, sePaRLC, seR, seSeLC, seSeRC, seSeRL, seSeRLC, seriesTee, smithChart, trf, trf4Port, version };

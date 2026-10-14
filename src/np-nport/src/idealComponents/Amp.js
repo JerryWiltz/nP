@@ -1,8 +1,9 @@
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 import {complex} from '../../../np-math/src/complex';
 import {global} from '../../../np-global/src/global';
 import {nPort} from '../nPort';
 import {analysisFrequencies} from '../analysisFrequencies';
+import {componentSettings} from '../componentSettings';
 
 const kB = 1.380649e-23;
 
@@ -59,7 +60,7 @@ function covarianceFromNoiseParameters(spars, fMinDb, gammaOpt, noiseResistanceO
 
 // Every form starts with the same frequency-flat S and noise parameters.
 // Object options replace only the named defaults; the positional form sets S21 and Fmin.
-export function Amp(gainDb = 20, noiseFigureDb = 4, referenceTemperature = 290) {
+export function Amp(gainDb = 20, noiseFigureDb = 4, referenceTemperature = 290, options = {}) {
 	var defaults = {
 		spars: [complex(0, 0), complex(0, 0), complex(10, 0), complex(0, 0)],
 		fMinDb: 4,
@@ -69,7 +70,6 @@ export function Amp(gainDb = 20, noiseFigureDb = 4, referenceTemperature = 290) 
 	};
 	var specifiedSpars = defaults.spars;
 	var noiseParameters = defaults;
-	var options;
 	var oip2dBm;
 	var harmonicOip2dBm;
 	var oip3dBm;
@@ -156,7 +156,8 @@ export function Amp(gainDb = 20, noiseFigureDb = 4, referenceTemperature = 290) 
 	var amplifier = new nPort();
 	var sparsArray = [];
 	var noiseArray = [];
-	var frequencies = analysisFrequencies(global);
+	var settings = componentSettings(global, options);
+	var frequencies = analysisFrequencies(settings);
 	for (var i = 0; i < frequencies.length; i++) {
 		var frequency = frequencies[i];
 		sparsArray[i] = [frequency].concat(specifiedSpars.map(function (s) { return s.copy(); }));
@@ -169,9 +170,9 @@ export function Amp(gainDb = 20, noiseFigureDb = 4, referenceTemperature = 290) 
 	}
 	amplifier.setspars(sparsArray);
 	amplifier.noise = noiseArray;
-	amplifier.setglobal(global);
+	amplifier.setglobal(settings);
 	amplifier.referenceTemperature = referenceTemperature;
-	amplifier._displayFrequencies = global.fList.slice();
+	amplifier._displayFrequencies = settings.fList.slice();
 	amplifier._intermod = {
 		type: 'amp',
 		p2: ip2Watts,

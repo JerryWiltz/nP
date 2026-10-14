@@ -1,8 +1,9 @@
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 import { complex } from '../../../np-math/src/complex';
 import { nPort } from '../nPort';
 import { global } from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
+import {componentSettings} from '../componentSettings';
 import { C0, COPPER_RESISTIVITY, INCH_TO_METER, MU0, VACUUM_IMPEDANCE } from '../physicalConstants';
 import {passiveNoiseCovariance} from '../passiveNoise';
 import {normalizePhysicalModelOptions, physicalModelMetadata, requireNonnegative, requirePositive, resistivityScale} from '../physicalModels/options';
@@ -83,6 +84,7 @@ var singleLineDispersion = function (u, er, erEff0, z0, frequency, Height) {
 export function mlin(input = {}) {
 	if (arguments.length > 1) throw new TypeError('nP.mlin() accepts one options object.');
 	var options = normalizePhysicalModelOptions('mlin', input, [
+			{name: 'fList', defaultValue: global.fList},
 			{name: 'width', aliases: ['Width'], defaultValue: 0.023 * INCH_TO_METER},
 			{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
 			{name: 'length', aliases: ['Length'], defaultValue: 0.5 * INCH_TO_METER},
@@ -102,7 +104,8 @@ export function mlin(input = {}) {
 	requirePositive('mlin', 'relativePermittivity', er); requireNonnegative('mlin', 'resistivity', rho * COPPER_RESISTIVITY);
 	requireNonnegative('mlin', 'lossTangent', tand); requireNonnegative('mlin', 'roughnessRms', roughnessRms); requireNonnegative('mlin', 'temperature', temperature);
 	var mlin = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro, 0), two = complex(2, 0), freqCount = 0, s11, s12, s21, s22, sparsArray = [], noiseArray = [];
 	var Atlin = {}, Btlin = {}, Ctlin = {}, Zmlin = {}, Ds = {}, alpha = 0, beta = 0, gamma = {};
 
@@ -164,9 +167,9 @@ export function mlin(input = {}) {
 	};
 	mlin.setspars(sparsArray);
 	mlin.noise = noiseArray;
-	mlin.setglobal(global);
+	mlin.setglobal(settings);
 	var firstDisplayAnalysis = analysis.find(function (point) {
-		return point.frequency === global.fList[0];
+		return point.frequency === settings.fList[0];
 	});
 	mlin.microstrip = {
 		Width,
