@@ -1,11 +1,11 @@
-// Modified: 2026-10-13
-import {digitalRx} from './digitalRx';
+// Modified: 2026-10-14
+import {demod} from './demod';
 
 // Compare independent receiver decisions with a known transmitted bit pattern.
 export function bitErrorRate(tx, stage, options = {}) {
 	if (!tx || !Array.isArray(tx.bits) || tx.bits.length === 0 ||
 		tx.bits.some(function (bit) { return bit !== 0 && bit !== 1; })) {
-		throw new TypeError('bitErrorRate requires transmitted bits from digitalTx or mod.');
+		throw new TypeError('bitErrorRate requires transmitted bits from mod.');
 	}
 	if (!options || Array.isArray(options) || typeof options !== 'object') {
 		throw new TypeError('bitErrorRate options must be an object.');
@@ -16,7 +16,7 @@ export function bitErrorRate(tx, stage, options = {}) {
 	}
 	var receiverOptions = {...options};
 	delete receiverOptions.receptions;
-	var receiver = receiverOptions.receiver === undefined ? digitalRx : receiverOptions.receiver;
+	var receiver = receiverOptions.receiver === undefined ? demod : receiverOptions.receiver;
 	delete receiverOptions.receiver;
 	if (typeof receiver !== 'function') {
 		throw new TypeError('bitErrorRate receiver must be a function.');

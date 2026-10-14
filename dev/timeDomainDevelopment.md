@@ -1,15 +1,15 @@
-<!-- Modified: 2026-10-13 -->
+<!-- Modified: 2026-10-14 -->
 # Time-domain development
 
 ## 1. Purpose
 
-Send the ASCII message `now is the time for all good men to come to the aid of their country` through a matched 290 K attenuator. `digitalTx()` returns signal data: bit pattern, complex FFT spectrum, frequency list, sample rate, and reference impedance. It also sets `global.fList`. Construct the attenuator after `digitalTx()`, then give the signal to `nodal()` at port 1. The completed nPort carries the resulting complex output waves. Increasing attenuation lowers the received signal while the matched 290 K noise floor remains about the same. This example sets the attenuation near the point where BER is $10^{-2}$ and measures it over repeated receptions. A separate PN7 section plots the clocked and received waveforms.
+Send the ASCII message `now is the time for all good men to come to the aid of their country` through a matched 290 K attenuator. `mod()` returns signal data: bit pattern, complex FFT spectrum, frequency list, sample rate, and reference impedance. It also sets `global.fList`. Construct the attenuator after `mod()`, then give the signal to `nodal()` at port 1. The completed nPort carries the resulting complex output waves. Increasing attenuation lowers the received signal while the matched 290 K noise floor remains about the same. This example sets the attenuation near the point where BER is $10^{-2}$ and measures it over repeated receptions. A separate PN7 section plots the clocked and received waveforms.
 
 ## 2. The example
 
 ```js
 var message = 'now is the time for all good men to come to the aid of their country';
-var tx = nP.digitalTx({mode: 'ASCII', message: message, bitRate: 1e9, samplesPerBit: 8, highVolts: 1e-3});
+var tx = nP.mod({mode: 'ASCII', message: message, bitRate: 1e9, samplesPerBit: 8, highVolts: 1e-3});
 var attenuationDb = 17.6;
 var attenuator = nP.Attn(attenuationDb, 290);
 var chain = nP.nodal(
@@ -18,35 +18,33 @@ var chain = nP.nodal(
     {signal: tx, inputPort: 1}
 );
 nP.log('Transmitted: ' + message);
-var Rxout = nP.digitalRx(chain);
-var text = Rxout.out('ASCII text');
-nP.log('Recieved: ' + text);
+var rx = nP.demod(chain);
+var text = rx.out('ASCII text');
+nP.log('Received: ' + text);
 nP.log('Attenuation: ' + attenuationDb + ' dB');
-var oldBer = nP.bitErrorRate(tx, chain, {receptions: 100});
-nP.log('Measured BER with digitalRx: ' + oldBer.toExponential(2));
+var ber = nP.bitErrorRate(tx, chain, {receptions: 100});
+nP.log('Measured BER: ' + ber.toExponential(2));
 ```
 
-`digitalRx()` returns a receiver result. Its `out('ASCII text')` method returns the received string; the page passes that string to `nP.log()`. The same result also provides `out('bits')`, `out('bit count')`, `out('sample count')`, `out('frequency count')`, `out('frequencies')`, `out('spectrum')`, and `out('waveform')`. `bitErrorRate()` compares received bit decisions with the known transmitter bits over 100 independent noise draws. The receiver itself does not need the transmitter.
-
-The page then repeats the circuit with `nP.mod({mode: 'ASCII', message: message, carrierHz: 0, bitRate: 1e9, samplesPerBit: 8, highVolts: 1e-3})` and `nP.demod(modChain)`. `modTx.out('settings')` displays the actual choices. `nP.bitErrorRate(modTx, modChain, {receptions: 100, receiver: nP.demod})` measures the new path. The two paths use identical FFT frequencies and receiver calculations at 0 Hz. Each BER estimate uses fresh random noise, so the displayed values should be close rather than identical. RF carriers are not implemented yet.
+`demod()` returns a receiver result. Its `out('ASCII text')` method returns the received string; the page passes that string to `nP.log()`. The same result also provides `out('bits')`, `out('bit count')`, `out('sample count')`, `out('frequency count')`, `out('frequencies')`, `out('spectrum')`, and `out('waveform')`. `bitErrorRate()` compares received bit decisions with the known transmitter bits over 100 independent noise draws. The receiver itself does not need the transmitter.
 
 `Attn(17.6, 290)` is a normal nPort with $S_{11}=S_{22}=0$ and $S_{12}=S_{21}=10^{-17.6/20}\approx0.132$ at every frequency, including DC. It also has its own 290 K noise covariance. The signal is applied at external port 1. The matched reference impedance is `nP.global.Ro` (50 Ω by default). For a two-port chain, the equivalent call is `nP.cascade(attenuator, {signal: tx, inputPort: 1})`.
 
 ## 3. Frequencies and signal data
 
-The 68 characters in the message become 544 bits: eight bits per ASCII character, most-significant bit first. At 1 Gbit/s and eight samples per bit, one repeating message has 4,352 time samples and 2,177 nonnegative FFT bins from DC to 4 GHz. `tx.out('frequency count')` returns `2177`; the frequency spacing is $R_b/544$, about 1.838 MHz. `Rxout.out('ASCII text')` samples the center of each bit, estimates the centers of the two received voltage levels, groups bit decisions into bytes, and returns the text. An explicit `thresholdVolts` option is available when a known decision level is preferred.
+The 68 characters in the message become 544 bits: eight bits per ASCII character, most-significant bit first. At 1 Gbit/s and eight samples per bit, one repeating message has 4,352 time samples and 2,177 nonnegative FFT bins from DC to 4 GHz. `tx.out('frequency count')` returns `2177`; the frequency spacing is $R_b/544$, about 1.838 MHz. `rx.out('ASCII text')` samples the center of each bit, estimates the centers of the two received voltage levels, groups bit decisions into bytes, and returns the text. An explicit `thresholdVolts` option is available when a known decision level is preferred.
 
-`tx.spectrum` contains complex input-voltage FFT bins, and `tx.fList` contains their frequencies. Neither `tx` nor its spectrum is an nPort or a circuit stage. After the signal is applied, the resulting nPort's `.signal` contains the sample rate, sample count, reference impedance, and a complex outgoing-wave vector for each S-parameter frequency row. A later `nodal()` or `cascade()` call can reuse that nPort and propagate its signal. Thus `digitalRx(chain)` does not need the transmitter. The complex waves retain amplitude and phase.
+`tx.spectrum` contains complex input-voltage FFT bins, and `tx.fList` contains their frequencies. Neither `tx` nor its spectrum is an nPort or a circuit stage. After the signal is applied, the resulting nPort's `.signal` contains the sample rate, sample count, reference impedance, and a complex outgoing-wave vector for each S-parameter frequency row. A later `nodal()` or `cascade()` call can reuse that nPort and propagate its signal. Thus `demod(chain)` does not need the transmitter. The complex waves retain amplitude and phase.
 
-`digitalTx()` also accepts `{mode: 'PN7'}` or `{mode: 'bits', bits: '0101'}` (or an array of zeros and ones). All modes treat the supplied bit sequence as one *repeating* period. The default voltage levels are 0 and 1 V; this example sets the high level to 1 mV. `digitalRx()` draws a fresh random noise waveform by default from the output noise density of the nPort, including source and component noise. `out('waveform')` returns a noisy voltage table in nanoseconds and volts; `digitalRx(chain, {noise: false}).out('waveform')` returns the exact signal-only table. ASCII decoding uses the `samplesPerBit` metadata carried by the nPort; it does not perform clock recovery or error correction.
+`mod()` also accepts `{mode: 'PN7'}` or `{mode: 'bits', bits: '0101'}` (or an array of zeros and ones). All modes treat the supplied bit sequence as one *repeating* period. The default voltage levels are 0 and 1 V; this example sets the high level to 1 mV. `demod()` draws a fresh random noise waveform by default from the output noise density of the nPort, including source and component noise. `out('waveform')` returns a noisy voltage table in nanoseconds and volts; `demod(chain, {noise: false}).out('waveform')` returns the exact signal-only table. ASCII decoding uses the `samplesPerBit` metadata carried by the nPort; it does not perform clock recovery or error correction.
 
 ## 4. Noise floor and bit errors
 
 At the default 290 K source temperature, a matched 50 Ω input produces about 28 µV RMS noise over the 4 GHz receiver bandwidth. The attenuator is also at 290 K, so it reduces the source noise and adds its own thermal noise; the total output noise stays near 28 µV RMS. The transmitted high level is 1 mV. At 17.6 dB attenuation, the received high level is about 132 µV.
 
-With a decision threshold near 66 µV, the 132 µV level separation gives approximately 1% bit-error probability. One 544-bit message is too short for a steady BER estimate: at $10^{-2}$, it has about five errors on average. `bitErrorRate(tx, chain, {receptions: 100})` compares 54,400 bit decisions, with a fresh noise draw for each reception. The measured BER varies around $10^{-2}$. `Rxout.out('ASCII text')` displays one noisy reception. The average 290 K output noise floor can be read with `chain.out('noiseFloor')`.
+With a decision threshold near 66 µV, the 132 µV level separation gives approximately 1% bit-error probability. One 544-bit message is too short for a steady BER estimate: at $10^{-2}$, it has about five errors on average. `bitErrorRate(tx, chain, {receptions: 100})` compares 54,400 bit decisions, with a fresh noise draw for each reception. The measured BER varies around $10^{-2}$. `rx.out('ASCII text')` displays one noisy reception. The average 290 K output noise floor can be read with `chain.out('noiseFloor')`.
 
-`nP.FFT()` and `nP.invFFT()` remain public math helpers for other sampled-signal work. They accept nonempty arrays of arbitrary length and return complex arrays. The forward transform is unscaled; the inverse divides by the sample count. `digitalTx()` and `digitalRx()` use them internally, so the user need not manage FFT bins to run this example.
+`nP.FFT()` and `nP.invFFT()` remain public math helpers for other sampled-signal work. They accept nonempty arrays of arbitrary length and return complex arrays. The forward transform is unscaled; the inverse divides by the sample count. `mod()` and `demod()` use them internally, so the user need not manage FFT bins to run this example.
 
 This first calculation is linear and periodic. The final bit transitions back to the first bit at the repetition boundary. A later capacitor example can show DC rejection and baseline wander, but startup from arbitrary stored charge is outside this periodic FFT calculation.
 

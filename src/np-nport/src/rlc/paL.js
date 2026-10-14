@@ -1,9 +1,10 @@
-// Modified: 2026-10-13
+// Modified: 2026-10-14
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
 import {componentSettings} from '../componentSettings';
+import {dcTwoPort} from './dcTwoPort';
 
 export function paL(L = 5e-9, options = {}) { // parallel capacitor nPort object
 	var paL = new nPort;
@@ -11,6 +12,10 @@ export function paL(L = 5e-9, options = {}) { // parallel capacitor nPort object
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('shuntShort', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount]);
 		Y[freqCount] = Z[freqCount].inv();
 		s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));

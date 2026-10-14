@@ -4,7 +4,7 @@ import {noiseAnalysis} from './noiseFigure';
 import {connectionModel, intermodAt, waveDbm, oipDbm} from './intermod';
 import {validateSignal, compatibleSignals, signalWithRows} from './signal';
 
-// Modified: 2026-10-13
+// Modified: 2026-10-14
 var conjugate = function (value) { return complex(value.getR(), -value.getI()); };
 
 export function nPort() { this._noise = undefined; this._signal = undefined; }; // base class for nPort objects
@@ -156,6 +156,8 @@ nPort.prototype = {
 		var parsed = selectors.map(function (selector) {
 			var match = /^s([1-9])([1-9])(dB|mag|ang|Re|Im)$/.exec(selector);
 			if (match) return {kind: 's', row: Number(match[1]) - 1, col: Number(match[2]) - 1, format: match[3]};
+			match = /^signal([1-9]\d*)(V|Deg|dBm)$/.exec(selector);
+			if (match) return {kind: 'signal', row: Number(match[1]) - 1, format: match[2]};
 			match = /^c([1-9])([1-9])(Re|Im|mag|dB)?$/.exec(selector);
 			if (match) return {kind: 'c', row: Number(match[1]) - 1, col: Number(match[2]) - 1, format: match[3] || 'Re'};
 			match = /^NF([1-9])([1-9])(dB)?$/.exec(selector);
@@ -183,7 +185,12 @@ nPort.prototype = {
 			if (selection.row >= portCount || selection.col >= portCount) {
 				throw new RangeError('nPort.out(): selected port is outside the n-port dimensions.');
 			}
-		});
+			if (selection.kind === 'signal' && (!this.signal ||
+				(this.signal.mode !== 'AM' && this.signal.mode !== 'FM' &&
+					this.signal.mode !== 'PM'))) {
+				throw new RangeError('Signal tone selectors require an AM, FM, or PM signal on the nPort.');
+			}
+		}, this);
 		var output = [['Freq'].concat(selectors)];
 		for (var frequencyIndex = 0; frequencyIndex < spars.length; frequencyIndex++) {
 			var sparsRow = spars[frequencyIndex];
@@ -196,7 +203,14 @@ nPort.prototype = {
 				var selection = parsed[selectionIndex];
 				if ((selection.kind === 'c' || selection.kind === 'NF' ||
 					selection.kind === 'noiseFloor') && noiseRow === null) noiseRow = this.noise[frequencyIndex];
-				if (selection.kind === 'NF' || selection.kind === 'noiseFloor') {
+				if (selection.kind === 'signal') {
+					var voltage = this.signal.rows[frequencyIndex].waves[selection.row]
+						.mul(complex(Math.sqrt(this.signal.referenceImpedanceOhms), 0));
+					if (selection.format === 'V') row.push(voltage.mag());
+					else if (selection.format === 'Deg') row.push(voltage.ang());
+					else row.push(10 * Math.log10(voltage.mag() ** 2 /
+						(2 * this.signal.referenceImpedanceOhms * 1e-3)));
+				} else if (selection.kind === 'NF' || selection.kind === 'noiseFloor') {
 					var noiseKey = selection.row + ',' + selection.col;
 					if (!noiseResults[noiseKey]) {
 						noiseResults[noiseKey] = noiseAnalysis(sparsRow, noiseRow.C,

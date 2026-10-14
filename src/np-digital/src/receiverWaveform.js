@@ -1,31 +1,31 @@
-// Modified: 2026-10-08
+// Modified: 2026-10-14
 import {complex} from '../../np-math/src/complex';
 import {invFFT} from '../../np-math/src/fft';
 import {noiseWaveformSpectrum} from './noiseWaveform';
 
 // Reconstruct the output signal and one independent noise realization.
-export function digitalRx(stage, options = {}) {
+export function receiveWaveform(stage, options = {}) {
 	if (!stage || !stage.signal || !Array.isArray(stage.spars)) {
-		throw new TypeError('digitalRx requires an nPort containing a digital signal.');
+		throw new TypeError('demod requires an nPort containing a digital signal.');
 	}
 	if (!options || Array.isArray(options) || typeof options !== 'object') {
-		throw new TypeError('digitalRx options must be an object.');
+		throw new TypeError('demod options must be an object.');
 	}
 	if (options.mode !== undefined) {
-		throw new RangeError('Select digitalRx output with .out() instead of mode.');
+		throw new RangeError('Select demod output with .out() instead of mode.');
 	}
 	if (options.noise !== undefined && typeof options.noise !== 'boolean') {
-		throw new TypeError('digitalRx noise must be true or false.');
+		throw new TypeError('demod noise must be true or false.');
 	}
 	var signal = stage.signal;
 	var portCount = Math.sqrt(stage.spars[0].length - 1);
 	var outputPort = options.outputPort === undefined ? 2 : options.outputPort;
 	var inputPort = options.inputPort === undefined ? 1 : options.inputPort;
 	if (!Number.isInteger(outputPort) || outputPort < 1 || outputPort > portCount) {
-		throw new RangeError('digitalRx outputPort is outside the nPort dimensions.');
+		throw new RangeError('demod outputPort is outside the nPort dimensions.');
 	}
 	if (!Number.isInteger(inputPort) || inputPort < 1 || inputPort > portCount) {
-		throw new RangeError('digitalRx inputPort is outside the nPort dimensions.');
+		throw new RangeError('demod inputPort is outside the nPort dimensions.');
 	}
 	var count = signal.sampleCount;
 	if (signal.rows.length !== Math.floor(count / 2) + 1) {
@@ -124,7 +124,7 @@ export function digitalRx(stage, options = {}) {
 				return message;
 			}
 			if (selector !== 'waveform') {
-				throw new RangeError('Unknown digitalRx output: ' + selector);
+				throw new RangeError('Unknown demod output: ' + selector);
 			}
 			var output = [['Time (ns)', 'Output (V)']];
 			for (var index = 0; index < count; index++) {

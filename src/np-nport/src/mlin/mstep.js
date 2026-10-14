@@ -1,4 +1,4 @@
-// Modified: 2026-10-13
+// Modified: 2026-10-14
 import {complex} from '../../../np-math/src/complex';
 import {matrix, dim} from '../../../np-math/src/matrix';
 import {nPort} from '../nPort';
@@ -152,6 +152,11 @@ export function mstep(input = {}) {
 
 	for (var freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		var frequency = frequencyList[freqCount];
+		if (frequency === 0) {
+			sparsArray[freqCount] = [0, complex(0, 0), complex(1, 0), complex(1, 0), complex(0, 0)];
+			analysis[freqCount] = {frequency, CsPf, LsNh, L1Nh, L2Nh, Z: null};
+			continue;
+		}
 		var z21 = complex(0, -1 / (2 * pi * frequency * CsPf * 1e-12));
 		var z11 = complex(0, 2 * pi * frequency * L1Nh * 1e-9).add(z21);
 		var z22 = complex(0, 2 * pi * frequency * L2Nh * 1e-9).add(z21);

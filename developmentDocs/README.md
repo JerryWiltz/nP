@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-13 -->
+<!-- Modified: 2026-10-14 -->
 # nP Development Documentation
 
 This directory contains internal engineering knowledge for developing nP. It records RF mathematics, equation-to-code translations, implementation decisions, data contracts, assumptions, units, references, and worked examples.
@@ -37,10 +37,11 @@ src/
 │   ├── src/
 │   │   ├── bitErrorRate.js
 │   │   ├── demod.js
-│   │   ├── digitalRx.js
-│   │   ├── digitalTx.js
 │   │   ├── mod.js
-│   │   └── noiseWaveform.js
+│   │   ├── noiseWaveform.js
+│   │   ├── PN.js
+│   │   ├── receiverWaveform.js
+│   │   └── sourceWaveform.js
 │   └── index.js
 ├── np-global/
 │   ├── src/
@@ -142,7 +143,7 @@ src/
 
 ### `nPort` object
 
-[`src/np-nport/src/nPort.js`](../src/np-nport/src/nPort.js) defines the `nPort()` constructor. Its instances carry frequency-aligned S-parameters and noise covariance. A digital transmitter adds frequency-aligned complex signal waves. Combined nPorts retain those waves and known internal amplifier intermodulation sources for reuse in later connections. `digitalRx()` draws a fresh random waveform from the output noise density when reconstructing received samples. `bitErrorRate()` compares repeated receiver bit decisions with known transmitter bits.
+[`src/np-nport/src/nPort.js`](../src/np-nport/src/nPort.js) defines the `nPort()` constructor. Its instances carry frequency-aligned S-parameters and noise covariance. A digital transmitter adds frequency-aligned complex signal waves. Combined nPorts retain those waves and known internal amplifier intermodulation sources for reuse in later connections. `demod()` draws a fresh random waveform from the output noise density when reconstructing received samples. `bitErrorRate()` compares repeated receiver bit decisions with known transmitter bits.
 
 | Member | Purpose |
 | --- | --- |
@@ -159,6 +160,7 @@ src/
 
 - [`rf-math-coding.md`](rf-math-coding.md): shared practices for translating RF mathematics into maintainable JavaScript.
 - [`nport-data-model.md`](nport-data-model.md): the shapes and invariants of n-port objects and S-parameter data.
+- [`ModDemod.md`](ModDemod.md): implemented and proposed modulation modes, transmitter frequency lists, signal attachment, and demodulation.
 - [`nodal-analysis.md`](nodal-analysis.md): the mathematical and coding model behind arbitrary n-port interconnection.
 - [`interconnection-matrix.md`](interconnection-matrix.md): an educational explanation of the \(\Gamma\) wiring matrix used by nodal analysis.
 - [`mesfet-voltage-current-noise.md`](mesfet-voltage-current-noise.md): a floating MESFET voltage/current model with dependent sources, parasitics, and semiconductor-noise covariance.

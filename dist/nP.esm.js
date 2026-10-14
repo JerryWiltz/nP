@@ -7416,18 +7416,26 @@ function oipDbm(result, product, outputPort) {
 	return 10 * Math.log10(intercept / 1e-3);
 }
 
-// Modified: 2026-10-13
+// Modified: 2026-10-14
 
 // A deterministic signal uses one complex outgoing-wave vector per S row.
 function validateSignal(signal, spars) {
-	if (!signal || !Number.isInteger(signal.sampleCount) || signal.sampleCount < 1 ||
-		!Number.isFinite(signal.sampleRateHz) || signal.sampleRateHz <= 0 ||
+	var analog = signal && (signal.mode === 'AM' || signal.mode === 'FM' || signal.mode === 'PM');
+	if (!signal || (!analog && (!Number.isInteger(signal.sampleCount) || signal.sampleCount < 1 ||
+		!Number.isFinite(signal.sampleRateHz) || signal.sampleRateHz <= 0)) ||
+		(analog && (!Number.isFinite(signal.carrierHz) || !Number.isFinite(signal.toneHz) ||
+			signal.carrierHz <= 0 || signal.toneHz <= 0 ||
+			(signal.mode === 'AM' && signal.carrierHz <= signal.toneHz) ||
+			!Array.isArray(signal.rows) || signal.rows.length !==
+				(signal.mode === 'AM' ? 3 : 2 * signal.sidebandOrder + 1) ||
+			(signal.mode !== 'AM' && (!Number.isInteger(signal.sidebandOrder) ||
+				signal.sidebandOrder < 0)))) ||
 		!Number.isFinite(signal.referenceImpedanceOhms) || signal.referenceImpedanceOhms <= 0 ||
 		(signal.samplesPerBit !== undefined &&
 			(!Number.isInteger(signal.samplesPerBit) || signal.samplesPerBit < 1 ||
 				signal.sampleCount % signal.samplesPerBit !== 0)) ||
 		!Array.isArray(signal.rows) || (spars && signal.rows.length !== spars.length)) {
-		throw new RangeError('Digital signal metadata and frequency rows must match the nPort.');
+		throw new RangeError('Signal metadata and frequency rows must match the nPort.');
 	}
 	for (var i = 0; i < signal.rows.length; i++) {
 		var row = signal.rows[i];
@@ -7438,7 +7446,7 @@ function validateSignal(signal, spars) {
 				return !wave || typeof wave.getR !== 'function' || typeof wave.getI !== 'function' ||
 					!Number.isFinite(wave.getR()) || !Number.isFinite(wave.getI());
 			})) {
-			throw new RangeError('Digital signal waves must match the S-parameter frequency and port count.');
+			throw new RangeError('Signal waves must match the S-parameter frequency and port count.');
 		}
 	}
 	return signal;
@@ -7447,10 +7455,22 @@ function validateSignal(signal, spars) {
 function compatibleSignals(first, second) {
 	if (!first) return second;
 	if (!second) return first;
-	if (first.sampleCount !== second.sampleCount ||
+	var firstAnalog = first.mode === 'AM' || first.mode === 'FM' || first.mode === 'PM';
+	var secondAnalog = second.mode === 'AM' || second.mode === 'FM' || second.mode === 'PM';
+	if (first.mode !== second.mode && (firstAnalog || secondAnalog)) {
+		throw new RangeError('Analog and sampled digital signals, or different analog modes, cannot share one connection.');
+	}
+	if (firstAnalog && (first.toneHz !== second.toneHz ||
+		first.carrierHz !== second.carrierHz ||
+		first.sidebandOrder !== second.sidebandOrder ||
+		first.referenceImpedanceOhms !== second.referenceImpedanceOhms)) {
+		throw new RangeError('Analog sources must have matching carrier, tone, sideband order, and reference impedance.');
+	}
+	if (!firstAnalog && (first.sampleCount !== second.sampleCount ||
 		first.sampleRateHz !== second.sampleRateHz ||
+		first.encoding !== second.encoding ||
 		first.referenceImpedanceOhms !== second.referenceImpedanceOhms ||
-		(first.carrierHz || 0) !== (second.carrierHz || 0)) {
+		(first.carrierHz || 0) !== (second.carrierHz || 0))) {
 		throw new RangeError('Digital sources must have matching sample counts, rates, carriers, and reference impedances.');
 	}
 	if (first.samplesPerBit !== second.samplesPerBit) {
@@ -7461,6 +7481,16 @@ function compatibleSignals(first, second) {
 
 function signalWithRows(template, rows) {
 	return {
+		mode: template.mode,
+		dataMode: template.dataMode,
+		encoding: template.encoding,
+		toneHz: template.toneHz,
+		beta: template.beta,
+		sidebandOrder: template.sidebandOrder,
+		sidebandPowerTolerance: template.sidebandPowerTolerance,
+		modulationIndex: template.modulationIndex,
+		carrierAmplitudeVolts: template.carrierAmplitudeVolts,
+		frequencyDeviationHz: template.frequencyDeviationHz,
 		sampleCount: template.sampleCount,
 		sampleRateHz: template.sampleRateHz,
 		referenceImpedanceOhms: template.referenceImpedanceOhms,
@@ -7478,25 +7508,35 @@ function applyInputSignal(network, options) {
 	var portCount = Math.sqrt(spars[0].length - 1);
 	var inputPort = options.inputPort === undefined ? 1 : options.inputPort;
 	if (!Number.isInteger(inputPort) || inputPort < 1 || inputPort > portCount) {
-		throw new RangeError('Digital inputPort is outside the nPort dimensions.');
+		throw new RangeError('Signal inputPort is outside the nPort dimensions.');
 	}
+	var analog = source.mode === 'AM' || source.mode === 'FM' || source.mode === 'PM';
+	var sidebandOrder = source.mode === 'AM' ? 1 : source.sidebandOrder;
 	if (!Array.isArray(source.fList) || !Array.isArray(source.spectrum) ||
 		source.fList.length !== spars.length || source.spectrum.length !== spars.length ||
-		!Number.isInteger(source.sampleCount) || source.sampleCount < 1 ||
-		!Number.isInteger(source.samplesPerBit) || source.samplesPerBit < 1 ||
-		source.sampleCount % source.samplesPerBit !== 0 ||
-		spars.length !== Math.floor(source.sampleCount / 2) + 1 ||
-		!Number.isFinite(source.sampleRateHz) || source.sampleRateHz <= 0 ||
+		(analog ? (!Number.isFinite(source.carrierHz) || !Number.isFinite(source.toneHz) ||
+			source.carrierHz <= 0 || source.toneHz <= 0 ||
+			(source.mode === 'AM' && source.carrierHz <= source.toneHz) ||
+			!Number.isInteger(sidebandOrder) || sidebandOrder < 0 ||
+			spars.length !== 2 * sidebandOrder + 1 ||
+			source.fList.some(function (frequency, index) {
+				return frequency !== source.carrierHz + (index - sidebandOrder) * source.toneHz;
+			})) :
+			(!Number.isInteger(source.sampleCount) || source.sampleCount < 1 ||
+			!Number.isInteger(source.samplesPerBit) || source.samplesPerBit < 1 ||
+			source.sampleCount % source.samplesPerBit !== 0 ||
+			spars.length !== Math.floor(source.sampleCount / 2) + 1 ||
+			!Number.isFinite(source.sampleRateHz) || source.sampleRateHz <= 0)) ||
 		!Number.isFinite(source.referenceImpedanceOhms) || source.referenceImpedanceOhms <= 0 ||
 		source.fList.some(function (frequency, index) { return frequency !== spars[index][0]; }) ||
 		source.spectrum.some(function (value) {
 			return !value || typeof value.getR !== 'function' || typeof value.getI !== 'function' ||
 				!Number.isFinite(value.getR()) || !Number.isFinite(value.getI());
 		})) {
-		throw new RangeError('Digital input frequencies and spectrum must match the nPort.');
+		throw new RangeError('Input signal frequencies and spectrum must match the nPort.');
 	}
 	if (network.global && network.global.Ro !== source.referenceImpedanceOhms) {
-		throw new RangeError('Digital input reference impedance must match the nPort.');
+		throw new RangeError('Signal input reference impedance must match the nPort.');
 	}
 	var template = compatibleSignals(network.signal, source);
 	var scale = Math.sqrt(source.referenceImpedanceOhms);
@@ -7513,7 +7553,7 @@ function applyInputSignal(network, options) {
 	return network;
 }
 
-// Modified: 2026-10-13
+// Modified: 2026-10-14
 var conjugate$2 = function (value) { return complex(value.getR(), -value.getI()); };
 
 function nPort() { this._noise = undefined; this._signal = undefined; }
@@ -7663,6 +7703,8 @@ nPort.prototype = {
 		var parsed = selectors.map(function (selector) {
 			var match = /^s([1-9])([1-9])(dB|mag|ang|Re|Im)$/.exec(selector);
 			if (match) return {kind: 's', row: Number(match[1]) - 1, col: Number(match[2]) - 1, format: match[3]};
+			match = /^signal([1-9]\d*)(V|Deg|dBm)$/.exec(selector);
+			if (match) return {kind: 'signal', row: Number(match[1]) - 1, format: match[2]};
 			match = /^c([1-9])([1-9])(Re|Im|mag|dB)?$/.exec(selector);
 			if (match) return {kind: 'c', row: Number(match[1]) - 1, col: Number(match[2]) - 1, format: match[3] || 'Re'};
 			match = /^NF([1-9])([1-9])(dB)?$/.exec(selector);
@@ -7690,7 +7732,12 @@ nPort.prototype = {
 			if (selection.row >= portCount || selection.col >= portCount) {
 				throw new RangeError('nPort.out(): selected port is outside the n-port dimensions.');
 			}
-		});
+			if (selection.kind === 'signal' && (!this.signal ||
+				(this.signal.mode !== 'AM' && this.signal.mode !== 'FM' &&
+					this.signal.mode !== 'PM'))) {
+				throw new RangeError('Signal tone selectors require an AM, FM, or PM signal on the nPort.');
+			}
+		}, this);
 		var output = [['Freq'].concat(selectors)];
 		for (var frequencyIndex = 0; frequencyIndex < spars.length; frequencyIndex++) {
 			var sparsRow = spars[frequencyIndex];
@@ -7703,7 +7750,14 @@ nPort.prototype = {
 				var selection = parsed[selectionIndex];
 				if ((selection.kind === 'c' || selection.kind === 'NF' ||
 					selection.kind === 'noiseFloor') && noiseRow === null) noiseRow = this.noise[frequencyIndex];
-				if (selection.kind === 'NF' || selection.kind === 'noiseFloor') {
+				if (selection.kind === 'signal') {
+					var voltage = this.signal.rows[frequencyIndex].waves[selection.row]
+						.mul(complex(Math.sqrt(this.signal.referenceImpedanceOhms), 0));
+					if (selection.format === 'V') row.push(voltage.mag());
+					else if (selection.format === 'Deg') row.push(voltage.ang());
+					else row.push(10 * Math.log10(voltage.mag() ** 2 /
+						(2 * this.signal.referenceImpedanceOhms * 1e-3)));
+				} else if (selection.kind === 'NF' || selection.kind === 'noiseFloor') {
 					var noiseKey = selection.row + ',' + selection.col;
 					if (!noiseResults[noiseKey]) {
 						noiseResults[noiseKey] = noiseAnalysis(sparsRow, noiseRow.C,
@@ -8168,7 +8222,35 @@ function L(L = 5e-9, options = {}) { // series inductor nPort object
 	return lPort;
 }
 
-// Modified: 2026-10-13
+// Modified: 2026-10-14
+
+// Exact 0 Hz limits for ideal series and shunt RLC branches.
+function dcTwoPort(mode, resistance, referenceImpedance) {
+	var reflection;
+	var transmission;
+	if (mode === 'open') {
+		reflection = 1;
+		transmission = 0;
+	} else if (mode === 'short') {
+		reflection = 0;
+		transmission = 1;
+	} else if (mode === 'shuntShort') {
+		reflection = -1;
+		transmission = 0;
+	} else if (mode === 'seriesR') {
+		reflection = resistance / (resistance + 2 * referenceImpedance);
+		transmission = 2 * referenceImpedance / (resistance + 2 * referenceImpedance);
+	} else if (mode === 'shuntR') {
+		reflection = -referenceImpedance / (2 * resistance + referenceImpedance);
+		transmission = 2 * resistance / (2 * resistance + referenceImpedance);
+	} else {
+		throw new RangeError('Unknown DC branch mode.');
+	}
+	return [complex(reflection, 0), complex(transmission, 0),
+		complex(transmission, 0), complex(reflection, 0)];
+}
+
+// Modified: 2026-10-14
 
 function paL(L = 5e-9, options = {}) { // parallel capacitor nPort object
 	var paL = new nPort;
@@ -8176,6 +8258,10 @@ function paL(L = 5e-9, options = {}) { // parallel capacitor nPort object
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('shuntShort', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount]);
 		Y[freqCount] = Z[freqCount].inv();
 		s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
@@ -8189,7 +8275,7 @@ function paL(L = 5e-9, options = {}) { // parallel capacitor nPort object
 	return paL;
 }
 
-// Modified: 2026-10-13
+// Modified: 2026-10-14
 
 function seC(C = 1e-12, options = {}) { // series capacitor nPort object
 	var seC = new nPort;
@@ -8197,6 +8283,10 @@ function seC(C = 1e-12, options = {}) { // series capacitor nPort object
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('open', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = complex(0, -1/(2*Math.PI*C*frequencyList[freqCount]));	
 		s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
 		s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
@@ -8208,7 +8298,7 @@ function seC(C = 1e-12, options = {}) { // series capacitor nPort object
 	return seC;
 }
 
-// Modified: 2026-10-13
+// Modified: 2026-10-14
 
 function C(C = 1e-12, options = {}) { // series capacitor nPort object
 	var cPort = new nPort;
@@ -8216,6 +8306,10 @@ function C(C = 1e-12, options = {}) { // series capacitor nPort object
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('open', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = complex(0, -1/(2*Math.PI*C*frequencyList[freqCount]));	
 		s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
 		s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
@@ -8227,7 +8321,7 @@ function C(C = 1e-12, options = {}) { // series capacitor nPort object
 	return cPort;
 }
 
-// Modified: 2026-10-13
+// Modified: 2026-10-14
 
 function paC(C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var paC = new nPort;
@@ -8235,6 +8329,10 @@ function paC(C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('short', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = complex(0, -1/(2*Math.PI*C*frequencyList[freqCount]));
 		Y[freqCount] = Z[freqCount].inv();
 		s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
@@ -8337,7 +8435,7 @@ function paSeRL(R = 75, L = 5e-9, options = {}) { // parallel capacitor nPort ob
 	return paSeRL;
 }
 
-// Modified: 2026-10-13
+// Modified: 2026-10-14
 
 function seSeRC(R = 75, C = 1e-12, options = {}) { // series inductor nPort object
 	var seSeRC = new nPort;
@@ -8345,6 +8443,10 @@ function seSeRC(R = 75, C = 1e-12, options = {}) { // series inductor nPort obje
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('open', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = complex(R, -1/(2*Math.PI*C*frequencyList[freqCount]));	
 		s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
 		s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
@@ -8356,7 +8458,7 @@ function seSeRC(R = 75, C = 1e-12, options = {}) { // series inductor nPort obje
 	return seSeRC;
 }
 
-// Modified: 2026-10-13
+// Modified: 2026-10-14
 
 function paSeRC(R = 75, C = 1e-12, options = {}) { // parallel series-RC nPort object
 	var paSeRC = new nPort;
@@ -8364,6 +8466,10 @@ function paSeRC(R = 75, C = 1e-12, options = {}) { // parallel series-RC nPort o
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('short', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = complex(R, -1/(2*Math.PI*C*frequencyList[freqCount]));
 		Y[freqCount] = Z[freqCount].inv();
 		s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
@@ -8377,7 +8483,7 @@ function paSeRC(R = 75, C = 1e-12, options = {}) { // parallel series-RC nPort o
 	return paSeRC;
 }
 
-// Modified: 2026-10-13
+// Modified: 2026-10-14
 
 function seSeLC(L = 5e-9, C = 1e-12, options = {}) { // series inductor nPort object
 	var seSeLC = new nPort;
@@ -8385,6 +8491,10 @@ function seSeLC(L = 5e-9, C = 1e-12, options = {}) { // series inductor nPort ob
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('open', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount] -1/(2*Math.PI*C*frequencyList[freqCount]));	
 		s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
 		s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
@@ -8396,7 +8506,7 @@ function seSeLC(L = 5e-9, C = 1e-12, options = {}) { // series inductor nPort ob
 	return seSeLC;
 }
 
-// Modified: 2026-10-13
+// Modified: 2026-10-14
 
 function paSeLC(L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var paSeLC = new nPort;
@@ -8404,6 +8514,10 @@ function paSeLC(L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('short', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount] -1/(2*Math.PI*C*frequencyList[freqCount]));
 		Y[freqCount] = Z[freqCount].inv();
 		s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
@@ -8417,7 +8531,7 @@ function paSeLC(L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort
 	return paSeLC;
 }
 
-// Modified: 2026-10-13
+// Modified: 2026-10-14
 
 function seSeRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // series inductor nPort object
 	var seSeRLC = new nPort;
@@ -8425,6 +8539,10 @@ function seSeRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // series inductor
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('open', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = complex(R, 2*Math.PI*L*frequencyList[freqCount] -1/(2*Math.PI*C*frequencyList[freqCount]));	
 		s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
 		s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
@@ -8436,7 +8554,7 @@ function seSeRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // series inductor
 	return seSeRLC;
 }
 
-// Modified: 2026-10-13
+// Modified: 2026-10-14
 
 function paSeRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var paSeRLC = new nPort;
@@ -8444,6 +8562,10 @@ function paSeRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // parallel capaci
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('short', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = complex(R, 2*Math.PI*L*frequencyList[freqCount] -1/(2*Math.PI*C*frequencyList[freqCount]));
 		Y[freqCount] = Z[freqCount].inv();
 		s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
@@ -8457,7 +8579,7 @@ function paSeRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // parallel capaci
 	return paSeRLC;
 }
 
-// Modified: 2026-10-13
+// Modified: 2026-10-14
 
 function paPaRL(R = 75, L = 5e-9, options = {}) { // parallel capacitor nPort object
 	var paPaRL = new nPort;
@@ -8465,6 +8587,10 @@ function paPaRL(R = 75, L = 5e-9, options = {}) { // parallel capacitor nPort ob
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('shuntShort', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = (  (complex(R,0).inv()).add(complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv())  ).inv();
 		Y[freqCount] = Z[freqCount].inv();
 		s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
@@ -8478,7 +8604,7 @@ function paPaRL(R = 75, L = 5e-9, options = {}) { // parallel capacitor nPort ob
 	return paPaRL;
 }
 
-// Modified: 2026-10-13
+// Modified: 2026-10-14
 
 function sePaRL(R = 75, L = 5e-9, options = {}) { // parallel capacitor nPort object
 	var sePaRL = new nPort;
@@ -8486,6 +8612,10 @@ function sePaRL(R = 75, L = 5e-9, options = {}) { // parallel capacitor nPort ob
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('short', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = (  (complex(R,0).inv()).add(complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv())  ).inv();
 		s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
 		s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
@@ -8498,7 +8628,7 @@ function sePaRL(R = 75, L = 5e-9, options = {}) { // parallel capacitor nPort ob
 	return sePaRL;
 }
 
-// Modified: 2026-10-13
+// Modified: 2026-10-14
 
 function paPaRC(R = 75, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var paPaRC = new nPort;
@@ -8506,6 +8636,10 @@ function paPaRC(R = 75, C = 1e-12, options = {}) { // parallel capacitor nPort o
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('shuntR', R, Ro));
+			continue;
+		}
 		Z[freqCount] = (  (complex(R,0).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
 		Y[freqCount] = Z[freqCount].inv();
 		s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
@@ -8519,7 +8653,7 @@ function paPaRC(R = 75, C = 1e-12, options = {}) { // parallel capacitor nPort o
 	return paPaRC;
 }
 
-// Modified: 2026-10-13
+// Modified: 2026-10-14
 
 function sePaRC(R = 75, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var sePaRC = new nPort;
@@ -8527,6 +8661,10 @@ function sePaRC(R = 75, C = 1e-12, options = {}) { // parallel capacitor nPort o
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('seriesR', R, Ro));
+			continue;
+		}
 		Z[freqCount] = (  (complex(R,0).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
 		s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
 		s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
@@ -8539,7 +8677,7 @@ function sePaRC(R = 75, C = 1e-12, options = {}) { // parallel capacitor nPort o
 	return sePaRC;
 }
 
-// Modified: 2026-10-13
+// Modified: 2026-10-14
 
 function paPaLC(L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var paPaLC = new nPort;
@@ -8547,6 +8685,10 @@ function paPaLC(L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('shuntShort', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = (  (complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
 		Y[freqCount] = Z[freqCount].inv();
 		s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
@@ -8560,7 +8702,7 @@ function paPaLC(L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort
 	return paPaLC;
 }
 
-// Modified: 2026-10-13
+// Modified: 2026-10-14
 
 function sePaLC(L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var sePaLC = new nPort;
@@ -8568,6 +8710,10 @@ function sePaLC(L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('short', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = (  (complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
 		s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
 		s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
@@ -8580,7 +8726,7 @@ function sePaLC(L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort
 	return sePaLC;
 }
 
-// Modified: 2026-10-13
+// Modified: 2026-10-14
 
 function paPaRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var paPaRLC = new nPort;
@@ -8588,6 +8734,10 @@ function paPaRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // parallel capaci
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('shuntShort', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = ( (complex(R,0).inv()).add (complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
 		Y[freqCount] = Z[freqCount].inv();
 		s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
@@ -8601,7 +8751,7 @@ function paPaRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // parallel capaci
 	return paPaRLC;
 }
 
-// Modified: 2026-10-13
+// Modified: 2026-10-14
 
 function sePaRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var sePaRLC = new nPort;
@@ -8609,6 +8759,10 @@ function sePaRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // parallel capaci
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('short', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = ( (complex(R,0).inv()).add (complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
 		s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
 		s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
@@ -10120,7 +10274,7 @@ function mtee(input = {}) { // microstrip tee nPort object
 	return mtee;
 }
 
-// Modified: 2026-10-13
+// Modified: 2026-10-14
 
 var pi$4 = Math.PI;
 
@@ -10330,6 +10484,25 @@ function mcross(input = {}) {
 	for (var freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		var freq = frequencyList[freqCount];
 		var omega = 2 * pi$4 * freq;
+		var maxNormalizedParasitic = Math.max(
+			...armInds.map(function (L) { return Math.abs(omega * L / Ro); }),
+			Math.abs(omega * Lcenter / Ro),
+			...armCaps.map(function (C) { return Math.abs(omega * C * Ro); })
+		);
+		// The nodal admittance reduction loses precision as 1/(omega L) grows.
+		// Use the junction limit while every parasitic effect is below 1 ppm.
+		if (maxNormalizedParasitic < 1e-6) {
+			var dcRow = [freq];
+			for (var dcPort = 0; dcPort < 4; dcPort++) {
+				for (var otherPort = 0; otherPort < 4; otherPort++) {
+					dcRow.push(complex(dcPort === otherPort ? -0.5 : 0.5, 0));
+				}
+			}
+			sparsArray[freqCount] = dcRow;
+			analysis[freqCount] = {frequency: freq, armCaps: armCaps.slice(),
+				armInds: armInds.slice(), Lcenter: Lcenter, Ct: Ct, Y: null};
+			continue;
+		}
 		var Y = emptyCplxMatrix(6);
 
 		stampAdmittance(Y, 0, 4, complex(0, -1 / (omega * armInds[0])));
@@ -10398,7 +10571,7 @@ function mcross(input = {}) {
 	return cross;
 }
 
-// Modified: 2026-10-13
+// Modified: 2026-10-14
 
 var pi$3 = Math.PI;
 
@@ -10544,6 +10717,11 @@ function mstep(input = {}) {
 
 	for (var freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		var frequency = frequencyList[freqCount];
+		if (frequency === 0) {
+			sparsArray[freqCount] = [0, complex(0, 0), complex(1, 0), complex(1, 0), complex(0, 0)];
+			analysis[freqCount] = {frequency, CsPf, LsNh, L1Nh, L2Nh, Z: null};
+			continue;
+		}
 		var z21 = complex(0, -1 / (2 * pi$3 * frequency * CsPf * 1e-12));
 		var z11 = complex(0, 2 * pi$3 * frequency * L1Nh * 1e-9).add(z21);
 		var z22 = complex(0, 2 * pi$3 * frequency * L2Nh * 1e-9).add(z21);
@@ -10596,7 +10774,7 @@ function mstep(input = {}) {
 	return step;
 }
 
-// Modified: 2026-10-13
+// Modified: 2026-10-14
 
 var pi$2 = Math.PI;
 
@@ -10668,6 +10846,11 @@ function mbend(input = {}) {
 
 	for (var freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		var frequency = frequencyList[freqCount];
+		if (frequency === 0) {
+			sparsArray[freqCount] = [0, complex(0, 0), complex(1, 0), complex(1, 0), complex(0, 0)];
+			analysis[freqCount] = {frequency, CpF, LnH, Z: null};
+			continue;
+		}
 		var z21 = complex(0, -1 / (2 * pi$2 * frequency * CpF * 1e-12));
 		var z11 = complex(0, 2 * pi$2 * frequency * LnH * 1e-9).add(z21);
 		var Z = matrix([
@@ -11029,221 +11212,6 @@ function mvia(input = {}) {
 	return via;
 }
 
-// Modified: 2026-10-13
-
-
-// Feedback masks for maximal-length, left-shifting registers of 2–16 stages.
-var FEEDBACK_MASKS = {
-	2: 0x3, 3: 0x5, 4: 0x9, 5: 0x17, 6: 0x21,
-	7: 0x41, 8: 0x95, 9: 0x10d, 10: 0x20d, 11: 0x40b,
-	12: 0x829, 13: 0x100d, 14: 0x2015, 15: 0x4001, 16: 0x801f
-};
-
-function pnBits(stages = 7, seed = 2 ** stages - 1) {
-	if (!Number.isInteger(stages) || !FEEDBACK_MASKS[stages]) {
-		throw new RangeError('PN stages must be an integer from 2 through 16.');
-	}
-	var mask = 2 ** stages - 1;
-	if (!Number.isInteger(seed) || seed < 1 || seed > mask) {
-		throw new RangeError('PN' + stages + ' seed must be a nonzero ' + stages + '-bit integer.');
-	}
-	var bits = [];
-	var register = seed;
-	for (var i = 0; i < mask; i++) {
-		bits.push((register >> (stages - 1)) & 1);
-		var taps = register & FEEDBACK_MASKS[stages];
-		var feedback = 0;
-		while (taps) {
-			feedback ^= taps & 1;
-			taps >>= 1;
-		}
-		register = ((register << 1) | feedback) & mask;
-	}
-	if (register !== seed) throw new RangeError('PN' + stages + ' did not return to its seed.');
-	return bits;
-}
-
-// Advance the selected PN register once at each clock time.
-function PN(options = {}) {
-	if (!options || Array.isArray(options) || typeof options !== 'object') {
-		throw new TypeError('PN expects an options object.');
-	}
-	var stages = options.stages === undefined ? 7 : options.stages;
-	if (!Number.isInteger(stages) || !FEEDBACK_MASKS[stages]) {
-		throw new RangeError('PN stages must be an integer from 2 through 16.');
-	}
-	var periodLength = 2 ** stages - 1;
-	var time = options.time === undefined ? global.tList : options.time;
-	if (!Array.isArray(time) || time.length < periodLength || time.length % periodLength !== 0) {
-		throw new RangeError('PN time must contain a multiple of ' + periodLength + ' clock ticks.');
-	}
-	var step = time[1] - time[0];
-	if (!Number.isFinite(step) || step <= 0 || time.some(function (value, index) {
-		return !Number.isFinite(value) ||
-			Math.abs(value - (time[0] + index * step)) > Math.abs(step) * 1e-6;
-	})) {
-		throw new RangeError('PN time must be a uniformly spaced, increasing list in seconds.');
-	}
-	var lowVolts = options.lowVolts === undefined ? 0 : options.lowVolts;
-	var highVolts = options.highVolts === undefined ? 1 : options.highVolts;
-	if (!Number.isFinite(lowVolts) || !Number.isFinite(highVolts)) {
-		throw new RangeError('PN voltage levels must be finite.');
-	}
-	var period = pnBits(stages, options.seed === undefined ? periodLength : options.seed);
-	var bits = Array.from({length: time.length}, function (_, index) {
-		return period[index % period.length];
-	});
-	var samples = bits.map(function (bit) { return bit ? highVolts : lowVolts; });
-	var bitRate = 1 / step;
-	if (!Number.isFinite(bitRate)) {
-		throw new RangeError('PN clock spacing produces an invalid bit rate.');
-	}
-	var waveform = {
-		kind: 'PN', mode: 'PN' + stages, stages: stages, bits: bits, samples: samples,
-		time: time.slice(), samplesPerBit: 1, sampleRateHz: bitRate,
-		bitRate: bitRate, lowVolts: lowVolts, highVolts: highVolts
-	};
-	waveform.out = function (selector) {
-		if (selector === 'bits') return bits.slice();
-		if (selector === 'samples') return samples.slice();
-		if (selector === 'time') return waveform.time.slice();
-		if (selector === 'bit count') return bits.length;
-		if (selector === 'sample count') return samples.length;
-		if (selector === 'bit rate') return bitRate;
-		if (selector === 'sample rate' || selector === 'clock rate') return bitRate;
-		if (selector === 'waveform') {
-			return [['Time (ns)', 'Output (V)']].concat(waveform.time.map(function (value, index) {
-				return [value * 1e9, samples[index]];
-			}));
-		}
-		throw new RangeError('Unknown PN output: ' + selector);
-	};
-	return waveform;
-}
-
-// Modified: 2026-10-13
-
-function patternBits(options) {
-	var mode = options.mode === undefined ? 'PN7' : options.mode;
-	var bits = [];
-	if (typeof mode === 'string' && /^PN\d+$/.test(mode)) {
-		var stages = Number(mode.slice(2));
-		bits = pnBits(stages, options.seed === undefined ? 2 ** stages - 1 : options.seed);
-	} else if (mode === 'ASCII') {
-		if (typeof options.message !== 'string' || options.message.length === 0) {
-			throw new TypeError('ASCII mode requires a nonempty message.');
-		}
-		for (var character = 0; character < options.message.length; character++) {
-			var code = options.message.charCodeAt(character);
-			if (code > 127) throw new RangeError('ASCII mode accepts only characters U+0000 through U+007F.');
-			for (var shift = 7; shift >= 0; shift--) bits.push((code >> shift) & 1);
-		}
-	} else if (mode === 'bits') {
-		if (typeof options.bits === 'string') {
-			if (!/^[01]+$/.test(options.bits)) throw new TypeError('bits mode requires a nonempty 0/1 string.');
-			bits = options.bits.split('').map(Number);
-		} else if (Array.isArray(options.bits) && options.bits.length > 0 &&
-			options.bits.every(function (bit) { return bit === 0 || bit === 1; })) {
-			bits = options.bits.slice();
-		} else {
-			throw new TypeError('bits mode requires a nonempty array of 0s and 1s or a 0/1 string.');
-		}
-	} else {
-		throw new RangeError('digitalTx mode must be PN2 through PN16, ASCII, or bits.');
-	}
-	return {mode: mode, bits: bits};
-}
-
-// Describe an input waveform; the circuit itself remains an ordinary nPort.
-// mod() may fill a caller-owned list instead of replacing the global default.
-function createDigitalTx(options = {}, fftList) {
-	if (!options || Array.isArray(options) || typeof options !== 'object') {
-		throw new TypeError('digitalTx expects an options object.');
-	}
-	if (fftList !== undefined && !Array.isArray(fftList)) {
-		throw new TypeError('mod fftList must be an array.');
-	}
-	if (global.twoTone) throw new RangeError('Clear global.twoTone before digital waveform analysis.');
-	var input = options.input;
-	if (input !== undefined && (Object.keys(options).some(function (key) {
-		return key !== 'input' && key !== 'samplesPerBit';
-	}) || !input ||
-		input.kind !== 'PN' || !Number.isInteger(input.stages) ||
-		input.stages < 2 || input.stages > 16 || input.mode !== 'PN' + input.stages ||
-		!Array.isArray(input.bits) ||
-		!Array.isArray(input.samples) || !Array.isArray(input.time) ||
-		input.bits.length < 2 ** input.stages - 1 ||
-		input.bits.length % (2 ** input.stages - 1) !== 0 ||
-		input.samples.length !== input.time.length ||
-		input.samples.length !== input.bits.length ||
-		input.samples.some(function (sample) { return !Number.isFinite(sample); }))) {
-		throw new TypeError('digitalTx input must be a PN clock waveform with only an optional samplesPerBit setting.');
-	}
-	var bitRate = input ? input.bitRate : options.bitRate === undefined ? 1e9 : options.bitRate;
-	var samplesPerBit = options.samplesPerBit === undefined ? 8 : options.samplesPerBit;
-	var lowVolts = input ? input.lowVolts : options.lowVolts === undefined ? 0 : options.lowVolts;
-	var highVolts = input ? input.highVolts : options.highVolts === undefined ? 1 : options.highVolts;
-	if (!Number.isFinite(bitRate) || bitRate <= 0 ||
-		!Number.isInteger(samplesPerBit) || samplesPerBit < 1 ||
-		!Number.isFinite(lowVolts) || !Number.isFinite(highVolts) ||
-		!Number.isFinite(global.Ro) || global.Ro <= 0) {
-		throw new RangeError('digitalTx needs a positive bit rate, positive integer samples per bit, finite voltage levels, and positive global.Ro.');
-	}
-	var pattern = input ? {mode: input.mode, bits: input.bits.slice()} : patternBits(options);
-	var samples = input ? input.samples.flatMap(function (sample) {
-		return Array(samplesPerBit).fill(sample);
-	}) : pattern.bits.flatMap(function (bit) {
-		return Array(samplesPerBit).fill(bit ? highVolts : lowVolts);
-	});
-	var sampleCount = samples.length;
-	var sampleRateHz = bitRate * samplesPerBit;
-	if (!Number.isFinite(sampleRateHz)) throw new RangeError('digitalTx sample rate must be finite.');
-	var spectrum = FFT(samples);
-	var frequencyList = Array.from({length: Math.floor(sampleCount / 2) + 1}, function (_, bin) {
-		return bin * sampleRateHz / sampleCount;
-	});
-	if (fftList === undefined) {
-		global.fList = frequencyList;
-	} else {
-		fftList.length = 0;
-		for (var frequencyIndex = 0; frequencyIndex < frequencyList.length; frequencyIndex++) {
-			fftList.push(frequencyList[frequencyIndex]);
-		}
-	}
-	var tx = {
-		mode: pattern.mode,
-		bits: pattern.bits,
-		samples: samples,
-		fList: frequencyList,
-		spectrum: spectrum.slice(0, frequencyList.length),
-		sampleRateHz: sampleRateHz,
-		sampleCount: sampleCount,
-		samplesPerBit: samplesPerBit,
-		lowVolts: lowVolts,
-		highVolts: highVolts,
-		time: input ? input.time.flatMap(function (clockTime) {
-			return Array.from({length: samplesPerBit}, function (_, index) {
-				return clockTime + index / sampleRateHz;
-			});
-		}) : undefined,
-		referenceImpedanceOhms: global.Ro
-	};
-	tx.out = function (selector) {
-		if (selector === 'mode') return tx.mode;
-		if (selector === 'bit count') return tx.bits.length;
-		if (selector === 'sample count') return tx.sampleCount;
-		if (selector === 'frequency count') return tx.fList.length;
-		if (selector === 'frequencies') return tx.fList.slice();
-		if (selector === 'spectrum') return tx.spectrum.map(function (value) { return value.copy(); });
-		throw new RangeError('Unknown digitalTx output: ' + selector);
-	};
-	return tx;
-}
-
-function digitalTx(options = {}) {
-	return createDigitalTx(options);
-}
-
 // Modified: 2026-10-08
 
 // Two independent standard-normal samples per pair of uniform draws.
@@ -11288,31 +11256,31 @@ function noiseWaveformSpectrum(stage, signal, inputPort, outputPort, options) {
 	return spectrum;
 }
 
-// Modified: 2026-10-08
+// Modified: 2026-10-14
 
 // Reconstruct the output signal and one independent noise realization.
-function digitalRx(stage, options = {}) {
+function receiveWaveform(stage, options = {}) {
 	if (!stage || !stage.signal || !Array.isArray(stage.spars)) {
-		throw new TypeError('digitalRx requires an nPort containing a digital signal.');
+		throw new TypeError('demod requires an nPort containing a digital signal.');
 	}
 	if (!options || Array.isArray(options) || typeof options !== 'object') {
-		throw new TypeError('digitalRx options must be an object.');
+		throw new TypeError('demod options must be an object.');
 	}
 	if (options.mode !== undefined) {
-		throw new RangeError('Select digitalRx output with .out() instead of mode.');
+		throw new RangeError('Select demod output with .out() instead of mode.');
 	}
 	if (options.noise !== undefined && typeof options.noise !== 'boolean') {
-		throw new TypeError('digitalRx noise must be true or false.');
+		throw new TypeError('demod noise must be true or false.');
 	}
 	var signal = stage.signal;
 	var portCount = Math.sqrt(stage.spars[0].length - 1);
 	var outputPort = options.outputPort === undefined ? 2 : options.outputPort;
 	var inputPort = options.inputPort === undefined ? 1 : options.inputPort;
 	if (!Number.isInteger(outputPort) || outputPort < 1 || outputPort > portCount) {
-		throw new RangeError('digitalRx outputPort is outside the nPort dimensions.');
+		throw new RangeError('demod outputPort is outside the nPort dimensions.');
 	}
 	if (!Number.isInteger(inputPort) || inputPort < 1 || inputPort > portCount) {
-		throw new RangeError('digitalRx inputPort is outside the nPort dimensions.');
+		throw new RangeError('demod inputPort is outside the nPort dimensions.');
 	}
 	var count = signal.sampleCount;
 	if (signal.rows.length !== Math.floor(count / 2) + 1) {
@@ -11411,7 +11379,7 @@ function digitalRx(stage, options = {}) {
 				return message;
 			}
 			if (selector !== 'waveform') {
-				throw new RangeError('Unknown digitalRx output: ' + selector);
+				throw new RangeError('Unknown demod output: ' + selector);
 			}
 			var output = [['Time (ns)', 'Output (V)']];
 			for (var index = 0; index < count; index++) {
@@ -11422,97 +11390,22 @@ function digitalRx(stage, options = {}) {
 	};
 }
 
-// Modified: 2026-10-13
+// Modified: 2026-10-14
 
-// Compare independent receiver decisions with a known transmitted bit pattern.
-function bitErrorRate(tx, stage, options = {}) {
-	if (!tx || !Array.isArray(tx.bits) || tx.bits.length === 0 ||
-		tx.bits.some(function (bit) { return bit !== 0 && bit !== 1; })) {
-		throw new TypeError('bitErrorRate requires transmitted bits from digitalTx or mod.');
+// Connect a transmitter directly to the receiver using the transmitter's
+// original frequency grid and impedance, independent of the active context.
+function directStage(source) {
+	if (!source || !Array.isArray(source.fList) || source.fList.length === 0) {
+		throw new TypeError('demod requires an nPort with a signal or a mod() result.');
 	}
-	if (!options || Array.isArray(options) || typeof options !== 'object') {
-		throw new TypeError('bitErrorRate options must be an object.');
-	}
-	var receptions = options.receptions === undefined ? 100 : options.receptions;
-	if (!Number.isInteger(receptions) || receptions < 1) {
-		throw new RangeError('bitErrorRate receptions must be a positive integer.');
-	}
-	var receiverOptions = {...options};
-	delete receiverOptions.receptions;
-	var receiver = receiverOptions.receiver === undefined ? digitalRx : receiverOptions.receiver;
-	delete receiverOptions.receiver;
-	if (typeof receiver !== 'function') {
-		throw new TypeError('bitErrorRate receiver must be a function.');
-	}
-	var errors = 0;
-	for (var reception = 0; reception < receptions; reception++) {
-		var receivedBits = receiver(stage, receiverOptions).out('bits');
-		if (receivedBits.length !== tx.bits.length) {
-			throw new RangeError('Transmitted and received bit counts must match.');
-		}
-		for (var bit = 0; bit < receivedBits.length; bit++) {
-			if (receivedBits[bit] !== tx.bits[bit]) errors++;
-		}
-	}
-	return errors / (receptions * tx.bits.length);
+	var stage = new nPort();
+	stage.setspars(source.fList.map(function (frequency) {
+		return [frequency, complex(0, 0), complex(1, 0), complex(1, 0), complex(0, 0)];
+	}));
+	stage.setglobal({fList: source.fList, Ro: source.referenceImpedanceOhms,
+		Temp: 290, tList: [], twoTone: undefined});
+	return applyInputSignal(stage, {signal: source, inputPort: 1});
 }
-
-// Modified: 2026-10-13
-
-// Prepare a real, cosine-modulated digital source for the nPort frequency grid.
-function mod(options = {}) {
-	if (!options || Array.isArray(options) || typeof options !== 'object') {
-		throw new TypeError('mod expects an options object.');
-	}
-	var carrierHz = options.carrierHz === undefined ? 0 : options.carrierHz;
-	if (!Number.isFinite(carrierHz) || carrierHz < 0) {
-		throw new RangeError('mod carrierHz must be a nonnegative finite frequency.');
-	}
-	var txOptions = {...options};
-	delete txOptions.carrierHz;
-	delete txOptions.fftList;
-	var tx = createDigitalTx(txOptions, options.fftList);
-	if (carrierHz >= tx.sampleRateHz / 2) {
-		throw new RangeError('mod carrierHz must be below the sample Nyquist frequency.');
-	}
-	if (carrierHz !== 0) {
-		tx.samples = tx.samples.map(function (voltage, index) {
-			return voltage * Math.cos(2 * Math.PI * carrierHz * index / tx.sampleRateHz);
-		});
-		tx.spectrum = FFT(tx.samples).slice(0, tx.fList.length);
-	}
-	var originalOut = tx.out;
-	tx.carrierHz = carrierHz;
-	tx.out = function (selector) {
-		if (selector === 'waveform') {
-			return [['Time (ns)', 'Output (V)']].concat(tx.samples.map(function (voltage, index) {
-				return [index * 1e9 / tx.sampleRateHz, voltage];
-			}));
-		}
-		if (selector === 'settings') {
-			return {
-				mode: tx.mode,
-				carrierHz: carrierHz,
-				bitRate: tx.sampleRateHz / tx.samplesPerBit,
-				samplesPerBit: tx.samplesPerBit,
-				sampleRateHz: tx.sampleRateHz,
-				sampleCount: tx.sampleCount,
-				frequencyCount: tx.fList.length,
-				lowVolts: tx.lowVolts,
-				highVolts: tx.highVolts
-			};
-		}
-		if (selector === 'frequency table') {
-			return [['Bin', 'Frequency (Hz)']].concat(tx.fList.map(function (frequency, bin) {
-				return [bin, frequency];
-			}));
-		}
-		return originalOut(selector);
-	};
-	return tx;
-}
-
-// Modified: 2026-10-13
 
 function decideBits(levels, threshold) {
 	if (threshold === undefined) {
@@ -11543,10 +11436,216 @@ function decideBits(levels, threshold) {
 	return levels.map(function (level) { return level > threshold ? 1 : 0; });
 }
 
+// Recover the envelope from the three propagated complex peak-voltage tones.
+function demodAM(stage, options) {
+	if (!options || Array.isArray(options) || typeof options !== 'object') {
+		throw new TypeError('demod options must be an object.');
+	}
+	if (options.noise !== undefined && options.noise !== false) {
+		throw new RangeError('AM envelope analysis does not yet generate random noise samples.');
+	}
+	if (options.mode !== undefined) {
+		throw new RangeError('Select AM demod output with .out() instead of mode.');
+	}
+	var portCount = Math.sqrt(stage.spars[0].length - 1);
+	var outputPort = options.outputPort === undefined ? 2 : options.outputPort;
+	var points = options.points === undefined ? 1001 : options.points;
+	if (!Number.isInteger(outputPort) || outputPort < 1 || outputPort > portCount ||
+		!Number.isInteger(points) || points < 3) {
+		throw new RangeError('AM demod needs a valid outputPort and at least three envelope points.');
+	}
+	var signal = stage.signal;
+	var voltageScale = complex(Math.sqrt(signal.referenceImpedanceOhms), 0);
+	var lower = signal.rows[0].waves[outputPort - 1].mul(voltageScale);
+	var carrier = signal.rows[1].waves[outputPort - 1].mul(voltageScale);
+	var upper = signal.rows[2].waves[outputPort - 1].mul(voltageScale);
+	if (carrier.mag() === 0) throw new RangeError('AM phase requires a nonzero output carrier.');
+	var envelope = [['Time (s)', 'Envelope (V)']];
+	var phase = [['Time (s)', 'Phase deviation (deg)']];
+	var peakPhase = 0;
+	var carrierPhase = Math.atan2(carrier.getI(), carrier.getR());
+	for (var index = 0; index < points; index++) {
+		var theta = 2 * Math.PI * index / (points - 1);
+		var cosine = Math.cos(theta), sine = Math.sin(theta);
+		var real = carrier.getR() + (lower.getR() + upper.getR()) * cosine +
+			(lower.getI() - upper.getI()) * sine;
+		var imaginary = carrier.getI() + (lower.getI() + upper.getI()) * cosine +
+			(upper.getR() - lower.getR()) * sine;
+		var difference = Math.atan2(imaginary, real) - carrierPhase;
+		difference = Math.atan2(Math.sin(difference), Math.cos(difference)) * 180 / Math.PI;
+		var time = index / ((points - 1) * signal.toneHz);
+		envelope.push([time, Math.hypot(real, imaginary)]);
+		phase.push([time, difference]);
+		peakPhase = Math.max(peakPhase, Math.abs(difference));
+	}
+	return {
+		out: function (selector) {
+			if (selector === 'envelope') return envelope.map(function (row) { return row.slice(); });
+			if (selector === 'phase') return phase.map(function (row) { return row.slice(); });
+			if (selector === 'amToPmDeg') return peakPhase;
+			if (selector === 'tones') return stage.out('signal' + outputPort + 'V',
+				'signal' + outputPort + 'Deg', 'signal' + outputPort + 'dBm');
+			if (selector === 'frequencies') return signal.rows.map(function (row) { return row.frequency; });
+			throw new RangeError('Unknown AM demod output: ' + selector);
+		}
+	};
+}
+
+// Sum the propagated angle-modulation sidebands into a complex envelope.
+function demodAngle(stage, options) {
+	var mode = stage.signal.mode;
+	if (!options || Array.isArray(options) || typeof options !== 'object') {
+		throw new TypeError('demod options must be an object.');
+	}
+	if (options.noise !== undefined && options.noise !== false) {
+		throw new RangeError(mode + ' analysis does not yet generate random receiver noise samples.');
+	}
+	if (options.mode !== undefined) {
+		throw new RangeError('Select ' + mode + ' demod output with .out() instead of mode.');
+	}
+	var portCount = Math.sqrt(stage.spars[0].length - 1);
+	var outputPort = options.outputPort === undefined ? 2 : options.outputPort;
+	var points = options.points === undefined ? 1001 : options.points;
+	if (!Number.isInteger(outputPort) || outputPort < 1 || outputPort > portCount ||
+		!Number.isInteger(points) || points < 3) {
+		throw new RangeError(mode + ' demod needs a valid outputPort and at least three display points.');
+	}
+	var signal = stage.signal;
+	if (mode === 'PM' && points <= 2 * signal.beta + 1) {
+		throw new RangeError('PM needs more display points to unwrap its phase.');
+	}
+	var order = signal.sidebandOrder;
+	var scale = complex(Math.sqrt(signal.referenceImpedanceOhms), 0);
+	var tones = signal.rows.map(function (row) { return row.waves[outputPort - 1].mul(scale); });
+	var envelope = [['Time (s)', 'Envelope (V)']];
+	var phase = [['Time (s)', 'Phase deviation (deg, wrapped)']];
+	var deviation = [['Time (s)', 'Frequency deviation (Hz)']];
+	var referencePhase;
+	var peakDeviation = 0;
+	var rawPhases = [];
+	for (var index = 0; index < points; index++) {
+		var theta = 2 * Math.PI * index / (points - 1);
+		var real = 0, imaginary = 0, derivativeReal = 0, derivativeImaginary = 0;
+		for (var toneIndex = 0; toneIndex < tones.length; toneIndex++) {
+			var n = toneIndex - order;
+			var cosine = Math.cos(n * theta), sine = Math.sin(n * theta);
+			var componentReal = tones[toneIndex].getR() * cosine - tones[toneIndex].getI() * sine;
+			var componentImaginary = tones[toneIndex].getR() * sine + tones[toneIndex].getI() * cosine;
+			real += componentReal;
+			imaginary += componentImaginary;
+			derivativeReal += n * componentReal;
+			derivativeImaginary += n * componentImaginary;
+		}
+		var power = real * real + imaginary * imaginary;
+		if (power === 0) throw new RangeError(mode + ' demodulation requires a nonzero envelope.');
+		var time = index / ((points - 1) * signal.toneHz);
+		var currentPhase = Math.atan2(imaginary, real);
+		rawPhases.push(currentPhase);
+		if (referencePhase === undefined) referencePhase = currentPhase;
+		var difference = currentPhase - referencePhase;
+		difference = Math.atan2(Math.sin(difference), Math.cos(difference)) * 180 / Math.PI;
+		var frequencyDeviation = signal.toneHz *
+			(derivativeReal * real + derivativeImaginary * imaginary) / power;
+		envelope.push([time, Math.sqrt(power)]);
+		phase.push([time, difference]);
+		deviation.push([time, frequencyDeviation]);
+		peakDeviation = Math.max(peakDeviation, Math.abs(frequencyDeviation));
+	}
+	var peakPhaseRadians;
+	if (mode === 'PM') {
+		var unwrapped = [rawPhases[0]];
+		for (var phaseIndex = 1; phaseIndex < points; phaseIndex++) {
+			var step = rawPhases[phaseIndex] - rawPhases[phaseIndex - 1];
+			unwrapped.push(unwrapped[phaseIndex - 1] + Math.atan2(Math.sin(step), Math.cos(step)));
+		}
+		var center = unwrapped.slice(0, -1).reduce(function (sum, value) {
+			return sum + value;
+		}, 0) / (points - 1);
+		peakPhaseRadians = 0;
+		phase = [['Time (s)', 'Phase deviation (deg)']];
+		for (var phasePoint = 0; phasePoint < points; phasePoint++) {
+			var phaseRadians = unwrapped[phasePoint] - center;
+			phase.push([phasePoint / ((points - 1) * signal.toneHz),
+				phaseRadians * 180 / Math.PI]);
+			peakPhaseRadians = Math.max(peakPhaseRadians, Math.abs(phaseRadians));
+		}
+	}
+	return {
+		out: function (selector) {
+			if (selector === 'envelope') return envelope.map(function (row) { return row.slice(); });
+			if (selector === 'phase') return phase.map(function (row) { return row.slice(); });
+			if (selector === 'frequency deviation') return deviation.map(function (row) { return row.slice(); });
+			if (selector === 'peak frequency deviation Hz') return peakDeviation;
+			if (selector === 'peak phase deviation radians' && mode === 'PM') return peakPhaseRadians;
+			if (selector === 'tones') return stage.out('signal' + outputPort + 'V',
+				'signal' + outputPort + 'Deg', 'signal' + outputPort + 'dBm');
+			if (selector === 'frequencies') return signal.rows.map(function (row) { return row.frequency; });
+			throw new RangeError('Unknown ' + mode + ' demod output: ' + selector);
+		}
+	};
+}
+
+// Compare quadrature energy at the two FSK tones in each known bit interval.
+function demodFSK(receiver, signal) {
+	var samplesPerBit = signal.samplesPerBit;
+	if (!Number.isInteger(samplesPerBit) || samplesPerBit < 2 ||
+		signal.sampleCount % samplesPerBit !== 0 ||
+		!Number.isFinite(signal.frequencyDeviationHz) || signal.frequencyDeviationHz <= 0) {
+		throw new RangeError('FSK reception needs two valid tones and whole bit intervals.');
+	}
+	var samples = receiver.out('waveform');
+	var frequencies = [signal.carrierHz - signal.frequencyDeviationHz,
+		signal.carrierHz + signal.frequencyDeviationHz];
+	var bits = [];
+	var energies = [['Bit', 'Low-tone energy', 'High-tone energy']];
+	for (var start = 0; start < signal.sampleCount; start += samplesPerBit) {
+		var scores = frequencies.map(function (frequency) {
+			var inPhase = 0, quadrature = 0;
+			for (var offset = 0; offset < samplesPerBit; offset++) {
+				var index = start + offset;
+				var phase = 2 * Math.PI * frequency * index / signal.sampleRateHz;
+				inPhase += samples[index + 1][1] * Math.cos(phase);
+				quadrature += samples[index + 1][1] * Math.sin(phase);
+			}
+			return inPhase * inPhase + quadrature * quadrature;
+		});
+		bits.push(scores[1] > scores[0] ? 1 : 0);
+		energies.push([start / samplesPerBit, scores[0], scores[1]]);
+	}
+	return {
+		out: function (selector = 'waveform') {
+			if (selector === 'mode') return 'FSK';
+			if (selector === 'data mode') return signal.dataMode;
+			if (selector === 'bits') return bits.slice();
+			if (selector === 'bit count') return bits.length;
+			if (selector === 'tone energies') return energies.map(function (row) { return row.slice(); });
+			if (selector === 'tone frequencies Hz') return frequencies.slice();
+			if (selector === 'ASCII text') {
+				if (bits.length % 8 !== 0) throw new RangeError('ASCII reception requires complete eight-bit bytes.');
+				var message = '';
+				for (var byte = 0; byte < bits.length; byte += 8) {
+					var code = 0;
+					for (var bit = 0; bit < 8; bit++) code = (code << 1) | bits[byte + bit];
+					message += code > 127 ? '\uFFFD' : String.fromCharCode(code);
+				}
+				return message;
+			}
+			return receiver.out(selector === 'carrier waveform' || selector === 'passband waveform' ?
+				'waveform' : selector);
+		}
+	};
+}
+
 // Recover baseband levels from a real carrier using the known carrier phase.
 function demod(stage, options = {}) {
-	var receiver = digitalRx(stage, options);
+	if (!stage || !Array.isArray(stage.spars)) stage = directStage(stage);
+	if (stage.signal && stage.signal.mode === 'AM') return demodAM(stage, options);
+	if (stage.signal && (stage.signal.mode === 'FM' || stage.signal.mode === 'PM')) {
+		return demodAngle(stage, options);
+	}
+	var receiver = receiveWaveform(stage, options);
 	var signal = stage.signal;
+	if (signal.mode === 'FSK') return demodFSK(receiver, signal);
 	var carrierHz = signal.carrierHz || 0;
 	if (carrierHz === 0) return receiver;
 	var samplesPerBit = signal.samplesPerBit;
@@ -11562,6 +11661,8 @@ function demod(stage, options = {}) {
 		for (var offset = 0; offset < samplesPerBit; offset++) {
 			var index = bitStart + offset;
 			var reference = Math.cos(2 * Math.PI * carrierHz * index / sampleRateHz);
+			if (signal.mode === 'PSK' && signal.encoding === 'Manchester' &&
+				offset >= samplesPerBit / 2) reference = -reference;
 			numerator += passband[index + 1][1] * reference;
 			denominator += reference * reference;
 		}
@@ -11573,11 +11674,22 @@ function demod(stage, options = {}) {
 	});
 	var bits;
 	var receivedBits = function () {
-		if (bits === undefined) bits = decideBits(levels, options.thresholdVolts);
+		if (bits === undefined) {
+			if (signal.mode === 'PSK') {
+				var threshold = options.thresholdVolts === undefined ? 0 : options.thresholdVolts;
+				if (!Number.isFinite(threshold)) throw new RangeError('PSK thresholdVolts must be finite.');
+				bits = levels.map(function (level) { return level > threshold ? 1 : 0; });
+			} else {
+				bits = decideBits(levels, options.thresholdVolts);
+			}
+		}
 		return bits;
 	};
 	return {
 		out: function (selector = 'waveform') {
+			if (selector === 'mode') return signal.mode;
+			if (selector === 'data mode') return signal.dataMode || signal.mode;
+			if (selector === 'encoding' && signal.mode === 'PSK') return signal.encoding || 'NRZ';
 			if (selector === 'carrier waveform' || selector === 'passband waveform') {
 				return receiver.out('waveform');
 			}
@@ -11604,6 +11716,568 @@ function demod(stage, options = {}) {
 			return receiver.out(selector);
 		}
 	};
+}
+
+// Modified: 2026-10-14
+
+// Compare independent receiver decisions with a known transmitted bit pattern.
+function bitErrorRate(tx, stage, options = {}) {
+	if (!tx || !Array.isArray(tx.bits) || tx.bits.length === 0 ||
+		tx.bits.some(function (bit) { return bit !== 0 && bit !== 1; })) {
+		throw new TypeError('bitErrorRate requires transmitted bits from mod.');
+	}
+	if (!options || Array.isArray(options) || typeof options !== 'object') {
+		throw new TypeError('bitErrorRate options must be an object.');
+	}
+	var receptions = options.receptions === undefined ? 100 : options.receptions;
+	if (!Number.isInteger(receptions) || receptions < 1) {
+		throw new RangeError('bitErrorRate receptions must be a positive integer.');
+	}
+	var receiverOptions = {...options};
+	delete receiverOptions.receptions;
+	var receiver = receiverOptions.receiver === undefined ? demod : receiverOptions.receiver;
+	delete receiverOptions.receiver;
+	if (typeof receiver !== 'function') {
+		throw new TypeError('bitErrorRate receiver must be a function.');
+	}
+	var errors = 0;
+	for (var reception = 0; reception < receptions; reception++) {
+		var receivedBits = receiver(stage, receiverOptions).out('bits');
+		if (receivedBits.length !== tx.bits.length) {
+			throw new RangeError('Transmitted and received bit counts must match.');
+		}
+		for (var bit = 0; bit < receivedBits.length; bit++) {
+			if (receivedBits[bit] !== tx.bits[bit]) errors++;
+		}
+	}
+	return errors / (receptions * tx.bits.length);
+}
+
+// Modified: 2026-10-13
+
+
+// Feedback masks for maximal-length, left-shifting registers of 2–16 stages.
+var FEEDBACK_MASKS = {
+	2: 0x3, 3: 0x5, 4: 0x9, 5: 0x17, 6: 0x21,
+	7: 0x41, 8: 0x95, 9: 0x10d, 10: 0x20d, 11: 0x40b,
+	12: 0x829, 13: 0x100d, 14: 0x2015, 15: 0x4001, 16: 0x801f
+};
+
+function pnBits(stages = 7, seed = 2 ** stages - 1) {
+	if (!Number.isInteger(stages) || !FEEDBACK_MASKS[stages]) {
+		throw new RangeError('PN stages must be an integer from 2 through 16.');
+	}
+	var mask = 2 ** stages - 1;
+	if (!Number.isInteger(seed) || seed < 1 || seed > mask) {
+		throw new RangeError('PN' + stages + ' seed must be a nonzero ' + stages + '-bit integer.');
+	}
+	var bits = [];
+	var register = seed;
+	for (var i = 0; i < mask; i++) {
+		bits.push((register >> (stages - 1)) & 1);
+		var taps = register & FEEDBACK_MASKS[stages];
+		var feedback = 0;
+		while (taps) {
+			feedback ^= taps & 1;
+			taps >>= 1;
+		}
+		register = ((register << 1) | feedback) & mask;
+	}
+	if (register !== seed) throw new RangeError('PN' + stages + ' did not return to its seed.');
+	return bits;
+}
+
+// Advance the selected PN register once at each clock time.
+function PN(options = {}) {
+	if (!options || Array.isArray(options) || typeof options !== 'object') {
+		throw new TypeError('PN expects an options object.');
+	}
+	var stages = options.stages === undefined ? 7 : options.stages;
+	if (!Number.isInteger(stages) || !FEEDBACK_MASKS[stages]) {
+		throw new RangeError('PN stages must be an integer from 2 through 16.');
+	}
+	var periodLength = 2 ** stages - 1;
+	var time = options.time === undefined ? global.tList : options.time;
+	if (!Array.isArray(time) || time.length < periodLength || time.length % periodLength !== 0) {
+		throw new RangeError('PN time must contain a multiple of ' + periodLength + ' clock ticks.');
+	}
+	var step = time[1] - time[0];
+	if (!Number.isFinite(step) || step <= 0 || time.some(function (value, index) {
+		return !Number.isFinite(value) ||
+			Math.abs(value - (time[0] + index * step)) > Math.abs(step) * 1e-6;
+	})) {
+		throw new RangeError('PN time must be a uniformly spaced, increasing list in seconds.');
+	}
+	var lowVolts = options.lowVolts === undefined ? 0 : options.lowVolts;
+	var highVolts = options.highVolts === undefined ? 1 : options.highVolts;
+	if (!Number.isFinite(lowVolts) || !Number.isFinite(highVolts)) {
+		throw new RangeError('PN voltage levels must be finite.');
+	}
+	var period = pnBits(stages, options.seed === undefined ? periodLength : options.seed);
+	var bits = Array.from({length: time.length}, function (_, index) {
+		return period[index % period.length];
+	});
+	var samples = bits.map(function (bit) { return bit ? highVolts : lowVolts; });
+	var bitRate = 1 / step;
+	if (!Number.isFinite(bitRate)) {
+		throw new RangeError('PN clock spacing produces an invalid bit rate.');
+	}
+	var waveform = {
+		kind: 'PN', mode: 'PN' + stages, stages: stages, bits: bits, samples: samples,
+		time: time.slice(), samplesPerBit: 1, sampleRateHz: bitRate,
+		bitRate: bitRate, lowVolts: lowVolts, highVolts: highVolts
+	};
+	waveform.out = function (selector) {
+		if (selector === 'bits') return bits.slice();
+		if (selector === 'samples') return samples.slice();
+		if (selector === 'time') return waveform.time.slice();
+		if (selector === 'bit count') return bits.length;
+		if (selector === 'sample count') return samples.length;
+		if (selector === 'bit rate') return bitRate;
+		if (selector === 'sample rate' || selector === 'clock rate') return bitRate;
+		if (selector === 'waveform') {
+			return [['Time (ns)', 'Output (V)']].concat(waveform.time.map(function (value, index) {
+				return [value * 1e9, samples[index]];
+			}));
+		}
+		throw new RangeError('Unknown PN output: ' + selector);
+	};
+	return waveform;
+}
+
+// Modified: 2026-10-14
+
+function patternBits(options) {
+	var mode = options.mode === undefined ? 'PN7' : options.mode;
+	var bits = [];
+	if (typeof mode === 'string' && /^PN\d+$/.test(mode)) {
+		var stages = Number(mode.slice(2));
+		bits = pnBits(stages, options.seed === undefined ? 2 ** stages - 1 : options.seed);
+	} else if (mode === 'ASCII') {
+		if (typeof options.message !== 'string' || options.message.length === 0) {
+			throw new TypeError('ASCII mode requires a nonempty message.');
+		}
+		for (var character = 0; character < options.message.length; character++) {
+			var code = options.message.charCodeAt(character);
+			if (code > 127) throw new RangeError('ASCII mode accepts only characters U+0000 through U+007F.');
+			for (var shift = 7; shift >= 0; shift--) bits.push((code >> shift) & 1);
+		}
+	} else if (mode === 'bits') {
+		if (typeof options.bits === 'string') {
+			if (!/^[01]+$/.test(options.bits)) throw new TypeError('bits mode requires a nonempty 0/1 string.');
+			bits = options.bits.split('').map(Number);
+		} else if (Array.isArray(options.bits) && options.bits.length > 0 &&
+			options.bits.every(function (bit) { return bit === 0 || bit === 1; })) {
+			bits = options.bits.slice();
+		} else {
+			throw new TypeError('bits mode requires a nonempty array of 0s and 1s or a 0/1 string.');
+		}
+	} else {
+		throw new RangeError('mod mode must be PN2 through PN16, ASCII, or bits.');
+	}
+	return {mode: mode, bits: bits};
+}
+
+// Describe an input waveform; the circuit itself remains an ordinary nPort.
+// mod() may fill a caller-owned list instead of replacing the global default.
+function createSourceWaveform(options = {}, fftList) {
+	if (!options || Array.isArray(options) || typeof options !== 'object') {
+		throw new TypeError('mod expects an options object.');
+	}
+	if (fftList !== undefined && !Array.isArray(fftList)) {
+		throw new TypeError('mod fftList must be an array.');
+	}
+	if (global.twoTone) throw new RangeError('Clear global.twoTone before digital waveform analysis.');
+	var input = options.input;
+	if (input !== undefined && (Object.keys(options).some(function (key) {
+		return key !== 'input' && key !== 'samplesPerBit';
+	}) || !input ||
+		input.kind !== 'PN' || !Number.isInteger(input.stages) ||
+		input.stages < 2 || input.stages > 16 || input.mode !== 'PN' + input.stages ||
+		!Array.isArray(input.bits) ||
+		!Array.isArray(input.samples) || !Array.isArray(input.time) ||
+		input.bits.length < 2 ** input.stages - 1 ||
+		input.bits.length % (2 ** input.stages - 1) !== 0 ||
+		input.samples.length !== input.time.length ||
+		input.samples.length !== input.bits.length ||
+		input.samples.some(function (sample) { return !Number.isFinite(sample); }))) {
+		throw new TypeError('mod input must be a PN clock waveform with only an optional samplesPerBit setting.');
+	}
+	var bitRate = input ? input.bitRate : options.bitRate === undefined ? 1e9 : options.bitRate;
+	var samplesPerBit = options.samplesPerBit === undefined ? 8 : options.samplesPerBit;
+	var lowVolts = input ? input.lowVolts : options.lowVolts === undefined ? 0 : options.lowVolts;
+	var highVolts = input ? input.highVolts : options.highVolts === undefined ? 1 : options.highVolts;
+	if (!Number.isFinite(bitRate) || bitRate <= 0 ||
+		!Number.isInteger(samplesPerBit) || samplesPerBit < 1 ||
+		!Number.isFinite(lowVolts) || !Number.isFinite(highVolts) ||
+		!Number.isFinite(global.Ro) || global.Ro <= 0) {
+		throw new RangeError('mod needs a positive bit rate, positive integer samples per bit, finite voltage levels, and positive global.Ro.');
+	}
+	var pattern = input ? {mode: input.mode, bits: input.bits.slice()} : patternBits(options);
+	var samples = input ? input.samples.flatMap(function (sample) {
+		return Array(samplesPerBit).fill(sample);
+	}) : pattern.bits.flatMap(function (bit) {
+		return Array(samplesPerBit).fill(bit ? highVolts : lowVolts);
+	});
+	var sampleCount = samples.length;
+	var sampleRateHz = bitRate * samplesPerBit;
+	if (!Number.isFinite(sampleRateHz)) throw new RangeError('mod sample rate must be finite.');
+	var spectrum = FFT(samples);
+	var frequencyList = Array.from({length: Math.floor(sampleCount / 2) + 1}, function (_, bin) {
+		return bin * sampleRateHz / sampleCount;
+	});
+	if (fftList === undefined) {
+		global.fList = frequencyList;
+	} else {
+		fftList.length = 0;
+		for (var frequencyIndex = 0; frequencyIndex < frequencyList.length; frequencyIndex++) {
+			fftList.push(frequencyList[frequencyIndex]);
+		}
+	}
+	var tx = {
+		mode: pattern.mode,
+		bits: pattern.bits,
+		samples: samples,
+		fList: frequencyList,
+		spectrum: spectrum.slice(0, frequencyList.length),
+		sampleRateHz: sampleRateHz,
+		sampleCount: sampleCount,
+		samplesPerBit: samplesPerBit,
+		lowVolts: lowVolts,
+		highVolts: highVolts,
+		time: input ? input.time.flatMap(function (clockTime) {
+			return Array.from({length: samplesPerBit}, function (_, index) {
+				return clockTime + index / sampleRateHz;
+			});
+		}) : undefined,
+		referenceImpedanceOhms: global.Ro
+	};
+	tx.out = function (selector) {
+		if (selector === 'mode') return tx.mode;
+		if (selector === 'bit count') return tx.bits.length;
+		if (selector === 'sample count') return tx.sampleCount;
+		if (selector === 'frequency count') return tx.fList.length;
+		if (selector === 'frequencies') return tx.fList.slice();
+		if (selector === 'spectrum') return tx.spectrum.map(function (value) { return value.copy(); });
+		throw new RangeError('Unknown mod output: ' + selector);
+	};
+	return tx;
+}
+
+// Modified: 2026-10-14
+
+// A single sinusoidal AM input has only a carrier and two sidebands.
+function analogAM(options) {
+	var carrierHz = options.carrierHz;
+	var toneHz = options.toneHz;
+	var modulationIndex = options.modulationIndex === undefined ? 0.5 : options.modulationIndex;
+	var carrierAmplitudeVolts = options.carrierAmplitudeVolts === undefined ? 1 : options.carrierAmplitudeVolts;
+	var fftList = options.fftList;
+	if (!Number.isFinite(carrierHz) || !Number.isFinite(toneHz) ||
+		carrierHz <= toneHz || toneHz <= 0 || !Number.isFinite(modulationIndex) ||
+		modulationIndex < 0 || modulationIndex > 1 ||
+		!Number.isFinite(carrierAmplitudeVolts) || carrierAmplitudeVolts <= 0 ||
+		!Number.isFinite(global.Ro) || global.Ro <= 0 ||
+		(fftList !== undefined && !Array.isArray(fftList))) {
+		throw new RangeError('AM needs carrierHz > toneHz > 0, modulationIndex from 0 to 1, positive carrierAmplitudeVolts and global.Ro, and an optional fftList array.');
+	}
+	if (global.twoTone) throw new RangeError('Clear global.twoTone before AM analysis.');
+	var fList = [carrierHz - toneHz, carrierHz, carrierHz + toneHz];
+	if (fftList) {
+		fftList.length = 0;
+		fList.forEach(function (frequency) { fftList.push(frequency); });
+	} else {
+		global.fList = fList.slice();
+	}
+	var sidebandVolts = carrierAmplitudeVolts * modulationIndex / 2;
+	var spectrum = [complex(sidebandVolts, 0), complex(carrierAmplitudeVolts, 0),
+		complex(sidebandVolts, 0)];
+	var tx = {
+		mode: 'AM', carrierHz: carrierHz, toneHz: toneHz,
+		modulationIndex: modulationIndex, carrierAmplitudeVolts: carrierAmplitudeVolts,
+		fList: fList, spectrum: spectrum, referenceImpedanceOhms: global.Ro
+	};
+	tx.out = function (selector) {
+		if (selector === 'settings') return {mode: 'AM', carrierHz: carrierHz, toneHz: toneHz,
+			modulationIndex: modulationIndex, carrierAmplitudeVolts: carrierAmplitudeVolts,
+			frequencyCount: 3};
+		if (selector === 'frequency count') return 3;
+		if (selector === 'frequencies') return fList.slice();
+		if (selector === 'spectrum') return spectrum.map(function (value) { return value.copy(); });
+		if (selector === 'frequency table') return [['Bin', 'Frequency (Hz)']].concat(
+			fList.map(function (frequency, index) { return [index, frequency]; }));
+		if (selector === 'tones') return [['Freq', 'Peak voltage (V)', 'Phase (deg)']].concat(
+			fList.map(function (frequency, index) {
+				return [frequency, spectrum[index].mag(), spectrum[index].ang()];
+			}));
+		throw new RangeError('Unknown AM output: ' + selector);
+	};
+	return tx;
+}
+
+// Sample the slow phase waveform, not the RF carrier. FM uses beta sin(theta);
+// PM uses beta cos(theta), with beta measured in peak radians.
+function analogAngle(options) {
+	var mode = options.mode;
+	var carrierHz = options.carrierHz;
+	var toneHz = options.toneHz;
+	var beta = options.beta;
+	var carrierAmplitudeVolts = options.carrierAmplitudeVolts === undefined ? 1 : options.carrierAmplitudeVolts;
+	var tolerance = options.sidebandPowerTolerance === undefined ? 1e-6 : options.sidebandPowerTolerance;
+	var fftList = options.fftList;
+	if (!Number.isFinite(carrierHz) || carrierHz <= 0 ||
+		!Number.isFinite(toneHz) || toneHz <= 0 ||
+		!Number.isFinite(beta) || beta < 0 ||
+		!Number.isFinite(carrierAmplitudeVolts) || carrierAmplitudeVolts <= 0 ||
+		!Number.isFinite(tolerance) || tolerance <= 0 || tolerance >= 1 ||
+		!Number.isFinite(global.Ro) || global.Ro <= 0 ||
+		(fftList !== undefined && !Array.isArray(fftList))) {
+		throw new RangeError(mode + ' needs positive carrierHz, toneHz, carrierAmplitudeVolts and global.Ro, nonnegative beta, and sidebandPowerTolerance between 0 and 1.');
+	}
+	if (global.twoTone) throw new RangeError('Clear global.twoTone before ' + mode + ' analysis.');
+	var coefficientSamples = 256;
+	while (coefficientSamples < 16 * (Math.ceil(beta) + 12)) coefficientSamples *= 2;
+	if (coefficientSamples > 131072) {
+		throw new RangeError(mode + ' beta requires too many sideband coefficient samples.');
+	}
+	var phaseSamples = Array.from({length: coefficientSamples}, function (_, index) {
+		var theta = 2 * Math.PI * index / coefficientSamples;
+		var phase = beta * (mode === 'PM' ? Math.cos(theta) : Math.sin(theta));
+		return complex(Math.cos(phase), Math.sin(phase));
+	});
+	var coefficients = FFT(phaseSamples);
+	var retainedPower = coefficients[0].mag() ** 2 / coefficientSamples ** 2;
+	var sidebandOrder = 0;
+	while (1 - retainedPower > tolerance && sidebandOrder < coefficientSamples / 2 - 1) {
+		sidebandOrder++;
+		retainedPower += (coefficients[sidebandOrder].mag() ** 2 +
+			coefficients[coefficientSamples - sidebandOrder].mag() ** 2) /
+			coefficientSamples ** 2;
+	}
+	if (1 - retainedPower > tolerance) {
+		throw new RangeError(mode + ' sideband tolerance could not be met.');
+	}
+	if (carrierHz <= sidebandOrder * toneHz) {
+		throw new RangeError(mode + ' lower sideband frequencies must remain positive.');
+	}
+	var fList = [];
+	var spectrum = [];
+	for (var order = -sidebandOrder; order <= sidebandOrder; order++) {
+		fList.push(carrierHz + order * toneHz);
+		var coefficient = coefficients[(order + coefficientSamples) % coefficientSamples];
+		spectrum.push(complex(carrierAmplitudeVolts * coefficient.getR() / coefficientSamples,
+			carrierAmplitudeVolts * coefficient.getI() / coefficientSamples));
+	}
+	if (fList.some(function (frequency, index) {
+		return !Number.isFinite(frequency) || (index > 0 && frequency <= fList[index - 1]);
+	})) {
+		throw new RangeError(mode + ' sideband frequencies must be finite and distinct.');
+	}
+	if (fftList) {
+		fftList.length = 0;
+		fList.forEach(function (frequency) { fftList.push(frequency); });
+	} else {
+		global.fList = fList.slice();
+	}
+	var tx = {
+		mode: mode, carrierHz: carrierHz, toneHz: toneHz, beta: beta,
+		carrierAmplitudeVolts: carrierAmplitudeVolts,
+		sidebandOrder: sidebandOrder, sidebandPowerTolerance: tolerance,
+		fList: fList, spectrum: spectrum, referenceImpedanceOhms: global.Ro
+	};
+	tx.out = function (selector) {
+		if (selector === 'settings') return {mode: mode, carrierHz: carrierHz, toneHz: toneHz,
+			beta: beta, frequencyDeviationHz: beta * toneHz,
+			...(mode === 'PM' ? {peakPhaseRadians: beta} : {}),
+			carrierAmplitudeVolts: carrierAmplitudeVolts,
+			sidebandOrder: sidebandOrder, sidebandPowerTolerance: tolerance,
+			frequencyCount: fList.length};
+		if (selector === 'frequency count') return fList.length;
+		if (selector === 'frequencies') return fList.slice();
+		if (selector === 'spectrum') return spectrum.map(function (value) { return value.copy(); });
+		if (selector === 'frequency table') return [['Bin', 'Frequency (Hz)']].concat(
+			fList.map(function (frequency, index) { return [index, frequency]; }));
+		if (selector === 'tones') return [['Freq', 'Peak voltage (V)', 'Phase (deg)']].concat(
+			fList.map(function (frequency, index) {
+				return [frequency, spectrum[index].mag(), spectrum[index].ang()];
+			}));
+		throw new RangeError('Unknown ' + mode + ' output: ' + selector);
+	};
+	return tx;
+}
+
+// Prepare a sampled digital waveform or sparse, single-tone analog source.
+function mod(options = {}) {
+	if (!options || Array.isArray(options) || typeof options !== 'object') {
+		throw new TypeError('mod expects an options object.');
+	}
+	if (options.mode === 'AM') return analogAM(options);
+	if (options.mode === 'FM' || options.mode === 'PM') return analogAngle(options);
+	var keyedMode = options.mode === 'OOK' || options.mode === 'ASK';
+	var fskMode = options.mode === 'FSK';
+	var pskMode = options.mode === 'PSK';
+	var encoding = pskMode ? (options.encoding === undefined ? 'NRZ' : options.encoding) : undefined;
+	if (pskMode ? encoding !== 'NRZ' && encoding !== 'Manchester' :
+		options.encoding !== undefined) {
+		throw new RangeError('encoding must be NRZ or Manchester and is available only for PSK.');
+	}
+	var carrierHz = options.carrierHz === undefined ? 0 : options.carrierHz;
+	if (!Number.isFinite(carrierHz) || carrierHz < 0) {
+		throw new RangeError('mod carrierHz must be a nonnegative finite frequency.');
+	}
+	if ((keyedMode || fskMode || pskMode) && carrierHz === 0) {
+		throw new RangeError('OOK, ASK, FSK, and PSK require a positive carrierHz.');
+	}
+	var txOptions = {...options};
+	delete txOptions.carrierHz;
+	delete txOptions.fftList;
+	if (keyedMode) {
+		var lowVolts = options.lowVolts === undefined ?
+			(options.mode === 'OOK' ? 0 : 0.5) : options.lowVolts;
+		var highVolts = options.highVolts === undefined ? 1 : options.highVolts;
+		if (!Number.isFinite(lowVolts) || !Number.isFinite(highVolts) ||
+			(options.mode === 'OOK' ? lowVolts !== 0 || highVolts <= 0 :
+				lowVolts <= 0 || highVolts <= lowVolts)) {
+			throw new RangeError('OOK requires 0 V off and positive on voltage; ASK requires two increasing positive voltage levels.');
+		}
+		var dataMode = options.dataMode === undefined ?
+			(options.message !== undefined ? 'ASCII' : options.bits !== undefined ? 'bits' : 'PN7') :
+			options.dataMode;
+		if (options.input) {
+			if (options.dataMode !== undefined || options.message !== undefined ||
+				options.bits !== undefined) {
+				throw new TypeError('OOK or ASK with a PN input cannot also select another data mode.');
+			}
+			var input = options.input;
+			txOptions = {input: {...input, lowVolts: lowVolts, highVolts: highVolts,
+				samples: Array.isArray(input.bits) ? input.bits.map(function (bit) {
+					return bit ? highVolts : lowVolts;
+				}) : input.samples}, samplesPerBit: options.samplesPerBit};
+		} else {
+			txOptions.mode = dataMode;
+			txOptions.lowVolts = lowVolts;
+			txOptions.highVolts = highVolts;
+			delete txOptions.dataMode;
+		}
+	}
+	if (fskMode || pskMode) {
+		if (options.input) {
+			if (options.dataMode !== undefined || options.message !== undefined ||
+				options.bits !== undefined) {
+				throw new TypeError(options.mode + ' with a PN input cannot also select another data mode.');
+			}
+			txOptions = {input: options.input, samplesPerBit: options.samplesPerBit};
+		} else {
+			txOptions.mode = options.dataMode === undefined ?
+				(options.message !== undefined ? 'ASCII' : options.bits !== undefined ? 'bits' : 'PN7') :
+				options.dataMode;
+			delete txOptions.dataMode;
+			delete txOptions.frequencyDeviationHz;
+			delete txOptions.carrierAmplitudeVolts;
+			delete txOptions.encoding;
+		}
+	}
+	var tx = createSourceWaveform(txOptions, options.fftList);
+	if (pskMode && encoding === 'Manchester' &&
+		(tx.samplesPerBit < 2 || tx.samplesPerBit % 2 !== 0)) {
+		throw new RangeError('Manchester PSK requires an even samplesPerBit of at least 2.');
+	}
+	var deviationHz = fskMode ? (options.frequencyDeviationHz === undefined ?
+		tx.sampleRateHz / tx.samplesPerBit / 2 : options.frequencyDeviationHz) : undefined;
+	var carrierAmplitudeVolts = (fskMode || pskMode) ? (options.carrierAmplitudeVolts === undefined ?
+		1 : options.carrierAmplitudeVolts) : undefined;
+	if (pskMode && (!Number.isFinite(carrierAmplitudeVolts) || carrierAmplitudeVolts <= 0)) {
+		throw new RangeError('PSK needs positive carrierAmplitudeVolts.');
+	}
+	if (fskMode && (!Number.isFinite(deviationHz) || deviationHz <= 0 ||
+		!Number.isFinite(carrierAmplitudeVolts) || carrierAmplitudeVolts <= 0 ||
+		carrierHz <= deviationHz)) {
+		throw new RangeError('FSK needs positive frequencyDeviationHz and carrierAmplitudeVolts, with carrierHz greater than deviation.');
+	}
+	if (carrierHz + (fskMode ? deviationHz : 0) >= tx.sampleRateHz / 2) {
+		throw new RangeError('mod carrierHz must be below the sample Nyquist frequency.');
+	}
+	if (fskMode) {
+		var phase = 0;
+		tx.samples = tx.bits.flatMap(function (bit) {
+			var frequency = carrierHz + (bit ? deviationHz : -deviationHz);
+			var phaseStep = 2 * Math.PI * frequency / tx.sampleRateHz;
+			return Array.from({length: tx.samplesPerBit}, function () {
+				var voltage = carrierAmplitudeVolts * Math.cos(phase);
+				phase += phaseStep;
+				return voltage;
+			});
+		});
+		tx.spectrum = FFT(tx.samples).slice(0, tx.fList.length);
+	} else if (pskMode) {
+		tx.samples = tx.samples.map(function (_, index) {
+			var bit = tx.bits[Math.floor(index / tx.samplesPerBit)];
+			var secondHalf = index % tx.samplesPerBit >= tx.samplesPerBit / 2;
+			var polarity = (bit ? 1 : -1) *
+				(encoding === 'Manchester' && secondHalf ? -1 : 1);
+			return polarity * carrierAmplitudeVolts *
+				Math.cos(2 * Math.PI * carrierHz * index / tx.sampleRateHz);
+		});
+		tx.spectrum = FFT(tx.samples).slice(0, tx.fList.length);
+	} else if (carrierHz !== 0) {
+		tx.samples = tx.samples.map(function (voltage, index) {
+			return voltage * Math.cos(2 * Math.PI * carrierHz * index / tx.sampleRateHz);
+		});
+		tx.spectrum = FFT(tx.samples).slice(0, tx.fList.length);
+	}
+	var originalOut = tx.out;
+	if (keyedMode) {
+		tx.dataMode = tx.mode;
+		tx.mode = options.mode;
+	}
+	if (fskMode) {
+		tx.dataMode = tx.mode;
+		tx.mode = 'FSK';
+		tx.frequencyDeviationHz = deviationHz;
+		tx.carrierAmplitudeVolts = carrierAmplitudeVolts;
+	}
+	if (pskMode) {
+		tx.dataMode = tx.mode;
+		tx.mode = 'PSK';
+		tx.encoding = encoding;
+		tx.carrierAmplitudeVolts = carrierAmplitudeVolts;
+	}
+	tx.carrierHz = carrierHz;
+	tx.out = function (selector) {
+		if (selector === 'waveform') {
+			return [['Time (ns)', 'Output (V)']].concat(tx.samples.map(function (voltage, index) {
+				return [index * 1e9 / tx.sampleRateHz, voltage];
+			}));
+		}
+		if (selector === 'settings') {
+			return {
+				mode: tx.mode,
+				dataMode: tx.dataMode,
+				carrierHz: carrierHz,
+				...(fskMode ? {frequencyDeviationHz: deviationHz,
+					lowFrequencyHz: carrierHz - deviationHz,
+					highFrequencyHz: carrierHz + deviationHz,
+					carrierAmplitudeVolts: carrierAmplitudeVolts} : {}),
+				...(pskMode ? {encoding: encoding,
+					carrierAmplitudeVolts: carrierAmplitudeVolts,
+					phaseZeroDeg: 180, phaseOneDeg: 0} : {}),
+				bitRate: tx.sampleRateHz / tx.samplesPerBit,
+				samplesPerBit: tx.samplesPerBit,
+				sampleRateHz: tx.sampleRateHz,
+				sampleCount: tx.sampleCount,
+				frequencyCount: tx.fList.length,
+				lowVolts: tx.lowVolts,
+				highVolts: tx.highVolts
+			};
+		}
+		if (selector === 'frequency table') {
+			return [['Bin', 'Frequency (Hz)']].concat(tx.fList.map(function (frequency, bin) {
+				return [bin, frequency];
+			}));
+		}
+		return originalOut(selector);
+	};
+	return tx;
 }
 
 function getCircuitTitle() {
@@ -11648,4 +12322,4 @@ function bodyWidth () {
 	return width;
 }
 
-export { Amp, Attn, C, FFT, L, Load, Open, PN, R, Shift90, Short, Tclin, Tee, Tee4, Tee5, Thru, Tlin, bitErrorRate, bodyWidth, callCodemirror, cascade, chebyLPLCs, chebyLPNsec, chebyLPgk, complex, demod, digitalRx, digitalTx, dim, diode1N4148, dup, editor, getCircuitTitle, global, invFFT, lineChart, lineTable, log, lpfGen, matrix, mbend, mclin, mcross, mlin, mod, mstep, mtee, mtfr, mvgnd, mvia, nodal, paC, paL, paPaLC, paPaRC, paPaRL, paPaRLC, paR, paSeLC, paSeRC, paSeRL, paSeRLC, run, runButton, seC, seL, sePaLC, sePaRC, sePaRL, sePaRLC, seR, seSeLC, seSeRC, seSeRL, seSeRLC, seriesTee, smithChart, trf, trf4Port, version };
+export { Amp, Attn, C, FFT, L, Load, Open, PN, R, Shift90, Short, Tclin, Tee, Tee4, Tee5, Thru, Tlin, bitErrorRate, bodyWidth, callCodemirror, cascade, chebyLPLCs, chebyLPNsec, chebyLPgk, complex, demod, dim, diode1N4148, dup, editor, getCircuitTitle, global, invFFT, lineChart, lineTable, log, lpfGen, matrix, mbend, mclin, mcross, mlin, mod, mstep, mtee, mtfr, mvgnd, mvia, nodal, paC, paL, paPaLC, paPaRC, paPaRL, paPaRLC, paR, paSeLC, paSeRC, paSeRL, paSeRLC, run, runButton, seC, seL, sePaLC, sePaRC, sePaRL, sePaRLC, seR, seSeLC, seSeRC, seSeRL, seSeRLC, seriesTee, smithChart, trf, trf4Port, version };

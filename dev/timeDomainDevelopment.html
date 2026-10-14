@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Modified: 2026-10-13 -->
+<!-- Modified: 2026-10-14 -->
 <html lang="en">
 <head>
     <meta charset="utf-8">
@@ -9,7 +9,7 @@
 <body>
     <script>
         var message = 'now is the time for all good men to come to the aid of their country';
-        var tx = nP.digitalTx({mode: 'ASCII', message: message, bitRate: 1e9, samplesPerBit: 8, highVolts: 1e-3});
+        var tx = nP.mod({mode: 'ASCII', message: message, bitRate: 1e9, samplesPerBit: 8, highVolts: 1e-3});
         var attenuationDb = 17.6;
         var attenuator = nP.Attn(attenuationDb, 290);
         var chain = nP.nodal(
@@ -19,39 +19,12 @@
         );
 
         nP.log('Transmitted: ' + message);
-        var Rxout = nP.digitalRx(chain);
-        var text = Rxout.out('ASCII text');
-        nP.log('Recieved: ' + text);
+        var rx = nP.demod(chain);
+        var text = rx.out('ASCII text');
+        nP.log('Received: ' + text);
         nP.log('Attenuation: ' + attenuationDb + ' dB');
-        var oldBer = nP.bitErrorRate(tx, chain, {receptions: 100});
-        nP.log('Measured BER with digitalRx: ' + oldBer.toExponential(2));
-    </script>
-
-    <h2>0 Hz carrier: mod() and demod()</h2>
-    <script>
-        var modTx = nP.mod({
-            mode: 'ASCII',
-            message: message,
-            carrierHz: 0,
-            bitRate: 1e9,
-            samplesPerBit: 8,
-            highVolts: 1e-3
-        });
-        var modChain = nP.nodal(
-            [attenuator, 1, 2],
-            ['out', 1, 2],
-            {signal: modTx, inputPort: 1}
-        );
-        var demodOut = nP.demod(modChain);
-        var modBer = nP.bitErrorRate(modTx, modChain, {
-            receptions: 100,
-            receiver: nP.demod
-        });
-
-        nP.log('Received with demod: ' + demodOut.out('ASCII text'));
-        nP.log('mod settings: ' + JSON.stringify(modTx.out('settings')));
-        nP.log('Measured BER with demod: ' + modBer.toExponential(2));
-        nP.log('BER difference: ' + (modBer - oldBer).toExponential(2));
+        var ber = nP.bitErrorRate(tx, chain, {receptions: 100});
+        nP.log('Measured BER: ' + ber.toExponential(2));
     </script>
 
     <h2>PN7 on a 200 MHz carrier</h2>

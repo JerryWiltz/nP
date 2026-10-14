@@ -1,10 +1,12 @@
-// Modified: 2026-10-13
+// Modified: 2026-10-14
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {global} from '../src/np-global/index.js';
-import {digitalTx, digitalRx, bitErrorRate, mod, demod, PN} from '../src/np-digital/index.js';
+import {mod, demod, bitErrorRate, PN} from '../src/np-digital/index.js';
 import {Thru, Attn, Amp, nodal, cascade} from '../src/np-nport/index.js';
+import {nPort} from '../src/np-nport/src/nPort.js';
+import {complex} from '../src/np-math/src/complex.js';
 
 function withGlobal(action) {
     var previous = {fList: global.fList, Ro: global.Ro, twoTone: global.twoTone};
@@ -28,9 +30,9 @@ function checkSamples(table, bits, samplesPerBit, scale = 1) {
     }
 }
 
-test('PN7 digitalTx returns signal data and cascade reconstructs its waveform', () => {
+test('PN7 mod returns signal data and cascade reconstructs its waveform', () => {
     withGlobal(() => {
-        var tx = digitalTx({mode: 'PN7', bitRate: 1e9, samplesPerBit: 8});
+        var tx = mod({mode: 'PN7', bitRate: 1e9, samplesPerBit: 8});
         assert.equal(tx.bits.length, 127);
         assert.equal(tx.bits.filter(Boolean).length, 64);
         assert.equal(tx.bits.slice(0, 8).join(''), '11111110');
@@ -49,7 +51,7 @@ test('PN7 digitalTx returns signal data and cascade reconstructs its waveform', 
         assert.equal(global.fList[0], 0);
         assert.equal(global.fList[508], 4e9);
         var thru = Thru();
-        var received = digitalRx(cascade(thru, {signal: tx, inputPort: 1}), {noise: false});
+        var received = demod(cascade(thru, {signal: tx, inputPort: 1}), {noise: false});
         checkSamples(received.out('waveform'), tx.bits, 8);
         assert.deepEqual(received.out('bits'), tx.bits);
         assert.equal(thru.signal, undefined);
@@ -164,29 +166,48 @@ test('200 MHz PN carrier survives an attenuator and coherent demodulation', () =
     });
 });
 
-test('0 Hz mod and demod match digitalTx and digitalRx for ASCII and PN7', () => {
+test('demod accepts a mod source directly, using its original grid and impedance', () => {
+    withGlobal(() => {
+        global.Ro = 75;
+        for (var carrierHz of [0, 200e6]) {
+            var tx = mod({mode: 'ASCII', message: 'hello', carrierHz});
+            var through = cascade(Thru({fList: tx.fList}), {signal: tx});
+            global.Ro = 50;
+            global.fList = [2e9];
+
+            var direct = demod(tx, {noise: false});
+            var viaThru = demod(through, {noise: false});
+            assert.equal(direct.out('ASCII text'), 'hello');
+            assert.deepEqual(direct.out('waveform'), viaThru.out('waveform'));
+            assert.deepEqual(direct.out('bits'), viaThru.out('bits'));
+            assert.deepEqual(direct.out('frequencies'), tx.fList);
+            assert.deepEqual(global.fList, [2e9]);
+            assert.equal(tx.referenceImpedanceOhms, 75);
+            assert.equal(demod(tx).out('waveform').length, tx.sampleCount + 1);
+            global.Ro = 75;
+        }
+    });
+});
+
+test('mod defaults to a 0 Hz carrier for ASCII and PN7', () => {
     withGlobal(() => {
         for (var source of [
             {mode: 'ASCII', message: 'hello', bitRate: 1e9, samplesPerBit: 8, highVolts: 1e-3},
             {mode: 'PN7', bitRate: 1e9, samplesPerBit: 8, highVolts: 1e-3}
         ]) {
-            var original = digitalTx(source);
-            var replacement = mod({...source, carrierHz: 0});
-            assert.deepEqual(replacement.bits, original.bits);
-            assert.deepEqual(replacement.fList, original.fList);
-            assert.deepEqual(replacement.spectrum.map(value => [value.getR(), value.getI()]),
-                original.spectrum.map(value => [value.getR(), value.getI()]));
-            assert.equal(replacement.out('settings').carrierHz, 0);
-            assert.equal(replacement.out('settings').bitRate, source.bitRate);
-            assert.equal(replacement.out('settings').frequencyCount, original.out('frequency count'));
-            var oldChain = cascade(Thru(), {signal: original});
-            var newChain = cascade(Thru(), {signal: replacement});
-            assert.equal(newChain.signal.carrierHz, 0);
-            assert.deepEqual(demod(newChain, {noise: false}).out('bits'),
-                digitalRx(oldChain, {noise: false}).out('bits'));
-            assert.equal(bitErrorRate(replacement, newChain, {
-                receiver: demod, noise: false, receptions: 1
-            }), 0);
+            var implicit = mod(source);
+            var explicit = mod({...source, carrierHz: 0});
+            assert.deepEqual(implicit.bits, explicit.bits);
+            assert.deepEqual(implicit.fList, explicit.fList);
+            assert.deepEqual(implicit.spectrum.map(value => [value.getR(), value.getI()]),
+                explicit.spectrum.map(value => [value.getR(), value.getI()]));
+            assert.equal(implicit.out('settings').carrierHz, 0);
+            assert.equal(implicit.out('settings').bitRate, source.bitRate);
+            assert.equal(implicit.out('settings').frequencyCount, explicit.out('frequency count'));
+            var chain = cascade(Thru(), {signal: implicit});
+            assert.equal(chain.signal.carrierHz, 0);
+            assert.deepEqual(demod(chain, {noise: false}).out('bits'), implicit.bits);
+            assert.equal(bitErrorRate(implicit, chain, {noise: false, receptions: 1}), 0);
         }
     });
 });
@@ -268,7 +289,7 @@ test('two mod circuits follow the default global frequency workflow', () => {
 
 test('nodal carries driven signal when its result is reused', () => {
     withGlobal(() => {
-        var tx = digitalTx({mode: 'PN7'});
+        var tx = mod({mode: 'PN7'});
         var thru = Thru();
         var first = nodal(
             [thru, 1, 2],
@@ -280,31 +301,304 @@ test('nodal carries driven signal when its result is reused', () => {
             [thru, 2, 3],
             ['out', 1, 3]
         );
-        checkSamples(digitalRx(first, {noise: false}).out('waveform'), tx.bits, 8);
-        checkSamples(digitalRx(second, {noise: false}).out('waveform'), tx.bits, 8);
-        checkSamples(digitalRx(cascade(first, thru), {noise: false}).out('waveform'), tx.bits, 8);
+        checkSamples(demod(first, {noise: false}).out('waveform'), tx.bits, 8);
+        checkSamples(demod(second, {noise: false}).out('waveform'), tx.bits, 8);
+        checkSamples(demod(cascade(first, thru), {noise: false}).out('waveform'), tx.bits, 8);
+    });
+});
+
+test('ten nodal blocks combine in a final nodal with one input signal', () => {
+    withGlobal(() => {
+        var tx = mod({mode: 'PN3', samplesPerBit: 4});
+        var blocks = Array.from({length: 10}, function () {
+            return nodal(
+                [Thru(), 1, 2],
+                [Attn(1, 0), 2, 3],
+                ['out', 1, 3]
+            );
+        });
+        var connections = blocks.map(function (block, index) {
+            return [block, index + 1, index + 2];
+        });
+        connections.push(['out', 1, 11]);
+        connections.push({signal: tx, inputPort: 1});
+        var chain = nodal(...connections);
+        var viaCascade = cascade(...blocks, {signal: tx, inputPort: 1});
+
+        assert.ok(blocks.every(function (block) { return block.signal === undefined; }));
+        assert.equal(chain.signal.rows.length, tx.fList.length);
+        checkSamples(demod(chain, {noise: false}).out('waveform'), tx.bits, 4, 10 ** (-10 / 20));
+        assert.deepEqual(demod(chain, {noise: false}).out('bits'), tx.bits);
+        assert.deepEqual(chain.out('s21dB'), viaCascade.out('s21dB'));
+    });
+});
+
+test('single-tone AM uses three frequencies and exposes sidebands and AM-to-PM', () => {
+    withGlobal(() => {
+        global.fList = [];
+        var tx = mod({mode: 'AM', carrierHz: 200e6, toneHz: 300,
+            modulationIndex: 0.5, carrierAmplitudeVolts: 1});
+        assert.deepEqual(global.fList, [200e6 - 300, 200e6, 200e6 + 300]);
+        assert.equal(tx.out('frequency count'), 3);
+        assert.deepEqual(tx.out('tones').slice(1).map(function (row) { return row[1]; }),
+            [0.25, 1, 0.25]);
+
+        var through = nodal([Thru(), 1, 2], ['out', 1, 2], {signal: tx});
+        assert.deepEqual(through.out('signal2V').slice(1).map(function (row) { return row[1]; }),
+            [0.25, 1, 0.25]);
+        assert.ok(demod(through).out('amToPmDeg') < 1e-10);
+        var flatEnvelope = demod(through).out('envelope');
+        assert.ok(Math.abs(flatEnvelope[1][1] - 1.5) < 1e-12);
+        assert.ok(Math.abs(flatEnvelope[501][1] - 0.5) < 1e-12);
+        assert.deepEqual(demod(tx).out('tones'), demod(through).out('tones'));
+
+        var filter = new nPort();
+        filter.setspars(global.fList.map(function (frequency, index) {
+            var response = [0.8, 1, 0.2][index];
+            return [frequency, complex(0, 0), complex(response, 0),
+                complex(response, 0), complex(0, 0)];
+        }));
+        filter.setglobal(global);
+        var viaNodal = nodal([filter, 1, 2], ['out', 1, 2], {signal: tx});
+        var viaCascade = cascade(filter, {signal: tx});
+        assert.deepEqual(viaNodal.out('signal2V', 'signal2Deg'),
+            viaCascade.out('signal2V', 'signal2Deg'));
+        viaNodal.out('signal2V').slice(1).forEach(function (row, index) {
+            assert.ok(Math.abs(row[1] - [0.2, 1, 0.05][index]) < 1e-12);
+        });
+        assert.ok(demod(viaNodal).out('amToPmDeg') > 8);
+        assert.equal(demod(viaNodal).out('phase').length, 1002);
+        var nested = nodal(
+            [viaNodal, 1, 2],
+            [Thru(), 2, 3],
+            ['out', 1, 3]
+        );
+        assert.equal(nested.signal.mode, 'AM');
+        assert.ok(Math.abs(demod(nested).out('amToPmDeg') -
+            demod(viaNodal).out('amToPmDeg')) < 1e-10);
+        assert.throws(() => demod(viaNodal, {noise: true}), /random noise/);
+        assert.throws(() => mod({mode: 'AM', carrierHz: 200e6, toneHz: 1e6,
+            modulationIndex: 1.1}), RangeError);
+    });
+});
+
+test('single-tone FM adds sidebands as beta grows and demodulates deviation', () => {
+    withGlobal(() => {
+        global.fList = [];
+        var carrierOnly = mod({mode: 'FM', carrierHz: 200e6, toneHz: 300, beta: 0});
+        assert.deepEqual(carrierOnly.fList, [200e6]);
+
+        var tx = mod({mode: 'FM', carrierHz: 200e6, toneHz: 300, beta: 1});
+        assert.equal(tx.sidebandOrder, 4);
+        assert.equal(tx.out('frequency count'), 9);
+        assert.deepEqual(global.fList, tx.fList);
+        assert.ok(Math.abs(tx.spectrum[4].getR() - 0.7651976866) < 1e-9);
+        assert.ok(Math.abs(tx.spectrum[3].getR() + tx.spectrum[5].getR()) < 1e-12);
+        assert.equal(tx.out('settings').frequencyDeviationHz, 300);
+        var through = nodal([Thru(), 1, 2], ['out', 1, 2], {signal: tx});
+        var viaCascade = cascade(Thru(), {signal: tx});
+        assert.deepEqual(through.out('signal2V', 'signal2Deg'),
+            viaCascade.out('signal2V', 'signal2Deg'));
+        var rx = demod(through);
+        assert.ok(Math.abs(rx.out('peak frequency deviation Hz') - 300) < 1);
+        var envelope = rx.out('envelope').slice(1).map(function (row) { return row[1]; });
+        assert.ok(Math.max(...envelope) - Math.min(...envelope) < 0.001);
+        assert.equal(rx.out('frequency deviation').length, 1002);
+        assert.deepEqual(demod(tx).out('tones'), rx.out('tones'));
+
+        var nested = nodal([through, 1, 2], [Thru(), 2, 3], ['out', 1, 3]);
+        assert.equal(nested.signal.mode, 'FM');
+        assert.equal(nested.signal.sidebandOrder, 4);
+        assert.ok(Math.abs(demod(nested).out('peak frequency deviation Hz') -
+            rx.out('peak frequency deviation Hz')) < 1e-8);
+
+        var wide = mod({mode: 'FM', carrierHz: 200e6, toneHz: 300, beta: 20});
+        assert.ok(wide.out('frequency count') > tx.out('frequency count'));
+        assert.throws(() => demod(through, {noise: true}), /random receiver noise/);
+        assert.throws(() => mod({mode: 'FM', carrierHz: 200e6, toneHz: 300, beta: -1}), RangeError);
+    });
+});
+
+test('single-tone PM carries phase sidebands through nPorts and recovers phase swing', () => {
+    withGlobal(() => {
+        global.fList = [];
+        var tx = mod({mode: 'PM', carrierHz: 200e6, toneHz: 300, beta: 1});
+        assert.equal(tx.out('settings').peakPhaseRadians, 1);
+        assert.equal(tx.out('frequency count'), 9);
+        assert.ok(Math.abs(tx.spectrum[4].getR() - 0.7651976866) < 1e-9);
+        assert.ok(Math.abs(tx.spectrum[3].getI() - 0.4400505857) < 1e-9);
+        assert.ok(Math.abs(tx.spectrum[5].getI() - 0.4400505857) < 1e-9);
+        var through = nodal([Thru(), 1, 2], ['out', 1, 2], {signal: tx});
+        var viaCascade = cascade(Thru(), {signal: tx});
+        assert.deepEqual(through.out('signal2V', 'signal2Deg'),
+            viaCascade.out('signal2V', 'signal2Deg'));
+        var rx = demod(through);
+        assert.ok(Math.abs(rx.out('peak phase deviation radians') - 1) < 0.01);
+        assert.ok(Math.abs(rx.out('peak frequency deviation Hz') - 300) < 1);
+        assert.ok(Math.abs(rx.out('phase')[1][1] - 180 / Math.PI) < 1);
+        assert.deepEqual(demod(tx).out('tones'), rx.out('tones'));
+        var nested = nodal([through, 1, 2], [Thru(), 2, 3], ['out', 1, 3]);
+        assert.equal(nested.signal.mode, 'PM');
+        assert.ok(Math.abs(demod(nested).out('peak phase deviation radians') -
+            rx.out('peak phase deviation radians')) < 1e-8);
+        assert.ok(mod({mode: 'PM', carrierHz: 200e6, toneHz: 300, beta: 20})
+            .out('frequency count') > tx.out('frequency count'));
+        assert.throws(() => mod({mode: 'PM', carrierHz: 200e6, toneHz: 300, beta: -1}), RangeError);
+        assert.throws(() => demod(through, {noise: true}), /random receiver noise/);
+    });
+});
+
+test('explicit OOK and ASK modes retain their bit source and decode through nPorts', () => {
+    withGlobal(() => {
+        var ook = mod({mode: 'OOK', carrierHz: 200e6, message: 'Hi'});
+        assert.equal(ook.out('mode'), 'OOK');
+        assert.equal(ook.out('settings').dataMode, 'ASCII');
+        assert.equal(ook.lowVolts, 0);
+        assert.equal(ook.highVolts, 1);
+        var ookChain = nodal(
+            [Thru(), 1, 2],
+            ['out', 1, 2],
+            {signal: ook}
+        );
+        var ookRx = demod(ookChain, {noise: false});
+        assert.equal(ookRx.out('mode'), 'OOK');
+        assert.equal(ookRx.out('data mode'), 'ASCII');
+        assert.equal(ookRx.out('ASCII text'), 'Hi');
+        assert.equal(demod(ook, {noise: false}).out('ASCII text'), 'Hi');
+        assert.equal(bitErrorRate(ook, ookChain, {noise: false, receptions: 1}), 0);
+
+        var ask = mod({mode: 'ASK', carrierHz: 200e6, dataMode: 'bits', bits: '010110'});
+        assert.equal(ask.out('mode'), 'ASK');
+        assert.equal(ask.out('settings').dataMode, 'bits');
+        assert.equal(ask.lowVolts, 0.5);
+        assert.equal(ask.highVolts, 1);
+        var askRx = demod(cascade(Attn(3, 0), {signal: ask}), {noise: false});
+        assert.equal(askRx.out('mode'), 'ASK');
+        assert.deepEqual(askRx.out('bits'), ask.bits);
+
+        var pn = PN({stages: 3, time: global.tGen(0, 6e-9, 7)});
+        var pnAsk = mod({mode: 'ASK', carrierHz: 200e6, input: pn});
+        assert.equal(pnAsk.out('settings').dataMode, 'PN3');
+        assert.deepEqual(demod(cascade(Thru(), {signal: pnAsk}),
+            {noise: false}).out('bits'), pn.bits);
+
+        assert.throws(() => mod({mode: 'OOK'}), RangeError);
+        assert.throws(() => mod({mode: 'OOK', carrierHz: 200e6, lowVolts: 0.1}), RangeError);
+        assert.throws(() => mod({mode: 'ASK', carrierHz: 200e6, lowVolts: 0}), RangeError);
+    });
+});
+
+test('continuous-phase binary FSK survives nodal and cascade without a carrier phase reference', () => {
+    withGlobal(() => {
+        var tx = mod({mode: 'FSK', carrierHz: 200e6, bitRate: 10e6,
+            samplesPerBit: 64, message: 'Hi'});
+        assert.equal(tx.out('settings').frequencyDeviationHz, 5e6);
+        assert.deepEqual([tx.out('settings').lowFrequencyHz,
+            tx.out('settings').highFrequencyHz], [195e6, 205e6]);
+        assert.equal(tx.out('frequency count'), 513);
+        var viaNodal = nodal([Attn(3, 0), 1, 2], ['out', 1, 2], {signal: tx});
+        var viaCascade = cascade(Attn(3, 0), {signal: tx});
+        assert.equal(demod(viaNodal, {noise: false}).out('ASCII text'), 'Hi');
+        assert.equal(demod(viaCascade, {noise: false}).out('ASCII text'), 'Hi');
+        assert.equal(demod(tx, {noise: false}).out('ASCII text'), 'Hi');
+        assert.deepEqual(demod(viaNodal, {noise: false}).out('bits'), tx.bits);
+        assert.equal(demod(viaNodal, {noise: false}).out('tone energies').length, 17);
+        var nested = nodal([viaNodal, 1, 2], [Thru(), 2, 3], ['out', 1, 3]);
+        assert.equal(demod(nested, {noise: false}).out('ASCII text'), 'Hi');
+
+        var raw = mod({mode: 'FSK', carrierHz: 200e6, bitRate: 10e6,
+            samplesPerBit: 64, dataMode: 'bits', bits: '011010'});
+        assert.deepEqual(demod(cascade(Thru(), {signal: raw}), {noise: false})
+            .out('bits'), raw.bits);
+        assert.throws(() => mod({mode: 'FSK', carrierHz: 200e6, bitRate: 10e6,
+            samplesPerBit: 64, bits: '01', frequencyDeviationHz: 0}), RangeError);
+        assert.throws(() => mod({mode: 'FSK', carrierHz: 200e6, bitRate: 10e6,
+            samplesPerBit: 64, bits: '01', frequencyDeviationHz: 200e6}), RangeError);
+    });
+});
+
+test('binary PSK recovers mixed and constant bits with a coherent carrier reference', () => {
+    withGlobal(() => {
+        var tx = mod({mode: 'PSK', carrierHz: 200e6, bitRate: 10e6,
+            samplesPerBit: 64, message: 'Hi'});
+        assert.equal(tx.out('settings').phaseZeroDeg, 180);
+        assert.equal(tx.out('settings').phaseOneDeg, 0);
+        assert.equal(tx.out('frequency count'), 513);
+        var viaNodal = nodal([Attn(3, 0), 1, 2], ['out', 1, 2], {signal: tx});
+        var viaCascade = cascade(Attn(3, 0), {signal: tx});
+        assert.equal(demod(viaNodal, {noise: false}).out('ASCII text'), 'Hi');
+        assert.equal(demod(viaCascade, {noise: false}).out('ASCII text'), 'Hi');
+        assert.equal(demod(tx, {noise: false}).out('ASCII text'), 'Hi');
+        var nested = nodal([viaNodal, 1, 2], [Thru(), 2, 3], ['out', 1, 3]);
+        assert.equal(demod(nested, {noise: false}).out('ASCII text'), 'Hi');
+
+        for (var pattern of ['00000000', '11111111']) {
+            var constant = mod({mode: 'PSK', carrierHz: 200e6, bitRate: 10e6,
+                samplesPerBit: 64, bits: pattern});
+            assert.equal(demod(cascade(Thru(), {signal: constant}), {noise: false})
+                .out('bits').join(''), pattern);
+        }
+        assert.throws(() => mod({mode: 'PSK', bits: '01'}), RangeError);
+        assert.throws(() => mod({mode: 'PSK', carrierHz: 200e6, bits: '01',
+            carrierAmplitudeVolts: 0}), RangeError);
+    });
+});
+
+test('Manchester PSK reverses phase mid-bit and suppresses the carrier', () => {
+    withGlobal(() => {
+        var tx = mod({mode: 'PSK', encoding: 'Manchester', carrierHz: 200e6,
+            bitRate: 10e6, samplesPerBit: 64, message: 'Hi'});
+        assert.equal(tx.out('settings').encoding, 'Manchester');
+        assert.equal(tx.out('frequency count'), 513);
+        var carrierBin = tx.fList.indexOf(200e6);
+        assert.ok(carrierBin >= 0);
+        assert.ok(tx.spectrum[carrierBin].mag() < 1e-9);
+        assert.ok(Math.abs(tx.samples[0] + tx.samples[32]) < 1e-9);
+        var viaNodal = nodal([Attn(3, 0), 1, 2], ['out', 1, 2], {signal: tx});
+        var viaCascade = cascade(Attn(3, 0), {signal: tx});
+        assert.equal(demod(viaNodal, {noise: false}).out('ASCII text'), 'Hi');
+        assert.equal(demod(viaCascade, {noise: false}).out('ASCII text'), 'Hi');
+        assert.equal(demod(tx, {noise: false}).out('ASCII text'), 'Hi');
+        assert.equal(demod(viaNodal, {noise: false}).out('encoding'), 'Manchester');
+        var nested = nodal([viaNodal, 1, 2], [Thru(), 2, 3], ['out', 1, 3]);
+        assert.equal(demod(nested, {noise: false}).out('ASCII text'), 'Hi');
+
+        for (var pattern of ['00000000', '11111111']) {
+            var manchester = mod({mode: 'PSK', encoding: 'Manchester', carrierHz: 200e6,
+                bitRate: 10e6, samplesPerBit: 64, bits: pattern});
+            var nrz = mod({mode: 'PSK', carrierHz: 200e6,
+                bitRate: 10e6, samplesPerBit: 64, bits: pattern});
+            assert.ok(manchester.spectrum[manchester.fList.indexOf(200e6)].mag() < 1e-9);
+            assert.ok(nrz.spectrum[nrz.fList.indexOf(200e6)].mag() > 100);
+            assert.equal(demod(cascade(Thru(), {signal: manchester}), {noise: false})
+                .out('bits').join(''), pattern);
+        }
+        assert.throws(() => mod({mode: 'PSK', encoding: 'Manchester', carrierHz: 200e6,
+            bitRate: 10e6, samplesPerBit: 63, bits: '01'}), RangeError);
+        assert.throws(() => mod({mode: 'PSK', encoding: 'other', carrierHz: 200e6,
+            bits: '01'}), RangeError);
     });
 });
 
 test('cascade propagates deterministic amplitude through an attenuator', () => {
     withGlobal(() => {
-        var tx = digitalTx({mode: 'bits', bits: '10110010', samplesPerBit: 4});
+        var tx = mod({mode: 'bits', bits: '10110010', samplesPerBit: 4});
         var attenuationDb = 6;
         var chain = cascade(Thru(), Attn(attenuationDb, 0), {signal: tx});
-        checkSamples(digitalRx(chain, {noise: false}).out('waveform'), tx.bits, 4, 10 ** (-attenuationDb / 20));
+        checkSamples(demod(chain, {noise: false}).out('waveform'), tx.bits, 4, 10 ** (-attenuationDb / 20));
     });
 });
 
 test('ASCII and raw 96-bit modes generate the requested bytes and bits', () => {
     withGlobal(() => {
-        var ascii = digitalTx({mode: 'ASCII', message: 'hello, world', samplesPerBit: 2});
+        var ascii = mod({mode: 'ASCII', message: 'hello, world', samplesPerBit: 2});
         assert.equal(ascii.bits.length, 96);
         assert.equal(ascii.out('mode'), 'ASCII');
         assert.equal(ascii.out('bit count'), 96);
         assert.equal(ascii.out('frequency count'), 97);
         assert.equal(ascii.bits.slice(0, 8).join(''), '01101000');
         var asciiChain = cascade(Thru(), {signal: ascii});
-        var Rxout = digitalRx(asciiChain, {noise: false});
+        var Rxout = demod(asciiChain, {noise: false});
         assert.equal(Rxout.out('bit count'), 96);
         assert.equal(Rxout.out('sample count'), 192);
         assert.equal(Rxout.out('frequency count'), 97);
@@ -321,24 +615,24 @@ test('ASCII and raw 96-bit modes generate the requested bytes and bits', () => {
             [Thru(), 2, 3],
             ['out', 1, 3]
         );
-        assert.equal(digitalRx(nested, {noise: false}).out('ASCII text'), 'hello, world');
-        var raw = digitalTx({mode: 'bits', bits: '01'.repeat(48), samplesPerBit: 2});
+        assert.equal(demod(nested, {noise: false}).out('ASCII text'), 'hello, world');
+        var raw = mod({mode: 'bits', bits: '01'.repeat(48), samplesPerBit: 2});
         assert.equal(raw.bits.length, 96);
         assert.equal(raw.out('mode'), 'bits');
-        checkSamples(digitalRx(cascade(Thru(), {signal: raw}), {noise: false}).out('waveform'), raw.bits, 2);
+        checkSamples(demod(cascade(Thru(), {signal: raw}), {noise: false}).out('waveform'), raw.bits, 2);
     });
 });
 
 test('raised source noise gives roughly ten percent errors over repeated receptions', () => {
     withGlobal(() => {
         var message = 'now is the time for all good men to come to the aid of their country';
-        var tx = digitalTx({mode: 'ASCII', message: message, samplesPerBit: 8});
+        var tx = mod({mode: 'ASCII', message: message, samplesPerBit: 8});
         assert.equal(tx.out('frequency count'), 2177);
         var chain = cascade(Thru(), {signal: tx});
         var totalErrors = 0;
         var trials = 20;
         for (var trial = 0; trial < trials; trial++) {
-            var waveform = digitalRx(chain, {
+            var waveform = demod(chain, {
                 thresholdVolts: 0.5,
                 referenceTemperature: 5.5126e10
             }).out('waveform');
@@ -355,7 +649,7 @@ test('raised source noise gives roughly ten percent errors over repeated recepti
 test('290 K attenuator sets BER near one percent for a 1 mV signal', () => {
     withGlobal(() => {
         var message = 'now is the time for all good men to come to the aid of their country';
-        var tx = digitalTx({mode: 'ASCII', message: message, highVolts: 1e-3});
+        var tx = mod({mode: 'ASCII', message: message, highVolts: 1e-3});
         var chain = nodal(
             [Attn(17.6, 290), 1, 2],
             ['out', 1, 2],
@@ -370,20 +664,20 @@ test('290 K attenuator sets BER near one percent for a 1 mV signal', () => {
 test('ASCII reception recovers a longer message through an attenuator', () => {
     withGlobal(() => {
         var message = 'now is the time for all good men to come to the aid of their country';
-        var tx = digitalTx({mode: 'ASCII', message: message, samplesPerBit: 8});
+        var tx = mod({mode: 'ASCII', message: message, samplesPerBit: 8});
         var chain = cascade(Thru(), Attn(6, 0), {signal: tx});
         assert.equal(chain.signal.samplesPerBit, 8);
-        assert.equal(digitalRx(chain, {noise: false}).out('ASCII text'), message);
+        assert.equal(demod(chain, {noise: false}).out('ASCII text'), message);
     });
 });
 
-test('digitalRx draws fresh thermal noise at the calculated output noise level', () => {
+test('demod draws fresh thermal noise at the calculated output noise level', () => {
     withGlobal(() => {
-        var tx = digitalTx({mode: 'bits', bits: '0'.repeat(128), samplesPerBit: 8});
+        var tx = mod({mode: 'bits', bits: '0'.repeat(128), samplesPerBit: 8});
         var chain = cascade(Thru(), {signal: tx});
         var floorBefore = chain.out('noiseFloor');
-        var first = digitalRx(chain).out('waveform');
-        var second = digitalRx(chain).out('waveform');
+        var first = demod(chain).out('waveform');
+        var second = demod(chain).out('waveform');
         var floorAfter = chain.out('noiseFloor');
         assert.deepEqual(floorAfter, floorBefore);
         assert.notDeepEqual(second, first);
@@ -398,12 +692,12 @@ test('digitalRx draws fresh thermal noise at the calculated output noise level',
 
 test('amplifier noise samples follow its output noise floor', () => {
     withGlobal(() => {
-        var tx = digitalTx({mode: 'bits', bits: '0'.repeat(128), samplesPerBit: 8});
+        var tx = mod({mode: 'bits', bits: '0'.repeat(128), samplesPerBit: 8});
         var chain = cascade(Amp(20, 4), {signal: tx});
         var densityDbmHz = chain.out('noiseFloor')[1][1];
         var densityWattsHz = 1e-3 * 10 ** (densityDbmHz / 10);
         var expectedRms = Math.sqrt(densityWattsHz * 50 * tx.sampleRateHz / 2);
-        var waveform = digitalRx(chain).out('waveform');
+        var waveform = demod(chain).out('waveform');
         var meanSquare = waveform.slice(1).reduce(function (total, row) {
             return total + row[1] ** 2;
         }, 0) / tx.sampleCount;
@@ -415,27 +709,27 @@ test('amplifier noise samples follow its output noise floor', () => {
 test('a weak ASCII signal can acquire bit errors from default receiver noise', () => {
     withGlobal(() => {
         var message = 'now is the time for all good men to come to the aid of their country';
-        var tx = digitalTx({mode: 'ASCII', message: message, highVolts: 80e-6});
+        var tx = mod({mode: 'ASCII', message: message, highVolts: 80e-6});
         var chain = cascade(Thru(), {signal: tx});
-        assert.equal(digitalRx(chain, {noise: false}).out('ASCII text'), message);
-        assert.notEqual(digitalRx(chain, {thresholdVolts: 40e-6}).out('ASCII text'), message);
+        assert.equal(demod(chain, {noise: false}).out('ASCII text'), message);
+        assert.notEqual(demod(chain, {thresholdVolts: 40e-6}).out('ASCII text'), message);
     });
 });
 
 test('digital helpers reject invalid signal descriptions and missing signal', () => {
     withGlobal(() => {
-        assert.throws(() => digitalTx({mode: 'PN7', seed: 0}), RangeError);
-        assert.throws(() => digitalTx({mode: 'ASCII', message: 'é'}), RangeError);
-        assert.throws(() => digitalTx({mode: 'bits', bits: '0102'}), TypeError);
-        assert.throws(() => digitalTx().out('unknown'), RangeError);
-        assert.throws(() => digitalRx(Thru()), TypeError);
-        var tx = digitalTx({mode: 'bits', bits: '10'});
+        assert.throws(() => mod({mode: 'PN7', seed: 0}), RangeError);
+        assert.throws(() => mod({mode: 'ASCII', message: 'é'}), RangeError);
+        assert.throws(() => mod({mode: 'bits', bits: '0102'}), TypeError);
+        assert.throws(() => mod().out('unknown'), RangeError);
+        assert.throws(() => demod(Thru()), TypeError);
+        var tx = mod({mode: 'bits', bits: '10'});
         assert.throws(() => cascade(Thru(), {signal: tx, inputPort: 3}), RangeError);
-        assert.throws(() => digitalRx(cascade(Thru(), {signal: tx}), {outputPort: 3}), RangeError);
-        assert.throws(() => digitalRx(cascade(Thru(), {signal: tx})).out('ASCII text'), RangeError);
-        assert.throws(() => digitalRx(cascade(Thru(), {signal: tx}), {mode: 'ASCII'}), RangeError);
-        assert.throws(() => digitalRx(cascade(Thru(), {signal: tx})).out('unknown'), RangeError);
-        assert.throws(() => digitalRx(cascade(Thru(), {signal: tx}), {noise: 'yes'}), TypeError);
+        assert.throws(() => demod(cascade(Thru(), {signal: tx}), {outputPort: 3}), RangeError);
+        assert.throws(() => demod(cascade(Thru(), {signal: tx})).out('ASCII text'), RangeError);
+        assert.throws(() => demod(cascade(Thru(), {signal: tx}), {mode: 'ASCII'}), RangeError);
+        assert.throws(() => demod(cascade(Thru(), {signal: tx})).out('unknown'), RangeError);
+        assert.throws(() => demod(cascade(Thru(), {signal: tx}), {noise: 'yes'}), TypeError);
         assert.throws(() => bitErrorRate(tx, cascade(Thru(), {signal: tx}), {receptions: 0}), RangeError);
         assert.throws(() => mod({carrierHz: -1}), RangeError);
         assert.throws(() => bitErrorRate(tx, cascade(Thru(), {signal: tx}), {receiver: 1}), TypeError);

@@ -1,4 +1,4 @@
-// Modified: 2026-10-13
+// Modified: 2026-10-14
 import {complex} from '../../../np-math/src/complex';
 import {matrix, dim} from '../../../np-math/src/matrix';
 import {nPort} from '../nPort';
@@ -216,6 +216,25 @@ export function mcross(input = {}) {
 	for (var freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		var freq = frequencyList[freqCount];
 		var omega = 2 * pi * freq;
+		var maxNormalizedParasitic = Math.max(
+			...armInds.map(function (L) { return Math.abs(omega * L / Ro); }),
+			Math.abs(omega * Lcenter / Ro),
+			...armCaps.map(function (C) { return Math.abs(omega * C * Ro); })
+		);
+		// The nodal admittance reduction loses precision as 1/(omega L) grows.
+		// Use the junction limit while every parasitic effect is below 1 ppm.
+		if (maxNormalizedParasitic < 1e-6) {
+			var dcRow = [freq];
+			for (var dcPort = 0; dcPort < 4; dcPort++) {
+				for (var otherPort = 0; otherPort < 4; otherPort++) {
+					dcRow.push(complex(dcPort === otherPort ? -0.5 : 0.5, 0));
+				}
+			}
+			sparsArray[freqCount] = dcRow;
+			analysis[freqCount] = {frequency: freq, armCaps: armCaps.slice(),
+				armInds: armInds.slice(), Lcenter: Lcenter, Ct: Ct, Y: null};
+			continue;
+		}
 		var Y = emptyCplxMatrix(6);
 
 		stampAdmittance(Y, 0, 4, complex(0, -1 / (omega * armInds[0])));

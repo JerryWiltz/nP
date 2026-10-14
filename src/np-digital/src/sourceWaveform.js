@@ -1,4 +1,4 @@
-// Modified: 2026-10-13
+// Modified: 2026-10-14
 import {FFT} from '../../np-math/src/fft';
 import {global} from '../../np-global/src/global';
 import {pnBits} from './PN';
@@ -29,16 +29,16 @@ function patternBits(options) {
 			throw new TypeError('bits mode requires a nonempty array of 0s and 1s or a 0/1 string.');
 		}
 	} else {
-		throw new RangeError('digitalTx mode must be PN2 through PN16, ASCII, or bits.');
+		throw new RangeError('mod mode must be PN2 through PN16, ASCII, or bits.');
 	}
 	return {mode: mode, bits: bits};
 }
 
 // Describe an input waveform; the circuit itself remains an ordinary nPort.
 // mod() may fill a caller-owned list instead of replacing the global default.
-export function createDigitalTx(options = {}, fftList) {
+export function createSourceWaveform(options = {}, fftList) {
 	if (!options || Array.isArray(options) || typeof options !== 'object') {
-		throw new TypeError('digitalTx expects an options object.');
+		throw new TypeError('mod expects an options object.');
 	}
 	if (fftList !== undefined && !Array.isArray(fftList)) {
 		throw new TypeError('mod fftList must be an array.');
@@ -57,7 +57,7 @@ export function createDigitalTx(options = {}, fftList) {
 		input.samples.length !== input.time.length ||
 		input.samples.length !== input.bits.length ||
 		input.samples.some(function (sample) { return !Number.isFinite(sample); }))) {
-		throw new TypeError('digitalTx input must be a PN clock waveform with only an optional samplesPerBit setting.');
+		throw new TypeError('mod input must be a PN clock waveform with only an optional samplesPerBit setting.');
 	}
 	var bitRate = input ? input.bitRate : options.bitRate === undefined ? 1e9 : options.bitRate;
 	var samplesPerBit = options.samplesPerBit === undefined ? 8 : options.samplesPerBit;
@@ -67,7 +67,7 @@ export function createDigitalTx(options = {}, fftList) {
 		!Number.isInteger(samplesPerBit) || samplesPerBit < 1 ||
 		!Number.isFinite(lowVolts) || !Number.isFinite(highVolts) ||
 		!Number.isFinite(global.Ro) || global.Ro <= 0) {
-		throw new RangeError('digitalTx needs a positive bit rate, positive integer samples per bit, finite voltage levels, and positive global.Ro.');
+		throw new RangeError('mod needs a positive bit rate, positive integer samples per bit, finite voltage levels, and positive global.Ro.');
 	}
 	var pattern = input ? {mode: input.mode, bits: input.bits.slice()} : patternBits(options);
 	var samples = input ? input.samples.flatMap(function (sample) {
@@ -77,7 +77,7 @@ export function createDigitalTx(options = {}, fftList) {
 	});
 	var sampleCount = samples.length;
 	var sampleRateHz = bitRate * samplesPerBit;
-	if (!Number.isFinite(sampleRateHz)) throw new RangeError('digitalTx sample rate must be finite.');
+	if (!Number.isFinite(sampleRateHz)) throw new RangeError('mod sample rate must be finite.');
 	var spectrum = FFT(samples);
 	var frequencyList = Array.from({length: Math.floor(sampleCount / 2) + 1}, function (_, bin) {
 		return bin * sampleRateHz / sampleCount;
@@ -115,11 +115,7 @@ export function createDigitalTx(options = {}, fftList) {
 		if (selector === 'frequency count') return tx.fList.length;
 		if (selector === 'frequencies') return tx.fList.slice();
 		if (selector === 'spectrum') return tx.spectrum.map(function (value) { return value.copy(); });
-		throw new RangeError('Unknown digitalTx output: ' + selector);
+		throw new RangeError('Unknown mod output: ' + selector);
 	};
 	return tx;
-}
-
-export function digitalTx(options = {}) {
-	return createDigitalTx(options);
 }

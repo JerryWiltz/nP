@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-13 -->
+<!-- Modified: 2026-10-14 -->
 # nP
 
 JavaScript tools for RF and microwave network analysis.
@@ -97,7 +97,17 @@ var realSamples = samples.map(function (value) { return value.getR(); });
 
 ## Digital waveform through a circuit
 
-`mod()` and `demod()` provide a digital signal path alongside `digitalTx()` and `digitalRx()`. With `carrierHz: 0` (the default), `mod()` produces the same baseband signal as `digitalTx()` for matching settings, and `demod(chain)` uses `digitalRx()` processing. With a positive carrier below the sample Nyquist frequency, `mod()` multiplies the sampled voltage by a cosine before the FFT. `demod()` uses that known carrier frequency and zero phase to recover each bit level. This is coherent amplitude detection; carrier and clock recovery are not implemented. Use `tx.out('settings')` to inspect the carrier, bit rate, sample rate, FFT size, frequency count, and voltage levels. `tx.out('frequency count')` gives the number of FFT frequencies, and `tx.out('frequency table')` returns `[['Bin', 'Frequency (Hz)'], ...]` for inspection or `lineTable()`. Check the count before constructing components or running `nodal()` on a large grid. To compare BER, use `nP.bitErrorRate(tx, chain, {receptions: 100, receiver: nP.demod})`.
+`mod()` and `demod()` provide a digital signal path. With `carrierHz: 0` (the default), `mod()` produces a baseband signal. With a positive carrier below the sample Nyquist frequency, `mod()` multiplies the sampled voltage by a cosine before the FFT. `demod()` uses that known carrier frequency and zero phase to recover each bit level. This is coherent amplitude detection; carrier and clock recovery are not implemented. Use `tx.out('settings')` to inspect the carrier, bit rate, sample rate, FFT size, frequency count, and voltage levels. `tx.out('frequency count')` gives the number of FFT frequencies, and `tx.out('frequency table')` returns `[['Bin', 'Frequency (Hz)'], ...]` for inspection or `lineTable()`. Check the count before constructing components or running `nodal()` on a large grid. To compare BER, use `nP.bitErrorRate(tx, chain, {receptions: 100})`.
+
+For a direct connection with no circuit, pass the transmitter to `demod()`:
+
+```js
+var tx = nP.mod({mode: 'ASCII', message: 'hello', carrierHz: 200e6});
+var rx = nP.demod(tx);
+nP.log(rx.out('ASCII text'));
+```
+
+`demod(tx)` uses an ideal matched connection internally, with the transmitter's frequency grid and reference impedance. It includes matched-source thermal noise by default, just like a `Thru()` connection; use `{noise: false}` for a clean signal. `demod(chain)` still reads the propagated signal from the completed nPort.
 
 For separate digital circuits, create a context for each circuit and set its `fList` to `[]`. `mod()` fills the selected context's frequency list; construct the components afterward. The constructors continue to use their usual defaults.
 
@@ -136,30 +146,159 @@ nP.lineChart({inputTable: rx.out('waveform')});
 
 `mod({input: pn})` expands each PN bit to eight samples, applies the carrier when requested, transforms those samples, and fills `g.fList`. Use `mod({input: pn, samplesPerBit: 4})` to choose another FFT sampling density. The first clock tick is the FFT's zero-time reference; the PN period extends one clock interval beyond the last tick returned by `tGen()`. Direct shortcuts range from `mod({mode: 'PN2'})` through `mod({mode: 'PN16'})`; `PN7` remains the default. `mod().out('waveform')` returns its sampled transmit voltage. For a positive carrier, `demod().out('carrier waveform')` returns the received passband voltage, and `out('waveform')` returns the recovered bit levels. If `mod()` receives an explicit `fftList` array, it fills that array in place instead.
 
-`digitalTx()` returns a signal description with a repeating bit sequence, complex FFT spectrum, frequency list, and an `out()` method. Use `tx.out('mode')`, `tx.out('bit count')`, `tx.out('sample count')`, `tx.out('frequency count')`, `tx.out('frequencies')`, or `tx.out('spectrum')` to inspect it. It also fills `global.fList` so components constructed afterward have matching frequency rows. Supply the signal at the circuit input when connecting the components. The completed nPort carries the propagated signal, so `digitalRx()` needs only that nPort.
+`mod()` returns a signal description with a repeating bit sequence, complex FFT spectrum, frequency list, and an `out()` method. Use `tx.out('mode')`, `tx.out('bit count')`, `tx.out('sample count')`, `tx.out('frequency count')`, `tx.out('frequencies')`, or `tx.out('spectrum')` to inspect it. It fills the selected context's `fList` unless you supply an `fftList` array. Construct components after modulation so their S-parameter rows match.
 
 ```js
-var tx = nP.digitalTx({mode: 'ASCII', message: 'hello, world', bitRate: 1e9, samplesPerBit: 8});
+var tx = nP.mod({mode: 'ASCII', message: 'hello, world', bitRate: 1e9, samplesPerBit: 8});
 var thru = nP.Thru();
 var chain = nP.nodal(
     [thru, 1, 2],
     ['out', 1, 2],
     {signal: tx, inputPort: 1}
 );
-var Rxout = nP.digitalRx(chain);
-var waveform = Rxout.out('waveform'); // time in ns, output voltage in V
-nP.lineChart({inputTable: waveform, title: 'hello, world through Thru'});
+var rx = nP.demod(chain);
+nP.lineChart({inputTable: rx.out('waveform'), title: 'hello, world through Thru'});
 ```
 
-The example's ASCII message produces 96 bits. The default mode is `PN7`, with a 127-bit period, 1 Gbit/s, eight samples per bit, and 0/1 V levels. Use `{mode: 'bits', bits: '0101'}` for an explicit bit string or array. Set `lowVolts`, `highVolts`, `bitRate`, or `samplesPerBit` in the same options object. The sequence repeats periodically for the FFT calculation. `digitalRx(chain, {outputPort: 3})` selects another output on a multiport nPort; port 2 is the default. For two-port chains, use `nP.cascade(firstStage, secondStage, {signal: tx, inputPort: 1})`. The input port defaults to 1. Signal sources combined in one network need matching sample rates, sample counts, FFT frequency rows, and reference impedances.
+The example's ASCII message produces 96 bits. The default mode is `PN7`, with a 127-bit period, 1 Gbit/s, eight samples per bit, and 0/1 V levels. Use `{mode: 'bits', bits: '0101'}` for an explicit bit string or array. Set `lowVolts`, `highVolts`, `bitRate`, or `samplesPerBit` in the same options object. The sequence repeats periodically for the FFT calculation. `demod(chain, {outputPort: 3})` selects another output on a multiport nPort; port 2 is the default. For two-port chains, use `nP.cascade(firstStage, secondStage, {signal: tx, inputPort: 1})`. The input port defaults to 1. Signal sources combined in one network need matching sample rates, sample counts, FFT frequency rows, and reference impedances.
 
-`digitalRx()` returns a receiver result with `.out('waveform')`, `.out('ASCII text')`, `.out('bits')`, `.out('bit count')`, `.out('sample count')`, `.out('frequency count')`, `.out('frequencies')`, and `.out('spectrum')`. For text, use `var text = Rxout.out('ASCII text')`, then `nP.log(text)` to display it in a browser. `digitalRx()` includes a new random noise waveform on every call, using the nPort's calculated source, termination, and component noise at each frequency. All outputs from the same receiver result use that same noise draw. The plotted `out('noiseFloor')` remains the repeatable average noise density. Use `{noise: false}` when an exact signal-only result is needed.
+`demod()` returns a receiver result with `.out('waveform')`, `.out('ASCII text')`, `.out('bits')`, `.out('bit count')`, `.out('sample count')`, `.out('frequency count')`, `.out('frequencies')`, and `.out('spectrum')`. It draws a new random noise waveform on every call, using the nPort's calculated source, termination, and component noise at each frequency. All outputs from the same receiver result use that same noise draw. The plotted `out('noiseFloor')` remains the repeatable average noise density. Use `{noise: false}` for an exact signal-only result.
 
-`out('ASCII text')` uses the bit timing carried by `chain`, samples at each bit center, and estimates a threshold from the centers of the two received voltage levels. Pass `thresholdVolts` to `digitalRx()` to set the decision level explicitly. A noisy bit can change the returned character; a received byte outside seven-bit ASCII becomes `�`. ASCII decoding needs complete eight-bit bytes and does not perform clock recovery or error correction. The default noise conditions are a matched 290 K source, matched terminations at 290 K, and a 0 K output load. The input port defaults to 1 and can be selected with `inputPort`.
+`out('ASCII text')` uses the bit timing carried by `chain`, samples at each bit center, and estimates a threshold from the centers of the two received voltage levels. Pass `thresholdVolts` to `demod()` to set the decision level explicitly. A noisy bit can change the returned character; a received byte outside seven-bit ASCII becomes `�`. ASCII decoding needs complete eight-bit bytes and does not perform clock recovery or error correction. The default noise conditions are a matched 290 K source, matched terminations at 290 K, and a 0 K output load. The input port defaults to 1 and can be selected with `inputPort`.
 
 The `referenceTemperature` option changes the source and unused-port termination noise temperature; pass the same option to `out('noiseFloor', {referenceTemperature: ...})` when comparing with the expected noise floor. Each reception draws new noise, so the received text can vary.
 
-For a BER measurement, `nP.bitErrorRate(tx, chain, {receptions: 100})` compares the known transmitted bits with 100 independent receiver decisions and returns the fraction in error. The receiver does not need the transmitter; the helper performs the comparison. See [the attenuator example](dev/timeDomainDevelopment.html) for a 290 K, 17.6 dB stage near $10^{-2}$ BER.
+For a BER measurement, `nP.bitErrorRate(tx, chain, {receptions: 100})` compares the known transmitted bits with 100 independent receiver decisions and returns the fraction in error. The helper uses `demod()` by default. See [the attenuator example](dev/timeDomainDevelopment.html) for a 290 K, 17.6 dB stage near $10^{-2}$ BER.
+
+### OOK and two-level ASK
+
+Use `mode: 'OOK'` or `mode: 'ASK'` to name the carrier modulation explicitly. Both require a positive `carrierHz`. OOK defaults to 0 V for bit 0 and 1 V for bit 1; ASK defaults to 0.5 V and 1 V. `dataMode` selects the bits (`'PN2'` through `'PN16'`, `'ASCII'`, or `'bits'`) and defaults to `'PN7'`. If `message` or `bits` is supplied without `dataMode`, the data mode is inferred. A clocked `PN()` object can also be passed as `input`.
+
+```js
+var ook = nP.mod({mode: 'OOK', carrierHz: 200e6, message: 'Hi'});
+var ask = nP.mod({mode: 'ASK', carrierHz: 200e6,
+    dataMode: 'bits', bits: '0101', lowVolts: 0.25, highVolts: 1});
+
+var chain = nP.cascade(nP.Attn(3), {signal: ask});
+var rx = nP.demod(chain);
+var bits = rx.out('bits');
+var ber = nP.bitErrorRate(ask, chain, {receptions: 100});
+```
+
+`tx.out('mode')` reports `'OOK'` or `'ASK'`; `tx.out('settings').dataMode` reports the bit source. The completed nPort retains both fields, and `rx.out('mode')` and `rx.out('data mode')` report them after coherent reception. OOK requires `lowVolts: 0`; ASK requires `0 < lowVolts < highVolts`. Existing digital calls such as `mod({mode: 'ASCII', carrierHz: 200e6})` continue to work.
+
+### Single-tone analog AM
+
+For a sinusoidal modulation tone, `mod({mode: 'AM', ...})` creates exactly three complex peak-voltage tones: lower sideband, carrier, and upper sideband. It sets `fList` to those three frequencies without sampling the RF waveform or running an FFT. The modulation index defaults to 0.5, the carrier peak voltage defaults to 1 V, and the carrier and modulation frequencies are required.
+
+```js
+var g = nP.global();
+g.fList = [];
+var tx = nP.mod({mode: 'AM', carrierHz: 200e6, toneHz: 300,
+    modulationIndex: 0.5, carrierAmplitudeVolts: 1});
+var stage = nP.Attn(3);
+var chain = nP.nodal(
+    [stage, 1, 2],
+    ['out', 1, 2],
+    {signal: tx}
+);
+var tones = chain.out('signal2V', 'signal2Deg', 'signal2dBm');
+var rx = nP.demod(chain);
+var phaseSwingDeg = rx.out('amToPmDeg');
+```
+
+The three `chain.out()` rows are at `carrierHz - toneHz`, `carrierHz`, and `carrierHz + toneHz`. `signal2V` is peak voltage at port 2, `signal2Deg` is its phase, and `signal2dBm` is its power into the reference impedance. `rx.out('envelope')` and `rx.out('phase')` return tables over one modulation period; `amToPmDeg` is the largest absolute phase deviation from the output carrier phase on that table. This AM path is deterministic; random noise samples are not yet included in its envelope calculation. The existing digital modes and BER calculation continue to use sampled waveforms.
+
+### Single-tone analog FM
+
+For sinusoidal FM, supply `beta`, the modulation index. `mod()` creates the carrier and symmetric sidebands spaced by `toneHz`; it keeps enough sidebands that the omitted power fraction is at most `sidebandPowerTolerance` (default `1e-6`). It calculates the sideband coefficients from the modulation phase without sampling the RF carrier. The number of circuit frequencies grows with `beta`; inspect `tx.out('settings')` before constructing the circuit.
+
+```js
+var g = nP.global();
+g.fList = [];
+var tx = nP.mod({mode: 'FM', carrierHz: 200e6, toneHz: 300,
+    beta: 5, carrierAmplitudeVolts: 1});
+var stage = nP.Attn(3);
+var chain = nP.nodal(
+    [stage, 1, 2],
+    ['out', 1, 2],
+    {signal: tx}
+);
+var tones = chain.out('signal2V', 'signal2Deg', 'signal2dBm');
+var rx = nP.demod(chain);
+var deviation = rx.out('frequency deviation');
+var peakDeviationHz = rx.out('peak frequency deviation Hz');
+```
+
+`beta` must be nonnegative; the unfiltered input's peak frequency deviation is `beta * toneHz`. `tx.out('settings')` reports `sidebandOrder` and `frequencyCount`, and `tx.out('tones')` lists the input phasors. `rx.out('envelope')`, `rx.out('phase')`, and `rx.out('frequency deviation')` return tables over one modulation period. The phase table wraps at ±180°. The default 1,001 display points can be changed with `demod(chain, {points: ...})`. FM reception here is deterministic; random receiver noise is not yet included.
+
+### Single-tone analog PM
+
+For PM, `beta` is the peak phase swing in **radians**. `mod()` uses a cosine phase waveform and includes enough sidebands to meet the same power tolerance as FM. For small beta, the first sidebands are approximately `beta / 2` times the carrier voltage. PM and FM use the same nPort connection path.
+
+```js
+var g = nP.global();
+g.fList = [];
+var tx = nP.mod({mode: 'PM', carrierHz: 200e6, toneHz: 300, beta: 0.1});
+var stage = nP.Attn(3);
+var chain = nP.cascade(stage, {signal: tx});
+var tones = chain.out('signal2V', 'signal2Deg', 'signal2dBm');
+var rx = nP.demod(chain);
+var phase = rx.out('phase');
+var peakPhaseRadians = rx.out('peak phase deviation radians');
+```
+
+`rx.out('phase')` is an unwrapped degree-valued table centered on the mean phase over one tone period. `rx.out('frequency deviation')` is also available; a sinusoidal PM tone has peak frequency deviation `beta * toneHz`. The recovered phase swing may differ after a frequency-selective circuit. `tx.out('settings')` includes `peakPhaseRadians`, `sidebandOrder`, and `frequencyCount`. PM reception is deterministic; `{noise: true}` is not yet supported.
+
+### Binary FSK
+
+FSK sends each 0 at `carrierHz - frequencyDeviationHz` and each 1 at `carrierHz + frequencyDeviationHz`. The phase remains continuous when bits change. By default, the deviation is half the bit rate; supply another positive `frequencyDeviationHz` when needed. Choose `samplesPerBit` so the sample rate exceeds twice the upper tone frequency.
+
+```js
+var g = nP.global();
+g.fList = [];
+var tx = nP.mod({mode: 'FSK', carrierHz: 200e6, bitRate: 10e6,
+    samplesPerBit: 64, message: 'Hi'});
+var stage = nP.Attn(3);
+var chain = nP.cascade(stage, {signal: tx});
+var rx = nP.demod(chain);
+var text = rx.out('ASCII text');
+var decisions = rx.out('tone energies');
+```
+
+`tx.out('settings')` reports both tones, the frequency deviation, and the frequency count before components are constructed. `demod()` compares energy at both tones in each bit interval; it needs bit timing from the signal metadata but no carrier phase reference. `rx.out('bits')`, `out('ASCII text')`, `out('tone energies')`, and `out('waveform')` are available. The ordinary digital receiver noise applies unless `{noise: false}` is supplied.
+
+### Binary PSK
+
+PSK keeps one carrier frequency and sends a 0 at 180° and a 1 at 0°. This is binary phase shift keying (BPSK); phase reverses at a bit transition. Reception correlates each bit with a zero-phase carrier and decides from the sign, so the receiver needs known carrier phase and bit timing. Carrier phase recovery is not implemented.
+
+```js
+var g = nP.global();
+g.fList = [];
+var tx = nP.mod({mode: 'PSK', carrierHz: 200e6, bitRate: 10e6,
+    samplesPerBit: 64, message: 'Hi'});
+var stage = nP.Attn(3);
+var chain = nP.cascade(stage, {signal: tx});
+var rx = nP.demod(chain);
+var text = rx.out('ASCII text');
+```
+
+`carrierAmplitudeVolts` defaults to 1 V peak. `tx.out('settings')` reports the carrier, phase mapping, sample rate, and frequency count. `rx.out('bits')`, `out('ASCII text')`, `out('waveform')`, and `out('carrier waveform')` work as in the other sampled digital modes. Receiver noise is on by default; use `{noise: false}` for a deterministic check.
+
+To use Manchester (bi-phase) coding on the PSK carrier, add `encoding: 'Manchester'`. A `1` sends 0° for the first half-bit and 180° for the second; a `0` reverses that order. Every bit therefore has a mid-bit phase reversal. Ordinary whole-bit PSK remains the default (`encoding: 'NRZ'`).
+
+```js
+var g = nP.global();
+g.fList = [];
+var tx = nP.mod({mode: 'PSK', encoding: 'Manchester',
+    carrierHz: 200e6, bitRate: 10e6, samplesPerBit: 64,
+    message: 'Hi'});
+var chain = nP.cascade(nP.Attn(3), {signal: tx});
+var text = nP.demod(chain).out('ASCII text');
+var spectrum = tx.out('spectrum');
+```
+
+`samplesPerBit` must be even. Equal, opposite phase halves suppress the carrier line in the ideal aligned-frequency case, including a run of identical bits. The receiver compares the two halves using the known carrier phase and bit timing; `rx.out('encoding')` reports `'Manchester'`. Carrier and clock recovery are not implemented.
 
 ## Circuit example
 
@@ -324,7 +463,7 @@ Current microstrip constructors include:
 | Ideal transmission lines | `Tlin()`, `Tclin()` |
 | Network assembly | `nodal()`, `cascade()`, `nPort.cas()` |
 | Data extraction | `nPort.out()` |
-| Digital waveforms | `PN()`, `mod()`, `demod()`, `digitalTx()`, `digitalRx()`, `bitErrorRate()` |
+| Digital waveforms | `PN()`, `mod()`, `demod()`, `bitErrorRate()` |
 | Mathematics | `complex()`, `matrix()`, `dim()`, `dup()`, `FFT()`, `invFFT()` |
 | Filter prototypes | `chebyLPNsec()`, `chebyLPgk()`, `chebyLPLCs()` |
 | Visualization | `lineChart()`, `lineTable()`, `smithChart()` |
