@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-14 -->
+<!-- Modified: 2026-10-16 -->
 # nP
 
 JavaScript tools for RF and microwave network analysis.
@@ -97,7 +97,7 @@ var realSamples = samples.map(function (value) { return value.getR(); });
 
 ## Digital waveform through a circuit
 
-`mod()` and `demod()` provide a digital signal path. With `carrierHz: 0` (the default), `mod()` produces a baseband signal. With a positive carrier below the sample Nyquist frequency, `mod()` multiplies the sampled voltage by a cosine before the FFT. `demod()` uses that known carrier frequency and zero phase to recover each bit level. This is coherent amplitude detection; carrier and clock recovery are not implemented. Use `tx.out('settings')` to inspect the carrier, bit rate, sample rate, FFT size, frequency count, and voltage levels. `tx.out('frequency count')` gives the number of FFT frequencies, and `tx.out('frequency table')` returns `[['Bin', 'Frequency (Hz)'], ...]` for inspection or `lineTable()`. Check the count before constructing components or running `nodal()` on a large grid. To compare BER, use `nP.bitErrorRate(tx, chain, {receptions: 100})`.
+`mod()` and `demod()` provide a digital signal path. With `carrierHz: 0` (the default for PN, ASCII, and raw bits), `mod()` produces a baseband signal. A positive carrier moves a sampled waveform into the RF band before its FFT. The receiver uses mode-specific detection with known timing; carrier and clock recovery are not implemented. Use `tx.out('settings')` to inspect the carrier, sample rate, frequency count, and mode settings. `tx.out('frequency count')` gives the number of FFT frequencies, and `tx.out('frequency table')` returns `[['Bin', 'Frequency (Hz)'], ...]` for inspection or `lineTable()`. Check the count before constructing components or running `nodal()` on a large grid. To compare BER, use `nP.bitErrorRate(tx, chain, {receptions: 100})`.
 
 For a direct connection with no circuit, pass the transmitter to `demod()`:
 
@@ -300,6 +300,35 @@ var spectrum = tx.out('spectrum');
 
 `samplesPerBit` must be even. Equal, opposite phase halves suppress the carrier line in the ideal aligned-frequency case, including a run of identical bits. The receiver compares the two halves using the known carrier phase and bit timing; `rx.out('encoding')` reports `'Manchester'`. Carrier and clock recovery are not implemented.
 
+### More modulation modes
+
+The same `mod()` → components → `cascade()` or `nodal()` → `demod()` workflow supports these additional modes. Build each example in its own circuit context so the components use its frequency list.
+
+```js
+var g = nP.global();
+g.fList = [];
+var tx = nP.mod({mode: 'QPSK', carrierHz: 200e6,
+    symbolRate: 5e6, samplesPerBit: 64, message: 'Hi'});
+var chain = nP.cascade(nP.Amp(20, 4), nP.Attn(3), {signal: tx});
+var rx = nP.demod(chain);
+nP.log(rx.out('ASCII text'));
+```
+
+Available sampled digital modes are binary `DPSK`, `QPSK`, square `QAM` (orders 4, 16, 64, or 256), `MSK`, Gaussian-filtered `GMSK`, and `OFDM`. They accept `message`, `bits`, or PN data. `DPSK` and `QAM` add a known reference symbol; `QPSK` and `QAM` use Gray-coded I/Q axes. Set `symbolRate` for QPSK/QAM or `bitRate`; when both are supplied, they must agree. MSK uses deviation `bitRate / 4`; GMSK defaults to `bt: 0.3`.
+
+`OFDM` defaults to 64 data subcarriers, a 256-sample inverse FFT per symbol, 5 MHz subcarrier spacing, and QPSK per subcarrier. Its carrier must align to that spacing and keep all occupied tones between DC and Nyquist. `subcarrierMode: 'QAM'` with `order: 16` selects 16-QAM subcarriers. A known carrier pilot corrects one gain and phase per OFDM block. The receiver assumes known carrier and symbol timing and does not equalize each subcarrier separately.
+
+Single-tone analog `SSB` and `DSB-SC` use only their occupied tone frequencies, with no RF waveform FFT:
+
+```js
+var ssb = nP.mod({mode: 'SSB', sideband: 'USB',
+    carrierHz: 200e6, toneHz: 300, toneAmplitudeVolts: 1});
+var suppressedAm = nP.mod({mode: 'DSB-SC',
+    carrierHz: 200e6, toneHz: 300, toneAmplitudeVolts: 1});
+```
+
+Use `nP.demod(chain).out('waveform')` for the coherently recovered tone, or `.out('tones')` for its propagated frequency components. These analog paths are deterministic and do not synthesize receiver noise. See [modDemod.md](developmentDocs/modDemod.md) for all mode objects, FFT usage, and metadata.
+
 ## Circuit example
 
 This low-pass network uses explicit electrical components so its topology remains visible:
@@ -497,7 +526,7 @@ port 1 -----+
 - [`docs/`](docs/) contains the user documentation site.
 - [`developmentDocs/`](developmentDocs/) contains model provenance, equation notes, API decisions, and verification guidance.
 - [`dev/`](dev/) contains standalone browser development harnesses and focused Obsidian `npjs` examples.
-- [`docs/legacy-api-reference.md`](docs/legacy-api-reference.md) preserves the former long-form README reference while it is modernized.
+- [`docs/guide.md`](docs/guide.md) contains the detailed nP guide and constructor reference.
 
 The related **nP RF Analysis** Obsidian plugin executes nP examples inside Markdown notes. It is maintained in a separate repository and consumes its own bundled copy of nP.
 

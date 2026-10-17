@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-05 -->
+<!-- Modified: 2026-10-15 -->
 # np-nport Development Notes
 
 `src/np-nport/` contains the common n-port object, lumped components, ideal fixtures, transmission lines, physical microstrip models, noise and intermodulation helpers, and network-composition functions.
@@ -19,7 +19,7 @@ dist/nP.js, dist/nP.esm.js, and dist/nP.cjs
 
 A new public constructor must be exported through this path and covered by a direct source test. Rebuild the root distribution when the browser or packaged library is expected to contain the change.
 
-The [constructor catalog](./constructor-catalog.md) lists public n-port constructors, the resulting `nPort` object and its methods, math helpers, and low-pass prototype generators. Update it whenever one of these APIs or defaults changes.
+The [constructor catalog](./constructorCatalog.md) lists public n-port constructors, the resulting `nPort` object and its methods, math helpers, and low-pass prototype generators. Update it whenever one of these APIs or defaults changes.
 
 ## Common component result
 
@@ -32,7 +32,7 @@ Every constructor returns an object based on `nPort` with:
 - `.out(...)` for display-table extraction.
 - Compatibility with `nP.nodal()`.
 
-See [`../nport-data-model.md`](../nport-data-model.md) for the exact row contract.
+See [`../nPortDataModel.md`](../nPortDataModel.md) for the exact row contract.
 
 ## Constructor families
 
@@ -115,7 +115,7 @@ Cascade requires two-port inputs with aligned frequency rows and a common refere
 
 `nP.nodal()` combines arbitrary port counts by building and inverting a complex connection matrix at each frequency. Use it for shunt elements, tees, dividers, diplexers, coupled structures, and hierarchical subnetworks.
 
-See [`../nodal-analysis.md`](../nodal-analysis.md) for its calling and connection invariants.
+See [`../nodalAnalysis.md`](../nodalAnalysis.md) for its calling and connection invariants.
 
 ### Noise and two-tone outputs
 

@@ -1,4 +1,22 @@
-/* Modified: 2026-09-07 */
+/* Modified: 2026-10-16 */
+
+/* Use the landing SVG as the compact home link in every page header. */
+.VPNavBarTitle .logo {
+  width: 96px;
+  height: 40px;
+  margin-right: 0;
+  object-fit: cover;
+  object-position: center;
+}
+
+html.dark .VPNavBarTitle .logo {
+  filter: brightness(0) invert(1);
+}
+
+/* Align the Guide outline link with its section links. */
+.VPDocAsideOutline .VPDocOutlineItem.root > li > .outline-link[href="#guide"] {
+  margin-left: 16px;
+}
 
 /* Give the nPort wordmark a larger hero presence on desktop. */
 @media (min-width: 960px) {

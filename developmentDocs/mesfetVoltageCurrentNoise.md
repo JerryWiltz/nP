@@ -1,18 +1,13 @@
-<!-- Modified: 2026-09-08 -->
+<!-- Modified: 2026-10-15 -->
 # Floating MESFET voltage/current model and noise
 
 This note describes a possible frequency-domain voltage/current (modified nodal analysis, or MNA) model for a three-terminal MESFET. It is separate from the existing wave-based `nP.nodal()` solver. The model is floating: gate, drain, and source are all terminals, and none is implicitly ground.
 
+The [dependent-source architecture note](dependentSourcesAndMesfet.md) explains why this solver belongs inside a device constructor and how its external result joins the nP workflow.
+
 ## Why use a separate solver?
 
-The present n-port interconnection method works with incident and reflected waves:
-
-```text
-b = S a + c
-b = Γ a
-```
-
-A transistor model is naturally specified by node voltages, branch currents, controlled sources, and parasitic elements. A voltage/current solver can assemble those equations directly and later convert the solved terminal behavior into S-parameters.
+The present n-port interconnection method works with incident and reflected waves, as described in the [architecture note](dependentSourcesAndMesfet.md). A transistor model is naturally specified by node voltages, branch currents, controlled sources, and parasitic elements. A voltage/current solver can assemble those equations directly and later convert the solved terminal behavior into S-parameters.
 
 ## Floating small-signal model
 
@@ -171,7 +166,7 @@ Apply independent terminal excitations and record terminal voltages and currents
 S = (Z - Z0 I) (Z + Z0 I)⁻¹
 ```
 
-Transform the terminal voltage/current noise covariance into noise-wave covariance, then expose noise figure, noise parameters, or output noise. The resulting three-port nPort can be reused by `nP.cascade()` or the existing wave-based `nP.nodal()`.
+Transform the terminal voltage/current noise covariance into noise-wave covariance, then expose noise figure, noise parameters, or output noise. The resulting floating three-port nPort can be connected through the existing wave-based `nP.nodal()`. A common-source two-port, with the source tied to the circuit reference, can also be used in `nP.cascade()`.
 
 ## Overall data flow
 

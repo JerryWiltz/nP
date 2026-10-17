@@ -1,10 +1,13 @@
 # AGENTS.md
-<!-- Modified: 2026-10-07 -->
+<!-- Modified: 2026-10-15 -->
 
 Instructions for files in `docs/` and its subdirectories.
 
 These files are user-facing documentation, examples, images, and documentation-site configuration. Keep documentation examples aligned with the current source in `src/` and the browser global `nP`.
 
+- Name hand-maintained public Markdown pages under `docs/` with lowercase kebab-case basenames, such as `noise-and-intermodulation.md`. Keep the conventional `index.md` and `AGENTS.md` names. Archived files, assets in `public/`, and VitePress configuration are outside this page rule.
+- Before renaming an existing page, update its VitePress navigation, internal links, and other active references; account for the change to its public URL.
+- Name hand-maintained images in `docs/_images/` with descriptive lowercase kebab-case basenames. Check active references before renaming an image. Assets in `docs/public/` and archived images are outside this rule.
 - Treat `src/` as the source of truth for library behavior.
 - Update documentation examples when public APIs or recommended circuit-building patterns change.
 - Prefer clear, modern examples over preserving legacy example style.

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-14 -->
+<!-- Modified: 2026-10-15 -->
 # nP constructor catalog
 
 This catalog covers the 51 public functions that produce n-port objects from `src/np-nport/src/index.js`, the digital waveform functions from `src/np-digital`, and the exported math and low-pass prototype functions. Each JS call below spells out the **current defaults** where they exist. Each argument or property appears on its own line. Units are in comments. Each constructor has its own heading and code block.
@@ -694,7 +694,7 @@ nP.mvia({
 // returns an nPort object
 ```
 
-Every physical microstrip options object also accepts `fList`, an array of frequencies in hertz, defaulting to `nP.global.fList`. For the physical object forms, use `resistivity` in Ω·m. Legacy `rho` defaults to **1** as a copper multiplier for `mlin`, `mclin`, `mtee`, `mstep`, `mbend`, and `mcross`; for `mvia` and `mvgnd` it defaults to **`1.72e-8 Ω·m`**. Do not supply `rho` and `resistivity` together. Other legacy property aliases are described in `developmentDocs/physical-model-api.md`.
+Every physical microstrip options object also accepts `fList`, an array of frequencies in hertz, defaulting to `nP.global.fList`. For the physical object forms, use `resistivity` in Ω·m. Legacy `rho` defaults to **1** as a copper multiplier for `mlin`, `mclin`, `mtee`, `mstep`, `mbend`, and `mcross`; for `mvia` and `mvgnd` it defaults to **`1.72e-8 Ω·m`**. Do not supply `rho` and `resistivity` together. Other legacy property aliases are described in `developmentDocs/physicalModelApi.md`.
 
 ## Diode
 
@@ -766,7 +766,7 @@ var tx = nP.mod({
 // returns a signal description with an out() method, not an nPort object
 ```
 
-`mod()` accepts no arguments for its defaults. For ASCII, supply `message`; for a custom bit sequence, use `mode: 'bits'` and `bits`. To transform a waveform from `PN()`, use `{input: pn}` with an optional `samplesPerBit`; the clock spacing determines bit rate. With no `fftList`, it sets the selected context's `fList`. At `carrierHz: 0`, it produces a baseband spectrum. At a positive carrier below sample Nyquist, it multiplies the sampled voltage by a cosine before its FFT. `tx.out('settings')` reports the selected mode, carrier, bit rate, sample rate, sample and frequency counts, samples per bit, and voltage levels. `tx.out('waveform')` returns the sampled transmit voltage in a chart-ready table. `tx.out('frequency table')` returns `[['Bin', 'Frequency (Hz)'], ...]`, with one row per FFT frequency, including DC. Check `tx.out('frequency count')` before constructing components or running `nodal()` on a large grid. A carrier at or above Nyquist raises `RangeError`.
+`mod()` accepts no arguments for its defaults. For ASCII, supply `message`; for a custom bit sequence, use `mode: 'bits'` and `bits`. To transform a waveform from `PN()`, use `{input: pn}` with an optional `samplesPerBit`; the clock spacing determines bit rate. With no `fftList`, it sets the selected context's `fList`. At `carrierHz: 0`, the PN, ASCII, and raw-bit modes produce a baseband spectrum. At a positive carrier below sample Nyquist, these modes multiply the sampled voltage by a cosine before its FFT. Other digital modes below use their own symbol mappings. `tx.out('settings')` reports the selected mode, carrier, sample rate, sample and frequency counts, and applicable mode settings. `tx.out('waveform')` returns the sampled transmit voltage in a chart-ready table. `tx.out('frequency table')` returns `[['Bin', 'Frequency (Hz)'], ...]`, with one row per FFT frequency, including DC. Check `tx.out('frequency count')` before constructing components or running `nodal()` on a large grid. A carrier at or above Nyquist raises `RangeError`.
 
 The optional `fftList` property is an array of frequencies in hertz. `mod()` replaces its contents with the computed FFT frequencies while preserving the array itself. Without `fftList`, `mod()` replaces the selected context's `fList` with its computed frequencies. To build a circuit, create its context, set its `fList` to an empty array, call `mod()`, and then construct the components with their usual defaults:
 
@@ -924,6 +924,67 @@ var tx = nP.mod({
 
 `tx.out('settings').encoding` reports the selected encoding. `tx.out('frequencies')` and `tx.out('spectrum')` expose the generated FFT bins. Manchester requires an even `samplesPerBit` of at least two. The encoding is retained on the nPort when the signal passes through `nodal()` or `cascade()`.
 
+Additional implemented `mod({...})` modes follow the same frequency-first workflow. Each example below is a separate call in its own circuit context:
+
+```js
+// mod: Differential Phase Shift Keying
+var dpsk = nP.mod({mode: 'DPSK', carrierHz: 200e6,
+    bitRate: 10e6, samplesPerBit: 64, message: 'Hi'});
+// returns a sampled signal description, not an nPort object
+```
+
+```js
+// mod: Quadrature Phase Shift Keying
+var qpsk = nP.mod({mode: 'QPSK', carrierHz: 200e6,
+    symbolRate: 5e6, samplesPerBit: 64, message: 'Hi'});
+// returns a sampled signal description, not an nPort object
+```
+
+```js
+// mod: Quadrature Amplitude Modulation
+var qam = nP.mod({mode: 'QAM', order: 16, carrierHz: 200e6,
+    symbolRate: 2.5e6, samplesPerBit: 64, message: 'Hi'});
+// returns a sampled signal description, not an nPort object
+```
+
+```js
+// mod: Minimum Shift Keying
+var msk = nP.mod({mode: 'MSK', carrierHz: 200e6,
+    bitRate: 10e6, samplesPerBit: 64, message: 'Hi'});
+// returns a sampled signal description, not an nPort object
+```
+
+```js
+// mod: Gaussian Minimum Shift Keying
+var gmsk = nP.mod({mode: 'GMSK', carrierHz: 200e6,
+    bitRate: 10e6, samplesPerBit: 64, bt: 0.3, message: 'Hi'});
+// returns a sampled signal description, not an nPort object
+```
+
+```js
+// mod: Orthogonal Frequency Division Multiplexing
+var ofdm = nP.mod({mode: 'OFDM', carrierHz: 200e6,
+    subcarrierCount: 64, fftSize: 256, symbolRate: 5e6,
+    subcarrierMode: 'QPSK', message: 'Hi'});
+// returns a sampled signal description, not an nPort object
+```
+
+```js
+// mod: Single Sideband
+var ssb = nP.mod({mode: 'SSB', sideband: 'USB',
+    carrierHz: 200e6, toneHz: 300, toneAmplitudeVolts: 1});
+// returns a one-tone signal description, not an nPort object
+```
+
+```js
+// mod: Double Sideband Suppressed Carrier
+var dsb = nP.mod({mode: 'DSB-SC', carrierHz: 200e6,
+    toneHz: 300, toneAmplitudeVolts: 1});
+// returns a two-tone signal description, not an nPort object
+```
+
+`carrierAmplitudeVolts` defaults to 1 V peak for the new sampled RF modes. DPSK includes one known reference bit interval. QAM defaults to order 16 and includes one known reference symbol; supported square orders are 4, 16, 64, and 256. QPSK and QAM accept `symbolRate`, which determines `bitRate`; if both are supplied, they must agree. MSK uses deviation `bitRate / 4`; GMSK defaults to `bt: 0.3`. OFDM defaults to 64 data subcarriers, `fftSize: 256`, `symbolRate: 5e6`, and QPSK on each subcarrier. Its `subcarrierMode` may be `'QAM'` with a supported square `order`. The carrier must align to the subcarrier spacing, and all occupied tones must lie between DC and Nyquist. SSB defaults to the upper sideband; SSB and DSB-SC default to `toneAmplitudeVolts: 1` and use no FFT. See [modDemod.md](../modDemod.md) for frequency-row counts and receiver assumptions.
+
 ### `demod`
 
 ```js
@@ -946,7 +1007,11 @@ For PM, `demod()` uses the same phasor sum. `out('phase')` returns an unwrapped 
 
 For FSK, `demod()` reconstructs the passband waveform, compares in-phase and quadrature energy at the two known tones over each bit interval, and chooses the stronger tone. It uses known bit timing but does not need a carrier phase reference. `out('bits')` and `out('ASCII text')` return decisions; `out('tone energies')` gives one row per bit; `out('tone frequencies Hz')` returns the two tones. `out('waveform')`, `out('spectrum')`, and `out('frequencies')` expose the received passband data. Receiver noise is on by default and can be disabled with `{noise: false}`.
 
-For PSK with default NRZ encoding, `demod()` correlates each bit interval with a zero-phase carrier and decides 1 for a positive result and 0 for a negative result. With Manchester encoding, the receiver reverses its reference for the second half-bit before making the same decision. The default decision threshold is zero volts. `out('encoding')` reports `'NRZ'` or `'Manchester'`; `out('bits')`, `out('ASCII text')`, `out('waveform')`, and `out('carrier waveform')` use the ordinary sampled digital receiver API. Both are coherent detection: bit timing and carrier phase must already be known. There is no carrier phase recovery or differential decoding. Noise is on by default and can be disabled with `{noise: false}`.
+For PSK with default NRZ encoding, `demod()` correlates each bit interval with a zero-phase carrier and decides 1 for a positive result and 0 for a negative result. With Manchester encoding, the receiver reverses its reference for the second half-bit before making the same decision. The default decision threshold is zero volts. `out('encoding')` reports `'NRZ'` or `'Manchester'`; `out('bits')`, `out('ASCII text')`, `out('waveform')`, and `out('carrier waveform')` use the ordinary sampled digital receiver API. Both are coherent detection: bit timing and carrier phase must already be known. There is no carrier phase recovery. Noise is on by default and can be disabled with `{noise: false}`.
+
+`DPSK` decodes phase changes relative to its known first symbol. `QPSK` decodes the signs of coherent I/Q symbol averages. `QAM` divides received symbols by its known reference to correct one gain and phase before choosing the nearest Gray-coded point. `MSK` and `GMSK` use the phase slope near bit centers. `OFDM` uses a carrier pilot in each block and decodes QPSK or square QAM on its active subcarriers. These digital receivers offer `out('bits')`, `out('ASCII text')`, `out('symbols')`, `out('waveform')`, and `out('carrier waveform')`. Their noise is on by default. Carrier and timing recovery and per-subcarrier OFDM equalization are not implemented.
+
+For single-tone `SSB` or `DSB-SC`, `demod()` coherently reconstructs the baseband tone from one or two propagated phasors. Its selectors are `waveform`, `envelope`, `tones`, and `frequencies`; `noise: true` is not supported.
 
 ```js
 var rx = nP.demod(chain, {outputPort: 2}); // output port 2 is the default

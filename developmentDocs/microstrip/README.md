@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-07 -->
+<!-- Modified: 2026-10-15 -->
 # Microstrip Development Notes
 
 The physical microstrip constructors live in `src/np-nport/src/mlin/`. They turn geometry, material properties, loss parameters, and frequency into n-port-compatible S-parameter rows.
@@ -38,7 +38,7 @@ Most models use some subset of:
 | `roughnessRms` | RMS conductor roughness in meters. |
 | `Ro` | Reference impedance taken from `global.Ro`, in ohms. |
 
-The canonical object API and compatibility rules are defined in [`../physical-model-api.md`](../physical-model-api.md). Call `mlin()`, `mclin()`, and `mtee()` with no arguments for defaults or one options object for custom values. Positional values are unsupported. Legacy `rho` remains constructor-specific inside options objects so existing named calls keep their numerical behavior:
+The canonical object API and compatibility rules are defined in [`../physicalModelApi.md`](../physicalModelApi.md). Call `mlin()`, `mclin()`, and `mtee()` with no arguments for defaults or one options object for custom values. Positional values are unsupported. Legacy `rho` remains constructor-specific inside options objects so existing named calls keep their numerical behavior:
 
 - In `mlin()` and `mclin()`, default `rho = 1` acts as a multiplier on `COPPER_RESISTIVITY`; `rho = 0` disables conductor loss.
 - In `mvgnd()` and `mvia()`, default `rho = COPPER_RESISTIVITY` is an absolute resistivity in ohm-meters.
@@ -171,6 +171,30 @@ Most physical constructors attach `.microstrip` with:
 - Validity ranges and limitations.
 
 This metadata is intentionally inspectable for development and verification. It does not replace the common `.spars` interface.
+
+## Model maturity snapshot (2026-10-07)
+
+At this snapshot, the practical maturity ranking for the microstrip constructor family was:
+
+```text
+mclin(), mlin()
+mtfr()
+mbend(), mstep(), mvgnd()
+mtee(), mcross()
+mvia()
+```
+
+Status notes:
+
+- `mclin()` is currently the strongest numerically checked model. It has equal-width coupled-line modal behavior, dispersion, loss, roughness, and comparison against outside coupled-line calculator values.
+- `mlin()` is mature enough for regular use. It has Hammerstad/Jensen-style impedance/effective dielectric constant, finite-thickness correction, dispersion, conductor loss, dielectric loss, and roughness support.
+- `mtfr()` is good enough for current RF use. It uses sheet resistance, physical length, automatic section count from `Length / Width`, and cascaded `mlin()`/`R()` sections. The zero-ohm/square case tracks a plain `mlin()` closely in both `s21mag` and `s21ang`, which checks the cascade structure. Remaining limits are end-transition parasitics, current-spreading correction, thermal behavior, and measured thin-film frequency correction.
+- `mbend()` is reasonably mature for unmitered bends. It uses Edwards/Steer equations and pins a textbook example. Miter geometry is exposed, but mitered capacitance/inductance behavior is not implemented.
+- `mstep()` is reasonably mature for a symmetrical impedance step. It is now tied directly to Edwards/Steer section 9.4 and the matching QUCS equations, supports the larger-ratio `er = 9.6` capacitance branch, and has pinned equation outputs. It still needs independent calculator, measurement, or field-solver comparison before treating it as fully validated.
+- `mvgnd()` is a reasonable simple ground-via model using QUCS/Goldfarb-Pucel barrel equations and pinned outputs.
+- `mtee()` is usable and structurally meaningful. It is now source-traced to both the QUCS closed-form S-parameter implementation and Edwards/Steer section 9.6.1, but it still needs an external S-parameter benchmark before treating it as mature.
+- `mcross()` is usable as a first implementation from QUCS equations and is now cross-checked against Edwards/Steer section 9.6.3 for topology and cautionary limits. Edwards/Steer explicitly warns that theory/experiment agreement is weak for cross-junction equivalent circuits, so asymmetric width behavior should be benchmarked before important use.
+- `mvia()` is the least mature. Its barrel resistance and inductance inherit the `mvgnd()` source, but pad, antipad, and stub capacitance terms need stronger source tracing and validation.
 
 ## Source material
 

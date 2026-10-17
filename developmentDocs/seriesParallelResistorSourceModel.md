@@ -1,4 +1,4 @@
-<!-- Modified: 2026-09-10 -->
+<!-- Modified: 2026-10-15 -->
 # One physical resistor-noise source and its two-port wave column
 
 This note separates three ideas:

@@ -1,3 +1,4 @@
+// Modified: 2026-10-15
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -15,8 +16,8 @@ if (!pageName) {
     process.exit(1);
 }
 
-if (!/^[A-Za-z][A-Za-z0-9_-]*$/.test(pageName)) {
-    console.error('Page name must start with a letter and contain only letters, numbers, underscores, or hyphens.');
+if (!/^[a-z][A-Za-z0-9]*$/.test(pageName)) {
+    console.error('Page name must be lower camelCase (start with a lowercase letter; use only letters and numbers).');
     process.exit(1);
 }
 
@@ -27,9 +28,8 @@ for (const divId of divIds) {
     }
 }
 
-const fileBase = pageName.endsWith('Development') ? pageName : `${pageName}Development`;
-const fileName = `${fileBase}.html`;
-const title = fileBase;
+const fileName = `${pageName}.html`;
+const title = pageName;
 const outputPath = path.join(process.cwd(), 'dev', fileName);
 const ids = divIds.length > 0 ? divIds : ['chartDiv'];
 

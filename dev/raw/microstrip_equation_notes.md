@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-07 -->
+<!-- Modified: 2026-10-15 -->
 
 # Microstrip Equation Notes
 
@@ -449,27 +449,7 @@ Model notes:
 
 ## Current Maturity Snapshot
 
-This is the current practical maturity ranking for the microstrip constructor family:
-
-```text
-mclin(), mlin()
-mtfr()
-mbend(), mstep(), mvgnd()
-mtee(), mcross()
-mvia()
-```
-
-Status notes:
-
-- `mclin()` is currently the strongest numerically checked model. It has equal-width coupled-line modal behavior, dispersion, loss, roughness, and comparison against outside coupled-line calculator values.
-- `mlin()` is mature enough for regular use. It has Hammerstad/Jensen-style impedance/effective dielectric constant, finite-thickness correction, dispersion, conductor loss, dielectric loss, and roughness support.
-- `mtfr()` is good enough for current RF use. It uses sheet resistance, physical length, automatic section count from `Length / Width`, and cascaded `mlin()`/`R()` sections. The zero-ohm/square case tracks a plain `mlin()` closely in both `s21mag` and `s21ang`, which checks the cascade structure. Remaining limits are end-transition parasitics, current-spreading correction, thermal behavior, and measured thin-film frequency correction.
-- `mbend()` is reasonably mature for unmitered bends. It uses Edwards/Steer equations and pins a textbook example. Miter geometry is exposed, but mitered capacitance/inductance behavior is not implemented.
-- `mstep()` is reasonably mature for a symmetrical impedance step. It is now tied directly to Edwards/Steer section 9.4 and the matching QUCS equations, supports the larger-ratio `er = 9.6` capacitance branch, and has pinned equation outputs. It still needs independent calculator, measurement, or field-solver comparison before treating it as fully validated.
-- `mvgnd()` is a reasonable simple ground-via model using QUCS/Goldfarb-Pucel barrel equations and pinned outputs.
-- `mtee()` is usable and structurally meaningful. It is now source-traced to both the QUCS closed-form S-parameter implementation and Edwards/Steer section 9.6.1, but it still needs an external S-parameter benchmark before treating it as mature.
-- `mcross()` is usable as a first implementation from QUCS equations and is now cross-checked against Edwards/Steer section 9.6.3 for topology and cautionary limits. Edwards/Steer explicitly warns that theory/experiment agreement is weak for cross-junction equivalent circuits, so asymmetric width behavior should be benchmarked before important use.
-- `mvia()` is the least mature. Its barrel resistance and inductance inherit the `mvgnd()` source, but pad, antipad, and stub capacitance terms need stronger source tracing and validation.
+The model maturity assessment is maintained in [Microstrip Development Notes](../../developmentDocs/microstrip/README.md#model-maturity-snapshot-2026-10-07). This file retains the equation captures, alternative sources, and reference values behind that assessment.
 
 ## Sources
 

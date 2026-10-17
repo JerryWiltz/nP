@@ -1,5 +1,6 @@
-// Modified: 2026-10-14
+// Modified: 2026-10-15
 import {receiveWaveform} from './receiverWaveform';
+import {demodulateAdvanced} from './advancedModes';
 import {FFT} from '../../np-math/src/fft';
 import {complex} from '../../np-math/src/complex';
 import {nPort} from '../../np-nport/src/nPort';
@@ -102,6 +103,51 @@ function demodAM(stage, options) {
 			throw new RangeError('Unknown AM demod output: ' + selector);
 		}
 	};
+}
+
+// Coherently translate occupied sidebands back to the modulation frequency.
+function demodSuppressed(stage, options) {
+	if (!options || Array.isArray(options) || typeof options !== 'object') {
+		throw new TypeError('demod options must be an object.');
+	}
+	if (options.noise !== undefined && options.noise !== false) {
+		throw new RangeError('Suppressed-carrier analysis does not yet generate random noise samples.');
+	}
+	if (options.mode !== undefined) throw new RangeError('Select demod output with .out() instead of mode.');
+	var signal = stage.signal;
+	var outputPort = options.outputPort === undefined ? 2 : options.outputPort;
+	var portCount = Math.sqrt(stage.spars[0].length - 1);
+	var points = options.points === undefined ? 1001 : options.points;
+	if (!Number.isInteger(outputPort) || outputPort < 1 || outputPort > portCount ||
+		!Number.isInteger(points) || points < 3) {
+		throw new RangeError(signal.mode + ' demod needs a valid outputPort and at least three points.');
+	}
+	var scale = complex(Math.sqrt(signal.referenceImpedanceOhms), 0);
+	var tones = signal.rows.map(function (row) { return row.waves[outputPort - 1].mul(scale); });
+	var waveform = [['Time (s)', 'Recovered voltage (V)']];
+	var envelope = [['Time (s)', 'Envelope (V)']];
+	for (var index = 0; index < points; index++) {
+		var time = index / ((points - 1) * signal.toneHz);
+		var real = 0, imaginary = 0;
+		for (var toneIndex = 0; toneIndex < tones.length; toneIndex++) {
+			var offset = signal.rows[toneIndex].frequency - signal.carrierHz;
+			var theta = 2 * Math.PI * offset * time;
+			real += tones[toneIndex].getR() * Math.cos(theta) - tones[toneIndex].getI() * Math.sin(theta);
+			imaginary += tones[toneIndex].getR() * Math.sin(theta) +
+				tones[toneIndex].getI() * Math.cos(theta);
+		}
+		waveform.push([time, real]);
+		envelope.push([time, Math.hypot(real, imaginary)]);
+	}
+	return {out: function (selector) {
+		if (selector === 'mode') return signal.mode;
+		if (selector === 'waveform') return waveform.map(function (row) { return row.slice(); });
+		if (selector === 'envelope') return envelope.map(function (row) { return row.slice(); });
+		if (selector === 'tones') return stage.out('signal' + outputPort + 'V',
+			'signal' + outputPort + 'Deg', 'signal' + outputPort + 'dBm');
+		if (selector === 'frequencies') return signal.rows.map(function (row) { return row.frequency; });
+		throw new RangeError('Unknown ' + signal.mode + ' demod output: ' + selector);
+	}};
 }
 
 // Sum the propagated angle-modulation sidebands into a complex envelope.
@@ -253,11 +299,17 @@ function demodFSK(receiver, signal) {
 export function demod(stage, options = {}) {
 	if (!stage || !Array.isArray(stage.spars)) stage = directStage(stage);
 	if (stage.signal && stage.signal.mode === 'AM') return demodAM(stage, options);
+	if (stage.signal && (stage.signal.mode === 'SSB' || stage.signal.mode === 'DSB-SC')) {
+		return demodSuppressed(stage, options);
+	}
 	if (stage.signal && (stage.signal.mode === 'FM' || stage.signal.mode === 'PM')) {
 		return demodAngle(stage, options);
 	}
 	var receiver = receiveWaveform(stage, options);
 	var signal = stage.signal;
+	if (['DPSK', 'QPSK', 'QAM', 'MSK', 'GMSK', 'OFDM'].includes(signal.mode)) {
+		return demodulateAdvanced(receiver, signal);
+	}
 	if (signal.mode === 'FSK') return demodFSK(receiver, signal);
 	var carrierHz = signal.carrierHz || 0;
 	if (carrierHz === 0) return receiver;

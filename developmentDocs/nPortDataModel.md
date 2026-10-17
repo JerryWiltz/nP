@@ -1,29 +1,34 @@
-<!-- Modified: 2026-07-15 -->
+<!-- Modified: 2026-10-15 -->
 # n-Port Data Model
 
 This document describes the object and table shapes that allow components, circuit combinations, output extractors, charts, and the Obsidian plugin to interoperate.
 
 ## Global analysis settings
 
-The shared object exported from `src/np-global/src/global.js` contains:
+The selected circuit context exported from `src/np-global/src/global.js` contains settings and generators such as:
 
 ```js
 {
     fList: [2e9],
+    tList: [],
+    twoTone: undefined,
     Ro: 50,
     Temp: 293,
-    fGen(start, stop, points)
+    fGen(start, stop, points),
+    tGen(start, stop, points)
 }
 ```
 
 - `fList` is the list of analysis frequencies in hertz.
+- `tList` is a time list in seconds for clocked digital sources.
+- `twoTone` configures a two-tone intermodulation analysis when present.
 - `Ro` is the real reference impedance in ohms.
 - `Temp` is the shared temperature setting. Models must document the temperature scale they use.
 - `fGen()` creates a linearly spaced list including both endpoints when `points > 1`.
 
-Set these values before constructing components. Constructors calculate their S-parameter rows immediately; changing `global.fList` later does not recalculate an existing component.
+Set these values before constructing components. Call `nP.global()` to create and select a separate circuit context, or `nP.global(context)` to select one again. Constructors calculate their S-parameter rows immediately; changing the selected context's `fList` later does not recalculate an existing component.
 
-An n-port's `.global` property currently holds a reference to the shared global object, not an immutable snapshot. Its `.spars` rows are the actual calculated result.
+An n-port's `.global` property holds a shallow settings snapshot made by `setglobal()`. Its `fList` and `tList` arrays and `twoTone` object are copied, so later changes to those settings do not change the n-port's selected analysis frequencies. Other nested settings, if added, are not deeply cloned. Its `.spars` rows are the actual calculated result.
 
 ## The base object
 
@@ -41,9 +46,9 @@ The common public surface is:
 | Member | Purpose |
 | --- | --- |
 | `.spars` | Frequency rows containing the S matrices. |
-| `.global` | Reference to the analysis settings object used by the constructor. |
+| `.global` | Settings snapshot captured by the constructor. |
 | `.setspars(rows)` / `.getspars()` | Store and retrieve S-parameter rows. |
-| `.setglobal(settings)` / `.getglobal()` | Store and retrieve global settings. |
+| `.setglobal(settings)` / `.getglobal()` | Capture and retrieve component analysis settings. |
 | `.cas(other)` | Cascade this two-port with another two-port. |
 | `.out(...selectors)` | Produce a numeric chart/table input table. |
 | `.outTable(...selectors)` | Existing equivalent table-producing method. |
@@ -162,7 +167,7 @@ At minimum, test the row count, row length, frequencies, finite complex values, 
 
 ## Related documents
 
-- [`nodal-analysis.md`](nodal-analysis.md) explains arbitrary interconnection.
+- [`nodalAnalysis.md`](nodalAnalysis.md) explains arbitrary interconnection.
 - [`np-math/README.md`](np-math/README.md) explains the complex and matrix objects used in S matrices.
 - [`np-nport/README.md`](np-nport/README.md) describes constructor and composition families.
-- [`rf-math-coding.md`](rf-math-coding.md) describes the equation-to-code workflow.
+- [`rfMathCoding.md`](rfMathCoding.md) describes the equation-to-code workflow.

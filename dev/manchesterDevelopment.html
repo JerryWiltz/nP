@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<!-- Modified: 2026-10-15 -->
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Manchester PSK Development</title>
+    <script src="../dist/nP.js"></script>
+</head>
+
+<body>
+    <script>
+        var g = nP.global();
+        g.fList = [];
+
+        var tx = nP.mod({
+            mode: 'PSK', encoding: 'Manchester',
+            carrierHz: 200e6, bitRate: 10e6, samplesPerBit: 64,
+            message: 'Hi'
+        });
+        var amp = nP.Amp(20, 4);
+        var attenuator = nP.Attn(200);
+        var chain = nP.cascade(amp, attenuator, { signal: tx, inputPort: 1 });
+        var rx = nP.demod(chain, { outputPort: 2 });
+        nP.log(rx.out('ASCII text'));
+    </script>
+</body>
+
+</html>

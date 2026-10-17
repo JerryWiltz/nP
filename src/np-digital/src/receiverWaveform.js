@@ -1,4 +1,4 @@
-// Modified: 2026-10-14
+// Modified: 2026-10-15
 import {complex} from '../../np-math/src/complex';
 import {invFFT} from '../../np-math/src/fft';
 import {noiseWaveformSpectrum} from './noiseWaveform';
@@ -62,6 +62,7 @@ export function receiveWaveform(stage, options = {}) {
 				return spectrum.slice(0, signal.rows.length).map(function (value) { return value.copy(); });
 			}
 			if (selector === 'bit count') {
+				if (signal.mode === 'OFDM') return signal.bitCount;
 				if (!Number.isInteger(signal.samplesPerBit) || signal.samplesPerBit < 1) {
 					throw new RangeError('Receiver bit count requires samplesPerBit metadata.');
 				}

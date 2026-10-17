@@ -1,4 +1,4 @@
-<!-- Modified: 2026-09-09 -->
+<!-- Modified: 2026-10-15 -->
 # Thermal noise in nP: resistor, `nodal()`, and `cascade()`
 
 ## Purpose

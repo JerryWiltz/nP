@@ -1,7 +1,11 @@
 # Raw Technical Notes
-<!-- Modified: 2026-10-04 -->
+<!-- Modified: 2026-10-15 -->
 
 This folder collects raw research material for future RF/microwave model work.
+
+## Network connection reference
+
+- [gupta_connection_scattering_p345_347.pdf](gupta_connection_scattering_p345_347.pdf) — Gupta source scan, pp. 345–347, covering the connection-scattering method and its worked multiport example. The excerpt does not establish the book title or edition; see [the transcribed derivation](../../developmentDocs/guptaConnectionScattering.md).
 
 ## Noise analysis references
 
@@ -13,7 +17,7 @@ The physical `nP.mtee()` model is implemented under `src/np-nport/src/mlin/`; it
 
 ## Amplifier references
 
-- Watkins-Johnson Company, *Application Information for Thin Film Cascadable Amplifiers*. This 15-page scan is numbered pp. 442-456. A separate citation places the same title in the 1993-1994 *RF and Microwave Designer's Handbook*, pp. 724-739; this scan does not establish that it is the same edition. [Archived PDF](https://datasheet.datasheetarchive.com/originals/scans/Scans-068/DSA2IH00223110.pdf); [1993-1994 citation](https://fileserver-az.core.ac.uk/download/37342817.pdf).
+- Watkins-Johnson Company, *Application Information for Thin Film Cascadable Amplifiers*. The local copy is [watkins_johnson_thin_film_cascadable_amplifiers.pdf](watkins_johnson_thin_film_cascadable_amplifiers.pdf). This 15-page scan is numbered pp. 442-456. A separate citation places the same title in the 1993-1994 *RF and Microwave Designer's Handbook*, pp. 724-739; this scan does not establish that it is the same edition. [Archived PDF](https://datasheet.datasheetarchive.com/originals/scans/Scans-068/DSA2IH00223110.pdf); [1993-1994 citation](https://fileserver-az.core.ac.uk/download/37342817.pdf).
 
 For each paper or source, capture:
 

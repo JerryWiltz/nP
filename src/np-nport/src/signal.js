@@ -1,17 +1,36 @@
-// Modified: 2026-10-14
+// Modified: 2026-10-15
 import {complex} from '../../np-math/src/complex';
+
+function analogMode(mode) {
+	return ['AM', 'FM', 'PM', 'SSB', 'DSB-SC'].includes(mode);
+}
+
+function analogRowCount(signal) {
+	if (signal.mode === 'AM') return 3;
+	if (signal.mode === 'SSB') return 1;
+	if (signal.mode === 'DSB-SC') return 2;
+	return 2 * signal.sidebandOrder + 1;
+}
+
+function analogFrequency(signal, index) {
+	if (signal.mode === 'SSB') return signal.carrierHz +
+		(signal.sideband === 'USB' ? signal.toneHz : -signal.toneHz);
+	if (signal.mode === 'DSB-SC') return signal.carrierHz +
+		(index === 0 ? -signal.toneHz : signal.toneHz);
+	return signal.carrierHz + (index - (analogRowCount(signal) - 1) / 2) * signal.toneHz;
+}
 
 // A deterministic signal uses one complex outgoing-wave vector per S row.
 export function validateSignal(signal, spars) {
-	var analog = signal && (signal.mode === 'AM' || signal.mode === 'FM' || signal.mode === 'PM');
+	var analog = signal && analogMode(signal.mode);
 	if (!signal || (!analog && (!Number.isInteger(signal.sampleCount) || signal.sampleCount < 1 ||
 		!Number.isFinite(signal.sampleRateHz) || signal.sampleRateHz <= 0)) ||
 		(analog && (!Number.isFinite(signal.carrierHz) || !Number.isFinite(signal.toneHz) ||
 			signal.carrierHz <= 0 || signal.toneHz <= 0 ||
-			(signal.mode === 'AM' && signal.carrierHz <= signal.toneHz) ||
+			(['AM', 'SSB', 'DSB-SC'].includes(signal.mode) && signal.carrierHz <= signal.toneHz) ||
 			!Array.isArray(signal.rows) || signal.rows.length !==
-				(signal.mode === 'AM' ? 3 : 2 * signal.sidebandOrder + 1) ||
-			(signal.mode !== 'AM' && (!Number.isInteger(signal.sidebandOrder) ||
+				analogRowCount(signal) ||
+			(['FM', 'PM'].includes(signal.mode) && (!Number.isInteger(signal.sidebandOrder) ||
 				signal.sidebandOrder < 0)))) ||
 		!Number.isFinite(signal.referenceImpedanceOhms) || signal.referenceImpedanceOhms <= 0 ||
 		(signal.samplesPerBit !== undefined &&
@@ -38,20 +57,28 @@ export function validateSignal(signal, spars) {
 export function compatibleSignals(first, second) {
 	if (!first) return second;
 	if (!second) return first;
-	var firstAnalog = first.mode === 'AM' || first.mode === 'FM' || first.mode === 'PM';
-	var secondAnalog = second.mode === 'AM' || second.mode === 'FM' || second.mode === 'PM';
+	var firstAnalog = analogMode(first.mode);
+	var secondAnalog = analogMode(second.mode);
 	if (first.mode !== second.mode && (firstAnalog || secondAnalog)) {
 		throw new RangeError('Analog and sampled digital signals, or different analog modes, cannot share one connection.');
 	}
 	if (firstAnalog && (first.toneHz !== second.toneHz ||
 		first.carrierHz !== second.carrierHz ||
 		first.sidebandOrder !== second.sidebandOrder ||
+		first.sideband !== second.sideband ||
 		first.referenceImpedanceOhms !== second.referenceImpedanceOhms)) {
 		throw new RangeError('Analog sources must have matching carrier, tone, sideband order, and reference impedance.');
 	}
-	if (!firstAnalog && (first.sampleCount !== second.sampleCount ||
+	if (!firstAnalog && (first.mode !== second.mode ||
+		first.sampleCount !== second.sampleCount ||
 		first.sampleRateHz !== second.sampleRateHz ||
 		first.encoding !== second.encoding ||
+		first.order !== second.order ||
+		first.fftSize !== second.fftSize ||
+		first.subcarrierCount !== second.subcarrierCount ||
+		first.symbolRate !== second.symbolRate ||
+		first.frequencyDeviationHz !== second.frequencyDeviationHz ||
+		first.bt !== second.bt ||
 		first.referenceImpedanceOhms !== second.referenceImpedanceOhms ||
 		(first.carrierHz || 0) !== (second.carrierHz || 0))) {
 		throw new RangeError('Digital sources must have matching sample counts, rates, carriers, and reference impedances.');
@@ -72,8 +99,19 @@ export function signalWithRows(template, rows) {
 		sidebandOrder: template.sidebandOrder,
 		sidebandPowerTolerance: template.sidebandPowerTolerance,
 		modulationIndex: template.modulationIndex,
+		toneAmplitudeVolts: template.toneAmplitudeVolts,
+		sideband: template.sideband,
 		carrierAmplitudeVolts: template.carrierAmplitudeVolts,
 		frequencyDeviationHz: template.frequencyDeviationHz,
+		order: template.order,
+		bitsPerSymbol: template.bitsPerSymbol,
+		referenceSymbols: template.referenceSymbols,
+		bitCount: template.bitCount,
+		bt: template.bt,
+		subcarrierCount: template.subcarrierCount,
+		fftSize: template.fftSize,
+		symbolRate: template.symbolRate,
+		subcarrierMode: template.subcarrierMode,
 		sampleCount: template.sampleCount,
 		sampleRateHz: template.sampleRateHz,
 		referenceImpedanceOhms: template.referenceImpedanceOhms,
@@ -93,21 +131,26 @@ export function applyInputSignal(network, options) {
 	if (!Number.isInteger(inputPort) || inputPort < 1 || inputPort > portCount) {
 		throw new RangeError('Signal inputPort is outside the nPort dimensions.');
 	}
-	var analog = source.mode === 'AM' || source.mode === 'FM' || source.mode === 'PM';
+	var analog = analogMode(source.mode);
 	var sidebandOrder = source.mode === 'AM' ? 1 : source.sidebandOrder;
 	if (!Array.isArray(source.fList) || !Array.isArray(source.spectrum) ||
 		source.fList.length !== spars.length || source.spectrum.length !== spars.length ||
 		(analog ? (!Number.isFinite(source.carrierHz) || !Number.isFinite(source.toneHz) ||
 			source.carrierHz <= 0 || source.toneHz <= 0 ||
-			(source.mode === 'AM' && source.carrierHz <= source.toneHz) ||
-			!Number.isInteger(sidebandOrder) || sidebandOrder < 0 ||
-			spars.length !== 2 * sidebandOrder + 1 ||
+			(['AM', 'SSB', 'DSB-SC'].includes(source.mode) && source.carrierHz <= source.toneHz) ||
+			(['FM', 'PM', 'AM'].includes(source.mode) &&
+				(!Number.isInteger(sidebandOrder) || sidebandOrder < 0)) ||
+			spars.length !== analogRowCount(source) ||
 			source.fList.some(function (frequency, index) {
-				return frequency !== source.carrierHz + (index - sidebandOrder) * source.toneHz;
+				return frequency !== analogFrequency(source, index);
 			})) :
 			(!Number.isInteger(source.sampleCount) || source.sampleCount < 1 ||
-			!Number.isInteger(source.samplesPerBit) || source.samplesPerBit < 1 ||
-			source.sampleCount % source.samplesPerBit !== 0 ||
+			(source.mode === 'OFDM' ?
+				(!Number.isInteger(source.bitCount) || source.bitCount < 1 ||
+				!Number.isInteger(source.fftSize) || source.fftSize < 1 ||
+				 source.sampleCount % source.fftSize !== 0) :
+				(!Number.isInteger(source.samplesPerBit) || source.samplesPerBit < 1 ||
+				 source.sampleCount % source.samplesPerBit !== 0)) ||
 			spars.length !== Math.floor(source.sampleCount / 2) + 1 ||
 			!Number.isFinite(source.sampleRateHz) || source.sampleRateHz <= 0)) ||
 		!Number.isFinite(source.referenceImpedanceOhms) || source.referenceImpedanceOhms <= 0 ||

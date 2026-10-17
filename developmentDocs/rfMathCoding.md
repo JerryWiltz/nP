@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-07 -->
+<!-- Modified: 2026-10-15 -->
 # RF Math Coding
 
 This document defines the working method for turning RF equations into maintainable nP code. The purpose is not to make Codex invent RF models. The purpose is to preserve the engineering decisions so Codex can perform the repetitive translation, testing, documentation, and consistency work without losing the intent of the model.

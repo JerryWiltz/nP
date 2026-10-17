@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-13 -->
+<!-- Modified: 2026-10-15 -->
 # Development pages
 
 The HTML files in this directory are executable browser harnesses that load
@@ -6,17 +6,23 @@ The HTML files in this directory are executable browser harnesses that load
 explain the analysis and record worked examples. Rebuild the bundle after
 source changes, then keep a changed harness and its companion note aligned.
 
-| Harness | Focus | Companion notes |
+| Harness | Focus | Companion note |
 | --- | --- | --- |
+| `chartDefaultsDevelopment.html` | Built-in line chart, line table, and Smith chart defaults | — |
 | `diodeDevelopment.html` | 1N4148 RF S-parameters and DC I-V | `diodeDevelopment.md` |
+| `edgeCoupledFilter.html` | Coupled-line filter with amplifier cascade | — |
+| `intermodAnalysis.html` | Two-tone amplifier then attenuator sweep: IP3, NF, and output noise floor from nodal and cascade | `intermodAnalysis.md` |
+| `manchesterDevelopment.html` | Manchester PSK transmit, cascade, and demodulation example (currently untracked) | — |
 | `matrixDevelopment.html` | Real and complex matrix operations | `matrixDevelopment.md` |
+| `microstripDevelopment.html` | Microstrip line, coupled line, tee, divider, and thin-film resistor | `microstripDevelopment.md` |
 | `nodalDevelopment.html` | Series and parallel nodal connections | `nodalDevelopment.md` |
-| [timeDomainDevelopment.html](timeDomainDevelopment.html) | ASCII BER comparison and clocked PN7 on a 200 MHz carrier through an attenuator and `demod` | [timeDomainDevelopment.md](timeDomainDevelopment.md) |
-| [noiseAnalysis.html](noiseAnalysis.html) | Three amplifier constructor forms compared through nodal and cascade NF | [noiseAnalysis.md](noiseAnalysis.md) |
-| [intermodAnalysis.html](intermodAnalysis.html) | Two-tone amplifier then attenuator sweep: IP3, NF, and output noise floor from nodal and cascade | [intermodAnalysis.md](intermodAnalysis.md) |
+| `noiseAnalysis.html` | Three amplifier constructor forms compared through nodal and cascade NF | `noiseAnalysis.md` |
 | `seriesTeeDevelopment.html` | Series tee regression harness | — |
-| `microstripDevelopment.html` | Microstrip line, coupled line, tee, divider, and thin-film resistor | `mlinDevelopment.md`, `mclinDevelopment.md`, `mteeDevelopment.md`, `mteePowerDividerDevelopment.md`, `mtfrDevelopment.md` |
-| `visualizationDevelopment.html` | Line chart, line table, and Smith chart smoke harness | `lineChartDevelopment.md`, `lineTableDevelopment.md`, `smithChartDevelopment.md` |
+| `timeDomainDevelopment.html` | ASCII BER comparison and clocked PN7 through an attenuator and `demod()` | `timeDomainDevelopment.md` |
+| `visualizationDevelopment.html` | Line chart, line table, and Smith chart smoke harness | `visualizationDevelopment.md` |
+| `watkinsJohnsonAmplifierExamplesDevelopment.html` | Cascaded amplifier gain and noise examples from application data | — |
+
+The diode, matrix, nodal, and visualization notes mirror their harness scripts. The time-domain note contains the PN7 signal setup; its harness adds logging and plots. The microstrip note keeps equivalent standalone examples with different chart mount IDs. The noise and intermodulation notes are worked derivations with different example settings from their harnesses; they share the [Gupta connection-scattering derivation](../developmentDocs/guptaConnectionScattering.md).
 
 Run the browser smoke check with:
 
@@ -31,3 +37,9 @@ directly to charts and tables; its `noiseFloor` output is in dBm/Hz.
 
 Raw papers, downloaded references, and equation notes belong under `dev/raw/`.
 Repository-wide release and packaging plans belong under `developmentDocs/`.
+
+Name top-level harnesses and notes with lower camelCase basenames. Companion
+`.html` and `.md` files share a basename; `Development` is optional. The
+conventional `README.md` and `AGENTS.md` names and the separate `dev/raw/`
+rules are exceptions. `npm run dev:new -- pageName [divId ...]` uses the page
+name exactly as given.

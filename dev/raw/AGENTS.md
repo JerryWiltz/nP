@@ -1,5 +1,5 @@
 # AGENTS.md
-<!-- Modified: 2026-10-07 -->
+<!-- Modified: 2026-10-15 -->
 
 Instructions for files in `dev/raw/`.
 
@@ -7,6 +7,7 @@ This directory is for raw technical source material, equation notes, and early d
 
 - Keep papers, copied notes, screenshots, and equation-capture files here while researching a model.
 - For hand-maintained note filenames in this `dev/raw/` folder, use lowercase underscore names such as `microstrip_equation_notes.md`. Do not use camelCase or hyphenated names for new raw note files. Conventional special files such as `README.md` and `AGENTS.md` may keep their standard names.
+- Name PDF source captures with descriptive lowercase underscore basenames, using the verified author or organization, topic, and page range, year, or version when known, such as `gupta_connection_scattering_p345_347.pdf`. Do not guess a source identity from an incomplete scan; check references and `.gitignore` before renaming a PDF.
 - Preserve source attribution: include paper title, author, publication/source, page, figure, and equation number when available.
 - Prefer short summary notes over long verbatim copied text. Avoid storing full copyrighted papers in git unless the user explicitly decides the file should be tracked and has the right to store it.
 - Use ASCII text when writing notes unless equations require a specific symbol.

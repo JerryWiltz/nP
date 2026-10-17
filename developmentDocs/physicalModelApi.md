@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-07 -->
+<!-- Modified: 2026-10-15 -->
 # Physical-model API contract
 
 Physical transmission-media constructors use one canonical options object. This contract applies to microstrip now and to future stripline, coaxial-line, and waveguide families.

@@ -1,7 +1,9 @@
-<!-- Modified: 2026-09-08 -->
+<!-- Modified: 2026-10-15 -->
 # Dependent sources and a MESFET model
 
-This note records the design considerations for adding a small-signal MESFET model to nP. The proposed device will contain one or more dependent sources and parasitic components, then expose a normal n-port result that can be connected with `nodal()` or `cascade()`.
+This note records the design considerations for adding a small-signal MESFET model to nP. The proposed device will contain one or more dependent sources and parasitic components, then expose a normal n-port result for `nodal()`; a two-port result can also enter `cascade()`.
+
+The [floating MESFET model](mesfetVoltageCurrentNoise.md) works out a specific three-terminal circuit, its voltage/current equations, and its noise covariance. This note covers the implementation choice and public n-port boundary.
 
 ## 1. Controlled-source vocabulary
 
@@ -39,7 +41,7 @@ An ideal controlled source can also produce a singular or poorly conditioned int
 
 ### Path A: solve the complete device internally
 
-Build the controlled sources and parasitic RLC elements inside a MESFET constructor. Solve the internal voltage/current system, convert the external device behavior to a 2-port S-matrix, and return a normal nP object:
+Build the controlled sources and parasitic RLC elements inside a MESFET constructor. Solve the internal voltage/current system, convert the external device behavior to S-parameters, and return a normal nP object. A floating gate-drain-source device has three external ports; a common-source device whose source is tied to the circuit reference has two:
 
 ```text
 MESFET internals
@@ -49,10 +51,10 @@ MESFET internals
             ↓
     external S(f) and explicit C(f)
             ↓
-    ordinary nP 2-port
+    ordinary nP 3-port or common-source 2-port
 ```
 
-This path fits the existing architecture best. The completed MESFET can be passed to `nP.nodal()` alongside capacitors, resistors, and transmission lines. Its internal voltage/current bookkeeping remains hidden from users.
+This path fits the existing architecture best. The completed MESFET can be passed to `nP.nodal()` alongside capacitors, resistors, and transmission lines. A two-port result can also be passed to `nP.cascade()`. Its internal voltage/current bookkeeping remains hidden from users.
 
 ### Path B: expose controlled sources directly to `nodal()`
 
@@ -64,7 +66,7 @@ It should not be undertaken merely to build the first MESFET model.
 
 ## 4. Recommended architecture
 
-Use an internal linear controlled-source representation and solve the complete MESFET as one device. The public MESFET constructor should return a normal nP 2-port with:
+Use an internal linear controlled-source representation and solve the complete MESFET as one device. The public constructor should return a normal three-port for a floating device, or a two-port when the source terminal is tied to the circuit reference, with:
 
 ```js
 device.spars; // frequency-aligned external S-parameters
@@ -88,16 +90,7 @@ The exact option names are not yet settled. Do not silently mix volts, millivolt
 
 ## 5. MESFET small-signal structure
 
-A practical first MESFET model can contain:
-
-- Gate-source and gate-drain capacitances.
-- Drain-source output conductance or resistance.
-- A voltage-controlled drain current source (`gm · vgs`).
-- Optional gate resistance and package parasitics.
-- Optional drain/source series resistances.
-- Frequency-dependent or bias-dependent small-signal parameters.
-
-The internal circuit is linearized around a bias point. The public device remains a frequency-swept n-port, so it can be reused in larger nP networks.
+A practical first model can contain a voltage-controlled drain current source, intrinsic capacitances and output conductance, plus gate, drain, and source parasitics. The [floating model note](mesfetVoltageCurrentNoise.md#floating-small-signal-model) gives the branch orientations and terminal equations. Linearize the internal circuit around a bias point; the public result remains a frequency-swept n-port that can be reused in larger networks.
 
 ## 6. Noise rules
 
@@ -120,7 +113,7 @@ Noise parameters such as `Fmin`, `Rn`, and `Γopt` can be converted into an exte
 
 ## 7. Interaction with `nodal()` and cascade
 
-Once the MESFET returns an external `(S, C)` pair, no special user-facing network syntax is needed:
+Once the MESFET returns an external `(S, C)` pair, no special user-facing network syntax is needed. This example assumes a common-source two-port whose source terminal has been tied to the circuit reference:
 
 ```js
 var network = nP.nodal(
@@ -131,7 +124,7 @@ var network = nP.nodal(
 );
 ```
 
-`nodal()` uses the MESFET S-matrix in the deterministic solve and its explicit covariance in the noise propagation. The same pair can be carried through `cascade()` when the device is part of a two-port chain.
+`nodal()` uses the MESFET S-matrix in the deterministic solve and its explicit covariance in the noise propagation. A floating three-port connects through `nodal()` with all three ports exposed. The pair can be carried through `cascade()` only after the device is represented as a two-port.
 
 The user does not need to know the internal controlled-source equations, the global matrix size, or the noise-transfer matrix `F`. Those remain implementation details of the device and network solvers.
 

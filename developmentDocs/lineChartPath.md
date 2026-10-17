@@ -1,7 +1,9 @@
-<!-- Modified: 2026-09-06 -->
+<!-- Modified: 2026-10-15 -->
 # The Path of `lineChart`
 
 This note documents how `nP.lineChart()` travels from its source in the nP repository into the nPort RF Analysis Obsidian plugin. It also explains the two different paths a chart request can take inside Obsidian: a verbatim JavaScript `npjs` block or a declarative JSON `np` block.
+
+The chart function's input tables, options, defaults, and returned display object are documented in [Chart and table functions](chartFunctions.md).
 
 ## The source of truth in nP
 

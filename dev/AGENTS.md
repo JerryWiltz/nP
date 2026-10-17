@@ -1,10 +1,12 @@
 # AGENTS.md
-<!-- Modified: 2026-10-14 -->
+<!-- Modified: 2026-10-15 -->
 
 Instructions for files in `dev/`.
 
 These files are manual browser development and verification harnesses. They are not the source of truth for library behavior.
 
+- Name top-level hand-maintained `.html` harnesses and `.md` notes with lower camelCase basenames. Keep `README.md` and `AGENTS.md` as conventional entry points; `dev/raw/` follows its own naming rule.
+- When a harness has a companion note, give both files the same basename. The `Development` suffix is optional, so choose a descriptive name without adding it automatically.
 - Load the built browser bundle with `../dist/nP.js`.
 - Put reusable library code under `src/`, then run `npm run build` when the browser bundle should be updated.
 - Use `npm run dev:new -- pageName [divId ...]` to create a new dev HTML page without rewriting boilerplate by hand.

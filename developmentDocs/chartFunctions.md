@@ -1,7 +1,9 @@
-<!-- Modified: 2026-10-06 -->
+<!-- Modified: 2026-10-15 -->
 # Chart and table functions
 
 `nP.lineChart()`, `nP.lineTable()`, and `nP.smithChart()` display data in a browser. They take one options object, append a container `<div>` to `mount` (the document body by default), and draw an SVG inside it. They return display objects, not nPorts. The examples below use tables returned by an nPort's `.out()` method.
+
+This note owns the display functions' inputs, options, and returned objects. For how `lineChart()` reaches the Obsidian plugin, see [The Path of `lineChart`](lineChartPath.md).
 
 ## Input tables
 

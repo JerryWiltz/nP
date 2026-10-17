@@ -1,4 +1,4 @@
-// Modified: 2026-10-14
+// Modified: 2026-10-15
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -733,5 +733,93 @@ test('digital helpers reject invalid signal descriptions and missing signal', ()
         assert.throws(() => bitErrorRate(tx, cascade(Thru(), {signal: tx}), {receptions: 0}), RangeError);
         assert.throws(() => mod({carrierHz: -1}), RangeError);
         assert.throws(() => bitErrorRate(tx, cascade(Thru(), {signal: tx}), {receiver: 1}), TypeError);
+    });
+});
+
+test('new sampled modes recover data through cascade and nested nodal circuits', () => {
+    withGlobal(() => {
+        for (var mode of ['DPSK', 'QPSK', 'QAM', 'MSK', 'GMSK', 'OFDM']) {
+            global.fList = [];
+            var tx = mod({mode: mode, carrierHz: 200e6,
+                ...(mode === 'OFDM' ? {} : {bitRate: 10e6, samplesPerBit: 64}),
+                ...(mode === 'QAM' ? {} : {symbolRate: 5e6}),
+                message: 'Hi'});
+            var chain = cascade(Amp(20, 4), Attn(3, 0), {signal: tx});
+            var nested = nodal(
+                [chain, 1, 2],
+                ['out', 1, 2]
+            );
+            assert.equal(demod(chain, {noise: false}).out('ASCII text'), 'Hi', mode + ' cascade');
+            assert.equal(demod(nested, {noise: false}).out('ASCII text'), 'Hi', mode + ' nested nodal');
+            assert.equal(tx.out('settings').frequencyCount, tx.fList.length);
+            assert.equal(nested.signal.mode, mode);
+        }
+    });
+});
+
+test('QAM and OFDM support the declared constellation settings', () => {
+    withGlobal(() => {
+        for (var options of [
+            {mode: 'QAM', order: 64, bits: '101001101011001010'},
+            {mode: 'OFDM', subcarrierMode: 'QAM', order: 16,
+                subcarrierCount: 8, fftSize: 128, symbolRate: 5e6, bits: '101001101011001010'}
+        ]) {
+            var tx = mod({...options, carrierHz: 200e6,
+                ...(options.mode === 'OFDM' ? {} : {bitRate: 10e6, samplesPerBit: 64})});
+            var rx = demod(cascade(Thru(), {signal: tx}), {noise: false});
+            assert.deepEqual(rx.out('bits'), tx.bits);
+            assert.equal(rx.out('bit count'), tx.bits.length);
+            assert.equal(rx.out('symbols').length > 1, true);
+        }
+        var qpsk = mod({mode: 'QPSK', carrierHz: 200e6,
+            symbolRate: 5e6, samplesPerBit: 64, message: 'Hi'});
+        assert.equal(qpsk.out('settings').bitRate, 10e6);
+        assert.equal(qpsk.out('settings').symbolRate, 5e6);
+        assert.equal(demod(cascade(Thru(), {signal: qpsk}), {noise: false})
+            .out('ASCII text'), 'Hi');
+        var pnQam = mod({mode: 'QAM', carrierHz: 200e6,
+            bitRate: 10e6, samplesPerBit: 64});
+        assert.equal(pnQam.out('bit count'), 127);
+        assert.deepEqual(demod(cascade(Thru(), {signal: pnQam}), {noise: false})
+            .out('bits'), pnQam.bits);
+        var multiBlock = mod({mode: 'OFDM', carrierHz: 200e6,
+            subcarrierCount: 8, fftSize: 128, symbolRate: 5e6, message: 'hello'});
+        assert.equal(multiBlock.out('settings').blockCount, 3);
+        assert.equal(demod(cascade(Thru(), {signal: multiBlock}), {noise: false})
+            .out('ASCII text'), 'hello');
+        assert.throws(() => mod({mode: 'QAM', order: 8, carrierHz: 200e6,
+            bits: '1010'}), /QAM order/);
+        assert.throws(() => mod({mode: 'GMSK', bt: 0, carrierHz: 200e6,
+            bits: '1010'}), /GMSK bt/);
+        assert.throws(() => mod({mode: 'OFDM', carrierHz: 200e6,
+            symbolRate: 7e6, bits: '1010'}), /bin-aligned/);
+        assert.throws(() => mod({mode: 'OFDM', carrierHz: 200e6,
+            bitRate: 10e6, bits: '1010'}), /do not apply/);
+    });
+});
+
+test('single-tone SSB and DSB-SC use only occupied frequency rows', () => {
+    withGlobal(() => {
+        for (var options of [
+            {mode: 'SSB', sideband: 'USB', count: 1},
+            {mode: 'SSB', sideband: 'LSB', count: 1},
+            {mode: 'DSB-SC', count: 2}
+        ]) {
+            var tx = mod({mode: options.mode, sideband: options.sideband,
+                carrierHz: 200e6, toneHz: 300, toneAmplitudeVolts: 1});
+            var chain = cascade(Thru(), {signal: tx});
+            var nested = nodal(
+                [chain, 1, 2],
+                ['out', 1, 2]
+            );
+            assert.equal(tx.out('frequency count'), options.count);
+            assert.equal(chain.spars.length, options.count);
+            assert.equal(nested.signal.mode, options.mode);
+            var waveform = demod(nested, {noise: false}).out('waveform');
+            assert.ok(Math.abs(waveform[1][1] - 1) < 1e-10);
+            assert.ok(Math.abs(waveform[251][1]) < 1e-10);
+            assert.equal(demod(nested, {noise: false}).out('tones').length,
+                options.count + 1);
+        }
     });
 });

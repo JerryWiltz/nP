@@ -1,5 +1,6 @@
-// Modified: 2026-10-14
+// Modified: 2026-10-15
 import {createSourceWaveform} from './sourceWaveform';
+import {modulateAdvanced} from './advancedModes';
 import {FFT} from '../../np-math/src/fft';
 import {complex} from '../../np-math/src/complex';
 import {global} from '../../np-global/src/global';
@@ -49,6 +50,51 @@ function analogAM(options) {
 				return [frequency, spectrum[index].mag(), spectrum[index].ang()];
 			}));
 		throw new RangeError('Unknown AM output: ' + selector);
+	};
+	return tx;
+}
+
+// A pure tone needs only its occupied sideband frequencies.
+function analogSuppressed(options) {
+	var mode = options.mode;
+	var carrierHz = options.carrierHz;
+	var toneHz = options.toneHz;
+	var amplitude = options.toneAmplitudeVolts === undefined ? 1 : options.toneAmplitudeVolts;
+	var sideband = options.sideband === undefined ? 'USB' : options.sideband;
+	if (!Number.isFinite(carrierHz) || !Number.isFinite(toneHz) ||
+		carrierHz <= toneHz || toneHz <= 0 || !Number.isFinite(amplitude) || amplitude <= 0 ||
+		!Number.isFinite(global.Ro) || global.Ro <= 0 ||
+		(options.fftList !== undefined && !Array.isArray(options.fftList)) ||
+		(mode === 'SSB' ? sideband !== 'USB' && sideband !== 'LSB' : options.sideband !== undefined)) {
+		throw new RangeError(mode + ' needs carrierHz > toneHz > 0, positive toneAmplitudeVolts and global.Ro, and a valid sideband for SSB.');
+	}
+	if (global.twoTone) throw new RangeError('Clear global.twoTone before ' + mode + ' analysis.');
+	var fList = mode === 'SSB' ?
+		[carrierHz + (sideband === 'USB' ? toneHz : -toneHz)] :
+		[carrierHz - toneHz, carrierHz + toneHz];
+	var spectrum = mode === 'SSB' ? [complex(amplitude, 0)] :
+		[complex(amplitude / 2, 0), complex(amplitude / 2, 0)];
+	if (options.fftList) {
+		options.fftList.length = 0;
+		fList.forEach(function (frequency) { options.fftList.push(frequency); });
+	} else global.fList = fList.slice();
+	var tx = {mode: mode, carrierHz: carrierHz, toneHz: toneHz,
+		toneAmplitudeVolts: amplitude, sideband: mode === 'SSB' ? sideband : undefined,
+		fList: fList, spectrum: spectrum, referenceImpedanceOhms: global.Ro};
+	tx.out = function (selector) {
+		if (selector === 'settings') return {mode: mode, carrierHz: carrierHz,
+			toneHz: toneHz, toneAmplitudeVolts: amplitude,
+			...(mode === 'SSB' ? {sideband: sideband} : {}), frequencyCount: fList.length};
+		if (selector === 'frequency count') return fList.length;
+		if (selector === 'frequencies') return fList.slice();
+		if (selector === 'spectrum') return spectrum.map(function (value) { return value.copy(); });
+		if (selector === 'frequency table') return [['Bin', 'Frequency (Hz)']].concat(
+			fList.map(function (frequency, index) { return [index, frequency]; }));
+		if (selector === 'tones') return [['Freq', 'Peak voltage (V)', 'Phase (deg)']].concat(
+			fList.map(function (frequency, index) {
+				return [frequency, spectrum[index].mag(), spectrum[index].ang()];
+			}));
+		throw new RangeError('Unknown ' + mode + ' output: ' + selector);
 	};
 	return tx;
 }
@@ -150,10 +196,12 @@ export function mod(options = {}) {
 		throw new TypeError('mod expects an options object.');
 	}
 	if (options.mode === 'AM') return analogAM(options);
+	if (options.mode === 'SSB' || options.mode === 'DSB-SC') return analogSuppressed(options);
 	if (options.mode === 'FM' || options.mode === 'PM') return analogAngle(options);
 	var keyedMode = options.mode === 'OOK' || options.mode === 'ASK';
 	var fskMode = options.mode === 'FSK';
 	var pskMode = options.mode === 'PSK';
+	var advancedMode = ['DPSK', 'QPSK', 'QAM', 'MSK', 'GMSK', 'OFDM'].includes(options.mode);
 	var encoding = pskMode ? (options.encoding === undefined ? 'NRZ' : options.encoding) : undefined;
 	if (pskMode ? encoding !== 'NRZ' && encoding !== 'Manchester' :
 		options.encoding !== undefined) {
@@ -163,8 +211,8 @@ export function mod(options = {}) {
 	if (!Number.isFinite(carrierHz) || carrierHz < 0) {
 		throw new RangeError('mod carrierHz must be a nonnegative finite frequency.');
 	}
-	if ((keyedMode || fskMode || pskMode) && carrierHz === 0) {
-		throw new RangeError('OOK, ASK, FSK, and PSK require a positive carrierHz.');
+	if ((keyedMode || fskMode || pskMode || advancedMode) && carrierHz === 0) {
+		throw new RangeError('Digital RF modes require a positive carrierHz.');
 	}
 	var txOptions = {...options};
 	delete txOptions.carrierHz;
@@ -198,7 +246,7 @@ export function mod(options = {}) {
 			delete txOptions.dataMode;
 		}
 	}
-	if (fskMode || pskMode) {
+	if (fskMode || pskMode || advancedMode) {
 		if (options.input) {
 			if (options.dataMode !== undefined || options.message !== undefined ||
 				options.bits !== undefined) {
@@ -215,7 +263,26 @@ export function mod(options = {}) {
 			delete txOptions.encoding;
 		}
 	}
+	if (options.mode === 'QPSK' || options.mode === 'QAM') {
+		var bitsPerSymbol = Math.log2(options.mode === 'QPSK' ? 4 :
+			(options.order === undefined ? 16 : options.order));
+		if (options.symbolRate !== undefined) {
+			if (!Number.isFinite(options.symbolRate) || options.symbolRate <= 0 ||
+				(options.bitRate !== undefined && options.bitRate !== options.symbolRate * bitsPerSymbol)) {
+				throw new RangeError('QPSK/QAM symbolRate must be positive and agree with bitRate.');
+			}
+			if (options.input && options.input.bitRate !== options.symbolRate * bitsPerSymbol) {
+				throw new RangeError('QPSK/QAM symbolRate must agree with the PN input clock rate.');
+			}
+			if (!options.input) txOptions.bitRate = options.symbolRate * bitsPerSymbol;
+		}
+	}
+	if (options.mode === 'OFDM' &&
+		(options.bitRate !== undefined || options.samplesPerBit !== undefined)) {
+		throw new RangeError('OFDM uses symbolRate and fftSize; bitRate and samplesPerBit do not apply.');
+	}
 	var tx = createSourceWaveform(txOptions, options.fftList);
+	var advancedSettings = advancedMode ? modulateAdvanced(tx, options, carrierHz) : null;
 	if (pskMode && encoding === 'Manchester' &&
 		(tx.samplesPerBit < 2 || tx.samplesPerBit % 2 !== 0)) {
 		throw new RangeError('Manchester PSK requires an even samplesPerBit of at least 2.');
@@ -232,10 +299,12 @@ export function mod(options = {}) {
 		carrierHz <= deviationHz)) {
 		throw new RangeError('FSK needs positive frequencyDeviationHz and carrierAmplitudeVolts, with carrierHz greater than deviation.');
 	}
-	if (carrierHz + (fskMode ? deviationHz : 0) >= tx.sampleRateHz / 2) {
+	if (!advancedMode && carrierHz + (fskMode ? deviationHz : 0) >= tx.sampleRateHz / 2) {
 		throw new RangeError('mod carrierHz must be below the sample Nyquist frequency.');
 	}
-	if (fskMode) {
+	if (advancedMode) {
+		// The selected advanced mode has already produced the sampled RF waveform.
+	} else if (fskMode) {
 		var phase = 0;
 		tx.samples = tx.bits.flatMap(function (bit) {
 			var frequency = carrierHz + (bit ? deviationHz : -deviationHz);
@@ -292,6 +361,7 @@ export function mod(options = {}) {
 				mode: tx.mode,
 				dataMode: tx.dataMode,
 				carrierHz: carrierHz,
+				...(advancedSettings || {}),
 				...(fskMode ? {frequencyDeviationHz: deviationHz,
 					lowFrequencyHz: carrierHz - deviationHz,
 					highFrequencyHz: carrierHz + deviationHz,
@@ -299,13 +369,13 @@ export function mod(options = {}) {
 				...(pskMode ? {encoding: encoding,
 					carrierAmplitudeVolts: carrierAmplitudeVolts,
 					phaseZeroDeg: 180, phaseOneDeg: 0} : {}),
-				bitRate: tx.sampleRateHz / tx.samplesPerBit,
-				samplesPerBit: tx.samplesPerBit,
+				...(tx.samplesPerBit ? {bitRate: tx.sampleRateHz / tx.samplesPerBit,
+					samplesPerBit: tx.samplesPerBit} : {bitCount: tx.bitCount}),
 				sampleRateHz: tx.sampleRateHz,
 				sampleCount: tx.sampleCount,
 				frequencyCount: tx.fList.length,
-				lowVolts: tx.lowVolts,
-				highVolts: tx.highVolts
+				...(tx.bitCount !== undefined ? {bitCount: tx.bitCount} : {}),
+				...(!advancedMode ? {lowVolts: tx.lowVolts, highVolts: tx.highVolts} : {})
 			};
 		}
 		if (selector === 'frequency table') {

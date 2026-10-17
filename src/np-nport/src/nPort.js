@@ -4,7 +4,7 @@ import {noiseAnalysis} from './noiseFigure';
 import {connectionModel, intermodAt, waveDbm, oipDbm} from './intermod';
 import {validateSignal, compatibleSignals, signalWithRows} from './signal';
 
-// Modified: 2026-10-14
+// Modified: 2026-10-15
 var conjugate = function (value) { return complex(value.getR(), -value.getI()); };
 
 export function nPort() { this._noise = undefined; this._signal = undefined; }; // base class for nPort objects
@@ -186,9 +186,8 @@ nPort.prototype = {
 				throw new RangeError('nPort.out(): selected port is outside the n-port dimensions.');
 			}
 			if (selection.kind === 'signal' && (!this.signal ||
-				(this.signal.mode !== 'AM' && this.signal.mode !== 'FM' &&
-					this.signal.mode !== 'PM'))) {
-				throw new RangeError('Signal tone selectors require an AM, FM, or PM signal on the nPort.');
+				!['AM', 'FM', 'PM', 'SSB', 'DSB-SC'].includes(this.signal.mode))) {
+				throw new RangeError('Signal tone selectors require an analog signal on the nPort.');
 			}
 		}, this);
 		var output = [['Freq'].concat(selectors)];

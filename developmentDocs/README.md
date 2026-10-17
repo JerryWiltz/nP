@@ -1,7 +1,9 @@
-<!-- Modified: 2026-10-14 -->
+<!-- Modified: 2026-10-15 -->
 # nP Development Documentation
 
 This directory contains internal engineering knowledge for developing nP. It records RF mathematics, equation-to-code translations, implementation decisions, data contracts, assumptions, units, references, and worked examples.
+
+Hand-maintained topic notes in this directory and its subdirectories use lower camelCase filenames, such as `chartFunctions.md` and `np-nport/constructorCatalog.md`. Keep conventional `README.md` entry points.
 
 These documents are separate from:
 
@@ -147,7 +149,7 @@ src/
 
 | Member | Purpose |
 | --- | --- |
-| `setglobal(global)`, `getglobal()` | Store and retrieve analysis settings. |
+| `setglobal(global)`, `getglobal()` | Capture and retrieve component analysis settings. |
 | `setspars(rows)`, `getspars()` | Store and retrieve S-parameter rows. |
 | `noise` getter and setter | Read or assign the frequency-aligned noise covariance. |
 | `signal` getter and setter | Read or assign deterministic complex signal waves aligned with the S rows. |
@@ -158,18 +160,20 @@ src/
 
 ## Index
 
-- [`rf-math-coding.md`](rf-math-coding.md): shared practices for translating RF mathematics into maintainable JavaScript.
-- [`nport-data-model.md`](nport-data-model.md): the shapes and invariants of n-port objects and S-parameter data.
-- [`ModDemod.md`](ModDemod.md): implemented and proposed modulation modes, transmitter frequency lists, signal attachment, and demodulation.
-- [`nodal-analysis.md`](nodal-analysis.md): the mathematical and coding model behind arbitrary n-port interconnection.
-- [`interconnection-matrix.md`](interconnection-matrix.md): an educational explanation of the \(\Gamma\) wiring matrix used by nodal analysis.
-- [`mesfet-voltage-current-noise.md`](mesfet-voltage-current-noise.md): a floating MESFET voltage/current model with dependent sources, parasitics, and semiconductor-noise covariance.
-- [`series-parallel-resistor-source-model.md`](series-parallel-resistor-source-model.md): one physical resistor-noise source represented as two-port waves for series and parallel topologies.
-- [`kurokawa-power-waves-synopsis.md`](kurokawa-power-waves-synopsis.md): synopsis and equation-by-equation explanation of Kurokawa's power-wave and scattering-matrix paper.
-- [`npm-maintenance.md`](npm-maintenance.md): maintenance and release checks for the published npm package and its Obsidian-plugin bundle.
-- [`physical-model-api.md`](physical-model-api.md): canonical options, units, compatibility, validation, and metadata for physical transmission-media models.
-- [`chart-functions.md`](chart-functions.md): inputs, options, defaults, and return values for `lineChart()`, `lineTable()`, and `smithChart()`.
-- [`thePathOflineChart.md`](thePathOflineChart.md): the path from the nP chart source through the nPort RF Analysis Obsidian plugin.
+- [`rfMathCoding.md`](rfMathCoding.md): shared practices for translating RF mathematics into maintainable JavaScript.
+- [`nPortDataModel.md`](nPortDataModel.md): the shapes and invariants of n-port objects and S-parameter data.
+- [`modDemod.md`](modDemod.md): implemented and proposed modulation modes, transmitter frequency lists, signal attachment, and demodulation.
+- [`nodalAnalysis.md`](nodalAnalysis.md): the mathematical and coding model behind arbitrary n-port interconnection.
+- [`interconnectionMatrix.md`](interconnectionMatrix.md): an educational explanation of the \(\Gamma\) wiring matrix used by nodal analysis.
+- [`guptaConnectionScattering.md`](guptaConnectionScattering.md): shared linear-wave derivation used by the noise and intermodulation worked notes.
+- [`dependentSourcesAndMesfet.md`](dependentSourcesAndMesfet.md): controlled-source vocabulary and the proposed MESFET implementation boundary.
+- [`mesfetVoltageCurrentNoise.md`](mesfetVoltageCurrentNoise.md): detailed floating three-terminal MESFET equations, parasitics, and semiconductor-noise covariance.
+- [`seriesParallelResistorSourceModel.md`](seriesParallelResistorSourceModel.md): one physical resistor-noise source represented as two-port waves for series and parallel topologies.
+- [`kurokawaPowerWavesSynopsis.md`](kurokawaPowerWavesSynopsis.md): synopsis and equation-by-equation explanation of Kurokawa's power-wave and scattering-matrix paper.
+- [`npmMaintenance.md`](npmMaintenance.md): maintenance and release checks for the published npm package and its Obsidian-plugin bundle.
+- [`physicalModelApi.md`](physicalModelApi.md): canonical options, units, compatibility, validation, and metadata for physical transmission-media models.
+- [`chartFunctions.md`](chartFunctions.md): inputs, options, defaults, and return values for `lineChart()`, `lineTable()`, and `smithChart()`.
+- [`lineChartPath.md`](lineChartPath.md): the path from the nP chart source through the nPort RF Analysis Obsidian plugin.
 - [`np-math/`](np-math/): complex-number, matrix, and numerical-method documentation.
 - [`np-nport/`](np-nport/): n-port constructors, composition, fixtures, and port-convention documentation.
 - [`microstrip/`](microstrip/): physical microstrip models, constants, equations, and references.

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-09-14 -->
+<!-- Modified: 2026-10-15 -->
 # Kurokawa's power waves and scattering matrix: a synopsis
 
 **Source.** K. Kurokawa, “Power Waves and the Scattering Matrix,” *IEEE Transactions on Microwave Theory and Techniques*, vol. 13, no. 2, pp. 194–202, 1965. The source PDF is preserved at [`dev/raw/kurokawa_power_waves_scattering_matrix_1965.pdf`](../dev/raw/kurokawa_power_waves_scattering_matrix_1965.pdf).

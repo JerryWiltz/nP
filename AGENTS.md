@@ -2,7 +2,7 @@ sudo npm install -g @openai/codex
 Read all applicable AGENTS.md files before working. Inspect the current Git status and latest commits, then continue from the repository’s current state.
 
 # AGENTS.md
-<!-- Modified: 2026-10-13 -->
+<!-- Modified: 2026-10-15 -->
 
 Repository guide for agents working in the `nP` repo.
 
@@ -107,7 +107,7 @@ The main internal objects are `complex`, `matrix`, and `nPort`. Keep their exist
 - Built-in n-port constructors use the current `global.fList` by default and accept an optional `fList` in their options. Use `componentSettings(global, options)` before `analysisFrequencies(settings)` so each nPort retains its own frequency list and two-tone settings. All components combined in one analysis must have matching frequency rows. `.out()` displays the selected `fList` points for these components and their combinations.
 - `cas()` and `nP.cascade()` are for 2-port cascades. Use `nP.nodal()` for arbitrary interconnections and multiport circuits.
 - Returned nPorts retain combined noise covariance and known internal amplifier intermodulation sources when reused in `nP.nodal()` or `nP.cascade()`.
-- When adding or changing an n-port constructor or method, public math helper, or low-pass prototype generator, update its arguments and defaults in `developmentDocs/np-nport/constructor-catalog.md` in the same change.
+- When adding or changing an n-port constructor or method, public math helper, or low-pass prototype generator, update its arguments and defaults in `developmentDocs/np-nport/constructorCatalog.md` in the same change.
 
 ## Ladder Network Pattern
 
@@ -196,7 +196,7 @@ Shared physical constants live in `src/np-nport/src/physicalConstants.js`. Use t
 
 Do not create alternate spellings for the same physical constant in nearby constructors. If a paper uses a different symbol, map it to the shared nP name in comments or raw notes, for example `eta_0 = VACUUM_IMPEDANCE`.
 
-Physical-model constructors use one canonical options object with lower-camel-case, complete engineering names and SI units. `mlin()`, `mclin()`, and `mtee()` accept no arguments for defaults or one options object; they do not accept positional values. `resistivity` always means absolute ohm-meters. Preserve documented property aliases, reject conflicting aliases and unknown properties, and expose canonical `.physicalModel` metadata. Follow `developmentDocs/physical-model-api.md` for microstrip and future stripline, coaxial-line, and waveguide constructors.
+Physical-model constructors use one canonical options object with lower-camel-case, complete engineering names and SI units. `mlin()`, `mclin()`, and `mtee()` accept no arguments for defaults or one options object; they do not accept positional values. `resistivity` always means absolute ohm-meters. Preserve documented property aliases, reject conflicting aliases and unknown properties, and expose canonical `.physicalModel` metadata. Follow `developmentDocs/physicalModelApi.md` for microstrip and future stripline, coaxial-line, and waveguide constructors.
 
 ## Diode Model Pattern
 
@@ -216,6 +216,25 @@ Diode-related constructors live in `src/np-nport/src/diodes`. These models are e
 - Verify unfamiliar technical names before introducing or renaming them.
 - Do not silently rename an established public API identifier merely to correct its spelling. Preserve compatibility or make an intentional, documented migration with an alias and updated consumers.
 - When correcting a filename, update every active reference to that path in the same change and verify that the old spelling is no longer referenced.
+
+### Source JavaScript filenames
+
+- Name a file that defines one public constructor to match its exported function exactly, including capitalization, such as `R.js`, `Tlin.js`, `seriesTee.js`, `trf.js`, or `mlin.js`. Choose the constructor name from its existing API family before naming the file; do not force one capitalization style across all families.
+- Internal helper files may use a descriptive lower camelCase topic name even when their exported helper has a different name, such as `inputTables.js` exporting `normalizeInputTables()` or `receiverWaveform.js` exporting `receiveWaveform()`.
+- Keep conventional entry points such as `index.js` and existing modules that export several related functions under their descriptive names.
+
+### Test filenames
+
+- Name test files under `test/` with a descriptive lowercase kebab-case topic followed by `.test.js`, such as `component-frequencies.test.js` or `noise-figure.test.js`. Keep public API identifiers in test code spelled exactly as exported.
+
+### Script filenames
+
+- Name scripts under `scripts/` with a descriptive lowercase kebab-case action, using `.mjs` for Node scripts and `.sh` for shell scripts, such as `create-dev-html.mjs` or `cleanup-gitignore.sh`. Update package commands and active references when renaming a script.
+
+### Development documentation filenames
+
+- Name hand-maintained Markdown topic files anywhere under `developmentDocs/` with a lower camelCase basename and a `.md` extension, such as `chartFunctions.md`, `nPortDataModel.md`, or `np-nport/constructorCatalog.md`.
+- Keep conventional entry-point filenames such as `README.md` and `AGENTS.md`. This rule does not rename directories or public API identifiers.
 
 ## Repository Layout
 

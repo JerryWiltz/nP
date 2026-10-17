@@ -1,9 +1,11 @@
-<!-- Modified: 2026-10-04 -->
+<!-- Modified: 2026-10-15 -->
 # Nodal Analysis
 
 `nP.nodal()` combines arbitrary one-port and multiport S-parameter objects into a new n-port. It is the general composition tool for circuit topologies that are not a simple two-port cascade.
 
 The implementation is in `src/np-nport/src/combining/nodal.js` and depends on complex matrix inversion from `src/np-math/src/matrix.js`.
+
+For a worked six-position wiring matrix and the meaning of its entries, see [Understanding the Interconnection Matrix](interconnectionMatrix.md). This note owns the `nodal()` calling rules and implementation sequence.
 
 ## Calling form
 
@@ -51,7 +53,7 @@ Each physical component provides an S matrix relating incident waves `a` to outg
 b = S a
 ```
 
-A direct connection exchanges outgoing and incident waves between the two connected ports. The implementation represents all of those pairings in a connection matrix. It then inserts the negative component S matrices into the combined system, inverts that system for each frequency, and extracts the block associated with the requested output ports.
+A direct connection exchanges outgoing and incident waves between the two connected ports. The [interconnection-matrix note](interconnectionMatrix.md#the-two-relationships) explains the wiring matrix in detail. The implementation combines that matrix with negative component S blocks, inverts the system for each frequency, and extracts the block associated with the requested output ports.
 
 The important implementation consequence is that arbitrary component types can participate as long as they obey the common n-port row shape. A previously combined n-port can therefore be reused as a component in a larger `nP.nodal()` call.
 
@@ -75,11 +77,11 @@ Component blocks appear in the same order as the arguments. Within each block, S
 
 - The frequency list stored in the output.
 - The number of frequency iterations.
-- The `.global` reference attached to the result.
+- The settings snapshot captured by the result.
 
-All participating components are therefore expected to have aligned frequency rows and the same reference impedance. The routine indexes every component by the same frequency-row number and does not interpolate or renormalize.
+All participating components must have aligned frequency rows and the same reference impedance. The routine rejects mismatched frequency rows, indexes every component by the same row number, and does not interpolate or renormalize.
 
-Construct all components after setting one shared `nP.global` configuration.
+Construct components with matching frequency lists and reference impedances. Separate circuit contexts are valid when those settings agree.
 
 ## External ports
 

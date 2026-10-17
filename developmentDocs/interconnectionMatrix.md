@@ -1,8 +1,10 @@
-<!-- Modified: 2026-09-08 -->
+<!-- Modified: 2026-10-15 -->
 # Understanding the Interconnection Matrix
 
 This note explains the matrix called `Gamma` in the direct
 multiport method used by `nP.nodal()`.
+
+For the public connection rules, implementation sequence, and examples, see [Nodal Analysis](nodalAnalysis.md). This note focuses on the six-position matrix and the wave equations it represents.
 
 ## The two relationships
 
@@ -160,31 +162,7 @@ right 2×2 block selected by `nodal()` is the transfer from `[c1, c2]` to
 
 ## How `nP.nodal()` builds `Gamma`
 
-The call
-
-```js
-var result = nP.nodal(
-    [component, 1, 2],
-    ['out', 1, 2]
-);
-```
-
-uses equal labels to identify connected ports. Internally, `nodal()`:
-
-1. Flattens every component port and every requested output port into a list.
-2. Records the connection label beside each wave-variable position.
-3. Finds the other position carrying the same label.
-4. Places `complex(1, 0)` in the corresponding `Gamma` entry.
-5. Inserts each component's negative S-matrix into its diagonal block.
-6. Inverts the resulting complex matrix for each frequency.
-7. Extracts the rows and columns belonging to the `'out'` positions.
-
-The labels are connection identifiers, not voltages or node potentials. Their
-numeric values have no electrical meaning; only equality matters. The current
-implementation expects each label to occur exactly twice. A three-way junction
-should therefore be represented by an explicit `Tee`, `Tee4`, `Tee5`, or
-physical junction component rather than by assigning one label to three
-arbitrary component ports.
+`nodal()` flattens component and external ports in call order, then uses each matched pair of connection labels to place two reciprocal `1` entries in `Gamma`. The label values are identifiers, not node voltages. The six-position example above shows the resulting entries explicitly. The [nodal guide](nodalAnalysis.md#what-the-implementation-builds) gives the complete assembly and inversion sequence; its [pairwise connection rule](nodalAnalysis.md#pairwise-connection-rule) explains why a three-way junction needs an explicit Tee or other junction component.
 
 ## Why this is useful for noise
 

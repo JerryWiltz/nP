@@ -1,5 +1,9 @@
-<!-- Modified: 2026-10-07 -->
-# nP: RF and microwave network analysis in JavaScript
+---
+outline: [1, 2]
+---
+
+<!-- Modified: 2026-10-16 -->
+# Guide
 
 **nP** is a browser-oriented JavaScript library for constructing, analyzing, and visualizing RF and microwave networks. It supports complex arithmetic, matrix solving, S-parameters, n-port interconnection, lumped components, ideal transmission lines, physical microstrip models, nonlinear-device models, line charts, SVG tables, and Smith charts.
 
