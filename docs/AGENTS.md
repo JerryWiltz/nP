@@ -1,5 +1,5 @@
 # AGENTS.md
-<!-- Modified: 2026-10-15 -->
+<!-- Modified: 2026-10-17 -->
 
 Instructions for files in `docs/` and its subdirectories.
 
@@ -32,6 +32,18 @@ Write RF examples in this order so the circuit logic is easy to follow:
 6. Send the output table to `nP.lineChart()`, `nP.lineTable()`, or `nP.smithChart()`.
 
 Prefer this flow over examples that hide topology inside legacy combined RLC constructors or long cascades.
+
+## REPL Examples
+
+The runnable REPL examples live in `docs/.vitepress/theme/replExamples.js`. The sidebar groups and their order live in `docs/.vitepress/config.js`.
+
+- Give each example a unique, stable `id`, a clear `title`, a sidebar `category`, and runnable `code`. Reorder examples within a category by moving their array entries; avoid changing an existing ID because links and saved browser drafts use it.
+- Make each example self-contained. Set the required analysis frequencies or time context before constructing dependent objects, and show a useful result with `nP.log()`, `nP.lineChart()`, `nP.lineTable()`, or `nP.smithChart()`.
+- Make RF topology visible: construct and name components before passing them to `nP.nodal()` or `nP.cascade()`. Use reference-designator-style names for electrical parts, and put each `nodal()` connection on its own line.
+- Put object properties on separate lines. Use blank lines between distinct stages such as settings, components, connections, outputs, and display. Keep truly small examples compact.
+- Let `nP.lineChart()`, `nP.lineTable()`, and `nP.smithChart()` use their default output mount. Do not add `document.createElement()` or `appendChild()` setup to REPL code just to display a chart or table.
+- Match chart axis titles and `metricPrefix` to the values in the output table. Use `metricPrefix: 'none'` when x values are already in the displayed unit; an empty string falls back to the chart's gigascale default.
+- After changing examples, verify that each changed snippet loads and runs in the REPL. Check for visible chart or table output when an example calls a display helper.
 
 ## Ideal Component Naming
 

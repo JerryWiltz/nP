@@ -1,12 +1,23 @@
 <script setup>
-// Modified: 2026-10-16
+// Modified: 2026-10-17
 import { onMounted, onUnmounted, ref } from 'vue'
 import { withBase } from 'vitepress'
 import { examples } from './replExamples'
 
 const root = ref(null)
+const exampleById = Object.fromEntries(examples.map(example => [example.id, example]))
 let editor
 let disposed = false
+let outputFrame
+let loadExampleFromHash
+
+function resizeSingleChart(event) {
+  if (event.source !== outputFrame?.contentWindow || event.data?.type !== 'np-repl-single-chart-height') return
+  const height = Number(event.data.height)
+  if (Number.isFinite(height) && height > 0 && height < 10000) {
+    outputFrame.style.height = `${Math.max(360, height)}px`
+  }
+}
 
 function loadScript(url) {
   return new Promise((resolve, reject) => {
@@ -38,10 +49,15 @@ async function loadCodeMirror() {
 
 function readDrafts() {
   try {
-    return JSON.parse(localStorage.getItem('np-repl-example-drafts') || '{}')
+    const saved = JSON.parse(localStorage.getItem('np-repl-example-drafts') || '{}')
+    return saved && typeof saved === 'object' && !Array.isArray(saved) ? saved : {}
   } catch {
     return {}
   }
+}
+
+function sameCodeIgnoringWhitespace(left, right) {
+  return left.replace(/\s+/g, '') === right.replace(/\s+/g, '')
 }
 
 onMounted(async () => {
@@ -51,17 +67,23 @@ onMounted(async () => {
   const container = root.value
   const textarea = container.querySelector('#code')
   const output = container.querySelector('#output')
+  outputFrame = output
+  window.addEventListener('message', resizeSingleChart)
   const status = container.querySelector('#status')
-  const exampleList = container.querySelector('#examples')
+  const resetButton = container.querySelector('#reset')
   let drafts = readDrafts()
-  let activeIndex = 0
+  let activeId = null
+  let loadingExample = false
 
   editor = codeMirrorReady
     ? window.CodeMirror.fromTextArea(textarea, { lineNumbers: true, mode: 'javascript', tabSize: 2, lineWrapping: true })
     : { getValue: () => textarea.value, setValue: value => { textarea.value = value }, clearHistory: () => {} }
 
   function saveDraft() {
-    drafts[activeIndex] = editor.getValue()
+    if (activeId === null || loadingExample) return
+    const value = editor.getValue()
+    if (value.trim() && !sameCodeIgnoringWhitespace(value, exampleById[activeId].code)) drafts[activeId] = value
+    else delete drafts[activeId]
     try {
       localStorage.setItem('np-repl-example-drafts', JSON.stringify(drafts))
     } catch {
@@ -69,47 +91,74 @@ onMounted(async () => {
     }
   }
 
-  examples.forEach((example, index) => {
-    const item = document.createElement('li')
-    const button = document.createElement('button')
-    button.className = 'example-button' + (index === 0 ? ' active' : '')
-    button.type = 'button'
-    button.textContent = example.title
-    button.addEventListener('click', () => {
-      saveDraft()
-      activeIndex = index
-      editor.setValue(drafts[index] ?? example.code)
-      editor.clearHistory()
-      exampleList.querySelectorAll('.example-button').forEach(entry => entry.classList.remove('active'))
-      button.classList.add('active')
-      status.textContent = 'Example loaded'
-    })
-    item.appendChild(button)
-    exampleList.appendChild(item)
-  })
+  loadExampleFromHash = () => {
+    const match = location.hash.match(/^#example-([a-z0-9-]+)$/)
+    if (!match) return
+    const id = match[1]
+    const example = exampleById[id]
+    if (!example || id === activeId) return
+    saveDraft()
+    activeId = id
+    loadingExample = true
+    const draft = drafts[id]
+    if (typeof draft === 'string' && sameCodeIgnoringWhitespace(draft, example.code)) delete drafts[id]
+    editor.setValue(typeof draft === 'string' && draft.trim() && !sameCodeIgnoringWhitespace(draft, example.code) ? draft : example.code)
+    loadingExample = false
+    editor.clearHistory()
+    resetButton.disabled = false
+    status.textContent = 'Example loaded'
+  }
 
-  editor.setValue(drafts[0] ?? examples[0].code)
+  window.addEventListener('hashchange', loadExampleFromHash)
+  loadExampleFromHash()
+
   if (codeMirrorReady) editor.on('change', saveDraft)
   else textarea.addEventListener('input', saveDraft)
 
-  container.querySelector('#reset').addEventListener('click', () => {
-    delete drafts[activeIndex]
-    editor.setValue(examples[activeIndex].code)
-    saveDraft()
+  resetButton.addEventListener('click', () => {
+    delete drafts[activeId]
+    loadingExample = true
+    editor.setValue(exampleById[activeId].code)
+    loadingExample = false
+    try {
+      localStorage.setItem('np-repl-example-drafts', JSON.stringify(drafts))
+    } catch {
+      // Keep the draft in memory when browser storage is unavailable.
+    }
     editor.clearHistory()
     status.textContent = 'Example reset'
+  })
+
+  container.querySelector('#clear').addEventListener('click', () => {
+    editor.setValue('')
+    saveDraft()
+    output.onload = null
+    output.srcdoc = ''
+    output.style.height = ''
+    status.textContent = 'Editor and output cleared'
+  })
+
+  container.querySelector('#view-output').addEventListener('click', () => {
+    container.querySelector('#output-heading').scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
+
+  container.querySelector('#view-code').addEventListener('click', () => {
+    container.querySelector('#code-toolbar').scrollIntoView({ behavior: 'smooth', block: 'start' })
   })
 
   container.querySelector('#run').addEventListener('click', () => {
     const sourceLiteral = JSON.stringify(editor.getValue()).replace(/</g, '\\u003c')
     status.textContent = 'Running…'
-    output.srcdoc = `<!doctype html><html><head><meta charset="utf-8"><style>body{font:14px Arial,sans-serif;margin:1rem;color:#1f2937}pre{white-space:pre-wrap}.error{color:#b91c1c}svg{max-width:100%;height:auto}</style></head><body><div id="result"></div><script>const userSource=${sourceLiteral};function showError(error){document.getElementById('result').innerHTML='<pre class="error">'+String(error).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</pre>';}window.onerror=function(message){showError(message);};function execute(){try{new Function(userSource)();}catch(error){showError(error.stack||error);}}<\/script><script src="${withBase('/nP.js')}" onload="execute()" onerror="showError('Unable to load the nP browser bundle.')"><\/script></body></html>`
+    output.style.height = ''
+    output.srcdoc = `<!doctype html><html><head><meta charset="utf-8"><style>body{font:14px Arial,sans-serif;margin:1rem;color:#1f2937}pre{white-space:pre-wrap}.error{color:#b91c1c}svg{max-width:100%;height:auto}</style></head><body><div id="result"></div><script>const userSource=${sourceLiteral};function showError(error){document.getElementById('result').innerHTML='<pre class="error">'+String(error).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</pre>';}function reportChartHeight(){if(document.querySelectorAll('svg.svgContainerClass,svg.smith-chart-svg').length!==1)return;const margin=parseFloat(getComputedStyle(document.body).marginBottom)||0;const height=Math.ceil(document.body.getBoundingClientRect().bottom+margin+4);parent.postMessage({type:'np-repl-single-chart-height',height},'*');}window.onerror=function(message){showError(message);};function execute(){try{new Function(userSource)();requestAnimationFrame(reportChartHeight);new ResizeObserver(reportChartHeight).observe(document.body);}catch(error){showError(error.stack||error);}}<\/script><script src="${withBase('/nP.js')}" onload="execute()" onerror="showError('Unable to load the nP browser bundle.')"><\/script></body></html>`
     output.onload = () => { status.textContent = 'Finished' }
   })
 })
 
 onUnmounted(() => {
   disposed = true
+  window.removeEventListener('message', resizeSingleChart)
+  if (loadExampleFromHash) window.removeEventListener('hashchange', loadExampleFromHash)
   if (editor?.toTextArea) editor.toTextArea()
 })
 </script>
@@ -117,31 +166,24 @@ onUnmounted(() => {
 <template>
   <main ref="root" class="np-repl">
     <h1>nP RF REPL</h1>
-    <p class="intro">Choose a starter example, edit the JavaScript, press Run, and inspect the result below.</p>
+    <div class="intro">
+      <p>Choose an example or write JavaScript, then press Run. Set <code>nP.global.fList</code> for frequency-dependent circuits; use <code>nP.log(...)</code> to show values.</p>
+    </div>
     <div class="workspace">
-      <aside>
-        <div class="instructions">
-          <h2>Instructions</h2>
-          <p>Each example runs in an isolated browser frame with the global <code>nP</code> object available.</p>
-          <ol>
-            <li>Choose an example.</li>
-            <li>Modify the code.</li>
-            <li>Press <strong>Run</strong>.</li>
-            <li>Read the output or chart.</li>
-          </ol>
-          <p>Set <code>nP.global.fList</code> before creating frequency-dependent circuits. Use <code>nP.log(...)</code> to print values.</p>
-        </div>
-        <h2>Examples</h2>
-        <ol id="examples" aria-label="REPL starter examples"></ol>
-      </aside>
       <section>
-        <div class="toolbar">
+        <div id="code-toolbar" class="toolbar">
+          <h2>JS Code</h2>
           <button id="run" type="button">Run</button>
-          <button id="reset" type="button">Reset example</button>
+          <button id="view-output" type="button">View output</button>
+          <button id="clear" type="button">Clear</button>
+          <button id="reset" type="button" disabled>Reset example</button>
           <span id="status" class="status" role="status">Ready</span>
         </div>
         <textarea id="code" aria-label="JavaScript editor"></textarea>
-        <h2>Output</h2>
+        <div class="output-heading-row">
+          <h2 id="output-heading">Output</h2>
+          <button id="view-code" type="button">View Code</button>
+        </div>
         <iframe id="output" title="REPL output" sandbox="allow-scripts"></iframe>
         <p class="note">Code runs in an isolated output frame using the site's nP browser bundle.</p>
       </section>
@@ -150,27 +192,24 @@ onUnmounted(() => {
 </template>
 
 <style>
-.np-repl { box-sizing: border-box; width: 100%; max-width: 1280px; margin: 0 auto; padding: 2rem; font-family: Arial, sans-serif; color: var(--vp-c-text-1); }
-.np-repl .workspace { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 2rem; align-items: start; }
-.np-repl .workspace > * { min-width: 0; }
-.np-repl aside { position: sticky; top: 5rem; }
-.np-repl aside h2 { margin-top: 0; }
-.np-repl aside p, .np-repl aside li { color: var(--vp-c-text-2); font-size: .9rem; line-height: 1.45; }
-.np-repl aside ol { margin: .5rem 0 0; padding-left: 1.25rem; }
-.np-repl .example-button { display: block; width: 100%; margin: .35rem 0; padding: .45rem .55rem; border: 0; border-radius: 6px; color: var(--vp-c-brand-1); background: transparent; text-align: left; font-weight: 600; cursor: pointer; }
-.np-repl .example-button:hover, .np-repl .example-button.active { background: var(--vp-c-bg-soft); }
-.np-repl .instructions { padding-bottom: 1rem; border-bottom: 1px solid var(--vp-c-divider); }
+.np-repl { box-sizing: border-box; width: 100%; max-width: 1280px; margin: 0 auto; padding: 0 2rem 2rem; font-family: Arial, sans-serif; color: var(--vp-c-text-1); }
+.np-repl .workspace { min-width: 0; }
 .np-repl h1 { margin: 0 0 .5rem; font-size: 2rem; }
-.np-repl .intro { margin-top: 0; color: var(--vp-c-text-2); }
+.np-repl .intro { color: var(--vp-c-text-2); }
+.np-repl .intro p { margin: .5rem 0; }
 .np-repl .toolbar { display: flex; align-items: center; gap: 1rem; margin: 1.25rem 0 .5rem; }
-.np-repl .toolbar button { border: 0; border-radius: 999px; padding: .65rem 1.25rem; color: white; background: var(--vp-c-brand-1); font-weight: 700; cursor: pointer; }
-.np-repl .toolbar button:hover { background: var(--vp-c-brand-2); }
+.np-repl .toolbar button, .np-repl .output-heading-row button { border: 0; border-radius: 999px; padding: .65rem 1.25rem; color: white; background: var(--vp-c-brand-1); font-weight: 700; cursor: pointer; }
+.np-repl .toolbar button:hover, .np-repl .output-heading-row button:hover { background: var(--vp-c-brand-2); }
+.np-repl .toolbar button:disabled { opacity: .5; cursor: not-allowed; }
 .np-repl .status { color: var(--vp-c-text-2); font-size: .9rem; }
 .np-repl .CodeMirror { height: 420px; border: 1px solid var(--vp-c-divider); border-radius: 8px; font-size: .95rem; color: var(--vp-c-text-1); background: var(--vp-c-bg); }
 .np-repl textarea { display: block; width: 100%; min-height: 420px; }
 .np-repl h2 { margin: 1.5rem 0 .5rem; font-size: 1.2rem; }
+.np-repl .output-heading-row { display: flex; align-items: center; gap: 1rem; margin: 1.5rem 0 .5rem; }
+.np-repl .toolbar h2, .np-repl .output-heading-row h2 { margin: 0; padding: 0; border: 0; }
+.np-repl #code-toolbar,
+.np-repl #output-heading { scroll-margin-top: calc(var(--vp-nav-height, 64px) + 1rem); }
 .np-repl iframe { width: 100%; min-height: 360px; border: 1px solid var(--vp-c-divider); border-radius: 8px; background: white; }
 .np-repl .note { margin-top: 1rem; color: var(--vp-c-text-2); font-size: .9rem; }
-@media (max-width: 800px) { .np-repl .workspace { grid-template-columns: 1fr; } .np-repl aside { position: static; } }
-@media (max-width: 640px) { .np-repl { padding: 1rem; } .np-repl .toolbar { flex-wrap: wrap; } }
+@media (max-width: 640px) { .np-repl { padding: 0 1rem 1rem; } .np-repl .toolbar { flex-wrap: wrap; } }
 </style>
