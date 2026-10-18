@@ -5141,7 +5141,7 @@ function appendTooltipRows(tooltip, rows) {
     });
 }
 
-// Modified: 2026-10-06
+// Modified: 2026-10-18
 
 function lineChart(options = {}) {
             // ======== Options & defaults ========
@@ -5427,54 +5427,50 @@ function lineChart(options = {}) {
 
             // --- One function to copy the current SVG as PNG to clipboard ---
             function copyPNG() {
-                const containerDiv = container.node();
-                const svgElement = containerDiv.querySelector('svg');
+                if (!navigator.clipboard || !window.ClipboardItem) {
+                    console.error('Clipboard API for images is not supported in this browser/context.');
+                    return;
+                }
 
-                const serializer = new XMLSerializer();
-                const svgString = serializer.serializeToString(svgElement);
+                const pngBlob = new Promise((resolve, reject) => {
+                    const svgElement = container.node().querySelector('svg');
+                    const svgString = new XMLSerializer().serializeToString(svgElement);
+                    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+                    const url = URL.createObjectURL(svgBlob);
+                    const img = new Image();
 
-                const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
-                const url = URL.createObjectURL(svgBlob);
-
-                const img = new Image();
-                img.onload = async () => {
-                    const canvas = document.createElement("canvas");
-                    // Use rendered size
-                    canvas.width = svgElement.clientWidth || +svgElement.getAttribute('width') || 800;
-                    canvas.height = svgElement.clientHeight || +svgElement.getAttribute('height') || 600;
-
-                    const ctx = canvas.getContext("2d");
-
-                    // ------ NEW: optional background fill (defaults to transparent) ------
-                    if (effectiveBackgroundColor && effectiveBackgroundColor !== 'transparent') {
-                        ctx.save();
-                        ctx.globalCompositeOperation = 'source-over';
-                        ctx.fillStyle = effectiveBackgroundColor;    // e.g., 'white', '#fff', 'rgba(0,0,0,0.5)'
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-                        ctx.restore();
-                    }
-                    // --------------------------------------------------------------------
-
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-                    URL.revokeObjectURL(url);
-
-                    canvas.toBlob(async (blob) => {
+                    img.onload = () => {
                         try {
-                            await navigator.clipboard.write([
-                                new ClipboardItem({ "image/png": blob })
-                            ]);
-                            //console.log("Image copied to clipboard!");
+                            const canvas = document.createElement('canvas');
+                            canvas.width = svgElement.clientWidth || +svgElement.getAttribute('width') || 800;
+                            canvas.height = svgElement.clientHeight || +svgElement.getAttribute('height') || 600;
+                            const ctx = canvas.getContext('2d');
+
+                            if (effectiveBackgroundColor && effectiveBackgroundColor !== 'transparent') {
+                                ctx.fillStyle = effectiveBackgroundColor;
+                                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                            }
+
+                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                            canvas.toBlob((blob) => {
+                                if (blob) resolve(blob);
+                                else reject(new Error('Failed to create PNG blob'));
+                            }, 'image/png');
                         } catch (err) {
-                            //console.error("Failed to copy image:", err);
+                            reject(err);
+                        } finally {
+                            URL.revokeObjectURL(url);
                         }
-                    }, "image/png");
-                };
-                img.onerror = (e) => {
-                    URL.revokeObjectURL(url);
-                    console.error("Failed to load serialized SVG into Image", e);
-                };
-                img.src = url;
+                    };
+                    img.onerror = (err) => {
+                        URL.revokeObjectURL(url);
+                        reject(err);
+                    };
+                    img.src = url;
+                });
+
+                navigator.clipboard.write([new ClipboardItem({ 'image/png': pngBlob })])
+                    .catch((err) => console.error('Failed to copy chart PNG:', err));
             }
 
             // Chart Title
@@ -5819,7 +5815,7 @@ function lineChart(options = {}) {
 
         }
 
-// Modified: 2026-10-06
+// Modified: 2026-10-18
 
 function smithChart(options = {}) {
 	// ======== Options & defaults ========
@@ -6020,54 +6016,50 @@ function smithChart(options = {}) {
 	button.on('click', copyPNG);
 
 	function copyPNG() {
-		const containerDiv = container.node();
-		const svgElement = containerDiv.querySelector('svg');
+		if (!navigator.clipboard || !window.ClipboardItem) {
+			console.error('Clipboard API for images is not supported in this browser/context.');
+			return;
+		}
 
-		const serializer = new XMLSerializer();
-		const svgString = serializer.serializeToString(svgElement);
+		const pngBlob = new Promise((resolve, reject) => {
+			const svgElement = container.node().querySelector('svg');
+			const svgString = new XMLSerializer().serializeToString(svgElement);
+			const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+			const url = URL.createObjectURL(svgBlob);
+			const img = new Image();
 
-		const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-		const url = URL.createObjectURL(svgBlob);
-
-		const img = new Image();
-		img.onload = async () => {
-			const canvas = document.createElement('canvas');
-			// Use rendered size
-			canvas.width = svgElement.clientWidth || +svgElement.getAttribute('width') || 800;
-			canvas.height = svgElement.clientHeight || +svgElement.getAttribute('height') || 600;
-
-			const ctx = canvas.getContext('2d');
-
-			// ------ NEW: optional background fill (defaults to transparent) ------
-			if (effectiveBackgroundColor && effectiveBackgroundColor !== 'transparent') {
-				ctx.save();
-				ctx.globalCompositeOperation = 'source-over';
-				ctx.fillStyle = effectiveBackgroundColor;
-				ctx.fillRect(0, 0, canvas.width, canvas.height);
-				ctx.restore();
-			}
-			// --------------------------------------------------------------------
-
-			ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-			URL.revokeObjectURL(url);
-
-			canvas.toBlob(async (blob) => {
+			img.onload = () => {
 				try {
-					await navigator.clipboard.write([
-						new ClipboardItem({ 'image/png': blob })
-					]);
-					//console.log("Image copied to clipboard!");
+					const canvas = document.createElement('canvas');
+					canvas.width = svgElement.clientWidth || +svgElement.getAttribute('width') || 800;
+					canvas.height = svgElement.clientHeight || +svgElement.getAttribute('height') || 600;
+					const ctx = canvas.getContext('2d');
+
+					if (effectiveBackgroundColor && effectiveBackgroundColor !== 'transparent') {
+						ctx.fillStyle = effectiveBackgroundColor;
+						ctx.fillRect(0, 0, canvas.width, canvas.height);
+					}
+
+					ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+					canvas.toBlob((blob) => {
+						if (blob) resolve(blob);
+						else reject(new Error('Failed to create PNG blob'));
+					}, 'image/png');
 				} catch (err) {
-					//console.error("Failed to copy image:", err);
+					reject(err);
+				} finally {
+					URL.revokeObjectURL(url);
 				}
-			}, 'image/png');
-		};
-		img.onerror = (e) => {
-			URL.revokeObjectURL(url);
-			console.error("Failed to load serialized SVG into Image", e);
-		};
-		img.src = url;
+			};
+			img.onerror = (err) => {
+				URL.revokeObjectURL(url);
+				reject(err);
+			};
+			img.src = url;
+		});
+
+		navigator.clipboard.write([new ClipboardItem({ 'image/png': pngBlob })])
+			.catch((err) => console.error('Failed to copy Smith chart PNG:', err));
 	}
 
 	const txtChartTitle = svg.append('text')
@@ -6406,7 +6398,7 @@ function log(input) {
 	outputBox === undefined ? document.body.appendChild(pre) : outputBox.appendChild(pre);
 }
 
-// Modified: 2026-10-06
+// Modified: 2026-10-18
 
 function lineTable(options = {}) {
 		// ======== Options & defaults ========
@@ -6595,20 +6587,20 @@ function lineTable(options = {}) {
 		async function copyPNG() {
 			const node = svg.node();
 			try {
-				const blob = await svgToPngBlob(node, outerWidth, outerHeight);
-				if (!blob) throw new Error('Failed to create PNG blob');
-
 				if (!navigator.clipboard || !window.ClipboardItem) {
 					throw new Error('Clipboard API for images is not supported in this browser/context.');
 				}
 
-				await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+				const pngBlob = svgToPngBlob(node, outerWidth, outerHeight).then((blob) => {
+					if (!blob) throw new Error('Failed to create PNG blob');
+					return blob;
+				});
+				await navigator.clipboard.write([new ClipboardItem({ 'image/png': pngBlob })]);
 
 				//console.log("Image copied to clipboard!");
 
 			} catch (err) {
-				//console.error(err);
-				//console.error("Failed to copy image:", err);
+				console.error('Failed to copy table PNG:', err);
 			}
 		}
 

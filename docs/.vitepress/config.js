@@ -1,4 +1,4 @@
-// Modified: 2026-10-17
+// Modified: 2026-10-18
 import { examples } from './theme/replExamples.js'
 
 function replSidebarItems(category) {
@@ -46,6 +46,12 @@ export default {
                 items: [
                     { text: 'Hello nPort', link: '/hello-nport' },
                     { text: 'Introduction', link: '/introduction' }
+                ]
+            },
+            {
+                text: 'REPL',
+                items: [
+                    { text: 'Using the REPL', link: '/using-the-repl' }
                 ]
             },
             {

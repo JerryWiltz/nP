@@ -13,7 +13,7 @@ hero:
   actions:
     - theme: brand
       text: Get started
-      link: /introduction
+      link: /hello-nport
     - theme: alt
       text: View on GitHub
       link: https://github.com/JerryWiltz/nP
@@ -56,7 +56,7 @@ features:
     linkText: View chart APIs
 ---
 
-<!-- Modified: 2026-10-16 -->
+<!-- Modified: 2026-10-18 -->
 
 ## Start here
 

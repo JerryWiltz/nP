@@ -1,5 +1,5 @@
 # AGENTS.md
-<!-- Modified: 2026-10-17 -->
+<!-- Modified: 2026-10-18 -->
 
 Instructions for files in `docs/` and its subdirectories.
 
@@ -37,7 +37,7 @@ Prefer this flow over examples that hide topology inside legacy combined RLC con
 
 The runnable REPL examples live in `docs/.vitepress/theme/replExamples.js`. The sidebar groups and their order live in `docs/.vitepress/config.js`.
 
-- Give each example a unique, stable `id`, a clear `title`, a sidebar `category`, and runnable `code`. Reorder examples within a category by moving their array entries; avoid changing an existing ID because links and saved browser drafts use it.
+- Give each example a unique, stable `id`, a clear `title`, a sidebar `category`, and runnable `code`. Reorder examples within a category by moving their array entries; avoid changing an existing ID because links and the REPL's session buffer use it.
 - Make each example self-contained. Set the required analysis frequencies or time context before constructing dependent objects, and show a useful result with `nP.log()`, `nP.lineChart()`, `nP.lineTable()`, or `nP.smithChart()`.
 - Make RF topology visible: construct and name components before passing them to `nP.nodal()` or `nP.cascade()`. Use reference-designator-style names for electrical parts, and put each `nodal()` connection on its own line.
 - Put object properties on separate lines. Use blank lines between distinct stages such as settings, components, connections, outputs, and display. Keep truly small examples compact.

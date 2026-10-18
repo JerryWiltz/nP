@@ -1,4 +1,4 @@
-// Modified: 2026-10-06
+// Modified: 2026-10-18
 import * as d3 from 'd3';
 import {normalizeInputTables} from './inputTables';
 import {CHART_FONT_FAMILY, CHART_FONT_SIZE} from './chartTypography';
@@ -190,20 +190,20 @@ export function lineTable(options = {}) {
 		async function copyPNG() {
 			const node = svg.node();
 			try {
-				const blob = await svgToPngBlob(node, outerWidth, outerHeight);
-				if (!blob) throw new Error('Failed to create PNG blob');
-
 				if (!navigator.clipboard || !window.ClipboardItem) {
 					throw new Error('Clipboard API for images is not supported in this browser/context.');
 				}
 
-				await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+				const pngBlob = svgToPngBlob(node, outerWidth, outerHeight).then((blob) => {
+					if (!blob) throw new Error('Failed to create PNG blob');
+					return blob;
+				});
+				await navigator.clipboard.write([new ClipboardItem({ 'image/png': pngBlob })]);
 
 				//console.log("Image copied to clipboard!");
 
 			} catch (err) {
-				//console.error(err);
-				//console.error("Failed to copy image:", err);
+				console.error('Failed to copy table PNG:', err);
 			}
 		}
 
