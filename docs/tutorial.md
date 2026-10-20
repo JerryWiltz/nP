@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-16 -->
+<!-- Modified: 2026-10-19 -->
 # Tutorial
 
 These examples assume that the `nP` browser bundle has been loaded or the package has been imported as `nP`. The [Introduction](./introduction.md) explains the two analysis paths.
@@ -46,5 +46,7 @@ The clean reception above makes the signal path easy to inspect. By default, `de
 ## Continue exploring
 
 - [RF Constructors](./rf-constructors.md) introduces the component families.
-- [Noise figure and intermodulation](./noise-and-intermodulation.md) covers RF chain measurements.
-- The [detailed API reference](./guide.md) contains the existing function documentation.
+- [Noise](./noise.md) covers noise figure and output noise density.
+- [Intermodulation](./intermodulation.md) covers two-tone products and intercepts.
+- [Circuit examples](./circuit-examples.md) shows larger RF networks.
+- The [API topics](./global-settings.md) describe the current functions and their defaults.

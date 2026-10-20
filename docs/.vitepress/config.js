@@ -1,4 +1,4 @@
-// Modified: 2026-10-18
+// Modified: 2026-10-19
 import { examples } from './theme/replExamples.js'
 
 function replSidebarItems(category) {
@@ -36,6 +36,7 @@ export default {
             { text: 'Filters', items: replSidebarItems('filters') },
             { text: 'Microstrip', items: replSidebarItems('microstrip') },
             { text: 'Noise', items: replSidebarItems('noise') },
+            { text: 'Intermodulation', items: replSidebarItems('intermodulation') },
             { text: 'Nonlinear', items: replSidebarItems('nonlinear') },
             { text: 'Analog Modulation', items: replSidebarItems('analog-modulation') },
             { text: 'Digital Signals', items: replSidebarItems('digital-signals') }
@@ -58,14 +59,26 @@ export default {
                 text: 'More info',
                 items: [
                     { text: 'Tutorial', link: '/tutorial' },
-                    { text: 'Noise figure and intermodulation', link: '/noise-and-intermodulation' }
+                    { text: 'Circuit examples', link: '/circuit-examples' }
                 ]
             },
             {
                 text: 'API',
                 items: [
+                    { text: 'Global settings', link: '/global-settings' },
+                    { text: 'nPort object', link: '/nport-object' },
                     { text: 'RF Constructors', link: '/rf-constructors' },
-                    { text: 'Detailed API reference', link: '/guide' }
+                    { text: 'Connecting nPorts', link: '/connecting-nports' },
+                    { text: 'Charts, tables, and logs', link: '/charts-tables-and-logs' },
+                    { text: 'Noise', link: '/noise' },
+                    { text: 'Intermodulation', link: '/intermodulation' },
+                    { text: 'Digital signals', link: '/digital-signals' },
+                    { text: 'Math', link: '/math' },
+                    { text: 'Ideal components', link: '/ideal-components' },
+                    { text: 'Lumped components', link: '/lumped-components' },
+                    { text: 'Filters', link: '/filters' },
+                    { text: 'Microstrip', link: '/microstrip' },
+                    { text: 'Diodes and active components', link: '/diodes-and-active-components' }
                 ]
             }
           ]

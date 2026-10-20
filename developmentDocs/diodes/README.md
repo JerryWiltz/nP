@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-07 -->
+<!-- Modified: 2026-10-19 -->
 # Diode Development Notes
 
 Diode and nonlinear-device models live under `src/np-nport/src/diodes/`. The current public model is `nP.diode1N4148()`.
@@ -135,11 +135,15 @@ The returned rows are therefore compatible with `.out()`, `nP.nodal()`, `nP.casc
 
 This is a linearized small-signal RF model at one bias point. The same bias point also supplies approximate noise and weak-signal intermodulation sources. It is not a large-signal transient, harmonic-balance, or switching-storage simulation.
 
-## Noise and intermodulation
+## Noise
 
 The constructor creates a full two-port noise covariance at every analysis frequency. It combines series-resistance thermal noise with junction-current noise estimated from the larger of the equilibrium conductance noise and a weak shot-noise term, plus leakage noise. The noise level depends on the selected bias and temperature.
 
-When `global.twoTone` is set before construction, the S-parameter and noise rows include the second tone, IM2 and IM3 products, and second harmonics as well as the configured `fList` points. The diode's nonlinear source model uses current and junction-charge derivatives at the same DC bias point to estimate those products. The network solver propagates each generated product once through the linear S-parameter network; it does not calculate compression or nonlinear remixing. Use `.out(...)` on the diode or a containing network to inspect NF, noise floor, and intermodulation results.
+Use `.out(...)` on the diode or a containing network to inspect NF and output noise density.
+
+## Intermodulation
+
+When `global.twoTone` is set before construction, the S-parameter and noise rows include the second tone, IM2 and IM3 products, and second harmonics as well as the configured `fList` points. The diode's nonlinear source model uses current and junction-charge derivatives at the same DC bias point to estimate those products. The network solver propagates each generated product once through the linear S-parameter network; it does not calculate compression or nonlinear remixing. Use `.out(...)` on the diode or a containing network to inspect product powers and intercepts.
 
 ## DC I-V table
 
@@ -173,7 +177,8 @@ Preserve this inspectable metadata when extending the model. If a parameter is f
 - Parameters are representative datasheet anchors, not a statistical production spread.
 - Temperature scaling is included through thermal voltage, but not every physical parameter has an independent temperature coefficient.
 - The model assumes one bias point for the entire frequency sweep.
-- The noise and intermodulation estimates are weak-signal approximations, not measured device specifications. Charge conservation, transient recovery, compression, and large-signal distortion are not modeled.
+- The noise estimate is a weak-signal approximation, not a measured device specification.
+- The intermodulation estimate is a weak-signal approximation. Charge conservation, transient recovery, compression, and large-signal distortion are not modeled.
 
 These limits should remain visible so the convenience of the model is not mistaken for greater physical fidelity.
 

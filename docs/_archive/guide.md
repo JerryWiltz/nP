@@ -2,7 +2,7 @@
 outline: [1, 2]
 ---
 
-<!-- Modified: 2026-10-16 -->
+<!-- Modified: 2026-10-19 -->
 # Guide
 
 **nP** is a browser-oriented JavaScript library for constructing, analyzing, and visualizing RF and microwave networks. It supports complex arithmetic, matrix solving, S-parameters, n-port interconnection, lumped components, ideal transmission lines, physical microstrip models, nonlinear-device models, line charts, SVG tables, and Smith charts.
@@ -15,7 +15,7 @@ The normal workflow is:
 4. Extract selected S-parameter data with `.out(...)`.
 5. Render the result with `nP.lineChart()`, `nP.lineTable()`, or `nP.smithChart()`.
 
-For the current `Amp()` and `Attn()` constructors, noise-figure measurement options, two-tone IP2/IP3, and second harmonics, use the [noise and intermodulation guide](./noise-and-intermodulation.md). Those capabilities also work on networks returned by `nodal()` and `cascade()`.
+For the current `Amp()` and `Attn()` constructors, use [Noise](./noise.md) for noise-figure measurement options and [Intermodulation](./intermodulation.md) for two-tone IP2/IP3 and second harmonics. These capabilities also work on networks returned by `nodal()` and `cascade()`.
 
 ## Quick start
 
@@ -143,7 +143,7 @@ nPort.<b>getglobal</b> [<>](https://github.com/JerryWiltz/nP/blob/master/src/np-
 
 nPort1.<b>cas</b> (<i> nPort2 </i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/nPort.js "Source") cascades two 2-ports and creates a new nPort. Method chaining enabled.
 
-nPort.<b>out</b> (<i> 'sij|mag|dB|ang|Re|Im', ' ... ' </i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/nPort.js "Source") Creates an output data set that can be plotted with nP.lineChart() or can be seen in a table with nP.lineTable(). Arguments must be in quotes and separated by commas. For example for a filter 2-port named, ```filt1```, to specify an out(), the syntax would be,  ```filt1.out('s11mag','s11dB','s22ang')```. It also accepts `NF21dB`, `noiseFloor`, covariance, intermodulation, harmonic, and output-intercept selectors, described in the [noise and intermodulation guide](./noise-and-intermodulation.md).
+nPort.<b>out</b> (<i> 'sij|mag|dB|ang|Re|Im', ' ... ' </i>)[<>](https://github.com/JerryWiltz/nP/blob/master/src/np-nport/src/nPort.js "Source") Creates an output data set that can be plotted with nP.lineChart() or can be seen in a table with nP.lineTable(). Arguments must be in quotes and separated by commas. For example for a filter 2-port named, ```filt1```, to specify an out(), the syntax would be,  ```filt1.out('s11mag','s11dB','s22ang')```. It also accepts `NF21dB`, `noiseFloor`, covariance, intermodulation, harmonic, and output-intercept selectors, described in [Noise](./noise.md) and [Intermodulation](./intermodulation.md).
 
 * <b>mag</b> the magnitude of a complex number, such as an s-parameter
 * <b>ang</b> the angle

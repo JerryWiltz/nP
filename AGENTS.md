@@ -2,7 +2,7 @@ sudo npm install -g @openai/codex
 Read all applicable AGENTS.md files before working. Inspect the current Git status and latest commits, then continue from the repository’s current state.
 
 # AGENTS.md
-<!-- Modified: 2026-10-15 -->
+<!-- Modified: 2026-10-19 -->
 
 Repository guide for agents working in the `nP` repo.
 
@@ -254,7 +254,7 @@ Diode-related constructors live in `src/np-nport/src/diodes`. These models are e
 - `dev/`: local browser development and verification pages. These files are manual harnesses, not source of truth.
   - `dev/visualizationDevelopment.html` loads `../dist/nP.js` and exercises the built line-chart, line-table, and Smith-chart APIs.
   - `dev/microstripDevelopment.html`, `dev/matrixDevelopment.html`, and `dev/nodalDevelopment.html` are manual development pages for focused RF/math workflows.
-  - `dev/noiseAnalysis.html` and `dev/intermodAnalysis.html` exercise amplifier and attenuator noise, intermodulation, nodal, and cascade behavior.
+  - `dev/noiseAnalysis.html` exercises amplifier and attenuator noise through nodal and cascade connections. `dev/intermodAnalysis.html` exercises two-tone intermodulation through those connections.
   - `dev/raw/` holds raw technical source material, equation notes, and early derivations for work such as `mtee()`.
 
 The old subpackage-level build artifacts under `src/np-*` have been removed. Treat the root package and root Rollup config as the only current build path.

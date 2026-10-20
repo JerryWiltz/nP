@@ -22,41 +22,46 @@ features:
   - icon: 🧰
     title: Microwave engineering
     details: Build reusable n-port components for RF and microwave analysis.
-    link: /guide#np-nport
+    link: /nport-object
     linkText: Explore n-port analysis
   - icon: 🔬
     title: S-parameters
     details: Set frequencies, create circuits, and extract meaningful network data.
-    link: /guide#np-nport
+    link: /nport-object
     linkText: Learn the workflow
   - icon: ⚙️
     title: Transmission lines
     details: Work with ideal, coupled, and physical microstrip transmission lines.
-    link: /guide#np-transmission-lines
+    link: /ideal-components#a-lossless-line
     linkText: See transmission lines
   - icon: 🔗
     title: Network assembly
     details: Connect components with nodal interconnection or two-port cascade analysis.
-    link: /guide#np-connections
+    link: /connecting-nports
     linkText: Connect components
   - icon: 📡
-    title: Noise figure and intercepts
-    details: Analyze gain, noise floor, IP2, IP3, and harmonics in connected RF chains.
-    link: /noise-and-intermodulation
-    linkText: Analyze an RF chain
+    title: Noise
+    details: Analyze noise figure and output noise density in connected RF chains.
+    link: /noise
+    linkText: Analyze noise
+  - icon: 📶
+    title: Intermodulation
+    details: Analyze two-tone IP2, IP3, and harmonic products in connected RF chains.
+    link: /intermodulation
+    linkText: Analyze intermodulation
   - icon: ➕
     title: Math included
     details: Use complex-number and real or complex matrix operations directly from nP.
-    link: /guide#np-math
+    link: /math
     linkText: Browse math functions
   - icon: 📶
     title: Visualize results
     details: Render line charts, SVG tables, and Smith charts from nP output tables.
-    link: /guide#np-chart
+    link: /charts-tables-and-logs
     linkText: View chart APIs
 ---
 
-<!-- Modified: 2026-10-18 -->
+<!-- Modified: 2026-10-19 -->
 
 ## Start here
 
@@ -82,6 +87,6 @@ The browser bundle is also available as `dist/nP.js` and exposes the global `nP`
 4. Extract data with `.out(...)`.
 5. Display the result with `nP.lineChart()`, `nP.lineTable()`, or `nP.smithChart()`.
 
-Start with the [Introduction](./introduction.md), then follow the [Tutorial](./tutorial.md) for RF and digital signal examples. The [RF Constructors](./rf-constructors.md) page introduces the component families; the [detailed API reference](./guide.md) retains the existing function documentation. Physical-model design notes and equation provenance are maintained in the repository's [`developmentDocs/`](https://github.com/JerryWiltz/nP/tree/master/developmentDocs) directory.
+Start with the [Introduction](./introduction.md), then follow the [Tutorial](./tutorial.md) for RF and digital signal examples. The [RF Constructors](./rf-constructors.md) page introduces the component families; [Circuit examples](./circuit-examples.md) shows complete RF networks. Physical-model design notes and equation provenance are maintained in the repository's [`developmentDocs/`](https://github.com/JerryWiltz/nP/tree/master/developmentDocs) directory.
 
-For gain, noise figure, noise floor, IP2, IP3, and harmonics, see the [noise and intermodulation guide](./noise-and-intermodulation.md).
+For noise figure and output noise density, see [Noise](./noise.md). For IP2, IP3, and harmonics, see [Intermodulation](./intermodulation.md).

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-15 -->
+<!-- Modified: 2026-10-19 -->
 # np-nport Development Notes
 
 `src/np-nport/` contains the common n-port object, lumped components, ideal fixtures, transmission lines, physical microstrip models, noise and intermodulation helpers, and network-composition functions.
@@ -117,21 +117,36 @@ Cascade requires two-port inputs with aligned frequency rows and a common refere
 
 See [`../nodalAnalysis.md`](../nodalAnalysis.md) for its calling and connection invariants.
 
-### Noise and two-tone outputs
+### Noise outputs
 
-Set `global.fList` and, for intermodulation, `global.twoTone` before creating components. Every built-in constructor then supplies S and noise rows at the fundamentals and product frequencies. Custom nPorts need matching rows to join the same two-tone network.
+Set `global.fList` before creating components. Their noise covariance uses the temperature captured at construction.
+
+```js
+nP.global.fList = [1e9];
+
+var amp = nP.Amp({gainDb: 20, noiseFigureDb: 4});
+var attenuator = nP.Attn(3);
+var chain = nP.cascade(amp, attenuator);
+var noiseResults = chain.out('NF21dB', 'noiseFloor');
+```
+
+`noiseFloor` reports output noise density in dBm/Hz for input port 1 and output port 2, using matched 290 K measurement defaults. Port-specific forms such as `noiseFloor31dBmHz` work on larger nPorts. `nodal()`, `cas()`, and `cascade()` preserve combined noise covariance. Passive components contribute thermal noise at their captured temperature; ideal lossless parts add none. The diode model has bias-dependent noise.
+
+### Intermodulation outputs
+
+Set `global.twoTone` before creating components. Built-in constructors then supply S-parameter rows at both fundamentals and product frequencies. Custom nPorts need matching frequency rows to join the same two-tone network.
 
 ```js
 nP.global.fList = [1e9];
 nP.global.twoTone = {spacingHz: 1e6, p1dBm: -30, p2dBm: -25};
 
-var amp = nP.Amp({gainDb: 20, noiseFigureDb: 4, oip3dBm: 30});
+var amp = nP.Amp({gainDb: 20, oip3dBm: 30});
 var attenuator = nP.Attn(3);
 var chain = nP.cascade(amp, attenuator);
-var result = chain.out('s21dB', 'NF21dB', 'noiseFloor', 'OIP3lower21dBm');
+var intermodResults = chain.out('OIP3lower21dBm');
 ```
 
-`noiseFloor` reports output noise density in dBm/Hz for input port 1 and output port 2, using matched 290 K measurement defaults. Port-specific forms such as `noiseFloor31dBmHz` work on larger nPorts. `nodal()`, `cas()`, and `cascade()` return nPorts that can be reused without losing their combined noise or known nonlinear sources. Passive components contribute their thermal noise at their captured temperature; ideal lossless parts add none. The diode model has bias-dependent noise and weak junction-current and junction-charge nonlinear sources. The intermodulation solver propagates generated products once through the linear network; it does not model compression or nonlinear remixing.
+`nodal()`, `cas()`, and `cascade()` preserve known nonlinear sources. The diode model can supply weak junction-current and junction-charge sources. The intermodulation solver propagates generated products once through the linear network; it does not model compression or nonlinear remixing.
 
 ## Public port conventions
 

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-15 -->
+<!-- Modified: 2026-10-19 -->
 # Gupta matrices and intermodulation analysis
 
 This note uses a six-variable attenuator-amplifier network to develop nP's
@@ -55,9 +55,9 @@ nonlinear iterations because only the right-hand side changes.
 
 ## 5. From amplifier OIP2 and OIP3 to nonlinear coefficients
 
-The user supplies the amplifier's gain, noise data, and, when known, its
+The user supplies the amplifier's gain and, when known, its
 **output** IP2 and IP3 in dBm. The user does not supply polynomial
-coefficients. The noise data are separate from this conversion. An omitted
+coefficients. An omitted
 IP2 or IP3 means that order generates no product. Input tone powers and
 phases are chosen for the analysis later; they are not needed to determine
 the amplifier coefficients.
@@ -285,7 +285,7 @@ point, rather than one row per internal frequency.
 
 ### 7.2 Amplifier input data and product waves
 
-`Amp` keeps its present gain and noise inputs and accepts optional output-referred
+`Amp` accepts optional output-referred
 `oip2dBm` and `oip3dBm` values to its object form. A missing IP value means
 infinite intercept for that order: its nonlinear coefficient is zero and it
 generates no product of that order. These are extrapolated, matched, equal-tone
@@ -395,11 +395,10 @@ Use one 20 dB amplifier with finite OIP2/OIP3 and one matched 3 dB
 attenuator. With equal source conditions, Amp then Atten and Atten then Amp
 both have 17 dB small-signal gain. Relative to Amp then Atten, Atten then Amp
 has 3 dB less IM2 output and 6 dB less IM3 output: the attenuator reduces
-both tones before they drive the nonlinear amplifier. The two arrangements
-also retain their different noise figures.
+both tones before they drive the nonlinear amplifier.
 
 The tests build the same chain directly, as nested nodal networks, and as
-nested two-port cascades. Their external S-parameters, noise, and complex IM
+nested two-port cascades. Their external S-parameters and complex IM
 outputs agree within numerical tolerance. This checks that neither combining
 path loses nonlinear behavior when its returned nPort is reused.
 

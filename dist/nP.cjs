@@ -6284,118 +6284,101 @@ function smithChart(options = {}) {
 // Modified: 2026-08-18
 const version = '0.0.48';
 
-function CplxToCell(complexNumber) {
-	return complexNumber.x.toPrecision(4) + (complexNumber.y.toPrecision(4) >= 0 ? " +j" + complexNumber.y.toPrecision(4) : " -j" + (-complexNumber.y).toPrecision(4));
-}
-function createArray(myArray) {
-	var row = 0, element = '', html = '';
+// Modified: 2026-10-19
 
-	html = "<table><tbody>"; // fill in the table with one column only
-	for (row = 0; row < myArray.length; row++) {
-		if ( typeof myArray[row] === 'string') {
-			element = myArray[row];
-		} else if ( typeof myArray[row] === 'number') {
-			element = myArray[row].toPrecision(4);
-		} else if ( myArray[row].constructor.name === 'Complex') {
-			element = CplxToCell(myArray[row]);
-		} else {
-			element = '** ** **';
-		}		html +="<tr>";
-		html += "<td style='text-align: center; border-style: solid; border-width: 1px' width='140px'>" + element;
-		html += "</td>";
-		html +="</tr>";
-	}	html += "</tbody></table>"; // finish the one column table
-	return html; // return the one column table
+function isComplex(value) {
+	return value !== null && typeof value === 'object' &&
+		value.constructor && value.constructor.name === 'Complex' &&
+		typeof value.x === 'number' && typeof value.y === 'number';
 }
 
-function createTable (myMatrix) {
-	var row = 0, col = 0, html = "";
-
-	html = "<table><tbody>"; // fill in the table
-	for (row = 0; row < myMatrix.length; row++) {
-		html +="<tr>";
-		for (col = 0; col < myMatrix[0].length; col++) {
-			html += "<td style='text-align: center; border-style: solid; border-width: 1px' width='140px'>" + myMatrix[row][col].toPrecision(4);
-			html += "</td>";
-		}		html +="</tr>";
-	}	html += "</tbody></table>"; // finish the table
-
-	return html; // return the table
+function formatComplexCell(value) {
+	return value.x.toPrecision(4) +
+		(value.y >= 0 ? ' +j' : ' -j') +
+		Math.abs(value.y).toPrecision(4);
 }
 
-
-
-function createCplxTable (myMatrix) {
-	var row = 0, col = 0, html = "";
-
-	html = "<table><tbody>"; // fill in the table
-	for (row = 0; row < myMatrix.length; row++) {
-		html +="<tr>";
-		for (col = 0; col < myMatrix[0].length; col++) {
-			html += "<td style='text-align: center; border-style: solid; border-width: 1px' width='140px'>" + CplxToCell(myMatrix[row][col]);
-			html += "</td>";
-		}		html +="</tr>";
-	}	html += "</tbody></table>"; // finish the table
-
-	return html; // return the table
+function formatCell(value) {
+	if (typeof value === 'string') return value;
+	if (typeof value === 'number') return value.toPrecision(4);
+	if (isComplex(value)) return formatComplexCell(value);
+	return null;
 }
 
-function lineTable$1(out) {
-	var row = 0, col = 0, element = '', html = '';
+function validRows(rows, matrixOnly) {
+	if (!Array.isArray(rows) || rows.length === 0 ||
+		!Array.isArray(rows[0]) || rows[0].length === 0) return false;
 
-	html = "<table><tbody>"; // fill in the table with one column only
-	for (row = 0; row < out.length; row++) {
-		html +="<tr>";
-		for (col = 0; col < out[0].length; col++) {
-			if ( typeof out[row][col] === 'string') {
-				element = out[row][col];
-			} else if ( typeof out[row][col] === 'number') {
-				element = out[row][col].toPrecision(4);
-			} else if ( out[row][col].constructor.name === 'Complex') {
-				element = CplxToCell(out[row][col]);
-			} else {
-				element = '** ** **';
-			}			html += "<td style='text-align: center; border-style: solid; border-width: 1px' width='140px'>" + element;
-			html += "</td>";
-		}
-		html +="</tr>";
-	}	html += "</tbody></table>"; // finish the one column table
-	return html; // return the one column table
+	var width = rows[0].length;
+	return rows.every(row => Array.isArray(row) && row.length === width &&
+		row.every(value => (!matrixOnly || typeof value === 'number' || isComplex(value)) &&
+			formatCell(value) !== null));
 }
 
-function log(input) {
+function createTable(rows) {
+	var table = document.createElement('table');
+	var body = document.createElement('tbody');
+	table.appendChild(body);
+
+	rows.forEach(row => {
+		var tr = document.createElement('tr');
+		body.appendChild(tr);
+		row.forEach(value => {
+			var td = document.createElement('td');
+			td.setAttribute('style', 'text-align: center; border-style: solid; border-width: 1px');
+			td.setAttribute('width', '140px');
+			td.textContent = formatCell(value);
+			tr.appendChild(td);
+		});
+	});
+
+	return table;
+}
+
+function log(input, options = {}) {
 	var pre = document.createElement('pre');
-	var output = '';
-	var classAttr = document.createAttribute('class');
+	pre.className = 'outputSection remove';
 
-	// added this for webpage
-	var outputBox = document.getElementsByClassName('outputBox')[0];
-
-	classAttr.value = 'outputSection remove'; // added another class name for elements to be removed
-	pre.setAttributeNode(classAttr);
-	if ( typeof input === 'string'){
-		output = input;
-	} else if ( typeof input === 'number'){
-		output = input.toPrecision(4);
-	} else if ( typeof input === 'boolean' ){
-		output = input;
-	} else if ( input instanceof Array && input.m === undefined && !(input[0] instanceof Array) ) { // linear array
-		output = createArray(input);
-	} else if (input instanceof Array && input[0] instanceof Array) { // lineTable
-		output = lineTable$1(input);
-	} else if ( input.constructor.name === 'Complex') {
-		var real = '', imaginary = '';
-		real = input.getR().toPrecision(4);
-		imaginary = input.getI() >= 0 ? 'j' + input.getI().toPrecision(4) : '-j' + (Math.abs(input.getI())).toPrecision(4);
-		output = real + ', ' + imaginary;
-	} else if ( typeof input === 'object' && input.m.constructor.name === 'Array' && !(input.m[0][0].constructor.name === 'Complex')) { // matrix of real numbers 
-		output = createTable(input.m);
-	} else if ( typeof input === 'object' && input.m.constructor.name === 'Array' && input.m[0][0].constructor.name === 'Complex') { // matrix of Complex numbers
-		output = createCplxTable(input.m);
+	if (typeof input === 'string' || typeof input === 'number' || typeof input === 'boolean') {
+		pre.textContent = typeof input === 'number' ? input.toPrecision(4) : String(input);
+	} else if (isComplex(input)) {
+		pre.textContent = input.x.toPrecision(4) + ', ' +
+			(input.y >= 0 ? 'j' : '-j') + Math.abs(input.y).toPrecision(4);
+	} else if (Array.isArray(input)) {
+		if (input.length === 0) {
+			pre.appendChild(createTable([]));
+		} else if (Array.isArray(input[0])) {
+			if (validRows(input, false)) {
+				pre.appendChild(createTable(input));
+			} else {
+				pre.textContent = "nP.log can't read this input";
+			}
+		} else if (input.every(value => formatCell(value) !== null)) {
+			pre.appendChild(createTable(input.map(value => [value])));
+		} else {
+			pre.textContent = "nP.log can't read this input";
+		}
+	} else if (input !== null && typeof input === 'object' &&
+		Array.isArray(input.m) && validRows(input.m, true)) {
+		pre.appendChild(createTable(input.m));
 	} else {
-		output = "nP.log can't read this input";
-	}	pre.innerHTML = output;
-	outputBox === undefined ? document.body.appendChild(pre) : outputBox.appendChild(pre);
+		pre.textContent = "nP.log can't read this input";
+	}
+
+	var destination;
+	if (options && options.mount !== undefined) {
+		destination = typeof options.mount === 'string'
+			? document.querySelector(options.mount)
+			: options.mount;
+		if (!destination || typeof destination.appendChild !== 'function') {
+			throw new TypeError('nP.log(): mount must be a CSS selector or DOM element.');
+		}
+	} else {
+		destination = document.getElementsByClassName('outputBox')[0] || document.body;
+	}
+
+	destination.appendChild(pre);
+	return pre;
 }
 
 // Modified: 2026-10-18

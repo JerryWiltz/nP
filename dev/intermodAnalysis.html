@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-03 -->
+<!-- Modified: 2026-10-19 -->
 <!DOCTYPE html>
 <html>
 
@@ -14,10 +14,6 @@
     <div id="nodalTable"></div>
     <div id="cascadeChart"></div>
     <div id="cascadeTable"></div>
-    <div id="noiseFloorChart"></div>
-    <div id="noiseFloorTable"></div>
-    <div id="cascadeNoiseFloorChart"></div>
-    <div id="cascadeNoiseFloorTable"></div>
 
     <script>
         // Sweep f1 from 1 to 2 GHz. f2 is always 1 MHz above f1.
@@ -26,7 +22,6 @@
 
         var amp = nP.Amp({
             gainDb: 20,
-            noiseFigureDb: 4,
             oip2dBm: 42,
             oip3dBm: 30
         });
@@ -38,79 +33,43 @@
             ['out', 1, 3]
         );
 
-        var nodalResults = ampThenAtten.out('OIP3lower21dBm', 'NF21dB');
+        var nodalResults = ampThenAtten.out('OIP3lower21dBm');
         nP.lineChart({
             inputTable: [nodalResults],
             title: 'IP3 from nodal',
             mount: '#nodalChart',
             xAxisTitle: 'Frequency (GHz)',
-            yAxisTitle: 'Output IP3 (dBm) / NF (dB)',
+            yAxisTitle: 'Output IP3 (dBm)',
             yRange: [0, 30],
             metricPrefix: 'giga'
         });
         nP.lineTable({
             inputTable: [nodalResults],
-            title: 'IP3 and NF from nodal',
+            title: 'IP3 from nodal',
             mount: '#nodalTable',
             metricPrefix: 'giga',
             columnWidth: 170
         });
 
         var ampThenAttenCascade = nP.cascade(amp, attenuator);
-        var cascadeResults = ampThenAttenCascade.out('OIP3lower21dBm', 'NF21dB');
+        var cascadeResults = ampThenAttenCascade.out('OIP3lower21dBm');
         nP.lineChart({
             inputTable: [cascadeResults],
             title: 'IP3 from cascade',
             mount: '#cascadeChart',
             xAxisTitle: 'Frequency (GHz)',
-            yAxisTitle: 'Output IP3 (dBm) / NF (dB)',
+            yAxisTitle: 'Output IP3 (dBm)',
             yRange: [0, 30],
             metricPrefix: 'giga'
         });
         nP.lineTable({
             inputTable: [cascadeResults],
-            title: 'IP3 and NF from cascade',
+            title: 'IP3 from cascade',
             mount: '#cascadeTable',
             metricPrefix: 'giga',
             columnWidth: 170
         });
 
-        var outputNoiseFloor = ampThenAtten.out('noiseFloor');
-
-        nP.lineChart({
-            inputTable: [outputNoiseFloor],
-            title: 'Output noise floor (dBm/Hz) from nodal',
-            mount: '#noiseFloorChart',
-            xAxisTitle: 'Frequency (GHz)',
-            yAxisTitle: 'Output noise floor (dBm/Hz)',
-            yRange: [-200, -140],
-            metricPrefix: 'giga'
-        });
-        nP.lineTable({
-            inputTable: [outputNoiseFloor],
-            title: 'Output noise floor (dBm/Hz) from nodal',
-            mount: '#noiseFloorTable',
-            metricPrefix: 'giga',
-            columnWidth: 220
-        });
-
-        var cascadeNoiseFloor = ampThenAttenCascade.out('noiseFloor');
-        nP.lineChart({
-            inputTable: [cascadeNoiseFloor],
-            title: 'Output noise floor (dBm/Hz) from cascade',
-            mount: '#cascadeNoiseFloorChart',
-            xAxisTitle: 'Frequency (GHz)',
-            yAxisTitle: 'Output noise floor (dBm/Hz)',
-            yRange: [-200, -140],
-            metricPrefix: 'giga'
-        });
-        nP.lineTable({
-            inputTable: [cascadeNoiseFloor],
-            title: 'Output noise floor (dBm/Hz) from cascade',
-            mount: '#cascadeNoiseFloorTable',
-            metricPrefix: 'giga',
-            columnWidth: 220
-        });
     </script>
 </body>
 

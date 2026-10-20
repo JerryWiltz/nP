@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-15 -->
+<!-- Modified: 2026-10-19 -->
 # nP constructor catalog
 
 This catalog covers the 51 public functions that produce n-port objects from `src/np-nport/src/index.js`, the digital waveform functions from `src/np-digital`, and the exported math and low-pass prototype functions. Each JS call below spells out the **current defaults** where they exist. Each argument or property appears on its own line. Units are in comments. Each constructor has its own heading and code block.
@@ -1116,26 +1116,42 @@ var chain = amp.cas(
 
 `cas()` returns a **new** two-port. It combines the S matrices, noise covariance, deterministic signal waves when present, and known internal intermodulation sources without changing either input object. Both inputs must have the same frequency rows. `nP.cascade(amp, attenuator)` performs the same two-port operation; `nP.nodal()` handles arbitrary multiport connections.
 
-Here, `stage` is the single attenuator used in the earlier data examples. `chain` is the amplifier followed by the attenuator. Both `.out()` examples below measure `chain`: the first uses the default measurement conditions, and the second supplies a final options object to specify them.
+Here, `stage` is the single attenuator used in the earlier data examples. `chain` is the amplifier followed by the attenuator. The `.out()` calls below measure `chain`; the noise options example changes its measurement conditions.
 
 ### Extracting results with `.out()`
 
 ```js
-// nPort.out: extract gain, noise, and intermodulation results
-var table = chain.out(
-    's21dB',          // S21 magnitude in dB
-    'NF21dB',         // noise figure: output port 2, input port 1
-    'noiseFloor',     // output noise density at port 2, dBm/Hz
-    'OIP3lower21dBm' // two-tone output intercept, if configured
-);
+// S-parameter result
+var sParameters = chain.out('s21dB');
+
+// Noise results: output port 2, input port 1
+var noiseResults = chain.out('NF21dB', 'noiseFloor');
+```
+
+For intermodulation, construct a chain with two-tone settings and an output intercept:
+
+```js
+var intermodContext = nP.global();
+intermodContext.fList = [1e9];
+intermodContext.twoTone = {spacingHz: 1e6, p1dBm: -30, p2dBm: -25};
+
+var intermodAmp = nP.Amp({gainDb: 20, oip3dBm: 30});
+var intermodChain = nP.cascade(intermodAmp, nP.Attn(3));
+var intermodResults = intermodChain.out('OIP3lower21dBm');
 ```
 
 `out()` returns a chart-ready numeric table: `['Freq', ...selectors]` followed by one row per frequency selected when the nPort was constructed. The port digits are **output row, input column**; `NF31dB` means output port 3 from input port 1. Supported selector families are:
 
 - `s21dB`, `s21mag`, `s21ang`, `s21Re`, `s21Im`: S-parameter magnitude in dB, linear magnitude, phase in degrees, real part, or imaginary part.
+
+Noise selectors:
+
 - `c22`, `c12Re`, `c12Im`, `c12mag`, `c12dB`: intrinsic noise covariance entries; `c22` means the real part.
 - `NF21` or `NF21dB`: linear noise factor or noise figure in dB.
 - `noiseFloor` or `noiseFloor31dBmHz`: output noise density in dBm/Hz; `noiseFloor` means port 2 from port 1.
+
+Intermodulation selectors:
+
 - `IM2sum21dBm`, `IM2diff21dBm`, `IM3lower21dBm`, `IM3upper21dBm`: two-tone product power.
 - `H2f121dBm`, `H2f221dBm`: second-harmonic power for the first or second tone.
 - Matching `OIP...dBm` and `OIP2f...dBm` forms: extrapolated output intercepts.

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-16 -->
+<!-- Modified: 2026-10-19 -->
 # Introduction
 
 ## What is nP?
@@ -50,4 +50,5 @@ nP.lineChart({inputTable: [response], title: 'Series R-L response'});
 
 - Follow the [Tutorial](./tutorial.md) for an RF circuit and a digital signal path.
 - Browse [RF Constructors](./rf-constructors.md) to choose components.
-- Use the [detailed API reference](./guide.md) for the existing function documentation.
+- Browse the [API topics](./global-settings.md), starting with global settings and the nPort object.
+- Study [Circuit examples](./circuit-examples.md) for dividers, filters, and attenuators.

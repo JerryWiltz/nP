@@ -1,4 +1,4 @@
-// Modified: 2026-10-17
+// Modified: 2026-10-19
 // Add an example with a unique id, title, category, and code. Array order sets
 // sidebar order within a category; stable ids preserve links and browser drafts.
 // Sidebar categories and their section order are listed in config.js.
@@ -292,7 +292,7 @@ nP.log(ampFirst.out('s21dB', 'NF21dB'));
 
 nP.log('Attenuator first:');
 nP.log(attenuatorFirst.out('s21dB', 'NF21dB'));` },
-  { id: 'two-tone-ip3', title: 'Two-tone IM3 and OIP3', category: 'nonlinear', code: `nP.global.fList = nP.global.fGen(1e9, 1.1e9, 5);
+  { id: 'two-tone-ip3', title: 'Two-tone IM3 and OIP3', category: 'intermodulation', code: `nP.global.fList = nP.global.fGen(1e9, 1.1e9, 5);
 nP.global.twoTone = {
   spacingHz: 1e6,
   p1dBm: -30,
@@ -301,7 +301,6 @@ nP.global.twoTone = {
 
 var amp = nP.Amp({
   gainDb: 20,
-  noiseFigureDb: 4,
   oip3dBm: 30
 });
 var attenuator = nP.Attn(3);

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Modified: 2026-10-03 -->
+<!-- Modified: 2026-10-19 -->
 <html lang="en">
 
 <head>
@@ -25,9 +25,9 @@
         var defaultViaCascade = nP.cascade(defaultAmp, attenuator);
 
         nP.log('Amp() via nodal');
-        nP.log(defaultViaNodal.out('NF21dB'));
+        nP.log(defaultViaNodal.out('NF21dB', 'noiseFloor'));
         nP.log('Amp() via cascade');
-        nP.log(defaultViaCascade.out('NF21dB'));
+        nP.log(defaultViaCascade.out('NF21dB', 'noiseFloor'));
 
         var positionalAmp = nP.Amp(20, 4);
         var positionalViaNodal = nP.nodal(
@@ -38,9 +38,9 @@
         var positionalViaCascade = nP.cascade(positionalAmp, attenuator);
 
         nP.log('Amp(20, 4) via nodal');
-        nP.log(positionalViaNodal.out('NF21dB'));
+        nP.log(positionalViaNodal.out('NF21dB', 'noiseFloor'));
         nP.log('Amp(20, 4) via cascade');
-        nP.log(positionalViaCascade.out('NF21dB'));
+        nP.log(positionalViaCascade.out('NF21dB', 'noiseFloor'));
 
         var objectAmp = nP.Amp({
             spars: [
@@ -60,9 +60,9 @@
         var objectViaCascade = nP.cascade(objectAmp, attenuator);
 
         nP.log('Amp({...}) via nodal');
-        nP.log(objectViaNodal.out('NF21dB'));
+        nP.log(objectViaNodal.out('NF21dB', 'noiseFloor'));
         nP.log('Amp({...}) via cascade');
-        nP.log(objectViaCascade.out('NF21dB'));
+        nP.log(objectViaCascade.out('NF21dB', 'noiseFloor'));
     </script>
 </body>
 

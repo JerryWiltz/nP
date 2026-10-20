@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-16 -->
+<!-- Modified: 2026-10-19 -->
 # nP
 
 JavaScript tools for RF and microwave network analysis.
@@ -360,6 +360,8 @@ Every S-parameter entry inside an n-port is a complex value. Common `.out()` sel
 - `s21Re` — real part
 - `s21Im` — imaginary part
 
+## Noise
+
 Every n-port carries frequency-aligned noise covariance as well as S-parameters. Use `.out()` for noise figure or individual covariance entries:
 
 ```js
@@ -414,7 +416,7 @@ Set the swept first-tone frequencies and tone spacing **before** creating the co
 nP.global.fList = [1e9];
 nP.global.twoTone = {spacingHz: 1e8, p1dBm: -30, p2dBm: -25};
 
-var amp = nP.Amp({gainDb: 20, noiseFigureDb: 4,
+var amp = nP.Amp({gainDb: 20,
     oip2dBm: 42, harmonicOip2dBm: 40, oip3dBm: 30});
 var attenuator = nP.Attn(3);
 var chain = nP.nodal(
@@ -433,7 +435,7 @@ The optional `oip2dBm` and `oip3dBm` values are output-referred, matched, equal-
 
 Selectors `IM2diff21dBm`, `IM2sum21dBm`, `IM3lower21dBm`, and `IM3upper21dBm` report output product power for input port 1 and output port 2. `H2f121dBm` and `H2f221dBm` report the harmonics at 2f₁ and 2f₂; `OIP2f121dBm` and `OIP2f221dBm` report their output-referred harmonic intercepts. Other `OIP...` selectors report two-tone intercepts. For another port pair, change the two port digits; for ports numbered 10 or higher, use parentheses such as `H2f1(10,1)dBm`. `nodal()`, `cascade()`, and `nPort.cas()` preserve known internal nonlinear sources through nested combinations. Linear passive constructors add no IP2/IP3 products of their own, but propagate each product through their S-parameters at that frequency. The calculation propagates generated waves once through the linear S-parameter network at each product frequency. It does not calculate compression, nonlinear remixing, or time averaging. When a product coincides with another product or a fundamental, the reported product power is their coherent combined power; an OIP selector for that frequency raises an error because the separate intercept cannot be recovered.
 
-`nP.diode1N4148()` uses its DC bias point to generate a small-signal noise covariance and one-pass IM2, IM3, and second-harmonic sources. The noise model includes series-resistance thermal noise and an approximate junction-current noise level. The nonlinear source uses local current and junction-charge derivatives, so it is a weak-signal estimate around the selected bias, not a large-signal diode simulation or a datasheet-calibrated intercept model.
+`nP.diode1N4148()` uses its DC bias point to generate one-pass IM2, IM3, and second-harmonic sources. The nonlinear source uses local current and junction-charge derivatives, so it is a weak-signal estimate around the selected bias, not a large-signal diode simulation or a datasheet-calibrated intercept model. Its noise behavior is described in the noise section above.
 
 For a two-stage IP2 check, use the 15 dB A5 gain from Table 1 and its 40 dBm second-harmonic IP2 from Table 3 of Watkins-Johnson's [*Application Information for Thin Film Cascadable Amplifiers*](https://datasheet.datasheetarchive.com/originals/scans/Scans-068/DSA2IH00223110.pdf). The note says two-tone IP2 is approximately equal to second-harmonic IP2, so the 40 dBm `oip2dBm` inputs here are estimates. With matched stages and coherent IM2 addition, its general intercept rule gives 38.578 dBm for the cascade. The input tones may have different powers:
 
@@ -495,10 +497,12 @@ Current microstrip constructors include:
 | Digital waveforms | `PN()`, `mod()`, `demod()`, `bitErrorRate()` |
 | Mathematics | `complex()`, `matrix()`, `dim()`, `dup()`, `FFT()`, `invFFT()` |
 | Filter prototypes | `chebyLPNsec()`, `chebyLPgk()`, `chebyLPLCs()` |
-| Visualization | `lineChart()`, `lineTable()`, `smithChart()` |
+| Visualization | `lineChart()`, `lineTable()`, `smithChart()`, `log()` |
 | Nonlinear devices | `diode1N4148()` |
 
 The older combined RLC constructors remain available for compatibility, but new examples favor explicit components and `nP.nodal()`.
+
+`nP.log(value)` displays text or a simple table on the page. Use `nP.log(value, {mount: '#results'})` to choose a destination; without `mount`, it uses the first `.outputBox` or the document body. It returns the created `<pre>` element. Text is displayed literally, including any HTML markup characters.
 
 ## Port conventions
 
@@ -526,7 +530,7 @@ port 1 -----+
 - [`docs/`](docs/) contains the user documentation site.
 - [`developmentDocs/`](developmentDocs/) contains model provenance, equation notes, API decisions, and verification guidance.
 - [`dev/`](dev/) contains standalone browser development harnesses and focused Obsidian `npjs` examples.
-- [`docs/guide.md`](docs/guide.md) contains the detailed nP guide and constructor reference.
+- [`docs/circuit-examples.md`](docs/circuit-examples.md) shows complete RF networks; the [API pages](docs/global-settings.md) document the current functions and defaults.
 
 The related **nP RF Analysis** Obsidian plugin executes nP examples inside Markdown notes. It is maintained in a separate repository and consumes its own bundled copy of nP.
 

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-15 -->
+<!-- Modified: 2026-10-19 -->
 # Development pages
 
 The HTML files in this directory are executable browser harnesses that load
@@ -11,12 +11,12 @@ source changes, then keep a changed harness and its companion note aligned.
 | `chartDefaultsDevelopment.html` | Built-in line chart, line table, and Smith chart defaults | — |
 | `diodeDevelopment.html` | 1N4148 RF S-parameters and DC I-V | `diodeDevelopment.md` |
 | `edgeCoupledFilter.html` | Coupled-line filter with amplifier cascade | — |
-| `intermodAnalysis.html` | Two-tone amplifier then attenuator sweep: IP3, NF, and output noise floor from nodal and cascade | `intermodAnalysis.md` |
+| `intermodAnalysis.html` | Two-tone amplifier then attenuator sweep: IP3 from nodal and cascade | `intermodAnalysis.md` |
 | `manchesterDevelopment.html` | Manchester PSK transmit, cascade, and demodulation example (currently untracked) | — |
 | `matrixDevelopment.html` | Real and complex matrix operations | `matrixDevelopment.md` |
 | `microstripDevelopment.html` | Microstrip line, coupled line, tee, divider, and thin-film resistor | `microstripDevelopment.md` |
 | `nodalDevelopment.html` | Series and parallel nodal connections | `nodalDevelopment.md` |
-| `noiseAnalysis.html` | Three amplifier constructor forms compared through nodal and cascade NF | `noiseAnalysis.md` |
+| `noiseAnalysis.html` | Three amplifier constructor forms compared through nodal and cascade NF and output noise floor | `noiseAnalysis.md` |
 | `seriesTeeDevelopment.html` | Series tee regression harness | — |
 | `timeDomainDevelopment.html` | ASCII BER comparison and clocked PN7 through an attenuator and `demod()` | `timeDomainDevelopment.md` |
 | `visualizationDevelopment.html` | Line chart, line table, and Smith chart smoke harness | `visualizationDevelopment.md` |
@@ -33,7 +33,7 @@ npm run dev:smoke
 The check opens every `dev/*.html` page, reports page and console errors, and
 checks SVG output on its configured chart pages. `intermodAnalysis.html` uses
 `nP.global.twoTone` before component construction and passes `.out()` tables
-directly to charts and tables; its `noiseFloor` output is in dBm/Hz.
+directly to charts and tables. `noiseAnalysis.html` displays `noiseFloor` in dBm/Hz.
 
 Raw papers, downloaded references, and equation notes belong under `dev/raw/`.
 Repository-wide release and packaging plans belong under `developmentDocs/`.
