@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-19 -->
+<!-- Modified: 2026-10-21 -->
 # nP
 
 JavaScript tools for RF and microwave network analysis.
@@ -85,23 +85,52 @@ Local bundle entry points are:
 - `dist/nP.cjs` — CommonJS
 - `dist/nP.js` — UMD browser bundle exposing `nP`
 
-The math helpers also include `FFT()` and `invFFT()`. They accept a nonempty array of real numbers or `nP.complex()` values and return an array of complex values at the same length. The forward transform is unscaled; the inverse divides by the sample count. They work for arbitrary lengths, including the 768 samples in an eight-samples-per-bit, 96-bit ASCII message. They transform sample values only: with sample rate `Fs` and `N` samples, bin `k` is at `k * Fs / N` up to Nyquist; higher bins represent negative frequencies at `(k - N) * Fs / N`.
+The math helpers also include `FFT()` and `invFFT()`. Set `nP.global.tList` to one uniformly spaced time in seconds per sample before calling `FFT()`. It accepts an array of real numbers or `nP.complex()` values, returns an equally long array of complex frequency bins, and fills `global.fList` with their signed frequencies in hertz. The forward transform is unscaled; the inverse divides by the sample count. They work for arbitrary lengths, including the 768 samples in an eight-samples-per-bit, 96-bit ASCII message. With sample rate `Fs` and `N` samples, bin `k` is at `k * Fs / N` up to Nyquist; higher bins represent negative frequencies at `(k - N) * Fs / N`.
 
 ```js
-var spectrum = nP.FFT([1, 0, 0, 0]);
-var samples = nP.invFFT(spectrum);
-var realSamples = samples.map(function (value) { return value.getR(); });
-// spectrum: four complex values, each 1 + 0i
-// realSamples: approximately [1, 0, 0, 0]
+var g = nP.global;
+g.tList = g.tGen(0, 3e-3, 4);
+g.fList = [];
+var samples = [1, 0, 0, 0];
+var spectrum = nP.FFT(samples);
+var recovered = nP.invFFT(spectrum);
+
+nP.log('FFT bins:');
+nP.log(spectrum.out('magnitude')); // Frequency and magnitude table.
+
+nP.log('Recovered time samples:');
+nP.log(recovered.out('real'));      // Time and real value table.
 ```
+
+The returned values remain arrays of complex samples or bins. Each array also has `.out('real')`, `.out('imaginary')`, and `.out('magnitude')` for numeric tables. For real voltage samples, `spectrum.out('dBV')` gives a one-sided RMS voltage spectrum in dBV, with a −80 dBV display floor by default; pass `{floorDbv: -100}` as a second argument to change it. FFT tables include the nonnegative bins through Nyquist; inverse FFT tables include every time sample. These tables can be passed directly to `nP.lineChart()`.
+
+## Sample a periodic waveform
+
+Set `nP.global.tList` to the sample times in seconds, then call `nP.waveform()` for a triangle, square, full-wave rectified sine, or custom shape. Its `out('waveform')` table is ready for `lineChart()`, and `out('samples')` supplies values for `FFT()`.
+
+```js
+var g = nP.global;
+g.tList = g.tGen(0, 255e-3 / 256, 256);
+g.fList = [];
+var triangle = nP.waveform({period: 1e-3});
+var square = nP.waveform({shape: 'square', period: 1e-3});
+var rectified = nP.waveform({shape: 'rectifiedSine', period: 1e-3});
+var fft = nP.FFT(rectified.out('samples'));
+var harmonics = fft.out('dBV');
+```
+
+The default triangle rises halfway through each period between −1 V and +1 V; the default square spends half its period at each level. `rectifiedSine` ranges from 0 V to 1 V by default. Its `period` is the original sine period, while its output repeats every half period and has DC plus even multiples of the original frequency. A custom periodic waveform requires `shape: 'custom'` and `points: [[0, -1], [0.3e-3, 1], [1e-3, -1]]`; the points are linearly interpolated onto `tList`. `fft.out('dBV')` returns a chart-ready, one-sided RMS dBV table, with values below −80 dBV shown at that floor by default. Use `lineChart({inputTable: [harmonics], plotType: 'bar', barBaseline: -80})` for a discrete spectrum. See the [digital signals guide](docs/digital-signals.md) for charting and options. `mod({input: ...})` currently accepts PN waveforms only.
 
 ## Digital waveform through a circuit
 
-`mod()` and `demod()` provide a digital signal path. With `carrierHz: 0` (the default for PN, ASCII, and raw bits), `mod()` produces a baseband signal. A positive carrier moves a sampled waveform into the RF band before its FFT. The receiver uses mode-specific detection with known timing; carrier and clock recovery are not implemented. Use `tx.out('settings')` to inspect the carrier, sample rate, frequency count, and mode settings. `tx.out('frequency count')` gives the number of FFT frequencies, and `tx.out('frequency table')` returns `[['Bin', 'Frequency (Hz)'], ...]` for inspection or `lineTable()`. Check the count before constructing components or running `nodal()` on a large grid. To compare BER, use `nP.bitErrorRate(tx, chain, {receptions: 100})`.
+`mod()` and `demod()` provide a digital signal path. Set `global.tList` to the complete sample grid before `mod()`, with one time per generated waveform sample; `mod()` checks its count and spacing. With `carrierHz: 0` (the default for PN, ASCII, and raw bits), `mod()` produces a baseband signal. A positive carrier moves a sampled waveform into the RF band before its FFT. The receiver uses mode-specific detection with known timing; carrier and clock recovery are not implemented. Use `tx.out('settings')` to inspect the carrier, sample rate, frequency count, and mode settings. `tx.out('frequency count')` gives the number of FFT frequencies, and `tx.out('frequency table')` returns `[['Bin', 'Frequency (Hz)'], ...]` for inspection or `lineTable()`. Check the count before constructing components or running `nodal()` on a large grid. To compare BER, use `nP.bitErrorRate(tx, chain, {receptions: 100})`.
 
 For a direct connection with no circuit, pass the transmitter to `demod()`:
 
 ```js
+var g = nP.global;
+g.tList = g.tGen(0, 319 / 8e9, 320); // Five ASCII characters, 8 samples per bit.
+g.fList = [];
 var tx = nP.mod({mode: 'ASCII', message: 'hello', carrierHz: 200e6});
 var rx = nP.demod(tx);
 nP.log(rx.out('ASCII text'));
@@ -113,12 +142,14 @@ For separate digital circuits, create a context for each circuit and set its `fL
 
 ```js
 var g = nP.global();
+g.tList = g.tGen(0, 1015 / 8e9, 1016); // PN7: 127 bits × 8 samples.
 g.fList = [];
 var firstTx = nP.mod({mode: 'PN7'});
 var firstStage = nP.Attn(3);
 var firstCircuit = nP.cascade(firstStage, {signal: firstTx});
 
 var h = nP.global();
+h.tList = h.tGen(0, 319 / 8e9, 320); // Five ASCII characters × 8 samples.
 h.fList = [];
 var secondTx = nP.mod({mode: 'ASCII', message: 'hello'});
 var secondStage = nP.Thru();
@@ -127,14 +158,15 @@ var secondCircuit = nP.cascade(secondStage, {signal: secondTx});
 nP.global(g); // select the first circuit again before constructing more parts for it
 ```
 
-For a digital block before modulation, `tGen(start, stop, points)` returns a uniformly spaced time list in seconds and includes both endpoints. Each entry in `tList` is a **clock tick** for `PN()`; its register advances once per entry. Select `stages` from 2 through 16; the maximal-length period is `2 ** stages - 1` ticks, and `tList` must contain a whole number of periods. Seven stages is the default. `mod()` creates the finer FFT sampling grid, with eight samples per bit by default. `PN().out('waveform')` returns a chart-ready table of the voltage at each clock tick. For PN3, use `g.tList = g.tGen(0, 6e-9, 7)` and `nP.PN({stages: 3, time: g.tList})`.
+For a digital block before modulation, `tGen(start, stop, points)` returns a uniformly spaced time list in seconds and includes both endpoints. Each entry in the time list passed to `PN()` is a **clock tick**; its register advances once per entry. Select `stages` from 2 through 16; the maximal-length period is `2 ** stages - 1` ticks. Seven stages is the default. Before `mod()`, set `global.tList` to the finer sample grid, with eight samples per bit by default. `PN().out('waveform')` returns a chart-ready table of the voltage at each clock tick. For PN3, use `var clockTimes = g.tGen(0, 6e-9, 7)` and `nP.PN({stages: 3, time: clockTimes})`.
 
 ```js
 var g = nP.global();
-g.tList = g.tGen(0, 126e-9, 127); // 127 ticks, 1 ns apart
+var clockTimes = g.tGen(0, 126e-9, 127); // 127 ticks, 1 ns apart
+g.tList = g.tGen(0, 1015 / 8e9, 1016); // 8 samples per tick
 g.fList = [];
 
-var pn = nP.PN({stages: 7, time: g.tList});
+var pn = nP.PN({stages: 7, time: clockTimes});
 var tx = nP.mod({input: pn, carrierHz: 200e6});
 var chain = nP.cascade(nP.Attn(3), {signal: tx});
 var rx = nP.demod(chain);
@@ -144,11 +176,14 @@ nP.lineChart({inputTable: rx.out('carrier waveform')});
 nP.lineChart({inputTable: rx.out('waveform')});
 ```
 
-`mod({input: pn})` expands each PN bit to eight samples, applies the carrier when requested, transforms those samples, and fills `g.fList`. Use `mod({input: pn, samplesPerBit: 4})` to choose another FFT sampling density. The first clock tick is the FFT's zero-time reference; the PN period extends one clock interval beyond the last tick returned by `tGen()`. Direct shortcuts range from `mod({mode: 'PN2'})` through `mod({mode: 'PN16'})`; `PN7` remains the default. `mod().out('waveform')` returns its sampled transmit voltage. For a positive carrier, `demod().out('carrier waveform')` returns the received passband voltage, and `out('waveform')` returns the recovered bit levels. If `mod()` receives an explicit `fftList` array, it fills that array in place instead.
+`mod({input: pn})` expands each PN bit to eight samples, applies the carrier when requested, transforms those samples, and fills `g.fList`. Use `mod({input: pn, samplesPerBit: 4})` to choose another FFT sampling density, updating `g.tList` to match. The first clock tick is the FFT's zero-time reference; the PN period extends one clock interval beyond the last tick returned by `tGen()`. Direct shortcuts range from `mod({mode: 'PN2'})` through `mod({mode: 'PN16'})`; `PN7` remains the default. `mod().out('waveform')` returns its sampled transmit voltage. For a positive carrier, `demod().out('carrier waveform')` returns the received passband voltage, and `out('waveform')` returns the recovered bit levels. If `mod()` receives an explicit `fftList` array, it fills that array in place instead.
 
-`mod()` returns a signal description with a repeating bit sequence, complex FFT spectrum, frequency list, and an `out()` method. Use `tx.out('mode')`, `tx.out('bit count')`, `tx.out('sample count')`, `tx.out('frequency count')`, `tx.out('frequencies')`, or `tx.out('spectrum')` to inspect it. It fills the selected context's `fList` unless you supply an `fftList` array. Construct components after modulation so their S-parameter rows match.
+`mod()` returns a signal description with a repeating bit sequence, complex FFT spectrum, frequency list, and an `out()` method. Use `tx.out('mode')`, `tx.out('bit string')`, `tx.out('bit count')`, `tx.out('sample count')`, `tx.out('frequency count')`, `tx.out('frequencies')`, or `tx.out('spectrum')` to inspect it. The bit string contains the same sequence as `tx.bits`, written as consecutive `0` and `1` characters. It fills the selected context's `fList` unless you supply an `fftList` array. Construct components after modulation so their S-parameter rows match.
 
 ```js
+var g = nP.global;
+g.tList = g.tGen(0, 767 / 8e9, 768); // 96 bits × 8 samples.
+g.fList = [];
 var tx = nP.mod({mode: 'ASCII', message: 'hello, world', bitRate: 1e9, samplesPerBit: 8});
 var thru = nP.Thru();
 var chain = nP.nodal(
@@ -162,7 +197,7 @@ nP.lineChart({inputTable: rx.out('waveform'), title: 'hello, world through Thru'
 
 The example's ASCII message produces 96 bits. The default mode is `PN7`, with a 127-bit period, 1 Gbit/s, eight samples per bit, and 0/1 V levels. Use `{mode: 'bits', bits: '0101'}` for an explicit bit string or array. Set `lowVolts`, `highVolts`, `bitRate`, or `samplesPerBit` in the same options object. The sequence repeats periodically for the FFT calculation. `demod(chain, {outputPort: 3})` selects another output on a multiport nPort; port 2 is the default. For two-port chains, use `nP.cascade(firstStage, secondStage, {signal: tx, inputPort: 1})`. The input port defaults to 1. Signal sources combined in one network need matching sample rates, sample counts, FFT frequency rows, and reference impedances.
 
-`demod()` returns a receiver result with `.out('waveform')`, `.out('ASCII text')`, `.out('bits')`, `.out('bit count')`, `.out('sample count')`, `.out('frequency count')`, `.out('frequencies')`, and `.out('spectrum')`. It draws a new random noise waveform on every call, using the nPort's calculated source, termination, and component noise at each frequency. All outputs from the same receiver result use that same noise draw. The plotted `out('noiseFloor')` remains the repeatable average noise density. Use `{noise: false}` for an exact signal-only result.
+`demod()` returns a receiver result with `.out('waveform')`, `.out('ASCII text')`, `.out('bits')`, `.out('bit string')`, `.out('bit count')`, `.out('sample count')`, `.out('frequency count')`, `.out('frequencies')`, and `.out('spectrum')`. It draws a new random noise waveform on every call, using the nPort's calculated source, termination, and component noise at each frequency. All outputs from the same receiver result use that same noise draw. The plotted `out('noiseFloor')` remains the repeatable average noise density. Use `{noise: false}` for an exact signal-only result.
 
 `out('ASCII text')` uses the bit timing carried by `chain`, samples at each bit center, and estimates a threshold from the centers of the two received voltage levels. Pass `thresholdVolts` to `demod()` to set the decision level explicitly. A noisy bit can change the returned character; a received byte outside seven-bit ASCII becomes `�`. ASCII decoding needs complete eight-bit bytes and does not perform clock recovery or error correction. The default noise conditions are a matched 290 K source, matched terminations at 290 K, and a 0 K output load. The input port defaults to 1 and can be selected with `inputPort`.
 
@@ -175,7 +210,12 @@ For a BER measurement, `nP.bitErrorRate(tx, chain, {receptions: 100})` compares 
 Use `mode: 'OOK'` or `mode: 'ASK'` to name the carrier modulation explicitly. Both require a positive `carrierHz`. OOK defaults to 0 V for bit 0 and 1 V for bit 1; ASK defaults to 0.5 V and 1 V. `dataMode` selects the bits (`'PN2'` through `'PN16'`, `'ASCII'`, or `'bits'`) and defaults to `'PN7'`. If `message` or `bits` is supplied without `dataMode`, the data mode is inferred. A clocked `PN()` object can also be passed as `input`.
 
 ```js
+var g = nP.global;
+g.tList = g.tGen(0, 127 / 8e9, 128); // 'Hi': 16 bits × 8 samples.
+g.fList = [];
 var ook = nP.mod({mode: 'OOK', carrierHz: 200e6, message: 'Hi'});
+g.tList = g.tGen(0, 31 / 8e9, 32); // Four bits × 8 samples.
+g.fList = [];
 var ask = nP.mod({mode: 'ASK', carrierHz: 200e6,
     dataMode: 'bits', bits: '0101', lowVolts: 0.25, highVolts: 1});
 
@@ -193,6 +233,7 @@ For a sinusoidal modulation tone, `mod({mode: 'AM', ...})` creates exactly three
 
 ```js
 var g = nP.global();
+g.tList = g.tGen(0, 1e-3, 2);
 g.fList = [];
 var tx = nP.mod({mode: 'AM', carrierHz: 200e6, toneHz: 300,
     modulationIndex: 0.5, carrierAmplitudeVolts: 1});
@@ -215,6 +256,7 @@ For sinusoidal FM, supply `beta`, the modulation index. `mod()` creates the carr
 
 ```js
 var g = nP.global();
+g.tList = g.tGen(0, 1e-3, 2);
 g.fList = [];
 var tx = nP.mod({mode: 'FM', carrierHz: 200e6, toneHz: 300,
     beta: 5, carrierAmplitudeVolts: 1});
@@ -238,6 +280,7 @@ For PM, `beta` is the peak phase swing in **radians**. `mod()` uses a cosine pha
 
 ```js
 var g = nP.global();
+g.tList = g.tGen(0, 1e-3, 2);
 g.fList = [];
 var tx = nP.mod({mode: 'PM', carrierHz: 200e6, toneHz: 300, beta: 0.1});
 var stage = nP.Attn(3);
@@ -256,6 +299,7 @@ FSK sends each 0 at `carrierHz - frequencyDeviationHz` and each 1 at `carrierHz 
 
 ```js
 var g = nP.global();
+g.tList = g.tGen(0, 1023 / 640e6, 1024); // 'Hi': 16 bits × 64 samples.
 g.fList = [];
 var tx = nP.mod({mode: 'FSK', carrierHz: 200e6, bitRate: 10e6,
     samplesPerBit: 64, message: 'Hi'});
@@ -274,6 +318,7 @@ PSK keeps one carrier frequency and sends a 0 at 180° and a 1 at 0°. This is b
 
 ```js
 var g = nP.global();
+g.tList = g.tGen(0, 1023 / 640e6, 1024);
 g.fList = [];
 var tx = nP.mod({mode: 'PSK', carrierHz: 200e6, bitRate: 10e6,
     samplesPerBit: 64, message: 'Hi'});
@@ -289,6 +334,7 @@ To use Manchester (bi-phase) coding on the PSK carrier, add `encoding: 'Manchest
 
 ```js
 var g = nP.global();
+g.tList = g.tGen(0, 1023 / 640e6, 1024);
 g.fList = [];
 var tx = nP.mod({mode: 'PSK', encoding: 'Manchester',
     carrierHz: 200e6, bitRate: 10e6, samplesPerBit: 64,
@@ -306,6 +352,7 @@ The same `mod()` → components → `cascade()` or `nodal()` → `demod()` workf
 
 ```js
 var g = nP.global();
+g.tList = g.tGen(0, 1023 / 640e6, 1024);
 g.fList = [];
 var tx = nP.mod({mode: 'QPSK', carrierHz: 200e6,
     symbolRate: 5e6, samplesPerBit: 64, message: 'Hi'});
@@ -321,6 +368,9 @@ Available sampled digital modes are binary `DPSK`, `QPSK`, square `QAM` (orders 
 Single-tone analog `SSB` and `DSB-SC` use only their occupied tone frequencies, with no RF waveform FFT:
 
 ```js
+var g = nP.global;
+g.tList = g.tGen(0, 1e-3, 2);
+g.fList = [];
 var ssb = nP.mod({mode: 'SSB', sideband: 'USB',
     carrierHz: 200e6, toneHz: 300, toneAmplitudeVolts: 1});
 var suppressedAm = nP.mod({mode: 'DSB-SC',
@@ -494,7 +544,7 @@ Current microstrip constructors include:
 | Ideal transmission lines | `Tlin()`, `Tclin()` |
 | Network assembly | `nodal()`, `cascade()`, `nPort.cas()` |
 | Data extraction | `nPort.out()` |
-| Digital waveforms | `PN()`, `mod()`, `demod()`, `bitErrorRate()` |
+| Digital waveforms | `waveform()`, `PN()`, `mod()`, `demod()`, `bitErrorRate()` |
 | Mathematics | `complex()`, `matrix()`, `dim()`, `dup()`, `FFT()`, `invFFT()` |
 | Filter prototypes | `chebyLPNsec()`, `chebyLPgk()`, `chebyLPLCs()` |
 | Visualization | `lineChart()`, `lineTable()`, `smithChart()`, `log()` |

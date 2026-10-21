@@ -1,7 +1,7 @@
-// Modified: 2026-10-15
+// Modified: 2026-10-21
 import {receiveWaveform} from './receiverWaveform';
 import {demodulateAdvanced} from './advancedModes';
-import {FFT} from '../../np-math/src/fft';
+import {fftBins} from '../../np-math/src/fft';
 import {complex} from '../../np-math/src/complex';
 import {nPort} from '../../np-nport/src/nPort';
 import {applyInputSignal} from '../../np-nport/src/signal';
@@ -276,6 +276,7 @@ function demodFSK(receiver, signal) {
 			if (selector === 'mode') return 'FSK';
 			if (selector === 'data mode') return signal.dataMode;
 			if (selector === 'bits') return bits.slice();
+			if (selector === 'bit string') return bits.join('');
 			if (selector === 'bit count') return bits.length;
 			if (selector === 'tone energies') return energies.map(function (row) { return row.slice(); });
 			if (selector === 'tone frequencies Hz') return frequencies.slice();
@@ -364,8 +365,9 @@ export function demod(stage, options = {}) {
 				}));
 			}
 			if (selector === 'bits') return receivedBits().slice();
+			if (selector === 'bit string') return receivedBits().join('');
 			if (selector === 'bit count') return levels.length;
-			if (selector === 'spectrum') return FFT(baseband).slice(0, signal.rows.length);
+			if (selector === 'spectrum') return fftBins(baseband).slice(0, signal.rows.length);
 			if (selector === 'carrier spectrum') return receiver.out('spectrum');
 			if (selector === 'ASCII text') {
 				var bits = receivedBits();

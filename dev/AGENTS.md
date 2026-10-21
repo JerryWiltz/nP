@@ -1,5 +1,5 @@
 # AGENTS.md
-<!-- Modified: 2026-10-15 -->
+<!-- Modified: 2026-10-20 -->
 
 Instructions for files in `dev/`.
 
@@ -30,9 +30,9 @@ Write dev examples in this order so the circuit logic is easy to follow:
 6. Send the output table to `nP.lineChart()`, `nP.lineTable()`, or `nP.smithChart()`.
 
 This pattern is preferred over putting unrelated chart/table data directly into a dev page unless the page is specifically testing chart or table behavior.
-For periodic digital waveform pages, call `mod()` first. It returns a signal description and sets the FFT-bin `global.fList`; construct the components afterward, pass `{signal: tx, inputPort: 1}` as the final `nodal()` or `cascade()` argument, and pass the completed nPort to `demod()`. A direct connection can use `demod(tx)` without a circuit. The receiver includes a fresh noise waveform by default; use `{noise: false}` for exact signal-only checks. The returned receiver result provides `.out('waveform')`, `.out('ASCII text')`, `.out('bits')`, count selectors, frequencies, and the received spectrum. Use `bitErrorRate(tx, chain, {receptions: 100})` to compare known transmitted bits with repeated receiver decisions.
+For periodic digital waveform pages, set `global.tList` to one uniformly spaced time per final waveform sample, then call `mod()`. It validates the sample grid and sets the FFT-bin `global.fList`; construct the components afterward, pass `{signal: tx, inputPort: 1}` as the final `nodal()` or `cascade()` argument, and pass the completed nPort to `demod()`. A direct connection can use `demod(tx)` without a circuit. The receiver includes a fresh noise waveform by default; use `{noise: false}` for exact signal-only checks. The returned receiver result provides `.out('waveform')`, `.out('ASCII text')`, `.out('bits')`, count selectors, frequencies, and the received spectrum. Use `bitErrorRate(tx, chain, {receptions: 100})` to compare known transmitted bits with repeated receiver decisions.
 `mod()` supports a 0 Hz carrier and a positive real cosine carrier below sample Nyquist. With an optional `fftList` array, `mod()` fills that array without changing `global.fList`; pass it as `fList` to each component in that circuit. Without `fftList`, `mod()` sets `global.fList` as before. Use `tx.out('settings')` to inspect the selected grid. Positive-carrier demodulation uses the known carrier phase and bit timing. `bitErrorRate()` uses `demod()` by default.
-For a PN clock example, set the selected circuit context's `tList` to clock ticks and `fList` to `[]`. `PN({stages: 7, time: context.tList})` advances once per tick; `mod({input: pn})` creates FFT samples and fills `fList`. Construct n-port components after `mod()`.
+For a PN clock example, create a separate clock-time array and pass it as `PN({stages: 7, time: clockTimes})` so the register advances once per tick. Set the selected circuit context's `tList` to the expanded sample grid and `fList` to `[]` before `mod({input: pn})`. Construct n-port components after `mod()`.
 For two-tone examples, set `nP.global.twoTone` before constructing the components, and keep the actual `nP.nodal()` or `nP.cascade()` calls visible in the script. Use the same `.out()` table for a chart and its corresponding table. `out('noiseFloor')` supplies the matched 290 K output noise density in dBm/Hz; `out('NF21dB')` and intermodulation selectors can share the same nPort.
 
 ## Ideal Component Naming

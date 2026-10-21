@@ -1,4 +1,4 @@
-// Modified: 2026-10-18
+// Modified: 2026-10-21
 import * as d3 from 'd3';
 import {normalizeInputTables} from './inputTables';
 import {CHART_FONT_FAMILY, CHART_FONT_SIZE} from './chartTypography';
@@ -53,8 +53,11 @@ export function lineChart(options = {}) {
                 yScale = 'linear',
                 xAxisPosition = 'bottom',
                 yAxisPosition = 'left',
+                plotType = 'line',
+                barWidth = 4,
+                barBaseline = 0,
                 showPoints = true,
-                showLabels = true,
+                showLabels = plotType !== 'bar',
                 showGrid = true,
                 gridColor = '#e0e0e0',
                 traceColor = true, // true for color, false for gray
@@ -73,6 +76,17 @@ export function lineChart(options = {}) {
             } = options;
 
             const tables = normalizeInputTables(inputTable, 'lineChart', 'line');
+            if (plotType !== 'line' && plotType !== 'bar') {
+                throw new RangeError('lineChart: plotType must be line or bar.');
+            }
+            if (plotType === 'bar' && (!Number.isFinite(barWidth) || barWidth <= 0 ||
+                !Number.isFinite(barBaseline))) {
+                throw new RangeError('lineChart: barWidth must be positive and barBaseline must be finite.');
+            }
+            if (plotType === 'bar' && rawYRange &&
+                (barBaseline < Math.min(...rawYRange) || barBaseline > Math.max(...rawYRange))) {
+                throw new RangeError('lineChart: yRange must include barBaseline in bar mode.');
+            }
 
             // Starting font sizes since d3.axisBottom and d3.axisLeft will override the container styles
             const effectiveTitle = title ?? chartTitle ?? '';
@@ -139,11 +153,36 @@ export function lineChart(options = {}) {
             const xValues = formattedData.flatMap(d => d.yValues.map(v => v.xValue));
             const yValues = formattedData.flatMap(d => d.yValues.map(v => v.yValue));
 
-            const xRange = rawXRange
-                ? rawXRange.map(v => v / pickScale)
-                : d3.extent(xValues);
+            const distinctX = [...new Set(xValues)].sort((a, b) => a - b);
+            let xRange;
+            if (rawXRange) xRange = rawXRange.map(v => v / pickScale);
+            else if (plotType === 'bar') {
+                const first = distinctX[0];
+                const last = distinctX[distinctX.length - 1];
+                if (String(xScale).toLowerCase() === 'log') {
+                    if (first <= 0) throw new Error('xScale: log scale requires a positive domain.');
+                    const leftRatio = distinctX.length > 1 ? distinctX[1] / first : 1.1;
+                    const rightRatio = distinctX.length > 1 ? last / distinctX[distinctX.length - 2] : 1.1;
+                    xRange = [first / Math.sqrt(leftRatio), last * Math.sqrt(rightRatio)];
+                } else {
+                    const leftGap = distinctX.length > 1 ? distinctX[1] - first : Math.max(Math.abs(first) * 0.1, 1);
+                    const rightGap = distinctX.length > 1 ? last - distinctX[distinctX.length - 2] : leftGap;
+                    xRange = [first - leftGap / 2, last + rightGap / 2];
+                }
+            } else xRange = d3.extent(xValues);
 
-            const yRange = rawYRange || d3.extent(yValues);
+            const yRange = rawYRange || d3.extent(plotType === 'bar'
+                ? [...yValues, barBaseline] : yValues);
+            if (!rawYRange && plotType === 'line' && String(yScale).toLowerCase() === 'linear') {
+                const span = yRange[1] - yRange[0];
+                const padding = 0.05 * (span || Math.max(Math.abs(yRange[0]), 1));
+                yRange[0] -= padding;
+                yRange[1] += padding;
+            }
+            if (plotType === 'bar' && String(yScale).toLowerCase() === 'log' &&
+                (barBaseline <= 0 || yValues.some(value => value <= 0))) {
+                throw new Error('lineChart: log yScale in bar mode needs a positive baseline and positive values.');
+            }
 
             // Dimensions
             const innerWidth = width - layoutMargin.left - layoutMargin.right;
@@ -423,39 +462,60 @@ export function lineChart(options = {}) {
                 .style('font-size', `${axisFontPx}px`)
                 .text(yAxisTitle);
 
-            // Line generator
-            const line = d3.line()
-                .x(d => x(d.xValue))
-                .y(d => y(d.yValue))
-                .curve(d3.curveMonotoneX);
-
-            // Draw Lines & Points
+            // Draw traces
             const groups = g.selectAll('.lineGroup')
                 .data(formattedData)
                 .join('g')
                 .attr('class', 'lineGroup');
 
-            // Lines
-            groups.append('path')
-                .attr('d', d => line(d.yValues))
-                .attr('fill', 'none')
-                .attr('stroke', d => color(d.yName))
-                .attr('stroke-width', traceWidth);
+            let marks;
+            if (plotType === 'bar') {
+                const pixelX = distinctX.map(value => x(value));
+                const gaps = pixelX.slice(1).map((value, index) => value - pixelX[index]);
+                const nearestGap = gaps.length ? d3.min(gaps) : Infinity;
+                const actualBarWidth = Math.min(barWidth, nearestGap * 0.8 / formattedData.length);
+                const baselineY = y(barBaseline);
+                marks = groups.selectAll('line.bar')
+                    .data(d => d.yValues)
+                    .join('line')
+                    .attr('class', 'bar')
+                    .attr('x1', function (d) {
+                        const traceIndex = formattedData.indexOf(d3.select(this.parentNode).datum());
+                        return x(d.xValue) + (traceIndex - (formattedData.length - 1) / 2) * actualBarWidth;
+                    })
+                    .attr('x2', function () { return this.getAttribute('x1'); })
+                    .attr('y1', baselineY)
+                    .attr('y2', d => y(d.yValue))
+                    .attr('stroke', function () { return color(d3.select(this.parentNode).datum().yName); })
+                    .attr('stroke-width', actualBarWidth);
+            } else {
+                const line = d3.line()
+                    .x(d => x(d.xValue))
+                    .y(d => y(d.yValue))
+                    .curve(d3.curveMonotoneX);
+                groups.append('path')
+                    .attr('d', d => line(d.yValues))
+                    .attr('fill', 'none')
+                    .attr('stroke', d => color(d.yName))
+                    .attr('stroke-width', traceWidth);
+                if (showPoints) {
+                    marks = groups.selectAll('circle')
+                        .data(d => d.yValues)
+                        .join('circle')
+                        .attr('cx', d => x(d.xValue))
+                        .attr('cy', d => y(d.yValue))
+                        .attr('r', pointRadius)
+                        .attr('fill', function (d, i, nodes) {
+                            const groupData = d3.select(nodes[i].parentNode).datum();
+                            return color(groupData.yName);
+                        });
+                }
+            }
 
-            // Points
-            if (showPoints) {
+            if (marks) {
                 let tooltip; // shared between handlers
 
-                groups.selectAll('circle')
-                    .data(d => d.yValues)
-                    .join('circle')
-                    .attr('cx', d => x(d.xValue))
-                    .attr('cy', d => y(d.yValue))
-                    .attr('r', pointRadius)
-                    .attr('fill', function (d, i, nodes) {
-                        const groupData = d3.select(nodes[i].parentNode).datum();
-                        return color(groupData.yName);
-                    })
+                marks
                     .on('mouseenter', (event, d) => {
                         // ensure only one tooltip
                         container.select('.tooltip').remove();

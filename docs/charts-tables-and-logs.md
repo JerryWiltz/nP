@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-19 -->
+<!-- Modified: 2026-10-21 -->
 # Charts, tables, and logs
 
 Use `nP.lineChart()`, `nP.smithChart()`, and `nP.lineTable()` for visual results in a browser, or `nP.log()` for quick values. The charts and table accept the numeric tables returned by an [nPort's `.out()` method](./nport-object.md#read-results-with-out). Each call adds a display to the page.
@@ -35,6 +35,9 @@ nP.lineChart({
     yScale: 'linear',
     xAxisPosition: 'bottom',
     yAxisPosition: 'left',
+    plotType: 'line', // 'line' or 'bar'
+    barWidth: 4, // requested maximum SVG width per bar
+    barBaseline: 0, // bar starting value in y-axis units
     showPoints: true,
     showLabels: true,
     showGrid: true,
@@ -56,6 +59,8 @@ nP.lineChart({
 
 The sample table is independent of `nP.global.fList`. Properties shown as `undefined` are optional and normally omitted; they use the fallback described by the function. Pass your own `inputTable` when you have circuit results.
 
+When `yRange` is omitted, a linear line chart adds 5% of the data span above and below its values before rounding the axis ticks. This keeps traces at the data limits away from the plot border. An explicit `yRange`, bar chart, or logarithmic y-axis does not use this padding.
+
 `lineChart()` draws one trace for each column after the first. For an RF response, request the wanted selectors with `.out()`:
 
 ```js
@@ -74,6 +79,24 @@ nP.lineChart({
 ```
 
 Here, `metricPrefix: 'giga'` displays frequency values in GHz while `response` keeps its original hertz values. The default is `'giga'`. Use `'mega'` for MHz or `'none'` if your x values are already in the displayed unit. The chart also supports axis titles, linear or logarithmic scales, trace labels, grid lines, and explicit x/y ranges.
+
+For discrete spectra, use `plotType: 'bar'`. Each data point becomes a narrow bar centered at its x value; bars do not connect. `barWidth` requests the maximum width in SVG pixels, and the chart narrows bars when x values are close enough to overlap. Bar mode includes `barBaseline` (default 0) in its automatic y range and hides endpoint trace labels by default. Set `barBaseline` explicitly when plotting already-converted dBm values from a chosen display floor; dBm values themselves belong on a linear y-axis. A logarithmic y-axis requires a positive baseline and positive data values.
+
+```js
+nP.lineChart({
+    inputTable: [[
+        ['Frequency', 'Peak amplitude'],
+        [1000, 1],
+        [2000, 0],
+        [3000, 0.33]
+    ]],
+    title: 'Harmonic spectrum',
+    plotType: 'bar',
+    barWidth: 4,
+    metricPrefix: 'kilo',
+    yAxisTitle: 'Peak amplitude'
+});
+```
 
 ### Returned API
 

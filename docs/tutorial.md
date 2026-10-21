@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-19 -->
+<!-- Modified: 2026-10-20 -->
 # Tutorial
 
 These examples assume that the `nP` browser bundle has been loaded or the package has been imported as `nP`. The [Introduction](./introduction.md) explains the two analysis paths.
@@ -30,6 +30,7 @@ Create a separate analysis context, then call `mod()` before constructing the at
 
 ```js
 var context = nP.global();
+context.tList = context.tGen(0, 319 / 8e9, 320); // 'hello': 40 bits × 8 samples.
 context.fList = [];
 
 var tx = nP.mod({mode: 'ASCII', message: 'hello'});

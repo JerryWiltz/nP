@@ -1,5 +1,5 @@
 <script setup>
-// Modified: 2026-10-18
+// Modified: 2026-10-20
 import { onMounted, onUnmounted, ref } from 'vue'
 import { withBase } from 'vitepress'
 import { examples } from './replExamples'
@@ -15,10 +15,10 @@ let sidebarMenuLabel
 let originalSidebarMenuLabel
 let publicApiPromise
 
-function resizeSingleChart(event) {
-  if (event.source !== outputFrame?.contentWindow || event.data?.type !== 'np-repl-single-chart-height') return
+function resizeOutput(event) {
+  if (event.source !== outputFrame?.contentWindow || event.data?.type !== 'np-repl-chart-height') return
   const height = Number(event.data.height)
-  if (Number.isFinite(height) && height > 0 && height < 10000) {
+  if (Number.isFinite(height) && height > 0) {
     outputFrame.style.height = `${Math.max(360, height)}px`
   }
 }
@@ -69,7 +69,16 @@ function readSessionBuffer() {
   try {
     const saved = JSON.parse(sessionStorage.getItem(sessionBufferKey) || 'null')
     if (saved && typeof saved.code === 'string') {
-      return { code: saved.code, activeId: exampleById[saved.activeId] ? saved.activeId : null }
+      const activeId = exampleById[saved.activeId] ? saved.activeId : null
+      const exampleCode = activeId ? exampleById[activeId].code : null
+      const priorTrapezoidCode = activeId === 'trapezoid-fft-round-trip'
+        ? exampleCode.replace("  shape: 'custom',\n", '')
+        : null
+      const unchangedExample = activeId && (
+        saved.code === saved.exampleCode ||
+        (typeof saved.exampleCode !== 'string' && saved.code === priorTrapezoidCode)
+      )
+      return { code: unchangedExample ? exampleCode : saved.code, activeId, exampleCode }
     }
   } catch {
     // Keep using the editor when browser storage is unavailable.
@@ -105,7 +114,7 @@ onMounted(async () => {
   const textarea = container.querySelector('#code')
   const output = container.querySelector('#output')
   outputFrame = output
-  window.addEventListener('message', resizeSingleChart)
+  window.addEventListener('message', resizeOutput)
   const status = container.querySelector('#status')
   const resetButton = container.querySelector('#reset')
   const lintResults = container.querySelector('#lint-results')
@@ -113,6 +122,7 @@ onMounted(async () => {
   const legacyDraft = takeLegacyDraft()
   const initialBuffer = savedBuffer || legacyDraft
   let activeId = initialBuffer?.activeId ?? null
+  let exampleCode = initialBuffer?.exampleCode ?? (activeId ? exampleById[activeId].code : null)
   let loadingExample = false
   let runVersion = 0
 
@@ -159,7 +169,7 @@ onMounted(async () => {
     try {
       const code = editor.getValue()
       if (!code && activeId === null) sessionStorage.removeItem(sessionBufferKey)
-      else sessionStorage.setItem(sessionBufferKey, JSON.stringify({ code, activeId }))
+      else sessionStorage.setItem(sessionBufferKey, JSON.stringify({ code, activeId, exampleCode }))
     } catch {
       // Keep the current code in the editor when browser storage is unavailable.
     }
@@ -179,6 +189,7 @@ onMounted(async () => {
     const example = exampleById[id]
     if (!example || id === activeId) return
     activeId = id
+    exampleCode = example.code
     loadingExample = true
     editor.setValue(example.code)
     loadingExample = false
@@ -195,8 +206,9 @@ onMounted(async () => {
   else textarea.addEventListener('input', saveBuffer)
 
   resetButton.addEventListener('click', () => {
+    exampleCode = exampleById[activeId].code
     loadingExample = true
-    editor.setValue(exampleById[activeId].code)
+    editor.setValue(exampleCode)
     loadingExample = false
     editor.clearHistory()
     status.textContent = 'Example reset'
@@ -209,6 +221,7 @@ onMounted(async () => {
     editor.setValue('')
     loadingExample = false
     activeId = null
+    exampleCode = null
     resetButton.disabled = true
     history.replaceState(history.state, '', location.pathname + location.search)
     output.onload = null
@@ -255,7 +268,7 @@ onMounted(async () => {
     const sourceLiteral = JSON.stringify(`${code}\n//# sourceURL=np-debug.js`).replace(/</g, '\\u003c')
     status.textContent = 'Running…'
     output.style.height = ''
-    output.srcdoc = `<!doctype html><html><head><meta charset="utf-8"><style>body{font:14px Arial,sans-serif;margin:1rem;color:#1f2937}pre{white-space:pre-wrap}.error{color:#b91c1c}svg{max-width:100%;height:auto}</style></head><body><div id="result"></div><script>const userSource=${sourceLiteral};function showError(error){document.getElementById('result').innerHTML='<pre class="error">'+String(error).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</pre>'; }function reportChartHeight(){if(document.querySelectorAll('svg.svgContainerClass,svg.smith-chart-svg').length!==1)return;const margin=parseFloat(getComputedStyle(document.body).marginBottom)||0;const height=Math.ceil(document.body.getBoundingClientRect().bottom+margin+4);parent.postMessage({type:'np-repl-single-chart-height',height},'*');}window.onerror=function(message){showError(message);};function execute(){try{new Function(userSource)();requestAnimationFrame(reportChartHeight);new ResizeObserver(reportChartHeight).observe(document.body);}catch(error){console.error(error);showError(error.stack||error);}}<\/script><script src="${withBase('/nP.js')}" onload="execute()" onerror="showError('Unable to load the nP browser bundle.')"><\/script></body></html>`
+    output.srcdoc = `<!doctype html><html><head><meta charset="utf-8"><style>body{font:14px Arial,sans-serif;margin:1rem;color:#1f2937}pre{white-space:pre-wrap}.error{color:#b91c1c}svg{max-width:100%;height:auto}</style></head><body><div id="result"></div><script>const userSource=${sourceLiteral};function reportOutputHeight(){const body=document.body;const bottom=Array.from(body.children).reduce((height,child)=>Math.max(height,child.getBoundingClientRect().bottom),0);const margin=parseFloat(getComputedStyle(body).marginBottom)||0;parent.postMessage({type:'np-repl-chart-height',height:Math.ceil(bottom+margin+4)},'*');}function showError(error){document.getElementById('result').innerHTML='<pre class="error">'+String(error).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</pre>';requestAnimationFrame(reportOutputHeight);}window.onerror=function(message){showError(message);};function execute(){try{new Function(userSource)();}catch(error){console.error(error);showError(error.stack||error);}requestAnimationFrame(reportOutputHeight);new ResizeObserver(reportOutputHeight).observe(document.body);}<\/script><script src="${withBase('/nP.js')}" onload="execute()" onerror="showError('Unable to load the nP browser bundle.')"><\/script></body></html>`
     output.onload = () => { status.textContent = warningCount ? `Finished (${warningCount} lint warning${warningCount === 1 ? '' : 's'})` : 'Finished' }
   })
 })
@@ -263,7 +276,7 @@ onMounted(async () => {
 onUnmounted(() => {
   disposed = true
   if (sidebarMenuLabel?.textContent === 'Code examples') sidebarMenuLabel.textContent = originalSidebarMenuLabel
-  window.removeEventListener('message', resizeSingleChart)
+  window.removeEventListener('message', resizeOutput)
   if (loadExampleFromHash) window.removeEventListener('hashchange', loadExampleFromHash)
   if (editor?.toTextArea) editor.toTextArea()
 })

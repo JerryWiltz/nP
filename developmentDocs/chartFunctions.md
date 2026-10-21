@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-15 -->
+<!-- Modified: 2026-10-21 -->
 # Chart and table functions
 
 `nP.lineChart()`, `nP.lineTable()`, and `nP.smithChart()` display data in a browser. They take one options object, append a container `<div>` to `mount` (the document body by default), and draw an SVG inside it. They return display objects, not nPorts. The examples below use tables returned by an nPort's `.out()` method.
@@ -53,6 +53,9 @@ var chart = nP.lineChart({
     yScale: 'linear',         // 'linear' or 'log'
     xAxisPosition: 'bottom',  // 'bottom', 'top', or 'origin'
     yAxisPosition: 'left',    // 'left', 'right', or 'origin'
+    plotType: 'line',         // 'line' or 'bar'
+    barWidth: 4,             // requested maximum bar width in SVG pixels
+    barBaseline: 0,          // y-axis value from which bars extend
     showPoints: true,
     showLabels: true,
     showGrid: true,
@@ -73,7 +76,9 @@ var chart = nP.lineChart({
 // returns an object with the container, SVG, chart elements, and style setters
 ```
 
-The chart derives its range from the data when `xRange` or `yRange` is omitted. Log scales require a positive range. To start a dB plot at zero, set `yRange: [0, upperLimit]`. An `xRange` in Hz is divided by `metricPrefix` along with the data. Hovering over a point shows `Trace`, the x-axis value, and `Value` with the y-axis title. When the x-axis title is `Frequency` or `Freq`, the tooltip shows the frequency unit selected by `metricPrefix`, such as `Frequency: 3.00 GHz`. Endpoint trace labels are spaced vertically when their y positions are too close, even if their x positions differ. `plotBorderColor` and `plotBorderWidth` outline only the plotted x-y area, inside the SVG margins.
+The chart derives its range from the data when `xRange` or `yRange` is omitted. Automatic linear line-chart y ranges add 5% of the data span on each side before tick rounding, so extrema stay inside the plot border. Constant-valued traces use 5% of the larger of the absolute value or 1. Explicit `yRange`, bar charts, and logarithmic y scales do not use this padding. Log scales require a positive range. To start a dB plot at zero, set `yRange: [0, upperLimit]`. An `xRange` in Hz is divided by `metricPrefix` along with the data. Hovering over a point shows `Trace`, the x-axis value, and `Value` with the y-axis title. When the x-axis title is `Frequency` or `Freq`, the tooltip shows the frequency unit selected by `metricPrefix`, such as `Frequency: 3.00 GHz`. Endpoint trace labels are spaced vertically when their y positions are too close, even if their x positions differ. `plotBorderColor` and `plotBorderWidth` outline only the plotted x-y area, inside the SVG margins.
+
+With `plotType: 'bar'`, the chart draws a separate vertical bar at each x value. Its width is at most `barWidth` SVG pixels and is narrowed when necessary to leave space between neighboring x positions or grouped traces. The default `barBaseline` is zero, and automatic y limits include it. Set a different baseline for already-converted dBm values, for example a display floor of `-120`; keep `yScale: 'linear'` for dBm. An explicit `yRange` must include the baseline. Bar mode hides endpoint trace labels by default and retains hover values for nonzero bars.
 
 ## `lineTable()`
 

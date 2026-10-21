@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-19 -->
+<!-- Modified: 2026-10-20 -->
 # Connecting nPorts
 
 Constructors such as `nP.R()`, `nP.L()`, and `nP.Tee()` return [nPort objects](./nport-object.md). Connect those objects to make a larger circuit, then call `.out()` on the result. Set the [analysis frequencies](./global-settings.md#frequency-list) before creating the components.
@@ -123,4 +123,4 @@ var complete = nP.cascade(stage, attenuator);
 
 Components in the same connection must have the **same frequency rows in the same order**. `nodal()` and `cascade()` reject mismatched rows; they do not interpolate. Build connected components with matching `fList` values and the same reference impedance `Ro`. Set two-tone analysis before constructing all stages if the network needs intermodulation products.
 
-For a digital or analog source, create the source with `nP.mod()` before its frequency-dependent components, then attach `{signal: tx}` as the final argument to `nodal()` or `cascade()`. The [Tutorial](./tutorial.md#send-a-digital-signal-through-a-circuit) shows that sequence.
+For a digital or analog source, select a valid `nP.global.tList` before `nP.mod()`. Sampled modes need one time per generated waveform sample. Create the source before its frequency-dependent components, then attach `{signal: tx}` as the final argument to `nodal()` or `cascade()`. The [Tutorial](./tutorial.md#send-a-digital-signal-through-a-circuit) shows that sequence.

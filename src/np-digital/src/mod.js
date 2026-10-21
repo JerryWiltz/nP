@@ -1,9 +1,10 @@
-// Modified: 2026-10-15
+// Modified: 2026-10-21
 import {createSourceWaveform} from './sourceWaveform';
 import {modulateAdvanced} from './advancedModes';
-import {FFT} from '../../np-math/src/fft';
+import {fftBins} from '../../np-math/src/fft';
 import {complex} from '../../np-math/src/complex';
 import {global} from '../../np-global/src/global';
+import {sampleRateFromTime} from '../../np-global/src/timeGrid';
 
 // A single sinusoidal AM input has only a carrier and two sidebands.
 function analogAM(options) {
@@ -129,7 +130,7 @@ function analogAngle(options) {
 		var phase = beta * (mode === 'PM' ? Math.cos(theta) : Math.sin(theta));
 		return complex(Math.cos(phase), Math.sin(phase));
 	});
-	var coefficients = FFT(phaseSamples);
+	var coefficients = fftBins(phaseSamples);
 	var retainedPower = coefficients[0].mag() ** 2 / coefficientSamples ** 2;
 	var sidebandOrder = 0;
 	while (1 - retainedPower > tolerance && sidebandOrder < coefficientSamples / 2 - 1) {
@@ -195,6 +196,7 @@ export function mod(options = {}) {
 	if (!options || Array.isArray(options) || typeof options !== 'object') {
 		throw new TypeError('mod expects an options object.');
 	}
+	sampleRateFromTime(global.tList, undefined, 'mod');
 	if (options.mode === 'AM') return analogAM(options);
 	if (options.mode === 'SSB' || options.mode === 'DSB-SC') return analogSuppressed(options);
 	if (options.mode === 'FM' || options.mode === 'PM') return analogAngle(options);
@@ -315,7 +317,7 @@ export function mod(options = {}) {
 				return voltage;
 			});
 		});
-		tx.spectrum = FFT(tx.samples).slice(0, tx.fList.length);
+		tx.spectrum = fftBins(tx.samples).slice(0, tx.fList.length);
 	} else if (pskMode) {
 		tx.samples = tx.samples.map(function (_, index) {
 			var bit = tx.bits[Math.floor(index / tx.samplesPerBit)];
@@ -325,13 +327,18 @@ export function mod(options = {}) {
 			return polarity * carrierAmplitudeVolts *
 				Math.cos(2 * Math.PI * carrierHz * index / tx.sampleRateHz);
 		});
-		tx.spectrum = FFT(tx.samples).slice(0, tx.fList.length);
+		tx.spectrum = fftBins(tx.samples).slice(0, tx.fList.length);
 	} else if (carrierHz !== 0) {
 		tx.samples = tx.samples.map(function (voltage, index) {
 			return voltage * Math.cos(2 * Math.PI * carrierHz * index / tx.sampleRateHz);
 		});
-		tx.spectrum = FFT(tx.samples).slice(0, tx.fList.length);
+		tx.spectrum = fftBins(tx.samples).slice(0, tx.fList.length);
 	}
+	var timeRateHz = sampleRateFromTime(global.tList, tx.sampleCount, 'mod');
+	if (Math.abs(timeRateHz - tx.sampleRateHz) > tx.sampleRateHz * 1e-6) {
+		throw new RangeError('mod tList spacing must match its waveform sample rate.');
+	}
+	tx.time = global.tList.slice();
 	var originalOut = tx.out;
 	if (keyedMode) {
 		tx.dataMode = tx.mode;
@@ -351,9 +358,10 @@ export function mod(options = {}) {
 	}
 	tx.carrierHz = carrierHz;
 	tx.out = function (selector) {
+		if (selector === 'bit string') return tx.bits.join('');
 		if (selector === 'waveform') {
 			return [['Time (ns)', 'Output (V)']].concat(tx.samples.map(function (voltage, index) {
-				return [index * 1e9 / tx.sampleRateHz, voltage];
+				return [tx.time[index] * 1e9, voltage];
 			}));
 		}
 		if (selector === 'settings') {

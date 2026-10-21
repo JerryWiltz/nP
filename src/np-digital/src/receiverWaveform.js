@@ -1,4 +1,4 @@
-// Modified: 2026-10-15
+// Modified: 2026-10-21
 import {complex} from '../../np-math/src/complex';
 import {invFFT} from '../../np-math/src/fft';
 import {noiseWaveformSpectrum} from './noiseWaveform';
@@ -68,7 +68,7 @@ export function receiveWaveform(stage, options = {}) {
 				}
 				return count / signal.samplesPerBit;
 			}
-			if (selector === 'bits' || selector === 'ASCII text') {
+			if (selector === 'bits' || selector === 'bit string' || selector === 'ASCII text') {
 				var samplesPerBit = signal.samplesPerBit;
 				if (!Number.isInteger(samplesPerBit) || samplesPerBit < 1 ||
 					count % samplesPerBit !== 0) {
@@ -111,6 +111,7 @@ export function receiveWaveform(stage, options = {}) {
 				if (!Number.isFinite(threshold)) throw new RangeError('ASCII thresholdVolts must be finite.');
 				var bits = bitVoltages.map(function (voltage) { return voltage > threshold ? 1 : 0; });
 				if (selector === 'bits') return bits;
+				if (selector === 'bit string') return bits.join('');
 				if (bits.length % 8 !== 0) {
 					throw new RangeError('ASCII reception requires complete eight-bit bytes.');
 				}

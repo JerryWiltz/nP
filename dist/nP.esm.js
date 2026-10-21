@@ -385,7 +385,132 @@ function matrix(mat) {
 	return matrixObject;
 }
 
-// Modified: 2026-10-08
+// Modified: 2026-10-13
+
+function fGen(fStart, fStop, points) {
+	var out = [];
+	var fStep = (fStop - fStart) / (points - 1);
+	var frequency = fStart;
+	for (var i = 0; i < points; i++, frequency += fStep) out.push(frequency);
+	return out;
+}
+
+function tGen(start, stop, points) {
+	if (!Number.isFinite(start) || !Number.isFinite(stop) ||
+		!Number.isInteger(points) || points < 2 || stop <= start) {
+		throw new RangeError('tGen needs a finite increasing interval and at least two points.');
+	}
+	var step = (stop - start) / (points - 1);
+	return Array.from({length: points}, function (_, index) { return start + index * step; });
+}
+
+function newContext() {
+	return {fList: [2e9], tList: [], twoTone: undefined, Ro: 50, Temp: 293,
+		fGen: fGen, tGen: tGen};
+}
+
+var contexts = new WeakSet();
+var activeContext = newContext();
+contexts.add(activeContext);
+
+// Calling global() creates and selects a circuit context. Calling it with a
+// previously returned context selects that circuit again.
+function global(context) {
+	if (arguments.length === 0) {
+		activeContext = newContext();
+		contexts.add(activeContext);
+	} else {
+		if (!context || typeof context !== 'object' || !contexts.has(context)) {
+			throw new TypeError('global expects a circuit context returned by global().');
+		}
+		activeContext = context;
+	}
+	return activeContext;
+}
+
+// Preserve the existing property calls and expose the selected context's time grid.
+// Enumerable accessors also let existing settings snapshots use {...global}.
+['fList', 'tList', 'twoTone', 'Ro', 'Temp', 'fGen', 'tGen'].forEach(function (key) {
+	Object.defineProperty(global, key, {
+		enumerable: true,
+		get: function () { return activeContext[key]; },
+		set: function (value) { activeContext[key] = value; }
+	});
+});
+
+// Modified: 2026-10-20
+
+// A sampled signal has one uniformly spaced time for each amplitude value.
+function sampleRateFromTime(time, count, caller) {
+	if (!Array.isArray(time) || time.length < 2) {
+		throw new RangeError(caller + ' needs a tList with at least two sample times.');
+	}
+	if (count !== undefined && time.length !== count) {
+		throw new RangeError(caller + ' needs one tList time for each sample.');
+	}
+	var step = time[1] - time[0];
+	if (!Number.isFinite(step) || step <= 0 || !Number.isFinite(1 / step) ||
+		time.some(function (value, index) {
+			var expected = time[0] + index * step;
+			return !Number.isFinite(value) ||
+				Math.abs(value - expected) > Math.max(Math.abs(step) * 1e-6,
+					Math.abs(expected) * Number.EPSILON * 16);
+		})) {
+		throw new RangeError(caller + ' needs a uniformly spaced, increasing tList in seconds.');
+	}
+	return 1 / step;
+}
+
+// Modified: 2026-10-20
+
+var fftTimeGrid = Symbol('FFT time grid');
+
+function withOutput(values, axis, axisTitle, defaultSelector, lastIndex, realInput) {
+	Object.defineProperty(values, 'out', {
+		value: function (selector = defaultSelector, options = {}) {
+			if (selector !== 'real' && selector !== 'imaginary' && selector !== 'magnitude' &&
+				selector !== 'dBV') {
+				throw new RangeError('FFT output must be real, imaginary, magnitude, or dBV.');
+			}
+			if (!axis || axis.length !== values.length) {
+				throw new RangeError('A matching tList is needed to output inverse FFT samples.');
+			}
+			var floorDbv;
+			if (selector === 'dBV') {
+				if (axisTitle !== 'Frequency (Hz)' || !realInput) {
+					throw new RangeError('FFT dBV output requires real voltage samples.');
+				}
+				if (!options || Array.isArray(options) || typeof options !== 'object') {
+					throw new TypeError('FFT dBV options must be an object.');
+				}
+				floorDbv = options.floorDbv === undefined ? -80 : options.floorDbv;
+				if (!Number.isFinite(floorDbv)) {
+					throw new RangeError('FFT dBV floorDbv must be finite.');
+				}
+			}
+			var heading = selector === 'dBV' ? 'Amplitude (dBV)' :
+				selector.charAt(0).toUpperCase() + selector.slice(1);
+			var table = [[axisTitle, heading]];
+			for (var index = 0; index <= lastIndex; index++) {
+				var value = values[index];
+				var output;
+				if (selector === 'dBV') {
+					var rmsVolts = value.mag() / values.length;
+					if (index !== 0 && !(values.length % 2 === 0 && index === lastIndex)) {
+						rmsVolts *= Math.SQRT2;
+					}
+					output = Math.max(floorDbv, 20 * Math.log10(rmsVolts));
+				} else {
+					output = selector === 'real' ? value.getR() :
+						selector === 'imaginary' ? value.getI() : value.mag();
+				}
+				table.push([axis[index], output]);
+			}
+			return table;
+		}
+	});
+	return values;
+}
 
 // In-place radix-2 transform. Forward transforms are unscaled; inverse
 // transforms divide by the number of samples.
@@ -508,68 +633,35 @@ function transform(samples, inverse) {
 	return result;
 }
 
-// X[k] = sum_n x[n] exp(-i 2πkn/N), with no forward scaling.
-function FFT(samples) {
+// Internal transform for sampled signals whose time context is checked by their owner.
+function fftBins(samples) {
 	return transform(samples, false);
+}
+
+// X[k] = sum_n x[n] exp(-i 2πkn/N), with no forward scaling.
+// The public transform requires the selected time grid and labels every output bin.
+function FFT(samples) {
+	var result = fftBins(samples);
+	var sampleRateHz = sampleRateFromTime(global.tList, samples.length, 'FFT');
+	var count = result.length;
+	global.fList = Array.from({length: count}, function (_, bin) {
+		return (bin <= Math.floor(count / 2) ? bin : bin - count) * sampleRateHz / count;
+	});
+	Object.defineProperty(result, fftTimeGrid, {value: global.tList.slice()});
+	var realInput = samples.every(function (sample) {
+		return typeof sample === 'number' || sample.getI() === 0;
+	});
+	return withOutput(result, global.fList.slice(), 'Frequency (Hz)', 'magnitude',
+		Math.floor(count / 2), realInput);
 }
 
 // x[n] = (1/N) sum_k X[k] exp(+i 2πkn/N).
 function invFFT(spectrum) {
-	return transform(spectrum, true);
+	var result = transform(spectrum, true);
+	var time = spectrum && spectrum[fftTimeGrid] ? spectrum[fftTimeGrid].slice() :
+		Array.isArray(global.tList) ? global.tList.slice() : null;
+	return withOutput(result, time, 'Time (s)', 'real', result.length - 1);
 }
-
-// Modified: 2026-10-13
-
-function fGen(fStart, fStop, points) {
-	var out = [];
-	var fStep = (fStop - fStart) / (points - 1);
-	var frequency = fStart;
-	for (var i = 0; i < points; i++, frequency += fStep) out.push(frequency);
-	return out;
-}
-
-function tGen(start, stop, points) {
-	if (!Number.isFinite(start) || !Number.isFinite(stop) ||
-		!Number.isInteger(points) || points < 2 || stop <= start) {
-		throw new RangeError('tGen needs a finite increasing interval and at least two points.');
-	}
-	var step = (stop - start) / (points - 1);
-	return Array.from({length: points}, function (_, index) { return start + index * step; });
-}
-
-function newContext() {
-	return {fList: [2e9], tList: [], twoTone: undefined, Ro: 50, Temp: 293,
-		fGen: fGen, tGen: tGen};
-}
-
-var contexts = new WeakSet();
-var activeContext = newContext();
-contexts.add(activeContext);
-
-// Calling global() creates and selects a circuit context. Calling it with a
-// previously returned context selects that circuit again.
-function global(context) {
-	if (arguments.length === 0) {
-		activeContext = newContext();
-		contexts.add(activeContext);
-	} else {
-		if (!context || typeof context !== 'object' || !contexts.has(context)) {
-			throw new TypeError('global expects a circuit context returned by global().');
-		}
-		activeContext = context;
-	}
-	return activeContext;
-}
-
-// Preserve the existing property calls and expose the selected context's time grid.
-// Enumerable accessors also let existing settings snapshots use {...global}.
-['fList', 'tList', 'twoTone', 'Ro', 'Temp', 'fGen', 'tGen'].forEach(function (key) {
-	Object.defineProperty(global, key, {
-		enumerable: true,
-		get: function () { return activeContext[key]; },
-		set: function (value) { activeContext[key] = value; }
-	});
-});
 
 function ascending$1(a, b) {
   return a == null || b == null ? NaN : a < b ? -1 : a > b ? 1 : a >= b ? 0 : NaN;
@@ -762,6 +854,19 @@ function tickStep(start, stop, count) {
   stop = +stop, start = +start, count = +count;
   const reverse = stop < start, inc = reverse ? tickIncrement(stop, start, count) : tickIncrement(start, stop, count);
   return (reverse ? -1 : 1) * (inc < 0 ? 1 / -inc : inc);
+}
+
+function min(values, valueof) {
+  let min;
+  {
+    for (const value of values) {
+      if (value != null
+          && (min > value || (min === undefined && value >= value))) {
+        min = value;
+      }
+    }
+  }
+  return min;
 }
 
 function identity$3(x) {
@@ -5139,7 +5244,7 @@ function appendTooltipRows(tooltip, rows) {
     });
 }
 
-// Modified: 2026-10-18
+// Modified: 2026-10-21
 
 function lineChart(options = {}) {
             // ======== Options & defaults ========
@@ -5190,8 +5295,11 @@ function lineChart(options = {}) {
                 yScale = 'linear',
                 xAxisPosition = 'bottom',
                 yAxisPosition = 'left',
+                plotType = 'line',
+                barWidth = 4,
+                barBaseline = 0,
                 showPoints = true,
-                showLabels = true,
+                showLabels = plotType !== 'bar',
                 showGrid = true,
                 gridColor = '#e0e0e0',
                 traceColor = true, // true for color, false for gray
@@ -5210,6 +5318,17 @@ function lineChart(options = {}) {
             } = options;
 
             const tables = normalizeInputTables(inputTable, 'lineChart', 'line');
+            if (plotType !== 'line' && plotType !== 'bar') {
+                throw new RangeError('lineChart: plotType must be line or bar.');
+            }
+            if (plotType === 'bar' && (!Number.isFinite(barWidth) || barWidth <= 0 ||
+                !Number.isFinite(barBaseline))) {
+                throw new RangeError('lineChart: barWidth must be positive and barBaseline must be finite.');
+            }
+            if (plotType === 'bar' && rawYRange &&
+                (barBaseline < Math.min(...rawYRange) || barBaseline > Math.max(...rawYRange))) {
+                throw new RangeError('lineChart: yRange must include barBaseline in bar mode.');
+            }
 
             // Starting font sizes since d3.axisBottom and d3.axisLeft will override the container styles
             const effectiveTitle = title ?? chartTitle ?? '';
@@ -5276,11 +5395,36 @@ function lineChart(options = {}) {
             const xValues = formattedData.flatMap(d => d.yValues.map(v => v.xValue));
             const yValues = formattedData.flatMap(d => d.yValues.map(v => v.yValue));
 
-            const xRange = rawXRange
-                ? rawXRange.map(v => v / pickScale)
-                : extent(xValues);
+            const distinctX = [...new Set(xValues)].sort((a, b) => a - b);
+            let xRange;
+            if (rawXRange) xRange = rawXRange.map(v => v / pickScale);
+            else if (plotType === 'bar') {
+                const first = distinctX[0];
+                const last = distinctX[distinctX.length - 1];
+                if (String(xScale).toLowerCase() === 'log') {
+                    if (first <= 0) throw new Error('xScale: log scale requires a positive domain.');
+                    const leftRatio = distinctX.length > 1 ? distinctX[1] / first : 1.1;
+                    const rightRatio = distinctX.length > 1 ? last / distinctX[distinctX.length - 2] : 1.1;
+                    xRange = [first / Math.sqrt(leftRatio), last * Math.sqrt(rightRatio)];
+                } else {
+                    const leftGap = distinctX.length > 1 ? distinctX[1] - first : Math.max(Math.abs(first) * 0.1, 1);
+                    const rightGap = distinctX.length > 1 ? last - distinctX[distinctX.length - 2] : leftGap;
+                    xRange = [first - leftGap / 2, last + rightGap / 2];
+                }
+            } else xRange = extent(xValues);
 
-            const yRange = rawYRange || extent(yValues);
+            const yRange = rawYRange || extent(plotType === 'bar'
+                ? [...yValues, barBaseline] : yValues);
+            if (!rawYRange && plotType === 'line' && String(yScale).toLowerCase() === 'linear') {
+                const span = yRange[1] - yRange[0];
+                const padding = 0.05 * (span || Math.max(Math.abs(yRange[0]), 1));
+                yRange[0] -= padding;
+                yRange[1] += padding;
+            }
+            if (plotType === 'bar' && String(yScale).toLowerCase() === 'log' &&
+                (barBaseline <= 0 || yValues.some(value => value <= 0))) {
+                throw new Error('lineChart: log yScale in bar mode needs a positive baseline and positive values.');
+            }
 
             // Dimensions
             const innerWidth = width - layoutMargin.left - layoutMargin.right;
@@ -5560,39 +5704,60 @@ function lineChart(options = {}) {
                 .style('font-size', `${axisFontPx}px`)
                 .text(yAxisTitle);
 
-            // Line generator
-            const line$1 = line()
-                .x(d => x(d.xValue))
-                .y(d => y(d.yValue))
-                .curve(monotoneX);
-
-            // Draw Lines & Points
+            // Draw traces
             const groups = g.selectAll('.lineGroup')
                 .data(formattedData)
                 .join('g')
                 .attr('class', 'lineGroup');
 
-            // Lines
-            groups.append('path')
-                .attr('d', d => line$1(d.yValues))
-                .attr('fill', 'none')
-                .attr('stroke', d => color(d.yName))
-                .attr('stroke-width', traceWidth);
+            let marks;
+            if (plotType === 'bar') {
+                const pixelX = distinctX.map(value => x(value));
+                const gaps = pixelX.slice(1).map((value, index) => value - pixelX[index]);
+                const nearestGap = gaps.length ? min(gaps) : Infinity;
+                const actualBarWidth = Math.min(barWidth, nearestGap * 0.8 / formattedData.length);
+                const baselineY = y(barBaseline);
+                marks = groups.selectAll('line.bar')
+                    .data(d => d.yValues)
+                    .join('line')
+                    .attr('class', 'bar')
+                    .attr('x1', function (d) {
+                        const traceIndex = formattedData.indexOf(select(this.parentNode).datum());
+                        return x(d.xValue) + (traceIndex - (formattedData.length - 1) / 2) * actualBarWidth;
+                    })
+                    .attr('x2', function () { return this.getAttribute('x1'); })
+                    .attr('y1', baselineY)
+                    .attr('y2', d => y(d.yValue))
+                    .attr('stroke', function () { return color(select(this.parentNode).datum().yName); })
+                    .attr('stroke-width', actualBarWidth);
+            } else {
+                const line$1 = line()
+                    .x(d => x(d.xValue))
+                    .y(d => y(d.yValue))
+                    .curve(monotoneX);
+                groups.append('path')
+                    .attr('d', d => line$1(d.yValues))
+                    .attr('fill', 'none')
+                    .attr('stroke', d => color(d.yName))
+                    .attr('stroke-width', traceWidth);
+                if (showPoints) {
+                    marks = groups.selectAll('circle')
+                        .data(d => d.yValues)
+                        .join('circle')
+                        .attr('cx', d => x(d.xValue))
+                        .attr('cy', d => y(d.yValue))
+                        .attr('r', pointRadius)
+                        .attr('fill', function (d, i, nodes) {
+                            const groupData = select(nodes[i].parentNode).datum();
+                            return color(groupData.yName);
+                        });
+                }
+            }
 
-            // Points
-            if (showPoints) {
+            if (marks) {
                 let tooltip; // shared between handlers
 
-                groups.selectAll('circle')
-                    .data(d => d.yValues)
-                    .join('circle')
-                    .attr('cx', d => x(d.xValue))
-                    .attr('cy', d => y(d.yValue))
-                    .attr('r', pointRadius)
-                    .attr('fill', function (d, i, nodes) {
-                        const groupData = select(nodes[i].parentNode).datum();
-                        return color(groupData.yName);
-                    })
+                marks
                     .on('mouseenter', (event, d) => {
                         // ensure only one tooltip
                         container.select('.tooltip').remove();
@@ -11273,7 +11438,7 @@ function noiseWaveformSpectrum(stage, signal, inputPort, outputPort, options) {
 	return spectrum;
 }
 
-// Modified: 2026-10-15
+// Modified: 2026-10-21
 
 // Reconstruct the output signal and one independent noise realization.
 function receiveWaveform(stage, options = {}) {
@@ -11340,7 +11505,7 @@ function receiveWaveform(stage, options = {}) {
 				}
 				return count / signal.samplesPerBit;
 			}
-			if (selector === 'bits' || selector === 'ASCII text') {
+			if (selector === 'bits' || selector === 'bit string' || selector === 'ASCII text') {
 				var samplesPerBit = signal.samplesPerBit;
 				if (!Number.isInteger(samplesPerBit) || samplesPerBit < 1 ||
 					count % samplesPerBit !== 0) {
@@ -11383,6 +11548,7 @@ function receiveWaveform(stage, options = {}) {
 				if (!Number.isFinite(threshold)) throw new RangeError('ASCII thresholdVolts must be finite.');
 				var bits = bitVoltages.map(function (voltage) { return voltage > threshold ? 1 : 0; });
 				if (selector === 'bits') return bits;
+				if (selector === 'bit string') return bits.join('');
 				if (bits.length % 8 !== 0) {
 					throw new RangeError('ASCII reception requires complete eight-bit bytes.');
 				}
@@ -11408,7 +11574,7 @@ function receiveWaveform(stage, options = {}) {
 	};
 }
 
-// Modified: 2026-10-15
+// Modified: 2026-10-21
 
 function powerOfTwo(value) {
 	return Number.isInteger(value) && value > 0 && (value & (value - 1)) === 0;
@@ -11456,7 +11622,7 @@ function setSamples(tx, samples, fftList, sampleRateHz) {
 	tx.fList = Array.from({length: Math.floor(samples.length / 2) + 1}, function (_, bin) {
 		return bin * tx.sampleRateHz / samples.length;
 	});
-	tx.spectrum = FFT(samples).slice(0, tx.fList.length);
+	tx.spectrum = fftBins(samples).slice(0, tx.fList.length);
 	if (fftList === undefined) global.fList = tx.fList.slice();
 	else {
 		fftList.length = 0;
@@ -11745,6 +11911,7 @@ function demodulateAdvanced(receiver, signal) {
 			if (selector === 'mode') return mode;
 			if (selector === 'data mode') return signal.dataMode;
 			if (selector === 'bits') return bits.slice();
+			if (selector === 'bit string') return bits.join('');
 			if (selector === 'bit count') return bits.length;
 			if (selector === 'ASCII text') return ascii(bits);
 			if (selector === 'symbols') return symbols.map(function (row) { return row.slice(); });
@@ -11756,7 +11923,7 @@ function demodulateAdvanced(receiver, signal) {
 	};
 }
 
-// Modified: 2026-10-15
+// Modified: 2026-10-21
 
 // Connect a transmitter directly to the receiver using the transmitter's
 // original frequency grid and impedance, independent of the active context.
@@ -12028,6 +12195,7 @@ function demodFSK(receiver, signal) {
 			if (selector === 'mode') return 'FSK';
 			if (selector === 'data mode') return signal.dataMode;
 			if (selector === 'bits') return bits.slice();
+			if (selector === 'bit string') return bits.join('');
 			if (selector === 'bit count') return bits.length;
 			if (selector === 'tone energies') return energies.map(function (row) { return row.slice(); });
 			if (selector === 'tone frequencies Hz') return frequencies.slice();
@@ -12116,8 +12284,9 @@ function demod(stage, options = {}) {
 				}));
 			}
 			if (selector === 'bits') return receivedBits().slice();
+			if (selector === 'bit string') return receivedBits().join('');
 			if (selector === 'bit count') return levels.length;
-			if (selector === 'spectrum') return FFT(baseband).slice(0, signal.rows.length);
+			if (selector === 'spectrum') return fftBins(baseband).slice(0, signal.rows.length);
 			if (selector === 'carrier spectrum') return receiver.out('spectrum');
 			if (selector === 'ASCII text') {
 				var bits = receivedBits();
@@ -12170,7 +12339,7 @@ function bitErrorRate(tx, stage, options = {}) {
 	return errors / (receptions * tx.bits.length);
 }
 
-// Modified: 2026-10-13
+// Modified: 2026-10-21
 
 
 // Feedback masks for maximal-length, left-shifting registers of 2–16 stages.
@@ -12246,6 +12415,7 @@ function PN(options = {}) {
 	};
 	waveform.out = function (selector) {
 		if (selector === 'bits') return bits.slice();
+		if (selector === 'bit string') return bits.join('');
 		if (selector === 'samples') return samples.slice();
 		if (selector === 'time') return waveform.time.slice();
 		if (selector === 'bit count') return bits.length;
@@ -12262,7 +12432,7 @@ function PN(options = {}) {
 	return waveform;
 }
 
-// Modified: 2026-10-14
+// Modified: 2026-10-20
 
 function patternBits(options) {
 	var mode = options.mode === undefined ? 'PN7' : options.mode;
@@ -12339,7 +12509,7 @@ function createSourceWaveform(options = {}, fftList) {
 	var sampleCount = samples.length;
 	var sampleRateHz = bitRate * samplesPerBit;
 	if (!Number.isFinite(sampleRateHz)) throw new RangeError('mod sample rate must be finite.');
-	var spectrum = FFT(samples);
+	var spectrum = fftBins(samples);
 	var frequencyList = Array.from({length: Math.floor(sampleCount / 2) + 1}, function (_, bin) {
 		return bin * sampleRateHz / sampleCount;
 	});
@@ -12381,7 +12551,7 @@ function createSourceWaveform(options = {}, fftList) {
 	return tx;
 }
 
-// Modified: 2026-10-15
+// Modified: 2026-10-21
 
 // A single sinusoidal AM input has only a carrier and two sidebands.
 function analogAM(options) {
@@ -12507,7 +12677,7 @@ function analogAngle(options) {
 		var phase = beta * (mode === 'PM' ? Math.cos(theta) : Math.sin(theta));
 		return complex(Math.cos(phase), Math.sin(phase));
 	});
-	var coefficients = FFT(phaseSamples);
+	var coefficients = fftBins(phaseSamples);
 	var retainedPower = coefficients[0].mag() ** 2 / coefficientSamples ** 2;
 	var sidebandOrder = 0;
 	while (1 - retainedPower > tolerance && sidebandOrder < coefficientSamples / 2 - 1) {
@@ -12573,6 +12743,7 @@ function mod(options = {}) {
 	if (!options || Array.isArray(options) || typeof options !== 'object') {
 		throw new TypeError('mod expects an options object.');
 	}
+	sampleRateFromTime(global.tList, undefined, 'mod');
 	if (options.mode === 'AM') return analogAM(options);
 	if (options.mode === 'SSB' || options.mode === 'DSB-SC') return analogSuppressed(options);
 	if (options.mode === 'FM' || options.mode === 'PM') return analogAngle(options);
@@ -12691,7 +12862,7 @@ function mod(options = {}) {
 				return voltage;
 			});
 		});
-		tx.spectrum = FFT(tx.samples).slice(0, tx.fList.length);
+		tx.spectrum = fftBins(tx.samples).slice(0, tx.fList.length);
 	} else if (pskMode) {
 		tx.samples = tx.samples.map(function (_, index) {
 			var bit = tx.bits[Math.floor(index / tx.samplesPerBit)];
@@ -12701,13 +12872,18 @@ function mod(options = {}) {
 			return polarity * carrierAmplitudeVolts *
 				Math.cos(2 * Math.PI * carrierHz * index / tx.sampleRateHz);
 		});
-		tx.spectrum = FFT(tx.samples).slice(0, tx.fList.length);
+		tx.spectrum = fftBins(tx.samples).slice(0, tx.fList.length);
 	} else if (carrierHz !== 0) {
 		tx.samples = tx.samples.map(function (voltage, index) {
 			return voltage * Math.cos(2 * Math.PI * carrierHz * index / tx.sampleRateHz);
 		});
-		tx.spectrum = FFT(tx.samples).slice(0, tx.fList.length);
+		tx.spectrum = fftBins(tx.samples).slice(0, tx.fList.length);
 	}
+	var timeRateHz = sampleRateFromTime(global.tList, tx.sampleCount, 'mod');
+	if (Math.abs(timeRateHz - tx.sampleRateHz) > tx.sampleRateHz * 1e-6) {
+		throw new RangeError('mod tList spacing must match its waveform sample rate.');
+	}
+	tx.time = global.tList.slice();
 	var originalOut = tx.out;
 	if (keyedMode) {
 		tx.dataMode = tx.mode;
@@ -12727,9 +12903,10 @@ function mod(options = {}) {
 	}
 	tx.carrierHz = carrierHz;
 	tx.out = function (selector) {
+		if (selector === 'bit string') return tx.bits.join('');
 		if (selector === 'waveform') {
 			return [['Time (ns)', 'Output (V)']].concat(tx.samples.map(function (voltage, index) {
-				return [index * 1e9 / tx.sampleRateHz, voltage];
+				return [tx.time[index] * 1e9, voltage];
 			}));
 		}
 		if (selector === 'settings') {
@@ -12762,6 +12939,116 @@ function mod(options = {}) {
 		return originalOut(selector);
 	};
 	return tx;
+}
+
+// Modified: 2026-10-20
+
+// Sample one periodic voltage waveform on the selected time grid.
+function waveform(options = {}) {
+	if (!options || Array.isArray(options) || typeof options !== 'object') {
+		throw new TypeError('waveform expects an options object.');
+	}
+	var time = options.time === undefined ? global.tList : options.time;
+	if (!Array.isArray(time) || time.length < 2) {
+		throw new RangeError('waveform needs at least two time samples.');
+	}
+	var step = time[1] - time[0];
+	if (!Number.isFinite(step) || step <= 0 || !Number.isFinite(1 / step) || time.some(function (value, index) {
+		return !Number.isFinite(value) ||
+			Math.abs(value - (time[0] + index * step)) > Math.abs(step) * 1e-6;
+	})) {
+		throw new RangeError('waveform time must be a uniformly spaced, increasing list in seconds.');
+	}
+	var period = options.period;
+	if (!Number.isFinite(period) || period <= 0) {
+		throw new RangeError('waveform period must be a positive number of seconds.');
+	}
+	var shape = options.shape === undefined ? 'triangle' : options.shape;
+	var custom = shape === 'custom';
+	if (options.points !== undefined && !custom) {
+		throw new TypeError("waveform points require shape: 'custom'.");
+	}
+	if (custom && options.points === undefined) {
+		throw new TypeError("waveform shape: 'custom' requires points.");
+	}
+	var points;
+	var dutyCycle;
+	var lowVolts;
+	var highVolts;
+	if (custom) {
+		if (options.riseFraction !== undefined || options.dutyCycle !== undefined ||
+			options.lowVolts !== undefined ||
+			options.highVolts !== undefined || !Array.isArray(options.points) ||
+			options.points.length < 2 || options.points.some(function (point) {
+				return !Array.isArray(point) || point.length !== 2 ||
+					!Number.isFinite(point[0]) || !Number.isFinite(point[1]);
+			}) || options.points[0][0] !== 0 ||
+			Math.abs(options.points[options.points.length - 1][0] - period) > period * 1e-9 ||
+			options.points.some(function (point, index) {
+				return index > 0 && point[0] <= options.points[index - 1][0];
+			})) {
+			throw new RangeError('waveform points must run from 0 to period with increasing, finite time-voltage pairs.');
+		}
+		points = options.points.map(function (point) { return point.slice(); });
+	} else {
+		if (shape !== 'triangle' && shape !== 'square' && shape !== 'rectifiedSine') {
+			throw new RangeError('waveform shape must be triangle, square, rectifiedSine, or custom.');
+		}
+		lowVolts = options.lowVolts === undefined ? (shape === 'rectifiedSine' ? 0 : -1) : options.lowVolts;
+		highVolts = options.highVolts === undefined ? 1 : options.highVolts;
+		if (!Number.isFinite(lowVolts) || !Number.isFinite(highVolts)) {
+			throw new RangeError('waveform voltage levels must be finite.');
+		}
+		if (shape === 'triangle') {
+			var riseFraction = options.riseFraction === undefined ? 0.5 : options.riseFraction;
+			if (options.dutyCycle !== undefined || !Number.isFinite(riseFraction) ||
+				riseFraction <= 0 || riseFraction >= 1) {
+				throw new RangeError('triangle waveform needs 0 < riseFraction < 1 and no dutyCycle.');
+			}
+			points = [[0, lowVolts], [period * riseFraction, highVolts], [period, lowVolts]];
+		} else if (shape === 'square') {
+			dutyCycle = options.dutyCycle === undefined ? 0.5 : options.dutyCycle;
+			if (options.riseFraction !== undefined || !Number.isFinite(dutyCycle) ||
+				dutyCycle <= 0 || dutyCycle >= 1) {
+				throw new RangeError('square waveform needs 0 < dutyCycle < 1 and no riseFraction.');
+			}
+		} else if (options.riseFraction !== undefined || options.dutyCycle !== undefined) {
+			throw new RangeError('rectifiedSine waveform does not use riseFraction or dutyCycle.');
+		}
+	}
+	var samples = time.map(function (value) {
+		var phase = ((value % period) + period) % period;
+		if (shape === 'square') return phase < period * dutyCycle ? highVolts : lowVolts;
+		if (shape === 'rectifiedSine') {
+			return lowVolts + (highVolts - lowVolts) * Math.abs(Math.sin(2 * Math.PI * phase / period));
+		}
+		var segment = 1;
+		while (segment < points.length - 1 && phase > points[segment][0]) segment++;
+		var left = points[segment - 1];
+		var right = points[segment];
+		return left[1] + (right[1] - left[1]) * (phase - left[0]) / (right[0] - left[0]);
+	});
+	if (samples.some(function (value) { return !Number.isFinite(value); })) {
+		throw new RangeError('waveform sample voltages must be finite.');
+	}
+	var result = {
+		kind: 'waveform', shape: shape, period: period,
+		time: time.slice(), samples: samples, sampleRateHz: 1 / step
+	};
+	result.out = function (selector = 'waveform') {
+		if (selector === 'waveform') {
+			return [['Time (s)', 'Voltage (V)']].concat(result.time.map(function (value, index) {
+				return [value, samples[index]];
+			}));
+		}
+		if (selector === 'time') return result.time.slice();
+		if (selector === 'samples') return samples.slice();
+		if (selector === 'sample count') return samples.length;
+		if (selector === 'sample rate') return result.sampleRateHz;
+		if (selector === 'period') return period;
+		throw new RangeError('Unknown waveform output: ' + selector);
+	};
+	return result;
 }
 
 function getCircuitTitle() {
@@ -12806,4 +13093,4 @@ function bodyWidth () {
 	return width;
 }
 
-export { Amp, Attn, C, FFT, L, Load, Open, PN, R, Shift90, Short, Tclin, Tee, Tee4, Tee5, Thru, Tlin, bitErrorRate, bodyWidth, callCodemirror, cascade, chebyLPLCs, chebyLPNsec, chebyLPgk, complex, demod, dim, diode1N4148, dup, editor, getCircuitTitle, global, invFFT, lineChart, lineTable, log, lpfGen, matrix, mbend, mclin, mcross, mlin, mod, mstep, mtee, mtfr, mvgnd, mvia, nodal, paC, paL, paPaLC, paPaRC, paPaRL, paPaRLC, paR, paSeLC, paSeRC, paSeRL, paSeRLC, run, runButton, seC, seL, sePaLC, sePaRC, sePaRL, sePaRLC, seR, seSeLC, seSeRC, seSeRL, seSeRLC, seriesTee, smithChart, trf, trf4Port, version };
+export { Amp, Attn, C, FFT, L, Load, Open, PN, R, Shift90, Short, Tclin, Tee, Tee4, Tee5, Thru, Tlin, bitErrorRate, bodyWidth, callCodemirror, cascade, chebyLPLCs, chebyLPNsec, chebyLPgk, complex, demod, dim, diode1N4148, dup, editor, getCircuitTitle, global, invFFT, lineChart, lineTable, log, lpfGen, matrix, mbend, mclin, mcross, mlin, mod, mstep, mtee, mtfr, mvgnd, mvia, nodal, paC, paL, paPaLC, paPaRC, paPaRL, paPaRLC, paR, paSeLC, paSeRC, paSeRL, paSeRLC, run, runButton, seC, seL, sePaLC, sePaRC, sePaRL, sePaRLC, seR, seSeLC, seSeRC, seSeRL, seSeRLC, seriesTee, smithChart, trf, trf4Port, version, waveform };

@@ -1,8 +1,14 @@
-// Modified: 2026-10-08
+// Modified: 2026-10-20
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { complex, matrix, FFT, invFFT } from '../src/np-math/index.js';
+import {global} from '../src/np-global/index.js';
+
+function selectTime(count) {
+	global.tList = global.tGen(0, (count - 1) / 1000, count);
+	global.fList = [];
+}
 
 const closeTo = (actual, expected, tolerance = 1e-12) => {
 	assert.ok(
@@ -13,7 +19,9 @@ const closeTo = (actual, expected, tolerance = 1e-12) => {
 
 test('FFT uses complex bins and invFFT restores real samples', () => {
 	const impulse = [1, 0, 0, 0];
+	selectTime(impulse.length);
 	const spectrum = FFT(impulse);
+	assert.deepEqual(global.fList, [0, 250, 500, -250]);
 	assert.deepEqual(spectrum.map(value => [value.getR(), value.getI()]),
 		[[1, 0], [1, 0], [1, 0], [1, 0]]);
 	const restored = invFFT(spectrum);
@@ -24,8 +32,57 @@ test('FFT uses complex bins and invFFT restores real samples', () => {
 	assert.deepEqual(impulse, [1, 0, 0, 0]);
 });
 
+test('FFT and invFFT provide chart-ready tables without caller mapping', () => {
+	selectTime(4);
+	const spectrum = FFT([1, 0, -1, 0]);
+	assert.deepEqual(spectrum.out(), [
+		['Frequency (Hz)', 'Magnitude'],
+		[0, 0], [250, 2], [500, 0]
+	]);
+	assert.deepEqual(spectrum.out('real'), [
+		['Frequency (Hz)', 'Real'],
+		[0, 0], [250, 2], [500, 0]
+	]);
+	assert.deepEqual(spectrum.out('imaginary'), [
+		['Frequency (Hz)', 'Imaginary'],
+		[0, 0], [250, 0], [500, 0]
+	]);
+	const recovered = invFFT(spectrum);
+	global.tList = [];
+	global.fList = [];
+	assert.deepEqual(recovered.out(), [
+		['Time (s)', 'Real'],
+		[0, 1], [0.001, 0], [0.002, -1], [0.003, 0]
+	]);
+	assert.throws(() => spectrum.out('phase'), /output must be/);
+	assert.throws(() => recovered.out('phase'), /output must be/);
+});
+
+test('FFT dBV output uses one-sided RMS voltage and a finite floor', () => {
+	selectTime(4);
+	const sine = FFT([0, 1, 0, -1]);
+	const table = sine.out('dBV');
+	assert.deepEqual(table[0], ['Frequency (Hz)', 'Amplitude (dBV)']);
+	assert.deepEqual(table[1], [0, -80]);
+	closeTo(table[2][1], 20 * Math.log10(1 / Math.SQRT2));
+	assert.deepEqual(table[3], [500, -80]);
+	assert.equal(sine.out('dBV', {floorDbv: -100})[1][1], -100);
+	assert.throws(() => sine.out('dBV', {floorDbv: Infinity}), /floorDbv/);
+	assert.throws(() => invFFT(sine).out('dBV'), /real voltage samples/);
+
+	selectTime(4);
+	const dc = FFT([1, 1, 1, 1]).out('dBV');
+	closeTo(dc[1][1], 0);
+	selectTime(4);
+	const nyquist = FFT([1, -1, 1, -1]).out('dBV');
+	closeTo(nyquist[3][1], 0);
+	selectTime(4);
+	assert.throws(() => FFT([complex(1, 1), 0, 0, 0]).out('dBV'), /real voltage samples/);
+});
+
 test('FFT handles non-power-of-two complex inputs', () => {
 	const samples = [complex(1, 2), complex(0, -1), complex(3, 0), complex(-2, 1), complex(0.5, -0.5)];
+	selectTime(samples.length);
 	const spectrum = FFT(samples);
 	for (let k = 0; k < samples.length; k++) {
 		let expectedReal = 0;
@@ -47,6 +104,7 @@ test('FFT handles non-power-of-two complex inputs', () => {
 
 test('FFT round-trips one PN7-sized period', () => {
 	const samples = Array.from({length: 1016}, (_, i) => (i % 13 < 7 ? 1 : 0));
+	selectTime(samples.length);
 	const restored = invFFT(FFT(samples));
 	for (let i = 0; i < samples.length; i++) {
 		closeTo(restored[i].getR(), samples[i], 1e-10);
@@ -55,6 +113,11 @@ test('FFT round-trips one PN7-sized period', () => {
 });
 
 test('FFT validates sample arrays', () => {
+	global.tList = [];
+	assert.throws(() => FFT([1, 0]), /tList/);
+	global.tList = [0, 1, 2];
+	assert.throws(() => FFT([1, 0]), /one tList time/);
+	global.tList = [0, 1];
 	assert.throws(() => FFT([]), TypeError);
 	assert.throws(() => FFT([1, Infinity]), RangeError);
 	assert.throws(() => invFFT([complex(1, 0), null]), TypeError);

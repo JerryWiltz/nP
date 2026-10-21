@@ -1,5 +1,5 @@
-// Modified: 2026-10-14
-import {FFT} from '../../np-math/src/fft';
+// Modified: 2026-10-20
+import {fftBins} from '../../np-math/src/fft';
 import {global} from '../../np-global/src/global';
 import {pnBits} from './PN';
 
@@ -78,7 +78,7 @@ export function createSourceWaveform(options = {}, fftList) {
 	var sampleCount = samples.length;
 	var sampleRateHz = bitRate * samplesPerBit;
 	if (!Number.isFinite(sampleRateHz)) throw new RangeError('mod sample rate must be finite.');
-	var spectrum = FFT(samples);
+	var spectrum = fftBins(samples);
 	var frequencyList = Array.from({length: Math.floor(sampleCount / 2) + 1}, function (_, bin) {
 		return bin * sampleRateHz / sampleCount;
 	});

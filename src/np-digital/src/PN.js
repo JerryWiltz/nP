@@ -1,4 +1,4 @@
-// Modified: 2026-10-13
+// Modified: 2026-10-21
 import {global} from '../../np-global/src/global';
 
 
@@ -79,6 +79,7 @@ export function PN(options = {}) {
 	};
 	waveform.out = function (selector) {
 		if (selector === 'bits') return bits.slice();
+		if (selector === 'bit string') return bits.join('');
 		if (selector === 'samples') return samples.slice();
 		if (selector === 'time') return waveform.time.slice();
 		if (selector === 'bit count') return bits.length;

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-14 -->
+<!-- Modified: 2026-10-20 -->
 # Time-domain development
 
 ## 1. Purpose
@@ -9,6 +9,9 @@ Send the ASCII message `now is the time for all good men to come to the aid of t
 
 ```js
 var message = 'now is the time for all good men to come to the aid of their country';
+var g = nP.global;
+g.tList = g.tGen(0, 4351 / 8e9, 4352);
+g.fList = [];
 var tx = nP.mod({mode: 'ASCII', message: message, bitRate: 1e9, samplesPerBit: 8, highVolts: 1e-3});
 var attenuationDb = 17.6;
 var attenuator = nP.Attn(attenuationDb, 290);
@@ -44,7 +47,7 @@ At the default 290 K source temperature, a matched 50 Ω input produces about 28
 
 With a decision threshold near 66 µV, the 132 µV level separation gives approximately 1% bit-error probability. One 544-bit message is too short for a steady BER estimate: at $10^{-2}$, it has about five errors on average. `bitErrorRate(tx, chain, {receptions: 100})` compares 54,400 bit decisions, with a fresh noise draw for each reception. The measured BER varies around $10^{-2}$. `rx.out('ASCII text')` displays one noisy reception. The average 290 K output noise floor can be read with `chain.out('noiseFloor')`.
 
-`nP.FFT()` and `nP.invFFT()` remain public math helpers for other sampled-signal work. They accept nonempty arrays of arbitrary length and return complex arrays. The forward transform is unscaled; the inverse divides by the sample count. `mod()` and `demod()` use them internally, so the user need not manage FFT bins to run this example.
+`nP.FFT()` and `nP.invFFT()` remain public math helpers for other sampled-signal work. The public FFT requires one selected `global.tList` time per sample, then fills `global.fList` with the signed bin frequencies. Both transforms return complex arrays. The forward transform is unscaled; the inverse divides by the sample count. `mod()` and `demod()` use the same transform internally, so the user need not manage FFT bins to run this example.
 
 This first calculation is linear and periodic. The final bit transitions back to the first bit at the repetition boundary. A later capacitor example can show DC rejection and baseline wander, but startup from arbitrary stored charge is outside this periodic FFT calculation.
 
@@ -54,10 +57,11 @@ The final section uses a new circuit context. `tGen(0, 126e-9, 127)` provides 12
 
 ```js
 var pnCircuit = nP.global();
-pnCircuit.tList = pnCircuit.tGen(0, 126e-9, 127);
+var pnClockTimes = pnCircuit.tGen(0, 126e-9, 127);
+pnCircuit.tList = pnCircuit.tGen(0, 1015 / 8e9, 1016);
 pnCircuit.fList = [];
 
-var pn = nP.PN({stages: 7, time: pnCircuit.tList});
+var pn = nP.PN({stages: 7, time: pnClockTimes});
 var pnTx = nP.mod({input: pn, carrierHz: 200e6});
 var pnAttenuator = nP.Attn(3, 0);
 var pnChain = nP.cascade(pnAttenuator, {signal: pnTx});

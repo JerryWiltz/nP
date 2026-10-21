@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-19 -->
+<!-- Modified: 2026-10-20 -->
 # Introduction
 
 ## What is nP?
@@ -25,7 +25,7 @@ Components capture their frequency settings when they are created, so components
 
 For an **RF frequency sweep**, set `nP.global.fList` before creating components. Then connect the components and inspect results such as `s11dB` or `s21dB`.
 
-For a **signal through a circuit**, create a transmitter with `nP.mod()` first. It establishes the signal's frequency grid. Create the components afterward, attach the signal to the connected circuit, and recover it with `nP.demod()`. `nP.PN()` can supply a clocked bit sequence, and `nP.bitErrorRate()` compares transmitted and recovered bits over repeated receptions.
+For a **signal through a circuit**, set `nP.global.tList` to one time per waveform sample, then create a transmitter with `nP.mod()`. It checks the time grid and establishes the signal's frequency grid. Create the components afterward, attach the signal to the connected circuit, and recover it with `nP.demod()`. `nP.PN()` can supply a clocked bit sequence, and `nP.bitErrorRate()` compares transmitted and recovered bits over repeated receptions.
 
 ## A small example
 

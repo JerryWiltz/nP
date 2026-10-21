@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Modified: 2026-10-14 -->
+<!-- Modified: 2026-10-20 -->
 <html lang="en">
 <head>
     <meta charset="utf-8">
@@ -9,6 +9,9 @@
 <body>
     <script>
         var message = 'now is the time for all good men to come to the aid of their country';
+        var g = nP.global;
+        g.tList = g.tGen(0, 4351 / 8e9, 4352);
+        g.fList = [];
         var tx = nP.mod({mode: 'ASCII', message: message, bitRate: 1e9, samplesPerBit: 8, highVolts: 1e-3});
         var attenuationDb = 17.6;
         var attenuator = nP.Attn(attenuationDb, 290);
@@ -33,16 +36,17 @@
     <div id="pnReceivedChart"></div>
     <script>
         var pnCircuit = nP.global();
-        pnCircuit.tList = pnCircuit.tGen(0, 126e-9, 127);
+        var pnClockTimes = pnCircuit.tGen(0, 126e-9, 127);
+        pnCircuit.tList = pnCircuit.tGen(0, 1015 / 8e9, 1016);
         pnCircuit.fList = [];
 
-        var pn = nP.PN({stages: 7, time: pnCircuit.tList});
+        var pn = nP.PN({stages: 7, time: pnClockTimes});
         var pnTx = nP.mod({input: pn, carrierHz: 200e6});
         var pnAttenuator = nP.Attn(3, 0);
         var pnChain = nP.cascade(pnAttenuator, {signal: pnTx});
         var pnRx = nP.demod(pnChain, {noise: false});
 
-        nP.log('PN clock ticks: ' + pnCircuit.tList.length);
+        nP.log('PN clock ticks: ' + pnClockTimes.length);
         nP.log('PN carrier: ' + pnTx.out('settings').carrierHz / 1e6 + ' MHz');
         nP.log('FFT samples: ' + pnTx.out('sample count'));
         nP.log('FFT frequencies: ' + pnTx.out('frequency count'));

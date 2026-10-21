@@ -1,16 +1,21 @@
-// Modified: 2026-10-19
+// Modified: 2026-10-21
 // Add an example with a unique id, title, category, and code. Array order sets
 // sidebar order within a category; stable ids preserve links and browser drafts.
 // Sidebar categories and their section order are listed in config.js.
 // REPL example authoring rules are in docs/AGENTS.md under "REPL Examples".
 export const examples = [
-  { id: 'hello-nport', title: 'Hello, nPort!', category: 'getting-started', code: `nP.log('Hello, nPort!');` },
-  { id: 'frequency-sweep', title: 'Frequency sweep', category: 'getting-started', code: `nP.global.fList = nP.global.fGen(1e9, 3e9, 5);
+  { id: 'frequency-sweep', title: 'Frequency sweep', category: 'getting-started', code: `// Frequency sweep
+
+nP.global.fList = nP.global.fGen(1e9, 3e9, 5);
 
 var r1 = nP.R(25);
 
-nP.log(r1.out('s11dB', 's21dB'));` },
-  { id: 'rc-low-pass', title: 'RC low-pass', category: 'getting-started', code: `var g = nP.global;
+var response = r1.out('s11dB', 's21dB');
+
+nP.log(response);` },
+  { id: 'rc-low-pass', title: 'RC low-pass', category: 'getting-started', code: `// RC low-pass
+
+var g = nP.global;
 g.fList = g.fGen(1e6, 1e9, 51);
 
 var tee = nP.Tee();
@@ -25,8 +30,18 @@ var lowPass = nP.nodal(
   [short, 5],
   ['out', 1, 3]
 );
-nP.log(lowPass.out('s11dB', 's21dB'));` },
-  { id: 'rlc-ladder', title: 'RLC ladder', category: 'rf-circuits', code: `var g = nP.global;
+
+var chartTable = lowPass.out('s11dB', 's21dB');
+
+nP.lineChart({
+  inputTable: [chartTable],
+  title: 'RC low-pass',
+  metricPrefix: 'giga',
+  showPoints: false
+});` },
+  { id: 'rlc-ladder', title: 'RLC ladder', category: 'rf-circuits', code: `// RLC ladder
+
+var g = nP.global;
 g.fList = g.fGen(10e6, 2e9, 51);
 
 var tee = nP.Tee();
@@ -43,26 +58,42 @@ var ladder = nP.nodal(
   [l2, 3, 6],
   ['out', 1, 6]
 );
-nP.log(ladder.out('s11dB', 's21dB'));` },
-  { id: 'three-section-stepped-line', title: 'Three-section stepped line', category: 'rf-circuits', code: `var g = nP.global;
-g.fList = g.fGen(1e9, 9e9, 41);
 
-// A quarter-wave section at 5 GHz (free-space velocity).
-var quarterWave = 299792458 / (4 * 5e9);
-var line50a = nP.Tlin(50, quarterWave);
-var line70 = nP.Tlin(70, quarterWave);
-var line50b = nP.Tlin(50, quarterWave);
+var chartTable = ladder.out('s11dB', 's21dB');
 
-var threeSection = nP.cascade(line50a, line70, line50b);` },
-  { id: 'cascaded-lines', title: 'Cascaded lines', category: 'rf-circuits', code: `var g = nP.global;
-g.fList = g.fGen(1e9, 5e9, 21);
+nP.lineChart({
+  inputTable: [chartTable],
+  title: 'RLC ladder',
+  metricPrefix: 'giga',
+  showPoints: false
+});` },
+  { id: 'method-chaining-nport', title: 'Method chaining in nPort', category: 'rf-circuits', code: `// Method chaining in nPort
 
-var line1 = nP.Tlin(50, 0.0127);
-var line2 = nP.Tlin(60, 0.0254);
+nP.global.fList = nP.global.fGen(1e9, 5e9, 21);
 
-var network = nP.cascade(line1, line2);
-nP.log(network.out('s11dB', 's21dB'));` },
-  { id: 'tee-power-divider', title: 'Tee power divider', category: 'rf-circuits', code: `var g = nP.global;
+var line1 = nP.Tlin(50, 0.01);
+var attenuator1 = nP.Attn(3);
+var line2 = nP.Tlin(60, 0.02);
+var attenuator2 = nP.Attn(6);
+var line3 = nP.Tlin(50, 0.01);
+
+var chain = line1
+  .cas(attenuator1)
+  .cas(line2)
+  .cas(attenuator2)
+  .cas(line3);
+
+var response = chain.out('s11dB', 's21dB');
+
+nP.lineChart({
+  inputTable: [response],
+  title: 'Five cascaded two-ports',
+  metricPrefix: 'giga',
+  showPoints: false
+});` },
+  { id: 'tee-power-divider', title: 'Tee power divider', category: 'rf-circuits', code: `// Tee power divider
+
+var g = nP.global;
 g.fList = g.fGen(1e9, 3e9, 21);
 
 var tee = nP.Tee();
@@ -75,8 +106,18 @@ var divider = nP.nodal(
   [branch2, 3, 5],
   ['out', 1, 4, 5]
 );
-nP.log(divider.out('s11dB', 's21dB', 's31dB'));` },
-  { id: 'series-stub', title: 'Series branch with seriesTee', category: 'rf-circuits', code: `nP.global.fList = nP.global.fGen(1e9, 3e9, 21);
+
+var chartTable = divider.out('s11dB', 's21dB', 's31dB');
+
+nP.lineChart({
+  inputTable: [chartTable],
+  title: 'Tee power divider',
+  metricPrefix: 'giga',
+  showPoints: false
+});` },
+  { id: 'series-stub', title: 'Series branch with seriesTee', category: 'rf-circuits', code: `// Series branch with seriesTee
+
+nP.global.fList = nP.global.fGen(1e9, 3e9, 21);
 
 var line = nP.Tlin(50, 0.0254);
 var seriesJunction = nP.seriesTee();
@@ -93,7 +134,9 @@ nP.lineChart({
   inputTable: [network.out('s11dB', 's21dB')],
   title: 'Open series stub'
 });` },
-  { id: 'coupled-line', title: 'Ideal coupled line', category: 'rf-circuits', code: `nP.global.fList = nP.global.fGen(1e9, 3e9, 21);
+  { id: 'coupled-line', title: 'Ideal coupled line', category: 'rf-circuits', code: `// Ideal coupled line
+
+nP.global.fList = nP.global.fGen(1e9, 3e9, 21);
 
 var coupler = nP.Tclin(100, 30, 0.0373);
 
@@ -101,7 +144,9 @@ nP.lineChart({
   inputTable: [coupler.out('s21dB', 's41dB')],
   title: 'Through and coupled ports'
 });` },
-  { id: 'line-chart', title: 'Line chart', category: 'charts-tables', code: `var g = nP.global;
+  { id: 'line-chart', title: 'Line chart', category: 'charts-tables', code: `// Line chart
+
+var g = nP.global;
 g.fList = g.fGen(1e9, 5e9, 41);
 
 var line1 = nP.Tlin(50, 0.0127);
@@ -117,7 +162,9 @@ nP.lineChart({
   metricPrefix: 'giga',
   showPoints: false
 });` },
-  { id: 'series-rc-smith-chart', title: 'Series RC Smith chart', category: 'charts-tables', code: `var g = nP.global;
+  { id: 'series-rc-smith-chart', title: 'Series RC Smith chart', category: 'charts-tables', code: `// Series RC Smith chart
+
+var g = nP.global;
 g.fList = g.fGen(1e6, 10e9, 41);
 
 var r1 = nP.R(50);
@@ -127,8 +174,25 @@ var seriesRC = nP.nodal(
   [r1, 1, 2],
   [c1, 2, 3],
   ['out', 1, 3]
-);` },
-  { id: 'line-table', title: 'Line table', category: 'charts-tables', code: `nP.global.fList = nP.global.fGen(1e9, 3e9, 11);
+);
+
+var smithTable = seriesRC.out('s11Re', 's11Im');
+
+nP.smithChart({
+  inputTable: [smithTable],
+  title: 'Series RC reflection',
+  metricPrefix: 'giga',
+  margin: {
+    top: 35,
+    right: 35,
+    bottom: 35,
+    left: 35
+  },
+  showPoints: true
+});` },
+  { id: 'line-table', title: 'Line table', category: 'charts-tables', code: `// Line table
+
+nP.global.fList = nP.global.fGen(1e9, 3e9, 11);
 
 var line = nP.Tlin(60, 0.0254);
 
@@ -138,42 +202,208 @@ nP.lineTable({
   inputTable: [table],
   title: 'Transmission line data'
 });` },
-  { id: 'complex-arithmetic', title: 'Complex arithmetic', category: 'math', code: `var a = nP.complex(3, 4);
+  { id: 'complex-arithmetic', title: 'Complex arithmetic', category: 'math', code: `// Complex arithmetic
+
+var a = nP.complex(3, 4);
 var b = nP.complex(2, -1);
 
-nP.log(a.mul(b));
+var product = a.mul(b);
+var quotient = a.div(b);
+var magnitude = a.mag();
+var angle = a.ang();
 
-nP.log(a.div(b));
+nP.log(product);
 
-nP.log(a.mag());
+nP.log(quotient);
 
-nP.log(a.ang());` },
-  { id: 'matrix-arithmetic', title: 'Matrix arithmetic', category: 'math', code: `var m1 = nP.matrix([[1, 2], [3, 4]]);
+nP.log(magnitude);
+
+nP.log(angle);` },
+  { id: 'matrix-arithmetic', title: 'Matrix arithmetic', category: 'math', code: `// Matrix arithmetic
+
+var m1 = nP.matrix([[1, 2], [3, 4]]);
 var m2 = nP.matrix([[4, 3], [2, 1]]);
 
-nP.log(m1.add(m2).m);
+var sum = m1.add(m2).m;
+var product = m1.mul(m2).m;
 
-nP.log(m1.mul(m2).m);` },
-  { id: 'fft-round-trip', title: 'FFT and inverse FFT', category: 'math', code: `var samples = [1, 0, -1, 0];
-var spectrum = nP.FFT(samples);
-var recovered = nP.invFFT(spectrum);
+nP.log(sum);
 
-nP.log(spectrum.map(value => value.mag()));
+nP.log(product);` },
+  { id: 'math-method-chaining', title: 'Method chaining with math objects', category: 'math', code: `// Method chaining with math objects
 
-nP.log(recovered.map(value => value.getR()));` },
-  { id: 'chebyshev-prototype', title: 'Chebyshev prototype', category: 'filters', code: `var gk = nP.chebyLPgk(3, 0.1);
+var aRows = nP.dim(10, 10, nP.complex(0, 0));
+var bRows = nP.dim(10, 10, nP.complex(0, 0));
+
+for (var row = 0; row < 10; row++) {
+  aRows[row][row] = nP.complex(12 + row, 1);
+  bRows[row][row] = nP.complex(3, -0.5);
+  if (row < 9) {
+    aRows[row][row + 1] = nP.complex(-1, 0.25);
+    aRows[row + 1][row] = nP.complex(-1, 0.25);
+  }
+}
+
+var matrixA = nP.matrix(aRows);
+var matrixB = nP.matrix(bRows);
+
+var inverseSum = matrixA.addCplx(matrixB).invertCplx();
+var identityCheck = matrixA.addCplx(matrixB).mulCplx(inverseSum);
+
+nP.log('Inverse of the 10 by 10 complex matrix sum:');
+nP.log(inverseSum);
+nP.log('Sum multiplied by its inverse:');
+nP.log(identityCheck);
+
+var realA = nP.matrix([[4, 1], [2, 3]]);
+var realB = nP.matrix([[1, 0], [0, 1]]);
+var realResult = realA.add(realB).invert().mul(realA);
+
+nP.log('Real matrix chain:');
+nP.log(realResult);
+
+var z1 = nP.complex(2, 3);
+var z2 = nP.complex(1, -1);
+var complexResult = z1.add(z2).mul(z2).inv();
+
+nP.log('Complex number chain:');
+nP.log(complexResult);` },
+  { id: 'full-wave-rectified-sine-fft', title: 'Full-wave rectified sine and FFT', category: 'math', code: `// Full-wave rectified sine and FFT
+
+var g = nP.global;
+var sampleCount = 256;
+var period = 1e-3; // Original sine frequency: 1 kHz.
+var periodsShown = 2;
+g.tList = g.tGen(0, periodsShown * period * (sampleCount - 1) / sampleCount, sampleCount);
+g.fList = [];
+
+var rectified = nP.waveform({
+  shape: 'rectifiedSine',
+  period: period
+});
+
+nP.lineChart({
+  inputTable: [rectified.out('waveform')],
+  title: 'Full-wave rectified 1 kHz sine',
+  metricPrefix: 'milli',
+  xAxisTitle: 'Time (ms)',
+  yAxisTitle: 'Voltage (V)',
+  showPoints: false
+});
+
+var fft = nP.FFT(rectified.out('samples'));
+
+nP.lineChart({
+  inputTable: [fft.out('dBV')],
+  title: 'DC and even harmonics of 1 kHz',
+  plotType: 'bar',
+  barWidth: 4,
+  barBaseline: -80,
+  yRange: [-80, 10],
+  metricPrefix: 'kilo',
+  xAxisTitle: 'Frequency (kHz)',
+  yAxisTitle: 'Amplitude (dBV)'
+});` },
+  { id: 'square-wave-fft', title: 'Square wave and FFT', category: 'math', code: `// Square wave and FFT
+
+var g = nP.global;
+var sampleCount = 256;
+var period = 1e-3; // Fundamental frequency: 1 kHz.
+var periodsShown = 2;
+g.tList = g.tGen(0, periodsShown * period * (sampleCount - 1) / sampleCount, sampleCount);
+g.fList = [];
+
+var square = nP.waveform({
+  shape: 'square',
+  period: period
+});
+
+nP.lineChart({
+  inputTable: [square.out('waveform')],
+  title: 'Ideal square wave',
+  metricPrefix: 'milli',
+  xAxisTitle: 'Time (ms)',
+  yAxisTitle: 'Voltage (V)',
+  showPoints: false
+});
+
+var fft = nP.FFT(square.out('samples'));
+
+nP.lineChart({
+  inputTable: [fft.out('dBV')],
+  title: 'Odd harmonics of 1 kHz',
+  plotType: 'bar',
+  barWidth: 4,
+  barBaseline: -80,
+  yRange: [-80, 10],
+  metricPrefix: 'kilo',
+  xAxisTitle: 'Frequency (kHz)',
+  yAxisTitle: 'Amplitude (dBV)'
+});` },
+  { id: 'trapezoid-fft-round-trip', title: 'Trapezoid, FFT, and inverse FFT', category: 'math', code: `// Trapezoid, FFT, and inverse FFT
+
+var g = nP.global;
+var period = 1e-3;
+var sampleCount = 256;
+g.tList = g.tGen(0, period * (sampleCount - 1) / sampleCount, sampleCount);
+g.fList = [];
+
+var trapezoid = nP.waveform({
+  shape: 'custom',
+  period: period,
+  points: [
+    [0, 0],
+    [0.1e-3, 1],
+    [0.6e-3, 1],
+    [0.7e-3, 0],
+    [period, 0]
+  ]
+});
+
+nP.lineChart({
+  inputTable: [trapezoid.out('waveform')],
+  title: 'Sampled trapezoid',
+  metricPrefix: 'milli',
+  xAxisTitle: 'Time (ms)',
+  yAxisTitle: 'Voltage (V)',
+  showPoints: false
+});
+
+var fft = nP.FFT(trapezoid.out('samples'));
+
+nP.lineChart({
+  inputTable: [fft.out('dBV')],
+  title: 'Trapezoid FFT',
+  plotType: 'bar',
+  barWidth: 4,
+  barBaseline: -80,
+  yRange: [-80, 10],
+  metricPrefix: 'kilo',
+  xAxisTitle: 'Frequency (kHz)',
+  yAxisTitle: 'Amplitude (dBV)'
+});
+
+var reconstructed = nP.invFFT(fft);
+
+nP.lineChart({
+  inputTable: [reconstructed.out('real')],
+  title: 'Reconstructed trapezoid samples',
+  metricPrefix: 'milli',
+  xAxisTitle: 'Time (ms)',
+  yAxisTitle: 'Voltage (V)',
+  showPoints: false
+});` },
+  { id: 'chebyshev-ladder', title: 'Chebyshev filter ladder', category: 'filters', code: `// Chebyshev filter ladder
+
+nP.global.fList = nP.global.fGen(10e6, 500e6, 51);
+
+var gk = nP.chebyLPgk(3, 0.1);
 var values = nP.chebyLPLCs(gk, 200e6, 50);
 
 nP.log('Normalized g values:');
-
 nP.log(gk);
-
 nP.log('Terminations, capacitors, and inductor (SI units):');
-
-nP.log(values);` },
-  { id: 'chebyshev-ladder', title: 'Chebyshev filter ladder', category: 'filters', code: `nP.global.fList = nP.global.fGen(10e6, 500e6, 51);
-
-var values = nP.chebyLPLCs(nP.chebyLPgk(3, 0.1), 200e6, 50);
+nP.log(values);
 
 var tee = nP.Tee();
 var short = nP.Short();
@@ -196,17 +426,9 @@ nP.lineChart({
   inputTable: [filter.out('s11dB', 's21dB')],
   title: 'Chebyshev low-pass'
 });` },
-  { id: 'lpf-gen', title: 'lpfGen shortcut', category: 'filters', code: `nP.global.fList = nP.global.fGen(10e6, 500e6, 51);
+  { id: 'microstrip-line', title: 'Microstrip line', category: 'microstrip', code: `// Microstrip line
 
-var values = nP.chebyLPLCs(nP.chebyLPgk(3, 0.1), 200e6, 50);
-
-var filter = nP.lpfGen(values.slice()); // lpfGen consumes its input array.
-
-nP.lineChart({
-  inputTable: [filter.out('s11dB', 's21dB')],
-  title: 'lpfGen response'
-});` },
-  { id: 'microstrip-line', title: 'Microstrip line', category: 'microstrip', code: `var g = nP.global;
+var g = nP.global;
 g.fList = g.fGen(1e9, 10e9, 21);
 
 var line = nP.mlin({
@@ -219,8 +441,18 @@ var line = nP.mlin({
   lossTangent: 0.001,
   roughnessRms: 0
 });
-nP.log(line.out('s11dB', 's21dB'));` },
-  { id: 'microstrip-coupler', title: 'Microstrip coupled line', category: 'microstrip', code: `nP.global.fList = nP.global.fGen(1e9, 5e9, 21);
+
+var chartTable = line.out('s11dB', 's21dB');
+
+nP.lineChart({
+  inputTable: [chartTable],
+  title: 'Microstrip line',
+  metricPrefix: 'giga',
+  showPoints: false
+});` },
+  { id: 'microstrip-coupler', title: 'Microstrip coupled line', category: 'microstrip', code: `// Microstrip coupled line
+
+nP.global.fList = nP.global.fGen(1e9, 5e9, 21);
 
 var coupler = nP.mclin();
 
@@ -228,7 +460,9 @@ nP.lineChart({
   inputTable: [coupler.out('s21dB', 's41dB')],
   title: 'Microstrip coupled line'
 });` },
-  { id: 'microstrip-tee', title: 'Microstrip Tee', category: 'microstrip', code: `nP.global.fList = nP.global.fGen(1e9, 5e9, 21);
+  { id: 'microstrip-tee', title: 'Microstrip Tee', category: 'microstrip', code: `// Microstrip Tee
+
+nP.global.fList = nP.global.fGen(1e9, 5e9, 21);
 
 var tee = nP.mtee();
 
@@ -236,7 +470,9 @@ nP.lineChart({
   inputTable: [tee.out('s21dB', 's31dB')],
   title: 'Microstrip Tee branches'
 });` },
-  { id: 'microstrip-layout', title: 'Step, bend, and via', category: 'microstrip', code: `nP.global.fList = nP.global.fGen(1e9, 5e9, 21);
+  { id: 'microstrip-layout', title: 'Step, bend, and via', category: 'microstrip', code: `// Step, bend, and via
+
+nP.global.fList = nP.global.fGen(1e9, 5e9, 21);
 
 var step = nP.mstep();
 var bend = nP.mbend();
@@ -248,7 +484,9 @@ nP.lineChart({
   inputTable: [path.out('s11dB', 's21dB')],
   title: 'Microstrip layout path'
 });` },
-  { id: 'microstrip-film-resistor', title: 'Thin-film resistor', category: 'microstrip', code: `nP.global.fList = nP.global.fGen(1e9, 5e9, 21);
+  { id: 'microstrip-film-resistor', title: 'Thin-film resistor', category: 'microstrip', code: `// Thin-film resistor
+
+nP.global.fList = nP.global.fGen(1e9, 5e9, 21);
 
 var resistor = nP.mtfr({
   ohmsPerSquare: 50,
@@ -257,13 +495,18 @@ var resistor = nP.mtfr({
   sections: 3
 });
 
-nP.log('DC resistance: ' + resistor.filmResistor.resistance.toFixed(1) + ' ohms');
+var resistanceOhms = resistor.filmResistor.resistance;
+
+nP.log('DC resistance (ohms):');
+nP.log(resistanceOhms);
 
 nP.lineChart({
   inputTable: [resistor.out('s11dB', 's21dB')],
   title: 'Thin-film resistor'
 });` },
-  { id: 'amplifier-noise', title: 'Amplifier noise figure', category: 'noise', code: `nP.global.fList = nP.global.fGen(1e9, 2e9, 11);
+  { id: 'amplifier-noise', title: 'Amplifier noise figure', category: 'noise', code: `// Amplifier noise figure
+
+nP.global.fList = nP.global.fGen(1e9, 2e9, 11);
 nP.global.Temp = 290;
 
 var amp = nP.Amp(20, 4);
@@ -279,7 +522,9 @@ nP.lineTable({
   inputTable: [chain.out('s21dB', 'NF21dB', 'noiseFloor')],
   title: 'Gain and noise'
 });` },
-  { id: 'noise-order', title: 'Amplifier versus attenuator order', category: 'noise', code: `nP.global.fList = [1e9];
+  { id: 'noise-order', title: 'Amplifier versus attenuator order', category: 'noise', code: `// Amplifier versus attenuator order
+
+nP.global.fList = [1e9];
 
 var amp = nP.Amp(20, 4);
 var attenuator = nP.Attn(3);
@@ -287,12 +532,17 @@ var attenuator = nP.Attn(3);
 var ampFirst = nP.cascade(amp, attenuator);
 var attenuatorFirst = nP.cascade(attenuator, amp);
 
+var ampFirstTable = ampFirst.out('s21dB', 'NF21dB');
+var attenuatorFirstTable = attenuatorFirst.out('s21dB', 'NF21dB');
+
 nP.log('Amplifier first:');
-nP.log(ampFirst.out('s21dB', 'NF21dB'));
+nP.log(ampFirstTable);
 
 nP.log('Attenuator first:');
-nP.log(attenuatorFirst.out('s21dB', 'NF21dB'));` },
-  { id: 'two-tone-ip3', title: 'Two-tone IM3 and OIP3', category: 'intermodulation', code: `nP.global.fList = nP.global.fGen(1e9, 1.1e9, 5);
+nP.log(attenuatorFirstTable);` },
+  { id: 'two-tone-ip3', title: 'Two-tone IM3 and OIP3', category: 'intermodulation', code: `// Two-tone IM3 and OIP3
+
+nP.global.fList = nP.global.fGen(1e9, 1.1e9, 5);
 nP.global.twoTone = {
   spacingHz: 1e6,
   p1dBm: -30,
@@ -315,13 +565,17 @@ nP.lineTable({
   inputTable: [chain.out('IM3lower21dBm', 'OIP3lower21dBm')],
   title: 'Two-tone products'
 });` },
-  { id: 'diode-dc-rf', title: '1N4148 DC and RF', category: 'nonlinear', code: `nP.global.fList = nP.global.fGen(1e6, 1e9, 21);
+  { id: 'diode-dc-rf', title: '1N4148 DC and RF', category: 'nonlinear', code: `// 1N4148 DC and RF
+
+nP.global.fList = nP.global.fGen(1e6, 1e9, 21);
 
 var diode = nP.diode1N4148({
   biasVoltage: 0.5
 });
 
-nP.log(diode.out('s11dB', 's21dB'));
+var rfTable = diode.out('s11dB', 's21dB');
+
+nP.log(rfTable);
 
 nP.lineChart({
   inputTable: [diode.ivTable(0, 0.9, 41)],
@@ -330,7 +584,13 @@ nP.lineChart({
   yAxisTitle: 'Current (A)',
   metricPrefix: 'none'
 });` },
-  { id: 'am-envelope', title: 'AM sidebands and envelope', category: 'analog-modulation', code: `var tx = nP.mod({
+  { id: 'am-envelope', title: 'AM sidebands and envelope', category: 'analog-modulation', code: `// AM sidebands and envelope
+
+var g = nP.global;
+g.tList = g.tGen(0, 1e-3, 2);
+g.fList = [];
+
+var tx = nP.mod({
   mode: 'AM',
   carrierHz: 200e6,
   toneHz: 300,
@@ -347,7 +607,9 @@ var rx = nP.demod(chain, {
   noise: false
 });
 
-nP.log(tx.out('tones'));
+var tones = tx.out('tones');
+
+nP.log(tones);
 nP.lineChart({
   inputTable: [rx.out('envelope')],
   title: 'AM envelope',
@@ -355,7 +617,13 @@ nP.lineChart({
   yAxisTitle: 'V',
   metricPrefix: 'milli'
 });` },
-  { id: 'fm-pm-sidebands', title: 'FM and PM sidebands', category: 'analog-modulation', code: `var fm = nP.mod({
+  { id: 'fm-pm-sidebands', title: 'FM and PM sidebands', category: 'analog-modulation', code: `// FM and PM sidebands
+
+var g = nP.global;
+g.tList = g.tGen(0, 1e-3, 2);
+g.fList = [];
+
+var fm = nP.mod({
   mode: 'FM',
   carrierHz: 200e6,
   toneHz: 300,
@@ -369,12 +637,21 @@ var pm = nP.mod({
   beta: 1
 });
 
+var fmTones = fm.out('tones');
+var pmTones = pm.out('tones');
+
 nP.log('FM tones:');
-nP.log(fm.out('tones'));
+nP.log(fmTones);
 
 nP.log('PM tones:');
-nP.log(pm.out('tones'));` },
-  { id: 'ssb-dsb-sidebands', title: 'SSB versus DSB-SC', category: 'analog-modulation', code: `var ssb = nP.mod({
+nP.log(pmTones);` },
+  { id: 'ssb-dsb-sidebands', title: 'SSB versus DSB-SC', category: 'analog-modulation', code: `// SSB versus DSB-SC
+
+var g = nP.global;
+g.tList = g.tGen(0, 1e-3, 2);
+g.fList = [];
+
+var ssb = nP.mod({
   mode: 'SSB',
   sideband: 'USB',
   carrierHz: 200e6,
@@ -387,12 +664,18 @@ var dsb = nP.mod({
   toneHz: 300
 });
 
+var ssbTones = ssb.out('tones');
+var dsbTones = dsb.out('tones');
+
 nP.log('SSB occupied tones:');
-nP.log(ssb.out('tones'));
+nP.log(ssbTones);
 
 nP.log('DSB-SC occupied tones:');
-nP.log(dsb.out('tones'));` },
-  { id: 'ascii-through-circuit', title: 'ASCII through a circuit', category: 'digital-signals', code: `var context = nP.global();
+nP.log(dsbTones);` },
+  { id: 'ascii-through-circuit', title: 'ASCII through a circuit', category: 'digital-signals', code: `// ASCII through a circuit
+
+var context = nP.global();
+context.tList = context.tGen(0, 319 / 8e9, 320); // 40 bits, 8 samples per bit.
 context.fList = [];
 
 var tx = nP.mod({
@@ -410,7 +693,10 @@ var rx = nP.demod(chain, {
   noise: false
 });
 
-nP.log('Received: ' + rx.out('ASCII text'));
+var receivedText = rx.out('ASCII text');
+
+nP.log('Received:');
+nP.log(receivedText);
 
 nP.lineChart({
   inputTable: [rx.out('waveform')],
@@ -419,7 +705,9 @@ nP.lineChart({
   yAxisTitle: 'V',
   metricPrefix: 'none'
 });` },
-  { id: 'pn7-waveform', title: 'PN7 clocked waveform', category: 'digital-signals', code: `var context = nP.global();
+  { id: 'pn7-waveform', title: 'PN7 clocked waveform', category: 'digital-signals', code: `// PN7 clocked waveform
+
+var context = nP.global();
 context.tList = context.tGen(0, 126e-9, 127);
 
 var pn = nP.PN({
@@ -427,7 +715,10 @@ var pn = nP.PN({
   time: context.tList
 });
 
-nP.log('First 16 bits: ' + pn.out('bits').slice(0, 16).join(''));
+var bits = pn.out('bit string');
+
+nP.log('PN7 bits:');
+nP.log(bits);
 
 nP.lineChart({
   inputTable: [pn.out('waveform')],
@@ -436,7 +727,13 @@ nP.lineChart({
   yAxisTitle: 'V',
   metricPrefix: 'none'
 });` },
-  { id: 'psk-receiver', title: 'PSK receiver', category: 'digital-signals', code: `var tx = nP.mod({
+  { id: 'psk-receiver', title: 'PSK receiver', category: 'digital-signals', code: `// PSK receiver
+
+var g = nP.global;
+g.tList = g.tGen(0, 511 / 640e6, 512); // 8 bits, 64 samples per bit.
+g.fList = [];
+
+var tx = nP.mod({
   mode: 'PSK',
   carrierHz: 200e6,
   bitRate: 10e6,
@@ -454,10 +751,21 @@ var rx = nP.demod(chain, {
   noise: false
 });
 
-nP.log('Sent: ' + tx.bits.join(''));
+var sentBits = tx.out('bit string');
+var receivedBits = rx.out('bit string');
 
-nP.log('Received: ' + rx.out('bits').join(''));` },
-  { id: 'ber-attenuation', title: 'BER through an attenuator', category: 'digital-signals', code: `var tx = nP.mod({
+nP.log('Sent:');
+nP.log(sentBits);
+
+nP.log('Received:');
+nP.log(receivedBits);` },
+  { id: 'ber-attenuation', title: 'BER through an attenuator', category: 'digital-signals', code: `// BER through an attenuator
+
+var g = nP.global;
+g.tList = g.tGen(0, 127 / 8e9, 128); // 16 bits, 8 samples per bit.
+g.fList = [];
+
+var tx = nP.mod({
   mode: 'ASCII',
   message: 'Hi',
   bitRate: 1e9,
@@ -475,8 +783,15 @@ var ber = nP.bitErrorRate(tx, chain, {
   receptions: 50
 });
 
-nP.log('Measured BER: ' + ber.toExponential(2));` },
-  { id: 'qam-ofdm', title: 'QAM and OFDM reception', category: 'digital-signals', code: `var qam = nP.mod({
+nP.log('Measured BER:');
+nP.log(ber);` },
+  { id: 'qam-ofdm', title: 'QAM and OFDM reception', category: 'digital-signals', code: `// QAM and OFDM reception
+
+var g = nP.global;
+g.tList = g.tGen(0, 1279 / 640e6, 1280); // Four data symbols and one QAM pilot.
+g.fList = [];
+
+var qam = nP.mod({
   mode: 'QAM',
   order: 16,
   carrierHz: 200e6,
@@ -493,7 +808,13 @@ var qamRx = nP.demod(qamChain, {
   noise: false
 });
 
-nP.log('QAM bits: ' + qamRx.out('bits').join(''));
+var qamBits = qamRx.out('bit string');
+
+nP.log('QAM bits:');
+nP.log(qamBits);
+
+g.tList = g.tGen(0, 127 / 640e6, 128); // One 128-sample OFDM block.
+g.fList = [];
 
 var ofdm = nP.mod({
   mode: 'OFDM',
@@ -512,25 +833,8 @@ var ofdmRx = nP.demod(ofdmChain, {
   noise: false
 });
 
-nP.log('OFDM bits: ' + ofdmRx.out('bits').join(''));` },
+var ofdmBits = ofdmRx.out('bit string');
+
+nP.log('OFDM bits:');
+nP.log(ofdmBits);` },
 ];
-
-function addLineChart(example, networkName, fields, title) {
-  example.code = example.code.replace(/\nnP\.log\([^;]+;/g, '');
-  example.code += `\n\nvar chartTable = ${networkName}.out(${fields});\n\nnP.lineChart({\n  inputTable: [chartTable],\n  title: '${title}',\n  metricPrefix: 'giga',\n  showPoints: false\n});`;
-}
-
-function addSmithChart(example, networkName, title) {
-  example.code += `\n\nvar smithTable = ${networkName}.out('s11Re', 's11Im');\n\nnP.smithChart({\n  inputTable: [smithTable],\n  title: '${title}',\n  metricPrefix: 'giga',\n  margin: {\n    top: 35,\n    right: 35,\n    bottom: 35,\n    left: 35\n  },\n  showPoints: false\n});`;
-}
-
-const exampleById = Object.fromEntries(examples.map(example => [example.id, example]));
-
-addSmithChart(exampleById['series-rc-smith-chart'], 'seriesRC', 'Series RC reflection');
-exampleById['series-rc-smith-chart'].code = exampleById['series-rc-smith-chart'].code.replace('showPoints: false', 'showPoints: true');
-addLineChart(exampleById['rc-low-pass'], 'lowPass', "'s11dB', 's21dB'", 'RC low-pass');
-addLineChart(exampleById['rlc-ladder'], 'ladder', "'s11dB', 's21dB'", 'RLC ladder');
-addLineChart(exampleById['three-section-stepped-line'], 'threeSection', "'s11dB', 's21dB'", 'Three-section stepped line');
-addLineChart(exampleById['cascaded-lines'], 'network', "'s11dB', 's21dB'", 'Cascaded lines');
-addLineChart(exampleById['tee-power-divider'], 'divider', "'s11dB', 's21dB', 's31dB'", 'Tee power divider');
-addLineChart(exampleById['microstrip-line'], 'line', "'s11dB', 's21dB'", 'Microstrip line');

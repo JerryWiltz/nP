@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-19 -->
+<!-- Modified: 2026-10-20 -->
 # Math
 
 The math API provides complex numbers, matrices, and Fourier transforms. These functions are also used by the RF and digital calculations, but you can call them directly through `nP`.
@@ -105,17 +105,21 @@ nP.log(copiedRows[0][0]); // 3
 
 ## Fourier transforms
 
-`nP.FFT(samples)` takes a nonempty array of finite numbers or `nP.complex()` values and returns an equally long array of complex frequency bins. `nP.invFFT(spectrum)` transforms those bins back into complex samples. Both support any positive array length; you do not need to pad to a power of two.
+`nP.FFT(samples)` takes an array of at least two finite numbers or `nP.complex()` values. Set `nP.global.tList` first to one uniformly spaced time in seconds per sample. It returns an equally long array of complex frequency bins and fills `global.fList` with their signed frequencies in hertz. `nP.invFFT(spectrum)` transforms those bins back into complex samples. You do not need to pad to a power of two. Both returned arrays have an `.out()` method that builds a numeric table for `nP.log()` or `nP.lineChart()`.
 
 ```js
+var g = nP.global;
+g.tList = g.tGen(0, 3e-3, 4);
+g.fList = [];
 var samples = [1, 0, 0, 0];
 var spectrum = nP.FFT(samples);
 var recovered = nP.invFFT(spectrum);
 
-nP.log(spectrum.map(function (bin) { return bin.getR(); }));
-// Approximately [1, 1, 1, 1]
-nP.log(recovered.map(function (sample) { return sample.getR(); }));
-// Approximately [1, 0, 0, 0]
+nP.log('FFT bins:');
+nP.log(spectrum.out('magnitude')); // Frequency (Hz), Magnitude
+
+nP.log('Recovered time samples:');
+nP.log(recovered.out('real'));      // Time (s), Real
 ```
 
-The forward transform is unscaled; the inverse divides by the sample count. The functions transform sample **values** only. If you sampled at rate `Fs` with `N` samples, bin `k` corresponds to `k × Fs / N` hertz through Nyquist. Bins above Nyquist represent negative frequencies at `(k − N) × Fs / N`. The returned values are complex even when the input samples are real, so use `getR()`, `getI()`, or `mag()` to inspect them.
+The forward transform is unscaled; the inverse divides by the sample count. If you sampled at rate `Fs` with `N` samples, bin `k` corresponds to `k × Fs / N` hertz through Nyquist. Bins above Nyquist represent negative frequencies at `(k − N) × Fs / N`. The returned values are complex even when the input samples are real. `spectrum.out('magnitude')` returns the nonnegative bins from DC through Nyquist with their raw, unscaled magnitudes. For real voltage samples, `spectrum.out('dBV')` returns a one-sided RMS voltage spectrum in dBV, ready for a chart with `yAxisTitle: 'Amplitude (dBV)'`. DC and Nyquist use `|X[k]| / N`; other nonnegative bins use `√2 |X[k]| / N`. Zero and very small bins are shown at −80 dBV by default; set another floor with `spectrum.out('dBV', {floorDbv: -100})`. `recovered.out('real')` returns every time and real sample value. Both transforms also accept `'real'`, `'imaginary'`, or `'magnitude'`; the defaults are magnitude for FFT and real for inverse FFT. The inverse transform does not change either global list.

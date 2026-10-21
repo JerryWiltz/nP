@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-19 -->
+<!-- Modified: 2026-10-20 -->
 # Global settings
 
 `nP.global` provides the settings for the currently selected analysis context. A context is a saved set of frequencies, times, reference impedance, temperature, and optional two-tone settings. Set the values you need before creating components: each n-port saves its settings when it is constructed.
@@ -41,6 +41,8 @@ nP.global.tList = nP.global.tGen(0, 1e-6, 101);
 ```
 
 `nP.PN()` uses `tList` for its clock times unless you pass a `time` array directly to `PN()`. The list must also meet that function's sequence-length requirements. See the [Tutorial](./tutorial.md) for a signal-through-circuit example.
+
+Public `nP.FFT()` requires one uniformly spaced `tList` time per input sample and fills `fList` with the signed output-bin frequencies. `nP.mod()` also requires a valid time list; for sampled modes, it must contain one time per final waveform sample at the modulation sample rate. Set `fList = []` before either call when starting a frequency grid from the signal. The default `[2e9]` remains available for ordinary RF component analysis. A PN clock list is coarser than the expanded sample list used by `mod({input: pn})`; pass that clock list directly to `PN()` and set `global.tList` to the full sample grid before `mod()`.
 
 ## Reference impedance and temperature
 

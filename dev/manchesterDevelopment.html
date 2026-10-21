@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Modified: 2026-10-15 -->
+<!-- Modified: 2026-10-20 -->
 <html lang="en">
 
 <head>
@@ -11,6 +11,7 @@
 <body>
     <script>
         var g = nP.global();
+        g.tList = g.tGen(0, 1023 / 640e6, 1024); // 'Hi': 16 bits × 64 samples.
         g.fList = [];
 
         var tx = nP.mod({

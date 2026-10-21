@@ -1,24 +1,67 @@
-// Modified: 2026-10-15
+// Modified: 2026-10-21
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {global} from '../src/np-global/index.js';
-import {mod, demod, bitErrorRate, PN} from '../src/np-digital/index.js';
+import {mod as runMod, demod, bitErrorRate, PN} from '../src/np-digital/index.js';
 import {Thru, Attn, Amp, nodal, cascade} from '../src/np-nport/index.js';
 import {nPort} from '../src/np-nport/src/nPort.js';
 import {complex} from '../src/np-math/src/complex.js';
 
 function withGlobal(action) {
-    var previous = {fList: global.fList, Ro: global.Ro, twoTone: global.twoTone};
+    var previous = {fList: global.fList, tList: global.tList,
+        Ro: global.Ro, twoTone: global.twoTone};
     global.Ro = 50;
     global.twoTone = undefined;
     try {
         return action();
     } finally {
         global.fList = previous.fList;
+        global.tList = previous.tList;
         global.Ro = previous.Ro;
         global.twoTone = previous.twoTone;
     }
+}
+
+function mod(options = {}) {
+    var mode = options.mode;
+    var analog = ['AM', 'SSB', 'DSB-SC', 'FM', 'PM'].includes(mode);
+    if (analog || !options || typeof options !== 'object') {
+        global.tList = global.tGen(0, 1e-6, 2);
+        return runMod(options);
+    }
+    var sourceMode = options.input ? options.input.mode :
+        options.dataMode || (options.message !== undefined ? 'ASCII' :
+            options.bits !== undefined ? 'bits' : /^PN\d+$/.test(mode) ? mode : 'PN7');
+    var bitCount = options.input ? options.input.bits.length :
+        sourceMode === 'ASCII' ? String(options.message || '').length * 8 :
+            sourceMode === 'bits' ? (options.bits || '').length :
+                /^PN\d+$/.test(sourceMode) && Number(sourceMode.slice(2)) <= 16 ?
+                    2 ** Number(sourceMode.slice(2)) - 1 : 0;
+    var samplesPerBit = options.samplesPerBit === undefined ? 8 : options.samplesPerBit;
+    var bitRate = options.input ? options.input.bitRate :
+        options.symbolRate !== undefined && (mode === 'QPSK' || mode === 'QAM') ?
+            options.symbolRate * Math.log2(mode === 'QPSK' ? 4 : options.order || 16) :
+                options.bitRate === undefined ? 1e9 : options.bitRate;
+    var count = bitCount * samplesPerBit;
+    var sampleRate = bitRate * samplesPerBit;
+    if (mode === 'DPSK') count = (bitCount + 1) * samplesPerBit;
+    if (mode === 'QPSK' || mode === 'QAM') {
+        var bitsPerSymbol = Math.log2(mode === 'QPSK' ? 4 : options.order || 16);
+        count = (Math.ceil(bitCount / bitsPerSymbol) + (mode === 'QAM' ? 1 : 0)) *
+            bitsPerSymbol * samplesPerBit;
+    }
+    if (mode === 'OFDM') {
+        var subcarrierCount = options.subcarrierCount || 64;
+        var fftSize = options.fftSize || 4 * subcarrierCount;
+        var order = options.subcarrierMode === 'QAM' ? options.order || 16 : 4;
+        count = Math.ceil(bitCount / (subcarrierCount * Math.log2(order))) * fftSize;
+        sampleRate = (options.symbolRate || 5e6) * fftSize;
+    }
+    global.tList = Number.isInteger(count) && count >= 2 &&
+        Number.isFinite(sampleRate) && sampleRate > 0 ?
+        global.tGen(0, (count - 1) / sampleRate, count) : global.tGen(0, 1e-9, 2);
+    return runMod(options);
 }
 
 function checkSamples(table, bits, samplesPerBit, scale = 1) {
@@ -30,6 +73,22 @@ function checkSamples(table, bits, samplesPerBit, scale = 1) {
     }
 }
 
+test('mod requires a selected sample grid with matching count and rate', () => {
+    withGlobal(() => {
+        global.tList = [];
+        assert.throws(() => runMod({mode: 'bits', bits: '10', samplesPerBit: 2}), /tList/);
+        global.tList = global.tGen(0, 1e-9, 3);
+        assert.throws(() => runMod({mode: 'bits', bits: '10', samplesPerBit: 2}), /one tList time/);
+        global.tList = global.tGen(0, 3e-9, 4);
+        assert.throws(() => runMod({mode: 'bits', bits: '10', samplesPerBit: 2}), /sample rate/);
+        global.tList = global.tGen(0, 1.5e-9, 4);
+        global.fList = [];
+        var tx = runMod({mode: 'bits', bits: '10', samplesPerBit: 2});
+        assert.deepEqual(tx.time, global.tList);
+        assert.deepEqual(global.fList, [0, 500e6, 1e9]);
+    });
+});
+
 test('PN7 mod returns signal data and cascade reconstructs its waveform', () => {
     withGlobal(() => {
         var tx = mod({mode: 'PN7', bitRate: 1e9, samplesPerBit: 8});
@@ -39,6 +98,7 @@ test('PN7 mod returns signal data and cascade reconstructs its waveform', () => 
         assert.equal(tx.sampleCount, 1016);
         assert.equal(tx.spectrum.length, 509);
         assert.equal(tx.out('mode'), 'PN7');
+        assert.equal(tx.out('bit string'), tx.bits.join(''));
         assert.equal(tx.out('bit count'), 127);
         assert.equal(tx.out('sample count'), 1016);
         assert.equal(tx.out('frequency count'), 509);
@@ -54,11 +114,12 @@ test('PN7 mod returns signal data and cascade reconstructs its waveform', () => 
         var received = demod(cascade(thru, {signal: tx, inputPort: 1}), {noise: false});
         checkSamples(received.out('waveform'), tx.bits, 8);
         assert.deepEqual(received.out('bits'), tx.bits);
+        assert.equal(received.out('bit string'), tx.out('bit string'));
         assert.equal(thru.signal, undefined);
     });
 });
 
-test('PN advances on clock ticks and mod creates the FFT sampling grid', () => {
+test('PN advances on clock ticks and mod uses the selected sample grid', () => {
     withGlobal(() => {
         var previousTime = global.tList;
         try {
@@ -70,6 +131,7 @@ test('PN advances on clock ticks and mod creates the FFT sampling grid', () => {
             var chain = cascade(stage, {signal: tx});
 
             assert.equal(pn.out('bit count'), 127);
+            assert.equal(pn.out('bit string'), pn.bits.join(''));
             assert.equal(pn.out('sample count'), 127);
             assert.equal(pn.samplesPerBit, 1);
             assert.equal(pn.out('waveform').length, 128);
@@ -87,7 +149,7 @@ test('PN advances on clock ticks and mod creates the FFT sampling grid', () => {
             assert.deepEqual(tx.bits, pn.bits);
             assert.deepEqual(global.fList, tx.fList);
             assert.deepEqual(stage.getglobal().fList, tx.fList);
-            assert.deepEqual(stage.getglobal().tList, pn.time);
+            assert.deepEqual(stage.getglobal().tList, tx.time);
             assert.deepEqual(demod(chain, {noise: false}).out('bits'), pn.bits);
             var fourSamples = mod({input: pn, samplesPerBit: 4});
             assert.equal(fourSamples.sampleCount, 508);
@@ -125,7 +187,7 @@ test('selectable PN lengths produce full periods and pass through mod and demod'
             assert.deepEqual(shortcut.bits, pn3.bits);
             assert.equal(shortcut.out('frequency count'), 29);
             assert.throws(() => mod({mode: 'PN17'}), /2 through 16/);
-            assert.throws(() => PN({stages: 3, time: global.tList, seed: 0}), /nonzero/);
+            assert.throws(() => PN({stages: 3, time: pn3.time, seed: 0}), /nonzero/);
         } finally {
             global.tList = previousTime;
         }
@@ -502,6 +564,7 @@ test('continuous-phase binary FSK survives nodal and cascade without a carrier p
         assert.equal(demod(viaCascade, {noise: false}).out('ASCII text'), 'Hi');
         assert.equal(demod(tx, {noise: false}).out('ASCII text'), 'Hi');
         assert.deepEqual(demod(viaNodal, {noise: false}).out('bits'), tx.bits);
+        assert.equal(demod(viaNodal, {noise: false}).out('bit string'), tx.out('bit string'));
         assert.equal(demod(viaNodal, {noise: false}).out('tone energies').length, 17);
         var nested = nodal([viaNodal, 1, 2], [Thru(), 2, 3], ['out', 1, 3]);
         assert.equal(demod(nested, {noise: false}).out('ASCII text'), 'Hi');
@@ -750,6 +813,7 @@ test('new sampled modes recover data through cascade and nested nodal circuits',
                 ['out', 1, 2]
             );
             assert.equal(demod(chain, {noise: false}).out('ASCII text'), 'Hi', mode + ' cascade');
+            assert.equal(demod(chain, {noise: false}).out('bit string'), tx.out('bit string'), mode + ' bit string');
             assert.equal(demod(nested, {noise: false}).out('ASCII text'), 'Hi', mode + ' nested nodal');
             assert.equal(tx.out('settings').frequencyCount, tx.fList.length);
             assert.equal(nested.signal.mode, mode);

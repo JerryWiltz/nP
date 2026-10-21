@@ -1,4 +1,4 @@
-// Modified: 2026-10-19
+// Modified: 2026-10-21
 import { examples } from './theme/replExamples.js'
 
 function replSidebarItems(category) {
@@ -13,6 +13,9 @@ export default {
     title: 'nP Docs',
     description: 'Documentation for the nP project',
     base: '/nP/',
+    markdown: {
+        math: true
+    },
 
     // Keep archived material and repository instructions out of the site.
     srcExclude: ['_*/**', '**/AGENTS.md'],
@@ -23,11 +26,32 @@ export default {
         nav: [
             { text: 'Guide', link: '/hello-nport' },
             { text: 'REPL', link: '/repl.html', activeMatch: '^$' },
+            { text: 'Tech Notes', link: '/tech-notes' },
             { text: 'npm', link: 'https://www.npmjs.com/package/@jerrywiltz/np' },
             { text: 'Obsidian', link: 'https://community.obsidian.md/plugins/np-rf-analysis' },
             { text: 'GitHub', link: 'https://github.com/JerryWiltz/nP' }
         ],
         sidebar: {
+          '/tech-notes': [
+            {
+                text: 'RF notes',
+                link: '/tech-notes#rf-notes',
+                items: [
+                    { text: 'S-parameters for the novice', link: '/tech-notes-s-parameters-for-the-novice' },
+                    { text: 'nPort overview', link: '/tech-notes-nport-overview' }
+                ]
+            },
+            {
+                text: 'Digital notes',
+                link: '/tech-notes#digital-notes',
+                items: [
+                    { text: 'Sampling and quantization', link: '/tech-notes-sampling-and-quantization' },
+                    { text: 'Waveform in nPort', link: '/tech-notes-waveform-in-nport' },
+                    { text: 'FFT in nPort', link: '/tech-notes-fft-in-nport' },
+                    { text: 'mod() in nPort', link: '/tech-notes-mod-in-nport' }
+                ]
+            }
+          ],
           '/repl': [
             { text: 'Getting Started', items: replSidebarItems('getting-started') },
             { text: 'RF Circuits', items: replSidebarItems('rf-circuits') },

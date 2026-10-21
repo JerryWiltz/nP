@@ -1,10 +1,13 @@
-<!-- Modified: 2026-10-15 -->
+<!-- Modified: 2026-10-20 -->
 # Modulation and demodulation in nP
 
 `nP.mod()` describes a signal to apply to a circuit. It produces the frequencies the circuit must analyze and the complex input voltage at each frequency. It does **not** return an nPort. Build components after calling `mod()`, combine them with `nodal()` or `cascade()`, and attach the transmitter to the completed circuit. `nP.demod()` then reads the signal carried by that nPort and reconstructs or measures its output.
 
+Set the selected context's `tList` before every `mod()` call. For sampled modes, it must have one uniformly spaced time per final transmit sample, at the generated sample rate. `mod()` checks this grid and populates `fList`. The sparse analog modes also require a valid time grid as part of the call setup, although their tone frequencies are calculated without sampling an RF waveform.
+
 ```js
 var g = nP.global();
+g.tList = g.tGen(0, 1023 / 640e6, 1024); // 'Hi': 16 bits × 64 samples.
 g.fList = [];
 
 var tx = nP.mod({mode: 'PSK', encoding: 'Manchester',
@@ -157,6 +160,7 @@ For example, ASCII `Hi` has 16 bits. At 64 samples per bit and 10 Mbit/s, `N = 1
 
 ```js
 var g = nP.global();
+g.tList = g.tGen(0, 1023 / 640e6, 1024);
 g.fList = [];
 var tx = nP.mod({mode: 'PSK', carrierHz: 200e6,
     bitRate: 10e6, samplesPerBit: 64, message: 'Hi'});
@@ -170,6 +174,8 @@ By default, `mod()` replaces the selected `nP.global` context's `fList`. Passing
 
 ```js
 var frequencies = [];
+var g = nP.global;
+g.tList = g.tGen(0, 1e-3, 2);
 var tx = nP.mod({mode: 'AM', carrierHz: 200e6,
     toneHz: 300, fftList: frequencies});
 var attenuator = nP.Attn({attenuationDb: 3, fList: frequencies});

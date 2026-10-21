@@ -1,5 +1,5 @@
-// Modified: 2026-10-15
-import {FFT, invFFT} from '../../np-math/src/fft';
+// Modified: 2026-10-21
+import {fftBins, invFFT} from '../../np-math/src/fft';
 import {complex} from '../../np-math/src/complex';
 import {global} from '../../np-global/src/global';
 
@@ -49,7 +49,7 @@ function setSamples(tx, samples, fftList, sampleRateHz) {
 	tx.fList = Array.from({length: Math.floor(samples.length / 2) + 1}, function (_, bin) {
 		return bin * tx.sampleRateHz / samples.length;
 	});
-	tx.spectrum = FFT(samples).slice(0, tx.fList.length);
+	tx.spectrum = fftBins(samples).slice(0, tx.fList.length);
 	if (fftList === undefined) global.fList = tx.fList.slice();
 	else {
 		fftList.length = 0;
@@ -338,6 +338,7 @@ export function demodulateAdvanced(receiver, signal) {
 			if (selector === 'mode') return mode;
 			if (selector === 'data mode') return signal.dataMode;
 			if (selector === 'bits') return bits.slice();
+			if (selector === 'bit string') return bits.join('');
 			if (selector === 'bit count') return bits.length;
 			if (selector === 'ASCII text') return ascii(bits);
 			if (selector === 'symbols') return symbols.map(function (row) { return row.slice(); });

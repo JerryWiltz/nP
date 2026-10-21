@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-19 -->
+<!-- Modified: 2026-10-20 -->
 # nP constructor catalog
 
 This catalog covers the 51 public functions that produce n-port objects from `src/np-nport/src/index.js`, the digital waveform functions from `src/np-digital`, and the exported math and low-pass prototype functions. Each JS call below spells out the **current defaults** where they exist. Each argument or property appears on its own line. Units are in comments. Each constructor has its own heading and code block.
@@ -729,6 +729,56 @@ The returned diode is a two-port with RF S-parameters, noise covariance, weak-si
 
 ## Digital waveform functions
 
+### `waveform`
+
+```js
+var g = nP.global;
+g.tList = g.tGen(0, 255e-3 / 256, 256); // s; one period, no duplicate endpoint
+
+var triangle = nP.waveform({
+    shape: 'triangle', // default shape
+    period: 1e-3,      // s; required
+    riseFraction: 0.5, // 0 to 1; peak location within the period
+    lowVolts: -1,      // V
+    highVolts: 1,      // V
+    time: g.tList      // s; defaults to the selected global.tList
+});
+
+var square = nP.waveform({
+    shape: 'square', // 50% duty cycle by default
+    period: 1e-3,   // s; required
+    dutyCycle: 0.5, // fraction of each period at highVolts
+    lowVolts: -1,   // V
+    highVolts: 1,   // V
+    time: g.tList   // s; defaults to the selected global.tList
+});
+
+var rectified = nP.waveform({
+    shape: 'rectifiedSine', // full-wave rectification of an ideal sine
+    period: 1e-3,          // s; original sine period
+    lowVolts: 0,           // V; default minimum
+    highVolts: 1,          // V; default maximum
+    time: g.tList          // s; defaults to the selected global.tList
+});
+
+var custom = nP.waveform({
+    shape: 'custom', // required when points are supplied
+    period: 1e-3,
+    points: [[0, -1], [0.3e-3, 1], [1e-3, -1]]
+});
+```
+
+`waveform()` samples a periodic voltage on a uniformly spaced time list; it does not change `global.tList` or `global.fList`. A custom waveform requires both `shape: 'custom'` and `points`. It interpolates linearly between time-voltage pairs that start at 0 and end at the period, then repeats the pattern. A triangle with `riseFraction: 0.5` is symmetric; a square with `dutyCycle: 0.5` spends half the period at each level. Both have only odd harmonics when ideal and symmetric. Changing the rise fraction or duty cycle can introduce even harmonics. `rectifiedSine` uses `lowVolts + (highVolts - lowVolts) × |sin(2πt / period)|`; `period` is the original sine period, so the rectified output repeats every half period and has DC plus even multiples of the original frequency. It does not use `riseFraction` or `dutyCycle`. `waveform` returns an object with copied `time`, `samples`, `sampleRateHz`, and `period`. `out('waveform')` returns a chart-ready `Time (s)`/`Voltage (V)` table; `out('time')` and `out('samples')` return copies. Other selectors are `sample count`, `sample rate`, and `period`. For an FFT of one period, sample at times from 0 through `(N - 1) × period / N` so the endpoint is not repeated. This waveform is not an nPort, and `mod({input: ...})` currently accepts PN waveforms only.
+
+### FFT output for sampled voltages
+
+```js
+var fft = nP.FFT(rectified.out('samples'));
+var harmonics = fft.out('dBV'); // frequency and one-sided RMS voltage in dBV
+```
+
+`FFT()` uses the selected `global.tList` and fills `global.fList`. Its complex result has `.out('dBV')` for real voltage samples. The table has `Frequency (Hz)` and `Amplitude (dBV)` columns from DC through Nyquist. DC and the Nyquist bin use `|X[k]| / N` for RMS volts; other bins use `sqrt(2) |X[k]| / N`. dBV is `20 log10(Vrms / 1 V)`, clamped to −80 dBV by default so zero and numerical-noise bins remain chartable. Pass `{floorDbv: finiteNumber}` as a second argument to change the floor. The table can go directly to `nP.lineChart({inputTable: [harmonics], plotType: 'bar', barBaseline: -80})`.
+
 ### `PN`
 
 ```js
@@ -749,12 +799,15 @@ var tx = nP.mod({input: pn});
 
 `PN()` supports 2 through 16 stages, with a maximal-length period of `2 ** stages - 1` bits. Seven stages and the all-ones seed are defaults. Each entry in `time` clocks the shift register once, so a PN3 period needs 7 ticks and a PN7 period needs 127. `time` defaults to the selected context's `tList`; it must be uniformly spaced, increasing, and contain a whole number of periods. The time spacing determines bit rate. The PN period extends one clock interval beyond the last tick. `pn.out('bits')`, `pn.out('samples')`, and `pn.out('time')` return copies; each sample is the output voltage at a clock tick. `pn.out('waveform')` returns a chart-ready table in nanoseconds and volts. Other selectors are `bit count`, `sample count`, `bit rate`, `clock rate`, and `sample rate`. The PN object is a digital waveform, not an nPort; pass it to `mod({input: pn})` before constructing frequency-dependent components. `mod()` creates eight FFT samples per bit by default, or uses its optional `samplesPerBit` setting.
 
-For PN3, set `g.tList = g.tGen(0, 6e-9, 7)`, then use `var pn = nP.PN({stages: 3, time: g.tList})` and `var tx = nP.mod({input: pn})`. The shorter direct form is `nP.mod({mode: 'PN3'})`; direct modes run from `PN2` through `PN16`.
+For PN3, use `var clockTimes = g.tGen(0, 6e-9, 7)` and `var pn = nP.PN({stages: 3, time: clockTimes})`. Before `nP.mod({input: pn})`, set `g.tList = g.tGen(0, 55 / 8e9, 56)` for its 56 waveform samples. The shorter direct form is `nP.mod({mode: 'PN3'})`; direct modes run from `PN2` through `PN16` and also require the complete sample grid.
 
 ### `mod`
 
 ```js
 // mod: Modulator; baseband or real cosine carrier
+var g = nP.global;
+g.tList = g.tGen(0, 1015 / 8e9, 1016); // PN7: 127 bits × 8 samples
+g.fList = [];
 var tx = nP.mod({
     mode: 'PN7',      // 'PN2' through 'PN16', 'ASCII', or 'bits'; defaults to 'PN7'
     carrierHz: 0,    // Hz; zero for baseband, positive below sample Nyquist
@@ -766,12 +819,13 @@ var tx = nP.mod({
 // returns a signal description with an out() method, not an nPort object
 ```
 
-`mod()` accepts no arguments for its defaults. For ASCII, supply `message`; for a custom bit sequence, use `mode: 'bits'` and `bits`. To transform a waveform from `PN()`, use `{input: pn}` with an optional `samplesPerBit`; the clock spacing determines bit rate. With no `fftList`, it sets the selected context's `fList`. At `carrierHz: 0`, the PN, ASCII, and raw-bit modes produce a baseband spectrum. At a positive carrier below sample Nyquist, these modes multiply the sampled voltage by a cosine before its FFT. Other digital modes below use their own symbol mappings. `tx.out('settings')` reports the selected mode, carrier, sample rate, sample and frequency counts, and applicable mode settings. `tx.out('waveform')` returns the sampled transmit voltage in a chart-ready table. `tx.out('frequency table')` returns `[['Bin', 'Frequency (Hz)'], ...]`, with one row per FFT frequency, including DC. Check `tx.out('frequency count')` before constructing components or running `nodal()` on a large grid. A carrier at or above Nyquist raises `RangeError`.
+`mod()` accepts no arguments for its mode defaults but requires a selected `tList`. For sampled modes, it needs one uniformly spaced time per final waveform sample and checks that the spacing matches its sample rate. For ASCII, supply `message`; for a custom bit sequence, use `mode: 'bits'` and `bits`. To transform a waveform from `PN()`, use `{input: pn}` with an optional `samplesPerBit`; the clock spacing determines bit rate, while the selected `tList` describes the expanded waveform samples. With no `fftList`, it sets the selected context's `fList`. At `carrierHz: 0`, the PN, ASCII, and raw-bit modes produce a baseband spectrum. At a positive carrier below sample Nyquist, these modes multiply the sampled voltage by a cosine before its FFT. Other digital modes below use their own symbol mappings. `tx.out('settings')` reports the selected mode, carrier, sample rate, sample and frequency counts, and applicable mode settings. `tx.out('waveform')` returns the sampled transmit voltage in a chart-ready table. `tx.out('frequency table')` returns `[['Bin', 'Frequency (Hz)'], ...]`, with one row per FFT frequency, including DC. Check `tx.out('frequency count')` before constructing components or running `nodal()` on a large grid. A carrier at or above Nyquist raises `RangeError`.
 
 The optional `fftList` property is an array of frequencies in hertz. `mod()` replaces its contents with the computed FFT frequencies while preserving the array itself. Without `fftList`, `mod()` replaces the selected context's `fList` with its computed frequencies. To build a circuit, create its context, set its `fList` to an empty array, call `mod()`, and then construct the components with their usual defaults:
 
 ```js
 var g = nP.global();
+g.tList = g.tGen(0, 1015 / 8e9, 1016);
 g.fList = [];
 var tx = nP.mod({mode: 'PN7', carrierHz: 0});
 var stage = nP.Attn(3);
@@ -1256,13 +1310,17 @@ var copiedCells = nP.dup(
 
 ```js
 // FFT: fast Fourier transform
+var g = nP.global;
+g.tList = g.tGen(0, 3e-3, 4);
+g.fList = [];
 var spectrum = nP.FFT(
-    [1, 0, 0, 0] // samples: nonempty array of numbers or nP.complex() values
+    [1, 0, 0, 0] // samples: one finite number or nP.complex() per tList entry
 );
 // returns an array of nP.complex() values, in FFT-bin order
+var frequencyTable = spectrum.out('magnitude'); // frequency and raw magnitude
 ```
 
-`FFT()` accepts any nonempty length, including 1,016 samples for one oversampled PN7 period. It uses the forward sign convention `exp(-i 2πkn/N)` and does not divide by `N`. It does not calculate a frequency list. At sample rate `Fs`, bin `k` is at `k * Fs / N` through Nyquist; higher bins represent negative frequencies at `(k - N) * Fs / N`.
+`FFT()` requires at least two samples and a uniformly spaced selected `tList` of the same length. It accepts arbitrary lengths, including 1,016 samples for one oversampled PN7 period. It uses the forward sign convention `exp(-i 2πkn/N)` and does not divide by `N`. It fills the selected context's `fList` with one signed frequency per output bin. At sample rate `Fs`, bin `k` is at `k * Fs / N` through Nyquist; higher bins represent negative frequencies at `(k - N) * Fs / N`. The returned complex array also has `.out('magnitude')`, `.out('real')`, and `.out('imaginary')`; its table covers nonnegative frequencies through Nyquist. `.out()` defaults to raw magnitude and snapshots the frequency grid. For real voltage samples, `.out('dBV')` gives a one-sided RMS voltage spectrum with header `Amplitude (dBV)`. DC and Nyquist use `|X[k]| / N`; other bins use `sqrt(2) |X[k]| / N`. The default floor is −80 dBV; pass `{floorDbv: finiteNumber}` as a second argument to change it. Complex-valued input does not support this one-sided dBV output.
 
 ### `invFFT`
 
@@ -1272,9 +1330,10 @@ var samples = nP.invFFT(
     spectrum // nonempty array of numbers or nP.complex() values
 );
 // returns an array of nP.complex() time samples
+var timeTable = samples.out('real'); // time and real sample value
 ```
 
-`invFFT()` uses `exp(+i 2πkn/N)` and divides by `N`, so `invFFT(FFT(samples))` recovers the original samples to floating-point precision. Real inputs may return tiny imaginary roundoff values.
+`invFFT()` uses `exp(+i 2πkn/N)` and divides by `N`, so `invFFT(FFT(samples))` recovers the original samples to floating-point precision. Real inputs may return tiny imaginary roundoff values. The returned complex array has `.out('real')`, `.out('imaginary')`, and `.out('magnitude')`; its table covers every time sample. `.out()` defaults to real. The table uses the time grid captured by its FFT input, or the selected `global.tList` when given a plain spectrum array.
 
 ### Complex object methods
 

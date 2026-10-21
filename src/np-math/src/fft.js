@@ -1,5 +1,56 @@
-// Modified: 2026-10-08
+// Modified: 2026-10-20
 import {complex} from './complex';
+import {global} from '../../np-global/src/global';
+import {sampleRateFromTime} from '../../np-global/src/timeGrid';
+
+var fftTimeGrid = Symbol('FFT time grid');
+
+function withOutput(values, axis, axisTitle, defaultSelector, lastIndex, realInput) {
+	Object.defineProperty(values, 'out', {
+		value: function (selector = defaultSelector, options = {}) {
+			if (selector !== 'real' && selector !== 'imaginary' && selector !== 'magnitude' &&
+				selector !== 'dBV') {
+				throw new RangeError('FFT output must be real, imaginary, magnitude, or dBV.');
+			}
+			if (!axis || axis.length !== values.length) {
+				throw new RangeError('A matching tList is needed to output inverse FFT samples.');
+			}
+			var floorDbv;
+			if (selector === 'dBV') {
+				if (axisTitle !== 'Frequency (Hz)' || !realInput) {
+					throw new RangeError('FFT dBV output requires real voltage samples.');
+				}
+				if (!options || Array.isArray(options) || typeof options !== 'object') {
+					throw new TypeError('FFT dBV options must be an object.');
+				}
+				floorDbv = options.floorDbv === undefined ? -80 : options.floorDbv;
+				if (!Number.isFinite(floorDbv)) {
+					throw new RangeError('FFT dBV floorDbv must be finite.');
+				}
+			}
+			var heading = selector === 'dBV' ? 'Amplitude (dBV)' :
+				selector.charAt(0).toUpperCase() + selector.slice(1);
+			var table = [[axisTitle, heading]];
+			for (var index = 0; index <= lastIndex; index++) {
+				var value = values[index];
+				var output;
+				if (selector === 'dBV') {
+					var rmsVolts = value.mag() / values.length;
+					if (index !== 0 && !(values.length % 2 === 0 && index === lastIndex)) {
+						rmsVolts *= Math.SQRT2;
+					}
+					output = Math.max(floorDbv, 20 * Math.log10(rmsVolts));
+				} else {
+					output = selector === 'real' ? value.getR() :
+						selector === 'imaginary' ? value.getI() : value.mag();
+				}
+				table.push([axis[index], output]);
+			}
+			return table;
+		}
+	});
+	return values;
+}
 
 // In-place radix-2 transform. Forward transforms are unscaled; inverse
 // transforms divide by the number of samples.
@@ -122,12 +173,32 @@ function transform(samples, inverse) {
 	return result;
 }
 
-// X[k] = sum_n x[n] exp(-i 2πkn/N), with no forward scaling.
-export function FFT(samples) {
+// Internal transform for sampled signals whose time context is checked by their owner.
+export function fftBins(samples) {
 	return transform(samples, false);
+}
+
+// X[k] = sum_n x[n] exp(-i 2πkn/N), with no forward scaling.
+// The public transform requires the selected time grid and labels every output bin.
+export function FFT(samples) {
+	var result = fftBins(samples);
+	var sampleRateHz = sampleRateFromTime(global.tList, samples.length, 'FFT');
+	var count = result.length;
+	global.fList = Array.from({length: count}, function (_, bin) {
+		return (bin <= Math.floor(count / 2) ? bin : bin - count) * sampleRateHz / count;
+	});
+	Object.defineProperty(result, fftTimeGrid, {value: global.tList.slice()});
+	var realInput = samples.every(function (sample) {
+		return typeof sample === 'number' || sample.getI() === 0;
+	});
+	return withOutput(result, global.fList.slice(), 'Frequency (Hz)', 'magnitude',
+		Math.floor(count / 2), realInput);
 }
 
 // x[n] = (1/N) sum_k X[k] exp(+i 2πkn/N).
 export function invFFT(spectrum) {
-	return transform(spectrum, true);
+	var result = transform(spectrum, true);
+	var time = spectrum && spectrum[fftTimeGrid] ? spectrum[fftTimeGrid].slice() :
+		Array.isArray(global.tList) ? global.tList.slice() : null;
+	return withOutput(result, time, 'Time (s)', 'real', result.length - 1);
 }

@@ -1,4 +1,4 @@
-// Modified: 2026-10-13
+// Modified: 2026-10-20
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -32,7 +32,7 @@ test('circuit contexts retain independent settings and default constructor frequ
 	var first = global();
 	try {
 		first.fList = [];
-		first.tList = first.tGen(0, 1e-9, 3);
+		first.tList = first.tGen(0, 31e-9 / 8, 32);
 		first.Ro = 50;
 		first.Temp = 290;
 		var firstTx = mod({mode: 'bits', bits: '1010', fftList: first.fList});
@@ -41,7 +41,7 @@ test('circuit contexts retain independent settings and default constructor frequ
 
 		var second = global();
 		second.fList = [];
-		second.tList = second.tGen(0, 2e-9, 3);
+		second.tList = second.tGen(0, 63e-9 / 8, 64);
 		second.Ro = 75;
 		second.Temp = 310;
 		var secondTx = mod({mode: 'bits', bits: '10110010', fftList: second.fList});
@@ -49,8 +49,10 @@ test('circuit contexts retain independent settings and default constructor frequ
 		var secondChain = cascade(secondStage, {signal: secondTx});
 
 		assert.notStrictEqual(first, second);
-		assert.deepEqual(first.tList, [0, 0.5e-9, 1e-9]);
-		assert.deepEqual(second.tList, [0, 1e-9, 2e-9]);
+		assert.equal(first.tList.length, 32);
+		assert.equal(second.tList.length, 64);
+		assert.ok(Math.abs(first.tList[1] - 1.25e-10) < 1e-20);
+		assert.ok(Math.abs(second.tList[1] - 1.25e-10) < 1e-20);
 		assert.deepEqual(firstStage.getglobal().tList, first.tList);
 		assert.deepEqual(secondStage.getglobal().tList, second.tList);
 		assert.equal(first.fList.length, 17);
