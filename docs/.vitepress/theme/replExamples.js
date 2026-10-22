@@ -1,4 +1,4 @@
-// Modified: 2026-10-21
+// Modified: 2026-10-22
 // Add an example with a unique id, title, category, and code. Array order sets
 // sidebar order within a category; stable ids preserve links and browser drafts.
 // Sidebar categories and their section order are listed in config.js.
@@ -91,75 +91,288 @@ nP.lineChart({
   metricPrefix: 'giga',
   showPoints: false
 });` },
-  { id: 'vna-short-reflection', title: 'VNA short and open reflections', category: 'rf-circuits', code: `// VNA short and open reflections
+  { id: 'vna-port1', title: 'VNA inductor S-parameters', category: 'rf-circuits', code: `// VNA inductor S-parameters
+
+var g = nP.global;
+g.fList = g.fGen(1e9, 3e9, 101);
+
+var tx = nP.mod({
+  mode: 'VNA-frequency',
+  fList: g.fList
+});
+
+var splitter = nP.Coupler180();
+var inputCoupler = nP.Coupler180();
+var outputCoupler = nP.Coupler180();
+var l1 = nP.L(5e-9);
+var load = nP.Load();
+
+var circuit = nP.nodal(
+  [splitter, 1, 2, 3, 4],
+  [inputCoupler, 2, 5, 6, 7],
+  [l1, 5, 8],
+  [outputCoupler, 8, 9, 10, 11],
+  [load, 3],
+  [load, 7],
+  [load, 9],
+  [load, 10],
+  ['out', 1, 4, 6, 11],
+  {signal: tx, inputPort: 1}
+);
+
+var referenceRx = nP.demod(circuit, {
+  outputPort: 2,
+  referenceGain: 1,
+  noise: false
+});
+var reflectionRx = nP.demod(circuit, {
+  outputPort: 3,
+  referenceReceiver: referenceRx,
+  referenceGain: 2,
+  noise: false
+});
+var transmissionRx = nP.demod(circuit, {
+  outputPort: 4,
+  referenceReceiver: referenceRx,
+  referenceGain: 2,
+  noise: false
+});
+var referenceTable = referenceRx.out('response magnitude');
+var s11Table = reflectionRx.out('response dB');
+var s21Table = transmissionRx.out('response dB');
+var directTable = l1.out('s11dB', 's21dB');
+
+nP.lineChart({
+  inputTable: [s11Table],
+  title: 'Measured inductor S11',
+  xAxisTitle: 'Frequency (GHz)',
+  yAxisTitle: 'S11 (dB)',
+  metricPrefix: 'giga',
+  showPoints: false
+});
+
+nP.lineChart({
+  inputTable: [s21Table],
+  title: 'Measured inductor S21',
+  xAxisTitle: 'Frequency (GHz)',
+  yAxisTitle: 'S21 (dB)',
+  metricPrefix: 'giga',
+  showPoints: false
+});
+
+nP.lineTable({
+  inputTable: directTable,
+  title: 'Direct L(5 nH) S-parameters'
+});
+
+nP.lineTable({
+  inputTable: referenceTable,
+  title: 'VNA reference receiver R'
+});` },
+  { id: 'vna-inductor-time', title: 'VNA inductor impulse response', category: 'rf-circuits', code: `// VNA inductor impulse response
 
 var g = nP.global();
+// 4096 samples at 16 GHz are 62.5 ps apart: 0 to 255.9375 ns.
+// VNA-time makes 2049 bins from DC to 8 GHz, spaced 3.90625 MHz.
+// The 8 GHz Nyquist bin is zero so demod can make a real waveform.
+g.tList = g.tGen(0, 4095 / 16e9, 4096);
+g.fList = [];
+
+var tx = nP.mod({
+  mode: 'VNA-time'
+});
+
+var splitter = nP.Coupler180();
+var inputCoupler = nP.Coupler180();
+var outputCoupler = nP.Coupler180();
+var l1 = nP.L(5e-9);
+var load = nP.Load();
+
+var circuit = nP.nodal(
+  [splitter, 1, 2, 3, 4],
+  [inputCoupler, 2, 5, 6, 7],
+  [l1, 5, 8],
+  [outputCoupler, 8, 9, 10, 11],
+  [load, 3],
+  [load, 7],
+  [load, 9],
+  [load, 10],
+  ['out', 1, 4, 6, 11],
+  {signal: tx, inputPort: 1}
+);
+
+var referenceRx = nP.demod(circuit, {
+  outputPort: 2,
+  referenceGain: 1,
+  noise: false
+});
+var reflectionRx = nP.demod(circuit, {
+  outputPort: 3,
+  referenceReceiver: referenceRx,
+  referenceGain: 2,
+  noise: false
+});
+var transmissionRx = nP.demod(circuit, {
+  outputPort: 4,
+  referenceReceiver: referenceRx,
+  referenceGain: 2,
+  noise: false
+});
+// R is the source reference after the ideal splitter, in volts.
+// A divided by R is the inductor's normalized S11 impulse response.
+// B divided by R is its normalized S21 impulse response.
+// The gain of 2 on A and B removes the ideal couplers' voltage split.
+var referenceTable = referenceRx.out('waveform');
+var reflectionTable = reflectionRx.out('waveform');
+var transmissionTable = transmissionRx.out('waveform');
+
+nP.lineChart({
+  inputTable: [referenceTable],
+  title: 'VNA reference receiver R',
+  xAxisTitle: 'Time (ns)',
+  yAxisTitle: 'Receiver voltage (V)',
+  metricPrefix: 'none',
+  showPoints: false
+});
+
+nP.lineChart({
+  inputTable: [reflectionTable],
+  title: 'Inductor reflection impulse response',
+  xAxisTitle: 'Time (ns)',
+  yAxisTitle: 'Normalized reflection',
+  metricPrefix: 'none',
+  showPoints: false
+});
+
+nP.lineChart({
+  inputTable: [transmissionTable],
+  title: 'Inductor transmission impulse response',
+  xAxisTitle: 'Time (ns)',
+  yAxisTitle: 'Normalized transmission',
+  metricPrefix: 'none',
+  showPoints: false
+});` },
+  { id: 'vna-short-reflection', title: 'VNA cable fault location', category: 'rf-circuits', code: `// VNA cable fault location
+
+var g = nP.global();
+// Start at 0 s and sample at 250 MHz, giving 4 ns between points.
+// Use 4096 points (2^12) for the VNA-time inverse FFT.
+// The last point is sample 4095; dividing by 250 MHz gives its time in seconds.
 g.tList = g.tGen(0, 4095 / 250e6, 4096);
 g.fList = [];
 
 var tx = nP.mod({
-  mode: 'VNA'
+  mode: 'VNA-time'
 });
 
-var coupler = nP.Coupler180();
-var line = nP.Tlin(50, 1000);
+// VNA fixture: splitter feeds R; input coupler samples the return at A.
+// The output coupler and receiver B are dormant for this one-port DUT.
+var splitter = nP.Coupler180();
+var inputCoupler = nP.Coupler180();
+var lineLengthMeters = 1000;
+var line = nP.Tlin(50, lineLengthMeters);
 var short = nP.Short();
 var open = nP.Open();
 var load = nP.Load();
 
 var shortCircuit = nP.nodal(
-  [coupler, 1, 2, 3, 4],
-  [line, 2, 5],
-  [short, 5],
-  [load, 4],
-  ['out', 1, 3],
+  [splitter, 1, 2, 3, 4],
+  [inputCoupler, 2, 5, 6, 7],
+  [line, 5, 8],
+  [short, 8],
+  [load, 3],
+  [load, 7],
+  ['out', 1, 4, 6],
   {signal: tx, inputPort: 1}
 );
 
 var openCircuit = nP.nodal(
-  [coupler, 1, 2, 3, 4],
-  [line, 2, 5],
-  [open, 5],
-  [load, 4],
-  ['out', 1, 3],
+  [splitter, 1, 2, 3, 4],
+  [inputCoupler, 2, 5, 6, 7],
+  [line, 5, 8],
+  [open, 8],
+  [load, 3],
+  [load, 7],
+  ['out', 1, 4, 6],
   {signal: tx, inputPort: 1}
 );
 
+var referenceRx = nP.demod(shortCircuit, {
+  outputPort: 2,
+  referenceGain: 1,
+  noise: false
+});
 var shortRx = nP.demod(shortCircuit, {
+  outputPort: 3,
+  referenceReceiver: referenceRx,
+  referenceGain: 2,
   noise: false
 });
 var openRx = nP.demod(openCircuit, {
+  outputPort: 3,
+  referenceReceiver: referenceRx,
+  referenceGain: 2,
   noise: false
 });
-var inputTable = tx.out('waveform');
+var referenceTable = referenceRx.out('waveform');
 var shortReturn = shortRx.out('waveform');
 var openReturn = openRx.out('waveform');
 
+// Find the largest return in each measured waveform, independently.
+var shortPeak = shortReturn[1];
+var openPeak = openReturn[1];
+for (var index = 2; index < shortReturn.length; index++) {
+  if (Math.abs(shortReturn[index][1]) > Math.abs(shortPeak[1])) {
+    shortPeak = shortReturn[index];
+  }
+  if (Math.abs(openReturn[index][1]) > Math.abs(openPeak[1])) {
+    openPeak = openReturn[index];
+  }
+}
+
+// A fault 1 km away gives a 2 km round trip at the modeled speed of light.
+var speedOfLightMetersPerSecond = 299792458;
+var expectedRoundTripNs = 2 * lineLengthMeters /
+  speedOfLightMetersPerSecond * 1e9;
+var transitTable = [
+  ['Fault', 'Predicted (ns)', 'Measured (ns)', 'Inferred distance (m)'],
+  ['Short', expectedRoundTripNs, shortPeak[0],
+    shortPeak[0] * 1e-9 * speedOfLightMetersPerSecond / 2],
+  ['Open', expectedRoundTripNs, openPeak[0],
+    openPeak[0] * 1e-9 * speedOfLightMetersPerSecond / 2]
+];
+
 nP.lineChart({
-  inputTable: [inputTable],
-  title: 'Synthetic input impulse',
+  inputTable: [referenceTable],
+  title: 'VNA reference receiver R',
   xAxisTitle: 'Time (ns)',
-  yAxisTitle: 'Voltage (V)',
+  yAxisTitle: 'Receiver voltage (V)',
   metricPrefix: 'none',
   showPoints: false
 });
 
 nP.lineChart({
   inputTable: [shortReturn],
-  title: 'Short reflection after 1 km',
+  title: 'Short fault at 1 km: receiver A / R',
   xAxisTitle: 'Time (ns)',
-  yAxisTitle: 'Voltage (V)',
+  yAxisTitle: 'Normalized reflection',
   metricPrefix: 'none',
   showPoints: false
 });
 
 nP.lineChart({
   inputTable: [openReturn],
-  title: 'Open reflection after 1 km',
+  title: 'Open fault at 1 km: receiver A / R',
   xAxisTitle: 'Time (ns)',
-  yAxisTitle: 'Voltage (V)',
+  yAxisTitle: 'Normalized reflection',
   metricPrefix: 'none',
   showPoints: false
+});
+
+nP.lineTable({
+  inputTable: transitTable,
+  title: 'Speed-of-light transit check: 2 km round trip',
+  metricPrefix: 'none'
 });` },
   { id: 'tee-power-divider', title: 'Tee power divider', category: 'rf-circuits', code: `// Tee power divider
 

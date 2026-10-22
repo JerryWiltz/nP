@@ -1,4 +1,4 @@
-// Modified: 2026-10-21
+// Modified: 2026-10-22
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -7,11 +7,11 @@ import {mod, demod} from '../src/np-digital/index.js';
 import {Coupler180, Tlin, Short, Open, Load, Thru, nodal, cascade} from '../src/np-nport/index.js';
 import {C0} from '../src/np-nport/src/physicalConstants.js';
 
-test('VNA mode creates a uniform unit-reference grid and reconstructs an impulse', () => {
+test('VNA-time creates a uniform unit-reference grid and reconstructs an impulse', () => {
 	var g = global();
 	g.tList = g.tGen(0, 31 / 8e6, 32);
 	g.fList = [];
-	var tx = mod({mode: 'VNA'});
+	var tx = mod({mode: 'VNA-time'});
 	assert.equal(tx.out('frequency count'), 17);
 	assert.deepEqual(g.fList, tx.out('frequencies'));
 	assert.equal(g.fList[16], 4e6);
@@ -27,12 +27,13 @@ test('VNA mode creates a uniform unit-reference grid and reconstructs an impulse
 	assert.deepEqual(direct, waveform);
 
 	var explicit = [];
-	var second = mod({mode: 'VNA', fftList: explicit});
+	var second = mod({mode: 'VNA-time', fftList: explicit});
 	assert.deepEqual(explicit, second.fList);
-	assert.throws(function () { mod({mode: 'VNA', carrierHz: 1e6}); }, TypeError);
-	assert.throws(function () { mod({mode: 'VNA', fftList: {}}); }, TypeError);
+	assert.throws(function () { mod({mode: 'VNA-time', carrierHz: 1e6}); }, TypeError);
+	assert.throws(function () { mod({mode: 'VNA-time', fftList: {}}); }, TypeError);
 	g.tList = g.tGen(0, 30 / 8e6, 31);
-	assert.throws(function () { mod({mode: 'VNA'}); }, /power-of-two/);
+	assert.throws(function () { mod({mode: 'VNA-time'}); }, /power-of-two/);
+	assert.throws(function () { mod({mode: 'VNA'}); }, /VNA-time or VNA-frequency/);
 });
 
 test('VNA sweep gives opposite-polarity returns for shorted and open 1 km lines', () => {
@@ -41,7 +42,7 @@ test('VNA sweep gives opposite-polarity returns for shorted and open 1 km lines'
 	var sampleRateHz = 62.5e6;
 	g.tList = g.tGen(0, (count - 1) / sampleRateHz, count);
 	g.fList = [];
-	var tx = mod({mode: 'VNA'});
+	var tx = mod({mode: 'VNA-time'});
 	var coupler = Coupler180();
 	var line = Tlin(50, 1000);
 	var short = Short();
@@ -81,4 +82,44 @@ test('VNA sweep gives opposite-polarity returns for shorted and open 1 km lines'
 	assert.ok(openWaveform[openPeak][1] > 0.35);
 	assert.ok(Math.abs(openWaveform[1][1]) < 0.01);
 	assert.ok(Math.abs(openWaveform[openPeak][1] + waveform[peak][1]) < 1e-9);
+});
+
+test('VNA-time compares a cable reflection with its splitter reference', () => {
+	var g = global();
+	var count = 1024;
+	var sampleRateHz = 62.5e6;
+	g.tList = g.tGen(0, (count - 1) / sampleRateHz, count);
+	g.fList = [];
+	var tx = mod({mode: 'VNA-time'});
+	var splitter = Coupler180();
+	var inputCoupler = Coupler180();
+	var line = Tlin(50, 1000);
+	var load = Load();
+	var circuit = nodal(
+		[splitter, 1, 2, 3, 4],
+		[inputCoupler, 2, 5, 6, 7],
+		[line, 5, 8],
+		[Short(), 8],
+		[load, 3],
+		[load, 7],
+		['out', 1, 4, 6],
+		{signal: tx, inputPort: 1}
+	);
+	var reference = demod(circuit, {outputPort: 2, referenceGain: 1, noise: false});
+	var reflection = demod(circuit, {
+		outputPort: 3, referenceReceiver: reference, referenceGain: 2, noise: false
+	});
+	var referenceWave = reference.out('waveform');
+	var reflectionWave = reflection.out('waveform');
+	assert.ok(Math.abs(referenceWave[1][1] - Math.SQRT1_2) < 0.002);
+	assert.ok(Math.abs(reflectionWave[1][1]) < 0.01);
+	var peak = 1;
+	for (var i = 2; i < reflectionWave.length; i++) {
+		if (Math.abs(reflectionWave[i][1]) > Math.abs(reflectionWave[peak][1])) peak = i;
+	}
+	assert.ok(Math.abs(reflectionWave[peak][0] - 2 * 1000 / C0 * 1e9) < 1e9 / sampleRateHz);
+	assert.ok(reflectionWave[peak][1] < -0.7);
+	assert.throws(function () {
+		demod(circuit, {outputPort: 3, referenceReceiver: reference, referenceGain: 0, noise: false});
+	}, /referenceGain/);
 });

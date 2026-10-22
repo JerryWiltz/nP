@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-21 -->
+<!-- Modified: 2026-10-22 -->
 # Tech Notes
 
 Engineering notes for the ideas behind nP. The left sidebar groups notes by subject; the right sidebar lists headings on the current page.
@@ -9,7 +9,8 @@ RF notes cover circuit and network theory, including the concepts used by nP's n
 
 - [S-parameters for the novice](./tech-notes-s-parameters-for-the-novice.md) explains incident and outgoing waves, calculates the S-parameters of a 5 nH series inductor at 2 GHz, and follows the calculation into `nP.L()`.
 - [nPort overview](./tech-notes-nport-overview.md) explains how nP represents components and complete circuits as frequency-dependent nPort objects.
-- [VNA time-domain reflection](./tech-notes-vna-time-domain-reflection.md) derives the synthetic impulse from swept frequency bins and checks a 1 km line's round-trip delay against the plotted short and open returns.
+- [VNA time-domain reflection](./tech-notes-vna-time-domain-reflection.md) derives the synthetic impulse, checks a 1 km cable's return time, and explains the inductor's three receiver impulse plots.
+- [VNA frequency-domain measurement](./tech-notes-vna-frequency-domain-measurement.md) follows R, A, and B through the ideal fixture and derives the 5 nH inductor's measured S11 and S21 values.
 
 ## Digital Notes
 

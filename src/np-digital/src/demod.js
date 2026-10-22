@@ -1,5 +1,6 @@
-// Modified: 2026-10-21
+// Modified: 2026-10-22
 import {receiveWaveform} from './receiverWaveform';
+import {receiveVnaFrequency} from './vnaFrequencyReceiver';
 import {demodulateAdvanced} from './advancedModes';
 import {fftBins} from '../../np-math/src/fft';
 import {complex} from '../../np-math/src/complex';
@@ -299,6 +300,9 @@ function demodFSK(receiver, signal) {
 // Recover baseband levels from a real carrier using the known carrier phase.
 export function demod(stage, options = {}) {
 	if (!stage || !Array.isArray(stage.spars)) stage = directStage(stage);
+	if (stage.signal && stage.signal.mode === 'VNA-frequency') {
+		return receiveVnaFrequency(stage, options);
+	}
 	if (stage.signal && stage.signal.mode === 'AM') return demodAM(stage, options);
 	if (stage.signal && (stage.signal.mode === 'SSB' || stage.signal.mode === 'DSB-SC')) {
 		return demodSuppressed(stage, options);

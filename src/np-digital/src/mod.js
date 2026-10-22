@@ -1,4 +1,4 @@
-// Modified: 2026-10-21
+// Modified: 2026-10-22
 import {createSourceWaveform} from './sourceWaveform';
 import {modulateAdvanced} from './advancedModes';
 import {fftBins, invFFT} from '../../np-math/src/fft';
@@ -6,23 +6,23 @@ import {complex} from '../../np-math/src/complex';
 import {global} from '../../np-global/src/global';
 import {sampleRateFromTime} from '../../np-global/src/timeGrid';
 
-// A VNA sweeps equal reference phasors and reconstructs a synthetic impulse.
-function vnaSweep(options, sampleRateHz) {
+// Equal reference phasors on an FFT grid reconstruct a synthetic impulse.
+function vnaTimeSweep(options, sampleRateHz) {
 	var count = global.tList.length;
 	if (count < 4 || (count & (count - 1)) !== 0 || global.tList[0] !== 0) {
-		throw new RangeError('VNA mode needs a power-of-two tList of at least four points starting at zero.');
+		throw new RangeError('VNA-time needs a power-of-two tList of at least four points starting at zero.');
 	}
-	if (global.twoTone) throw new RangeError('Clear global.twoTone before VNA analysis.');
+	if (global.twoTone) throw new RangeError('Clear global.twoTone before VNA-time analysis.');
 	if (!Number.isFinite(global.Ro) || global.Ro <= 0) {
-		throw new RangeError('VNA mode needs a positive global.Ro.');
+		throw new RangeError('VNA-time needs a positive global.Ro.');
 	}
 	if (options.fftList !== undefined && !Array.isArray(options.fftList)) {
-		throw new TypeError('VNA fftList must be an array.');
+		throw new TypeError('VNA-time fftList must be an array.');
 	}
 	if (Object.keys(options).some(function (key) {
 		return key !== 'mode' && key !== 'fftList';
 	})) {
-		throw new TypeError('VNA mode accepts only mode and optional fftList.');
+		throw new TypeError('VNA-time accepts only mode and optional fftList.');
 	}
 	var frequencyList = Array.from({length: count / 2 + 1}, function (_, bin) {
 		return bin * sampleRateHz / count;
@@ -37,7 +37,7 @@ function vnaSweep(options, sampleRateHz) {
 	}
 	var time = global.tList.slice();
 	var tx = {
-		mode: 'VNA', fList: frequencyList, spectrum: spectrum,
+		mode: 'VNA-time', fList: frequencyList, spectrum: spectrum,
 		sampleCount: count, sampleRateHz: sampleRateHz,
 		referenceImpedanceOhms: global.Ro
 	};
@@ -47,7 +47,7 @@ function vnaSweep(options, sampleRateHz) {
 		if (selector === 'frequency count') return frequencyList.length;
 		if (selector === 'frequencies') return frequencyList.slice();
 		if (selector === 'spectrum') return spectrum.map(function (value) { return value.copy(); });
-		if (selector === 'settings') return {mode: 'VNA', sampleRateHz: sampleRateHz,
+		if (selector === 'settings') return {mode: 'VNA-time', sampleRateHz: sampleRateHz,
 			sampleCount: count, frequencyCount: frequencyList.length,
 			frequencyStepHz: sampleRateHz / count,
 			maximumFrequencyHz: sampleRateHz / 2};
@@ -62,7 +62,42 @@ function vnaSweep(options, sampleRateHz) {
 				return [value * 1e9, samples[index].getR()];
 			}));
 		}
-		throw new RangeError('Unknown VNA output: ' + selector);
+		throw new RangeError('Unknown VNA-time output: ' + selector);
+	};
+	return tx;
+}
+
+// A stepped-frequency VNA has independent complex tones, with no time grid.
+function vnaFrequencySweep(options) {
+	if (Object.keys(options).some(function (key) { return key !== 'mode' && key !== 'fList'; })) {
+		throw new TypeError('VNA-frequency accepts only mode and fList.');
+	}
+	var frequencies = options.fList === undefined ? global.fList : options.fList;
+	if (!Array.isArray(frequencies) || frequencies.length === 0 ||
+		frequencies.some(function (frequency, index) {
+			return !Number.isFinite(frequency) || frequency < 0 ||
+				(index > 0 && frequency <= frequencies[index - 1]);
+		})) {
+		throw new RangeError('VNA-frequency needs a nonempty, increasing fList of nonnegative frequencies.');
+	}
+	if (global.twoTone) throw new RangeError('Clear global.twoTone before VNA-frequency analysis.');
+	if (!Number.isFinite(global.Ro) || global.Ro <= 0) {
+		throw new RangeError('VNA-frequency needs a positive global.Ro.');
+	}
+	var fList = frequencies.slice();
+	global.fList = fList.slice();
+	var spectrum = fList.map(function () { return complex(1, 0); });
+	var tx = {mode: 'VNA-frequency', fList: fList, spectrum: spectrum,
+		referenceImpedanceOhms: global.Ro};
+	tx.out = function (selector) {
+		if (selector === 'mode') return tx.mode;
+		if (selector === 'frequency count') return fList.length;
+		if (selector === 'frequencies') return fList.slice();
+		if (selector === 'spectrum') return spectrum.map(function (value) { return value.copy(); });
+		if (selector === 'settings') return {mode: tx.mode, frequencyCount: fList.length};
+		if (selector === 'frequency table') return [['Bin', 'Frequency (Hz)']].concat(
+			fList.map(function (frequency, index) { return [index, frequency]; }));
+		throw new RangeError('Unknown VNA-frequency output: ' + selector);
 	};
 	return tx;
 }
@@ -257,8 +292,12 @@ export function mod(options = {}) {
 	if (!options || Array.isArray(options) || typeof options !== 'object') {
 		throw new TypeError('mod expects an options object.');
 	}
+	if (options.mode === 'VNA') {
+		throw new RangeError('Use VNA-time or VNA-frequency as the mode.');
+	}
+	if (options.mode === 'VNA-frequency') return vnaFrequencySweep(options);
 	var sampleRateHz = sampleRateFromTime(global.tList, undefined, 'mod');
-	if (options.mode === 'VNA') return vnaSweep(options, sampleRateHz);
+	if (options.mode === 'VNA-time') return vnaTimeSweep(options, sampleRateHz);
 	if (options.mode === 'AM') return analogAM(options);
 	if (options.mode === 'SSB' || options.mode === 'DSB-SC') return analogSuppressed(options);
 	if (options.mode === 'FM' || options.mode === 'PM') return analogAngle(options);

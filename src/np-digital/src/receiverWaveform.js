@@ -1,4 +1,4 @@
-// Modified: 2026-10-21
+// Modified: 2026-10-22
 import {complex} from '../../np-math/src/complex';
 import {invFFT} from '../../np-math/src/fft';
 import {noiseWaveformSpectrum} from './noiseWaveform';
@@ -21,6 +21,28 @@ export function receiveWaveform(stage, options = {}) {
 	var portCount = Math.sqrt(stage.spars[0].length - 1);
 	var outputPort = options.outputPort === undefined ? 2 : options.outputPort;
 	var inputPort = options.inputPort === undefined ? 1 : options.inputPort;
+	var vnaTime = signal.mode === 'VNA-time';
+	var referencePort = options.referencePort;
+	var referenceReceiver = options.referenceReceiver;
+	var referenceGain = options.referenceGain === undefined ? 1 : options.referenceGain;
+	if (vnaTime && (!Number.isFinite(referenceGain) || referenceGain <= 0)) {
+		throw new RangeError('VNA-time referenceGain must be positive and finite.');
+	}
+	if (vnaTime && referencePort !== undefined && (!Number.isInteger(referencePort) ||
+		referencePort < 1 || referencePort > portCount || referencePort === outputPort)) {
+		throw new RangeError('VNA-time referencePort must name another output port.');
+	}
+	if (vnaTime && referencePort !== undefined && referenceReceiver !== undefined) {
+		throw new RangeError('Select referencePort or referenceReceiver, not both.');
+	}
+	if (vnaTime && referenceReceiver !== undefined &&
+		(!referenceReceiver || typeof referenceReceiver.out !== 'function')) {
+		throw new TypeError('VNA-time referenceReceiver must be a demod result.');
+	}
+	if (!vnaTime && (referencePort !== undefined || referenceReceiver !== undefined ||
+		options.referenceGain !== undefined)) {
+		throw new RangeError('referencePort, referenceReceiver, and referenceGain are only for VNA reception.');
+	}
 	if (!Number.isInteger(outputPort) || outputPort < 1 || outputPort > portCount) {
 		throw new RangeError('demod outputPort is outside the nPort dimensions.');
 	}
@@ -35,10 +57,34 @@ export function receiveWaveform(stage, options = {}) {
 	var voltageScale = Math.sqrt(signal.referenceImpedanceOhms);
 	var noiseSpectrum = options.noise === false ? null :
 		noiseWaveformSpectrum(stage, signal, inputPort, outputPort, options);
+	if (vnaTime && (referencePort !== undefined || referenceReceiver !== undefined) && noiseSpectrum) {
+		throw new RangeError('VNA reference normalization requires noise: false.');
+	}
+	var referenceSpectrum = referenceReceiver === undefined ? null : referenceReceiver.out('spectrum');
+	var referenceFrequencies = referenceReceiver === undefined ? null : referenceReceiver.out('frequencies');
+	if (referenceSpectrum && (!Array.isArray(referenceSpectrum) ||
+		referenceSpectrum.length !== signal.rows.length ||
+		!Array.isArray(referenceFrequencies) ||
+		referenceFrequencies.some(function (frequency, index) {
+			return frequency !== signal.rows[index].frequency;
+		}))) {
+		throw new RangeError('VNA referenceReceiver must use the same frequency grid.');
+	}
 	for (var bin = 0; bin < signal.rows.length; bin++) {
 		var wave = signal.rows[bin].waves[outputPort - 1];
 		var voltage = complex(wave.getR() * voltageScale, wave.getI() * voltageScale);
 		if (noiseSpectrum) voltage = voltage.add(noiseSpectrum[bin]);
+		if (vnaTime) {
+			if (referencePort !== undefined || referenceSpectrum) {
+				var reference = referenceSpectrum ? referenceSpectrum[bin] :
+					signal.rows[bin].waves[referencePort - 1].mul(complex(voltageScale, 0));
+				if (reference.mag() === 0) {
+					if (voltage.mag() !== 0) throw new RangeError('VNA reference receiver has zero signal.');
+					voltage = complex(0, 0);
+				} else voltage = voltage.div(reference);
+			}
+			voltage = voltage.mul(complex(referenceGain, 0));
+		}
 		var selfConjugate = bin === 0 || (count % 2 === 0 && bin === count / 2);
 		if (selfConjugate) {
 			if (Math.abs(voltage.getI()) > 1e-9 * Math.max(1, Math.abs(voltage.getR()))) {
@@ -128,7 +174,9 @@ export function receiveWaveform(stage, options = {}) {
 			if (selector !== 'waveform') {
 				throw new RangeError('Unknown demod output: ' + selector);
 			}
-			var output = [['Time (ns)', 'Output (V)']];
+			var output = [['Time (ns)', vnaTime &&
+				(referencePort !== undefined || referenceSpectrum) ?
+				'Normalized response' : 'Output (V)']];
 			for (var index = 0; index < count; index++) {
 				output.push([index * 1e9 / signal.sampleRateHz, samples[index].getR()]);
 			}

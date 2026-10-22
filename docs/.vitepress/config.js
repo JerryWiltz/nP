@@ -1,4 +1,4 @@
-// Modified: 2026-10-21
+// Modified: 2026-10-22
 import { examples } from './theme/replExamples.js'
 
 function replSidebarItems(category) {
@@ -39,7 +39,8 @@ export default {
                 items: [
                     { text: 'S-parameters for the novice', link: '/tech-notes-s-parameters-for-the-novice' },
                     { text: 'nPort overview', link: '/tech-notes-nport-overview' },
-                    { text: 'VNA time-domain reflection', link: '/tech-notes-vna-time-domain-reflection' }
+                    { text: 'VNA time-domain reflection', link: '/tech-notes-vna-time-domain-reflection' },
+                    { text: 'VNA frequency-domain measurement', link: '/tech-notes-vna-frequency-domain-measurement' }
                 ]
             },
             {

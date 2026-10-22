@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-21 -->
+<!-- Modified: 2026-10-22 -->
 # Digital signals
 
 Use `nP.mod()` to make a signal, send it through an n-port circuit, and use `nP.demod()` to recover the output. `nP.PN()` makes a clocked pseudorandom bit pattern when you need control over the clock ticks. `nP.bitErrorRate()` measures the fraction of received bits in error.
@@ -80,7 +80,7 @@ nP.lineChart({
 });
 ```
 
-`mod()` requires one uniformly spaced `tList` entry per generated sample and fills the selected circuit's frequency list with the signal's FFT frequencies. Create the attenuator **after** `mod()` so its S-parameter rows use those frequencies. `{signal: tx}` attaches the transmitter to the circuit. `demod()` normally includes receiver noise; `{noise: false}` makes this first example repeatable. The waveform table's time values are already in nanoseconds, so the chart uses `metricPrefix: 'none'`.
+For this sampled digital mode, `mod()` requires one uniformly spaced `tList` entry per generated sample and fills the selected circuit's frequency list with the signal's FFT frequencies. Create the attenuator **after** `mod()` so its S-parameter rows use those frequencies. `{signal: tx}` attaches the transmitter to the circuit. `demod()` normally includes receiver noise for sampled digital modes; `{noise: false}` makes this first example repeatable. The waveform table's time values are already in nanoseconds, so the chart uses `metricPrefix: 'none'`.
 
 ## Make a transmitter with `mod()`
 
@@ -193,50 +193,56 @@ nP.log(ber);
 
 Each reception calls `demod()` again, so a noisy result can differ between runs. For a signal-only check, pass `{noise: false}`. The transmitter and circuit must carry the same bit pattern and frequency grid.
 
-## VNA short and open reflections
+## VNA cable fault location
 
-A vector network analyzer measures the complex response at successive frequencies and calculates a time-domain impulse from those measurements. `mode: 'VNA'` models that calculation with a unit reference at each frequency bin, rather than transmitting a physical pulse. The frequency list runs from DC through Nyquist; the Nyquist reference is zero so the inverse transform remains real. The modeled circuit supplies its DC value directly, whereas a physical RF VNA commonly needs a low-frequency extrapolation. This mode requires a power-of-two `tList` beginning at zero, and has no bits or carrier.
+A vector network analyzer measures the complex response at successive frequencies and calculates a time-domain impulse from those measurements. `mode: 'VNA-time'` models that calculation with a unit reference at each frequency bin, rather than transmitting a physical pulse. The frequency list runs from DC through Nyquist; the Nyquist reference is zero so the inverse transform remains real. The modeled circuit supplies its DC value directly, whereas a physical RF VNA commonly needs a low-frequency extrapolation. This mode requires a power-of-two `tList` beginning at zero, and has no bits or carrier.
 
 ```js
 var g = nP.global();
 g.tList = g.tGen(0, 4095 / 250e6, 4096);
 g.fList = [];
 
-var tx = nP.mod({mode: 'VNA'});
+var tx = nP.mod({mode: 'VNA-time'});
 
-var coupler = nP.Coupler180();
+var splitter = nP.Coupler180();
+var inputCoupler = nP.Coupler180();
 var line = nP.Tlin(50, 1000);
 var short = nP.Short();
 var open = nP.Open();
 var load = nP.Load();
 
 var shortCircuit = nP.nodal(
-    [coupler, 1, 2, 3, 4],
-    [line, 2, 5],
-    [short, 5],
-    [load, 4],
-    ['out', 1, 3],
+    [splitter, 1, 2, 3, 4],
+    [inputCoupler, 2, 5, 6, 7],
+    [line, 5, 8],
+    [short, 8],
+    [load, 3],
+    [load, 7],
+    ['out', 1, 4, 6],
     {signal: tx, inputPort: 1}
 );
 
 var openCircuit = nP.nodal(
-    [coupler, 1, 2, 3, 4],
-    [line, 2, 5],
-    [open, 5],
-    [load, 4],
-    ['out', 1, 3],
+    [splitter, 1, 2, 3, 4],
+    [inputCoupler, 2, 5, 6, 7],
+    [line, 5, 8],
+    [open, 8],
+    [load, 3],
+    [load, 7],
+    ['out', 1, 4, 6],
     {signal: tx, inputPort: 1}
 );
 
-var shortRx = nP.demod(shortCircuit, {noise: false});
-var openRx = nP.demod(openCircuit, {noise: false});
-var inputTable = tx.out('waveform');
+var referenceRx = nP.demod(shortCircuit, {outputPort: 2, referenceGain: 1, noise: false});
+var shortRx = nP.demod(shortCircuit, {outputPort: 3, referenceReceiver: referenceRx, referenceGain: 2, noise: false});
+var openRx = nP.demod(openCircuit, {outputPort: 3, referenceReceiver: referenceRx, referenceGain: 2, noise: false});
+var inputTable = referenceRx.out('waveform');
 var shortReturn = shortRx.out('waveform');
 var openReturn = openRx.out('waveform');
 
 nP.lineChart({
     inputTable: [inputTable],
-    title: 'Synthetic input impulse',
+    title: 'VNA reference receiver R',
     xAxisTitle: 'Time (ns)',
     yAxisTitle: 'Voltage (V)',
     metricPrefix: 'none',
@@ -245,23 +251,65 @@ nP.lineChart({
 
 nP.lineChart({
     inputTable: [shortReturn],
-    title: 'Short reflection after 1 km',
+    title: 'Short fault at 1 km: receiver A / R',
     xAxisTitle: 'Time (ns)',
-    yAxisTitle: 'Voltage (V)',
+    yAxisTitle: 'Normalized reflection',
     metricPrefix: 'none',
     showPoints: false
 });
 
 nP.lineChart({
     inputTable: [openReturn],
-    title: 'Open reflection after 1 km',
+    title: 'Open fault at 1 km: receiver A / R',
     xAxisTitle: 'Time (ns)',
-    yAxisTitle: 'Voltage (V)',
+    yAxisTitle: 'Normalized reflection',
     metricPrefix: 'none',
     showPoints: false
 });
 ```
 
-The 4,096 time points give 2,049 nonnegative frequency bins, about 61 kHz apart, and a 16.384 µs unambiguous time window. The short has reflection coefficient $\Gamma=-1$ and produces a negative return; the open has $\Gamma=+1$ and produces a positive return. Both reach the receiver near **6.67 µs** in the ideal `Tlin()` model. `Coupler180()` isolates port 3 from the forward input, while port 4 is terminated in a matched load. These are synthetic **impulse** responses; step output, window selection, and custom pulse shapes are not part of VNA mode yet.
+The 4,096 time points give 2,049 nonnegative frequency bins, about 61 kHz apart, and a 16.384 µs unambiguous time window. The splitter feeds receiver R; the input coupler feeds reflection receiver A. The output coupler and B receiver are dormant for this one-port cable test. The short has reflection coefficient $\Gamma=-1$ and produces a negative return; the open has $\Gamma=+1$ and produces a positive return. Both reach A near **6.67 µs**. The displayed reflection divides A by R and applies the input coupler's known factor of two. These are synthetic **impulse** responses; step output, window selection, and custom pulse shapes are not part of VNA-time yet.
 
 For the pulse equation and a numerical check of the 2 km round-trip travel time, see [VNA time-domain reflection](./tech-notes-vna-time-domain-reflection.md).
+
+## VNA frequency-domain measurement
+
+`VNA-frequency` sweeps the supplied `fList` with one unit complex reference at each frequency. It does not require `tList`, equally spaced frequencies, or an FFT. `demod()` reads a complex receiver phasor at each point. `out('spectrum')` contains raw voltage phasors. With `referenceReceiver`, `out('response')` divides the selected receiver by the reference receiver's gain-adjusted response at each frequency and applies the settable `referenceGain`. The gain defaults to unity, including for a direct connection. The response selectors also provide chart tables. Frequency-domain reception supports `noise: false`; noise simulation is not available in this mode.
+
+In the [VNA inductor S-parameters REPL example](./repl.md#example-vna-port1), an ideal splitter feeds reference receiver R and the input coupler. The input coupler samples reflection at A; the output coupler samples transmission at B. Each test path has half the voltage seen by R, times the inductor's S-parameter. Set R's gain to 1 and A/B gains to 2, with `referenceReceiver: referenceRx` for A and B. A changed reference path, such as a 3 dB pad, requires a corresponding gain adjustment.
+
+```js
+var g = nP.global;
+g.fList = g.fGen(1e9, 3e9, 101);
+
+var tx = nP.mod({mode: 'VNA-frequency', fList: g.fList});
+var splitter = nP.Coupler180();
+var inputCoupler = nP.Coupler180();
+var outputCoupler = nP.Coupler180();
+var l1 = nP.L(5e-9);
+var load = nP.Load();
+
+var circuit = nP.nodal(
+    [splitter, 1, 2, 3, 4],
+    [inputCoupler, 2, 5, 6, 7],
+    [l1, 5, 8],
+    [outputCoupler, 8, 9, 10, 11],
+    [load, 3],
+    [load, 7],
+    [load, 9],
+    [load, 10],
+    ['out', 1, 4, 6, 11],
+    {signal: tx, inputPort: 1}
+);
+
+var referenceRx = nP.demod(circuit, {outputPort: 2, referenceGain: 1, noise: false});
+var reflectionRx = nP.demod(circuit, {outputPort: 3, referenceReceiver: referenceRx, referenceGain: 2, noise: false});
+var transmissionRx = nP.demod(circuit, {outputPort: 4, referenceReceiver: referenceRx, referenceGain: 2, noise: false});
+var s11Table = reflectionRx.out('response dB');
+var s21Table = transmissionRx.out('response dB');
+
+nP.lineChart({inputTable: [s11Table], title: 'Inductor S11', metricPrefix: 'giga'});
+nP.lineChart({inputTable: [s21Table], title: 'Inductor S21', metricPrefix: 'giga'});
+```
+
+The [VNA frequency-domain measurement note](./tech-notes-vna-frequency-domain-measurement.md) derives the three receiver paths and the expected complex S11 and S21 values at 2 GHz. The [VNA inductor impulse response example](./repl.md#example-vna-inductor-time) uses the same three-receiver circuit with `VNA-time`.

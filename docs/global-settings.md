@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-20 -->
+<!-- Modified: 2026-10-22 -->
 # Global settings
 
 `nP.global` provides the settings for the currently selected analysis context. A context is a saved set of frequencies, times, reference impedance, temperature, and optional two-tone settings. Set the values you need before creating components: each n-port saves its settings when it is constructed.
@@ -42,7 +42,9 @@ nP.global.tList = nP.global.tGen(0, 1e-6, 101);
 
 `nP.PN()` uses `tList` for its clock times unless you pass a `time` array directly to `PN()`. The list must also meet that function's sequence-length requirements. See the [Tutorial](./tutorial.md) for a signal-through-circuit example.
 
-Public `nP.FFT()` requires one uniformly spaced `tList` time per input sample and fills `fList` with the signed output-bin frequencies. `nP.mod()` also requires a valid time list; for sampled modes, it must contain one time per final waveform sample at the modulation sample rate. Set `fList = []` before either call when starting a frequency grid from the signal. The default `[2e9]` remains available for ordinary RF component analysis. A PN clock list is coarser than the expanded sample list used by `mod({input: pn})`; pass that clock list directly to `PN()` and set `global.tList` to the full sample grid before `mod()`.
+Public `nP.FFT()` requires one uniformly spaced `tList` time per input sample and replaces `fList` with the signed output-bin frequencies. `nP.invFFT()` transforms a spectrum back to complex samples; a spectrum returned by `FFT()` carries its time grid for `.out('real')`. For another spectrum, set a matching `tList` before asking for an inverse-transform output table.
+
+Sampled `nP.mod()` modes require one `tList` time per generated waveform sample. `VNA-time` requires a power-of-two time grid starting at zero and generates a DC-to-Nyquist frequency list for its synthetic impulse. `VNA-frequency` instead uses a supplied `fList` (or the selected context's current `fList`) and needs no time grid. `FFT()` replaces the selected `fList`; sampled `mod()` and `VNA-time` fill it unless given an `fftList` array. The default `[2e9]` remains available for ordinary RF component analysis. A PN clock list is coarser than the expanded sample list used by `mod({input: pn})`; pass that clock list directly to `PN()` and set `global.tList` to the full sample grid before `mod()`.
 
 ## Reference impedance and temperature
 

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-20 -->
+<!-- Modified: 2026-10-22 -->
 # Math
 
 The math API provides complex numbers, matrices, and Fourier transforms. These functions are also used by the RF and digital calculations, but you can call them directly through `nP`.
@@ -105,7 +105,7 @@ nP.log(copiedRows[0][0]); // 3
 
 ## Fourier transforms
 
-`nP.FFT(samples)` takes an array of at least two finite numbers or `nP.complex()` values. Set `nP.global.tList` first to one uniformly spaced time in seconds per sample. It returns an equally long array of complex frequency bins and fills `global.fList` with their signed frequencies in hertz. `nP.invFFT(spectrum)` transforms those bins back into complex samples. You do not need to pad to a power of two. Both returned arrays have an `.out()` method that builds a numeric table for `nP.log()` or `nP.lineChart()`.
+`nP.FFT(samples)` takes an array of at least two finite numbers or `nP.complex()` values. Set `nP.global.tList` first to one uniformly spaced time in seconds per sample. It returns an equally long array of complex frequency bins and fills `global.fList` with their signed frequencies in hertz. `nP.invFFT(spectrum)` transforms those bins back into complex samples. You do not need to pad to a power of two. Both returned arrays have an `.out()` method that builds a numeric table for `nP.log()` or `nP.lineChart()`. A spectrum returned by `FFT()` carries the original time grid into `invFFT()`; for a separate spectrum, set a matching `tList` before using the inverse result's `.out()` method.
 
 ```js
 var g = nP.global;

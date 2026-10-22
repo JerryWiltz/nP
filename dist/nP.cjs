@@ -7558,7 +7558,7 @@ function oipDbm(result, product, outputPort) {
 	return 10 * Math.log10(intercept / 1e-3);
 }
 
-// Modified: 2026-10-21
+// Modified: 2026-10-22
 
 function analogMode(mode) {
 	return ['AM', 'FM', 'PM', 'SSB', 'DSB-SC'].includes(mode);
@@ -7582,7 +7582,8 @@ function analogFrequency(signal, index) {
 // A deterministic signal uses one complex outgoing-wave vector per S row.
 function validateSignal(signal, spars) {
 	var analog = signal && analogMode(signal.mode);
-	if (!signal || (!analog && (!Number.isInteger(signal.sampleCount) || signal.sampleCount < 1 ||
+	var frequencyVna = signal && signal.mode === 'VNA-frequency';
+	if (!signal || (!analog && !frequencyVna && (!Number.isInteger(signal.sampleCount) || signal.sampleCount < 1 ||
 		!Number.isFinite(signal.sampleRateHz) || signal.sampleRateHz <= 0)) ||
 		(analog && (!Number.isFinite(signal.carrierHz) || !Number.isFinite(signal.toneHz) ||
 			signal.carrierHz <= 0 || signal.toneHz <= 0 ||
@@ -7618,6 +7619,13 @@ function compatibleSignals(first, second) {
 	if (!second) return first;
 	var firstAnalog = analogMode(first.mode);
 	var secondAnalog = analogMode(second.mode);
+	if ((first.mode === 'VNA-frequency' || second.mode === 'VNA-frequency') &&
+		(first.mode !== second.mode ||
+		first.referenceImpedanceOhms !== second.referenceImpedanceOhms ||
+		first.rows.length !== second.rows.length ||
+		first.rows.some(function (row, index) { return row.frequency !== second.rows[index].frequency; }))) {
+		throw new RangeError('VNA-frequency sources must have matching frequencies and reference impedances.');
+	}
 	if (first.mode !== second.mode && (firstAnalog || secondAnalog)) {
 		throw new RangeError('Analog and sampled digital signals, or different analog modes, cannot share one connection.');
 	}
@@ -7651,6 +7659,7 @@ function compatibleSignals(first, second) {
 function signalWithRows(template, rows) {
 	return {
 		mode: template.mode,
+		fList: template.fList,
 		dataMode: template.dataMode,
 		encoding: template.encoding,
 		toneHz: template.toneHz,
@@ -7691,7 +7700,8 @@ function applyInputSignal(network, options) {
 		throw new RangeError('Signal inputPort is outside the nPort dimensions.');
 	}
 	var analog = analogMode(source.mode);
-	var vna = source.mode === 'VNA';
+	var vna = source.mode === 'VNA-time';
+	var frequencyVna = source.mode === 'VNA-frequency';
 	var sidebandOrder = source.mode === 'AM' ? 1 : source.sidebandOrder;
 	if (!Array.isArray(source.fList) || !Array.isArray(source.spectrum) ||
 		source.fList.length !== spars.length || source.spectrum.length !== spars.length ||
@@ -7703,6 +7713,10 @@ function applyInputSignal(network, options) {
 			spars.length !== analogRowCount(source) ||
 			source.fList.some(function (frequency, index) {
 				return frequency !== analogFrequency(source, index);
+			})) : frequencyVna ?
+			(source.fList.length === 0 || source.fList.some(function (frequency, index) {
+				return !Number.isFinite(frequency) || frequency < 0 ||
+					(index > 0 && frequency <= source.fList[index - 1]);
 			})) :
 			(!Number.isInteger(source.sampleCount) || source.sampleCount < 1 ||
 			(vna ? source.samplesPerBit !== undefined : source.mode === 'OFDM' ?
@@ -11478,7 +11492,7 @@ function noiseWaveformSpectrum(stage, signal, inputPort, outputPort, options) {
 	return spectrum;
 }
 
-// Modified: 2026-10-21
+// Modified: 2026-10-22
 
 // Reconstruct the output signal and one independent noise realization.
 function receiveWaveform(stage, options = {}) {
@@ -11498,6 +11512,28 @@ function receiveWaveform(stage, options = {}) {
 	var portCount = Math.sqrt(stage.spars[0].length - 1);
 	var outputPort = options.outputPort === undefined ? 2 : options.outputPort;
 	var inputPort = options.inputPort === undefined ? 1 : options.inputPort;
+	var vnaTime = signal.mode === 'VNA-time';
+	var referencePort = options.referencePort;
+	var referenceReceiver = options.referenceReceiver;
+	var referenceGain = options.referenceGain === undefined ? 1 : options.referenceGain;
+	if (vnaTime && (!Number.isFinite(referenceGain) || referenceGain <= 0)) {
+		throw new RangeError('VNA-time referenceGain must be positive and finite.');
+	}
+	if (vnaTime && referencePort !== undefined && (!Number.isInteger(referencePort) ||
+		referencePort < 1 || referencePort > portCount || referencePort === outputPort)) {
+		throw new RangeError('VNA-time referencePort must name another output port.');
+	}
+	if (vnaTime && referencePort !== undefined && referenceReceiver !== undefined) {
+		throw new RangeError('Select referencePort or referenceReceiver, not both.');
+	}
+	if (vnaTime && referenceReceiver !== undefined &&
+		(!referenceReceiver || typeof referenceReceiver.out !== 'function')) {
+		throw new TypeError('VNA-time referenceReceiver must be a demod result.');
+	}
+	if (!vnaTime && (referencePort !== undefined || referenceReceiver !== undefined ||
+		options.referenceGain !== undefined)) {
+		throw new RangeError('referencePort, referenceReceiver, and referenceGain are only for VNA reception.');
+	}
 	if (!Number.isInteger(outputPort) || outputPort < 1 || outputPort > portCount) {
 		throw new RangeError('demod outputPort is outside the nPort dimensions.');
 	}
@@ -11512,10 +11548,34 @@ function receiveWaveform(stage, options = {}) {
 	var voltageScale = Math.sqrt(signal.referenceImpedanceOhms);
 	var noiseSpectrum = options.noise === false ? null :
 		noiseWaveformSpectrum(stage, signal, inputPort, outputPort, options);
+	if (vnaTime && (referencePort !== undefined || referenceReceiver !== undefined) && noiseSpectrum) {
+		throw new RangeError('VNA reference normalization requires noise: false.');
+	}
+	var referenceSpectrum = referenceReceiver === undefined ? null : referenceReceiver.out('spectrum');
+	var referenceFrequencies = referenceReceiver === undefined ? null : referenceReceiver.out('frequencies');
+	if (referenceSpectrum && (!Array.isArray(referenceSpectrum) ||
+		referenceSpectrum.length !== signal.rows.length ||
+		!Array.isArray(referenceFrequencies) ||
+		referenceFrequencies.some(function (frequency, index) {
+			return frequency !== signal.rows[index].frequency;
+		}))) {
+		throw new RangeError('VNA referenceReceiver must use the same frequency grid.');
+	}
 	for (var bin = 0; bin < signal.rows.length; bin++) {
 		var wave = signal.rows[bin].waves[outputPort - 1];
 		var voltage = complex(wave.getR() * voltageScale, wave.getI() * voltageScale);
 		if (noiseSpectrum) voltage = voltage.add(noiseSpectrum[bin]);
+		if (vnaTime) {
+			if (referencePort !== undefined || referenceSpectrum) {
+				var reference = referenceSpectrum ? referenceSpectrum[bin] :
+					signal.rows[bin].waves[referencePort - 1].mul(complex(voltageScale, 0));
+				if (reference.mag() === 0) {
+					if (voltage.mag() !== 0) throw new RangeError('VNA reference receiver has zero signal.');
+					voltage = complex(0, 0);
+				} else voltage = voltage.div(reference);
+			}
+			voltage = voltage.mul(complex(referenceGain, 0));
+		}
 		var selfConjugate = bin === 0 || (count % 2 === 0 && bin === count / 2);
 		if (selfConjugate) {
 			if (Math.abs(voltage.getI()) > 1e-9 * Math.max(1, Math.abs(voltage.getR()))) {
@@ -11605,11 +11665,101 @@ function receiveWaveform(stage, options = {}) {
 			if (selector !== 'waveform') {
 				throw new RangeError('Unknown demod output: ' + selector);
 			}
-			var output = [['Time (ns)', 'Output (V)']];
+			var output = [['Time (ns)', vnaTime &&
+				(referencePort !== undefined || referenceSpectrum) ?
+				'Normalized response' : 'Output (V)']];
 			for (var index = 0; index < count; index++) {
 				output.push([index * 1e9 / signal.sampleRateHz, samples[index].getR()]);
 			}
 			return output;
+		}
+	};
+}
+
+// Modified: 2026-10-22
+
+// Read one complex receiver phasor per swept frequency.
+function receiveVnaFrequency(stage, options = {}) {
+	if (!options || Array.isArray(options) || typeof options !== 'object') {
+		throw new TypeError('demod options must be an object.');
+	}
+	if (Object.keys(options).some(function (key) {
+		return key !== 'outputPort' && key !== 'referencePort' && key !== 'referenceReceiver' &&
+			key !== 'referenceGain' && key !== 'noise';
+	})) {
+		throw new TypeError('VNA-frequency demod accepts outputPort, referencePort, referenceReceiver, referenceGain, and noise.');
+	}
+	if (options.noise !== undefined && options.noise !== false) {
+		throw new RangeError('VNA-frequency reception currently requires noise: false.');
+	}
+	var signal = stage.signal;
+	var portCount = Math.sqrt(stage.spars[0].length - 1);
+	var outputPort = options.outputPort === undefined ? 2 : options.outputPort;
+	var referencePort = options.referencePort;
+	var referenceReceiver = options.referenceReceiver;
+	var referenceGain = options.referenceGain === undefined ? 1 : options.referenceGain;
+	if (!Number.isInteger(outputPort) || outputPort < 1 || outputPort > portCount) {
+		throw new RangeError('demod outputPort is outside the nPort dimensions.');
+	}
+	if (!Number.isFinite(referenceGain) || referenceGain <= 0) {
+		throw new RangeError('VNA-frequency referenceGain must be positive and finite.');
+	}
+	if (referencePort !== undefined && (!Number.isInteger(referencePort) ||
+		referencePort < 1 || referencePort > portCount || referencePort === outputPort)) {
+		throw new RangeError('VNA-frequency referencePort must name another output port.');
+	}
+	if (referencePort !== undefined && referenceReceiver !== undefined) {
+		throw new RangeError('Select referencePort or referenceReceiver, not both.');
+	}
+	if (referenceReceiver !== undefined &&
+		(!referenceReceiver || typeof referenceReceiver.out !== 'function')) {
+		throw new TypeError('VNA-frequency referenceReceiver must be a demod result.');
+	}
+	var voltageScale = complex(Math.sqrt(signal.referenceImpedanceOhms), 0);
+	var raw = signal.rows.map(function (row) {
+		return row.waves[outputPort - 1].mul(voltageScale);
+	});
+	var frequencies = signal.rows.map(function (row) { return row.frequency; });
+	var referenceValues = referenceReceiver === undefined ? null : referenceReceiver.out('response');
+	var referenceFrequencies = referenceReceiver === undefined ? null : referenceReceiver.out('frequencies');
+	if (referenceValues && (!Array.isArray(referenceValues) ||
+		referenceValues.length !== frequencies.length ||
+		!Array.isArray(referenceFrequencies) ||
+		referenceFrequencies.some(function (frequency, index) { return frequency !== frequencies[index]; }))) {
+		throw new RangeError('VNA referenceReceiver must use the same frequency grid.');
+	}
+	var response = raw.map(function (value, index) {
+		if (referencePort === undefined && !referenceValues) return value.mul(complex(referenceGain, 0));
+		var reference = referenceValues ? referenceValues[index] :
+			signal.rows[index].waves[referencePort - 1].mul(voltageScale);
+		if (reference.mag() === 0) throw new RangeError('VNA reference receiver has zero signal.');
+		return value.div(reference).mul(complex(referenceGain, 0));
+	});
+	return {
+		out: function (selector = 'response dB') {
+			if (selector === 'mode') return signal.mode;
+			if (selector === 'frequency count') return frequencies.length;
+			if (selector === 'frequencies') return frequencies.slice();
+			if (selector === 'spectrum') return raw.map(function (value) { return value.copy(); });
+			if (selector === 'response') return response.map(function (value) { return value.copy(); });
+			if (selector === 'response dB' || selector === 'response magnitude' ||
+				selector === 'response phase' || selector === 'response real' ||
+				selector === 'response imaginary') {
+				var label = selector === 'response dB' ? 'Response (dB)' :
+					selector === 'response magnitude' ? 'Response magnitude' :
+					selector === 'response phase' ? 'Response phase (deg)' :
+					selector === 'response real' ? 'Response real' : 'Response imaginary';
+				var table = [['Freq', label]];
+				for (var index = 0; index < frequencies.length; index++) {
+					var value = response[index];
+					table.push([frequencies[index], selector === 'response dB' ? value.mag20dB() :
+						selector === 'response magnitude' ? value.mag() :
+						selector === 'response phase' ? value.ang() :
+						selector === 'response real' ? value.getR() : value.getI()]);
+				}
+				return table;
+			}
+			throw new RangeError('Unknown VNA-frequency demod output: ' + selector);
 		}
 	};
 }
@@ -11963,7 +12113,7 @@ function demodulateAdvanced(receiver, signal) {
 	};
 }
 
-// Modified: 2026-10-21
+// Modified: 2026-10-22
 
 // Connect a transmitter directly to the receiver using the transmitter's
 // original frequency grid and impedance, independent of the active context.
@@ -12258,6 +12408,9 @@ function demodFSK(receiver, signal) {
 // Recover baseband levels from a real carrier using the known carrier phase.
 function demod(stage, options = {}) {
 	if (!stage || !Array.isArray(stage.spars)) stage = directStage(stage);
+	if (stage.signal && stage.signal.mode === 'VNA-frequency') {
+		return receiveVnaFrequency(stage, options);
+	}
 	if (stage.signal && stage.signal.mode === 'AM') return demodAM(stage, options);
 	if (stage.signal && (stage.signal.mode === 'SSB' || stage.signal.mode === 'DSB-SC')) {
 		return demodSuppressed(stage, options);
@@ -12591,25 +12744,25 @@ function createSourceWaveform(options = {}, fftList) {
 	return tx;
 }
 
-// Modified: 2026-10-21
+// Modified: 2026-10-22
 
-// A VNA sweeps equal reference phasors and reconstructs a synthetic impulse.
-function vnaSweep(options, sampleRateHz) {
+// Equal reference phasors on an FFT grid reconstruct a synthetic impulse.
+function vnaTimeSweep(options, sampleRateHz) {
 	var count = global.tList.length;
 	if (count < 4 || (count & (count - 1)) !== 0 || global.tList[0] !== 0) {
-		throw new RangeError('VNA mode needs a power-of-two tList of at least four points starting at zero.');
+		throw new RangeError('VNA-time needs a power-of-two tList of at least four points starting at zero.');
 	}
-	if (global.twoTone) throw new RangeError('Clear global.twoTone before VNA analysis.');
+	if (global.twoTone) throw new RangeError('Clear global.twoTone before VNA-time analysis.');
 	if (!Number.isFinite(global.Ro) || global.Ro <= 0) {
-		throw new RangeError('VNA mode needs a positive global.Ro.');
+		throw new RangeError('VNA-time needs a positive global.Ro.');
 	}
 	if (options.fftList !== undefined && !Array.isArray(options.fftList)) {
-		throw new TypeError('VNA fftList must be an array.');
+		throw new TypeError('VNA-time fftList must be an array.');
 	}
 	if (Object.keys(options).some(function (key) {
 		return key !== 'mode' && key !== 'fftList';
 	})) {
-		throw new TypeError('VNA mode accepts only mode and optional fftList.');
+		throw new TypeError('VNA-time accepts only mode and optional fftList.');
 	}
 	var frequencyList = Array.from({length: count / 2 + 1}, function (_, bin) {
 		return bin * sampleRateHz / count;
@@ -12624,7 +12777,7 @@ function vnaSweep(options, sampleRateHz) {
 	}
 	var time = global.tList.slice();
 	var tx = {
-		mode: 'VNA', fList: frequencyList, spectrum: spectrum,
+		mode: 'VNA-time', fList: frequencyList, spectrum: spectrum,
 		sampleCount: count, sampleRateHz: sampleRateHz,
 		referenceImpedanceOhms: global.Ro
 	};
@@ -12634,7 +12787,7 @@ function vnaSweep(options, sampleRateHz) {
 		if (selector === 'frequency count') return frequencyList.length;
 		if (selector === 'frequencies') return frequencyList.slice();
 		if (selector === 'spectrum') return spectrum.map(function (value) { return value.copy(); });
-		if (selector === 'settings') return {mode: 'VNA', sampleRateHz: sampleRateHz,
+		if (selector === 'settings') return {mode: 'VNA-time', sampleRateHz: sampleRateHz,
 			sampleCount: count, frequencyCount: frequencyList.length,
 			frequencyStepHz: sampleRateHz / count,
 			maximumFrequencyHz: sampleRateHz / 2};
@@ -12649,7 +12802,42 @@ function vnaSweep(options, sampleRateHz) {
 				return [value * 1e9, samples[index].getR()];
 			}));
 		}
-		throw new RangeError('Unknown VNA output: ' + selector);
+		throw new RangeError('Unknown VNA-time output: ' + selector);
+	};
+	return tx;
+}
+
+// A stepped-frequency VNA has independent complex tones, with no time grid.
+function vnaFrequencySweep(options) {
+	if (Object.keys(options).some(function (key) { return key !== 'mode' && key !== 'fList'; })) {
+		throw new TypeError('VNA-frequency accepts only mode and fList.');
+	}
+	var frequencies = options.fList === undefined ? global.fList : options.fList;
+	if (!Array.isArray(frequencies) || frequencies.length === 0 ||
+		frequencies.some(function (frequency, index) {
+			return !Number.isFinite(frequency) || frequency < 0 ||
+				(index > 0 && frequency <= frequencies[index - 1]);
+		})) {
+		throw new RangeError('VNA-frequency needs a nonempty, increasing fList of nonnegative frequencies.');
+	}
+	if (global.twoTone) throw new RangeError('Clear global.twoTone before VNA-frequency analysis.');
+	if (!Number.isFinite(global.Ro) || global.Ro <= 0) {
+		throw new RangeError('VNA-frequency needs a positive global.Ro.');
+	}
+	var fList = frequencies.slice();
+	global.fList = fList.slice();
+	var spectrum = fList.map(function () { return complex(1, 0); });
+	var tx = {mode: 'VNA-frequency', fList: fList, spectrum: spectrum,
+		referenceImpedanceOhms: global.Ro};
+	tx.out = function (selector) {
+		if (selector === 'mode') return tx.mode;
+		if (selector === 'frequency count') return fList.length;
+		if (selector === 'frequencies') return fList.slice();
+		if (selector === 'spectrum') return spectrum.map(function (value) { return value.copy(); });
+		if (selector === 'settings') return {mode: tx.mode, frequencyCount: fList.length};
+		if (selector === 'frequency table') return [['Bin', 'Frequency (Hz)']].concat(
+			fList.map(function (frequency, index) { return [index, frequency]; }));
+		throw new RangeError('Unknown VNA-frequency output: ' + selector);
 	};
 	return tx;
 }
@@ -12844,8 +13032,12 @@ function mod(options = {}) {
 	if (!options || Array.isArray(options) || typeof options !== 'object') {
 		throw new TypeError('mod expects an options object.');
 	}
+	if (options.mode === 'VNA') {
+		throw new RangeError('Use VNA-time or VNA-frequency as the mode.');
+	}
+	if (options.mode === 'VNA-frequency') return vnaFrequencySweep(options);
 	var sampleRateHz = sampleRateFromTime(global.tList, undefined, 'mod');
-	if (options.mode === 'VNA') return vnaSweep(options, sampleRateHz);
+	if (options.mode === 'VNA-time') return vnaTimeSweep(options, sampleRateHz);
 	if (options.mode === 'AM') return analogAM(options);
 	if (options.mode === 'SSB' || options.mode === 'DSB-SC') return analogSuppressed(options);
 	if (options.mode === 'FM' || options.mode === 'PM') return analogAngle(options);

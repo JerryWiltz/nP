@@ -1,4 +1,4 @@
-// Modified: 2026-10-21
+// Modified: 2026-10-22
 import {complex} from '../../np-math/src/complex';
 
 function analogMode(mode) {
@@ -23,7 +23,8 @@ function analogFrequency(signal, index) {
 // A deterministic signal uses one complex outgoing-wave vector per S row.
 export function validateSignal(signal, spars) {
 	var analog = signal && analogMode(signal.mode);
-	if (!signal || (!analog && (!Number.isInteger(signal.sampleCount) || signal.sampleCount < 1 ||
+	var frequencyVna = signal && signal.mode === 'VNA-frequency';
+	if (!signal || (!analog && !frequencyVna && (!Number.isInteger(signal.sampleCount) || signal.sampleCount < 1 ||
 		!Number.isFinite(signal.sampleRateHz) || signal.sampleRateHz <= 0)) ||
 		(analog && (!Number.isFinite(signal.carrierHz) || !Number.isFinite(signal.toneHz) ||
 			signal.carrierHz <= 0 || signal.toneHz <= 0 ||
@@ -59,6 +60,13 @@ export function compatibleSignals(first, second) {
 	if (!second) return first;
 	var firstAnalog = analogMode(first.mode);
 	var secondAnalog = analogMode(second.mode);
+	if ((first.mode === 'VNA-frequency' || second.mode === 'VNA-frequency') &&
+		(first.mode !== second.mode ||
+		first.referenceImpedanceOhms !== second.referenceImpedanceOhms ||
+		first.rows.length !== second.rows.length ||
+		first.rows.some(function (row, index) { return row.frequency !== second.rows[index].frequency; }))) {
+		throw new RangeError('VNA-frequency sources must have matching frequencies and reference impedances.');
+	}
 	if (first.mode !== second.mode && (firstAnalog || secondAnalog)) {
 		throw new RangeError('Analog and sampled digital signals, or different analog modes, cannot share one connection.');
 	}
@@ -92,6 +100,7 @@ export function compatibleSignals(first, second) {
 export function signalWithRows(template, rows) {
 	return {
 		mode: template.mode,
+		fList: template.fList,
 		dataMode: template.dataMode,
 		encoding: template.encoding,
 		toneHz: template.toneHz,
@@ -132,7 +141,8 @@ export function applyInputSignal(network, options) {
 		throw new RangeError('Signal inputPort is outside the nPort dimensions.');
 	}
 	var analog = analogMode(source.mode);
-	var vna = source.mode === 'VNA';
+	var vna = source.mode === 'VNA-time';
+	var frequencyVna = source.mode === 'VNA-frequency';
 	var sidebandOrder = source.mode === 'AM' ? 1 : source.sidebandOrder;
 	if (!Array.isArray(source.fList) || !Array.isArray(source.spectrum) ||
 		source.fList.length !== spars.length || source.spectrum.length !== spars.length ||
@@ -144,6 +154,10 @@ export function applyInputSignal(network, options) {
 			spars.length !== analogRowCount(source) ||
 			source.fList.some(function (frequency, index) {
 				return frequency !== analogFrequency(source, index);
+			})) : frequencyVna ?
+			(source.fList.length === 0 || source.fList.some(function (frequency, index) {
+				return !Number.isFinite(frequency) || frequency < 0 ||
+					(index > 0 && frequency <= source.fList[index - 1]);
 			})) :
 			(!Number.isInteger(source.sampleCount) || source.sampleCount < 1 ||
 			(vna ? source.samplesPerBit !== undefined : source.mode === 'OFDM' ?
