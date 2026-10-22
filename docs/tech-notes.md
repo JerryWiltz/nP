@@ -9,6 +9,7 @@ RF notes cover circuit and network theory, including the concepts used by nP's n
 
 - [S-parameters for the novice](./tech-notes-s-parameters-for-the-novice.md) explains incident and outgoing waves, calculates the S-parameters of a 5 nH series inductor at 2 GHz, and follows the calculation into `nP.L()`.
 - [nPort overview](./tech-notes-nport-overview.md) explains how nP represents components and complete circuits as frequency-dependent nPort objects.
+- [VNA time-domain reflection](./tech-notes-vna-time-domain-reflection.md) derives the synthetic impulse from swept frequency bins and checks a 1 km line's round-trip delay against the plotted short and open returns.
 
 ## Digital Notes
 

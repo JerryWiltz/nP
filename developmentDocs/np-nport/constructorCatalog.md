@@ -1,7 +1,7 @@
-<!-- Modified: 2026-10-20 -->
+<!-- Modified: 2026-10-21 -->
 # nP constructor catalog
 
-This catalog covers the 51 public functions that produce n-port objects from `src/np-nport/src/index.js`, the digital waveform functions from `src/np-digital`, and the exported math and low-pass prototype functions. Each JS call below spells out the **current defaults** where they exist. Each argument or property appears on its own line. Units are in comments. Each constructor has its own heading and code block.
+This catalog covers the 52 public functions that produce n-port objects from `src/np-nport/src/index.js`, the digital waveform functions from `src/np-digital`, and the exported math and low-pass prototype functions. Each JS call below spells out the **current defaults** where they exist. Each argument or property appears on its own line. Units are in comments. Each constructor has its own heading and code block.
 
 Parameter spelling follows the public API. Legacy positional names such as `R`, `N`, `Z`, and `Length` retain their source capitalization; physical options use `lowerCamelCase` property names. Positional argument order matters. Named object properties follow one presentation order: geometry, material and loss, then temperature.
 
@@ -457,6 +457,19 @@ nP.Tclin(
 
 `Tclin` has four ports. Coupled-line ports run clockwise from the upper left. `Tee4` has four ports and `Tee5` has five.
 
+### `Coupler180`
+
+```js
+// Coupler180: ideal frequency-independent 180° directional coupler
+nP.Coupler180({
+    couplingDb: 10 * Math.log10(2), // dB; exact equal-power split
+    fList: nP.global.fList          // Hz; optional analysis frequencies
+});
+// returns an nPort object
+```
+
+The default is a 3.0103 dB coupler. Port 1 is the input, port 2 is through, port 4 is forward coupled, and port 3 is isolated. A wave returning into port 2 couples to port 3. All ports are matched, and the same real, lossless S-matrix applies at every frequency, including DC. Terminate port 4 in a matched load when using port 3 as a reflection receiver.
+
 ### `Attn`
 
 ```js
@@ -834,7 +847,7 @@ var chain = nP.cascade(stage, {signal: tx});
 
 For another independent circuit, call `var h = nP.global()` and repeat the workflow with `h.fList`. Call `nP.global(g)` to select the first circuit again when constructing more components for it. The existing `nP.global.fList = ...` form continues to work for a single circuit. `mod()` sets the selected context's `fList` when `fftList` is omitted.
 
-`mod()` uses `FFT()` internally and produces a plain signal description with `fList`, complex `spectrum`, `bits`, `sampleCount`, `sampleRateHz`, `samplesPerBit`, and `referenceImpedanceOhms`. In ASCII mode, each character is encoded as eight bits, most-significant bit first. In bits mode, supply `bits: '0101'` or an array of zeros and ones. The sequence is treated as one repeating period. Construct components after `mod()` so their frequency rows match. Pass the source as the final connection argument: `nP.nodal([stage, 1, 2], ['out', 1, 2], {signal: tx, inputPort: 1})` or `nP.cascade(stage, {signal: tx, inputPort: 1})`. Input port 1 is the default. `nP.global.twoTone` must be unset.
+For sampled bit modes, `mod()` uses an FFT and produces a plain signal description with `fList`, complex `spectrum`, `bits`, `sampleCount`, `sampleRateHz`, `samplesPerBit`, and `referenceImpedanceOhms`. In ASCII mode, each character is encoded as eight bits, most-significant bit first. In bits mode, supply `bits: '0101'` or an array of zeros and ones. The sequence is treated as one repeating period. Construct components after `mod()` so their frequency rows match. Pass the source as the final connection argument: `nP.nodal([stage, 1, 2], ['out', 1, 2], {signal: tx, inputPort: 1})` or `nP.cascade(stage, {signal: tx, inputPort: 1})`. Input port 1 is the default. `nP.global.twoTone` must be unset.
 
 ```js
 tx.out('mode');            // 'PN2' through 'PN16', 'ASCII', or 'bits'
@@ -844,6 +857,22 @@ tx.out('frequency count'); // FFT frequencies, including DC
 tx.out('frequencies');     // copy of the frequency array in Hz
 tx.out('spectrum');        // copy of the complex FFT values
 ```
+
+VNA mode uses the selected `tList` to set a uniform low-pass frequency grid. It needs at least four times, a power-of-two count, and a zero first time. It fills `fList` from DC through Nyquist with `N/2 + 1` points. The complex reference is 1 V at every bin except Nyquist, which is zero so the inverse transform remains real. This is a synthetic impulse response, not a simultaneous multitone transmission or a physical pulse generator. VNA mode has no bits, carrier, or `samplesPerBit`.
+
+```js
+// mod: VNA-style swept-frequency reference
+var g = nP.global();
+g.tList = g.tGen(0, 4095 / 250e6, 4096); // s; 250 MHz sample grid
+g.fList = [];
+var tx = nP.mod({
+    mode: 'VNA', // frequency-independent unit reference bins
+    fftList: g.fList // optional; fills this list in place
+});
+// returns a signal description with 2,049 frequencies
+```
+
+When `fftList` is omitted, VNA mode replaces the selected context's `fList`. `tx.out('waveform')` shows the synthetic input impulse in nanoseconds; `tx.out('settings')` reports the sample rate, bin spacing, and maximum frequency. After attaching the source to a circuit, `nP.demod(circuit, {noise: false}).out('waveform')` gives the synthetic output impulse without any receiver code changes. A step response, windowing, and arbitrary pulse weighting are not yet provided.
 
 For the 68-character ASCII message in `dev/timeDomainDevelopment.html`, `tx.out('frequency count')` returns `2177`. Unknown selectors raise `RangeError`.
 
@@ -1051,7 +1080,7 @@ var directRx = nP.demod(tx);             // direct connection; no nPort needed
 
 `demod()` accepts receiver options such as `outputPort`, `inputPort`, `noise`, `thresholdVolts`, and `referenceTemperature`. Pass either a completed nPort carrying a signal or the result of `mod()` directly. The direct form uses an internal ideal matched connection with the transmitter's frequency grid and reference impedance; it does not depend on the currently selected global circuit. It draws matched-source thermal noise by default in either form; `{noise: false}` disables the random noise realization. For a positive carrier, it reconstructs the received passband waveform, correlates each bit interval with a cosine at the transmitted carrier frequency and zero phase, then decides bits from the recovered levels. `out('carrier waveform')` and `out('carrier spectrum')` expose the received passband data; `out('waveform')` and `out('spectrum')` expose the recovered bit levels. This path assumes the carrier phase and bit timing are known; it does not recover either from the signal.
 
-`demod()` needs only the completed nPort because its `.signal` contains the complex output waves. It draws a new random noise spectrum from the nPort's calculated source, termination, and component noise on each call, then uses `invFFT()` to reconstruct received samples. The output port can be any valid port of that nPort. `inputPort` defaults to 1, and the noise calculation uses the same matched 290 K source and termination conditions as `out('noiseFloor')` unless measurement options specify otherwise. Set `noise: false` to recover the deterministic waveform.
+`demod()` needs only the completed nPort because its `.signal` contains the complex output waves. It draws a new random noise spectrum from the nPort's calculated source, termination, and component noise on each call, then uses `invFFT()` to reconstruct received samples. The output port can be any valid port of that nPort. `inputPort` defaults to 1, and the noise calculation uses the same matched 290 K source and termination conditions as `out('noiseFloor')` unless measurement options specify otherwise. Set `noise: false` to recover the deterministic waveform. With a VNA-mode source, `out('waveform')` is the synthetic impulse response; bit and text outputs do not apply.
 
 For an AM signal, `demod()` instead uses the three propagated output phasors. It reports `out('envelope')` as a time-and-voltage table over one modulation period, `out('phase')` as a time-and-phase-deviation table in degrees relative to the output carrier, and `out('amToPmDeg')` as the largest absolute phase deviation on that table. The default table has 1,001 points; `{points: 201}` selects another count. `out('tones')` returns frequency, output peak voltage, phase, and power for the selected output port. AM demodulation is deterministic; `{noise: true}` is rejected because random AM receiver noise has not been implemented. The AM signal metadata is retained when the nPort is reused in `nodal()` or `cascade()`.
 

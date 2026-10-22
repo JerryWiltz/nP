@@ -7558,7 +7558,7 @@ function oipDbm(result, product, outputPort) {
 	return 10 * Math.log10(intercept / 1e-3);
 }
 
-// Modified: 2026-10-15
+// Modified: 2026-10-21
 
 function analogMode(mode) {
 	return ['AM', 'FM', 'PM', 'SSB', 'DSB-SC'].includes(mode);
@@ -7691,6 +7691,7 @@ function applyInputSignal(network, options) {
 		throw new RangeError('Signal inputPort is outside the nPort dimensions.');
 	}
 	var analog = analogMode(source.mode);
+	var vna = source.mode === 'VNA';
 	var sidebandOrder = source.mode === 'AM' ? 1 : source.sidebandOrder;
 	if (!Array.isArray(source.fList) || !Array.isArray(source.spectrum) ||
 		source.fList.length !== spars.length || source.spectrum.length !== spars.length ||
@@ -7704,7 +7705,7 @@ function applyInputSignal(network, options) {
 				return frequency !== analogFrequency(source, index);
 			})) :
 			(!Number.isInteger(source.sampleCount) || source.sampleCount < 1 ||
-			(source.mode === 'OFDM' ?
+			(vna ? source.samplesPerBit !== undefined : source.mode === 'OFDM' ?
 				(!Number.isInteger(source.bitCount) || source.bitCount < 1 ||
 				!Number.isInteger(source.fftSize) || source.fftSize < 1 ||
 				 source.sampleCount % source.fftSize !== 0) :
@@ -9649,6 +9650,43 @@ function Tclin(Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254, options = {}) { // 1
 	}	ctlin.setspars(sparsArray);
 	ctlin.setglobal(settings);
 	return ctlin;
+}
+
+// Modified: 2026-10-21
+
+// Matched, reciprocal 180-degree coupler with the same response at every frequency.
+// Port 1 drives port 2 (through) and port 4 (coupled); port 3 is isolated.
+function Coupler180(options = {}) {
+	if (!options || Array.isArray(options) || typeof options !== 'object') {
+		throw new TypeError('Coupler180 expects an options object.');
+	}
+	var couplingDb = options.couplingDb === undefined ? 10 * Math.log10(2) : options.couplingDb;
+	if (!Number.isFinite(couplingDb) || couplingDb < 0) {
+		throw new RangeError('Coupler180 couplingDb must be a finite, nonnegative number of dB.');
+	}
+	var coupling = 10 ** (-couplingDb / 20);
+	var through = Math.sqrt(1 - coupling * coupling);
+	var settings = componentSettings(global, options);
+	var frequencies = analysisFrequencies(settings);
+	var sparsArray = [];
+	var noiseArray = [];
+	for (var i = 0; i < frequencies.length; i++) {
+		sparsArray[i] = [frequencies[i],
+			complex(0, 0), complex(through, 0), complex(0, 0), complex(coupling, 0),
+			complex(through, 0), complex(0, 0), complex(coupling, 0), complex(0, 0),
+			complex(0, 0), complex(coupling, 0), complex(0, 0), complex(-through, 0),
+			complex(coupling, 0), complex(0, 0), complex(-through, 0), complex(0, 0)];
+		var covariance = [];
+		for (var row = 0; row < 4; row++) {
+			covariance[row] = Array.from({length: 4}, function () { return complex(0, 0); });
+		}
+		noiseArray[i] = {frequency: frequencies[i], C: covariance};
+	}
+	var coupler = new nPort();
+	coupler.setspars(sparsArray);
+	coupler.noise = noiseArray;
+	coupler.setglobal(settings);
+	return coupler;
 }
 
 // Modified: 2026-09-06
@@ -12555,6 +12593,67 @@ function createSourceWaveform(options = {}, fftList) {
 
 // Modified: 2026-10-21
 
+// A VNA sweeps equal reference phasors and reconstructs a synthetic impulse.
+function vnaSweep(options, sampleRateHz) {
+	var count = global.tList.length;
+	if (count < 4 || (count & (count - 1)) !== 0 || global.tList[0] !== 0) {
+		throw new RangeError('VNA mode needs a power-of-two tList of at least four points starting at zero.');
+	}
+	if (global.twoTone) throw new RangeError('Clear global.twoTone before VNA analysis.');
+	if (!Number.isFinite(global.Ro) || global.Ro <= 0) {
+		throw new RangeError('VNA mode needs a positive global.Ro.');
+	}
+	if (options.fftList !== undefined && !Array.isArray(options.fftList)) {
+		throw new TypeError('VNA fftList must be an array.');
+	}
+	if (Object.keys(options).some(function (key) {
+		return key !== 'mode' && key !== 'fftList';
+	})) {
+		throw new TypeError('VNA mode accepts only mode and optional fftList.');
+	}
+	var frequencyList = Array.from({length: count / 2 + 1}, function (_, bin) {
+		return bin * sampleRateHz / count;
+	});
+	var spectrum = frequencyList.map(function (_, bin) {
+		return complex(bin === count / 2 ? 0 : 1, 0);
+	});
+	if (options.fftList === undefined) global.fList = frequencyList.slice();
+	else {
+		options.fftList.length = 0;
+		frequencyList.forEach(function (frequency) { options.fftList.push(frequency); });
+	}
+	var time = global.tList.slice();
+	var tx = {
+		mode: 'VNA', fList: frequencyList, spectrum: spectrum,
+		sampleCount: count, sampleRateHz: sampleRateHz,
+		referenceImpedanceOhms: global.Ro
+	};
+	tx.out = function (selector) {
+		if (selector === 'mode') return tx.mode;
+		if (selector === 'sample count') return count;
+		if (selector === 'frequency count') return frequencyList.length;
+		if (selector === 'frequencies') return frequencyList.slice();
+		if (selector === 'spectrum') return spectrum.map(function (value) { return value.copy(); });
+		if (selector === 'settings') return {mode: 'VNA', sampleRateHz: sampleRateHz,
+			sampleCount: count, frequencyCount: frequencyList.length,
+			frequencyStepHz: sampleRateHz / count,
+			maximumFrequencyHz: sampleRateHz / 2};
+		if (selector === 'frequency table') return [['Bin', 'Frequency (Hz)']].concat(
+			frequencyList.map(function (frequency, bin) { return [bin, frequency]; }));
+		if (selector === 'waveform') {
+			var fullSpectrum = Array.from({length: count}, function (_, bin) {
+				return complex(bin === count / 2 ? 0 : 1, 0);
+			});
+			var samples = invFFT(fullSpectrum);
+			return [['Time (ns)', 'Input (V)']].concat(time.map(function (value, index) {
+				return [value * 1e9, samples[index].getR()];
+			}));
+		}
+		throw new RangeError('Unknown VNA output: ' + selector);
+	};
+	return tx;
+}
+
 // A single sinusoidal AM input has only a carrier and two sidebands.
 function analogAM(options) {
 	var carrierHz = options.carrierHz;
@@ -12745,7 +12844,8 @@ function mod(options = {}) {
 	if (!options || Array.isArray(options) || typeof options !== 'object') {
 		throw new TypeError('mod expects an options object.');
 	}
-	sampleRateFromTime(global.tList, undefined, 'mod');
+	var sampleRateHz = sampleRateFromTime(global.tList, undefined, 'mod');
+	if (options.mode === 'VNA') return vnaSweep(options, sampleRateHz);
 	if (options.mode === 'AM') return analogAM(options);
 	if (options.mode === 'SSB' || options.mode === 'DSB-SC') return analogSuppressed(options);
 	if (options.mode === 'FM' || options.mode === 'PM') return analogAngle(options);
@@ -13098,6 +13198,7 @@ function bodyWidth () {
 exports.Amp = Amp;
 exports.Attn = Attn;
 exports.C = C;
+exports.Coupler180 = Coupler180;
 exports.FFT = FFT;
 exports.L = L;
 exports.Load = Load;

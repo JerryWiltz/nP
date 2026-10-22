@@ -32,6 +32,7 @@ export {paPaLC} from './rlc/paPaLC';
 export {sePaLC} from './rlc/sePaLC';
 export {paPaRLC} from './rlc/paPaRLC';
 export {sePaRLC} from './rlc/sePaRLC';
+// Modified: 2026-10-21
 export {lpfGen} from './filters/lpfGen';
 
 export {Attn} from './idealComponents/Attn';
@@ -52,6 +53,7 @@ export {Shift90} from './idealComponents/Shift90';
 
 export {Tlin} from  './idealComponents/Tlin';
 export {Tclin} from './idealComponents/Tclin';
+export {Coupler180} from './idealComponents/Coupler180';
 
 export {mlin} from './mlin/mlin';
 export {mclin} from './mlin/mclin';

@@ -91,6 +91,76 @@ nP.lineChart({
   metricPrefix: 'giga',
   showPoints: false
 });` },
+  { id: 'vna-short-reflection', title: 'VNA short and open reflections', category: 'rf-circuits', code: `// VNA short and open reflections
+
+var g = nP.global();
+g.tList = g.tGen(0, 4095 / 250e6, 4096);
+g.fList = [];
+
+var tx = nP.mod({
+  mode: 'VNA'
+});
+
+var coupler = nP.Coupler180();
+var line = nP.Tlin(50, 1000);
+var short = nP.Short();
+var open = nP.Open();
+var load = nP.Load();
+
+var shortCircuit = nP.nodal(
+  [coupler, 1, 2, 3, 4],
+  [line, 2, 5],
+  [short, 5],
+  [load, 4],
+  ['out', 1, 3],
+  {signal: tx, inputPort: 1}
+);
+
+var openCircuit = nP.nodal(
+  [coupler, 1, 2, 3, 4],
+  [line, 2, 5],
+  [open, 5],
+  [load, 4],
+  ['out', 1, 3],
+  {signal: tx, inputPort: 1}
+);
+
+var shortRx = nP.demod(shortCircuit, {
+  noise: false
+});
+var openRx = nP.demod(openCircuit, {
+  noise: false
+});
+var inputTable = tx.out('waveform');
+var shortReturn = shortRx.out('waveform');
+var openReturn = openRx.out('waveform');
+
+nP.lineChart({
+  inputTable: [inputTable],
+  title: 'Synthetic input impulse',
+  xAxisTitle: 'Time (ns)',
+  yAxisTitle: 'Voltage (V)',
+  metricPrefix: 'none',
+  showPoints: false
+});
+
+nP.lineChart({
+  inputTable: [shortReturn],
+  title: 'Short reflection after 1 km',
+  xAxisTitle: 'Time (ns)',
+  yAxisTitle: 'Voltage (V)',
+  metricPrefix: 'none',
+  showPoints: false
+});
+
+nP.lineChart({
+  inputTable: [openReturn],
+  title: 'Open reflection after 1 km',
+  xAxisTitle: 'Time (ns)',
+  yAxisTitle: 'Voltage (V)',
+  metricPrefix: 'none',
+  showPoints: false
+});` },
   { id: 'tee-power-divider', title: 'Tee power divider', category: 'rf-circuits', code: `// Tee power divider
 
 var g = nP.global;

@@ -199,6 +199,8 @@ The example's ASCII message produces 96 bits. The default mode is `PN7`, with a 
 
 `demod()` returns a receiver result with `.out('waveform')`, `.out('ASCII text')`, `.out('bits')`, `.out('bit string')`, `.out('bit count')`, `.out('sample count')`, `.out('frequency count')`, `.out('frequencies')`, and `.out('spectrum')`. It draws a new random noise waveform on every call, using the nPort's calculated source, termination, and component noise at each frequency. All outputs from the same receiver result use that same noise draw. The plotted `out('noiseFloor')` remains the repeatable average noise density. Use `{noise: false}` for an exact signal-only result.
 
+`mod({mode: 'VNA'})` creates equal unit-reference frequency bins for a synthetic low-pass impulse response. Set a power-of-two `tList` starting at zero first; the resulting `fList` runs from DC through Nyquist with `N/2 + 1` bins, and the Nyquist source bin is zero for real inverse reconstruction. Attach the source to an nPort circuit and use `demod(circuit, {noise: false}).out('waveform')` to plot the time-domain return. VNA mode has no bits or carrier. The [VNA reflection example](docs/digital-signals.md#vna-time-domain-reflection) uses `Coupler180()`, a shorted 1 km `Tlin()`, and a matched load.
+
 `out('ASCII text')` uses the bit timing carried by `chain`, samples at each bit center, and estimates a threshold from the centers of the two received voltage levels. Pass `thresholdVolts` to `demod()` to set the decision level explicitly. A noisy bit can change the returned character; a received byte outside seven-bit ASCII becomes `�`. ASCII decoding needs complete eight-bit bytes and does not perform clock recovery or error correction. The default noise conditions are a matched 290 K source, matched terminations at 290 K, and a 0 K output load. The input port defaults to 1 and can be selected with `inputPort`.
 
 The `referenceTemperature` option changes the source and unused-port termination noise temperature; pass the same option to `out('noiseFloor', {referenceTemperature: ...})` when comparing with the expected noise floor. Each reception draws new noise, so the received text can vary.
@@ -540,7 +542,7 @@ Current microstrip constructors include:
 | --- | --- |
 | Analysis settings | `nP.global`, `fGen()`, `tGen()` |
 | Lumped components | `R()`, `L()`, `C()` |
-| Ideal fixtures | `Open()`, `Short()`, `Load()`, `Thru()`, `Tee()`, `Tee4()`, `Tee5()`, `seriesTee()` |
+| Ideal fixtures | `Open()`, `Short()`, `Load()`, `Thru()`, `Tee()`, `Tee4()`, `Tee5()`, `seriesTee()`, `Coupler180()` |
 | Ideal transmission lines | `Tlin()`, `Tclin()` |
 | Network assembly | `nodal()`, `cascade()`, `nPort.cas()` |
 | Data extraction | `nPort.out()` |
@@ -548,6 +550,8 @@ Current microstrip constructors include:
 | Mathematics | `complex()`, `matrix()`, `dim()`, `dup()`, `FFT()`, `invFFT()` |
 | Filter prototypes | `chebyLPNsec()`, `chebyLPgk()`, `chebyLPLCs()` |
 | Visualization | `lineChart()`, `lineTable()`, `smithChart()`, `log()` |
+
+`Coupler180()` is a matched, lossless four-port with an exact 3 dB default split and the same S-parameters at every frequency, including DC. Port 1 drives through port 2 and coupled port 4; port 3 receives a reflection returning into port 2. Set another split with `nP.Coupler180({couplingDb: 10})`.
 | Nonlinear devices | `diode1N4148()` |
 
 The older combined RLC constructors remain available for compatibility, but new examples favor explicit components and `nP.nodal()`.

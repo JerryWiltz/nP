@@ -146,7 +146,7 @@ For these RF modes, `message` or `bits` chooses the data automatically; otherwis
 | `'frequency table'` | Table of FFT bin numbers and frequencies. |
 | `'spectrum'` | Array of complex FFT values. |
 
-`tx.bits` contains the transmitted bits. For separate circuits, create a new context with `nP.global()` before each `mod()` call; its frequency list can start empty. If you pass `fftList: someArray`, `mod()` fills that array instead of the selected context's `fList`.
+For bit modes, `tx.bits` contains the transmitted bits. For separate circuits, create a new context with `nP.global()` before each `mod()` call; its frequency list can start empty. If you pass `fftList: someArray`, `mod()` fills that array instead of the selected context's `fList`.
 
 ## Make a clocked PN pattern
 
@@ -192,3 +192,76 @@ nP.log(ber);
 ```
 
 Each reception calls `demod()` again, so a noisy result can differ between runs. For a signal-only check, pass `{noise: false}`. The transmitter and circuit must carry the same bit pattern and frequency grid.
+
+## VNA short and open reflections
+
+A vector network analyzer measures the complex response at successive frequencies and calculates a time-domain impulse from those measurements. `mode: 'VNA'` models that calculation with a unit reference at each frequency bin, rather than transmitting a physical pulse. The frequency list runs from DC through Nyquist; the Nyquist reference is zero so the inverse transform remains real. The modeled circuit supplies its DC value directly, whereas a physical RF VNA commonly needs a low-frequency extrapolation. This mode requires a power-of-two `tList` beginning at zero, and has no bits or carrier.
+
+```js
+var g = nP.global();
+g.tList = g.tGen(0, 4095 / 250e6, 4096);
+g.fList = [];
+
+var tx = nP.mod({mode: 'VNA'});
+
+var coupler = nP.Coupler180();
+var line = nP.Tlin(50, 1000);
+var short = nP.Short();
+var open = nP.Open();
+var load = nP.Load();
+
+var shortCircuit = nP.nodal(
+    [coupler, 1, 2, 3, 4],
+    [line, 2, 5],
+    [short, 5],
+    [load, 4],
+    ['out', 1, 3],
+    {signal: tx, inputPort: 1}
+);
+
+var openCircuit = nP.nodal(
+    [coupler, 1, 2, 3, 4],
+    [line, 2, 5],
+    [open, 5],
+    [load, 4],
+    ['out', 1, 3],
+    {signal: tx, inputPort: 1}
+);
+
+var shortRx = nP.demod(shortCircuit, {noise: false});
+var openRx = nP.demod(openCircuit, {noise: false});
+var inputTable = tx.out('waveform');
+var shortReturn = shortRx.out('waveform');
+var openReturn = openRx.out('waveform');
+
+nP.lineChart({
+    inputTable: [inputTable],
+    title: 'Synthetic input impulse',
+    xAxisTitle: 'Time (ns)',
+    yAxisTitle: 'Voltage (V)',
+    metricPrefix: 'none',
+    showPoints: false
+});
+
+nP.lineChart({
+    inputTable: [shortReturn],
+    title: 'Short reflection after 1 km',
+    xAxisTitle: 'Time (ns)',
+    yAxisTitle: 'Voltage (V)',
+    metricPrefix: 'none',
+    showPoints: false
+});
+
+nP.lineChart({
+    inputTable: [openReturn],
+    title: 'Open reflection after 1 km',
+    xAxisTitle: 'Time (ns)',
+    yAxisTitle: 'Voltage (V)',
+    metricPrefix: 'none',
+    showPoints: false
+});
+```
+
+The 4,096 time points give 2,049 nonnegative frequency bins, about 61 kHz apart, and a 16.384 µs unambiguous time window. The short has reflection coefficient $\Gamma=-1$ and produces a negative return; the open has $\Gamma=+1$ and produces a positive return. Both reach the receiver near **6.67 µs** in the ideal `Tlin()` model. `Coupler180()` isolates port 3 from the forward input, while port 4 is terminated in a matched load. These are synthetic **impulse** responses; step output, window selection, and custom pulse shapes are not part of VNA mode yet.
+
+For the pulse equation and a numerical check of the 2 km round-trip travel time, see [VNA time-domain reflection](./tech-notes-vna-time-domain-reflection.md).

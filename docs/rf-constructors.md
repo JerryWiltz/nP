@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-19 -->
+<!-- Modified: 2026-10-21 -->
 # RF Constructors
 
 Set the frequencies first. Then make each part of the circuit. These calls return [nPort objects](./nport-object.md) that you can [connect](./connecting-nports.md).
@@ -85,6 +85,15 @@ var coupled2 = nP.Tclin(90, 35, 0.0254);
 ```
 
 The arguments are even-mode impedance, odd-mode impedance, and length. `Tclin()` ports are numbered clockwise from the upper left: 1, 2, 3, 4.
+
+### Ideal four-port coupler: `Coupler180()`
+
+```js
+var coupler1 = nP.Coupler180();                 // equal-power split
+var coupler2 = nP.Coupler180({couplingDb: 10}); // 10 dB coupled path
+```
+
+`Coupler180()` has a frequency-independent, lossless 180° hybrid S-matrix, including at DC. Port 1 drives port 2 through and port 4 coupled; port 3 is isolated from port 1 and receives a return entering port 2. Unlike `Tclin()`, it does not take even-mode impedance, odd-mode impedance, or length. See [Ideal components](./ideal-components.md#an-ideal-directional-coupler) for the time-domain use.
 
 ## Attenuator and amplifier
 

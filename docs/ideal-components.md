@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-19 -->
+<!-- Modified: 2026-10-21 -->
 # Ideal components
 
 Ideal components provide connections, terminations, lossless lines, and simple gain or loss blocks. Set the frequency list before constructing them. Each returns an [nPort object](./nport-object.md) that can be connected with [`nodal()` or `cascade()`](./connecting-nports.md).
@@ -48,6 +48,10 @@ port 4  ---- coupled line ----  port 3
 ```
 
 From input port 1, port 2 is through, port 4 is coupled, and port 3 is isolated. The same numbering applies to `nP.mclin()`.
+
+## An ideal directional coupler
+
+`nP.Coupler180()` is a matched, reciprocal, lossless four-port with the same real S-matrix at every frequency, including DC. It defaults to an exact equal-power split (about 3.0103 dB coupling); use `nP.Coupler180({couplingDb: 10})` for a 10 dB coupled path. It uses the port order shown above: input 1 goes through to 2 and forward coupled to 4, while 3 is isolated. A reflection entering port 2 couples to port 3. Its 180° phase convention makes it suitable for real-valued time-domain reconstruction. It is an ideal model rather than a physical coupled line; see the [VNA reflection example](./digital-signals.md#vna-time-domain-reflection).
 
 ## Attenuator and amplifier
 

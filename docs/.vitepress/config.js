@@ -38,7 +38,8 @@ export default {
                 link: '/tech-notes#rf-notes',
                 items: [
                     { text: 'S-parameters for the novice', link: '/tech-notes-s-parameters-for-the-novice' },
-                    { text: 'nPort overview', link: '/tech-notes-nport-overview' }
+                    { text: 'nPort overview', link: '/tech-notes-nport-overview' },
+                    { text: 'VNA time-domain reflection', link: '/tech-notes-vna-time-domain-reflection' }
                 ]
             },
             {

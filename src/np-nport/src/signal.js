@@ -1,4 +1,4 @@
-// Modified: 2026-10-15
+// Modified: 2026-10-21
 import {complex} from '../../np-math/src/complex';
 
 function analogMode(mode) {
@@ -132,6 +132,7 @@ export function applyInputSignal(network, options) {
 		throw new RangeError('Signal inputPort is outside the nPort dimensions.');
 	}
 	var analog = analogMode(source.mode);
+	var vna = source.mode === 'VNA';
 	var sidebandOrder = source.mode === 'AM' ? 1 : source.sidebandOrder;
 	if (!Array.isArray(source.fList) || !Array.isArray(source.spectrum) ||
 		source.fList.length !== spars.length || source.spectrum.length !== spars.length ||
@@ -145,7 +146,7 @@ export function applyInputSignal(network, options) {
 				return frequency !== analogFrequency(source, index);
 			})) :
 			(!Number.isInteger(source.sampleCount) || source.sampleCount < 1 ||
-			(source.mode === 'OFDM' ?
+			(vna ? source.samplesPerBit !== undefined : source.mode === 'OFDM' ?
 				(!Number.isInteger(source.bitCount) || source.bitCount < 1 ||
 				!Number.isInteger(source.fftSize) || source.fftSize < 1 ||
 				 source.sampleCount % source.fftSize !== 0) :

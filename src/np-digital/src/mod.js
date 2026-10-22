@@ -1,10 +1,71 @@
 // Modified: 2026-10-21
 import {createSourceWaveform} from './sourceWaveform';
 import {modulateAdvanced} from './advancedModes';
-import {fftBins} from '../../np-math/src/fft';
+import {fftBins, invFFT} from '../../np-math/src/fft';
 import {complex} from '../../np-math/src/complex';
 import {global} from '../../np-global/src/global';
 import {sampleRateFromTime} from '../../np-global/src/timeGrid';
+
+// A VNA sweeps equal reference phasors and reconstructs a synthetic impulse.
+function vnaSweep(options, sampleRateHz) {
+	var count = global.tList.length;
+	if (count < 4 || (count & (count - 1)) !== 0 || global.tList[0] !== 0) {
+		throw new RangeError('VNA mode needs a power-of-two tList of at least four points starting at zero.');
+	}
+	if (global.twoTone) throw new RangeError('Clear global.twoTone before VNA analysis.');
+	if (!Number.isFinite(global.Ro) || global.Ro <= 0) {
+		throw new RangeError('VNA mode needs a positive global.Ro.');
+	}
+	if (options.fftList !== undefined && !Array.isArray(options.fftList)) {
+		throw new TypeError('VNA fftList must be an array.');
+	}
+	if (Object.keys(options).some(function (key) {
+		return key !== 'mode' && key !== 'fftList';
+	})) {
+		throw new TypeError('VNA mode accepts only mode and optional fftList.');
+	}
+	var frequencyList = Array.from({length: count / 2 + 1}, function (_, bin) {
+		return bin * sampleRateHz / count;
+	});
+	var spectrum = frequencyList.map(function (_, bin) {
+		return complex(bin === count / 2 ? 0 : 1, 0);
+	});
+	if (options.fftList === undefined) global.fList = frequencyList.slice();
+	else {
+		options.fftList.length = 0;
+		frequencyList.forEach(function (frequency) { options.fftList.push(frequency); });
+	}
+	var time = global.tList.slice();
+	var tx = {
+		mode: 'VNA', fList: frequencyList, spectrum: spectrum,
+		sampleCount: count, sampleRateHz: sampleRateHz,
+		referenceImpedanceOhms: global.Ro
+	};
+	tx.out = function (selector) {
+		if (selector === 'mode') return tx.mode;
+		if (selector === 'sample count') return count;
+		if (selector === 'frequency count') return frequencyList.length;
+		if (selector === 'frequencies') return frequencyList.slice();
+		if (selector === 'spectrum') return spectrum.map(function (value) { return value.copy(); });
+		if (selector === 'settings') return {mode: 'VNA', sampleRateHz: sampleRateHz,
+			sampleCount: count, frequencyCount: frequencyList.length,
+			frequencyStepHz: sampleRateHz / count,
+			maximumFrequencyHz: sampleRateHz / 2};
+		if (selector === 'frequency table') return [['Bin', 'Frequency (Hz)']].concat(
+			frequencyList.map(function (frequency, bin) { return [bin, frequency]; }));
+		if (selector === 'waveform') {
+			var fullSpectrum = Array.from({length: count}, function (_, bin) {
+				return complex(bin === count / 2 ? 0 : 1, 0);
+			});
+			var samples = invFFT(fullSpectrum);
+			return [['Time (ns)', 'Input (V)']].concat(time.map(function (value, index) {
+				return [value * 1e9, samples[index].getR()];
+			}));
+		}
+		throw new RangeError('Unknown VNA output: ' + selector);
+	};
+	return tx;
+}
 
 // A single sinusoidal AM input has only a carrier and two sidebands.
 function analogAM(options) {
@@ -196,7 +257,8 @@ export function mod(options = {}) {
 	if (!options || Array.isArray(options) || typeof options !== 'object') {
 		throw new TypeError('mod expects an options object.');
 	}
-	sampleRateFromTime(global.tList, undefined, 'mod');
+	var sampleRateHz = sampleRateFromTime(global.tList, undefined, 'mod');
+	if (options.mode === 'VNA') return vnaSweep(options, sampleRateHz);
 	if (options.mode === 'AM') return analogAM(options);
 	if (options.mode === 'SSB' || options.mode === 'DSB-SC') return analogSuppressed(options);
 	if (options.mode === 'FM' || options.mode === 'PM') return analogAngle(options);

@@ -1,4 +1,4 @@
-// Modified: 2026-10-13
+// Modified: 2026-10-21
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -26,7 +26,7 @@ test('every built-in n-port constructor accepts its own frequency list', () => {
 		['seSeRLC', 'sePaRLC', 'paSeRLC', 'paPaRLC'].forEach(function (name) {
 			cases.push([name, function () { return nP[name](undefined, undefined, undefined, options); }]);
 		});
-		['Open', 'Short', 'Thru', 'Load', 'Shift90', 'Tee', 'Tee4', 'Tee5', 'seriesTee'].forEach(function (name) {
+		['Open', 'Short', 'Thru', 'Load', 'Shift90', 'Tee', 'Tee4', 'Tee5', 'seriesTee', 'Coupler180'].forEach(function (name) {
 			cases.push([name, function () { return nP[name](options); }]);
 		});
 		cases.push(['Tlin', function () { return nP.Tlin(undefined, undefined, options); }]);
@@ -39,7 +39,7 @@ test('every built-in n-port constructor accepts its own frequency list', () => {
 		cases.push(['diode1N4148', function () { return nP.diode1N4148(options); }]);
 		cases.push(['lpfGen', function () { return nP.lpfGen(undefined, options); }]);
 
-		assert.equal(cases.length, 51);
+		assert.equal(cases.length, 52);
 		cases.forEach(function ([name, make]) {
 			var component = make();
 			assert.deepEqual(component.spars.map(function (row) { return row[0]; }), fList, name + ' S frequencies');
