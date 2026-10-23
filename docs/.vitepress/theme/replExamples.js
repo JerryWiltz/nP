@@ -225,7 +225,8 @@ var transmissionRx = nP.demod(circuit, {
 var referenceTable = referenceRx.out('waveform');
 var reflectionTable = reflectionRx.out('waveform');
 var transmissionTable = transmissionRx.out('waveform');
-var timePlotRangeNs = [-10, 256];
+// Leave display space before and after the 256 ns periodic record.
+var timePlotRangeNs = [-10, 266];
 
 nP.lineChart({
   inputTable: [referenceTable],
@@ -327,7 +328,8 @@ var openRx = nP.demod(openCircuit, {
 var referenceTable = referenceRx.out('waveform');
 var shortReturn = shortRx.out('waveform');
 var openReturn = openRx.out('waveform');
-var timePlotRangeNs = [-500, 16384];
+// Leave display space before and after the 16,384 ns periodic record.
+var timePlotRangeNs = [-500, 16884];
 
 // Find the largest return in each measured waveform, independently.
 var shortPeak = shortReturn[1];
