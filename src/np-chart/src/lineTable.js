@@ -115,6 +115,7 @@ export function lineTable(options = {}) {
 		const controlsWidth = isNarrowViewport ? 40 : 130;
 		const minOuterWidth = Math.ceil(titleWidth + controlsWidth + 10);
 		const outerWidth = Math.max(margin.left + tableWidth + margin.right, minOuterWidth);
+		const scrollTable = measuredMountWidth > 0 && outerWidth > measuredMountWidth;
 		const layoutTop = Math.max(margin.top, 72);
 		const outerHeight = layoutTop + tableHeight + margin.bottom;
 
@@ -141,11 +142,11 @@ export function lineTable(options = {}) {
 				.append('div')
 				.attr('id', containerId || null)
 				.attr('class', 'line-table-container')
-				.style('display', isNarrowViewport ? 'block' : 'inline-block')
+				.style('display', scrollTable ? 'block' : 'inline-block')
 				.style('position', 'relative')        // anchor for absolute button
-				.style('width', isNarrowViewport ? '100%' : null)
+				.style('width', scrollTable ? '100%' : null)
 				.style('max-width', '100%')
-				.style('overflow-x', isNarrowViewport ? 'auto' : null)
+				.style('overflow-x', scrollTable ? 'auto' : null)
 				.style('box-sizing', 'border-box')
 				.style('font-family', fontFamily)
 				.style('font-size', `${effectiveFontSize}px`)
@@ -332,8 +333,8 @@ export function lineTable(options = {}) {
 				.attr('viewBox', `0 0 ${outerWidth} ${outerHeight}`)
 				.attr('preserveAspectRatio', 'xMinYMin meet')
 				.style('display', 'block')
-				.style('width', isNarrowViewport ? `${outerWidth}px` : '100%')
-				.style('max-width', isNarrowViewport ? 'none' : `${outerWidth}px`)
+				.style('width', scrollTable ? `${outerWidth}px` : '100%')
+				.style('max-width', scrollTable ? 'none' : `${outerWidth}px`)
 				.style('height', 'auto')
 				.style('font-family', fontFamily)
 				.style('font-size', `${effectiveFontSize}px`)
