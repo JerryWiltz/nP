@@ -5639,7 +5639,7 @@
 	                .attr('transform', `translate(0,${innerHeight})`)
 	                .attr('class', 'xGrid')
 	                .style('visibility', showGrid ? 'visible' : 'hidden')
-	                .call(axisBottom(x).ticks(tickCount).tickSize(-innerHeight).tickFormat(''));
+	                .call(axisBottom(x).ticks(xTickCount).tickSize(-innerHeight).tickFormat(''));
 
 	            xGridGroup.selectAll('path')
 	                .attr('stroke', 'none');
@@ -5652,7 +5652,7 @@
 	            const yGridGroup = g.append('g')
 	                .attr('class', 'yGrid')
 	                .style('visibility', showGrid ? 'visible' : 'hidden')
-	                .call(axisLeft(y).ticks(tickCount).tickSize(-innerWidth).tickFormat(''));
+	                .call(axisLeft(y).ticks(yTickCount).tickSize(-innerWidth).tickFormat(''));
 
 	            yGridGroup.selectAll('path')
 	                .attr('stroke', 'none');

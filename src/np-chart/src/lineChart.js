@@ -391,7 +391,7 @@ export function lineChart(options = {}) {
                 .attr('transform', `translate(0,${innerHeight})`)
                 .attr('class', 'xGrid')
                 .style('visibility', showGrid ? 'visible' : 'hidden')
-                .call(d3.axisBottom(x).ticks(tickCount).tickSize(-innerHeight).tickFormat(''));
+                .call(d3.axisBottom(x).ticks(xTickCount).tickSize(-innerHeight).tickFormat(''));
 
             xGridGroup.selectAll('path')
                 .attr('stroke', 'none');
@@ -404,7 +404,7 @@ export function lineChart(options = {}) {
             const yGridGroup = g.append('g')
                 .attr('class', 'yGrid')
                 .style('visibility', showGrid ? 'visible' : 'hidden')
-                .call(d3.axisLeft(y).ticks(tickCount).tickSize(-innerWidth).tickFormat(''));
+                .call(d3.axisLeft(y).ticks(yTickCount).tickSize(-innerWidth).tickFormat(''));
 
             yGridGroup.selectAll('path')
                 .attr('stroke', 'none');
