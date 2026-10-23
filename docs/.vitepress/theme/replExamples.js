@@ -225,7 +225,7 @@ var transmissionRx = nP.demod(circuit, {
 var referenceTable = referenceRx.out('waveform');
 var reflectionTable = reflectionRx.out('waveform');
 var transmissionTable = transmissionRx.out('waveform');
-var timePlotRangeNs = [-1, 256];
+var timePlotRangeNs = [-10, 256];
 
 nP.lineChart({
   inputTable: [referenceTable],
@@ -235,7 +235,8 @@ nP.lineChart({
   xRange: timePlotRangeNs,
   yAxisTitle: 'Receiver voltage (V)',
   metricPrefix: 'none',
-  showPoints: false
+  showPoints: false,
+  showLabels: false
 });
 
 nP.lineChart({
@@ -246,7 +247,8 @@ nP.lineChart({
   xRange: timePlotRangeNs,
   yAxisTitle: 'Normalized reflection',
   metricPrefix: 'none',
-  showPoints: false
+  showPoints: false,
+  showLabels: false
 });
 
 nP.lineChart({
@@ -257,7 +259,8 @@ nP.lineChart({
   xRange: timePlotRangeNs,
   yAxisTitle: 'Normalized transmission',
   metricPrefix: 'none',
-  showPoints: false
+  showPoints: false,
+  showLabels: false
 });` },
   { id: 'vna-short-reflection', title: 'VNA cable fault location', category: 'rf-circuits', code: `// VNA cable fault location
 
@@ -324,7 +327,7 @@ var openRx = nP.demod(openCircuit, {
 var referenceTable = referenceRx.out('waveform');
 var shortReturn = shortRx.out('waveform');
 var openReturn = openRx.out('waveform');
-var timePlotRangeNs = [-100, 16384];
+var timePlotRangeNs = [-500, 16384];
 
 // Find the largest return in each measured waveform, independently.
 var shortPeak = shortReturn[1];
@@ -358,7 +361,8 @@ nP.lineChart({
   xRange: timePlotRangeNs,
   yAxisTitle: 'Receiver voltage (V)',
   metricPrefix: 'none',
-  showPoints: false
+  showPoints: false,
+  showLabels: false
 });
 
 nP.lineChart({
@@ -369,7 +373,8 @@ nP.lineChart({
   xRange: timePlotRangeNs,
   yAxisTitle: 'Normalized reflection',
   metricPrefix: 'none',
-  showPoints: false
+  showPoints: false,
+  showLabels: false
 });
 
 nP.lineChart({
@@ -380,7 +385,8 @@ nP.lineChart({
   xRange: timePlotRangeNs,
   yAxisTitle: 'Normalized reflection',
   metricPrefix: 'none',
-  showPoints: false
+  showPoints: false,
+  showLabels: false
 });
 
 nP.lineTable({

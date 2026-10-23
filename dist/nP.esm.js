@@ -5244,7 +5244,7 @@ function appendTooltipRows(tooltip, rows) {
     });
 }
 
-// Modified: 2026-10-22
+// Modified: 2026-10-23
 
 function lineChart(options = {}) {
             // ======== Options & defaults ========
@@ -5433,15 +5433,18 @@ function lineChart(options = {}) {
 
             function makeScale(scaleType, domain, range, axisName) {
                 const effectiveScaleType = String(scaleType).toLowerCase();
+                const niceDomain = axisName !== 'x' || !rawXRange;
 
                 if (effectiveScaleType === 'log') {
                     if (domain[0] <= 0 || domain[1] <= 0) {
                         throw new Error(`${axisName}Scale: log scale requires a positive domain.`);
                     }
-                    return log$1().domain(domain).nice().range(range);
+                    const scale = log$1().domain(domain).range(range);
+                    return niceDomain ? scale.nice() : scale;
                 }
 
-                return linear().domain(domain).nice().range(range);
+                const scale = linear().domain(domain).range(range);
+                return niceDomain ? scale.nice() : scale;
             }
 
             // Scales

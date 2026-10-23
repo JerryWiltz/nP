@@ -1,4 +1,4 @@
-// Modified: 2026-10-22
+// Modified: 2026-10-23
 import * as d3 from 'd3';
 import {normalizeInputTables} from './inputTables';
 import {CHART_FONT_FAMILY, CHART_FONT_SIZE} from './chartTypography';
@@ -191,15 +191,18 @@ export function lineChart(options = {}) {
 
             function makeScale(scaleType, domain, range, axisName) {
                 const effectiveScaleType = String(scaleType).toLowerCase();
+                const niceDomain = axisName !== 'x' || !rawXRange;
 
                 if (effectiveScaleType === 'log') {
                     if (domain[0] <= 0 || domain[1] <= 0) {
                         throw new Error(`${axisName}Scale: log scale requires a positive domain.`);
                     }
-                    return d3.scaleLog().domain(domain).nice().range(range);
+                    const scale = d3.scaleLog().domain(domain).range(range);
+                    return niceDomain ? scale.nice() : scale;
                 }
 
-                return d3.scaleLinear().domain(domain).nice().range(range);
+                const scale = d3.scaleLinear().domain(domain).range(range);
+                return niceDomain ? scale.nice() : scale;
             }
 
             // Scales
