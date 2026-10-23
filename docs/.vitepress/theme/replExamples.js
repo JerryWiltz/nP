@@ -1,4 +1,4 @@
-// Modified: 2026-10-22
+// Modified: 2026-10-23
 // Add an example with a unique id, title, category, and code. Array order sets
 // sidebar order within a category; stable ids preserve links and browser drafts.
 // Sidebar categories and their section order are listed in config.js.
@@ -225,11 +225,14 @@ var transmissionRx = nP.demod(circuit, {
 var referenceTable = referenceRx.out('waveform');
 var reflectionTable = reflectionRx.out('waveform');
 var transmissionTable = transmissionRx.out('waveform');
+var timePlotRangeNs = [-1, 256];
 
 nP.lineChart({
   inputTable: [referenceTable],
   title: 'VNA reference receiver R',
   xAxisTitle: 'Time (ns)',
+  xAxisPosition: 'origin',
+  xRange: timePlotRangeNs,
   yAxisTitle: 'Receiver voltage (V)',
   metricPrefix: 'none',
   showPoints: false
@@ -239,6 +242,8 @@ nP.lineChart({
   inputTable: [reflectionTable],
   title: 'Inductor reflection impulse response',
   xAxisTitle: 'Time (ns)',
+  xAxisPosition: 'origin',
+  xRange: timePlotRangeNs,
   yAxisTitle: 'Normalized reflection',
   metricPrefix: 'none',
   showPoints: false
@@ -248,6 +253,8 @@ nP.lineChart({
   inputTable: [transmissionTable],
   title: 'Inductor transmission impulse response',
   xAxisTitle: 'Time (ns)',
+  xAxisPosition: 'origin',
+  xRange: timePlotRangeNs,
   yAxisTitle: 'Normalized transmission',
   metricPrefix: 'none',
   showPoints: false
@@ -317,6 +324,7 @@ var openRx = nP.demod(openCircuit, {
 var referenceTable = referenceRx.out('waveform');
 var shortReturn = shortRx.out('waveform');
 var openReturn = openRx.out('waveform');
+var timePlotRangeNs = [-100, 16384];
 
 // Find the largest return in each measured waveform, independently.
 var shortPeak = shortReturn[1];
@@ -346,6 +354,8 @@ nP.lineChart({
   inputTable: [referenceTable],
   title: 'VNA reference receiver R',
   xAxisTitle: 'Time (ns)',
+  xAxisPosition: 'origin',
+  xRange: timePlotRangeNs,
   yAxisTitle: 'Receiver voltage (V)',
   metricPrefix: 'none',
   showPoints: false
@@ -355,6 +365,8 @@ nP.lineChart({
   inputTable: [shortReturn],
   title: 'Short fault at 1 km: receiver A / R',
   xAxisTitle: 'Time (ns)',
+  xAxisPosition: 'origin',
+  xRange: timePlotRangeNs,
   yAxisTitle: 'Normalized reflection',
   metricPrefix: 'none',
   showPoints: false
@@ -364,6 +376,8 @@ nP.lineChart({
   inputTable: [openReturn],
   title: 'Open fault at 1 km: receiver A / R',
   xAxisTitle: 'Time (ns)',
+  xAxisPosition: 'origin',
+  xRange: timePlotRangeNs,
   yAxisTitle: 'Normalized reflection',
   metricPrefix: 'none',
   showPoints: false
