@@ -280,11 +280,11 @@ export function lineTable(options = {}) {
     </svg>Copy as png
 	    `);
 
+		if (isNarrowViewport) button.text('PNG');
+
 		button
-			.style('width', isNarrowViewport ? '28px' : null)
-			.style('overflow', isNarrowViewport ? 'hidden' : null)
 			.style('white-space', 'nowrap')
-			.style('padding', isNarrowViewport ? '4px' : '4px 8px');
+			.style('padding', '4px 8px');
 
 		const csvBtn = container.append('button')
 			.attr('aria-label', 'Copy CSV')
@@ -313,11 +313,11 @@ export function lineTable(options = {}) {
 			'</svg>Copy as csv'
 		].join(''));
 
+		if (isNarrowViewport) csvBtn.text('CSV');
+
 		csvBtn
-			.style('width', isNarrowViewport ? '28px' : null)
-			.style('overflow', isNarrowViewport ? 'hidden' : null)
 			.style('white-space', 'nowrap')
-			.style('padding', isNarrowViewport ? '4px' : '4px 8px');
+			.style('padding', '4px 8px');
 
 
 		// ======== The SVG itself ========

@@ -317,11 +317,11 @@ export function lineChart(options = {}) {
       </svg>Copy as png
     `);
 
+            if (isCompact) button.text('PNG');
+
             button
-                .style('width', isCompact ? '28px' : null)
-                .style('overflow', isCompact ? 'hidden' : null)
                 .style('white-space', 'nowrap')
-                .style('padding', isCompact ? '4px' : '4px 8px');
+                .style('padding', isCompact ? '6px 8px' : '4px 8px');
 
             // New button function fire
             button.on('click', copyPNG);

@@ -5559,11 +5559,11 @@ function lineChart(options = {}) {
       </svg>Copy as png
     `);
 
+            if (isCompact) button.text('PNG');
+
             button
-                .style('width', isCompact ? '28px' : null)
-                .style('overflow', isCompact ? 'hidden' : null)
                 .style('white-space', 'nowrap')
-                .style('padding', isCompact ? '4px' : '4px 8px');
+                .style('padding', isCompact ? '6px 8px' : '4px 8px');
 
             // New button function fire
             button.on('click', copyPNG);
@@ -5979,7 +5979,7 @@ function lineChart(options = {}) {
 
         }
 
-// Modified: 2026-10-18
+// Modified: 2026-10-22
 
 function smithChart(options = {}) {
 	// ======== Options & defaults ========
@@ -6170,11 +6170,11 @@ function smithChart(options = {}) {
       </svg>Copy as png
 	    `);
 
+	if (isNarrowViewport) button.text('PNG');
+
 	button
-		.style('width', isNarrowViewport ? '28px' : null)
-		.style('overflow', isNarrowViewport ? 'hidden' : null)
 		.style('white-space', 'nowrap')
-		.style('padding', isNarrowViewport ? '4px' : '4px 8px');
+		.style('padding', isNarrowViewport ? '6px 8px' : '4px 8px');
 
 	// New button function fire
 	button.on('click', copyPNG);
@@ -6824,11 +6824,11 @@ function lineTable(options = {}) {
     </svg>Copy as png
 	    `);
 
+		if (isNarrowViewport) button.text('PNG');
+
 		button
-			.style('width', isNarrowViewport ? '28px' : null)
-			.style('overflow', isNarrowViewport ? 'hidden' : null)
 			.style('white-space', 'nowrap')
-			.style('padding', isNarrowViewport ? '4px' : '4px 8px');
+			.style('padding', '4px 8px');
 
 		const csvBtn = container.append('button')
 			.attr('aria-label', 'Copy CSV')
@@ -6857,11 +6857,11 @@ function lineTable(options = {}) {
 			'</svg>Copy as csv'
 		].join(''));
 
+		if (isNarrowViewport) csvBtn.text('CSV');
+
 		csvBtn
-			.style('width', isNarrowViewport ? '28px' : null)
-			.style('overflow', isNarrowViewport ? 'hidden' : null)
 			.style('white-space', 'nowrap')
-			.style('padding', isNarrowViewport ? '4px' : '4px 8px');
+			.style('padding', '4px 8px');
 
 
 		// ======== The SVG itself ========

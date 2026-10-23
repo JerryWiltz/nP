@@ -1,4 +1,4 @@
-// Modified: 2026-10-18
+// Modified: 2026-10-22
 import * as d3 from 'd3';
 import {normalizeInputTables} from './inputTables';
 import {CHART_FONT_FAMILY, CHART_FONT_SIZE} from './chartTypography';
@@ -193,11 +193,11 @@ export function smithChart(options = {}) {
       </svg>Copy as png
 	    `);
 
+	if (isNarrowViewport) button.text('PNG');
+
 	button
-		.style('width', isNarrowViewport ? '28px' : null)
-		.style('overflow', isNarrowViewport ? 'hidden' : null)
 		.style('white-space', 'nowrap')
-		.style('padding', isNarrowViewport ? '4px' : '4px 8px');
+		.style('padding', isNarrowViewport ? '6px 8px' : '4px 8px');
 
 	// New button function fire
 	button.on('click', copyPNG);
