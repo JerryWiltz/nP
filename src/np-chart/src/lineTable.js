@@ -1,4 +1,4 @@
-// Modified: 2026-10-18
+// Modified: 2026-10-22
 import * as d3 from 'd3';
 import {normalizeInputTables} from './inputTables';
 import {CHART_FONT_FAMILY, CHART_FONT_SIZE} from './chartTypography';
@@ -141,9 +141,11 @@ export function lineTable(options = {}) {
 				.append('div')
 				.attr('id', containerId || null)
 				.attr('class', 'line-table-container')
-				.style('display', 'inline-block')
+				.style('display', isNarrowViewport ? 'block' : 'inline-block')
 				.style('position', 'relative')        // anchor for absolute button
+				.style('width', isNarrowViewport ? '100%' : null)
 				.style('max-width', '100%')
+				.style('overflow-x', isNarrowViewport ? 'auto' : null)
 				.style('box-sizing', 'border-box')
 				.style('font-family', fontFamily)
 				.style('font-size', `${effectiveFontSize}px`)
@@ -330,8 +332,8 @@ export function lineTable(options = {}) {
 				.attr('viewBox', `0 0 ${outerWidth} ${outerHeight}`)
 				.attr('preserveAspectRatio', 'xMinYMin meet')
 				.style('display', 'block')
-				.style('width', '100%')
-				.style('max-width', `${outerWidth}px`)
+				.style('width', isNarrowViewport ? `${outerWidth}px` : '100%')
+				.style('max-width', isNarrowViewport ? 'none' : `${outerWidth}px`)
 				.style('height', 'auto')
 				.style('font-family', fontFamily)
 				.style('font-size', `${effectiveFontSize}px`)

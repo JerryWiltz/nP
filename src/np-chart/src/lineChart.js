@@ -1,4 +1,4 @@
-// Modified: 2026-10-21
+// Modified: 2026-10-22
 import * as d3 from 'd3';
 import {normalizeInputTables} from './inputTables';
 import {CHART_FONT_FAMILY, CHART_FONT_SIZE} from './chartTypography';
@@ -104,7 +104,7 @@ export function lineChart(options = {}) {
                 : requestedWidth;
             const height = width === requestedWidth
                 ? requestedHeight
-                : Math.round(requestedHeight * width / requestedWidth);
+                : Math.max(Math.min(requestedHeight, 320), Math.round(requestedHeight * width / requestedWidth));
             const isCompact = width < 420;
             const labelNames = showLabels
                 ? tables.flatMap(table => table[0].slice(1))
@@ -121,12 +121,13 @@ export function lineChart(options = {}) {
                     // Reserve a title/control row above the plot and leave
                     // room for the rotated y-axis title and end labels.
                     top: Math.max(margin.top, 45),
-                    right: Math.max(margin.right, 60, labelRightMargin),
+                    right: Math.max(Math.min(margin.right, 58), labelRightMargin),
                     bottom: Math.max(margin.bottom, 45),
-                    left: Math.max(margin.left, 75)
+                    left: Math.min(margin.left, 58)
                 }
                 : {...margin, right: Math.max(margin.right, labelRightMargin)};
-            const tickCount = Math.max(5, Math.min(10, Math.floor((width - layoutMargin.left - layoutMargin.right) / 40)));
+            const xTickCount = Math.max(2, Math.min(10, Math.floor((width - layoutMargin.left - layoutMargin.right) / 60)));
+            const yTickCount = Math.max(3, Math.min(10, Math.floor((height - layoutMargin.top - layoutMargin.bottom) / 40)));
             const axisFontPx = effectiveFontSize;
             let txtLabels = d3.selectAll([]);
 
@@ -228,12 +229,12 @@ export function lineChart(options = {}) {
                     : 0;
 
             const xAxisGenerator = effectiveXAxisPosition === 'top'
-                ? d3.axisTop(x).ticks(tickCount)
-                : d3.axisBottom(x).ticks(tickCount);
+                ? d3.axisTop(x).ticks(xTickCount)
+                : d3.axisBottom(x).ticks(xTickCount);
 
             const yAxisGenerator = effectiveYAxisPosition === 'right'
-                ? d3.axisRight(y).ticks(tickCount)
-                : d3.axisLeft(y).ticks(tickCount);
+                ? d3.axisRight(y).ticks(yTickCount)
+                : d3.axisLeft(y).ticks(yTickCount);
 
 
             // color or gray plots

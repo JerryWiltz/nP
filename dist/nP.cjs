@@ -5246,7 +5246,7 @@ function appendTooltipRows(tooltip, rows) {
     });
 }
 
-// Modified: 2026-10-21
+// Modified: 2026-10-22
 
 function lineChart(options = {}) {
             // ======== Options & defaults ========
@@ -5348,7 +5348,7 @@ function lineChart(options = {}) {
                 : requestedWidth;
             const height = width === requestedWidth
                 ? requestedHeight
-                : Math.round(requestedHeight * width / requestedWidth);
+                : Math.max(Math.min(requestedHeight, 320), Math.round(requestedHeight * width / requestedWidth));
             const isCompact = width < 420;
             const labelNames = showLabels
                 ? tables.flatMap(table => table[0].slice(1))
@@ -5365,12 +5365,13 @@ function lineChart(options = {}) {
                     // Reserve a title/control row above the plot and leave
                     // room for the rotated y-axis title and end labels.
                     top: Math.max(margin.top, 45),
-                    right: Math.max(margin.right, 60, labelRightMargin),
+                    right: Math.max(Math.min(margin.right, 58), labelRightMargin),
                     bottom: Math.max(margin.bottom, 45),
-                    left: Math.max(margin.left, 75)
+                    left: Math.min(margin.left, 58)
                 }
                 : {...margin, right: Math.max(margin.right, labelRightMargin)};
-            const tickCount = Math.max(5, Math.min(10, Math.floor((width - layoutMargin.left - layoutMargin.right) / 40)));
+            const xTickCount = Math.max(2, Math.min(10, Math.floor((width - layoutMargin.left - layoutMargin.right) / 60)));
+            const yTickCount = Math.max(3, Math.min(10, Math.floor((height - layoutMargin.top - layoutMargin.bottom) / 40)));
             const axisFontPx = effectiveFontSize;
             let txtLabels = selectAll([]);
 
@@ -5472,12 +5473,12 @@ function lineChart(options = {}) {
                     : 0;
 
             const xAxisGenerator = effectiveXAxisPosition === 'top'
-                ? axisTop(x).ticks(tickCount)
-                : axisBottom(x).ticks(tickCount);
+                ? axisTop(x).ticks(xTickCount)
+                : axisBottom(x).ticks(xTickCount);
 
             const yAxisGenerator = effectiveYAxisPosition === 'right'
-                ? axisRight(y).ticks(tickCount)
-                : axisLeft(y).ticks(tickCount);
+                ? axisRight(y).ticks(yTickCount)
+                : axisLeft(y).ticks(yTickCount);
 
 
             // color or gray plots
@@ -6546,7 +6547,7 @@ function log(input, options = {}) {
 	return pre;
 }
 
-// Modified: 2026-10-18
+// Modified: 2026-10-22
 
 function lineTable(options = {}) {
 		// ======== Options & defaults ========
@@ -6686,9 +6687,11 @@ function lineTable(options = {}) {
 				.append('div')
 				.attr('id', containerId || null)
 				.attr('class', 'line-table-container')
-				.style('display', 'inline-block')
+				.style('display', isNarrowViewport ? 'block' : 'inline-block')
 				.style('position', 'relative')        // anchor for absolute button
+				.style('width', isNarrowViewport ? '100%' : null)
 				.style('max-width', '100%')
+				.style('overflow-x', isNarrowViewport ? 'auto' : null)
 				.style('box-sizing', 'border-box')
 				.style('font-family', fontFamily)
 				.style('font-size', `${effectiveFontSize}px`)
@@ -6875,8 +6878,8 @@ function lineTable(options = {}) {
 				.attr('viewBox', `0 0 ${outerWidth} ${outerHeight}`)
 				.attr('preserveAspectRatio', 'xMinYMin meet')
 				.style('display', 'block')
-				.style('width', '100%')
-				.style('max-width', `${outerWidth}px`)
+				.style('width', isNarrowViewport ? `${outerWidth}px` : '100%')
+				.style('max-width', isNarrowViewport ? 'none' : `${outerWidth}px`)
 				.style('height', 'auto')
 				.style('font-family', fontFamily)
 				.style('font-size', `${effectiveFontSize}px`)

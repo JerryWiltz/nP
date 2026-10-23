@@ -1,5 +1,5 @@
 <script setup>
-// Modified: 2026-10-20
+// Modified: 2026-10-22
 import { onMounted, onUnmounted, ref } from 'vue'
 import { withBase } from 'vitepress'
 import { examples } from './replExamples'
@@ -268,7 +268,7 @@ onMounted(async () => {
     const sourceLiteral = JSON.stringify(`${code}\n//# sourceURL=np-debug.js`).replace(/</g, '\\u003c')
     status.textContent = 'Running…'
     output.style.height = ''
-    output.srcdoc = `<!doctype html><html><head><meta charset="utf-8"><style>body{font:14px Arial,sans-serif;margin:1rem;color:#1f2937}pre{white-space:pre-wrap}.error{color:#b91c1c}svg{max-width:100%;height:auto}</style></head><body><div id="result"></div><script>const userSource=${sourceLiteral};function reportOutputHeight(){const body=document.body;const bottom=Array.from(body.children).reduce((height,child)=>Math.max(height,child.getBoundingClientRect().bottom),0);const margin=parseFloat(getComputedStyle(body).marginBottom)||0;parent.postMessage({type:'np-repl-chart-height',height:Math.ceil(bottom+margin+4)},'*');}function showError(error){document.getElementById('result').innerHTML='<pre class="error">'+String(error).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</pre>';requestAnimationFrame(reportOutputHeight);}window.onerror=function(message){showError(message);};function execute(){try{new Function(userSource)();}catch(error){console.error(error);showError(error.stack||error);}requestAnimationFrame(reportOutputHeight);new ResizeObserver(reportOutputHeight).observe(document.body);}<\/script><script src="${withBase('/nP.js')}" onload="execute()" onerror="showError('Unable to load the nP browser bundle.')"><\/script></body></html>`
+    output.srcdoc = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{font:14px Arial,sans-serif;margin:1rem;color:#1f2937}pre{white-space:pre-wrap}.error{color:#b91c1c}svg{max-width:100%;height:auto}</style></head><body><div id="result"></div><script>const userSource=${sourceLiteral};function reportOutputHeight(){const body=document.body;const bottom=Array.from(body.children).reduce((height,child)=>Math.max(height,child.getBoundingClientRect().bottom),0);const margin=parseFloat(getComputedStyle(body).marginBottom)||0;parent.postMessage({type:'np-repl-chart-height',height:Math.ceil(bottom+margin+4)},'*');}function showError(error){document.getElementById('result').innerHTML='<pre class="error">'+String(error).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</pre>';requestAnimationFrame(reportOutputHeight);}window.onerror=function(message){showError(message);};function execute(){try{new Function(userSource)();}catch(error){console.error(error);showError(error.stack||error);}requestAnimationFrame(reportOutputHeight);new ResizeObserver(reportOutputHeight).observe(document.body);}<\/script><script src="${withBase('/nP.js')}" onload="execute()" onerror="showError('Unable to load the nP browser bundle.')"><\/script></body></html>`
     output.onload = () => { status.textContent = warningCount ? `Finished (${warningCount} lint warning${warningCount === 1 ? '' : 's'})` : 'Finished' }
   })
 })
