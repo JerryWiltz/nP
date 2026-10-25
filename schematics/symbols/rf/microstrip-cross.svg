@@ -1,0 +1,15 @@
+<!-- Modified: 2026-10-24 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-60 -60 240 240" role="img" aria-labelledby="title description">
+  <title id="title">nP mcross physical microstrip cross symbol</title>
+  <desc id="description">A four-port physical microstrip cross with ports ordered left, top, right, and bottom and an interior marker identifying port 1.</desc>
+  <rect width="100%" height="100%" x="-60" y="-60" fill="#ffffff"/>
+  <!-- Enlarge the compact copper silhouette without changing its proportions. -->
+  <g transform="translate(-60 -60) scale(2)">
+    <path d="M53 40 H67 V53 H80 V67 H67 V80 H53 V67 H40 V53 H53 Z" fill="#ffffff" stroke="#202020" stroke-width="1"/><circle cx="56" cy="60" r="1.5" fill="#202020" stroke="none"/>
+  </g>
+  <path d="M0 60 H20 M60 0 V20 M100 60 H120 M60 100 V120" fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round"/>
+  <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
+    <text x="60" y="-35">mcross()</text><text x="-30" y="65">Port 1</text><text x="60" y="-15">Port 2</text><text x="150" y="65">Port 3</text><text x="60" y="150">Port 4</text>
+    <circle cx="0" cy="60" r="4"/><circle cx="60" cy="0" r="4"/><circle cx="120" cy="60" r="4"/><circle cx="60" cy="120" r="4"/>
+  </g>
+</svg>

@@ -1,0 +1,21 @@
+<!-- Modified: 2026-10-23 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200" role="img" aria-labelledby="title description">
+  <title id="title">nP seriesTee three-port series-junction symbol</title>
+  <desc id="description">An ideal three-port series junction with ports 1 and 2 on a separated horizontal path and port 3 entering upward into the central series gap.</desc>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <!-- External leads and square component body. -->
+    <path d="M80 100 H100 M140 100 H160 M120 120 V140"/>
+    <rect x="100" y="80" width="40" height="40"/>
+
+    <!-- Hand-drawn source: separated series path with port 3 directed into its gap. -->
+    <path d="M105 100 H115 M125 100 H135 M120 116 V105 M116 109 L120 105 L124 109"/>
+
+    <!-- Port-1 orientation marker. -->
+    <circle cx="108" cy="90" r="3" fill="#202020" stroke="none"/>
+  </g>
+  <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
+    <text x="120" y="30">seriesTee()</text><text x="60" y="125">Port 1</text><text x="180" y="125">Port 2</text><text x="120" y="170">Port 3</text>
+    <circle cx="80" cy="100" r="4"/><circle cx="160" cy="100" r="4"/><circle cx="120" cy="140" r="4"/>
+  </g>
+</svg>

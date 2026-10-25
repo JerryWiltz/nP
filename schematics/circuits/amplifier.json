@@ -1,0 +1,136 @@
+{
+  "title": "Amplifier stage",
+  "description": "Guide REPL example diodes-and-active-components: Amplifier stage.",
+  "domain": "rf",
+  "source": {
+    "file": "docs/diodes-and-active-components.md",
+    "result": "amp2",
+    "combination": "nP.cascade(amp2)",
+    "exampleId": "diodes-and-active-components"
+  },
+  "viewBox": [
+    0,
+    0,
+    420,
+    360
+  ],
+  "layout": {
+    "centerAxisX": 210,
+    "centerReference": "Amplifier stage signal path"
+  },
+  "components": [
+    {
+      "id": "amp2",
+      "symbol": "rf/amplifier.svg",
+      "source": {
+        "variable": "amp2",
+        "constructor": "Amp"
+      },
+      "at": [
+        160,
+        180
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "node": 1,
+          "at": [
+            160,
+            180
+          ],
+          "labelAt": [
+            160,
+            120
+          ]
+        },
+        {
+          "port": 2,
+          "node": 2,
+          "at": [
+            260,
+            180
+          ],
+          "labelAt": [
+            260,
+            120
+          ]
+        }
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "node": 1,
+      "points": [
+        [
+          100,
+          180
+        ],
+        [
+          160,
+          180
+        ]
+      ]
+    },
+    {
+      "node": 2,
+      "points": [
+        [
+          260,
+          180
+        ],
+        [
+          320,
+          180
+        ]
+      ]
+    }
+  ],
+  "terminals": [
+    {
+      "node": 1,
+      "at": [
+        100,
+        180
+      ]
+    },
+    {
+      "node": 2,
+      "at": [
+        320,
+        180
+      ]
+    }
+  ],
+  "labels": [
+    {
+      "componentId": "amp2",
+      "text": "amp2: 15 dB gain, 3 dB NF",
+      "at": [
+        210,
+        60
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 1",
+      "at": [
+        100,
+        240
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 2",
+      "at": [
+        320,
+        240
+      ],
+      "anchor": "middle"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-22 -->
+<!-- Modified: 2026-10-25 -->
 # Connecting nPorts
 
 Constructors such as `nP.R()`, `nP.L()`, and `nP.Tee()` return [nPort objects](./nport-object.md). Connect those objects to make a larger circuit, then call `.out()` on the result. Set the [analysis frequencies](./global-settings.md#frequency-list) before creating the components.
@@ -118,6 +118,8 @@ var stage = nP.nodal(
 var attenuator = nP.Attn(3);
 var complete = nP.cascade(stage, attenuator);
 ```
+
+![R-L stage followed by an attenuator](/schematics/stage-and-attenuator.svg)
 
 ## Keep analysis settings aligned
 

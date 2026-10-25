@@ -1,0 +1,200 @@
+{
+  "title": "Attenuator followed by amplifier",
+  "description": "Guide REPL example noise-order: Attenuator followed by amplifier.",
+  "domain": "rf",
+  "source": {
+    "file": "docs/.vitepress/theme/replExamples.js",
+    "result": "attenuatorFirst",
+    "combination": "nP.cascade(attenuator, amp)",
+    "exampleId": "noise-order"
+  },
+  "viewBox": [
+    0,
+    0,
+    580,
+    360
+  ],
+  "layout": {
+    "centerAxisX": 290,
+    "centerReference": "Attenuator followed by amplifier signal path"
+  },
+  "components": [
+    {
+      "id": "attenuator",
+      "symbol": "rf/attenuator.svg",
+      "source": {
+        "variable": "attenuator",
+        "constructor": "Attn"
+      },
+      "at": [
+        160,
+        180
+      ],
+      "sourceAnchor": [
+        100,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "node": 1,
+          "at": [
+            160,
+            180
+          ],
+          "labelAt": [
+            160,
+            120
+          ]
+        },
+        {
+          "port": 2,
+          "node": 2,
+          "at": [
+            220,
+            180
+          ],
+          "labelAt": [
+            280,
+            120
+          ]
+        }
+      ]
+    },
+    {
+      "id": "amp",
+      "symbol": "rf/amplifier.svg",
+      "source": {
+        "variable": "amp",
+        "constructor": "Amp"
+      },
+      "at": [
+        320,
+        180
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "node": 2,
+          "at": [
+            320,
+            180
+          ],
+          "labelAt": [
+            280,
+            120
+          ]
+        },
+        {
+          "port": 2,
+          "node": 3,
+          "at": [
+            420,
+            180
+          ],
+          "labelAt": [
+            420,
+            120
+          ]
+        }
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "node": 1,
+      "points": [
+        [
+          100,
+          180
+        ],
+        [
+          160,
+          180
+        ]
+      ]
+    },
+    {
+      "node": 2,
+      "points": [
+        [
+          220,
+          180
+        ],
+        [
+          320,
+          180
+        ]
+      ]
+    },
+    {
+      "node": 3,
+      "points": [
+        [
+          420,
+          180
+        ],
+        [
+          480,
+          180
+        ]
+      ]
+    }
+  ],
+  "terminals": [
+    {
+      "node": 1,
+      "at": [
+        100,
+        180
+      ]
+    },
+    {
+      "node": 3,
+      "at": [
+        480,
+        180
+      ]
+    }
+  ],
+  "labels": [
+    {
+      "componentId": "attenuator",
+      "text": "attenuator: 3 dB",
+      "at": [
+        190,
+        60
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "amp",
+      "text": "amp: 20 dB",
+      "at": [
+        370,
+        60
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 1",
+      "at": [
+        100,
+        240
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 2",
+      "at": [
+        480,
+        240
+      ],
+      "anchor": "middle"
+    }
+  ]
+}

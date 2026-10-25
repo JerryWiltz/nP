@@ -1,0 +1,13 @@
+<!-- Modified: 2026-10-24 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 240" role="img" aria-labelledby="title description">
+  <title id="title">nP trf4Port four-port transformer symbol</title>
+  <desc id="description">A four-port transformer with primary ports 1 and 3 on the left and secondary ports 2 and 4 on the right.</desc>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M80 80 H100 M180 80 H200 M80 160 H100 M180 160 H200 M100 80 C85 80 85 100 100 100 C85 100 85 120 100 120 C85 120 85 140 100 140 C85 140 85 160 100 160 M180 80 C195 80 195 100 180 100 C195 100 195 120 180 120 C195 120 195 140 180 140 C195 140 195 160 180 160 M137 70 V170 M143 70 V170"/>
+  </g>
+  <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
+    <text x="140" y="30">trf4Port()</text><text x="80" y="65">Port 1</text><text x="200" y="65">Port 2</text><text x="80" y="190">Port 3</text><text x="200" y="190">Port 4</text>
+    <circle cx="80" cy="80" r="4"/><circle cx="200" cy="80" r="4"/><circle cx="80" cy="160" r="4"/><circle cx="200" cy="160" r="4"/>
+  </g>
+</svg>

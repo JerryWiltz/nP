@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 580 360"
+     role="img" aria-labelledby="title description">
+  <title id="title">Series resistor and capacitor</title>
+  <desc id="description">Guide REPL example series-rc-smith-chart: Series resistor and capacitor.</desc>
+  <metadata id="circuit-description">{&quot;title&quot;:&quot;Series resistor and capacitor&quot;,&quot;description&quot;:&quot;Guide REPL example series-rc-smith-chart: Series resistor and capacitor.&quot;,&quot;domain&quot;:&quot;rf&quot;,&quot;source&quot;:{&quot;file&quot;:&quot;docs/.vitepress/theme/replExamples.js&quot;,&quot;result&quot;:&quot;seriesRC&quot;,&quot;combination&quot;:&quot;nP.nodal([r1, 1, 2], [c1, 2, 3], [&apos;out&apos;, 1, 3])&quot;,&quot;exampleId&quot;:&quot;series-rc-smith-chart&quot;},&quot;viewBox&quot;:[0,0,580,360],&quot;layout&quot;:{&quot;centerAxisX&quot;:290,&quot;centerReference&quot;:&quot;Series resistor and capacitor signal path&quot;},&quot;components&quot;:[{&quot;id&quot;:&quot;r1&quot;,&quot;symbol&quot;:&quot;rf/resistor.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;r1&quot;,&quot;constructor&quot;:&quot;R&quot;},&quot;at&quot;:[160,180],&quot;sourceAnchor&quot;:[60,80],&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:1,&quot;at&quot;:[160,180],&quot;labelAt&quot;:[160,120]},{&quot;port&quot;:2,&quot;node&quot;:2,&quot;at&quot;:[260,180],&quot;labelAt&quot;:[320,120]}]},{&quot;id&quot;:&quot;c1&quot;,&quot;symbol&quot;:&quot;rf/capacitor.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;c1&quot;,&quot;constructor&quot;:&quot;C&quot;},&quot;at&quot;:[360,180],&quot;sourceAnchor&quot;:[80,80],&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:2,&quot;at&quot;:[360,180],&quot;labelAt&quot;:[320,120]},{&quot;port&quot;:2,&quot;node&quot;:3,&quot;at&quot;:[420,180],&quot;labelAt&quot;:[420,120]}]}],&quot;wires&quot;:[{&quot;node&quot;:1,&quot;points&quot;:[[100,180],[160,180]]},{&quot;node&quot;:2,&quot;points&quot;:[[260,180],[360,180]]},{&quot;node&quot;:3,&quot;points&quot;:[[420,180],[480,180]]}],&quot;terminals&quot;:[{&quot;node&quot;:1,&quot;at&quot;:[100,180]},{&quot;node&quot;:3,&quot;at&quot;:[480,180]}],&quot;labels&quot;:[{&quot;componentId&quot;:&quot;r1&quot;,&quot;text&quot;:&quot;r1: 50 Ω&quot;,&quot;at&quot;:[210,60],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;c1&quot;,&quot;text&quot;:&quot;c1: 3.17 pF&quot;,&quot;at&quot;:[390,60],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;Port 1&quot;,&quot;at&quot;:[100,240],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;Port 2&quot;,&quot;at&quot;:[480,240],&quot;anchor&quot;:&quot;middle&quot;}]}</metadata>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path data-wire="1" data-node="1" d="M100 180 L160 180"/>
+    <path data-wire="2" data-node="2" d="M260 180 L360 180"/>
+    <path data-wire="3" data-node="3" d="M420 180 L480 180"/>
+    <circle data-external-terminal="1" cx="100" cy="180" r="4" fill="#202020" data-node="1"/>
+    <circle data-external-terminal="2" cx="480" cy="180" r="4" fill="#202020" data-node="3"/>
+    <!-- r1 from rf/resistor.svg -->
+    <g data-component-id="r1" data-symbol-source="rf/resistor.svg" data-symbol-sha256="d9315abe504556e2e181f3b66d00f1d995216974f0e506e636785c9dbbf4926b" data-symbol-geometry-sha256="03a4d1e2b62f5889e5e4879e43d361f7054157ab860b5a69ed6e786357844eaa" transform="translate(160 180) rotate(0) translate(-60 -80)">
+      <!-- canonical-geometry-start -->
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M60 80 H80 L85 70 L95 90 L105 70 L115 90 L125 70 L135 90 L140 80 H160"/>
+  </g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <!-- c1 from rf/capacitor.svg -->
+    <g data-component-id="c1" data-symbol-source="rf/capacitor.svg" data-symbol-sha256="b5d1fc08aa1dd3251ffaa4777446ce829d17673c54bbc0f9c2f20ec05dc42cd8" data-symbol-geometry-sha256="162b6ec98b0777fedb7f5e6fedab285aa0440cdf0903a6281833716e278df6b0" transform="translate(360 180) rotate(0) translate(-80 -80)">
+      <!-- canonical-geometry-start -->
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round">
+    <path d="M80 80 H105 M115 80 H140 M105 70 V90 M115 70 V90"/>
+  </g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <circle data-node-dot="1" cx="160" cy="180" r="4" fill="#202020"/>
+    <circle data-node-dot="2" cx="260" cy="180" r="4" fill="#202020"/>
+    <circle data-node-dot="2" cx="360" cy="180" r="4" fill="#202020"/>
+    <circle data-node-dot="3" cx="420" cy="180" r="4" fill="#202020"/>
+    <circle data-node-circle="1" cx="160" cy="120" r="12" fill="#ffffff"/>
+    <circle data-node-circle="2" cx="320" cy="120" r="12" fill="#ffffff"/>
+    <circle data-node-circle="3" cx="420" cy="120" r="12" fill="#ffffff"/>
+  </g>
+  <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    <text x="210" y="60" text-anchor="middle">r1: 50 Ω</text>
+    <text x="390" y="60" text-anchor="middle">c1: 3.17 pF</text>
+    <text x="100" y="240" text-anchor="middle">Port 1</text>
+    <text x="480" y="240" text-anchor="middle">Port 2</text>
+    <text data-node-label="1" x="160" y="125" text-anchor="middle">1</text>
+    <text data-node-label="2" x="320" y="125" text-anchor="middle">2</text>
+    <text data-node-label="3" x="420" y="125" text-anchor="middle">3</text>
+  </g>
+</svg>

@@ -1,173 +1,28 @@
 # AGENTS.md
-<!-- Modified: 2026-10-19 -->
+<!-- Modified: 2026-10-25 -->
 
-Instructions for files in `docs/` and its subdirectories.
+Instructions for `docs/`. Follow the repository root `AGENTS.md` as well. These files are the user-facing VitePress site; `src/` is the authority for API behavior.
 
-These files are user-facing documentation, examples, images, and documentation-site configuration. Keep documentation examples aligned with the current source in `src/` and the browser global `nP`.
+## Pages and assets
 
-- Name hand-maintained public Markdown pages under `docs/` with lowercase kebab-case basenames, such as `global-settings.md`. Keep the conventional `index.md` and `AGENTS.md` names. Archived files, assets in `public/`, and VitePress configuration are outside this page rule.
-- Before renaming an existing page, update its VitePress navigation, internal links, and other active references; account for the change to its public URL.
-- Name hand-maintained images in `docs/_images/` with descriptive lowercase kebab-case basenames. Check active references before renaming an image. Assets in `docs/public/` and archived images are outside this rule.
-- Treat `src/` as the source of truth for library behavior.
-- Update documentation examples when public APIs or recommended circuit-building patterns change.
-- Prefer clear, modern examples over preserving legacy example style.
-- Use `npm run docs:build` from the repo root after substantive docs changes when practical.
-- Do not edit generated VitePress output unless the user explicitly asks.
-- When updating archived material under `docs/_archive/`, preserve historical intent, but modernize examples when the user asks for docs-wide cleanup.
-- In browser examples, prefer `nP.log(...)` over `console.log(...)` when the output is meant to appear on the page. Make sure the page loads the built bundle before using `nP.log(...)`.
-- The version value is `nP.version`, not `nP.version()`.
-- When intentionally editing a hand-maintained documentation file, add or update a simple `Modified: YYYY-MM-DD` comment near the top of the file. Do not update dates in generated VitePress output.
-- Use Playwright Chromium for real browser smoke tests of changed docs HTML when practical. Browser launch may need escalated permissions in this Chromebook Linux container.
-- In Playwright checks, pages that execute `nP.lineChart()` or `nP.lineTable()` on load should produce SVG output. Do not require SVG output from example code that is only inside a CodeMirror `<textarea>` and not executed on page load.
+- Name hand-maintained public Markdown pages with lowercase kebab-case basenames; keep `index.md` and `AGENTS.md`. Name hand-maintained images in `_images/` descriptively with lowercase kebab-case basenames. Archived files, `public/` assets, and VitePress configuration are exempt.
+- Before renaming a page or image, update navigation, internal links, and other active references. A page rename changes its public URL; preserve old links when needed.
+- Keep `docs/_archive/` historical unless the user requests a docs-wide refresh. Do not edit generated `docs/.vitepress/dist/` output.
+- For SVG circuit schematics in `docs/public/schematics/`, follow `schematics/AGENTS.md` and `schematics/svg-style-guide.md`. Keep the editable description and canonical symbols under `schematics/` and regenerate the published SVG with the composer.
+- After substantive changes, run `npm run docs:build`. For browser-facing examples, verify changed runnable code and visible output when practical. Respect the root instruction not to open Chromium unless asked; code held only in a textarea does not execute on page load.
 
-## Documentation Example Flow
+## Examples
 
-Write RF examples in this order so the circuit logic is easy to follow:
+- Prefer clear current examples over legacy combined RLC constructors. Show frequencies, named parts, explicit connections, `.out(...)`, then charts or tables. Use `nP.nodal()` when topology matters; keep `nP.cascade()` for examples teaching two-port cascades. Put each `nodal()` connection on its own line.
+- Keep instructional code linear: assign intermediate results to named variables, then pass those variables to `nP` calls and `nP.log()`. Do not define helper functions inside example functions or pass inline function expressions or arrow callbacks to `nP` calls when a direct value or table will do.
+- Show ideal parts as `nP.Tlin()`, `nP.Tclin()`, `nP.Tee()`, and `nP.seriesTee()`; physical microstrip parts use lowercase constructor names. Follow the port and data conventions in the root instructions.
+- In browser examples, use `nP.log(...)` for page output and load the built browser bundle first. The version is `nP.version`, not a function call. Match chart axis labels and `metricPrefix` to actual table units; use `metricPrefix: 'none'` when x values already have their displayed unit.
+- Legacy RLC constructors remain available for compatibility and may appear in a page about legacy behavior; do not make them the preferred pattern in new examples.
 
-1. Set frequencies with `nP.global.fList`.
-2. Create electrical components as n-port objects, such as `nP.R()`, `nP.L()`, `nP.C()`, `nP.Tee()`, or `nP.Short()`.
-3. Combine those n-port objects into larger n-port objects with `nP.nodal()`.
-4. Reuse combined n-port objects as blocks in larger circuits when useful.
-5. Extract data with `.out(...)`.
-6. Send the output table to `nP.lineChart()`, `nP.lineTable()`, or `nP.smithChart()`.
+## REPL
 
-Prefer this flow over examples that hide topology inside legacy combined RLC constructors or long cascades.
-
-## REPL Examples
-
-The runnable REPL examples live in `docs/.vitepress/theme/replExamples.js`. The sidebar groups and their order live in `docs/.vitepress/config.js`.
-
-- Give each example a unique, stable `id`, a clear `title`, a sidebar `category`, and runnable `code`. Reorder examples within a category by moving their array entries; avoid changing an existing ID because links and the REPL's session buffer use it.
-- Make each example self-contained. Set the required analysis frequencies or time context before constructing dependent objects, and show a useful result with `nP.log()`, `nP.lineChart()`, `nP.lineTable()`, or `nP.smithChart()`.
-- Make RF topology visible: construct and name components before passing them to `nP.nodal()` or `nP.cascade()`. Use reference-designator-style names for electrical parts, and put each `nodal()` connection on its own line.
-- Put object properties on separate lines. Use blank lines between distinct stages such as settings, components, connections, outputs, and display. Keep truly small examples compact.
-- Let `nP.lineChart()`, `nP.lineTable()`, and `nP.smithChart()` use their default output mount. Do not add `document.createElement()` or `appendChild()` setup to REPL code just to display a chart or table.
-- Match chart axis titles and `metricPrefix` to the values in the output table. Use `metricPrefix: 'none'` when x values are already in the displayed unit; an empty string falls back to the chart's gigascale default.
-- After changing examples, verify that each changed snippet loads and runs in the REPL. Check for visible chart or table output when an example calls a display helper.
-
-## Ideal Component Naming
-
-Use uppercase-first public names for ideal components in docs examples, including `nP.Tlin()` and `nP.Tclin()`. Keep physical microstrip models lowercase, such as `nP.mlin()` and `nP.mclin()`. Use `nP.Tee()` for ordinary ideal shunt junctions. Use `nP.seriesTee()` when a one-port network must be inserted as a floating series branch; ports 1 and 2 form the through path and port 3 connects the one-port branch.
-
-## Modernizing Legacy RF Examples
-
-When refreshing docs examples, remove legacy compound-component style where practical:
-
-- Prefer explicit `nP.R()`, `nP.L()`, and `nP.C()` components with reference-designator-style names such as `r1`, `l1`, and `c1`.
-- Prefer `nP.nodal(...)` for circuit topology, especially ladders, filters, power dividers, and multiport examples.
-- Replace old combined RLC constructors such as `nP.seSeRL()`, `nP.paSeRC()`, `nP.sePaRLC()`, and similar helpers with explicit individual components and `nP.nodal(...)`.
-- Replace `.cas(...)` or `nP.cascade(...)` in documentation examples when the actual circuit topology is clearer as explicit nodes.
-- Keep `nP.cascade()` only when the example is specifically teaching or testing two-port cascade behavior.
-- Format `nP.nodal(...)` calls with one connection argument per line.
-
-## Ladder Network Pattern
-
-For ladder-style circuits, write explicit parts plus `nP.nodal()` so the schematic topology remains visible.
-
-- Use reference-designator-style names for electrical parts.
-- Construct ideal `Tee` and `Short` objects once when convenient, then reuse them.
-- In `nP.Tee()`, internal port 1 is the common/shunt branch. In a `nP.nodal(...)` call, place the shunt node first for that Tee.
-- Connect each shunt branch from the Tee common branch through the shunt component to `nP.Short()`.
-
-Example:
-
-```js
-var Tee = nP.Tee();
-var Short = nP.Short();
-
-var ladder = nP.nodal(
-    [series1, 1, 2],
-    [Tee, 4, 2, 3],
-    [shunt1, 4, 5],
-    [Short, 5],
-
-    [series2, 3, 6],
-    [Tee, 8, 6, 7],
-    [shunt2, 8, 9],
-    [Short, 9],
-
-    [series3, 7, 10],
-    ['out', 1, 10]
-);
-```
-
-## RF Power Divider Pattern
-
-Use `nP.Tee()` as the ideal split/combining junction for RF power divider examples. Tee internal port 1 is the common input or combining branch, and the other two Tee ports feed the output branches.
-
-```js
-var Tee = nP.Tee();
-
-var divider = nP.nodal(
-    [Tee, 1, 2, 3],
-    [branch1, 2, 4],
-    [branch2, 3, 5],
-    ['out', 1, 4, 5]
-);
-```
-
-For Wilkinson-style examples, use transmission-line branches and, when needed, an isolation resistor between output branch nodes. Useful outputs include `s21dB`, `s31dB`, `s11dB`, and `s23dB`.
-
-## Coupled Transmission Line Port Order
-
-Coupled transmission line components are numbered clockwise starting at the upper-left port. Use this convention for `nP.Tclin()`, `nP.mclin()`, and future coupled-line constructors.
-
-```text
-port 1  ---- coupled line ----  port 2
-port 4  ---- coupled line ----  port 3
-```
-
-With input at port 1, port 2 is through, port 4 is coupled, and port 3 is isolated. In `nP.nodal(...)`, preserve the constructor order, for example `[coupledLine, 1, 2, 3, 4]`.
-
-## Chart And Table Examples
-
-- `nP.lineChart()` consumes numeric x/y tables. It supports linear/log x and y scales, origin or edge axis placement, hover values, chart labels, plot border styling, and PNG copy.
-- `nP.smithChart()` consumes paired real/imaginary columns such as `s11Re`, `s11Im`, `s22Re`, and `s22Im`. Keep its rendered area square.
-- `nP.lineTable()` consumes the same table shape returned by `nPort.out(...)` and provides PNG and CSV copy buttons.
-- Prefer `pngBackground: 'white'` in documentation examples when copied PNG behavior matters.
-- Prefer `metricPrefix` values that match the displayed frequency header.
-
-## Complex And Matrix Documentation
-
-Update docs as needed when examples use `nP.complex()` or `nP.matrix()`.
-
-- `nP.complex(real, imaginary)` returns a complex object with public `.x` and `.y` fields.
-- Complex helpers include `getR()`, `getI()`, `setR()`, `setI()`, `add()`, `sub()`, `mul()`, `div()`, `inv()`, `mag()`, `ang()`, `mag10dB()`, and `mag20dB()`.
-- `setR()` and `setI()` mutate the complex object and return `this`.
-- `nP.matrix(array2d)` returns a matrix object with public field `.m`.
-- Read matrix entries through `.m[row][column]`; matrix objects do not have an `.out()` method.
-- Use real matrix methods for numeric matrices: `add()`, `sub()`, `mul()`, `invert()`, and `solveGaussFB()`.
-- Use complex matrix methods for complex entries: `addCplx()`, `subCplx()`, `mulCplx()`, `invertCplx()`, and `solveGaussFBCplx()`.
-- n-port objects carry S-parameter rows in `.spars`; each row is `[frequency, s11, s12, s21, s22, ...]` and S-parameter values are complex objects.
-
-## Keep-Alive Legacy RLC Functions
-
-These functions still exist and may be documented when the topic is legacy compatibility, but they should not be the preferred pattern for new or refreshed examples.
-
-RLC constructors:
-
-- `nP.seR()`
-- `nP.seL()`
-- `nP.seC()`
-- `nP.paR()`
-- `nP.paL()`
-- `nP.paC()`
-
-Combined RLC n-port constructors:
-
-- `nP.seSeRL()`
-- `nP.paSeRL()`
-- `nP.seSeRC()`
-- `nP.paSeRC()`
-- `nP.seSeLC()`
-- `nP.paSeLC()`
-- `nP.seSeRLC()`
-- `nP.paSeRLC()`
-- `nP.paPaRL()`
-- `nP.sePaRL()`
-- `nP.paPaRC()`
-- `nP.sePaRC()`
-- `nP.paPaLC()`
-- `nP.sePaLC()`
-- `nP.paPaRLC()`
-- `nP.sePaRLC()`
+- Runnable examples live in `.vitepress/theme/replExamples.js`; sidebar groups and ordering live in `.vitepress/config.js`.
+- `schematicMap.js` maps each circuit example to one or more shared SVGs; math-only examples are listed in `examplesWithoutCircuits`. Update the map and rebuild the inventory when an example's topology changes. Reuse an existing drawing only when its components, values, and connections still describe the example.
+- Give each example a unique stable `id`, `title`, `category`, and runnable `code`. Preserve IDs because links and the REPL session buffer use them. Move array entries to reorder examples.
+- Make each example self-contained. Set analysis grids before creating dependent objects, use named parts and visible wiring, separate stages with blank lines, and display a useful result. Use the chart and table helpers' default output mount; do not add manual DOM setup just to show them.
+- Verify each changed snippet in the REPL. An example calling a chart or table helper should produce visible output. Do not require SVG output from code that remains unexecuted in an editor.

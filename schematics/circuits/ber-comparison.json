@@ -1,0 +1,244 @@
+{
+  "title": "BER comparison through an RF attenuator",
+  "description": "The transmitter supplies the reference bits and the RF path; bitErrorRate compares its output with the received signal.",
+  "domain": "signal",
+  "source": {
+    "file": "docs/.vitepress/theme/replExamples.js",
+    "result": "ber",
+    "combination": "nP.bitErrorRate(tx, chain, {receptions: 50})",
+    "exampleId": "ber-attenuation"
+  },
+  "viewBox": [
+    0,
+    0,
+    760,
+    500
+  ],
+  "layout": {
+    "centerAxisX": 380,
+    "centerReference": "transmit and receive comparison"
+  },
+  "components": [
+    {
+      "id": "tx",
+      "symbol": "digital/mod.svg",
+      "source": {
+        "variable": "tx",
+        "constructor": "mod"
+      },
+      "at": [
+        160,
+        200
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "signal": "grid",
+          "at": [
+            160,
+            200
+          ]
+        },
+        {
+          "port": 2,
+          "signal": "tx",
+          "at": [
+            280,
+            200
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ber",
+      "symbol": "digital/bit-error-rate.svg",
+      "source": {
+        "variable": "ber",
+        "constructor": "bitErrorRate"
+      },
+      "at": [
+        460,
+        260
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "signal": "tx",
+          "at": [
+            460,
+            260
+          ]
+        },
+        {
+          "port": 2,
+          "signal": "received",
+          "at": [
+            460,
+            300
+          ]
+        },
+        {
+          "port": 3,
+          "signal": "ber-result",
+          "at": [
+            580,
+            280
+          ]
+        }
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "signal": "grid",
+      "points": [
+        [
+          100,
+          200
+        ],
+        [
+          160,
+          200
+        ]
+      ]
+    },
+    {
+      "signal": "tx",
+      "points": [
+        [
+          280,
+          200
+        ],
+        [
+          340,
+          200
+        ]
+      ]
+    },
+    {
+      "signal": "tx",
+      "points": [
+        [
+          340,
+          200
+        ],
+        [
+          340,
+          260
+        ],
+        [
+          460,
+          260
+        ]
+      ]
+    },
+    {
+      "signal": "received",
+      "points": [
+        [
+          400,
+          300
+        ],
+        [
+          460,
+          300
+        ]
+      ]
+    },
+    {
+      "signal": "ber-result",
+      "points": [
+        [
+          580,
+          280
+        ],
+        [
+          640,
+          280
+        ]
+      ]
+    }
+  ],
+  "terminals": [
+    {
+      "signal": "grid",
+      "at": [
+        100,
+        200
+      ]
+    },
+    {
+      "signal": "tx",
+      "at": [
+        340,
+        200
+      ]
+    },
+    {
+      "signal": "received",
+      "at": [
+        400,
+        300
+      ]
+    },
+    {
+      "signal": "ber-result",
+      "at": [
+        640,
+        280
+      ]
+    }
+  ],
+  "labels": [
+    {
+      "componentId": "tx",
+      "text": "ASCII mod",
+      "at": [
+        220,
+        90
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "ber",
+      "text": "bitErrorRate",
+      "at": [
+        520,
+        140
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "to RF attenuator",
+      "at": [
+        340,
+        160
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "received",
+      "at": [
+        400,
+        360
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "BER",
+      "at": [
+        640,
+        340
+      ],
+      "anchor": "middle"
+    }
+  ]
+}

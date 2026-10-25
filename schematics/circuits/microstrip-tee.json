@@ -1,0 +1,176 @@
+{
+  "title": "Microstrip Tee",
+  "description": "Guide REPL example microstrip-tee: Microstrip Tee.",
+  "domain": "rf",
+  "source": {
+    "file": "docs/.vitepress/theme/replExamples.js",
+    "result": "tee",
+    "combination": "tee",
+    "exampleId": "microstrip-tee"
+  },
+  "viewBox": [
+    0,
+    0,
+    600,
+    440
+  ],
+  "layout": {
+    "centerAxisX": 300,
+    "centerReference": "tee body"
+  },
+  "components": [
+    {
+      "id": "tee",
+      "symbol": "rf/microstrip-tee.svg",
+      "source": {
+        "variable": "tee",
+        "constructor": "mtee"
+      },
+      "at": [
+        280,
+        200
+      ],
+      "sourceAnchor": [
+        0,
+        60
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "node": 1,
+          "at": [
+            280,
+            200
+          ],
+          "labelAt": [
+            260,
+            160
+          ]
+        },
+        {
+          "port": 2,
+          "node": 2,
+          "at": [
+            340,
+            140
+          ],
+          "labelAt": [
+            360,
+            100
+          ]
+        },
+        {
+          "port": 3,
+          "node": 3,
+          "at": [
+            340,
+            260
+          ],
+          "labelAt": [
+            360,
+            300
+          ]
+        }
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "node": 1,
+      "points": [
+        [
+          280,
+          200
+        ],
+        [
+          220,
+          200
+        ]
+      ]
+    },
+    {
+      "node": 2,
+      "points": [
+        [
+          340,
+          140
+        ],
+        [
+          400,
+          140
+        ]
+      ]
+    },
+    {
+      "node": 3,
+      "points": [
+        [
+          340,
+          260
+        ],
+        [
+          400,
+          260
+        ]
+      ]
+    }
+  ],
+  "terminals": [
+    {
+      "node": 1,
+      "at": [
+        220,
+        200
+      ]
+    },
+    {
+      "node": 2,
+      "at": [
+        400,
+        140
+      ]
+    },
+    {
+      "node": 3,
+      "at": [
+        400,
+        260
+      ]
+    }
+  ],
+  "labels": [
+    {
+      "text": "Port 1",
+      "at": [
+        220,
+        300
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 2",
+      "at": [
+        400,
+        100
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 3",
+      "at": [
+        400,
+        340
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "tee",
+      "text": "tee: mtee()",
+      "at": [
+        300,
+        70
+      ],
+      "anchor": "middle"
+    }
+  ]
+}

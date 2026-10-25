@@ -1,0 +1,13 @@
+<!-- Modified: 2026-10-24 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -20 240 200" role="img" aria-labelledby="title description">
+  <title id="title">nP mvgnd one-port microstrip-via-to-ground symbol</title>
+  <desc id="description">A one-port physical microstrip via-to-ground pad with port 1 at the top.</desc>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <!-- Outlined via pad and bore, with a short lead to the grid terminal. -->
+  <circle cx="120" cy="90" r="30" fill="#ffffff" stroke="#202020" stroke-width="2"/>
+  <circle cx="120" cy="90" r="10" fill="#ffffff" stroke="#202020" stroke-width="2"/>
+  <path d="M120 40 V60" fill="none" stroke="#202020" stroke-width="2"/>
+  <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
+    <text x="120" y="-5">mvgnd()</text><text x="120" y="25">Port 1</text><text x="170" y="95">via</text><circle cx="120" cy="40" r="4"/>
+  </g>
+</svg>

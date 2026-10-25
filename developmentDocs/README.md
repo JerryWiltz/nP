@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-15 -->
+<!-- Modified: 2026-10-23 -->
 # nP Development Documentation
 
 This directory contains internal engineering knowledge for developing nP. It records RF mathematics, equation-to-code translations, implementation decisions, data contracts, assumptions, units, references, and worked examples.
@@ -20,128 +20,18 @@ raw research → development documentation → AGENTS rules → source code and 
 
 ## Source layout
 
-This tree lists every JavaScript file under `src/`, including all constructor files:
+`src/index.js` exports the public nP API. Each package has an `index.js` entry point and implementation files under `src/`:
 
-```text
-src/
-├── np-chart/
-│   ├── src/
-│   │   ├── chartTooltip.js
-│   │   ├── chartTypography.js
-│   │   ├── inputTables.js
-│   │   ├── lineChart.js
-│   │   ├── lineTable.js
-│   │   ├── log.js
-│   │   ├── smithChart.js
-│   │   └── version.js
-│   └── index.js
-├── np-digital/
-│   ├── src/
-│   │   ├── bitErrorRate.js
-│   │   ├── demod.js
-│   │   ├── mod.js
-│   │   ├── noiseWaveform.js
-│   │   ├── PN.js
-│   │   ├── receiverWaveform.js
-│   │   └── sourceWaveform.js
-│   └── index.js
-├── np-global/
-│   ├── src/
-│   │   └── global.js
-│   └── index.js
-├── np-math/
-│   ├── src/
-│   │   ├── complex.js
-│   │   ├── fft.js
-│   │   └── matrix.js
-│   └── index.js
-├── np-misc/
-│   ├── src/
-│   │   ├── getCircuitTitle.js
-│   │   └── htmlSupport.js
-│   └── index.js
-├── np-nport/
-│   ├── src/
-│   │   ├── physicalConstants.js
-│   │   ├── combining/
-│   │   │   ├── cascade.js
-│   │   │   └── nodal.js
-│   │   ├── diodes/
-│   │   │   └── diode1N4148.js
-│   │   ├── idealComponents/
-│   │   │   ├── Amp.js
-│   │   │   ├── Attn.js
-│   │   │   ├── Load.js
-│   │   │   ├── Open.js
-│   │   │   ├── seriesTee.js
-│   │   │   ├── Shift90.js
-│   │   │   ├── Short.js
-│   │   │   ├── Tclin.js
-│   │   │   ├── Tee.js
-│   │   │   ├── Tee4.js
-│   │   │   ├── Tee5.js
-│   │   │   ├── Thru.js
-│   │   │   └── Tlin.js
-│   │   ├── mlin/
-│   │   │   ├── mbend.js
-│   │   │   ├── mclin.js
-│   │   │   ├── mcross.js
-│   │   │   ├── mlin.js
-│   │   │   ├── mstep.js
-│   │   │   ├── mtee.js
-│   │   │   ├── mtfr.js
-│   │   │   ├── mvgnd.js
-│   │   │   └── mvia.js
-│   │   ├── filters/
-│   │   │   ├── archive/
-│   │   │   │   └── chebyshev.js
-│   │   │   ├── chebyLPgk.js
-│   │   │   ├── chebyLPLCs.js
-│   │   │   ├── chebyLPNsec.js
-│   │   │   └── lpfGen.js
-│   │   ├── physicalModels/
-│   │   │   └── options.js
-│   │   ├── rlc/
-│   │   │   ├── C.js
-│   │   │   ├── L.js
-│   │   │   ├── paC.js
-│   │   │   ├── paL.js
-│   │   │   ├── paPaLC.js
-│   │   │   ├── paPaRC.js
-│   │   │   ├── paPaRL.js
-│   │   │   ├── paPaRLC.js
-│   │   │   ├── paR.js
-│   │   │   ├── paSeLC.js
-│   │   │   ├── paSeRC.js
-│   │   │   ├── paSeRL.js
-│   │   │   ├── paSeRLC.js
-│   │   │   ├── R.js
-│   │   │   ├── seC.js
-│   │   │   ├── seL.js
-│   │   │   ├── sePaLC.js
-│   │   │   ├── sePaRC.js
-│   │   │   ├── sePaRL.js
-│   │   │   ├── sePaRLC.js
-│   │   │   ├── seR.js
-│   │   │   ├── seSeLC.js
-│   │   │   ├── seSeRC.js
-│   │   │   ├── seSeRL.js
-│   │   │   ├── seSeRLC.js
-│   │   │   ├── trf.js
-│   │   │   └── trf4Port.js
-│   │   ├── analysisFrequencies.js
-│   │   ├── index.js
-│   │   ├── intermod.js
-│   │   ├── noiseFigure.js
-│   │   ├── nPort.js
-│   │   ├── passiveNoise.js
-│   │   └── signal.js
-│   └── index.js
-├── index.js
-└── plugin.js
-```
+| Directory | Responsibility |
+| --- | --- |
+| `src/np-chart/` | Charts, tables, logging, and display helpers. |
+| `src/np-digital/` | Sampled waveforms, modulation, demodulation, and receiver analysis. |
+| `src/np-global/` | Analysis settings and time-grid validation. |
+| `src/np-math/` | Complex numbers, matrices, FFT, and inverse FFT. |
+| `src/np-misc/` | Browser utilities. |
+| `src/np-nport/` | RF components, physical models, filters, noise, intermodulation, and network composition. |
 
-`src/index.js` exports the public nP API. Each `np-*` package also has an `index.js` entry point. The package directories in the index below explain the implementation in more detail.
+`src/plugin.js` is the separate host-safe entry point. Use `rg --files src` for the current source-file list; the topic indexes below explain the implementation in more detail.
 
 ### `nPort` object
 

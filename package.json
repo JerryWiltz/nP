@@ -35,10 +35,15 @@
     "deploy": "./scripts/deploy.sh",
     "clean": "bash scripts/cleanup-gitignore.sh",
     "dev:new": "node scripts/create-dev-html.mjs",
-    "dev:smoke": "node scripts/dev-smoke.mjs"
+    "dev:smoke": "node scripts/dev-smoke.mjs",
+    "symbols:gallery": "node schematics/tools/generate-symbol-gallery.js",
+    "symbols:check": "node schematics/tools/validate-symbol-library.js",
+    "schematics:build": "node schematics/tools/build-example-schematics.js",
+    "schematics:check": "node schematics/tools/check-example-schematics.js"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^16.0.1",
+    "@xmldom/xmldom": "0.9.10",
     "d3": "^7.9.0",
     "eslint-linter-browserify": "^10.13.0",
     "markdown-it-mathjax3": "^4.3.2",

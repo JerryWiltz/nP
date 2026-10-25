@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 1200 360"
+     role="img" aria-labelledby="title description">
+  <title id="title">Five cascaded two-ports</title>
+  <desc id="description">Guide REPL example method-chaining-nport: Five cascaded two-ports.</desc>
+  <metadata id="circuit-description">{&quot;title&quot;:&quot;Five cascaded two-ports&quot;,&quot;description&quot;:&quot;Guide REPL example method-chaining-nport: Five cascaded two-ports.&quot;,&quot;domain&quot;:&quot;rf&quot;,&quot;source&quot;:{&quot;file&quot;:&quot;docs/.vitepress/theme/replExamples.js&quot;,&quot;result&quot;:&quot;chain&quot;,&quot;combination&quot;:&quot;line1.cas(attenuator1).cas(line2).cas(attenuator2).cas(line3)&quot;,&quot;exampleId&quot;:&quot;method-chaining-nport&quot;},&quot;viewBox&quot;:[0,0,1200,360],&quot;layout&quot;:{&quot;centerAxisX&quot;:600,&quot;centerReference&quot;:&quot;Five cascaded two-ports signal path&quot;},&quot;components&quot;:[{&quot;id&quot;:&quot;line1&quot;,&quot;symbol&quot;:&quot;rf/transmission-line.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;line1&quot;,&quot;constructor&quot;:&quot;Tlin&quot;},&quot;at&quot;:[160,180],&quot;sourceAnchor&quot;:[80,80],&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:1,&quot;at&quot;:[160,180],&quot;labelAt&quot;:[160,120]},{&quot;port&quot;:2,&quot;node&quot;:2,&quot;at&quot;:[280,180],&quot;labelAt&quot;:[340,120]}]},{&quot;id&quot;:&quot;attenuator1&quot;,&quot;symbol&quot;:&quot;rf/attenuator.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;attenuator1&quot;,&quot;constructor&quot;:&quot;Attn&quot;},&quot;at&quot;:[380,180],&quot;sourceAnchor&quot;:[100,80],&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:2,&quot;at&quot;:[380,180],&quot;labelAt&quot;:[340,120]},{&quot;port&quot;:2,&quot;node&quot;:3,&quot;at&quot;:[440,180],&quot;labelAt&quot;:[500,120]}]},{&quot;id&quot;:&quot;line2&quot;,&quot;symbol&quot;:&quot;rf/transmission-line.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;line2&quot;,&quot;constructor&quot;:&quot;Tlin&quot;},&quot;at&quot;:[540,180],&quot;sourceAnchor&quot;:[80,80],&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:3,&quot;at&quot;:[540,180],&quot;labelAt&quot;:[500,120]},{&quot;port&quot;:2,&quot;node&quot;:4,&quot;at&quot;:[660,180],&quot;labelAt&quot;:[720,120]}]},{&quot;id&quot;:&quot;attenuator2&quot;,&quot;symbol&quot;:&quot;rf/attenuator.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;attenuator2&quot;,&quot;constructor&quot;:&quot;Attn&quot;},&quot;at&quot;:[760,180],&quot;sourceAnchor&quot;:[100,80],&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:4,&quot;at&quot;:[760,180],&quot;labelAt&quot;:[720,120]},{&quot;port&quot;:2,&quot;node&quot;:5,&quot;at&quot;:[820,180],&quot;labelAt&quot;:[880,120]}]},{&quot;id&quot;:&quot;line3&quot;,&quot;symbol&quot;:&quot;rf/transmission-line.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;line3&quot;,&quot;constructor&quot;:&quot;Tlin&quot;},&quot;at&quot;:[920,180],&quot;sourceAnchor&quot;:[80,80],&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:5,&quot;at&quot;:[920,180],&quot;labelAt&quot;:[880,120]},{&quot;port&quot;:2,&quot;node&quot;:6,&quot;at&quot;:[1040,180],&quot;labelAt&quot;:[1040,120]}]}],&quot;wires&quot;:[{&quot;node&quot;:1,&quot;points&quot;:[[100,180],[160,180]]},{&quot;node&quot;:2,&quot;points&quot;:[[280,180],[380,180]]},{&quot;node&quot;:3,&quot;points&quot;:[[440,180],[540,180]]},{&quot;node&quot;:4,&quot;points&quot;:[[660,180],[760,180]]},{&quot;node&quot;:5,&quot;points&quot;:[[820,180],[920,180]]},{&quot;node&quot;:6,&quot;points&quot;:[[1040,180],[1100,180]]}],&quot;terminals&quot;:[{&quot;node&quot;:1,&quot;at&quot;:[100,180]},{&quot;node&quot;:6,&quot;at&quot;:[1100,180]}],&quot;labels&quot;:[{&quot;componentId&quot;:&quot;line1&quot;,&quot;text&quot;:&quot;line1: 50 Ω, 10 mm&quot;,&quot;at&quot;:[220,60],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;attenuator1&quot;,&quot;text&quot;:&quot;attenuator1: 3 dB&quot;,&quot;at&quot;:[410,60],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;line2&quot;,&quot;text&quot;:&quot;line2: 60 Ω, 20 mm&quot;,&quot;at&quot;:[600,60],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;attenuator2&quot;,&quot;text&quot;:&quot;attenuator2: 6 dB&quot;,&quot;at&quot;:[790,60],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;line3&quot;,&quot;text&quot;:&quot;line3: 50 Ω, 10 mm&quot;,&quot;at&quot;:[980,60],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;Port 1&quot;,&quot;at&quot;:[100,240],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;Port 2&quot;,&quot;at&quot;:[1100,240],&quot;anchor&quot;:&quot;middle&quot;}]}</metadata>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path data-wire="1" data-node="1" d="M100 180 L160 180"/>
+    <path data-wire="2" data-node="2" d="M280 180 L380 180"/>
+    <path data-wire="3" data-node="3" d="M440 180 L540 180"/>
+    <path data-wire="4" data-node="4" d="M660 180 L760 180"/>
+    <path data-wire="5" data-node="5" d="M820 180 L920 180"/>
+    <path data-wire="6" data-node="6" d="M1040 180 L1100 180"/>
+    <circle data-external-terminal="1" cx="100" cy="180" r="4" fill="#202020" data-node="1"/>
+    <circle data-external-terminal="2" cx="1100" cy="180" r="4" fill="#202020" data-node="6"/>
+    <!-- line1 from rf/transmission-line.svg -->
+    <g data-component-id="line1" data-symbol-source="rf/transmission-line.svg" data-symbol-sha256="fd6d978f243d35e852b7b6db79b83d36b2045a7b6a13727083f1a596a0d6065e" data-symbol-geometry-sha256="5acd46a160f0b95d8912c2eb0b7927b77afe1704299c720703ead3277df4d733" transform="translate(160 180) rotate(0) translate(-80 -80)">
+      <!-- canonical-geometry-start -->
+<g transform="translate(0 -10)">
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M80 90 H100 M180 90 H200"/><rect x="100" y="75" width="80" height="30"/></g>
+  </g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <!-- attenuator1 from rf/attenuator.svg -->
+    <g data-component-id="attenuator1" data-symbol-source="rf/attenuator.svg" data-symbol-sha256="88f81ec7f2e00da29470b539739ed6ec05cd51b9c8d244020e4c37780d55d519" data-symbol-geometry-sha256="4285088fba25feea940b274f5c537efb177c008176acfb1e2618717becf8c10d" transform="translate(380 180) rotate(0) translate(-100 -80)">
+      <!-- canonical-geometry-start -->
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M100 80 H160"/>
+    <path d="M130 50 L140 55 L120 65 L140 75 L120 85 L140 95 L120 105 L130 110"/>
+  </g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <!-- line2 from rf/transmission-line.svg -->
+    <g data-component-id="line2" data-symbol-source="rf/transmission-line.svg" data-symbol-sha256="fd6d978f243d35e852b7b6db79b83d36b2045a7b6a13727083f1a596a0d6065e" data-symbol-geometry-sha256="5acd46a160f0b95d8912c2eb0b7927b77afe1704299c720703ead3277df4d733" transform="translate(540 180) rotate(0) translate(-80 -80)">
+      <!-- canonical-geometry-start -->
+<g transform="translate(0 -10)">
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M80 90 H100 M180 90 H200"/><rect x="100" y="75" width="80" height="30"/></g>
+  </g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <!-- attenuator2 from rf/attenuator.svg -->
+    <g data-component-id="attenuator2" data-symbol-source="rf/attenuator.svg" data-symbol-sha256="88f81ec7f2e00da29470b539739ed6ec05cd51b9c8d244020e4c37780d55d519" data-symbol-geometry-sha256="4285088fba25feea940b274f5c537efb177c008176acfb1e2618717becf8c10d" transform="translate(760 180) rotate(0) translate(-100 -80)">
+      <!-- canonical-geometry-start -->
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M100 80 H160"/>
+    <path d="M130 50 L140 55 L120 65 L140 75 L120 85 L140 95 L120 105 L130 110"/>
+  </g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <!-- line3 from rf/transmission-line.svg -->
+    <g data-component-id="line3" data-symbol-source="rf/transmission-line.svg" data-symbol-sha256="fd6d978f243d35e852b7b6db79b83d36b2045a7b6a13727083f1a596a0d6065e" data-symbol-geometry-sha256="5acd46a160f0b95d8912c2eb0b7927b77afe1704299c720703ead3277df4d733" transform="translate(920 180) rotate(0) translate(-80 -80)">
+      <!-- canonical-geometry-start -->
+<g transform="translate(0 -10)">
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M80 90 H100 M180 90 H200"/><rect x="100" y="75" width="80" height="30"/></g>
+  </g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <circle data-node-dot="1" cx="160" cy="180" r="4" fill="#202020"/>
+    <circle data-node-dot="2" cx="280" cy="180" r="4" fill="#202020"/>
+    <circle data-node-dot="2" cx="380" cy="180" r="4" fill="#202020"/>
+    <circle data-node-dot="3" cx="440" cy="180" r="4" fill="#202020"/>
+    <circle data-node-dot="3" cx="540" cy="180" r="4" fill="#202020"/>
+    <circle data-node-dot="4" cx="660" cy="180" r="4" fill="#202020"/>
+    <circle data-node-dot="4" cx="760" cy="180" r="4" fill="#202020"/>
+    <circle data-node-dot="5" cx="820" cy="180" r="4" fill="#202020"/>
+    <circle data-node-dot="5" cx="920" cy="180" r="4" fill="#202020"/>
+    <circle data-node-dot="6" cx="1040" cy="180" r="4" fill="#202020"/>
+    <circle data-node-circle="1" cx="160" cy="120" r="12" fill="#ffffff"/>
+    <circle data-node-circle="2" cx="340" cy="120" r="12" fill="#ffffff"/>
+    <circle data-node-circle="3" cx="500" cy="120" r="12" fill="#ffffff"/>
+    <circle data-node-circle="4" cx="720" cy="120" r="12" fill="#ffffff"/>
+    <circle data-node-circle="5" cx="880" cy="120" r="12" fill="#ffffff"/>
+    <circle data-node-circle="6" cx="1040" cy="120" r="12" fill="#ffffff"/>
+  </g>
+  <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    <text x="220" y="60" text-anchor="middle">line1: 50 Ω, 10 mm</text>
+    <text x="410" y="60" text-anchor="middle">attenuator1: 3 dB</text>
+    <text x="600" y="60" text-anchor="middle">line2: 60 Ω, 20 mm</text>
+    <text x="790" y="60" text-anchor="middle">attenuator2: 6 dB</text>
+    <text x="980" y="60" text-anchor="middle">line3: 50 Ω, 10 mm</text>
+    <text x="100" y="240" text-anchor="middle">Port 1</text>
+    <text x="1100" y="240" text-anchor="middle">Port 2</text>
+    <text data-node-label="1" x="160" y="125" text-anchor="middle">1</text>
+    <text data-node-label="2" x="340" y="125" text-anchor="middle">2</text>
+    <text data-node-label="3" x="500" y="125" text-anchor="middle">3</text>
+    <text data-node-label="4" x="720" y="125" text-anchor="middle">4</text>
+    <text data-node-label="5" x="880" y="125" text-anchor="middle">5</text>
+    <text data-node-label="6" x="1040" y="125" text-anchor="middle">6</text>
+  </g>
+</svg>

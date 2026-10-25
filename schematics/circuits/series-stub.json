@@ -1,0 +1,267 @@
+{
+  "title": "Open series stub",
+  "description": "Guide REPL example series-stub: Open series stub.",
+  "domain": "rf",
+  "source": {
+    "file": "docs/.vitepress/theme/replExamples.js",
+    "result": "network",
+    "combination": "nP.nodal(..., ['out', 1, 2])",
+    "exampleId": "series-stub"
+  },
+  "viewBox": [
+    0,
+    0,
+    600,
+    620
+  ],
+  "layout": {
+    "centerAxisX": 300,
+    "centerReference": "seriesTee through port 2"
+  },
+  "components": [
+    {
+      "id": "seriesJunction",
+      "symbol": "rf/series-tee.svg",
+      "source": {
+        "variable": "seriesJunction",
+        "constructor": "seriesTee"
+      },
+      "at": [
+        220,
+        200
+      ],
+      "sourceAnchor": [
+        80,
+        100
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 1,
+          "at": [
+            220,
+            200
+          ],
+          "labelAt": [
+            180,
+            160
+          ]
+        },
+        {
+          "port": 2,
+          "node": 2,
+          "at": [
+            300,
+            200
+          ],
+          "labelAt": [
+            340,
+            160
+          ]
+        },
+        {
+          "port": 3,
+          "node": 3,
+          "at": [
+            260,
+            240
+          ],
+          "labelAt": [
+            300,
+            280
+          ]
+        }
+      ]
+    },
+    {
+      "id": "line",
+      "symbol": "rf/transmission-line.svg",
+      "source": {
+        "variable": "line",
+        "constructor": "Tlin"
+      },
+      "at": [
+        260,
+        320
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "rotation": 90,
+      "connections": [
+        {
+          "port": 1,
+          "node": 3,
+          "at": [
+            260,
+            320
+          ],
+          "labelAt": [
+            300,
+            280
+          ]
+        },
+        {
+          "port": 2,
+          "node": 4,
+          "at": [
+            260,
+            440
+          ],
+          "labelAt": [
+            300,
+            470
+          ]
+        }
+      ]
+    },
+    {
+      "id": "open",
+      "symbol": "rf/open.svg",
+      "source": {
+        "variable": "open",
+        "constructor": "Open"
+      },
+      "at": [
+        260,
+        500
+      ],
+      "sourceAnchor": [
+        120,
+        80
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 4,
+          "at": [
+            260,
+            500
+          ],
+          "labelAt": [
+            300,
+            470
+          ]
+        }
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "node": 1,
+      "points": [
+        [
+          220,
+          200
+        ],
+        [
+          120,
+          200
+        ]
+      ]
+    },
+    {
+      "node": 2,
+      "points": [
+        [
+          300,
+          200
+        ],
+        [
+          400,
+          200
+        ]
+      ]
+    },
+    {
+      "node": 3,
+      "points": [
+        [
+          260,
+          240
+        ],
+        [
+          260,
+          320
+        ]
+      ]
+    },
+    {
+      "node": 4,
+      "points": [
+        [
+          260,
+          440
+        ],
+        [
+          260,
+          500
+        ]
+      ]
+    }
+  ],
+  "terminals": [
+    {
+      "node": 1,
+      "at": [
+        120,
+        200
+      ]
+    },
+    {
+      "node": 2,
+      "at": [
+        400,
+        200
+      ]
+    }
+  ],
+  "labels": [
+    {
+      "componentId": "seriesJunction",
+      "text": "seriesTee",
+      "at": [
+        260,
+        90
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "line",
+      "text": "line = 25.4 mm",
+      "at": [
+        370,
+        380
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "open",
+      "text": "Open",
+      "at": [
+        320,
+        540
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 1",
+      "at": [
+        120,
+        260
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 2",
+      "at": [
+        400,
+        260
+      ],
+      "anchor": "middle"
+    }
+  ]
+}

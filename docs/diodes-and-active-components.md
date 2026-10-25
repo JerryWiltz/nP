@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-19 -->
+<!-- Modified: 2026-10-25 -->
 # Diodes and active components
 
 The public active-device constructors are `nP.Amp()` and `nP.diode1N4148()`. An amplifier is a configurable two-port gain and noise model. The diode combines a DC I–V curve with a small-signal RF n-port around one chosen bias point.
@@ -16,6 +16,8 @@ var amp2 = nP.Amp(15, 3); // 15 dB gain, 3 dB NF
 var gainAndNoise = amp2.out('s21dB', 'NF21dB');
 nP.lineTable({inputTable: [gainAndNoise], title: 'Amplifier'});
 ```
+
+![Amplifier stage schematic](/schematics/amplifier.svg)
 
 For two-tone intermodulation, the object form can supply `oip2dBm`, `oip3dBm`, and `harmonicOip2dBm`. None is present by default:
 

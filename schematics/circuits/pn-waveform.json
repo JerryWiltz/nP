@@ -1,0 +1,92 @@
+{
+  "title": "PN waveform generator",
+  "description": "Guide REPL example pn7-waveform: PN waveform generator.",
+  "domain": "signal",
+  "source": {
+    "file": "docs/.vitepress/theme/replExamples.js",
+    "result": "pn",
+    "combination": "pn",
+    "exampleId": "pn7-waveform"
+  },
+  "viewBox": [
+    0,
+    0,
+    600,
+    440
+  ],
+  "layout": {
+    "centerAxisX": 300,
+    "centerReference": "pn body"
+  },
+  "components": [
+    {
+      "id": "pn",
+      "symbol": "digital/pn.svg",
+      "source": {
+        "variable": "pn",
+        "constructor": "PN"
+      },
+      "at": [
+        300,
+        200
+      ],
+      "sourceAnchor": [
+        200,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "signal": "signal-1",
+          "at": [
+            300,
+            200
+          ]
+        }
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "signal": "signal-1",
+      "points": [
+        [
+          300,
+          200
+        ],
+        [
+          360,
+          200
+        ]
+      ]
+    }
+  ],
+  "terminals": [
+    {
+      "signal": "signal-1",
+      "at": [
+        360,
+        200
+      ]
+    }
+  ],
+  "labels": [
+    {
+      "text": "Output",
+      "at": [
+        360,
+        250
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "pn",
+      "text": "pn: PN7",
+      "at": [
+        300,
+        70
+      ],
+      "anchor": "middle"
+    }
+  ]
+}

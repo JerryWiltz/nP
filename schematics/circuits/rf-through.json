@@ -1,0 +1,136 @@
+{
+  "title": "RF through path",
+  "description": "Guide REPL example qam-ofdm: RF through path.",
+  "domain": "rf",
+  "source": {
+    "file": "docs/.vitepress/theme/replExamples.js",
+    "result": "qamChain",
+    "combination": "nP.cascade(qamThru)",
+    "exampleId": "qam-ofdm"
+  },
+  "viewBox": [
+    0,
+    0,
+    440,
+    360
+  ],
+  "layout": {
+    "centerAxisX": 220,
+    "centerReference": "RF through path signal path"
+  },
+  "components": [
+    {
+      "id": "qamThru",
+      "symbol": "rf/thru.svg",
+      "source": {
+        "variable": "qamThru",
+        "constructor": "Thru"
+      },
+      "at": [
+        160,
+        180
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "node": 1,
+          "at": [
+            160,
+            180
+          ],
+          "labelAt": [
+            160,
+            120
+          ]
+        },
+        {
+          "port": 2,
+          "node": 2,
+          "at": [
+            280,
+            180
+          ],
+          "labelAt": [
+            280,
+            120
+          ]
+        }
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "node": 1,
+      "points": [
+        [
+          100,
+          180
+        ],
+        [
+          160,
+          180
+        ]
+      ]
+    },
+    {
+      "node": 2,
+      "points": [
+        [
+          280,
+          180
+        ],
+        [
+          340,
+          180
+        ]
+      ]
+    }
+  ],
+  "terminals": [
+    {
+      "node": 1,
+      "at": [
+        100,
+        180
+      ]
+    },
+    {
+      "node": 2,
+      "at": [
+        340,
+        180
+      ]
+    }
+  ],
+  "labels": [
+    {
+      "componentId": "qamThru",
+      "text": "qamThru: Thru()",
+      "at": [
+        220,
+        60
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 1",
+      "at": [
+        100,
+        240
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 2",
+      "at": [
+        340,
+        240
+      ],
+      "anchor": "middle"
+    }
+  ]
+}

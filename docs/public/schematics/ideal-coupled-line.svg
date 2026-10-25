@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 600 440"
+     role="img" aria-labelledby="title description">
+  <title id="title">Ideal coupled line</title>
+  <desc id="description">Guide REPL example coupled-line: Ideal coupled line.</desc>
+  <metadata id="circuit-description">{&quot;title&quot;:&quot;Ideal coupled line&quot;,&quot;description&quot;:&quot;Guide REPL example coupled-line: Ideal coupled line.&quot;,&quot;domain&quot;:&quot;rf&quot;,&quot;source&quot;:{&quot;file&quot;:&quot;docs/.vitepress/theme/replExamples.js&quot;,&quot;result&quot;:&quot;coupler&quot;,&quot;combination&quot;:&quot;coupler&quot;,&quot;exampleId&quot;:&quot;coupled-line&quot;},&quot;viewBox&quot;:[0,0,600,440],&quot;layout&quot;:{&quot;centerAxisX&quot;:300,&quot;centerReference&quot;:&quot;coupler body&quot;},&quot;components&quot;:[{&quot;id&quot;:&quot;coupler&quot;,&quot;symbol&quot;:&quot;rf/coupled-transmission-line.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;coupler&quot;,&quot;constructor&quot;:&quot;Tclin&quot;},&quot;at&quot;:[240,180],&quot;sourceAnchor&quot;:[100,100],&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:1,&quot;at&quot;:[240,180],&quot;labelAt&quot;:[220,140]},{&quot;port&quot;:2,&quot;node&quot;:2,&quot;at&quot;:[360,180],&quot;labelAt&quot;:[380,140]},{&quot;port&quot;:3,&quot;node&quot;:3,&quot;at&quot;:[360,220],&quot;labelAt&quot;:[380,260]},{&quot;port&quot;:4,&quot;node&quot;:4,&quot;at&quot;:[240,220],&quot;labelAt&quot;:[220,260]}]}],&quot;wires&quot;:[{&quot;node&quot;:1,&quot;points&quot;:[[240,180],[180,180]]},{&quot;node&quot;:2,&quot;points&quot;:[[360,180],[420,180]]},{&quot;node&quot;:3,&quot;points&quot;:[[360,220],[420,220]]},{&quot;node&quot;:4,&quot;points&quot;:[[240,220],[180,220]]}],&quot;terminals&quot;:[{&quot;node&quot;:1,&quot;at&quot;:[180,180]},{&quot;node&quot;:2,&quot;at&quot;:[420,180]},{&quot;node&quot;:3,&quot;at&quot;:[420,220]},{&quot;node&quot;:4,&quot;at&quot;:[180,220]}],&quot;labels&quot;:[{&quot;text&quot;:&quot;Port 1&quot;,&quot;at&quot;:[180,100],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;Port 2&quot;,&quot;at&quot;:[420,100],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;Port 3&quot;,&quot;at&quot;:[420,340],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;Port 4&quot;,&quot;at&quot;:[180,340],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;coupler&quot;,&quot;text&quot;:&quot;coupler: 100/30 Ω, 37.3 mm&quot;,&quot;at&quot;:[300,70],&quot;anchor&quot;:&quot;middle&quot;}]}</metadata>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path data-wire="1" data-node="1" d="M240 180 L180 180"/>
+    <path data-wire="2" data-node="2" d="M360 180 L420 180"/>
+    <path data-wire="3" data-node="3" d="M360 220 L420 220"/>
+    <path data-wire="4" data-node="4" d="M240 220 L180 220"/>
+    <circle data-external-terminal="1" cx="180" cy="180" r="4" fill="#202020" data-node="1"/>
+    <circle data-external-terminal="2" cx="420" cy="180" r="4" fill="#202020" data-node="2"/>
+    <circle data-external-terminal="3" cx="420" cy="220" r="4" fill="#202020" data-node="3"/>
+    <circle data-external-terminal="4" cx="180" cy="220" r="4" fill="#202020" data-node="4"/>
+    <!-- coupler from rf/coupled-transmission-line.svg -->
+    <g data-component-id="coupler" data-symbol-source="rf/coupled-transmission-line.svg" data-symbol-sha256="31420f67cadfdfda6bedcfdff3ec4e87a428dc131e39eb9b5bf22b525f7a12d5" data-symbol-geometry-sha256="270905d70e0e65c92018ab9ffe38ef87c4a64968838cb5c0f430e729d6cc0171" transform="translate(240 180) rotate(0) translate(-100 -100)">
+      <!-- canonical-geometry-start -->
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M100 100 H120 M200 100 H220 M100 140 H120 M200 140 H220"/><rect x="120" y="85" width="80" height="30"/><rect x="120" y="125" width="80" height="30"/></g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <circle data-node-dot="1" cx="240" cy="180" r="4" fill="#202020"/>
+    <circle data-node-dot="2" cx="360" cy="180" r="4" fill="#202020"/>
+    <circle data-node-dot="3" cx="360" cy="220" r="4" fill="#202020"/>
+    <circle data-node-dot="4" cx="240" cy="220" r="4" fill="#202020"/>
+    <circle data-node-circle="1" cx="220" cy="140" r="12" fill="#ffffff"/>
+    <circle data-node-circle="2" cx="380" cy="140" r="12" fill="#ffffff"/>
+    <circle data-node-circle="3" cx="380" cy="260" r="12" fill="#ffffff"/>
+    <circle data-node-circle="4" cx="220" cy="260" r="12" fill="#ffffff"/>
+  </g>
+  <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    <text x="180" y="100" text-anchor="middle">Port 1</text>
+    <text x="420" y="100" text-anchor="middle">Port 2</text>
+    <text x="420" y="340" text-anchor="middle">Port 3</text>
+    <text x="180" y="340" text-anchor="middle">Port 4</text>
+    <text x="300" y="70" text-anchor="middle">coupler: 100/30 Ω, 37.3 mm</text>
+    <text data-node-label="1" x="220" y="145" text-anchor="middle">1</text>
+    <text data-node-label="2" x="380" y="145" text-anchor="middle">2</text>
+    <text data-node-label="3" x="380" y="265" text-anchor="middle">3</text>
+    <text data-node-label="4" x="220" y="265" text-anchor="middle">4</text>
+  </g>
+</svg>

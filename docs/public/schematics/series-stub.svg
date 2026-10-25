@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 600 620"
+     role="img" aria-labelledby="title description">
+  <title id="title">Open series stub</title>
+  <desc id="description">Guide REPL example series-stub: Open series stub.</desc>
+  <metadata id="circuit-description">{&quot;title&quot;:&quot;Open series stub&quot;,&quot;description&quot;:&quot;Guide REPL example series-stub: Open series stub.&quot;,&quot;domain&quot;:&quot;rf&quot;,&quot;source&quot;:{&quot;file&quot;:&quot;docs/.vitepress/theme/replExamples.js&quot;,&quot;result&quot;:&quot;network&quot;,&quot;combination&quot;:&quot;nP.nodal(..., [&apos;out&apos;, 1, 2])&quot;,&quot;exampleId&quot;:&quot;series-stub&quot;},&quot;viewBox&quot;:[0,0,600,620],&quot;layout&quot;:{&quot;centerAxisX&quot;:300,&quot;centerReference&quot;:&quot;seriesTee through port 2&quot;},&quot;components&quot;:[{&quot;id&quot;:&quot;seriesJunction&quot;,&quot;symbol&quot;:&quot;rf/series-tee.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;seriesJunction&quot;,&quot;constructor&quot;:&quot;seriesTee&quot;},&quot;at&quot;:[220,200],&quot;sourceAnchor&quot;:[80,100],&quot;rotation&quot;:0,&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:1,&quot;at&quot;:[220,200],&quot;labelAt&quot;:[180,160]},{&quot;port&quot;:2,&quot;node&quot;:2,&quot;at&quot;:[300,200],&quot;labelAt&quot;:[340,160]},{&quot;port&quot;:3,&quot;node&quot;:3,&quot;at&quot;:[260,240],&quot;labelAt&quot;:[300,280]}]},{&quot;id&quot;:&quot;line&quot;,&quot;symbol&quot;:&quot;rf/transmission-line.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;line&quot;,&quot;constructor&quot;:&quot;Tlin&quot;},&quot;at&quot;:[260,320],&quot;sourceAnchor&quot;:[80,80],&quot;rotation&quot;:90,&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:3,&quot;at&quot;:[260,320],&quot;labelAt&quot;:[300,280]},{&quot;port&quot;:2,&quot;node&quot;:4,&quot;at&quot;:[260,440],&quot;labelAt&quot;:[300,470]}]},{&quot;id&quot;:&quot;open&quot;,&quot;symbol&quot;:&quot;rf/open.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;open&quot;,&quot;constructor&quot;:&quot;Open&quot;},&quot;at&quot;:[260,500],&quot;sourceAnchor&quot;:[120,80],&quot;rotation&quot;:0,&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:4,&quot;at&quot;:[260,500],&quot;labelAt&quot;:[300,470]}]}],&quot;wires&quot;:[{&quot;node&quot;:1,&quot;points&quot;:[[220,200],[120,200]]},{&quot;node&quot;:2,&quot;points&quot;:[[300,200],[400,200]]},{&quot;node&quot;:3,&quot;points&quot;:[[260,240],[260,320]]},{&quot;node&quot;:4,&quot;points&quot;:[[260,440],[260,500]]}],&quot;terminals&quot;:[{&quot;node&quot;:1,&quot;at&quot;:[120,200]},{&quot;node&quot;:2,&quot;at&quot;:[400,200]}],&quot;labels&quot;:[{&quot;componentId&quot;:&quot;seriesJunction&quot;,&quot;text&quot;:&quot;seriesTee&quot;,&quot;at&quot;:[260,90],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;line&quot;,&quot;text&quot;:&quot;line = 25.4 mm&quot;,&quot;at&quot;:[370,380],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;open&quot;,&quot;text&quot;:&quot;Open&quot;,&quot;at&quot;:[320,540],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;Port 1&quot;,&quot;at&quot;:[120,260],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;Port 2&quot;,&quot;at&quot;:[400,260],&quot;anchor&quot;:&quot;middle&quot;}]}</metadata>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path data-wire="1" data-node="1" d="M220 200 L120 200"/>
+    <path data-wire="2" data-node="2" d="M300 200 L400 200"/>
+    <path data-wire="3" data-node="3" d="M260 240 L260 320"/>
+    <path data-wire="4" data-node="4" d="M260 440 L260 500"/>
+    <circle data-external-terminal="1" cx="120" cy="200" r="4" fill="#202020" data-node="1"/>
+    <circle data-external-terminal="2" cx="400" cy="200" r="4" fill="#202020" data-node="2"/>
+    <!-- seriesJunction from rf/series-tee.svg -->
+    <g data-component-id="seriesJunction" data-symbol-source="rf/series-tee.svg" data-symbol-sha256="9a501031d4e66f4c4987db289a10bd90e21a1662b1b597e7712bc924ac7e4ade" data-symbol-geometry-sha256="07cd374e7a5492bceed77545c940893cfc8ee608f63607db49ce9b9fe0a48fb7" transform="translate(220 200) rotate(0) translate(-80 -100)">
+      <!-- canonical-geometry-start -->
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <!-- External leads and square component body. -->
+    <path d="M80 100 H100 M140 100 H160 M120 120 V140"/>
+    <rect x="100" y="80" width="40" height="40"/>
+
+    <!-- Hand-drawn source: separated series path with port 3 directed into its gap. -->
+    <path d="M105 100 H115 M125 100 H135 M120 116 V105 M116 109 L120 105 L124 109"/>
+
+    <!-- Port-1 orientation marker. -->
+    <circle cx="108" cy="90" r="3" fill="#202020" stroke="none"/>
+  </g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <!-- line from rf/transmission-line.svg -->
+    <g data-component-id="line" data-symbol-source="rf/transmission-line.svg" data-symbol-sha256="fd6d978f243d35e852b7b6db79b83d36b2045a7b6a13727083f1a596a0d6065e" data-symbol-geometry-sha256="5acd46a160f0b95d8912c2eb0b7927b77afe1704299c720703ead3277df4d733" transform="translate(260 320) rotate(90) translate(-80 -80)">
+      <!-- canonical-geometry-start -->
+<g transform="translate(0 -10)">
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M80 90 H100 M180 90 H200"/><rect x="100" y="75" width="80" height="30"/></g>
+  </g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <!-- open from rf/open.svg -->
+    <g data-component-id="open" data-symbol-source="rf/open.svg" data-symbol-sha256="24ced853c7980b6a3cb5c20b7e9976c5ce0d239f12c73c4ec7cd06e74e2c6862" data-symbol-geometry-sha256="fc39f5c0c6848378f103db22ad79fe07b2ea40943f905497eab8e9ae5c02899e" transform="translate(260 500) rotate(0) translate(-120 -80)">
+      <!-- canonical-geometry-start -->
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round"><path d="M120 80 H140"/><circle cx="150" cy="80" r="10"/></g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <circle data-node-dot="1" cx="220" cy="200" r="4" fill="#202020"/>
+    <circle data-node-dot="2" cx="300" cy="200" r="4" fill="#202020"/>
+    <circle data-node-dot="3" cx="260" cy="240" r="4" fill="#202020"/>
+    <circle data-node-dot="3" cx="260" cy="320" r="4" fill="#202020"/>
+    <circle data-node-dot="4" cx="260" cy="440" r="4" fill="#202020"/>
+    <circle data-node-dot="4" cx="260" cy="500" r="4" fill="#202020"/>
+    <circle data-node-circle="1" cx="180" cy="160" r="12" fill="#ffffff"/>
+    <circle data-node-circle="2" cx="340" cy="160" r="12" fill="#ffffff"/>
+    <circle data-node-circle="3" cx="300" cy="280" r="12" fill="#ffffff"/>
+    <circle data-node-circle="4" cx="300" cy="470" r="12" fill="#ffffff"/>
+  </g>
+  <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    <text x="260" y="90" text-anchor="middle">seriesTee</text>
+    <text x="370" y="380" text-anchor="middle">line = 25.4 mm</text>
+    <text x="320" y="540" text-anchor="middle">Open</text>
+    <text x="120" y="260" text-anchor="middle">Port 1</text>
+    <text x="400" y="260" text-anchor="middle">Port 2</text>
+    <text data-node-label="1" x="180" y="165" text-anchor="middle">1</text>
+    <text data-node-label="2" x="340" y="165" text-anchor="middle">2</text>
+    <text data-node-label="3" x="300" y="285" text-anchor="middle">3</text>
+    <text data-node-label="4" x="300" y="475" text-anchor="middle">4</text>
+  </g>
+</svg>

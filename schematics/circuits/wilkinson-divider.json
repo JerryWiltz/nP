@@ -1,0 +1,548 @@
+{
+  "title": "Wilkinson power divider",
+  "description": "Guide REPL example circuit-examples: Wilkinson power divider.",
+  "domain": "rf",
+  "source": {
+    "file": "docs/circuit-examples.md",
+    "result": "divider",
+    "combination": "nP.nodal(..., ['out', 1, 7, 9])",
+    "exampleId": "circuit-examples"
+  },
+  "viewBox": [
+    0,
+    0,
+    840,
+    760
+  ],
+  "layout": {
+    "centerAxisX": 420,
+    "centerReference": "branch pair midpoint"
+  },
+  "components": [
+    {
+      "id": "inputTee",
+      "symbol": "rf/tee.svg",
+      "source": {
+        "variable": "inputTee",
+        "constructor": "Tee"
+      },
+      "at": [
+        200,
+        360
+      ],
+      "sourceAnchor": [
+        120,
+        140
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 1,
+          "at": [
+            200,
+            360
+          ],
+          "labelAt": [
+            140,
+            320
+          ]
+        },
+        {
+          "port": 2,
+          "node": 2,
+          "at": [
+            160,
+            320
+          ],
+          "labelAt": [
+            220,
+            200
+          ]
+        },
+        {
+          "port": 3,
+          "node": 3,
+          "at": [
+            240,
+            320
+          ],
+          "labelAt": [
+            260,
+            420
+          ]
+        }
+      ]
+    },
+    {
+      "id": "branch1",
+      "symbol": "rf/transmission-line.svg",
+      "source": {
+        "variable": "branch1",
+        "constructor": "Tlin"
+      },
+      "at": [
+        300,
+        240
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 2,
+          "at": [
+            300,
+            240
+          ],
+          "labelAt": [
+            220,
+            200
+          ]
+        },
+        {
+          "port": 2,
+          "node": 4,
+          "at": [
+            420,
+            240
+          ],
+          "labelAt": [
+            470,
+            200
+          ]
+        }
+      ]
+    },
+    {
+      "id": "branch2",
+      "symbol": "rf/transmission-line.svg",
+      "source": {
+        "variable": "branch2",
+        "constructor": "Tlin"
+      },
+      "at": [
+        300,
+        560
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 3,
+          "at": [
+            300,
+            560
+          ],
+          "labelAt": [
+            260,
+            420
+          ]
+        },
+        {
+          "port": 2,
+          "node": 5,
+          "at": [
+            420,
+            560
+          ],
+          "labelAt": [
+            470,
+            520
+          ]
+        }
+      ]
+    },
+    {
+      "id": "outputTee1",
+      "symbol": "rf/tee.svg",
+      "source": {
+        "variable": "outputTee1",
+        "constructor": "Tee"
+      },
+      "at": [
+        560,
+        280
+      ],
+      "sourceAnchor": [
+        120,
+        140
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 6,
+          "at": [
+            560,
+            280
+          ],
+          "labelAt": [
+            600,
+            300
+          ]
+        },
+        {
+          "port": 2,
+          "node": 4,
+          "at": [
+            520,
+            240
+          ],
+          "labelAt": [
+            470,
+            200
+          ]
+        },
+        {
+          "port": 3,
+          "node": 7,
+          "at": [
+            600,
+            240
+          ],
+          "labelAt": [
+            660,
+            200
+          ]
+        }
+      ]
+    },
+    {
+      "id": "outputTee2",
+      "symbol": "rf/tee.svg",
+      "source": {
+        "variable": "outputTee2",
+        "constructor": "Tee"
+      },
+      "at": [
+        560,
+        520
+      ],
+      "sourceAnchor": [
+        120,
+        140
+      ],
+      "rotation": 0,
+      "mirrorY": true,
+      "connections": [
+        {
+          "port": 1,
+          "node": 8,
+          "at": [
+            560,
+            520
+          ],
+          "labelAt": [
+            600,
+            460
+          ]
+        },
+        {
+          "port": 2,
+          "node": 5,
+          "at": [
+            520,
+            560
+          ],
+          "labelAt": [
+            470,
+            520
+          ]
+        },
+        {
+          "port": 3,
+          "node": 9,
+          "at": [
+            600,
+            560
+          ],
+          "labelAt": [
+            660,
+            520
+          ]
+        }
+      ]
+    },
+    {
+      "id": "isolationR",
+      "symbol": "rf/resistor.svg",
+      "source": {
+        "variable": "isolationR",
+        "constructor": "R"
+      },
+      "at": [
+        560,
+        320
+      ],
+      "sourceAnchor": [
+        60,
+        80
+      ],
+      "rotation": 90,
+      "connections": [
+        {
+          "port": 1,
+          "node": 6,
+          "at": [
+            560,
+            320
+          ],
+          "labelAt": [
+            600,
+            300
+          ]
+        },
+        {
+          "port": 2,
+          "node": 8,
+          "at": [
+            560,
+            420
+          ],
+          "labelAt": [
+            600,
+            460
+          ]
+        }
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "node": 1,
+      "points": [
+        [
+          200,
+          360
+        ],
+        [
+          100,
+          360
+        ]
+      ]
+    },
+    {
+      "node": 2,
+      "points": [
+        [
+          160,
+          320
+        ],
+        [
+          160,
+          240
+        ],
+        [
+          300,
+          240
+        ]
+      ]
+    },
+    {
+      "node": 3,
+      "points": [
+        [
+          240,
+          320
+        ],
+        [
+          300,
+          320
+        ],
+        [
+          300,
+          560
+        ]
+      ]
+    },
+    {
+      "node": 4,
+      "points": [
+        [
+          420,
+          240
+        ],
+        [
+          520,
+          240
+        ]
+      ]
+    },
+    {
+      "node": 5,
+      "points": [
+        [
+          420,
+          560
+        ],
+        [
+          520,
+          560
+        ]
+      ]
+    },
+    {
+      "node": 6,
+      "points": [
+        [
+          560,
+          280
+        ],
+        [
+          560,
+          320
+        ]
+      ]
+    },
+    {
+      "node": 7,
+      "points": [
+        [
+          600,
+          240
+        ],
+        [
+          720,
+          240
+        ]
+      ]
+    },
+    {
+      "node": 8,
+      "points": [
+        [
+          560,
+          520
+        ],
+        [
+          560,
+          420
+        ]
+      ]
+    },
+    {
+      "node": 9,
+      "points": [
+        [
+          600,
+          560
+        ],
+        [
+          720,
+          560
+        ]
+      ]
+    }
+  ],
+  "terminals": [
+    {
+      "node": 1,
+      "at": [
+        100,
+        360
+      ]
+    },
+    {
+      "node": 7,
+      "at": [
+        720,
+        240
+      ]
+    },
+    {
+      "node": 9,
+      "at": [
+        720,
+        560
+      ]
+    }
+  ],
+  "labels": [
+    {
+      "componentId": "inputTee",
+      "text": "input Tee",
+      "at": [
+        200,
+        170
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "branch1",
+      "text": "branch1 = 70.7 Ω",
+      "at": [
+        360,
+        110
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "branch2",
+      "text": "branch2 = 70.7 Ω",
+      "at": [
+        360,
+        660
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "outputTee1",
+      "text": "output Tee 1",
+      "at": [
+        560,
+        110
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "outputTee2",
+      "text": "output Tee 2",
+      "at": [
+        560,
+        700
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "isolationR",
+      "text": "100 Ω isolation",
+      "at": [
+        700,
+        360
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 1",
+      "at": [
+        100,
+        420
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 2",
+      "at": [
+        720,
+        200
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 3",
+      "at": [
+        720,
+        620
+      ],
+      "anchor": "middle"
+    }
+  ]
+}

@@ -1,0 +1,527 @@
+{
+  "title": "Pi attenuator",
+  "description": "Guide REPL example circuit-examples: Pi attenuator.",
+  "domain": "rf",
+  "source": {
+    "file": "docs/circuit-examples.md",
+    "result": "attenuator",
+    "combination": "nP.nodal(..., ['out', 1, 7])",
+    "exampleId": "circuit-examples"
+  },
+  "viewBox": [
+    0,
+    0,
+    720,
+    680
+  ],
+  "layout": {
+    "centerAxisX": 360,
+    "centerReference": "series resistor midpoint"
+  },
+  "components": [
+    {
+      "id": "inputTee",
+      "symbol": "rf/tee.svg",
+      "source": {
+        "variable": "inputTee",
+        "constructor": "Tee"
+      },
+      "at": [
+        180,
+        300
+      ],
+      "sourceAnchor": [
+        120,
+        140
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 2,
+          "at": [
+            180,
+            300
+          ],
+          "labelAt": [
+            220,
+            330
+          ]
+        },
+        {
+          "port": 2,
+          "node": 1,
+          "at": [
+            140,
+            260
+          ],
+          "labelAt": [
+            120,
+            220
+          ]
+        },
+        {
+          "port": 3,
+          "node": 3,
+          "at": [
+            220,
+            260
+          ],
+          "labelAt": [
+            270,
+            220
+          ]
+        }
+      ]
+    },
+    {
+      "id": "inputShunt",
+      "symbol": "rf/resistor.svg",
+      "source": {
+        "variable": "inputShunt",
+        "constructor": "R"
+      },
+      "at": [
+        180,
+        360
+      ],
+      "sourceAnchor": [
+        60,
+        80
+      ],
+      "rotation": 90,
+      "connections": [
+        {
+          "port": 1,
+          "node": 2,
+          "at": [
+            180,
+            360
+          ],
+          "labelAt": [
+            220,
+            330
+          ]
+        },
+        {
+          "port": 2,
+          "node": 4,
+          "at": [
+            180,
+            460
+          ],
+          "labelAt": [
+            240,
+            480
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ground1",
+      "symbol": "rf/short.svg",
+      "source": {
+        "variable": "ground",
+        "constructor": "Short"
+      },
+      "at": [
+        180,
+        520
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 4,
+          "at": [
+            180,
+            520
+          ],
+          "labelAt": [
+            240,
+            480
+          ]
+        }
+      ]
+    },
+    {
+      "id": "seriesR",
+      "symbol": "rf/resistor.svg",
+      "source": {
+        "variable": "seriesR",
+        "constructor": "R"
+      },
+      "at": [
+        320,
+        260
+      ],
+      "sourceAnchor": [
+        60,
+        80
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 3,
+          "at": [
+            320,
+            260
+          ],
+          "labelAt": [
+            270,
+            220
+          ]
+        },
+        {
+          "port": 2,
+          "node": 5,
+          "at": [
+            420,
+            260
+          ],
+          "labelAt": [
+            460,
+            220
+          ]
+        }
+      ]
+    },
+    {
+      "id": "outputTee",
+      "symbol": "rf/tee.svg",
+      "source": {
+        "variable": "outputTee",
+        "constructor": "Tee"
+      },
+      "at": [
+        540,
+        300
+      ],
+      "sourceAnchor": [
+        120,
+        140
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 6,
+          "at": [
+            540,
+            300
+          ],
+          "labelAt": [
+            580,
+            330
+          ]
+        },
+        {
+          "port": 2,
+          "node": 5,
+          "at": [
+            500,
+            260
+          ],
+          "labelAt": [
+            460,
+            220
+          ]
+        },
+        {
+          "port": 3,
+          "node": 7,
+          "at": [
+            580,
+            260
+          ],
+          "labelAt": [
+            600,
+            220
+          ]
+        }
+      ]
+    },
+    {
+      "id": "outputShunt",
+      "symbol": "rf/resistor.svg",
+      "source": {
+        "variable": "outputShunt",
+        "constructor": "R"
+      },
+      "at": [
+        540,
+        360
+      ],
+      "sourceAnchor": [
+        60,
+        80
+      ],
+      "rotation": 90,
+      "connections": [
+        {
+          "port": 1,
+          "node": 6,
+          "at": [
+            540,
+            360
+          ],
+          "labelAt": [
+            580,
+            330
+          ]
+        },
+        {
+          "port": 2,
+          "node": 8,
+          "at": [
+            540,
+            460
+          ],
+          "labelAt": [
+            600,
+            480
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ground2",
+      "symbol": "rf/short.svg",
+      "source": {
+        "variable": "ground",
+        "constructor": "Short"
+      },
+      "at": [
+        540,
+        520
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 8,
+          "at": [
+            540,
+            520
+          ],
+          "labelAt": [
+            600,
+            480
+          ]
+        }
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "node": 2,
+      "points": [
+        [
+          180,
+          300
+        ],
+        [
+          180,
+          360
+        ]
+      ]
+    },
+    {
+      "node": 1,
+      "points": [
+        [
+          140,
+          260
+        ],
+        [
+          80,
+          260
+        ]
+      ]
+    },
+    {
+      "node": 3,
+      "points": [
+        [
+          220,
+          260
+        ],
+        [
+          320,
+          260
+        ]
+      ]
+    },
+    {
+      "node": 4,
+      "points": [
+        [
+          180,
+          460
+        ],
+        [
+          180,
+          520
+        ]
+      ]
+    },
+    {
+      "node": 5,
+      "points": [
+        [
+          420,
+          260
+        ],
+        [
+          500,
+          260
+        ]
+      ]
+    },
+    {
+      "node": 6,
+      "points": [
+        [
+          540,
+          300
+        ],
+        [
+          540,
+          360
+        ]
+      ]
+    },
+    {
+      "node": 7,
+      "points": [
+        [
+          580,
+          260
+        ],
+        [
+          640,
+          260
+        ]
+      ]
+    },
+    {
+      "node": 8,
+      "points": [
+        [
+          540,
+          460
+        ],
+        [
+          540,
+          520
+        ]
+      ]
+    }
+  ],
+  "terminals": [
+    {
+      "node": 1,
+      "at": [
+        80,
+        260
+      ]
+    },
+    {
+      "node": 7,
+      "at": [
+        640,
+        260
+      ]
+    }
+  ],
+  "labels": [
+    {
+      "componentId": "inputTee",
+      "text": "input Tee",
+      "at": [
+        180,
+        150
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "inputShunt",
+      "text": "292.4 Ω",
+      "at": [
+        260,
+        400
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "ground1",
+      "text": "Short",
+      "at": [
+        230,
+        590
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "seriesR",
+      "text": "17.6 Ω",
+      "at": [
+        370,
+        130
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "outputTee",
+      "text": "output Tee",
+      "at": [
+        540,
+        150
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "outputShunt",
+      "text": "292.4 Ω",
+      "at": [
+        620,
+        400
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "ground2",
+      "text": "Short",
+      "at": [
+        590,
+        590
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 1",
+      "at": [
+        80,
+        320
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 2",
+      "at": [
+        640,
+        320
+      ],
+      "anchor": "middle"
+    }
+  ]
+}

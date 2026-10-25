@@ -1,0 +1,267 @@
+{
+  "title": "Step, bend, and via path",
+  "description": "Guide REPL example microstrip-layout: Step, bend, and via path.",
+  "domain": "rf",
+  "source": {
+    "file": "docs/.vitepress/theme/replExamples.js",
+    "result": "path",
+    "combination": "nP.nodal(..., ['out', 1, 4])",
+    "exampleId": "microstrip-layout"
+  },
+  "viewBox": [
+    0,
+    0,
+    620,
+    620
+  ],
+  "layout": {
+    "centerAxisX": 310,
+    "centerReference": "right-turn bend"
+  },
+  "components": [
+    {
+      "id": "step",
+      "symbol": "rf/microstrip-step.svg",
+      "source": {
+        "variable": "step",
+        "constructor": "mstep"
+      },
+      "at": [
+        160,
+        180
+      ],
+      "sourceAnchor": [
+        0,
+        60
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 1,
+          "at": [
+            160,
+            180
+          ],
+          "labelAt": [
+            160,
+            140
+          ]
+        },
+        {
+          "port": 2,
+          "node": 2,
+          "at": [
+            280,
+            180
+          ],
+          "labelAt": [
+            330,
+            140
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bend",
+      "symbol": "rf/microstrip-right-bend.svg",
+      "source": {
+        "variable": "bend",
+        "constructor": "mbend"
+      },
+      "at": [
+        380,
+        180
+      ],
+      "sourceAnchor": [
+        0,
+        60
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 2,
+          "at": [
+            380,
+            180
+          ],
+          "labelAt": [
+            330,
+            140
+          ]
+        },
+        {
+          "port": 2,
+          "node": 3,
+          "at": [
+            440,
+            240
+          ],
+          "labelAt": [
+            480,
+            280
+          ]
+        }
+      ]
+    },
+    {
+      "id": "via",
+      "symbol": "rf/microstrip-via-transition.svg",
+      "source": {
+        "variable": "via",
+        "constructor": "mvia"
+      },
+      "at": [
+        440,
+        340
+      ],
+      "sourceAnchor": [
+        120,
+        40
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 3,
+          "at": [
+            440,
+            340
+          ],
+          "labelAt": [
+            480,
+            280
+          ]
+        },
+        {
+          "port": 2,
+          "node": 4,
+          "at": [
+            440,
+            440
+          ],
+          "labelAt": [
+            480,
+            460
+          ]
+        }
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "node": 1,
+      "points": [
+        [
+          160,
+          180
+        ],
+        [
+          100,
+          180
+        ]
+      ]
+    },
+    {
+      "node": 2,
+      "points": [
+        [
+          280,
+          180
+        ],
+        [
+          380,
+          180
+        ]
+      ]
+    },
+    {
+      "node": 3,
+      "points": [
+        [
+          440,
+          240
+        ],
+        [
+          440,
+          340
+        ]
+      ]
+    },
+    {
+      "node": 4,
+      "points": [
+        [
+          440,
+          440
+        ],
+        [
+          440,
+          500
+        ]
+      ]
+    }
+  ],
+  "terminals": [
+    {
+      "node": 1,
+      "at": [
+        100,
+        180
+      ]
+    },
+    {
+      "node": 4,
+      "at": [
+        440,
+        500
+      ]
+    }
+  ],
+  "labels": [
+    {
+      "componentId": "step",
+      "text": "step",
+      "at": [
+        220,
+        70
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "bend",
+      "text": "bend",
+      "at": [
+        420,
+        70
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "via",
+      "text": "via",
+      "at": [
+        500,
+        380
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 1",
+      "at": [
+        100,
+        240
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 2",
+      "at": [
+        440,
+        560
+      ],
+      "anchor": "middle"
+    }
+  ]
+}

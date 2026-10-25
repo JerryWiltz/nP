@@ -1,10 +1,12 @@
 <script setup>
-// Modified: 2026-10-22
+// Modified: 2026-10-25
 import { onMounted, onUnmounted, ref } from 'vue'
 import { withBase } from 'vitepress'
 import { examples } from './replExamples'
+import { schematicMap } from './schematicMap'
 
 const root = ref(null)
+const activeSchematics = ref([])
 const exampleById = Object.fromEntries(examples.map(example => [example.id, example]))
 const sessionBufferKey = 'np-repl-session-buffer'
 let editor
@@ -122,6 +124,7 @@ onMounted(async () => {
   const legacyDraft = takeLegacyDraft()
   const initialBuffer = savedBuffer || legacyDraft
   let activeId = initialBuffer?.activeId ?? null
+  activeSchematics.value = activeId ? schematicMap[activeId] || [] : []
   let exampleCode = initialBuffer?.exampleCode ?? (activeId ? exampleById[activeId].code : null)
   let loadingExample = false
   let runVersion = 0
@@ -189,6 +192,7 @@ onMounted(async () => {
     const example = exampleById[id]
     if (!example || id === activeId) return
     activeId = id
+    activeSchematics.value = schematicMap[id] || []
     exampleCode = example.code
     loadingExample = true
     editor.setValue(example.code)
@@ -221,6 +225,7 @@ onMounted(async () => {
     editor.setValue('')
     loadingExample = false
     activeId = null
+    activeSchematics.value = []
     exampleCode = null
     resetButton.disabled = true
     history.replaceState(history.state, '', location.pathname + location.search)
@@ -300,6 +305,16 @@ onUnmounted(() => {
         </div>
         <div id="lint-results" class="lint-results" role="status" aria-live="polite" hidden></div>
         <textarea id="code" aria-label="JavaScript editor"></textarea>
+        <section v-if="activeSchematics.length" class="example-schematics" aria-label="Example schematics">
+          <h2>Schematics</h2>
+          <p>Reference drawings for the selected example. Editing the code does not update these images. RF and signal flow are shown separately where needed.</p>
+          <figure v-for="name in activeSchematics" :key="name">
+            <div class="schematic-scroll">
+              <img :src="withBase(`/schematics/${name}.svg`)" :alt="`${name.replaceAll('-', ' ')} schematic`" loading="lazy">
+            </div>
+            <figcaption>{{ name.replaceAll('-', ' ') }}</figcaption>
+          </figure>
+        </section>
         <div class="output-heading-row">
           <h2 id="output-heading">Output</h2>
           <button id="view-code" type="button">View code</button>
@@ -334,6 +349,12 @@ onUnmounted(() => {
 .np-repl #output-heading { scroll-margin-top: calc(var(--vp-nav-height, 64px) + 1rem); }
 .np-repl iframe { width: 100%; min-height: 360px; border: 1px solid var(--vp-c-divider); border-radius: 8px; background: white; }
 .np-repl .note { margin-top: 1rem; color: var(--vp-c-text-2); font-size: .9rem; }
+.np-repl .example-schematics { margin-top: 1.5rem; }
+.np-repl .example-schematics p { color: var(--vp-c-text-2); }
+.np-repl .example-schematics figure { margin: 1rem 0; }
+.np-repl .schematic-scroll { overflow-x: auto; border: 1px solid var(--vp-c-divider); background: white; }
+.np-repl .schematic-scroll img { display: block; width: 100%; min-width: 900px; height: auto; }
+.np-repl .example-schematics figcaption { margin-top: .4rem; color: var(--vp-c-text-2); text-transform: capitalize; }
 @media (max-width: 767px) {
   .np-repl { padding: 0 1rem 1rem; }
 }

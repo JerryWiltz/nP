@@ -1,0 +1,518 @@
+{
+  "title": "VNA cable with short fault",
+  "description": "Guide REPL example vna-short-reflection: VNA cable with short fault.",
+  "domain": "rf",
+  "source": {
+    "file": "docs/.vitepress/theme/replExamples.js",
+    "result": "shortCircuit",
+    "combination": "nP.nodal(..., ['out', 1, 4, 6])",
+    "exampleId": "vna-short-reflection"
+  },
+  "viewBox": [
+    0,
+    0,
+    1100,
+    500
+  ],
+  "layout": {
+    "centerAxisX": 550,
+    "centerReference": "RF path between input coupler and line"
+  },
+  "components": [
+    {
+      "id": "splitter",
+      "symbol": "rf/coupler-180.svg",
+      "source": {
+        "variable": "splitter",
+        "constructor": "Coupler180"
+      },
+      "at": [
+        160,
+        200
+      ],
+      "sourceAnchor": [
+        80,
+        100
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 1,
+          "at": [
+            160,
+            200
+          ],
+          "labelAt": [
+            160,
+            160
+          ]
+        },
+        {
+          "port": 2,
+          "node": 2,
+          "at": [
+            280,
+            200
+          ],
+          "labelAt": [
+            350,
+            160
+          ]
+        },
+        {
+          "port": 3,
+          "node": 3,
+          "at": [
+            280,
+            240
+          ],
+          "labelAt": [
+            340,
+            280
+          ]
+        },
+        {
+          "port": 4,
+          "node": 4,
+          "at": [
+            160,
+            240
+          ],
+          "labelAt": [
+            80,
+            280
+          ]
+        }
+      ]
+    },
+    {
+      "id": "inputCoupler",
+      "symbol": "rf/coupler-180.svg",
+      "source": {
+        "variable": "inputCoupler",
+        "constructor": "Coupler180"
+      },
+      "at": [
+        420,
+        200
+      ],
+      "sourceAnchor": [
+        80,
+        100
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 2,
+          "at": [
+            420,
+            200
+          ],
+          "labelAt": [
+            350,
+            160
+          ]
+        },
+        {
+          "port": 2,
+          "node": 5,
+          "at": [
+            540,
+            200
+          ],
+          "labelAt": [
+            610,
+            160
+          ]
+        },
+        {
+          "port": 3,
+          "node": 6,
+          "at": [
+            540,
+            240
+          ],
+          "labelAt": [
+            640,
+            280
+          ]
+        },
+        {
+          "port": 4,
+          "node": 7,
+          "at": [
+            420,
+            240
+          ],
+          "labelAt": [
+            520,
+            300
+          ]
+        }
+      ]
+    },
+    {
+      "id": "line",
+      "symbol": "rf/transmission-line.svg",
+      "source": {
+        "variable": "line",
+        "constructor": "Tlin"
+      },
+      "at": [
+        680,
+        200
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 5,
+          "at": [
+            680,
+            200
+          ],
+          "labelAt": [
+            610,
+            160
+          ]
+        },
+        {
+          "port": 2,
+          "node": 8,
+          "at": [
+            800,
+            200
+          ],
+          "labelAt": [
+            860,
+            160
+          ]
+        }
+      ]
+    },
+    {
+      "id": "short",
+      "symbol": "rf/short.svg",
+      "source": {
+        "variable": "short",
+        "constructor": "Short"
+      },
+      "at": [
+        920,
+        200
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 8,
+          "at": [
+            920,
+            200
+          ],
+          "labelAt": [
+            860,
+            160
+          ]
+        }
+      ]
+    },
+    {
+      "id": "load1",
+      "symbol": "rf/load.svg",
+      "source": {
+        "variable": "load",
+        "constructor": "Load"
+      },
+      "at": [
+        300,
+        340
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 3,
+          "at": [
+            300,
+            340
+          ],
+          "labelAt": [
+            340,
+            280
+          ]
+        }
+      ]
+    },
+    {
+      "id": "load2",
+      "symbol": "rf/load.svg",
+      "source": {
+        "variable": "load",
+        "constructor": "Load"
+      },
+      "at": [
+        480,
+        340
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 7,
+          "at": [
+            480,
+            340
+          ],
+          "labelAt": [
+            520,
+            300
+          ]
+        }
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "node": 1,
+      "points": [
+        [
+          160,
+          200
+        ],
+        [
+          100,
+          200
+        ]
+      ]
+    },
+    {
+      "node": 2,
+      "points": [
+        [
+          280,
+          200
+        ],
+        [
+          420,
+          200
+        ]
+      ]
+    },
+    {
+      "node": 3,
+      "points": [
+        [
+          280,
+          240
+        ],
+        [
+          300,
+          240
+        ],
+        [
+          300,
+          340
+        ]
+      ]
+    },
+    {
+      "node": 4,
+      "points": [
+        [
+          160,
+          240
+        ],
+        [
+          100,
+          240
+        ],
+        [
+          100,
+          320
+        ]
+      ]
+    },
+    {
+      "node": 5,
+      "points": [
+        [
+          540,
+          200
+        ],
+        [
+          680,
+          200
+        ]
+      ]
+    },
+    {
+      "node": 6,
+      "points": [
+        [
+          540,
+          240
+        ],
+        [
+          600,
+          240
+        ],
+        [
+          600,
+          320
+        ]
+      ]
+    },
+    {
+      "node": 7,
+      "points": [
+        [
+          420,
+          240
+        ],
+        [
+          480,
+          240
+        ],
+        [
+          480,
+          340
+        ]
+      ]
+    },
+    {
+      "node": 8,
+      "points": [
+        [
+          800,
+          200
+        ],
+        [
+          920,
+          200
+        ]
+      ]
+    }
+  ],
+  "terminals": [
+    {
+      "node": 1,
+      "at": [
+        100,
+        200
+      ]
+    },
+    {
+      "node": 4,
+      "at": [
+        100,
+        320
+      ]
+    },
+    {
+      "node": 6,
+      "at": [
+        600,
+        320
+      ]
+    }
+  ],
+  "labels": [
+    {
+      "componentId": "splitter",
+      "text": "splitter",
+      "at": [
+        220,
+        70
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "inputCoupler",
+      "text": "input coupler",
+      "at": [
+        480,
+        70
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "line",
+      "text": "line = 1 km",
+      "at": [
+        740,
+        70
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "short",
+      "text": "Short",
+      "at": [
+        970,
+        250
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "load1",
+      "text": "Load",
+      "at": [
+        350,
+        390
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "load2",
+      "text": "Load",
+      "at": [
+        530,
+        390
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 1: source",
+      "at": [
+        100,
+        120
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 2: R",
+      "at": [
+        100,
+        400
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 3: A",
+      "at": [
+        600,
+        400
+      ],
+      "anchor": "middle"
+    }
+  ]
+}

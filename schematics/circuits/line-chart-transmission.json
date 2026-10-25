@@ -1,0 +1,200 @@
+{
+  "title": "Two cascaded transmission lines",
+  "description": "Guide REPL example line-chart: Two cascaded transmission lines.",
+  "domain": "rf",
+  "source": {
+    "file": "docs/.vitepress/theme/replExamples.js",
+    "result": "network",
+    "combination": "nP.cascade(line1, line2)",
+    "exampleId": "line-chart"
+  },
+  "viewBox": [
+    0,
+    0,
+    660,
+    360
+  ],
+  "layout": {
+    "centerAxisX": 330,
+    "centerReference": "Two cascaded transmission lines signal path"
+  },
+  "components": [
+    {
+      "id": "line1",
+      "symbol": "rf/transmission-line.svg",
+      "source": {
+        "variable": "line1",
+        "constructor": "Tlin"
+      },
+      "at": [
+        160,
+        180
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "node": 1,
+          "at": [
+            160,
+            180
+          ],
+          "labelAt": [
+            160,
+            120
+          ]
+        },
+        {
+          "port": 2,
+          "node": 2,
+          "at": [
+            280,
+            180
+          ],
+          "labelAt": [
+            340,
+            120
+          ]
+        }
+      ]
+    },
+    {
+      "id": "line2",
+      "symbol": "rf/transmission-line.svg",
+      "source": {
+        "variable": "line2",
+        "constructor": "Tlin"
+      },
+      "at": [
+        380,
+        180
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "node": 2,
+          "at": [
+            380,
+            180
+          ],
+          "labelAt": [
+            340,
+            120
+          ]
+        },
+        {
+          "port": 2,
+          "node": 3,
+          "at": [
+            500,
+            180
+          ],
+          "labelAt": [
+            500,
+            120
+          ]
+        }
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "node": 1,
+      "points": [
+        [
+          100,
+          180
+        ],
+        [
+          160,
+          180
+        ]
+      ]
+    },
+    {
+      "node": 2,
+      "points": [
+        [
+          280,
+          180
+        ],
+        [
+          380,
+          180
+        ]
+      ]
+    },
+    {
+      "node": 3,
+      "points": [
+        [
+          500,
+          180
+        ],
+        [
+          560,
+          180
+        ]
+      ]
+    }
+  ],
+  "terminals": [
+    {
+      "node": 1,
+      "at": [
+        100,
+        180
+      ]
+    },
+    {
+      "node": 3,
+      "at": [
+        560,
+        180
+      ]
+    }
+  ],
+  "labels": [
+    {
+      "componentId": "line1",
+      "text": "line1: 50 Ω, 12.7 mm",
+      "at": [
+        220,
+        60
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "line2",
+      "text": "line2: 60 Ω, 25.4 mm",
+      "at": [
+        440,
+        60
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 1",
+      "at": [
+        100,
+        240
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 2",
+      "at": [
+        560,
+        240
+      ],
+      "anchor": "middle"
+    }
+  ]
+}

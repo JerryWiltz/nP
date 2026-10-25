@@ -1,0 +1,227 @@
+{
+  "title": "SSB and DSB-SC sources",
+  "description": "SSB and DSB-SC sources: two independent modulated sources.",
+  "domain": "signal",
+  "source": {
+    "file": "docs/.vitepress/theme/replExamples.js",
+    "result": "ssb, dsb",
+    "combination": "two independent nP.mod() calls",
+    "exampleId": "ssb-dsb-sidebands"
+  },
+  "viewBox": [
+    0,
+    0,
+    600,
+    500
+  ],
+  "layout": {
+    "centerAxisX": 300,
+    "centerReference": "two modulator sources"
+  },
+  "components": [
+    {
+      "id": "ssb",
+      "symbol": "digital/mod.svg",
+      "source": {
+        "variable": "ssb",
+        "constructor": "mod"
+      },
+      "at": [
+        180,
+        160
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "signal": "ssb-grid",
+          "at": [
+            180,
+            160
+          ]
+        },
+        {
+          "port": 2,
+          "signal": "ssb-tones",
+          "at": [
+            300,
+            160
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dsb",
+      "symbol": "digital/mod.svg",
+      "source": {
+        "variable": "dsb",
+        "constructor": "mod"
+      },
+      "at": [
+        180,
+        340
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "signal": "dsb-grid",
+          "at": [
+            180,
+            340
+          ]
+        },
+        {
+          "port": 2,
+          "signal": "dsb-tones",
+          "at": [
+            300,
+            340
+          ]
+        }
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "signal": "ssb-grid",
+      "points": [
+        [
+          100,
+          160
+        ],
+        [
+          180,
+          160
+        ]
+      ]
+    },
+    {
+      "signal": "ssb-tones",
+      "points": [
+        [
+          300,
+          160
+        ],
+        [
+          380,
+          160
+        ]
+      ]
+    },
+    {
+      "signal": "dsb-grid",
+      "points": [
+        [
+          100,
+          340
+        ],
+        [
+          180,
+          340
+        ]
+      ]
+    },
+    {
+      "signal": "dsb-tones",
+      "points": [
+        [
+          300,
+          340
+        ],
+        [
+          380,
+          340
+        ]
+      ]
+    }
+  ],
+  "terminals": [
+    {
+      "signal": "ssb-grid",
+      "at": [
+        100,
+        160
+      ]
+    },
+    {
+      "signal": "ssb-tones",
+      "at": [
+        380,
+        160
+      ]
+    },
+    {
+      "signal": "dsb-grid",
+      "at": [
+        100,
+        340
+      ]
+    },
+    {
+      "signal": "dsb-tones",
+      "at": [
+        380,
+        340
+      ]
+    }
+  ],
+  "labels": [
+    {
+      "componentId": "ssb",
+      "text": "ssb: SSB-USB",
+      "at": [
+        240,
+        90
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "analysis grid",
+      "at": [
+        100,
+        220
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "tones",
+      "at": [
+        380,
+        220
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "dsb",
+      "text": "dsb: DSB-SC",
+      "at": [
+        240,
+        270
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "analysis grid",
+      "at": [
+        100,
+        400
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "tones",
+      "at": [
+        380,
+        400
+      ],
+      "anchor": "middle"
+    }
+  ]
+}

@@ -1,0 +1,200 @@
+{
+  "title": "Series resistor and capacitor",
+  "description": "Guide REPL example series-rc-smith-chart: Series resistor and capacitor.",
+  "domain": "rf",
+  "source": {
+    "file": "docs/.vitepress/theme/replExamples.js",
+    "result": "seriesRC",
+    "combination": "nP.nodal([r1, 1, 2], [c1, 2, 3], ['out', 1, 3])",
+    "exampleId": "series-rc-smith-chart"
+  },
+  "viewBox": [
+    0,
+    0,
+    580,
+    360
+  ],
+  "layout": {
+    "centerAxisX": 290,
+    "centerReference": "Series resistor and capacitor signal path"
+  },
+  "components": [
+    {
+      "id": "r1",
+      "symbol": "rf/resistor.svg",
+      "source": {
+        "variable": "r1",
+        "constructor": "R"
+      },
+      "at": [
+        160,
+        180
+      ],
+      "sourceAnchor": [
+        60,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "node": 1,
+          "at": [
+            160,
+            180
+          ],
+          "labelAt": [
+            160,
+            120
+          ]
+        },
+        {
+          "port": 2,
+          "node": 2,
+          "at": [
+            260,
+            180
+          ],
+          "labelAt": [
+            320,
+            120
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c1",
+      "symbol": "rf/capacitor.svg",
+      "source": {
+        "variable": "c1",
+        "constructor": "C"
+      },
+      "at": [
+        360,
+        180
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "node": 2,
+          "at": [
+            360,
+            180
+          ],
+          "labelAt": [
+            320,
+            120
+          ]
+        },
+        {
+          "port": 2,
+          "node": 3,
+          "at": [
+            420,
+            180
+          ],
+          "labelAt": [
+            420,
+            120
+          ]
+        }
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "node": 1,
+      "points": [
+        [
+          100,
+          180
+        ],
+        [
+          160,
+          180
+        ]
+      ]
+    },
+    {
+      "node": 2,
+      "points": [
+        [
+          260,
+          180
+        ],
+        [
+          360,
+          180
+        ]
+      ]
+    },
+    {
+      "node": 3,
+      "points": [
+        [
+          420,
+          180
+        ],
+        [
+          480,
+          180
+        ]
+      ]
+    }
+  ],
+  "terminals": [
+    {
+      "node": 1,
+      "at": [
+        100,
+        180
+      ]
+    },
+    {
+      "node": 3,
+      "at": [
+        480,
+        180
+      ]
+    }
+  ],
+  "labels": [
+    {
+      "componentId": "r1",
+      "text": "r1: 50 Ω",
+      "at": [
+        210,
+        60
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "c1",
+      "text": "c1: 3.17 pF",
+      "at": [
+        390,
+        60
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 1",
+      "at": [
+        100,
+        240
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 2",
+      "at": [
+        480,
+        240
+      ],
+      "anchor": "middle"
+    }
+  ]
+}

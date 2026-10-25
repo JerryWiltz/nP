@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 680 360"
+     role="img" aria-labelledby="title description">
+  <title id="title">Modulation and demodulation</title>
+  <desc id="description">Guide REPL example am-envelope: Modulation and demodulation.</desc>
+  <metadata id="circuit-description">{&quot;title&quot;:&quot;Modulation and demodulation&quot;,&quot;description&quot;:&quot;Guide REPL example am-envelope: Modulation and demodulation.&quot;,&quot;domain&quot;:&quot;signal&quot;,&quot;source&quot;:{&quot;file&quot;:&quot;docs/.vitepress/theme/replExamples.js&quot;,&quot;result&quot;:&quot;rx&quot;,&quot;combination&quot;:&quot;nP.demod(chain, {noise: false})&quot;,&quot;exampleId&quot;:&quot;am-envelope&quot;},&quot;viewBox&quot;:[0,0,680,360],&quot;layout&quot;:{&quot;centerAxisX&quot;:340,&quot;centerReference&quot;:&quot;Modulation and demodulation flow&quot;},&quot;components&quot;:[{&quot;id&quot;:&quot;tx&quot;,&quot;symbol&quot;:&quot;digital/mod.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;tx&quot;,&quot;constructor&quot;:&quot;mod&quot;},&quot;at&quot;:[160,180],&quot;sourceAnchor&quot;:[80,80],&quot;connections&quot;:[{&quot;port&quot;:1,&quot;signal&quot;:&quot;signal-0&quot;,&quot;at&quot;:[160,180]},{&quot;port&quot;:2,&quot;signal&quot;:&quot;signal-1&quot;,&quot;at&quot;:[280,180]}]},{&quot;id&quot;:&quot;rx&quot;,&quot;symbol&quot;:&quot;digital/demod.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;rx&quot;,&quot;constructor&quot;:&quot;demod&quot;},&quot;at&quot;:[400,180],&quot;sourceAnchor&quot;:[80,80],&quot;connections&quot;:[{&quot;port&quot;:1,&quot;signal&quot;:&quot;signal-1&quot;,&quot;at&quot;:[400,180]},{&quot;port&quot;:2,&quot;signal&quot;:&quot;signal-2&quot;,&quot;at&quot;:[520,180]}]}],&quot;wires&quot;:[{&quot;signal&quot;:&quot;signal-0&quot;,&quot;points&quot;:[[100,180],[160,180]]},{&quot;signal&quot;:&quot;signal-1&quot;,&quot;points&quot;:[[280,180],[400,180]]},{&quot;signal&quot;:&quot;signal-2&quot;,&quot;points&quot;:[[520,180],[580,180]]}],&quot;terminals&quot;:[{&quot;signal&quot;:&quot;signal-0&quot;,&quot;at&quot;:[100,180]},{&quot;signal&quot;:&quot;signal-2&quot;,&quot;at&quot;:[580,180]}],&quot;labels&quot;:[{&quot;componentId&quot;:&quot;tx&quot;,&quot;text&quot;:&quot;tx: mod()&quot;,&quot;at&quot;:[220,60],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;rx&quot;,&quot;text&quot;:&quot;rx: demod()&quot;,&quot;at&quot;:[460,60],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;Output&quot;,&quot;at&quot;:[580,240],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;RF path shown separately&quot;,&quot;at&quot;:[340,140],&quot;anchor&quot;:&quot;middle&quot;}]}</metadata>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path data-wire="1" data-signal="signal-0" d="M100 180 L160 180"/>
+    <path data-wire="2" data-signal="signal-1" d="M280 180 L400 180"/>
+    <path data-wire="3" data-signal="signal-2" d="M520 180 L580 180"/>
+    <circle data-external-terminal="1" cx="100" cy="180" r="4" fill="#202020" data-signal="signal-0"/>
+    <circle data-external-terminal="2" cx="580" cy="180" r="4" fill="#202020" data-signal="signal-2"/>
+    <!-- tx from digital/mod.svg -->
+    <g data-component-id="tx" data-symbol-source="digital/mod.svg" data-symbol-sha256="ab82fbf7f4d083f0b3f275188229ac659dd2c799d4989197c40f4081ee7032fb" data-symbol-geometry-sha256="0417b29f0ec21b432981ba42d062fbe5ad4cd448fa5fc0dca12456cd578105ae" transform="translate(160 180) rotate(0) translate(-80 -80)">
+      <!-- canonical-geometry-start -->
+<g transform="translate(0 -10)">
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M80 90 H100 M180 90 H200"/><rect x="100" y="55" width="80" height="70"/><text x="140" y="90" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#202020" stroke="none" text-anchor="middle" dominant-baseline="middle">MOD</text>
+  </g>
+  </g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <!-- rx from digital/demod.svg -->
+    <g data-component-id="rx" data-symbol-source="digital/demod.svg" data-symbol-sha256="e7095a7049a2c6de581c64b634f2f2cb40a54c7ebb12e4456c7546883f67a879" data-symbol-geometry-sha256="ee0ca900e9f166d79a95f6943df593cf32a0ccda52d4585e0ef495d1d6cc56ea" transform="translate(400 180) rotate(0) translate(-80 -80)">
+      <!-- canonical-geometry-start -->
+<g transform="translate(0 -10)">
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M80 90 H100 M180 90 H200"/><rect x="100" y="55" width="80" height="70"/><text x="140" y="90" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#202020" stroke="none" text-anchor="middle" dominant-baseline="middle">DEMOD</text>
+  </g>
+  </g>
+      <!-- canonical-geometry-end -->
+    </g>
+
+  </g>
+  <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    <text x="220" y="60" text-anchor="middle">tx: mod()</text>
+    <text x="460" y="60" text-anchor="middle">rx: demod()</text>
+    <text x="580" y="240" text-anchor="middle">Output</text>
+    <text x="340" y="140" text-anchor="middle">RF path shown separately</text>
+
+  </g>
+</svg>

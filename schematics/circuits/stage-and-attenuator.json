@@ -1,0 +1,264 @@
+{
+  "title": "R-L stage with attenuator",
+  "description": "Guide REPL example connecting-nports: R-L stage with attenuator.",
+  "domain": "rf",
+  "source": {
+    "file": "docs/connecting-nports.md",
+    "result": "complete",
+    "combination": "nP.cascade(stage, attenuator), with stage = nP.nodal(r1, l1)",
+    "exampleId": "connecting-nports"
+  },
+  "viewBox": [
+    0,
+    0,
+    780,
+    360
+  ],
+  "layout": {
+    "centerAxisX": 390,
+    "centerReference": "R-L stage with attenuator signal path"
+  },
+  "components": [
+    {
+      "id": "r1",
+      "symbol": "rf/resistor.svg",
+      "source": {
+        "variable": "r1",
+        "constructor": "R"
+      },
+      "at": [
+        160,
+        180
+      ],
+      "sourceAnchor": [
+        60,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "node": 1,
+          "at": [
+            160,
+            180
+          ],
+          "labelAt": [
+            160,
+            120
+          ]
+        },
+        {
+          "port": 2,
+          "node": 2,
+          "at": [
+            260,
+            180
+          ],
+          "labelAt": [
+            320,
+            120
+          ]
+        }
+      ]
+    },
+    {
+      "id": "l1",
+      "symbol": "rf/inductor.svg",
+      "source": {
+        "variable": "l1",
+        "constructor": "L"
+      },
+      "at": [
+        360,
+        180
+      ],
+      "sourceAnchor": [
+        60,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "node": 2,
+          "at": [
+            360,
+            180
+          ],
+          "labelAt": [
+            320,
+            120
+          ]
+        },
+        {
+          "port": 2,
+          "node": 3,
+          "at": [
+            460,
+            180
+          ],
+          "labelAt": [
+            520,
+            120
+          ]
+        }
+      ]
+    },
+    {
+      "id": "attenuator",
+      "symbol": "rf/attenuator.svg",
+      "source": {
+        "variable": "attenuator",
+        "constructor": "Attn"
+      },
+      "at": [
+        560,
+        180
+      ],
+      "sourceAnchor": [
+        100,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "node": 3,
+          "at": [
+            560,
+            180
+          ],
+          "labelAt": [
+            520,
+            120
+          ]
+        },
+        {
+          "port": 2,
+          "node": 4,
+          "at": [
+            620,
+            180
+          ],
+          "labelAt": [
+            620,
+            120
+          ]
+        }
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "node": 1,
+      "points": [
+        [
+          100,
+          180
+        ],
+        [
+          160,
+          180
+        ]
+      ]
+    },
+    {
+      "node": 2,
+      "points": [
+        [
+          260,
+          180
+        ],
+        [
+          360,
+          180
+        ]
+      ]
+    },
+    {
+      "node": 3,
+      "points": [
+        [
+          460,
+          180
+        ],
+        [
+          560,
+          180
+        ]
+      ]
+    },
+    {
+      "node": 4,
+      "points": [
+        [
+          620,
+          180
+        ],
+        [
+          680,
+          180
+        ]
+      ]
+    }
+  ],
+  "terminals": [
+    {
+      "node": 1,
+      "at": [
+        100,
+        180
+      ]
+    },
+    {
+      "node": 4,
+      "at": [
+        680,
+        180
+      ]
+    }
+  ],
+  "labels": [
+    {
+      "componentId": "r1",
+      "text": "r1: 25 Ω",
+      "at": [
+        210,
+        60
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "l1",
+      "text": "l1: 2 nH",
+      "at": [
+        410,
+        60
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "attenuator",
+      "text": "attenuator: 3 dB",
+      "at": [
+        590,
+        60
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 1",
+      "at": [
+        100,
+        240
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 2",
+      "at": [
+        680,
+        240
+      ],
+      "anchor": "middle"
+    }
+  ]
+}

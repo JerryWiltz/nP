@@ -1,0 +1,38 @@
+{
+  "title": "Waveform to frequency spectrum",
+  "description": "A sampled nP.waveform() feeds nP.FFT(); connector names describe signal flow rather than RF nPort nodes.",
+  "domain": "signal",
+  "viewBox": [0, 0, 640, 280],
+  "layout": {"centerAxisX": 320, "centerReference": "FFT input"},
+  "components": [
+    {
+      "id": "waveform1",
+      "symbol": "digital/waveform.svg",
+      "at": [240, 140],
+      "connections": [
+        {"port": 1, "signal": "samples", "at": [240, 140]}
+      ]
+    },
+    {
+      "id": "fft1",
+      "symbol": "digital/fft.svg",
+      "at": [320, 140],
+      "connections": [
+        {"port": 1, "signal": "samples", "at": [320, 140]},
+        {"port": 2, "signal": "spectrum", "at": [440, 140]}
+      ]
+    }
+  ],
+  "wires": [
+    {"signal": "samples", "points": [[240, 140], [320, 140]]},
+    {"signal": "spectrum", "points": [[440, 140], [560, 140]]}
+  ],
+  "terminals": [
+    {"signal": "spectrum", "at": [560, 140]}
+  ],
+  "labels": [
+    {"text": "waveform()", "at": [140, 70], "anchor": "middle"},
+    {"text": "samples", "at": [280, 100], "anchor": "middle"},
+    {"text": "spectrum", "at": [540, 100], "anchor": "middle"}
+  ]
+}

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-19 -->
+<!-- Modified: 2026-10-23 -->
 # Diode Development Notes
 
 Diode and nonlinear-device models live under `src/np-nport/src/diodes/`. The current public model is `nP.diode1N4148()`.
@@ -197,7 +197,7 @@ These limits should remain visible so the convenience of the model is not mistak
 
 ## Verification checklist
 
-- S and noise rows follow `analysisFrequencies(global)`, which includes product frequencies when `global.twoTone` is set.
+- S and noise rows follow `analysisFrequencies(componentSettings(global, options))`, which respects a component `fList` and includes product frequencies when two-tone analysis is set.
 - Every RF row has `1 + n²` entries.
 - Reciprocal terms agree when reciprocity is assumed.
 - DC current is monotonic over ordinary forward bias.

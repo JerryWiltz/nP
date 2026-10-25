@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 840 760"
+     role="img" aria-labelledby="title description">
+  <title id="title">Wilkinson power divider</title>
+  <desc id="description">Guide REPL example circuit-examples: Wilkinson power divider.</desc>
+  <metadata id="circuit-description">{&quot;title&quot;:&quot;Wilkinson power divider&quot;,&quot;description&quot;:&quot;Guide REPL example circuit-examples: Wilkinson power divider.&quot;,&quot;domain&quot;:&quot;rf&quot;,&quot;source&quot;:{&quot;file&quot;:&quot;docs/circuit-examples.md&quot;,&quot;result&quot;:&quot;divider&quot;,&quot;combination&quot;:&quot;nP.nodal(..., [&apos;out&apos;, 1, 7, 9])&quot;,&quot;exampleId&quot;:&quot;circuit-examples&quot;},&quot;viewBox&quot;:[0,0,840,760],&quot;layout&quot;:{&quot;centerAxisX&quot;:420,&quot;centerReference&quot;:&quot;branch pair midpoint&quot;},&quot;components&quot;:[{&quot;id&quot;:&quot;inputTee&quot;,&quot;symbol&quot;:&quot;rf/tee.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;inputTee&quot;,&quot;constructor&quot;:&quot;Tee&quot;},&quot;at&quot;:[200,360],&quot;sourceAnchor&quot;:[120,140],&quot;rotation&quot;:0,&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:1,&quot;at&quot;:[200,360],&quot;labelAt&quot;:[140,320]},{&quot;port&quot;:2,&quot;node&quot;:2,&quot;at&quot;:[160,320],&quot;labelAt&quot;:[220,200]},{&quot;port&quot;:3,&quot;node&quot;:3,&quot;at&quot;:[240,320],&quot;labelAt&quot;:[260,420]}]},{&quot;id&quot;:&quot;branch1&quot;,&quot;symbol&quot;:&quot;rf/transmission-line.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;branch1&quot;,&quot;constructor&quot;:&quot;Tlin&quot;},&quot;at&quot;:[300,240],&quot;sourceAnchor&quot;:[80,80],&quot;rotation&quot;:0,&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:2,&quot;at&quot;:[300,240],&quot;labelAt&quot;:[220,200]},{&quot;port&quot;:2,&quot;node&quot;:4,&quot;at&quot;:[420,240],&quot;labelAt&quot;:[470,200]}]},{&quot;id&quot;:&quot;branch2&quot;,&quot;symbol&quot;:&quot;rf/transmission-line.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;branch2&quot;,&quot;constructor&quot;:&quot;Tlin&quot;},&quot;at&quot;:[300,560],&quot;sourceAnchor&quot;:[80,80],&quot;rotation&quot;:0,&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:3,&quot;at&quot;:[300,560],&quot;labelAt&quot;:[260,420]},{&quot;port&quot;:2,&quot;node&quot;:5,&quot;at&quot;:[420,560],&quot;labelAt&quot;:[470,520]}]},{&quot;id&quot;:&quot;outputTee1&quot;,&quot;symbol&quot;:&quot;rf/tee.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;outputTee1&quot;,&quot;constructor&quot;:&quot;Tee&quot;},&quot;at&quot;:[560,280],&quot;sourceAnchor&quot;:[120,140],&quot;rotation&quot;:0,&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:6,&quot;at&quot;:[560,280],&quot;labelAt&quot;:[600,300]},{&quot;port&quot;:2,&quot;node&quot;:4,&quot;at&quot;:[520,240],&quot;labelAt&quot;:[470,200]},{&quot;port&quot;:3,&quot;node&quot;:7,&quot;at&quot;:[600,240],&quot;labelAt&quot;:[660,200]}]},{&quot;id&quot;:&quot;outputTee2&quot;,&quot;symbol&quot;:&quot;rf/tee.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;outputTee2&quot;,&quot;constructor&quot;:&quot;Tee&quot;},&quot;at&quot;:[560,520],&quot;sourceAnchor&quot;:[120,140],&quot;rotation&quot;:0,&quot;mirrorY&quot;:true,&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:8,&quot;at&quot;:[560,520],&quot;labelAt&quot;:[600,460]},{&quot;port&quot;:2,&quot;node&quot;:5,&quot;at&quot;:[520,560],&quot;labelAt&quot;:[470,520]},{&quot;port&quot;:3,&quot;node&quot;:9,&quot;at&quot;:[600,560],&quot;labelAt&quot;:[660,520]}]},{&quot;id&quot;:&quot;isolationR&quot;,&quot;symbol&quot;:&quot;rf/resistor.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;isolationR&quot;,&quot;constructor&quot;:&quot;R&quot;},&quot;at&quot;:[560,320],&quot;sourceAnchor&quot;:[60,80],&quot;rotation&quot;:90,&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:6,&quot;at&quot;:[560,320],&quot;labelAt&quot;:[600,300]},{&quot;port&quot;:2,&quot;node&quot;:8,&quot;at&quot;:[560,420],&quot;labelAt&quot;:[600,460]}]}],&quot;wires&quot;:[{&quot;node&quot;:1,&quot;points&quot;:[[200,360],[100,360]]},{&quot;node&quot;:2,&quot;points&quot;:[[160,320],[160,240],[300,240]]},{&quot;node&quot;:3,&quot;points&quot;:[[240,320],[300,320],[300,560]]},{&quot;node&quot;:4,&quot;points&quot;:[[420,240],[520,240]]},{&quot;node&quot;:5,&quot;points&quot;:[[420,560],[520,560]]},{&quot;node&quot;:6,&quot;points&quot;:[[560,280],[560,320]]},{&quot;node&quot;:7,&quot;points&quot;:[[600,240],[720,240]]},{&quot;node&quot;:8,&quot;points&quot;:[[560,520],[560,420]]},{&quot;node&quot;:9,&quot;points&quot;:[[600,560],[720,560]]}],&quot;terminals&quot;:[{&quot;node&quot;:1,&quot;at&quot;:[100,360]},{&quot;node&quot;:7,&quot;at&quot;:[720,240]},{&quot;node&quot;:9,&quot;at&quot;:[720,560]}],&quot;labels&quot;:[{&quot;componentId&quot;:&quot;inputTee&quot;,&quot;text&quot;:&quot;input Tee&quot;,&quot;at&quot;:[200,170],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;branch1&quot;,&quot;text&quot;:&quot;branch1 = 70.7 Ω&quot;,&quot;at&quot;:[360,110],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;branch2&quot;,&quot;text&quot;:&quot;branch2 = 70.7 Ω&quot;,&quot;at&quot;:[360,660],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;outputTee1&quot;,&quot;text&quot;:&quot;output Tee 1&quot;,&quot;at&quot;:[560,110],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;outputTee2&quot;,&quot;text&quot;:&quot;output Tee 2&quot;,&quot;at&quot;:[560,700],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;isolationR&quot;,&quot;text&quot;:&quot;100 Ω isolation&quot;,&quot;at&quot;:[700,360],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;Port 1&quot;,&quot;at&quot;:[100,420],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;Port 2&quot;,&quot;at&quot;:[720,200],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;Port 3&quot;,&quot;at&quot;:[720,620],&quot;anchor&quot;:&quot;middle&quot;}]}</metadata>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path data-wire="1" data-node="1" d="M200 360 L100 360"/>
+    <path data-wire="2" data-node="2" d="M160 320 L160 240 L300 240"/>
+    <path data-wire="3" data-node="3" d="M240 320 L300 320 L300 560"/>
+    <path data-wire="4" data-node="4" d="M420 240 L520 240"/>
+    <path data-wire="5" data-node="5" d="M420 560 L520 560"/>
+    <path data-wire="6" data-node="6" d="M560 280 L560 320"/>
+    <path data-wire="7" data-node="7" d="M600 240 L720 240"/>
+    <path data-wire="8" data-node="8" d="M560 520 L560 420"/>
+    <path data-wire="9" data-node="9" d="M600 560 L720 560"/>
+    <circle data-external-terminal="1" cx="100" cy="360" r="4" fill="#202020" data-node="1"/>
+    <circle data-external-terminal="2" cx="720" cy="240" r="4" fill="#202020" data-node="7"/>
+    <circle data-external-terminal="3" cx="720" cy="560" r="4" fill="#202020" data-node="9"/>
+    <!-- inputTee from rf/tee.svg -->
+    <g data-component-id="inputTee" data-symbol-source="rf/tee.svg" data-symbol-sha256="a3c4df62d18e3f8bbe401b0bad5026fdc1b4470c785548afed8d881851a4c1c8" data-symbol-geometry-sha256="cab2ff2d4707d7fcea2eb3d05be2892f8d2b68546834d8242b4b8f0a4ad13660" transform="translate(200 360) rotate(0) translate(-120 -140)">
+      <!-- canonical-geometry-start -->
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M80 100 H100 M140 100 H160 M120 120 V140"/><rect x="100" y="80" width="40" height="40"/><circle cx="120" cy="110" r="3" fill="#202020" stroke="none"/></g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <!-- branch1 from rf/transmission-line.svg -->
+    <g data-component-id="branch1" data-symbol-source="rf/transmission-line.svg" data-symbol-sha256="fd6d978f243d35e852b7b6db79b83d36b2045a7b6a13727083f1a596a0d6065e" data-symbol-geometry-sha256="5acd46a160f0b95d8912c2eb0b7927b77afe1704299c720703ead3277df4d733" transform="translate(300 240) rotate(0) translate(-80 -80)">
+      <!-- canonical-geometry-start -->
+<g transform="translate(0 -10)">
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M80 90 H100 M180 90 H200"/><rect x="100" y="75" width="80" height="30"/></g>
+  </g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <!-- branch2 from rf/transmission-line.svg -->
+    <g data-component-id="branch2" data-symbol-source="rf/transmission-line.svg" data-symbol-sha256="fd6d978f243d35e852b7b6db79b83d36b2045a7b6a13727083f1a596a0d6065e" data-symbol-geometry-sha256="5acd46a160f0b95d8912c2eb0b7927b77afe1704299c720703ead3277df4d733" transform="translate(300 560) rotate(0) translate(-80 -80)">
+      <!-- canonical-geometry-start -->
+<g transform="translate(0 -10)">
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M80 90 H100 M180 90 H200"/><rect x="100" y="75" width="80" height="30"/></g>
+  </g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <!-- outputTee1 from rf/tee.svg -->
+    <g data-component-id="outputTee1" data-symbol-source="rf/tee.svg" data-symbol-sha256="a3c4df62d18e3f8bbe401b0bad5026fdc1b4470c785548afed8d881851a4c1c8" data-symbol-geometry-sha256="cab2ff2d4707d7fcea2eb3d05be2892f8d2b68546834d8242b4b8f0a4ad13660" transform="translate(560 280) rotate(0) translate(-120 -140)">
+      <!-- canonical-geometry-start -->
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M80 100 H100 M140 100 H160 M120 120 V140"/><rect x="100" y="80" width="40" height="40"/><circle cx="120" cy="110" r="3" fill="#202020" stroke="none"/></g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <!-- outputTee2 from rf/tee.svg -->
+    <g data-component-id="outputTee2" data-symbol-source="rf/tee.svg" data-symbol-sha256="a3c4df62d18e3f8bbe401b0bad5026fdc1b4470c785548afed8d881851a4c1c8" data-symbol-geometry-sha256="cab2ff2d4707d7fcea2eb3d05be2892f8d2b68546834d8242b4b8f0a4ad13660" transform="translate(560 520) rotate(0) scale(1 -1) translate(-120 -140)">
+      <!-- canonical-geometry-start -->
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M80 100 H100 M140 100 H160 M120 120 V140"/><rect x="100" y="80" width="40" height="40"/><circle cx="120" cy="110" r="3" fill="#202020" stroke="none"/></g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <!-- isolationR from rf/resistor.svg -->
+    <g data-component-id="isolationR" data-symbol-source="rf/resistor.svg" data-symbol-sha256="d9315abe504556e2e181f3b66d00f1d995216974f0e506e636785c9dbbf4926b" data-symbol-geometry-sha256="03a4d1e2b62f5889e5e4879e43d361f7054157ab860b5a69ed6e786357844eaa" transform="translate(560 320) rotate(90) translate(-60 -80)">
+      <!-- canonical-geometry-start -->
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M60 80 H80 L85 70 L95 90 L105 70 L115 90 L125 70 L135 90 L140 80 H160"/>
+  </g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <circle data-node-dot="1" cx="200" cy="360" r="4" fill="#202020"/>
+    <circle data-node-dot="2" cx="160" cy="320" r="4" fill="#202020"/>
+    <circle data-node-dot="3" cx="240" cy="320" r="4" fill="#202020"/>
+    <circle data-node-dot="2" cx="300" cy="240" r="4" fill="#202020"/>
+    <circle data-node-dot="4" cx="420" cy="240" r="4" fill="#202020"/>
+    <circle data-node-dot="3" cx="300" cy="560" r="4" fill="#202020"/>
+    <circle data-node-dot="5" cx="420" cy="560" r="4" fill="#202020"/>
+    <circle data-node-dot="6" cx="560" cy="280" r="4" fill="#202020"/>
+    <circle data-node-dot="4" cx="520" cy="240" r="4" fill="#202020"/>
+    <circle data-node-dot="7" cx="600" cy="240" r="4" fill="#202020"/>
+    <circle data-node-dot="8" cx="560" cy="520" r="4" fill="#202020"/>
+    <circle data-node-dot="5" cx="520" cy="560" r="4" fill="#202020"/>
+    <circle data-node-dot="9" cx="600" cy="560" r="4" fill="#202020"/>
+    <circle data-node-dot="6" cx="560" cy="320" r="4" fill="#202020"/>
+    <circle data-node-dot="8" cx="560" cy="420" r="4" fill="#202020"/>
+    <circle data-node-circle="1" cx="140" cy="320" r="12" fill="#ffffff"/>
+    <circle data-node-circle="2" cx="220" cy="200" r="12" fill="#ffffff"/>
+    <circle data-node-circle="3" cx="260" cy="420" r="12" fill="#ffffff"/>
+    <circle data-node-circle="4" cx="470" cy="200" r="12" fill="#ffffff"/>
+    <circle data-node-circle="5" cx="470" cy="520" r="12" fill="#ffffff"/>
+    <circle data-node-circle="6" cx="600" cy="300" r="12" fill="#ffffff"/>
+    <circle data-node-circle="7" cx="660" cy="200" r="12" fill="#ffffff"/>
+    <circle data-node-circle="8" cx="600" cy="460" r="12" fill="#ffffff"/>
+    <circle data-node-circle="9" cx="660" cy="520" r="12" fill="#ffffff"/>
+  </g>
+  <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    <text x="200" y="170" text-anchor="middle">input Tee</text>
+    <text x="360" y="110" text-anchor="middle">branch1 = 70.7 Ω</text>
+    <text x="360" y="660" text-anchor="middle">branch2 = 70.7 Ω</text>
+    <text x="560" y="110" text-anchor="middle">output Tee 1</text>
+    <text x="560" y="700" text-anchor="middle">output Tee 2</text>
+    <text x="700" y="360" text-anchor="middle">100 Ω isolation</text>
+    <text x="100" y="420" text-anchor="middle">Port 1</text>
+    <text x="720" y="200" text-anchor="middle">Port 2</text>
+    <text x="720" y="620" text-anchor="middle">Port 3</text>
+    <text data-node-label="1" x="140" y="325" text-anchor="middle">1</text>
+    <text data-node-label="2" x="220" y="205" text-anchor="middle">2</text>
+    <text data-node-label="3" x="260" y="425" text-anchor="middle">3</text>
+    <text data-node-label="4" x="470" y="205" text-anchor="middle">4</text>
+    <text data-node-label="5" x="470" y="525" text-anchor="middle">5</text>
+    <text data-node-label="6" x="600" y="305" text-anchor="middle">6</text>
+    <text data-node-label="7" x="660" y="205" text-anchor="middle">7</text>
+    <text data-node-label="8" x="600" y="465" text-anchor="middle">8</text>
+    <text data-node-label="9" x="660" y="525" text-anchor="middle">9</text>
+  </g>
+</svg>

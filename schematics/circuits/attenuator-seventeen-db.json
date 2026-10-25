@@ -1,0 +1,136 @@
+{
+  "title": "17.6 dB RF attenuator",
+  "description": "Guide REPL example ber-attenuation: 17.6 dB RF attenuator.",
+  "domain": "rf",
+  "source": {
+    "file": "docs/.vitepress/theme/replExamples.js",
+    "result": "chain",
+    "combination": "nP.cascade(attenuator)",
+    "exampleId": "ber-attenuation"
+  },
+  "viewBox": [
+    0,
+    0,
+    380,
+    360
+  ],
+  "layout": {
+    "centerAxisX": 190,
+    "centerReference": "17.6 dB RF attenuator signal path"
+  },
+  "components": [
+    {
+      "id": "attenuator",
+      "symbol": "rf/attenuator.svg",
+      "source": {
+        "variable": "attenuator",
+        "constructor": "Attn"
+      },
+      "at": [
+        160,
+        180
+      ],
+      "sourceAnchor": [
+        100,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "node": 1,
+          "at": [
+            160,
+            180
+          ],
+          "labelAt": [
+            160,
+            120
+          ]
+        },
+        {
+          "port": 2,
+          "node": 2,
+          "at": [
+            220,
+            180
+          ],
+          "labelAt": [
+            220,
+            120
+          ]
+        }
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "node": 1,
+      "points": [
+        [
+          100,
+          180
+        ],
+        [
+          160,
+          180
+        ]
+      ]
+    },
+    {
+      "node": 2,
+      "points": [
+        [
+          220,
+          180
+        ],
+        [
+          280,
+          180
+        ]
+      ]
+    }
+  ],
+  "terminals": [
+    {
+      "node": 1,
+      "at": [
+        100,
+        180
+      ]
+    },
+    {
+      "node": 2,
+      "at": [
+        280,
+        180
+      ]
+    }
+  ],
+  "labels": [
+    {
+      "componentId": "attenuator",
+      "text": "attenuator: 17.6 dB",
+      "at": [
+        190,
+        60
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 1",
+      "at": [
+        100,
+        240
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 2",
+      "at": [
+        280,
+        240
+      ],
+      "anchor": "middle"
+    }
+  ]
+}

@@ -1,9 +1,15 @@
-<!-- Modified: 2026-10-22 -->
+<!-- Modified: 2026-10-25 -->
 # VNA time-domain reflection
 
 A vector network analyzer (VNA) can locate a reflection without launching a physical pulse. It measures a circuit's **complex** response at a sequence of frequencies, preserving both amplitude and phase, then calculates what a chosen time-domain stimulus would produce. Keysight describes this as an inverse Fourier transform of frequency-domain measurements; its low-pass impulse and step displays are different transform choices. [Keysight VNA time-domain documentation](https://helpfiles.keysight.com/csg/pxivna/Time/TimeDomain.htm)
 
 This note follows the [VNA cable fault location REPL example](./repl.md#example-vna-short-reflection). Both circuits use a matched splitter, an ideal input coupler, a matched 1 km lossless line, and a termination that is either a short or an open. Reference receiver R samples the source; reflection receiver A samples the return. The VNA's output coupler and receiver B remain dormant for this one-port test. The model produces a **synthetic impulse response**. It does not model an instrument sending a broadband pulse down the line.
+
+![VNA cable source, active receivers R and A, and dormant B channel](/schematics/vna-cable-receivers.svg)
+
+![One-kilometer line terminated in a short](/schematics/vna-cable-short.svg)
+
+![One-kilometer line terminated in an open](/schematics/vna-cable-open.svg)
 
 ## Establish the frequency and time grids
 

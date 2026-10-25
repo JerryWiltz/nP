@@ -1,0 +1,51 @@
+{
+  "title": "Two series resistors",
+  "description": "Two nP.R() two-ports cascaded from left to right, with external ports at the ends.",
+  "domain": "rf",
+  "source": {
+    "file": "schematics/circuits/two-series-resistors.mjs",
+    "result": "circuit",
+    "combination": "nP.cascade(r1, r2)"
+  },
+  "viewBox": [0, 0, 620, 280],
+  "layout": {"centerAxisX": 310, "centerReference": "wire between r1 and r2"},
+  "components": [
+    {
+      "id": "r1",
+      "symbol": "rf/resistor.svg",
+      "source": {"variable": "r1", "constructor": "R"},
+      "at": [160, 140],
+      "sourceAnchor": [60, 80],
+      "connections": [
+        {"port": 1, "node": 1, "at": [160, 140], "labelAt": [160, 100]},
+        {"port": 2, "node": 2, "at": [260, 140], "labelAt": [310, 100]}
+      ]
+    },
+    {
+      "id": "r2",
+      "symbol": "rf/resistor.svg",
+      "source": {"variable": "r2", "constructor": "R"},
+      "at": [360, 140],
+      "sourceAnchor": [60, 80],
+      "connections": [
+        {"port": 1, "node": 2, "at": [360, 140], "labelAt": [310, 100]},
+        {"port": 2, "node": 3, "at": [460, 140], "labelAt": [460, 100]}
+      ]
+    }
+  ],
+  "wires": [
+    {"node": 1, "points": [[100, 140], [160, 140]]},
+    {"node": 2, "points": [[260, 140], [360, 140]]},
+    {"node": 3, "points": [[460, 140], [520, 140]]}
+  ],
+  "terminals": [
+    {"node": 1, "at": [100, 140]},
+    {"node": 3, "at": [520, 140]}
+  ],
+  "labels": [
+    {"text": "r1 = 25 Ω", "at": [210, 60], "anchor": "middle", "componentId": "r1"},
+    {"text": "r2 = 50 Ω", "at": [410, 60], "anchor": "middle", "componentId": "r2"},
+    {"text": "Port 1", "at": [100, 190], "anchor": "middle"},
+    {"text": "Port 2", "at": [520, 190], "anchor": "middle"}
+  ]
+}

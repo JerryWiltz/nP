@@ -1,0 +1,12 @@
+<!-- Modified: 2026-10-25 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 180" role="img" aria-labelledby="title description">
+  <title id="title">nP mtfr microstrip thin-film resistor symbol</title>
+  <desc id="description">A two-port microstrip thin-film resistor with its 20-unit leads at both ends of the resistor body.</desc>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <g transform="translate(0 -10)">
+<path d="M80 90 H100 M180 90 H200" fill="none" stroke="#202020" stroke-width="2"/><rect x="100" y="75" width="80" height="30" fill="#ffffff" stroke="#202020" stroke-width="2"/><text x="140" y="90" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#202020" text-anchor="middle" dominant-baseline="middle">mTFR</text>
+  </g>
+  <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
+    <text x="140" y="30">mtfr()</text><text x="140" y="150">microstrip thin-film resistor</text><text x="80" y="120">Port 1</text><text x="200" y="120">Port 2</text><circle cx="80" cy="80" r="4"/><circle cx="200" cy="80" r="4"/>
+  </g>
+</svg>

@@ -1,0 +1,332 @@
+{
+  "title": "RC low-pass",
+  "description": "Guide REPL example rc-low-pass: RC low-pass.",
+  "domain": "rf",
+  "source": {
+    "file": "docs/.vitepress/theme/replExamples.js",
+    "result": "lowPass",
+    "combination": "nP.nodal(..., ['out', 1, 3])",
+    "exampleId": "rc-low-pass"
+  },
+  "viewBox": [
+    0,
+    0,
+    640,
+    560
+  ],
+  "layout": {
+    "centerAxisX": 320,
+    "centerReference": "series path midpoint"
+  },
+  "components": [
+    {
+      "id": "r1",
+      "symbol": "rf/resistor.svg",
+      "source": {
+        "variable": "r1",
+        "constructor": "R"
+      },
+      "at": [
+        160,
+        220
+      ],
+      "sourceAnchor": [
+        60,
+        80
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 1,
+          "at": [
+            160,
+            220
+          ],
+          "labelAt": [
+            160,
+            180
+          ]
+        },
+        {
+          "port": 2,
+          "node": 2,
+          "at": [
+            260,
+            220
+          ],
+          "labelAt": [
+            320,
+            180
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tee",
+      "symbol": "rf/tee.svg",
+      "source": {
+        "variable": "tee",
+        "constructor": "Tee"
+      },
+      "at": [
+        400,
+        260
+      ],
+      "sourceAnchor": [
+        120,
+        140
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 4,
+          "at": [
+            400,
+            260
+          ],
+          "labelAt": [
+            440,
+            300
+          ]
+        },
+        {
+          "port": 2,
+          "node": 2,
+          "at": [
+            360,
+            220
+          ],
+          "labelAt": [
+            320,
+            180
+          ]
+        },
+        {
+          "port": 3,
+          "node": 3,
+          "at": [
+            440,
+            220
+          ],
+          "labelAt": [
+            480,
+            180
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c1",
+      "symbol": "rf/capacitor.svg",
+      "source": {
+        "variable": "c1",
+        "constructor": "C"
+      },
+      "at": [
+        400,
+        320
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "rotation": 90,
+      "connections": [
+        {
+          "port": 1,
+          "node": 4,
+          "at": [
+            400,
+            320
+          ],
+          "labelAt": [
+            440,
+            300
+          ]
+        },
+        {
+          "port": 2,
+          "node": 5,
+          "at": [
+            400,
+            380
+          ],
+          "labelAt": [
+            460,
+            400
+          ]
+        }
+      ]
+    },
+    {
+      "id": "short",
+      "symbol": "rf/short.svg",
+      "source": {
+        "variable": "short",
+        "constructor": "Short"
+      },
+      "at": [
+        400,
+        440
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 5,
+          "at": [
+            400,
+            440
+          ],
+          "labelAt": [
+            460,
+            400
+          ]
+        }
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "node": 1,
+      "points": [
+        [
+          160,
+          220
+        ],
+        [
+          100,
+          220
+        ]
+      ]
+    },
+    {
+      "node": 2,
+      "points": [
+        [
+          260,
+          220
+        ],
+        [
+          360,
+          220
+        ]
+      ]
+    },
+    {
+      "node": 4,
+      "points": [
+        [
+          400,
+          260
+        ],
+        [
+          400,
+          320
+        ]
+      ]
+    },
+    {
+      "node": 3,
+      "points": [
+        [
+          440,
+          220
+        ],
+        [
+          520,
+          220
+        ]
+      ]
+    },
+    {
+      "node": 5,
+      "points": [
+        [
+          400,
+          380
+        ],
+        [
+          400,
+          440
+        ]
+      ]
+    }
+  ],
+  "terminals": [
+    {
+      "node": 1,
+      "at": [
+        100,
+        220
+      ]
+    },
+    {
+      "node": 3,
+      "at": [
+        520,
+        220
+      ]
+    }
+  ],
+  "labels": [
+    {
+      "componentId": "r1",
+      "text": "r1 = 50 Ω",
+      "at": [
+        210,
+        70
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "tee",
+      "text": "tee",
+      "at": [
+        400,
+        150
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "c1",
+      "text": "c1 = 3.17 pF",
+      "at": [
+        490,
+        360
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "short",
+      "text": "Short",
+      "at": [
+        460,
+        490
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 1",
+      "at": [
+        100,
+        280
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 2",
+      "at": [
+        520,
+        280
+      ],
+      "anchor": "middle"
+    }
+  ]
+}

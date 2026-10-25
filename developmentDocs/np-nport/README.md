@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-19 -->
+<!-- Modified: 2026-10-23 -->
 # np-nport Development Notes
 
 `src/np-nport/` contains the common n-port object, lumped components, ideal fixtures, transmission lines, physical microstrip models, noise and intermodulation helpers, and network-composition functions.
@@ -25,10 +25,10 @@ The [constructor catalog](./constructorCatalog.md) lists public n-port construct
 
 Every constructor returns an object based on `nPort` with:
 
-- S-parameter rows at every frequency required by the selected analysis. All built-in n-port constructors use `analysisFrequencies(global)` to add two-tone product frequencies when `global.twoTone` is set.
+- S-parameter rows at every frequency required by the selected analysis. Built-in constructors capture per-component options with `componentSettings(global, options)`, then use `analysisFrequencies(settings)` to include two-tone product frequencies when configured.
 - Row-major square S matrices made of `complex()` values.
 - Frequency-aligned full noise covariance, including for combined nPorts.
-- A reference to the shared global settings.
+- Captured analysis settings, including the component's selected frequency list.
 - `.out(...)` for display-table extraction.
 - Compatibility with `nP.nodal()`.
 
@@ -76,14 +76,17 @@ S21 = S12 = 2 Y0 / (Y + 2 Y0)
 | `Open()` | 1 | Ideal reflection coefficient `+1`. |
 | `Short()` | 1 | Ideal reflection coefficient `-1`. |
 | `Load()` | 1 | Matched reflection coefficient `0`. |
+| `Thru()` | 2 | Matched ideal through connection. |
 | `Attn()` | 2 | Matched attenuator with temperature-dependent thermal noise. |
 | `Amp()` | 2 | Frequency-flat amplifier with noise covariance and optional OIP2/OIP3 sources. |
 | `Shift90()` | 2 | Matched ideal 90-degree phase shift. |
 | `Tee()` | 3 | Ideal equal-impedance junction. |
+| `seriesTee()` | 3 | Junction for inserting a one-port as a floating series branch. |
 | `Tee4()` | 4 | Ideal four-way junction. |
 | `Tee5()` | 5 | Ideal five-way junction. |
 | `Tlin()` | 2 | Ideal lossless transmission line. |
 | `Tclin()` | 4 | Ideal lossless coupled transmission line. |
+| `Coupler180()` | 4 | Matched ideal 180-degree coupler with settable coupling. |
 
 Ideal public names begin with an uppercase letter. Physical microstrip constructors remain lowercase.
 
@@ -179,7 +182,7 @@ With excitation at port 1, port 2 is through, port 4 is coupled, and port 3 is i
 
 1. Choose the owning subdirectory and canonical public name.
 2. Document physical reference planes, port order, units, equation source, and validity range.
-3. Read `analysisFrequencies(global)` and `global.Ro` after the caller has configured `global.fList` and, when applicable, `global.twoTone`.
+3. Capture settings with `componentSettings(global, options)`, then read `analysisFrequencies(settings)` and `global.Ro` after the caller has configured the analysis context. Respect an explicit component `fList`.
 4. Generate a complete row-major S matrix at every required frequency.
 5. Set `.spars` and `.global` on a new `nPort`; provide explicit covariance for active or biased noise models and a component temperature for lossy passive models. A nonlinear model must provide its own generated-wave source rather than treating a physical diode as intrinsically linear.
 6. Attach engineering metadata where it improves auditability.

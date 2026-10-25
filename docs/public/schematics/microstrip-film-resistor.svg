@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 440 360"
+     role="img" aria-labelledby="title description">
+  <title id="title">Microstrip film resistor</title>
+  <desc id="description">Guide REPL example microstrip-film-resistor: Microstrip film resistor.</desc>
+  <metadata id="circuit-description">{&quot;title&quot;:&quot;Microstrip film resistor&quot;,&quot;description&quot;:&quot;Guide REPL example microstrip-film-resistor: Microstrip film resistor.&quot;,&quot;domain&quot;:&quot;rf&quot;,&quot;source&quot;:{&quot;file&quot;:&quot;docs/.vitepress/theme/replExamples.js&quot;,&quot;result&quot;:&quot;resistor&quot;,&quot;combination&quot;:&quot;nP.cascade(resistor)&quot;,&quot;exampleId&quot;:&quot;microstrip-film-resistor&quot;},&quot;viewBox&quot;:[0,0,440,360],&quot;layout&quot;:{&quot;centerAxisX&quot;:220,&quot;centerReference&quot;:&quot;Microstrip film resistor signal path&quot;},&quot;components&quot;:[{&quot;id&quot;:&quot;resistor&quot;,&quot;symbol&quot;:&quot;rf/microstrip-thin-film-resistor.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;resistor&quot;,&quot;constructor&quot;:&quot;mtfr&quot;},&quot;at&quot;:[160,180],&quot;sourceAnchor&quot;:[80,80],&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:1,&quot;at&quot;:[160,180],&quot;labelAt&quot;:[160,120]},{&quot;port&quot;:2,&quot;node&quot;:2,&quot;at&quot;:[280,180],&quot;labelAt&quot;:[280,120]}]}],&quot;wires&quot;:[{&quot;node&quot;:1,&quot;points&quot;:[[100,180],[160,180]]},{&quot;node&quot;:2,&quot;points&quot;:[[280,180],[340,180]]}],&quot;terminals&quot;:[{&quot;node&quot;:1,&quot;at&quot;:[100,180]},{&quot;node&quot;:2,&quot;at&quot;:[340,180]}],&quot;labels&quot;:[{&quot;componentId&quot;:&quot;resistor&quot;,&quot;text&quot;:&quot;resistor: 100 Ω&quot;,&quot;at&quot;:[220,60],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;Port 1&quot;,&quot;at&quot;:[100,240],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;Port 2&quot;,&quot;at&quot;:[340,240],&quot;anchor&quot;:&quot;middle&quot;}]}</metadata>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path data-wire="1" data-node="1" d="M100 180 L160 180"/>
+    <path data-wire="2" data-node="2" d="M280 180 L340 180"/>
+    <circle data-external-terminal="1" cx="100" cy="180" r="4" fill="#202020" data-node="1"/>
+    <circle data-external-terminal="2" cx="340" cy="180" r="4" fill="#202020" data-node="2"/>
+    <!-- resistor from rf/microstrip-thin-film-resistor.svg -->
+    <g data-component-id="resistor" data-symbol-source="rf/microstrip-thin-film-resistor.svg" data-symbol-sha256="2ee49fcc9369438b857e9ae003b5c432430010688c4ed8c5505c6345d0f00e32" data-symbol-geometry-sha256="624e186af996800259703fb5db65d9dac5f2b82c6e7926fa301c3a1ec5590560" transform="translate(160 180) rotate(0) translate(-80 -80)">
+      <!-- canonical-geometry-start -->
+<g transform="translate(0 -10)">
+<path d="M80 90 H100 M180 90 H200" fill="none" stroke="#202020" stroke-width="2"/><rect x="100" y="75" width="80" height="30" fill="#ffffff" stroke="#202020" stroke-width="2"/><text x="140" y="90" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#202020" text-anchor="middle" dominant-baseline="middle">mTFR</text>
+  </g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <circle data-node-dot="1" cx="160" cy="180" r="4" fill="#202020"/>
+    <circle data-node-dot="2" cx="280" cy="180" r="4" fill="#202020"/>
+    <circle data-node-circle="1" cx="160" cy="120" r="12" fill="#ffffff"/>
+    <circle data-node-circle="2" cx="280" cy="120" r="12" fill="#ffffff"/>
+  </g>
+  <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    <text x="220" y="60" text-anchor="middle">resistor: 100 Ω</text>
+    <text x="100" y="240" text-anchor="middle">Port 1</text>
+    <text x="340" y="240" text-anchor="middle">Port 2</text>
+    <text data-node-label="1" x="160" y="125" text-anchor="middle">1</text>
+    <text data-node-label="2" x="280" y="125" text-anchor="middle">2</text>
+  </g>
+</svg>

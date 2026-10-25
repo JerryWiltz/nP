@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 640 280"
+     role="img" aria-labelledby="title description">
+  <title id="title">Waveform to frequency spectrum</title>
+  <desc id="description">A sampled nP.waveform() feeds nP.FFT(); connector names describe signal flow rather than RF nPort nodes.</desc>
+  <metadata id="circuit-description">{&quot;title&quot;:&quot;Waveform to frequency spectrum&quot;,&quot;description&quot;:&quot;A sampled nP.waveform() feeds nP.FFT(); connector names describe signal flow rather than RF nPort nodes.&quot;,&quot;domain&quot;:&quot;signal&quot;,&quot;viewBox&quot;:[0,0,640,280],&quot;layout&quot;:{&quot;centerAxisX&quot;:320,&quot;centerReference&quot;:&quot;FFT input&quot;},&quot;components&quot;:[{&quot;id&quot;:&quot;waveform1&quot;,&quot;symbol&quot;:&quot;digital/waveform.svg&quot;,&quot;at&quot;:[240,140],&quot;connections&quot;:[{&quot;port&quot;:1,&quot;signal&quot;:&quot;samples&quot;,&quot;at&quot;:[240,140]}]},{&quot;id&quot;:&quot;fft1&quot;,&quot;symbol&quot;:&quot;digital/fft.svg&quot;,&quot;at&quot;:[320,140],&quot;connections&quot;:[{&quot;port&quot;:1,&quot;signal&quot;:&quot;samples&quot;,&quot;at&quot;:[320,140]},{&quot;port&quot;:2,&quot;signal&quot;:&quot;spectrum&quot;,&quot;at&quot;:[440,140]}]}],&quot;wires&quot;:[{&quot;signal&quot;:&quot;samples&quot;,&quot;points&quot;:[[240,140],[320,140]]},{&quot;signal&quot;:&quot;spectrum&quot;,&quot;points&quot;:[[440,140],[560,140]]}],&quot;terminals&quot;:[{&quot;signal&quot;:&quot;spectrum&quot;,&quot;at&quot;:[560,140]}],&quot;labels&quot;:[{&quot;text&quot;:&quot;waveform()&quot;,&quot;at&quot;:[140,70],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;samples&quot;,&quot;at&quot;:[280,100],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;spectrum&quot;,&quot;at&quot;:[540,100],&quot;anchor&quot;:&quot;middle&quot;}]}</metadata>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path data-wire="1" data-signal="samples" d="M240 140 L320 140"/>
+    <path data-wire="2" data-signal="spectrum" d="M440 140 L560 140"/>
+    <circle data-external-terminal="1" cx="560" cy="140" r="4" fill="#202020" data-signal="spectrum"/>
+    <!-- waveform1 from digital/waveform.svg -->
+    <g data-component-id="waveform1" data-symbol-source="digital/waveform.svg" data-symbol-sha256="cf59ef2894faa4cb4a99baf1106b02ea93a7191a4aa235ffa4188d7d019e9e8c" data-symbol-geometry-sha256="b0fcad9dd0378fc4bbaf0e2f13bc6e7093d295cfd7ff618422063431e5c8a1fd" transform="translate(240 140) rotate(0) translate(-200 -80)">
+      <!-- canonical-geometry-start -->
+<g transform="translate(0 -10)">
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="100" y="55" width="80" height="70"/>
+    <path d="M180 90 H200"/>
+    <text x="140" y="80" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#202020" stroke="none" text-anchor="middle" dominant-baseline="middle">Wave</text>
+    <text x="140" y="100" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#202020" stroke="none" text-anchor="middle" dominant-baseline="middle">Form</text>
+  </g>
+  </g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <!-- fft1 from digital/fft.svg -->
+    <g data-component-id="fft1" data-symbol-source="digital/fft.svg" data-symbol-sha256="dc813f62462fccc2803e0d4cc24a72c7d877804e93d8e4fd78445452b22931d5" data-symbol-geometry-sha256="837ee27c16ab8d9c1cab95e1bb9b94349d56f7608e4c7725c0f819d68907e917" transform="translate(320 140) rotate(0) translate(-80 -80)">
+      <!-- canonical-geometry-start -->
+<g transform="translate(0 -10)">
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M80 90 H100 M180 90 H200"/><rect x="100" y="55" width="80" height="70"/><text x="140" y="90" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#202020" stroke="none" text-anchor="middle" dominant-baseline="middle">FFT</text>
+  </g>
+  </g>
+      <!-- canonical-geometry-end -->
+    </g>
+
+  </g>
+  <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    <text x="140" y="70" text-anchor="middle">waveform()</text>
+    <text x="280" y="100" text-anchor="middle">samples</text>
+    <text x="540" y="100" text-anchor="middle">spectrum</text>
+
+  </g>
+</svg>

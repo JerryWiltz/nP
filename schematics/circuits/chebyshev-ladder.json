@@ -1,0 +1,527 @@
+{
+  "title": "Chebyshev low-pass ladder",
+  "description": "Guide REPL example chebyshev-ladder: Chebyshev low-pass ladder.",
+  "domain": "rf",
+  "source": {
+    "file": "docs/.vitepress/theme/replExamples.js",
+    "result": "filter",
+    "combination": "nP.nodal(..., ['out', 2, 7])",
+    "exampleId": "chebyshev-ladder"
+  },
+  "viewBox": [
+    0,
+    0,
+    720,
+    600
+  ],
+  "layout": {
+    "centerAxisX": 360,
+    "centerReference": "series path midpoint"
+  },
+  "components": [
+    {
+      "id": "tee1",
+      "symbol": "rf/tee.svg",
+      "source": {
+        "variable": "tee",
+        "constructor": "Tee"
+      },
+      "at": [
+        180,
+        300
+      ],
+      "sourceAnchor": [
+        120,
+        140
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 1,
+          "at": [
+            180,
+            300
+          ],
+          "labelAt": [
+            220,
+            330
+          ]
+        },
+        {
+          "port": 2,
+          "node": 2,
+          "at": [
+            140,
+            260
+          ],
+          "labelAt": [
+            120,
+            220
+          ]
+        },
+        {
+          "port": 3,
+          "node": 3,
+          "at": [
+            220,
+            260
+          ],
+          "labelAt": [
+            270,
+            220
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c1",
+      "symbol": "rf/capacitor.svg",
+      "source": {
+        "variable": "c1",
+        "constructor": "C"
+      },
+      "at": [
+        180,
+        360
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "rotation": 90,
+      "connections": [
+        {
+          "port": 1,
+          "node": 1,
+          "at": [
+            180,
+            360
+          ],
+          "labelAt": [
+            220,
+            330
+          ]
+        },
+        {
+          "port": 2,
+          "node": 4,
+          "at": [
+            180,
+            420
+          ],
+          "labelAt": [
+            260,
+            440
+          ]
+        }
+      ]
+    },
+    {
+      "id": "short1",
+      "symbol": "rf/short.svg",
+      "source": {
+        "variable": "short",
+        "constructor": "Short"
+      },
+      "at": [
+        180,
+        480
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 4,
+          "at": [
+            180,
+            480
+          ],
+          "labelAt": [
+            260,
+            440
+          ]
+        }
+      ]
+    },
+    {
+      "id": "l1",
+      "symbol": "rf/inductor.svg",
+      "source": {
+        "variable": "l1",
+        "constructor": "L"
+      },
+      "at": [
+        320,
+        260
+      ],
+      "sourceAnchor": [
+        60,
+        80
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 3,
+          "at": [
+            320,
+            260
+          ],
+          "labelAt": [
+            270,
+            220
+          ]
+        },
+        {
+          "port": 2,
+          "node": 5,
+          "at": [
+            420,
+            260
+          ],
+          "labelAt": [
+            460,
+            220
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tee2",
+      "symbol": "rf/tee.svg",
+      "source": {
+        "variable": "tee",
+        "constructor": "Tee"
+      },
+      "at": [
+        540,
+        300
+      ],
+      "sourceAnchor": [
+        120,
+        140
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 6,
+          "at": [
+            540,
+            300
+          ],
+          "labelAt": [
+            580,
+            330
+          ]
+        },
+        {
+          "port": 2,
+          "node": 5,
+          "at": [
+            500,
+            260
+          ],
+          "labelAt": [
+            460,
+            220
+          ]
+        },
+        {
+          "port": 3,
+          "node": 7,
+          "at": [
+            580,
+            260
+          ],
+          "labelAt": [
+            600,
+            220
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c2",
+      "symbol": "rf/capacitor.svg",
+      "source": {
+        "variable": "c2",
+        "constructor": "C"
+      },
+      "at": [
+        540,
+        360
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "rotation": 90,
+      "connections": [
+        {
+          "port": 1,
+          "node": 6,
+          "at": [
+            540,
+            360
+          ],
+          "labelAt": [
+            580,
+            330
+          ]
+        },
+        {
+          "port": 2,
+          "node": 8,
+          "at": [
+            540,
+            420
+          ],
+          "labelAt": [
+            620,
+            440
+          ]
+        }
+      ]
+    },
+    {
+      "id": "short2",
+      "symbol": "rf/short.svg",
+      "source": {
+        "variable": "short",
+        "constructor": "Short"
+      },
+      "at": [
+        540,
+        480
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 8,
+          "at": [
+            540,
+            480
+          ],
+          "labelAt": [
+            620,
+            440
+          ]
+        }
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "node": 1,
+      "points": [
+        [
+          180,
+          300
+        ],
+        [
+          180,
+          360
+        ]
+      ]
+    },
+    {
+      "node": 2,
+      "points": [
+        [
+          140,
+          260
+        ],
+        [
+          80,
+          260
+        ]
+      ]
+    },
+    {
+      "node": 3,
+      "points": [
+        [
+          220,
+          260
+        ],
+        [
+          320,
+          260
+        ]
+      ]
+    },
+    {
+      "node": 4,
+      "points": [
+        [
+          180,
+          420
+        ],
+        [
+          180,
+          480
+        ]
+      ]
+    },
+    {
+      "node": 5,
+      "points": [
+        [
+          420,
+          260
+        ],
+        [
+          500,
+          260
+        ]
+      ]
+    },
+    {
+      "node": 6,
+      "points": [
+        [
+          540,
+          300
+        ],
+        [
+          540,
+          360
+        ]
+      ]
+    },
+    {
+      "node": 7,
+      "points": [
+        [
+          580,
+          260
+        ],
+        [
+          640,
+          260
+        ]
+      ]
+    },
+    {
+      "node": 8,
+      "points": [
+        [
+          540,
+          420
+        ],
+        [
+          540,
+          480
+        ]
+      ]
+    }
+  ],
+  "terminals": [
+    {
+      "node": 2,
+      "at": [
+        80,
+        260
+      ]
+    },
+    {
+      "node": 7,
+      "at": [
+        640,
+        260
+      ]
+    }
+  ],
+  "labels": [
+    {
+      "componentId": "tee1",
+      "text": "tee",
+      "at": [
+        180,
+        170
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "c1",
+      "text": "c1 16.418 pF",
+      "at": [
+        280,
+        390
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "short1",
+      "text": "Short",
+      "at": [
+        230,
+        540
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "l1",
+      "text": "l1 = 45.654 nH",
+      "at": [
+        370,
+        150
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "tee2",
+      "text": "tee",
+      "at": [
+        540,
+        170
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "c2",
+      "text": "c2 16.418 pF",
+      "at": [
+        620,
+        390
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "short2",
+      "text": "Short",
+      "at": [
+        590,
+        540
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 1",
+      "at": [
+        80,
+        320
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 2",
+      "at": [
+        640,
+        320
+      ],
+      "anchor": "middle"
+    }
+  ]
+}

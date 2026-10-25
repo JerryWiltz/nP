@@ -1,0 +1,264 @@
+{
+  "title": "C-L-C low-pass network",
+  "description": "Guide REPL example circuit-examples: C-L-C low-pass network.",
+  "domain": "rf",
+  "source": {
+    "file": "docs/circuit-examples.md",
+    "result": "byNodes",
+    "combination": "nP.nodal([c1, 1, 2], [l1, 2, 3], [c2, 3, 4], ['out', 1, 4])",
+    "exampleId": "circuit-examples"
+  },
+  "viewBox": [
+    0,
+    0,
+    700,
+    360
+  ],
+  "layout": {
+    "centerAxisX": 350,
+    "centerReference": "C-L-C low-pass network signal path"
+  },
+  "components": [
+    {
+      "id": "c1",
+      "symbol": "rf/parallel-capacitor.svg",
+      "source": {
+        "variable": "c1",
+        "constructor": "paC"
+      },
+      "at": [
+        160,
+        180
+      ],
+      "sourceAnchor": [
+        180,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "node": 1,
+          "at": [
+            160,
+            180
+          ],
+          "labelAt": [
+            160,
+            120
+          ]
+        },
+        {
+          "port": 2,
+          "node": 2,
+          "at": [
+            200,
+            180
+          ],
+          "labelAt": [
+            260,
+            120
+          ]
+        }
+      ]
+    },
+    {
+      "id": "l1",
+      "symbol": "rf/inductor.svg",
+      "source": {
+        "variable": "l1",
+        "constructor": "seL"
+      },
+      "at": [
+        300,
+        180
+      ],
+      "sourceAnchor": [
+        60,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "node": 2,
+          "at": [
+            300,
+            180
+          ],
+          "labelAt": [
+            260,
+            120
+          ]
+        },
+        {
+          "port": 2,
+          "node": 3,
+          "at": [
+            400,
+            180
+          ],
+          "labelAt": [
+            460,
+            120
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c2",
+      "symbol": "rf/parallel-capacitor.svg",
+      "source": {
+        "variable": "c2",
+        "constructor": "paC"
+      },
+      "at": [
+        500,
+        180
+      ],
+      "sourceAnchor": [
+        180,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "node": 3,
+          "at": [
+            500,
+            180
+          ],
+          "labelAt": [
+            460,
+            120
+          ]
+        },
+        {
+          "port": 2,
+          "node": 4,
+          "at": [
+            540,
+            180
+          ],
+          "labelAt": [
+            540,
+            120
+          ]
+        }
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "node": 1,
+      "points": [
+        [
+          100,
+          180
+        ],
+        [
+          160,
+          180
+        ]
+      ]
+    },
+    {
+      "node": 2,
+      "points": [
+        [
+          200,
+          180
+        ],
+        [
+          300,
+          180
+        ]
+      ]
+    },
+    {
+      "node": 3,
+      "points": [
+        [
+          400,
+          180
+        ],
+        [
+          500,
+          180
+        ]
+      ]
+    },
+    {
+      "node": 4,
+      "points": [
+        [
+          540,
+          180
+        ],
+        [
+          600,
+          180
+        ]
+      ]
+    }
+  ],
+  "terminals": [
+    {
+      "node": 1,
+      "at": [
+        100,
+        180
+      ]
+    },
+    {
+      "node": 4,
+      "at": [
+        600,
+        180
+      ]
+    }
+  ],
+  "labels": [
+    {
+      "componentId": "c1",
+      "text": "c1: 16.418 pF",
+      "at": [
+        180,
+        60
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "l1",
+      "text": "l1: 45.654 nH",
+      "at": [
+        350,
+        60
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "c2",
+      "text": "c2: 16.418 pF",
+      "at": [
+        520,
+        60
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 1",
+      "at": [
+        100,
+        240
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 2",
+      "at": [
+        600,
+        240
+      ],
+      "anchor": "middle"
+    }
+  ]
+}

@@ -1,0 +1,184 @@
+{
+  "title": "Modulation and demodulation",
+  "description": "Guide REPL example am-envelope: Modulation and demodulation.",
+  "domain": "signal",
+  "source": {
+    "file": "docs/.vitepress/theme/replExamples.js",
+    "result": "rx",
+    "combination": "nP.demod(chain, {noise: false})",
+    "exampleId": "am-envelope"
+  },
+  "viewBox": [
+    0,
+    0,
+    680,
+    360
+  ],
+  "layout": {
+    "centerAxisX": 340,
+    "centerReference": "Modulation and demodulation flow"
+  },
+  "components": [
+    {
+      "id": "tx",
+      "symbol": "digital/mod.svg",
+      "source": {
+        "variable": "tx",
+        "constructor": "mod"
+      },
+      "at": [
+        160,
+        180
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "signal": "signal-0",
+          "at": [
+            160,
+            180
+          ]
+        },
+        {
+          "port": 2,
+          "signal": "signal-1",
+          "at": [
+            280,
+            180
+          ]
+        }
+      ]
+    },
+    {
+      "id": "rx",
+      "symbol": "digital/demod.svg",
+      "source": {
+        "variable": "rx",
+        "constructor": "demod"
+      },
+      "at": [
+        400,
+        180
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "signal": "signal-1",
+          "at": [
+            400,
+            180
+          ]
+        },
+        {
+          "port": 2,
+          "signal": "signal-2",
+          "at": [
+            520,
+            180
+          ]
+        }
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "signal": "signal-0",
+      "points": [
+        [
+          100,
+          180
+        ],
+        [
+          160,
+          180
+        ]
+      ]
+    },
+    {
+      "signal": "signal-1",
+      "points": [
+        [
+          280,
+          180
+        ],
+        [
+          400,
+          180
+        ]
+      ]
+    },
+    {
+      "signal": "signal-2",
+      "points": [
+        [
+          520,
+          180
+        ],
+        [
+          580,
+          180
+        ]
+      ]
+    }
+  ],
+  "terminals": [
+    {
+      "signal": "signal-0",
+      "at": [
+        100,
+        180
+      ]
+    },
+    {
+      "signal": "signal-2",
+      "at": [
+        580,
+        180
+      ]
+    }
+  ],
+  "labels": [
+    {
+      "componentId": "tx",
+      "text": "tx: mod()",
+      "at": [
+        220,
+        60
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "rx",
+      "text": "rx: demod()",
+      "at": [
+        460,
+        60
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Output",
+      "at": [
+        580,
+        240
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "RF path shown separately",
+      "at": [
+        340,
+        140
+      ],
+      "anchor": "middle"
+    }
+  ]
+}

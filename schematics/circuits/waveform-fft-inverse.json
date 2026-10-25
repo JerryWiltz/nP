@@ -1,0 +1,204 @@
+{
+  "title": "Waveform, FFT, and inverse FFT",
+  "description": "Guide REPL example trapezoid-fft-round-trip: Waveform, FFT, and inverse FFT.",
+  "domain": "signal",
+  "source": {
+    "file": "docs/.vitepress/theme/replExamples.js",
+    "result": "reconstructed",
+    "combination": "nP.invFFT(fft), with fft = nP.FFT(trapezoid.out('samples'))",
+    "exampleId": "trapezoid-fft-round-trip"
+  },
+  "viewBox": [
+    0,
+    0,
+    920,
+    360
+  ],
+  "layout": {
+    "centerAxisX": 460,
+    "centerReference": "Waveform, FFT, and inverse FFT flow"
+  },
+  "components": [
+    {
+      "id": "trapezoid",
+      "symbol": "digital/waveform.svg",
+      "source": {
+        "variable": "trapezoid",
+        "constructor": "waveform"
+      },
+      "at": [
+        160,
+        180
+      ],
+      "sourceAnchor": [
+        200,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "signal": "signal-1",
+          "at": [
+            160,
+            180
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fft",
+      "symbol": "digital/fft.svg",
+      "source": {
+        "variable": "fft",
+        "constructor": "FFT"
+      },
+      "at": [
+        400,
+        180
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "signal": "signal-1",
+          "at": [
+            400,
+            180
+          ]
+        },
+        {
+          "port": 2,
+          "signal": "signal-2",
+          "at": [
+            520,
+            180
+          ]
+        }
+      ]
+    },
+    {
+      "id": "reconstructed",
+      "symbol": "digital/inverse-fft.svg",
+      "source": {
+        "variable": "reconstructed",
+        "constructor": "invFFT"
+      },
+      "at": [
+        640,
+        180
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "signal": "signal-2",
+          "at": [
+            640,
+            180
+          ]
+        },
+        {
+          "port": 2,
+          "signal": "signal-3",
+          "at": [
+            760,
+            180
+          ]
+        }
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "signal": "signal-1",
+      "points": [
+        [
+          160,
+          180
+        ],
+        [
+          400,
+          180
+        ]
+      ]
+    },
+    {
+      "signal": "signal-2",
+      "points": [
+        [
+          520,
+          180
+        ],
+        [
+          640,
+          180
+        ]
+      ]
+    },
+    {
+      "signal": "signal-3",
+      "points": [
+        [
+          760,
+          180
+        ],
+        [
+          820,
+          180
+        ]
+      ]
+    }
+  ],
+  "terminals": [
+    {
+      "signal": "signal-3",
+      "at": [
+        820,
+        180
+      ]
+    }
+  ],
+  "labels": [
+    {
+      "componentId": "trapezoid",
+      "text": "trapezoid: waveform()",
+      "at": [
+        160,
+        60
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "fft",
+      "text": "fft: FFT()",
+      "at": [
+        460,
+        60
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "reconstructed",
+      "text": "reconstructed: invFFT()",
+      "at": [
+        700,
+        60
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Output",
+      "at": [
+        820,
+        240
+      ],
+      "anchor": "middle"
+    }
+  ]
+}

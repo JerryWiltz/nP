@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-19 -->
+<!-- Modified: 2026-10-25 -->
 # Circuit examples
 
 These circuits show how individual n-ports become useful RF networks. Each example sets its frequencies, creates its parts, connects them, then displays selected S-parameters. The code assumes the `nP` browser bundle has been loaded, as in [Hello, nPort!](./hello-nport.md).
@@ -36,6 +36,8 @@ nP.lineChart({
 ```
 
 `s21dB` and `s31dB` show the two output paths. `s11dB` shows input match; `s23dB` shows isolation between the outputs. The line length above is close to a quarter wavelength near 6 GHz in the ideal vacuum-speed model.
+
+![Wilkinson power divider schematic](/schematics/wilkinson-divider.svg)
 
 ![Wilkinson divider schematic and response](/wilkinson-example.png)
 
@@ -84,6 +86,8 @@ nP.lineChart({
 
 The four traces should lie on top of one another. See [Filters](./filters.md) for the Chebyshev helpers and a custom `lpfGen()` input.
 
+![C-L-C low-pass circuit shared by the four connection methods](/schematics/clc-low-pass-four-ways.svg)
+
 The earlier nine-element version of this comparison has a schematic and four output plots:
 
 ![Nine-element low-pass filter comparison](/low-pass-filter-comparison.png)
@@ -121,6 +125,8 @@ nP.lineTable({
 
 This illustrates how a circuit of three separate resistors can be measured as a single two-port. The [Connecting nPorts](./connecting-nports.md) page explains the connection labels.
 
+![Pi attenuator schematic](/schematics/pi-attenuator.svg)
+
 ## Edge-coupled bandpass filter
 
 Three ideal coupled-line sections form this filter. `Tclin()` ports are numbered clockwise from the upper left. The unused ends are terminated with `Open()` fixtures.
@@ -154,6 +160,8 @@ nP.lineChart({
 });
 ```
 
-![Edge-coupled filter schematic and response](/edge-coupled-filter-example.png)
+![Three-section edge-coupled bandpass filter schematic](/schematics/edge-coupled-bandpass.svg)
+
+![Edge-coupled filter response](/edge-coupled-filter-example.png)
 
 For the coupled-line port order and defaults, see [Ideal components](./ideal-components.md#a-lossless-line).

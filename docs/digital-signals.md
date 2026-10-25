@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-22 -->
+<!-- Modified: 2026-10-25 -->
 # Digital signals
 
 Use `nP.mod()` to make a signal, send it through an n-port circuit, and use `nP.demod()` to recover the output. `nP.PN()` makes a clocked pseudorandom bit pattern when you need control over the clock ticks. `nP.bitErrorRate()` measures the fraction of received bits in error.
@@ -81,6 +81,10 @@ nP.lineChart({
 ```
 
 For this sampled digital mode, `mod()` requires one uniformly spaced `tList` entry per generated sample and fills the selected circuit's frequency list with the signal's FFT frequencies. Create the attenuator **after** `mod()` so its S-parameter rows use those frequencies. `{signal: tx}` attaches the transmitter to the circuit. `demod()` normally includes receiver noise for sampled digital modes; `{noise: false}` makes this first example repeatable. The waveform table's time values are already in nanoseconds, so the chart uses `metricPrefix: 'none'`.
+
+![Digital transmitter and receiver signal flow](/schematics/mod-demod.svg)
+
+![Three dB attenuator in the RF path](/schematics/attenuator-three-db.svg)
 
 ## Make a transmitter with `mod()`
 

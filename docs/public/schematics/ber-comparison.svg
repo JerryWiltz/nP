@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 760 500"
+     role="img" aria-labelledby="title description">
+  <title id="title">BER comparison through an RF attenuator</title>
+  <desc id="description">The transmitter supplies the reference bits and the RF path; bitErrorRate compares its output with the received signal.</desc>
+  <metadata id="circuit-description">{&quot;title&quot;:&quot;BER comparison through an RF attenuator&quot;,&quot;description&quot;:&quot;The transmitter supplies the reference bits and the RF path; bitErrorRate compares its output with the received signal.&quot;,&quot;domain&quot;:&quot;signal&quot;,&quot;source&quot;:{&quot;file&quot;:&quot;docs/.vitepress/theme/replExamples.js&quot;,&quot;result&quot;:&quot;ber&quot;,&quot;combination&quot;:&quot;nP.bitErrorRate(tx, chain, {receptions: 50})&quot;,&quot;exampleId&quot;:&quot;ber-attenuation&quot;},&quot;viewBox&quot;:[0,0,760,500],&quot;layout&quot;:{&quot;centerAxisX&quot;:380,&quot;centerReference&quot;:&quot;transmit and receive comparison&quot;},&quot;components&quot;:[{&quot;id&quot;:&quot;tx&quot;,&quot;symbol&quot;:&quot;digital/mod.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;tx&quot;,&quot;constructor&quot;:&quot;mod&quot;},&quot;at&quot;:[160,200],&quot;sourceAnchor&quot;:[80,80],&quot;connections&quot;:[{&quot;port&quot;:1,&quot;signal&quot;:&quot;grid&quot;,&quot;at&quot;:[160,200]},{&quot;port&quot;:2,&quot;signal&quot;:&quot;tx&quot;,&quot;at&quot;:[280,200]}]},{&quot;id&quot;:&quot;ber&quot;,&quot;symbol&quot;:&quot;digital/bit-error-rate.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;ber&quot;,&quot;constructor&quot;:&quot;bitErrorRate&quot;},&quot;at&quot;:[460,260],&quot;sourceAnchor&quot;:[80,80],&quot;connections&quot;:[{&quot;port&quot;:1,&quot;signal&quot;:&quot;tx&quot;,&quot;at&quot;:[460,260]},{&quot;port&quot;:2,&quot;signal&quot;:&quot;received&quot;,&quot;at&quot;:[460,300]},{&quot;port&quot;:3,&quot;signal&quot;:&quot;ber-result&quot;,&quot;at&quot;:[580,280]}]}],&quot;wires&quot;:[{&quot;signal&quot;:&quot;grid&quot;,&quot;points&quot;:[[100,200],[160,200]]},{&quot;signal&quot;:&quot;tx&quot;,&quot;points&quot;:[[280,200],[340,200]]},{&quot;signal&quot;:&quot;tx&quot;,&quot;points&quot;:[[340,200],[340,260],[460,260]]},{&quot;signal&quot;:&quot;received&quot;,&quot;points&quot;:[[400,300],[460,300]]},{&quot;signal&quot;:&quot;ber-result&quot;,&quot;points&quot;:[[580,280],[640,280]]}],&quot;terminals&quot;:[{&quot;signal&quot;:&quot;grid&quot;,&quot;at&quot;:[100,200]},{&quot;signal&quot;:&quot;tx&quot;,&quot;at&quot;:[340,200]},{&quot;signal&quot;:&quot;received&quot;,&quot;at&quot;:[400,300]},{&quot;signal&quot;:&quot;ber-result&quot;,&quot;at&quot;:[640,280]}],&quot;labels&quot;:[{&quot;componentId&quot;:&quot;tx&quot;,&quot;text&quot;:&quot;ASCII mod&quot;,&quot;at&quot;:[220,90],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;ber&quot;,&quot;text&quot;:&quot;bitErrorRate&quot;,&quot;at&quot;:[520,140],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;to RF attenuator&quot;,&quot;at&quot;:[340,160],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;received&quot;,&quot;at&quot;:[400,360],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;BER&quot;,&quot;at&quot;:[640,340],&quot;anchor&quot;:&quot;middle&quot;}]}</metadata>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path data-wire="1" data-signal="grid" d="M100 200 L160 200"/>
+    <path data-wire="2" data-signal="tx" d="M280 200 L340 200"/>
+    <path data-wire="3" data-signal="tx" d="M340 200 L340 260 L460 260"/>
+    <path data-wire="4" data-signal="received" d="M400 300 L460 300"/>
+    <path data-wire="5" data-signal="ber-result" d="M580 280 L640 280"/>
+    <circle data-external-terminal="1" cx="100" cy="200" r="4" fill="#202020" data-signal="grid"/>
+    <circle data-external-terminal="2" cx="340" cy="200" r="4" fill="#202020" data-signal="tx"/>
+    <circle data-external-terminal="3" cx="400" cy="300" r="4" fill="#202020" data-signal="received"/>
+    <circle data-external-terminal="4" cx="640" cy="280" r="4" fill="#202020" data-signal="ber-result"/>
+    <!-- tx from digital/mod.svg -->
+    <g data-component-id="tx" data-symbol-source="digital/mod.svg" data-symbol-sha256="ab82fbf7f4d083f0b3f275188229ac659dd2c799d4989197c40f4081ee7032fb" data-symbol-geometry-sha256="0417b29f0ec21b432981ba42d062fbe5ad4cd448fa5fc0dca12456cd578105ae" transform="translate(160 200) rotate(0) translate(-80 -80)">
+      <!-- canonical-geometry-start -->
+<g transform="translate(0 -10)">
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M80 90 H100 M180 90 H200"/><rect x="100" y="55" width="80" height="70"/><text x="140" y="90" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#202020" stroke="none" text-anchor="middle" dominant-baseline="middle">MOD</text>
+  </g>
+  </g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <!-- ber from digital/bit-error-rate.svg -->
+    <g data-component-id="ber" data-symbol-source="digital/bit-error-rate.svg" data-symbol-sha256="5348d2a6d6240f31611d348e7e21d4b142e2fe6608b7fc364eae28ff3981c003" data-symbol-geometry-sha256="fb9f23f2cf213cc0f990fd0ab213a95fcc9533300d476cf3b4d8689fd960bc7a" transform="translate(460 260) rotate(0) translate(-80 -80)">
+      <!-- canonical-geometry-start -->
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M80 80 H100 M80 120 H100 M180 100 H200"/><rect x="100" y="50" width="80" height="100"/><text x="140" y="100" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#202020" stroke="none" text-anchor="middle" dominant-baseline="middle">BER</text>
+  </g>
+      <!-- canonical-geometry-end -->
+    </g>
+
+  </g>
+  <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    <text x="220" y="90" text-anchor="middle">ASCII mod</text>
+    <text x="520" y="140" text-anchor="middle">bitErrorRate</text>
+    <text x="340" y="160" text-anchor="middle">to RF attenuator</text>
+    <text x="400" y="360" text-anchor="middle">received</text>
+    <text x="640" y="340" text-anchor="middle">BER</text>
+
+  </g>
+</svg>

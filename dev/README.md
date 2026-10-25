@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-19 -->
+<!-- Modified: 2026-10-24 -->
 # Development pages
 
 The HTML files in this directory are executable browser harnesses that load
@@ -8,11 +8,12 @@ source changes, then keep a changed harness and its companion note aligned.
 
 | Harness | Focus | Companion note |
 | --- | --- | --- |
+| `canonicalSymbolsDevelopment.html` | All 57 canonical SVG symbols in Guide API order | — |
 | `chartDefaultsDevelopment.html` | Built-in line chart, line table, and Smith chart defaults | — |
 | `diodeDevelopment.html` | 1N4148 RF S-parameters and DC I-V | `diodeDevelopment.md` |
 | `edgeCoupledFilter.html` | Coupled-line filter with amplifier cascade | — |
 | `intermodAnalysis.html` | Two-tone amplifier then attenuator sweep: IP3 from nodal and cascade | `intermodAnalysis.md` |
-| `manchesterDevelopment.html` | Manchester PSK transmit, cascade, and demodulation example (currently untracked) | — |
+| `manchesterDevelopment.html` | Manchester PSK transmit, cascade, and demodulation example | — |
 | `matrixDevelopment.html` | Real and complex matrix operations | `matrixDevelopment.md` |
 | `microstripDevelopment.html` | Microstrip line, coupled line, tee, divider, and thin-film resistor | `microstripDevelopment.md` |
 | `nodalDevelopment.html` | Series and parallel nodal connections | `nodalDevelopment.md` |

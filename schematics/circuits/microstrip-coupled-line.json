@@ -1,0 +1,216 @@
+{
+  "title": "Microstrip coupled line",
+  "description": "Guide REPL example microstrip-coupler: Microstrip coupled line.",
+  "domain": "rf",
+  "source": {
+    "file": "docs/.vitepress/theme/replExamples.js",
+    "result": "coupler",
+    "combination": "coupler",
+    "exampleId": "microstrip-coupler"
+  },
+  "viewBox": [
+    0,
+    0,
+    600,
+    440
+  ],
+  "layout": {
+    "centerAxisX": 300,
+    "centerReference": "coupler body"
+  },
+  "components": [
+    {
+      "id": "coupler",
+      "symbol": "rf/microstrip-coupled-line.svg",
+      "source": {
+        "variable": "coupler",
+        "constructor": "mclin"
+      },
+      "at": [
+        240,
+        180
+      ],
+      "sourceAnchor": [
+        100,
+        100
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "node": 1,
+          "at": [
+            240,
+            180
+          ],
+          "labelAt": [
+            220,
+            140
+          ]
+        },
+        {
+          "port": 2,
+          "node": 2,
+          "at": [
+            360,
+            180
+          ],
+          "labelAt": [
+            380,
+            140
+          ]
+        },
+        {
+          "port": 3,
+          "node": 3,
+          "at": [
+            360,
+            220
+          ],
+          "labelAt": [
+            380,
+            260
+          ]
+        },
+        {
+          "port": 4,
+          "node": 4,
+          "at": [
+            240,
+            220
+          ],
+          "labelAt": [
+            220,
+            260
+          ]
+        }
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "node": 1,
+      "points": [
+        [
+          240,
+          180
+        ],
+        [
+          180,
+          180
+        ]
+      ]
+    },
+    {
+      "node": 2,
+      "points": [
+        [
+          360,
+          180
+        ],
+        [
+          420,
+          180
+        ]
+      ]
+    },
+    {
+      "node": 3,
+      "points": [
+        [
+          360,
+          220
+        ],
+        [
+          420,
+          220
+        ]
+      ]
+    },
+    {
+      "node": 4,
+      "points": [
+        [
+          240,
+          220
+        ],
+        [
+          180,
+          220
+        ]
+      ]
+    }
+  ],
+  "terminals": [
+    {
+      "node": 1,
+      "at": [
+        180,
+        180
+      ]
+    },
+    {
+      "node": 2,
+      "at": [
+        420,
+        180
+      ]
+    },
+    {
+      "node": 3,
+      "at": [
+        420,
+        220
+      ]
+    },
+    {
+      "node": 4,
+      "at": [
+        180,
+        220
+      ]
+    }
+  ],
+  "labels": [
+    {
+      "text": "Port 1",
+      "at": [
+        180,
+        100
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 2",
+      "at": [
+        420,
+        100
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 3",
+      "at": [
+        420,
+        340
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 4",
+      "at": [
+        180,
+        340
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "coupler",
+      "text": "coupler: mclin()",
+      "at": [
+        300,
+        70
+      ],
+      "anchor": "middle"
+    }
+  ]
+}

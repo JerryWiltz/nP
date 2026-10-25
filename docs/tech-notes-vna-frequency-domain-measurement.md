@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-22 -->
+<!-- Modified: 2026-10-25 -->
 # VNA frequency-domain measurement
 
 A vector network analyzer (VNA) tests a device at selected frequencies and measures both the **magnitude and phase** of its reflected and transmitted signals. The result is a complex S-parameter at each frequency. The [VNA time-domain reflection note](./tech-notes-vna-time-domain-reflection.md) uses frequency measurements to calculate a synthetic impulse response; this note stays in the frequency domain and follows the [VNA inductor S-parameters REPL example](./repl.md#example-vna-port1). [Keysight's frequency-domain overview](https://helpfiles.keysight.com/csg/N1930xB/Analyzing/Analyzing_Data_in_the_Frequency_Domain.html) describes direct VNA sweeps of a device under test.
@@ -44,6 +44,10 @@ source -> splitter -> input coupler -> 5 nH inductor -> output coupler
 ```
 
 The `nP.nodal()` result exposes four ports: source input, R, A, and B. Its three demodulators select external output ports 2, 3, and 4. Every unused coupler port is matched.
+
+![Inductor between the VNA input and output couplers](/schematics/vna-inductor-fixture.svg)
+
+![VNA source and three receiver signal paths](/schematics/vna-receivers.svg)
 
 ## Compare all three receivers
 

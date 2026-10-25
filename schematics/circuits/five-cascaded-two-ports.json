@@ -1,0 +1,392 @@
+{
+  "title": "Five cascaded two-ports",
+  "description": "Guide REPL example method-chaining-nport: Five cascaded two-ports.",
+  "domain": "rf",
+  "source": {
+    "file": "docs/.vitepress/theme/replExamples.js",
+    "result": "chain",
+    "combination": "line1.cas(attenuator1).cas(line2).cas(attenuator2).cas(line3)",
+    "exampleId": "method-chaining-nport"
+  },
+  "viewBox": [
+    0,
+    0,
+    1200,
+    360
+  ],
+  "layout": {
+    "centerAxisX": 600,
+    "centerReference": "Five cascaded two-ports signal path"
+  },
+  "components": [
+    {
+      "id": "line1",
+      "symbol": "rf/transmission-line.svg",
+      "source": {
+        "variable": "line1",
+        "constructor": "Tlin"
+      },
+      "at": [
+        160,
+        180
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "node": 1,
+          "at": [
+            160,
+            180
+          ],
+          "labelAt": [
+            160,
+            120
+          ]
+        },
+        {
+          "port": 2,
+          "node": 2,
+          "at": [
+            280,
+            180
+          ],
+          "labelAt": [
+            340,
+            120
+          ]
+        }
+      ]
+    },
+    {
+      "id": "attenuator1",
+      "symbol": "rf/attenuator.svg",
+      "source": {
+        "variable": "attenuator1",
+        "constructor": "Attn"
+      },
+      "at": [
+        380,
+        180
+      ],
+      "sourceAnchor": [
+        100,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "node": 2,
+          "at": [
+            380,
+            180
+          ],
+          "labelAt": [
+            340,
+            120
+          ]
+        },
+        {
+          "port": 2,
+          "node": 3,
+          "at": [
+            440,
+            180
+          ],
+          "labelAt": [
+            500,
+            120
+          ]
+        }
+      ]
+    },
+    {
+      "id": "line2",
+      "symbol": "rf/transmission-line.svg",
+      "source": {
+        "variable": "line2",
+        "constructor": "Tlin"
+      },
+      "at": [
+        540,
+        180
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "node": 3,
+          "at": [
+            540,
+            180
+          ],
+          "labelAt": [
+            500,
+            120
+          ]
+        },
+        {
+          "port": 2,
+          "node": 4,
+          "at": [
+            660,
+            180
+          ],
+          "labelAt": [
+            720,
+            120
+          ]
+        }
+      ]
+    },
+    {
+      "id": "attenuator2",
+      "symbol": "rf/attenuator.svg",
+      "source": {
+        "variable": "attenuator2",
+        "constructor": "Attn"
+      },
+      "at": [
+        760,
+        180
+      ],
+      "sourceAnchor": [
+        100,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "node": 4,
+          "at": [
+            760,
+            180
+          ],
+          "labelAt": [
+            720,
+            120
+          ]
+        },
+        {
+          "port": 2,
+          "node": 5,
+          "at": [
+            820,
+            180
+          ],
+          "labelAt": [
+            880,
+            120
+          ]
+        }
+      ]
+    },
+    {
+      "id": "line3",
+      "symbol": "rf/transmission-line.svg",
+      "source": {
+        "variable": "line3",
+        "constructor": "Tlin"
+      },
+      "at": [
+        920,
+        180
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "node": 5,
+          "at": [
+            920,
+            180
+          ],
+          "labelAt": [
+            880,
+            120
+          ]
+        },
+        {
+          "port": 2,
+          "node": 6,
+          "at": [
+            1040,
+            180
+          ],
+          "labelAt": [
+            1040,
+            120
+          ]
+        }
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "node": 1,
+      "points": [
+        [
+          100,
+          180
+        ],
+        [
+          160,
+          180
+        ]
+      ]
+    },
+    {
+      "node": 2,
+      "points": [
+        [
+          280,
+          180
+        ],
+        [
+          380,
+          180
+        ]
+      ]
+    },
+    {
+      "node": 3,
+      "points": [
+        [
+          440,
+          180
+        ],
+        [
+          540,
+          180
+        ]
+      ]
+    },
+    {
+      "node": 4,
+      "points": [
+        [
+          660,
+          180
+        ],
+        [
+          760,
+          180
+        ]
+      ]
+    },
+    {
+      "node": 5,
+      "points": [
+        [
+          820,
+          180
+        ],
+        [
+          920,
+          180
+        ]
+      ]
+    },
+    {
+      "node": 6,
+      "points": [
+        [
+          1040,
+          180
+        ],
+        [
+          1100,
+          180
+        ]
+      ]
+    }
+  ],
+  "terminals": [
+    {
+      "node": 1,
+      "at": [
+        100,
+        180
+      ]
+    },
+    {
+      "node": 6,
+      "at": [
+        1100,
+        180
+      ]
+    }
+  ],
+  "labels": [
+    {
+      "componentId": "line1",
+      "text": "line1: 50 Ω, 10 mm",
+      "at": [
+        220,
+        60
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "attenuator1",
+      "text": "attenuator1: 3 dB",
+      "at": [
+        410,
+        60
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "line2",
+      "text": "line2: 60 Ω, 20 mm",
+      "at": [
+        600,
+        60
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "attenuator2",
+      "text": "attenuator2: 6 dB",
+      "at": [
+        790,
+        60
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "line3",
+      "text": "line3: 50 Ω, 10 mm",
+      "at": [
+        980,
+        60
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 1",
+      "at": [
+        100,
+        240
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 2",
+      "at": [
+        1100,
+        240
+      ],
+      "anchor": "middle"
+    }
+  ]
+}

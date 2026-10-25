@@ -1,0 +1,669 @@
+{
+  "title": "Three-section edge-coupled bandpass filter",
+  "description": "Guide REPL example circuit-examples: Three-section edge-coupled bandpass filter.",
+  "domain": "rf",
+  "source": {
+    "file": "docs/circuit-examples.md",
+    "result": "filter",
+    "combination": "nP.nodal(..., ['out', 1, 9])",
+    "exampleId": "circuit-examples"
+  },
+  "viewBox": [
+    0,
+    0,
+    940,
+    540
+  ],
+  "layout": {
+    "centerAxisX": 470,
+    "centerReference": "middle coupled section"
+  },
+  "components": [
+    {
+      "id": "coupled1",
+      "symbol": "rf/coupled-transmission-line.svg",
+      "source": {
+        "variable": "coupled1",
+        "constructor": "Tclin"
+      },
+      "at": [
+        160,
+        180
+      ],
+      "sourceAnchor": [
+        100,
+        100
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 1,
+          "at": [
+            160,
+            180
+          ],
+          "labelAt": [
+            160,
+            140
+          ]
+        },
+        {
+          "port": 2,
+          "node": 2,
+          "at": [
+            280,
+            180
+          ],
+          "labelAt": [
+            380,
+            140
+          ]
+        },
+        {
+          "port": 3,
+          "node": 3,
+          "at": [
+            280,
+            220
+          ],
+          "labelAt": [
+            340,
+            260
+          ]
+        },
+        {
+          "port": 4,
+          "node": 4,
+          "at": [
+            160,
+            220
+          ],
+          "labelAt": [
+            200,
+            280
+          ]
+        }
+      ]
+    },
+    {
+      "id": "coupled2",
+      "symbol": "rf/coupled-transmission-line.svg",
+      "source": {
+        "variable": "coupled2",
+        "constructor": "Tclin"
+      },
+      "at": [
+        400,
+        220
+      ],
+      "sourceAnchor": [
+        100,
+        100
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 3,
+          "at": [
+            400,
+            220
+          ],
+          "labelAt": [
+            340,
+            260
+          ]
+        },
+        {
+          "port": 2,
+          "node": 5,
+          "at": [
+            520,
+            220
+          ],
+          "labelAt": [
+            620,
+            160
+          ]
+        },
+        {
+          "port": 3,
+          "node": 6,
+          "at": [
+            520,
+            260
+          ],
+          "labelAt": [
+            580,
+            300
+          ]
+        },
+        {
+          "port": 4,
+          "node": 7,
+          "at": [
+            400,
+            260
+          ],
+          "labelAt": [
+            440,
+            320
+          ]
+        }
+      ]
+    },
+    {
+      "id": "coupled3",
+      "symbol": "rf/coupled-transmission-line.svg",
+      "source": {
+        "variable": "coupled3",
+        "constructor": "Tclin"
+      },
+      "at": [
+        640,
+        260
+      ],
+      "sourceAnchor": [
+        100,
+        100
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 6,
+          "at": [
+            640,
+            260
+          ],
+          "labelAt": [
+            580,
+            300
+          ]
+        },
+        {
+          "port": 2,
+          "node": 8,
+          "at": [
+            760,
+            260
+          ],
+          "labelAt": [
+            860,
+            180
+          ]
+        },
+        {
+          "port": 3,
+          "node": 9,
+          "at": [
+            760,
+            300
+          ],
+          "labelAt": [
+            800,
+            340
+          ]
+        },
+        {
+          "port": 4,
+          "node": 10,
+          "at": [
+            640,
+            300
+          ],
+          "labelAt": [
+            680,
+            360
+          ]
+        }
+      ]
+    },
+    {
+      "id": "open1",
+      "symbol": "rf/open.svg",
+      "source": {
+        "variable": "open",
+        "constructor": "Open"
+      },
+      "at": [
+        320,
+        100
+      ],
+      "sourceAnchor": [
+        120,
+        80
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 2,
+          "at": [
+            320,
+            100
+          ],
+          "labelAt": [
+            380,
+            140
+          ]
+        }
+      ]
+    },
+    {
+      "id": "open2",
+      "symbol": "rf/open.svg",
+      "source": {
+        "variable": "open",
+        "constructor": "Open"
+      },
+      "at": [
+        160,
+        340
+      ],
+      "sourceAnchor": [
+        120,
+        80
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 4,
+          "at": [
+            160,
+            340
+          ],
+          "labelAt": [
+            200,
+            280
+          ]
+        }
+      ]
+    },
+    {
+      "id": "open3",
+      "symbol": "rf/open.svg",
+      "source": {
+        "variable": "open",
+        "constructor": "Open"
+      },
+      "at": [
+        560,
+        100
+      ],
+      "sourceAnchor": [
+        120,
+        80
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 5,
+          "at": [
+            560,
+            100
+          ],
+          "labelAt": [
+            620,
+            160
+          ]
+        }
+      ]
+    },
+    {
+      "id": "open4",
+      "symbol": "rf/open.svg",
+      "source": {
+        "variable": "open",
+        "constructor": "Open"
+      },
+      "at": [
+        400,
+        380
+      ],
+      "sourceAnchor": [
+        120,
+        80
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 7,
+          "at": [
+            400,
+            380
+          ],
+          "labelAt": [
+            440,
+            320
+          ]
+        }
+      ]
+    },
+    {
+      "id": "open5",
+      "symbol": "rf/open.svg",
+      "source": {
+        "variable": "open",
+        "constructor": "Open"
+      },
+      "at": [
+        800,
+        100
+      ],
+      "sourceAnchor": [
+        120,
+        80
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 8,
+          "at": [
+            800,
+            100
+          ],
+          "labelAt": [
+            860,
+            180
+          ]
+        }
+      ]
+    },
+    {
+      "id": "open6",
+      "symbol": "rf/open.svg",
+      "source": {
+        "variable": "open",
+        "constructor": "Open"
+      },
+      "at": [
+        640,
+        420
+      ],
+      "sourceAnchor": [
+        120,
+        80
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 10,
+          "at": [
+            640,
+            420
+          ],
+          "labelAt": [
+            680,
+            360
+          ]
+        }
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "node": 1,
+      "points": [
+        [
+          160,
+          180
+        ],
+        [
+          100,
+          180
+        ]
+      ]
+    },
+    {
+      "node": 2,
+      "points": [
+        [
+          280,
+          180
+        ],
+        [
+          320,
+          180
+        ],
+        [
+          320,
+          100
+        ]
+      ]
+    },
+    {
+      "node": 3,
+      "points": [
+        [
+          280,
+          220
+        ],
+        [
+          400,
+          220
+        ]
+      ]
+    },
+    {
+      "node": 4,
+      "points": [
+        [
+          160,
+          220
+        ],
+        [
+          160,
+          340
+        ]
+      ]
+    },
+    {
+      "node": 5,
+      "points": [
+        [
+          520,
+          220
+        ],
+        [
+          560,
+          220
+        ],
+        [
+          560,
+          100
+        ]
+      ]
+    },
+    {
+      "node": 6,
+      "points": [
+        [
+          520,
+          260
+        ],
+        [
+          640,
+          260
+        ]
+      ]
+    },
+    {
+      "node": 7,
+      "points": [
+        [
+          400,
+          260
+        ],
+        [
+          400,
+          380
+        ]
+      ]
+    },
+    {
+      "node": 8,
+      "points": [
+        [
+          760,
+          260
+        ],
+        [
+          800,
+          260
+        ],
+        [
+          800,
+          100
+        ]
+      ]
+    },
+    {
+      "node": 9,
+      "points": [
+        [
+          760,
+          300
+        ],
+        [
+          820,
+          300
+        ]
+      ]
+    },
+    {
+      "node": 10,
+      "points": [
+        [
+          640,
+          300
+        ],
+        [
+          640,
+          420
+        ]
+      ]
+    }
+  ],
+  "terminals": [
+    {
+      "node": 1,
+      "at": [
+        100,
+        180
+      ]
+    },
+    {
+      "node": 9,
+      "at": [
+        820,
+        300
+      ]
+    }
+  ],
+  "labels": [
+    {
+      "componentId": "coupled1",
+      "text": "coupled1",
+      "at": [
+        220,
+        70
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "coupled2",
+      "text": "coupled2",
+      "at": [
+        460,
+        70
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "coupled3",
+      "text": "coupled3",
+      "at": [
+        700,
+        70
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "open1",
+      "text": "Open",
+      "at": [
+        360,
+        60
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "open2",
+      "text": "Open",
+      "at": [
+        210,
+        380
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "open3",
+      "text": "Open",
+      "at": [
+        600,
+        60
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "open4",
+      "text": "Open",
+      "at": [
+        450,
+        420
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "open5",
+      "text": "Open",
+      "at": [
+        840,
+        60
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "open6",
+      "text": "Open",
+      "at": [
+        690,
+        460
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 1",
+      "at": [
+        100,
+        240
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 2",
+      "at": [
+        820,
+        400
+      ],
+      "anchor": "middle"
+    }
+  ]
+}

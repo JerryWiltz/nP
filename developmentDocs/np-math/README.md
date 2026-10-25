@@ -1,4 +1,4 @@
-<!-- Modified: 2026-07-15 -->
+<!-- Modified: 2026-10-23 -->
 # np-math Development Notes
 
 `src/np-math/` supplies the complex arithmetic and matrix operations used by every RF constructor and by `nP.nodal()`. These objects are deliberately small JavaScript structures rather than typed-array or external numerical-library abstractions.
@@ -12,9 +12,13 @@ nP.complex(real, imaginary)
 nP.matrix(array2d)
 nP.dim(rows, columns, initial)
 nP.dup(array2d)
+nP.FFT(samples)
+nP.invFFT(spectrum)
 ```
 
-`complex()` is defined in `src/np-math/src/complex.js`. `matrix()`, `dim()`, and `dup()` are defined together in `src/np-math/src/matrix.js`.
+`complex()` is defined in `src/np-math/src/complex.js`. `matrix()`, `dim()`, and `dup()` are defined in `src/np-math/src/matrix.js`. The transforms are defined in `src/np-math/src/fft.js`.
+
+`FFT()` accepts real or complex samples of any nonzero length. The public call requires a matching uniform `global.tList`, fills `global.fList` with signed bin frequencies, and returns complex bins with chart-ready `.out(...)` tables. `invFFT()` returns complex time samples and divides by the sample count. See the [FFT tech note](../../docs/tech-notes-fft-in-nport.md) for examples and output selectors.
 
 ## Complex object
 

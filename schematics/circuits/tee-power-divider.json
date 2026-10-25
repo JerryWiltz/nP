@@ -1,0 +1,307 @@
+{
+  "title": "Tee power divider",
+  "description": "Guide REPL example tee-power-divider: Tee power divider.",
+  "domain": "rf",
+  "source": {
+    "file": "docs/.vitepress/theme/replExamples.js",
+    "result": "divider",
+    "combination": "nP.nodal(..., ['out', 1, 4, 5])",
+    "exampleId": "tee-power-divider"
+  },
+  "viewBox": [
+    0,
+    0,
+    760,
+    500
+  ],
+  "layout": {
+    "centerAxisX": 380,
+    "centerReference": "Tee common port"
+  },
+  "components": [
+    {
+      "id": "tee",
+      "symbol": "rf/tee.svg",
+      "source": {
+        "variable": "tee",
+        "constructor": "Tee"
+      },
+      "at": [
+        380,
+        300
+      ],
+      "sourceAnchor": [
+        120,
+        140
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 1,
+          "at": [
+            380,
+            300
+          ],
+          "labelAt": [
+            420,
+            350
+          ]
+        },
+        {
+          "port": 2,
+          "node": 2,
+          "at": [
+            340,
+            260
+          ],
+          "labelAt": [
+            310,
+            220
+          ]
+        },
+        {
+          "port": 3,
+          "node": 3,
+          "at": [
+            420,
+            260
+          ],
+          "labelAt": [
+            450,
+            220
+          ]
+        }
+      ]
+    },
+    {
+      "id": "branch1",
+      "symbol": "rf/transmission-line.svg",
+      "source": {
+        "variable": "branch1",
+        "constructor": "Tlin"
+      },
+      "at": [
+        160,
+        260
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 4,
+          "at": [
+            160,
+            260
+          ],
+          "labelAt": [
+            160,
+            220
+          ]
+        },
+        {
+          "port": 2,
+          "node": 2,
+          "at": [
+            280,
+            260
+          ],
+          "labelAt": [
+            310,
+            220
+          ]
+        }
+      ]
+    },
+    {
+      "id": "branch2",
+      "symbol": "rf/transmission-line.svg",
+      "source": {
+        "variable": "branch2",
+        "constructor": "Tlin"
+      },
+      "at": [
+        480,
+        260
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "rotation": 0,
+      "connections": [
+        {
+          "port": 1,
+          "node": 3,
+          "at": [
+            480,
+            260
+          ],
+          "labelAt": [
+            450,
+            220
+          ]
+        },
+        {
+          "port": 2,
+          "node": 5,
+          "at": [
+            600,
+            260
+          ],
+          "labelAt": [
+            600,
+            220
+          ]
+        }
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "node": 1,
+      "points": [
+        [
+          380,
+          300
+        ],
+        [
+          380,
+          400
+        ]
+      ]
+    },
+    {
+      "node": 2,
+      "points": [
+        [
+          340,
+          260
+        ],
+        [
+          280,
+          260
+        ]
+      ]
+    },
+    {
+      "node": 3,
+      "points": [
+        [
+          420,
+          260
+        ],
+        [
+          480,
+          260
+        ]
+      ]
+    },
+    {
+      "node": 4,
+      "points": [
+        [
+          160,
+          260
+        ],
+        [
+          100,
+          260
+        ]
+      ]
+    },
+    {
+      "node": 5,
+      "points": [
+        [
+          600,
+          260
+        ],
+        [
+          660,
+          260
+        ]
+      ]
+    }
+  ],
+  "terminals": [
+    {
+      "node": 1,
+      "at": [
+        380,
+        400
+      ]
+    },
+    {
+      "node": 4,
+      "at": [
+        100,
+        260
+      ]
+    },
+    {
+      "node": 5,
+      "at": [
+        660,
+        260
+      ]
+    }
+  ],
+  "labels": [
+    {
+      "componentId": "tee",
+      "text": "tee",
+      "at": [
+        380,
+        160
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "branch1",
+      "text": "branch1 = 25.4 mm",
+      "at": [
+        220,
+        90
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "branch2",
+      "text": "branch2 = 25.4 mm",
+      "at": [
+        540,
+        90
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 1",
+      "at": [
+        380,
+        440
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 2",
+      "at": [
+        100,
+        320
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "Port 3",
+      "at": [
+        660,
+        320
+      ],
+      "anchor": "middle"
+    }
+  ]
+}

@@ -1,0 +1,425 @@
+{
+  "title": "VNA source and three receiver channels",
+  "description": "The modulated source feeds RF fixture port 1. Separate demodulators receive R, A, and B from the fixture output ports.",
+  "domain": "signal",
+  "source": {
+    "file": "docs/.vitepress/theme/replExamples.js",
+    "result": "referenceRx, reflectionRx, transmissionRx",
+    "combination": "mod -> RF fixture -> demod(R), demod(A), demod(B)",
+    "exampleId": "vna-port1"
+  },
+  "viewBox": [
+    0,
+    0,
+    760,
+    560
+  ],
+  "layout": {
+    "centerAxisX": 380,
+    "centerReference": "RF fixture interface"
+  },
+  "components": [
+    {
+      "id": "tx",
+      "symbol": "digital/mod.svg",
+      "source": {
+        "variable": "tx",
+        "constructor": "mod"
+      },
+      "at": [
+        160,
+        220
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "signal": "grid",
+          "at": [
+            160,
+            220
+          ]
+        },
+        {
+          "port": 2,
+          "signal": "tx",
+          "at": [
+            280,
+            220
+          ]
+        }
+      ]
+    },
+    {
+      "id": "referenceRx",
+      "symbol": "digital/demod.svg",
+      "source": {
+        "variable": "referenceRx",
+        "constructor": "demod"
+      },
+      "at": [
+        460,
+        180
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "signal": "R",
+          "at": [
+            460,
+            180
+          ]
+        },
+        {
+          "port": 2,
+          "signal": "reference",
+          "at": [
+            580,
+            180
+          ]
+        }
+      ]
+    },
+    {
+      "id": "reflectionRx",
+      "symbol": "digital/demod.svg",
+      "source": {
+        "variable": "reflectionRx",
+        "constructor": "demod"
+      },
+      "at": [
+        460,
+        300
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "signal": "A",
+          "at": [
+            460,
+            300
+          ]
+        },
+        {
+          "port": 2,
+          "signal": "reflection",
+          "at": [
+            580,
+            300
+          ]
+        }
+      ]
+    },
+    {
+      "id": "transmissionRx",
+      "symbol": "digital/demod.svg",
+      "source": {
+        "variable": "transmissionRx",
+        "constructor": "demod"
+      },
+      "at": [
+        460,
+        420
+      ],
+      "sourceAnchor": [
+        80,
+        80
+      ],
+      "connections": [
+        {
+          "port": 1,
+          "signal": "B",
+          "at": [
+            460,
+            420
+          ]
+        },
+        {
+          "port": 2,
+          "signal": "transmission",
+          "at": [
+            580,
+            420
+          ]
+        }
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "signal": "grid",
+      "points": [
+        [
+          100,
+          220
+        ],
+        [
+          160,
+          220
+        ]
+      ]
+    },
+    {
+      "signal": "tx",
+      "points": [
+        [
+          280,
+          220
+        ],
+        [
+          340,
+          220
+        ]
+      ]
+    },
+    {
+      "signal": "R",
+      "points": [
+        [
+          400,
+          180
+        ],
+        [
+          460,
+          180
+        ]
+      ]
+    },
+    {
+      "signal": "reference",
+      "points": [
+        [
+          580,
+          180
+        ],
+        [
+          640,
+          180
+        ]
+      ]
+    },
+    {
+      "signal": "A",
+      "points": [
+        [
+          400,
+          300
+        ],
+        [
+          460,
+          300
+        ]
+      ]
+    },
+    {
+      "signal": "reflection",
+      "points": [
+        [
+          580,
+          300
+        ],
+        [
+          640,
+          300
+        ]
+      ]
+    },
+    {
+      "signal": "B",
+      "points": [
+        [
+          400,
+          420
+        ],
+        [
+          460,
+          420
+        ]
+      ]
+    },
+    {
+      "signal": "transmission",
+      "points": [
+        [
+          580,
+          420
+        ],
+        [
+          640,
+          420
+        ]
+      ]
+    }
+  ],
+  "terminals": [
+    {
+      "signal": "grid",
+      "at": [
+        100,
+        220
+      ]
+    },
+    {
+      "signal": "tx",
+      "at": [
+        340,
+        220
+      ]
+    },
+    {
+      "signal": "R",
+      "at": [
+        400,
+        180
+      ]
+    },
+    {
+      "signal": "reference",
+      "at": [
+        640,
+        180
+      ]
+    },
+    {
+      "signal": "A",
+      "at": [
+        400,
+        300
+      ]
+    },
+    {
+      "signal": "reflection",
+      "at": [
+        640,
+        300
+      ]
+    },
+    {
+      "signal": "B",
+      "at": [
+        400,
+        420
+      ]
+    },
+    {
+      "signal": "transmission",
+      "at": [
+        640,
+        420
+      ]
+    }
+  ],
+  "labels": [
+    {
+      "componentId": "tx",
+      "text": "VNA mod",
+      "at": [
+        220,
+        100
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "referenceRx",
+      "text": "referenceRx",
+      "at": [
+        520,
+        100
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "reflectionRx",
+      "text": "reflectionRx",
+      "at": [
+        520,
+        260
+      ],
+      "anchor": "middle"
+    },
+    {
+      "componentId": "transmissionRx",
+      "text": "transmissionRx",
+      "at": [
+        520,
+        380
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "fList or tList",
+      "at": [
+        100,
+        180
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "to RF port 1",
+      "at": [
+        280,
+        260
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "R",
+      "at": [
+        400,
+        140
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "A",
+      "at": [
+        400,
+        260
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "B",
+      "at": [
+        400,
+        380
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "reference",
+      "at": [
+        640,
+        140
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "reflection",
+      "at": [
+        640,
+        260
+      ],
+      "anchor": "middle"
+    },
+    {
+      "text": "transmission",
+      "at": [
+        640,
+        380
+      ],
+      "anchor": "middle"
+    }
+  ]
+}
