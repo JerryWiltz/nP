@@ -7,7 +7,7 @@
   "components": [
     {
       "id": "waveform1",
-      "symbol": "digital/waveform.svg",
+      "symbol": "waveform.svg",
       "at": [240, 140],
       "connections": [
         {"port": 1, "signal": "samples", "at": [240, 140]}
@@ -15,7 +15,7 @@
     },
     {
       "id": "fft1",
-      "symbol": "digital/fft.svg",
+      "symbol": "fft.svg",
       "at": [320, 140],
       "connections": [
         {"port": 1, "signal": "samples", "at": [320, 140]},

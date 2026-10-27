@@ -21,7 +21,7 @@
   "components": [
     {
       "id": "splitter",
-      "symbol": "rf/coupler-180.svg",
+      "symbol": "coupler-180.svg",
       "source": {
         "variable": "splitter",
         "constructor": "Coupler180"
@@ -88,7 +88,7 @@
     },
     {
       "id": "inputCoupler",
-      "symbol": "rf/coupler-180.svg",
+      "symbol": "coupler-180.svg",
       "source": {
         "variable": "inputCoupler",
         "constructor": "Coupler180"
@@ -155,7 +155,7 @@
     },
     {
       "id": "line",
-      "symbol": "rf/transmission-line.svg",
+      "symbol": "transmission-line.svg",
       "source": {
         "variable": "line",
         "constructor": "Tlin"
@@ -198,7 +198,7 @@
     },
     {
       "id": "short",
-      "symbol": "rf/short.svg",
+      "symbol": "short.svg",
       "source": {
         "variable": "short",
         "constructor": "Short"
@@ -229,7 +229,7 @@
     },
     {
       "id": "load1",
-      "symbol": "rf/load.svg",
+      "symbol": "load.svg",
       "source": {
         "variable": "load",
         "constructor": "Load"
@@ -260,7 +260,7 @@
     },
     {
       "id": "load2",
-      "symbol": "rf/load.svg",
+      "symbol": "load.svg",
       "source": {
         "variable": "load",
         "constructor": "Load"

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-25 -->
+<!-- Modified: 2026-10-27 -->
 
 # Schematic authoring rules
 
@@ -25,7 +25,7 @@ Read and follow `schematics/svg-style-guide.md` for exact SVG dimensions, snappi
 ## Workflow
 
 1. For nP circuit code, follow `schematics/code-to-schematic.md`: identify the measured result, expand `cas()`/`cascade()`/`nodal()` into public-port connections, and record source provenance. For a sketch or note, establish the same topology and port order. Record components, values, connections, external ports, and a grid layout in `circuits/*.json`.
-2. Run `npm run symbols:gallery` after editing a canonical SVG. Run `npm run symbols:check` before composition; it parses SVG XML, checks public API coverage, and confirms each canonical symbol appears once in the generated gallery.
+2. Run `npm run symbols:gallery` and `npm run symbols:bundle` after editing a canonical SVG. Run `npm run symbols:check` before composition; it parses SVG XML, checks public API coverage, and confirms the gallery and runtime symbol module match the canonical sources.
 3. Run `node schematics/tools/compose-schematic.js schematics/circuits/NAME.json docs/public/schematics/NAME.svg`.
 4. Run `node schematics/tools/validate-schematic.js docs/public/schematics/NAME.svg`.
 5. Compare the finished drawing with the circuit description and nP code, then inspect the rendered SVG for collisions, clipping, and legibility. Structural validation alone cannot establish electrical agreement or visual quality.

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Modified: 2026-10-25 -->
+<!-- Modified: 2026-10-27 -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -14,7 +14,7 @@
     p { line-height: 1.5; }
     nav a { margin-right: 1.5rem; }
     main { overflow-x: auto; }
-    .symbol-sheet { display: block; width: 520px; height: 17260px; }
+    .symbol-sheet { display: block; width: 520px; height: 17520px; }
     a { color: #13558d; }
     a:focus-visible { outline: 3px solid #13558d; outline-offset: 2px; }
   </style>
@@ -22,423 +22,431 @@
 <body>
   <header>
     <h1>Canonical symbols</h1>
-    <p>All 57 canonical SVGs, ordered like the Guide API. Select a symbol to open its editable source drawing.</p>
-    <nav aria-label="Symbol groups"><a href="#rf">RF constructors</a><a href="#digital">Digital signals</a><a href="#math">Math</a></nav>
+    <p>All 58 canonical SVGs, ordered like the Guide API. Select a symbol to open its editable source drawing.</p>
+    <nav aria-label="Symbol groups"><a href="#rf">RF constructors</a><a href="#digital">Digital signals</a><a href="#math">Math</a><a href="#combining">Circuit combining</a></nav>
   </header>
   <main>
-    <svg class="symbol-sheet" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 17260" role="img" aria-labelledby="sheet-title sheet-description">
+    <svg class="symbol-sheet" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 17520" role="img" aria-labelledby="sheet-title sheet-description">
       <title id="sheet-title">Canonical nPort symbols</title>
-      <desc id="sheet-description">All 57 canonical symbols in Guide API order on one shared SVG canvas.</desc>
+      <desc id="sheet-description">All 58 canonical symbols in Guide API order on one shared SVG canvas.</desc>
       <rect width="100%" height="100%" fill="#ffffff"/>
       <g fill="#202020" font-family="Arial, Helvetica, sans-serif">
     <text id="rf" x="40" y="50" font-size="22" font-weight="bold">RF constructors (50)</text>
     <text id="lumped" x="40" y="100" font-size="17" font-weight="bold">Resistors, inductors, and capacitors</text>
     <text x="40" y="140" font-size="16">R(), seR()</text>
-    <text x="480" y="140" font-size="13" text-anchor="end">rf/resistor.svg</text>
-    <a href="../schematics/symbols/rf/resistor.svg" aria-label="Open rf/resistor.svg">
-      <g data-symbol-source="rf/resistor.svg" transform="translate(150 160)">
-{{SYMBOL:rf/resistor.svg}}
+    <text x="480" y="140" font-size="13" text-anchor="end">resistor.svg</text>
+    <a href="../schematics/symbols/resistor.svg" aria-label="Open resistor.svg">
+      <g data-symbol-source="resistor.svg" transform="translate(150 160)">
+{{SYMBOL:resistor.svg}}
       </g>
     </a>
     <text x="40" y="360" font-size="16">L(), seL()</text>
-    <text x="480" y="360" font-size="13" text-anchor="end">rf/inductor.svg</text>
-    <a href="../schematics/symbols/rf/inductor.svg" aria-label="Open rf/inductor.svg">
-      <g data-symbol-source="rf/inductor.svg" transform="translate(150 380)">
-{{SYMBOL:rf/inductor.svg}}
+    <text x="480" y="360" font-size="13" text-anchor="end">inductor.svg</text>
+    <a href="../schematics/symbols/inductor.svg" aria-label="Open inductor.svg">
+      <g data-symbol-source="inductor.svg" transform="translate(150 380)">
+{{SYMBOL:inductor.svg}}
       </g>
     </a>
     <text x="40" y="580" font-size="16">C(), seC()</text>
-    <text x="480" y="580" font-size="13" text-anchor="end">rf/capacitor.svg</text>
-    <a href="../schematics/symbols/rf/capacitor.svg" aria-label="Open rf/capacitor.svg">
-      <g data-symbol-source="rf/capacitor.svg" transform="translate(150 600)">
-{{SYMBOL:rf/capacitor.svg}}
+    <text x="480" y="580" font-size="13" text-anchor="end">capacitor.svg</text>
+    <a href="../schematics/symbols/capacitor.svg" aria-label="Open capacitor.svg">
+      <g data-symbol-source="capacitor.svg" transform="translate(150 600)">
+{{SYMBOL:capacitor.svg}}
       </g>
     </a>
     <text x="40" y="800" font-size="16">paR()</text>
-    <text x="480" y="800" font-size="13" text-anchor="end">rf/parallel-resistor.svg</text>
-    <a href="../schematics/symbols/rf/parallel-resistor.svg" aria-label="Open rf/parallel-resistor.svg">
-      <g data-symbol-source="rf/parallel-resistor.svg" transform="translate(60 820)">
-{{SYMBOL:rf/parallel-resistor.svg}}
+    <text x="480" y="800" font-size="13" text-anchor="end">parallel-resistor.svg</text>
+    <a href="../schematics/symbols/parallel-resistor.svg" aria-label="Open parallel-resistor.svg">
+      <g data-symbol-source="parallel-resistor.svg" transform="translate(60 820)">
+{{SYMBOL:parallel-resistor.svg}}
       </g>
     </a>
     <text x="40" y="1160" font-size="16">paL()</text>
-    <text x="480" y="1160" font-size="13" text-anchor="end">rf/parallel-inductor.svg</text>
-    <a href="../schematics/symbols/rf/parallel-inductor.svg" aria-label="Open rf/parallel-inductor.svg">
-      <g data-symbol-source="rf/parallel-inductor.svg" transform="translate(60 1180)">
-{{SYMBOL:rf/parallel-inductor.svg}}
+    <text x="480" y="1160" font-size="13" text-anchor="end">parallel-inductor.svg</text>
+    <a href="../schematics/symbols/parallel-inductor.svg" aria-label="Open parallel-inductor.svg">
+      <g data-symbol-source="parallel-inductor.svg" transform="translate(60 1180)">
+{{SYMBOL:parallel-inductor.svg}}
       </g>
     </a>
     <text x="40" y="1520" font-size="16">paC()</text>
-    <text x="480" y="1520" font-size="13" text-anchor="end">rf/parallel-capacitor.svg</text>
-    <a href="../schematics/symbols/rf/parallel-capacitor.svg" aria-label="Open rf/parallel-capacitor.svg">
-      <g data-symbol-source="rf/parallel-capacitor.svg" transform="translate(60 1540)">
-{{SYMBOL:rf/parallel-capacitor.svg}}
+    <text x="480" y="1520" font-size="13" text-anchor="end">parallel-capacitor.svg</text>
+    <a href="../schematics/symbols/parallel-capacitor.svg" aria-label="Open parallel-capacitor.svg">
+      <g data-symbol-source="parallel-capacitor.svg" transform="translate(60 1540)">
+{{SYMBOL:parallel-capacitor.svg}}
       </g>
     </a>
     <text id="ideal-connections" x="40" y="1840" font-size="17" font-weight="bold">Ideal connections</text>
     <text x="40" y="1880" font-size="16">Open()</text>
-    <text x="480" y="1880" font-size="13" text-anchor="end">rf/open.svg</text>
-    <a href="../schematics/symbols/rf/open.svg" aria-label="Open rf/open.svg">
-      <g data-symbol-source="rf/open.svg" transform="translate(140 1900)">
-{{SYMBOL:rf/open.svg}}
+    <text x="480" y="1880" font-size="13" text-anchor="end">open.svg</text>
+    <a href="../schematics/symbols/open.svg" aria-label="Open open.svg">
+      <g data-symbol-source="open.svg" transform="translate(140 1900)">
+{{SYMBOL:open.svg}}
       </g>
     </a>
     <text x="40" y="2100" font-size="16">Short()</text>
-    <text x="480" y="2100" font-size="13" text-anchor="end">rf/short.svg</text>
-    <a href="../schematics/symbols/rf/short.svg" aria-label="Open rf/short.svg">
-      <g data-symbol-source="rf/short.svg" transform="translate(140 2120)">
-{{SYMBOL:rf/short.svg}}
+    <text x="480" y="2100" font-size="13" text-anchor="end">short.svg</text>
+    <a href="../schematics/symbols/short.svg" aria-label="Open short.svg">
+      <g data-symbol-source="short.svg" transform="translate(140 2120)">
+{{SYMBOL:short.svg}}
       </g>
     </a>
     <text x="40" y="2320" font-size="16">Load()</text>
-    <text x="480" y="2320" font-size="13" text-anchor="end">rf/load.svg</text>
-    <a href="../schematics/symbols/rf/load.svg" aria-label="Open rf/load.svg">
-      <g data-symbol-source="rf/load.svg" transform="translate(140 2340)">
-{{SYMBOL:rf/load.svg}}
+    <text x="480" y="2320" font-size="13" text-anchor="end">load.svg</text>
+    <a href="../schematics/symbols/load.svg" aria-label="Open load.svg">
+      <g data-symbol-source="load.svg" transform="translate(140 2340)">
+{{SYMBOL:load.svg}}
       </g>
     </a>
     <text x="40" y="2540" font-size="16">Thru()</text>
-    <text x="480" y="2540" font-size="13" text-anchor="end">rf/thru.svg</text>
-    <a href="../schematics/symbols/rf/thru.svg" aria-label="Open rf/thru.svg">
-      <g data-symbol-source="rf/thru.svg" transform="translate(120 2560)">
-{{SYMBOL:rf/thru.svg}}
+    <text x="480" y="2540" font-size="13" text-anchor="end">thru.svg</text>
+    <a href="../schematics/symbols/thru.svg" aria-label="Open thru.svg">
+      <g data-symbol-source="thru.svg" transform="translate(120 2560)">
+{{SYMBOL:thru.svg}}
       </g>
     </a>
     <text x="40" y="2800" font-size="16">Shift90()</text>
-    <text x="480" y="2800" font-size="13" text-anchor="end">rf/shift-90.svg</text>
-    <a href="../schematics/symbols/rf/shift-90.svg" aria-label="Open rf/shift-90.svg">
-      <g data-symbol-source="rf/shift-90.svg" transform="translate(120 2820)">
-{{SYMBOL:rf/shift-90.svg}}
+    <text x="480" y="2800" font-size="13" text-anchor="end">shift-90.svg</text>
+    <a href="../schematics/symbols/shift-90.svg" aria-label="Open shift-90.svg">
+      <g data-symbol-source="shift-90.svg" transform="translate(120 2820)">
+{{SYMBOL:shift-90.svg}}
       </g>
     </a>
     <text x="40" y="3020" font-size="16">Tee()</text>
-    <text x="480" y="3020" font-size="13" text-anchor="end">rf/tee.svg</text>
-    <a href="../schematics/symbols/rf/tee.svg" aria-label="Open rf/tee.svg">
-      <g data-symbol-source="rf/tee.svg" transform="translate(140 3040)">
-{{SYMBOL:rf/tee.svg}}
+    <text x="480" y="3020" font-size="13" text-anchor="end">tee.svg</text>
+    <a href="../schematics/symbols/tee.svg" aria-label="Open tee.svg">
+      <g data-symbol-source="tee.svg" transform="translate(140 3040)">
+{{SYMBOL:tee.svg}}
       </g>
     </a>
     <text x="40" y="3280" font-size="16">Tee4()</text>
-    <text x="480" y="3280" font-size="13" text-anchor="end">rf/tee4.svg</text>
-    <a href="../schematics/symbols/rf/tee4.svg" aria-label="Open rf/tee4.svg">
-      <g data-symbol-source="rf/tee4.svg" transform="translate(140 3300)">
-{{SYMBOL:rf/tee4.svg}}
+    <text x="480" y="3280" font-size="13" text-anchor="end">tee4.svg</text>
+    <a href="../schematics/symbols/tee4.svg" aria-label="Open tee4.svg">
+      <g data-symbol-source="tee4.svg" transform="translate(140 3300)">
+{{SYMBOL:tee4.svg}}
       </g>
     </a>
     <text x="40" y="3580" font-size="16">Tee5()</text>
-    <text x="480" y="3580" font-size="13" text-anchor="end">rf/tee5.svg</text>
-    <a href="../schematics/symbols/rf/tee5.svg" aria-label="Open rf/tee5.svg">
-      <g data-symbol-source="rf/tee5.svg" transform="translate(140 3600)">
-{{SYMBOL:rf/tee5.svg}}
+    <text x="480" y="3580" font-size="13" text-anchor="end">tee5.svg</text>
+    <a href="../schematics/symbols/tee5.svg" aria-label="Open tee5.svg">
+      <g data-symbol-source="tee5.svg" transform="translate(140 3600)">
+{{SYMBOL:tee5.svg}}
       </g>
     </a>
     <text x="40" y="3880" font-size="16">seriesTee()</text>
-    <text x="480" y="3880" font-size="13" text-anchor="end">rf/series-tee.svg</text>
-    <a href="../schematics/symbols/rf/series-tee.svg" aria-label="Open rf/series-tee.svg">
-      <g data-symbol-source="rf/series-tee.svg" transform="translate(140 3900)">
-{{SYMBOL:rf/series-tee.svg}}
+    <text x="480" y="3880" font-size="13" text-anchor="end">series-tee.svg</text>
+    <a href="../schematics/symbols/series-tee.svg" aria-label="Open series-tee.svg">
+      <g data-symbol-source="series-tee.svg" transform="translate(140 3900)">
+{{SYMBOL:series-tee.svg}}
       </g>
     </a>
     <text id="ideal-lines" x="40" y="4140" font-size="17" font-weight="bold">Ideal transmission lines</text>
     <text x="40" y="4180" font-size="16">Tlin()</text>
-    <text x="480" y="4180" font-size="13" text-anchor="end">rf/transmission-line.svg</text>
-    <a href="../schematics/symbols/rf/transmission-line.svg" aria-label="Open rf/transmission-line.svg">
-      <g data-symbol-source="rf/transmission-line.svg" transform="translate(120 4200)">
-{{SYMBOL:rf/transmission-line.svg}}
+    <text x="480" y="4180" font-size="13" text-anchor="end">transmission-line.svg</text>
+    <a href="../schematics/symbols/transmission-line.svg" aria-label="Open transmission-line.svg">
+      <g data-symbol-source="transmission-line.svg" transform="translate(120 4200)">
+{{SYMBOL:transmission-line.svg}}
       </g>
     </a>
     <text x="40" y="4420" font-size="16">Tclin()</text>
-    <text x="480" y="4420" font-size="13" text-anchor="end">rf/coupled-transmission-line.svg</text>
-    <a href="../schematics/symbols/rf/coupled-transmission-line.svg" aria-label="Open rf/coupled-transmission-line.svg">
-      <g data-symbol-source="rf/coupled-transmission-line.svg" transform="translate(100 4440)">
-{{SYMBOL:rf/coupled-transmission-line.svg}}
+    <text x="480" y="4420" font-size="13" text-anchor="end">coupled-transmission-line.svg</text>
+    <a href="../schematics/symbols/coupled-transmission-line.svg" aria-label="Open coupled-transmission-line.svg">
+      <g data-symbol-source="coupled-transmission-line.svg" transform="translate(100 4440)">
+{{SYMBOL:coupled-transmission-line.svg}}
       </g>
     </a>
     <text x="40" y="4700" font-size="16">Coupler180()</text>
-    <text x="480" y="4700" font-size="13" text-anchor="end">rf/coupler-180.svg</text>
-    <a href="../schematics/symbols/rf/coupler-180.svg" aria-label="Open rf/coupler-180.svg">
-      <g data-symbol-source="rf/coupler-180.svg" transform="translate(120 4720)">
-{{SYMBOL:rf/coupler-180.svg}}
+    <text x="480" y="4700" font-size="13" text-anchor="end">coupler-180.svg</text>
+    <a href="../schematics/symbols/coupler-180.svg" aria-label="Open coupler-180.svg">
+      <g data-symbol-source="coupler-180.svg" transform="translate(120 4720)">
+{{SYMBOL:coupler-180.svg}}
       </g>
     </a>
     <text id="gain" x="40" y="4960" font-size="17" font-weight="bold">Attenuator and amplifier</text>
     <text x="40" y="5000" font-size="16">Attn()</text>
-    <text x="480" y="5000" font-size="13" text-anchor="end">rf/attenuator.svg</text>
-    <a href="../schematics/symbols/rf/attenuator.svg" aria-label="Open rf/attenuator.svg">
-      <g data-symbol-source="rf/attenuator.svg" transform="translate(130 5020)">
-{{SYMBOL:rf/attenuator.svg}}
+    <text x="480" y="5000" font-size="13" text-anchor="end">attenuator.svg</text>
+    <a href="../schematics/symbols/attenuator.svg" aria-label="Open attenuator.svg">
+      <g data-symbol-source="attenuator.svg" transform="translate(130 5020)">
+{{SYMBOL:attenuator.svg}}
       </g>
     </a>
     <text x="40" y="5260" font-size="16">Amp()</text>
-    <text x="480" y="5260" font-size="13" text-anchor="end">rf/amplifier.svg</text>
-    <a href="../schematics/symbols/rf/amplifier.svg" aria-label="Open rf/amplifier.svg">
-      <g data-symbol-source="rf/amplifier.svg" transform="translate(130 5280)">
-{{SYMBOL:rf/amplifier.svg}}
+    <text x="480" y="5260" font-size="13" text-anchor="end">amplifier.svg</text>
+    <a href="../schematics/symbols/amplifier.svg" aria-label="Open amplifier.svg">
+      <g data-symbol-source="amplifier.svg" transform="translate(130 5280)">
+{{SYMBOL:amplifier.svg}}
       </g>
     </a>
     <text id="microstrip" x="40" y="5520" font-size="17" font-weight="bold">Physical microstrip</text>
     <text x="40" y="5560" font-size="16">mlin()</text>
-    <text x="480" y="5560" font-size="13" text-anchor="end">rf/microstrip-line.svg</text>
-    <a href="../schematics/symbols/rf/microstrip-line.svg" aria-label="Open rf/microstrip-line.svg">
-      <g data-symbol-source="rf/microstrip-line.svg" transform="translate(120 5580)">
-{{SYMBOL:rf/microstrip-line.svg}}
+    <text x="480" y="5560" font-size="13" text-anchor="end">microstrip-line.svg</text>
+    <a href="../schematics/symbols/microstrip-line.svg" aria-label="Open microstrip-line.svg">
+      <g data-symbol-source="microstrip-line.svg" transform="translate(120 5580)">
+{{SYMBOL:microstrip-line.svg}}
       </g>
     </a>
     <text x="40" y="5800" font-size="16">mclin()</text>
-    <text x="480" y="5800" font-size="13" text-anchor="end">rf/microstrip-coupled-line.svg</text>
-    <a href="../schematics/symbols/rf/microstrip-coupled-line.svg" aria-label="Open rf/microstrip-coupled-line.svg">
-      <g data-symbol-source="rf/microstrip-coupled-line.svg" transform="translate(100 5820)">
-{{SYMBOL:rf/microstrip-coupled-line.svg}}
+    <text x="480" y="5800" font-size="13" text-anchor="end">microstrip-coupled-line.svg</text>
+    <a href="../schematics/symbols/microstrip-coupled-line.svg" aria-label="Open microstrip-coupled-line.svg">
+      <g data-symbol-source="microstrip-coupled-line.svg" transform="translate(100 5820)">
+{{SYMBOL:microstrip-coupled-line.svg}}
       </g>
     </a>
     <text x="40" y="6080" font-size="16">mtee()</text>
-    <text x="480" y="6080" font-size="13" text-anchor="end">rf/microstrip-tee.svg</text>
-    <a href="../schematics/symbols/rf/microstrip-tee.svg" aria-label="Open rf/microstrip-tee.svg">
-      <g data-symbol-source="rf/microstrip-tee.svg" transform="translate(200 6160)">
-{{SYMBOL:rf/microstrip-tee.svg}}
+    <text x="480" y="6080" font-size="13" text-anchor="end">microstrip-tee.svg</text>
+    <a href="../schematics/symbols/microstrip-tee.svg" aria-label="Open microstrip-tee.svg">
+      <g data-symbol-source="microstrip-tee.svg" transform="translate(200 6160)">
+{{SYMBOL:microstrip-tee.svg}}
       </g>
     </a>
     <text x="40" y="6380" font-size="16">mstep()</text>
-    <text x="480" y="6380" font-size="13" text-anchor="end">rf/microstrip-step.svg</text>
-    <a href="../schematics/symbols/rf/microstrip-step.svg" aria-label="Open rf/microstrip-step.svg">
-      <g data-symbol-source="rf/microstrip-step.svg" transform="translate(200 6460)">
-{{SYMBOL:rf/microstrip-step.svg}}
+    <text x="480" y="6380" font-size="13" text-anchor="end">microstrip-step.svg</text>
+    <a href="../schematics/symbols/microstrip-step.svg" aria-label="Open microstrip-step.svg">
+      <g data-symbol-source="microstrip-step.svg" transform="translate(200 6460)">
+{{SYMBOL:microstrip-step.svg}}
       </g>
     </a>
     <text x="40" y="6680" font-size="16">mbend() — right turn</text>
-    <text x="480" y="6680" font-size="13" text-anchor="end">rf/microstrip-right-bend.svg</text>
-    <a href="../schematics/symbols/rf/microstrip-right-bend.svg" aria-label="Open rf/microstrip-right-bend.svg">
-      <g data-symbol-source="rf/microstrip-right-bend.svg" transform="translate(200 6760)">
-{{SYMBOL:rf/microstrip-right-bend.svg}}
+    <text x="480" y="6680" font-size="13" text-anchor="end">microstrip-right-bend.svg</text>
+    <a href="../schematics/symbols/microstrip-right-bend.svg" aria-label="Open microstrip-right-bend.svg">
+      <g data-symbol-source="microstrip-right-bend.svg" transform="translate(200 6760)">
+{{SYMBOL:microstrip-right-bend.svg}}
       </g>
     </a>
     <text x="40" y="6980" font-size="16">mbend() — left turn</text>
-    <text x="480" y="6980" font-size="13" text-anchor="end">rf/microstrip-left-bend.svg</text>
-    <a href="../schematics/symbols/rf/microstrip-left-bend.svg" aria-label="Open rf/microstrip-left-bend.svg">
-      <g data-symbol-source="rf/microstrip-left-bend.svg" transform="translate(200 7060)">
-{{SYMBOL:rf/microstrip-left-bend.svg}}
+    <text x="480" y="6980" font-size="13" text-anchor="end">microstrip-left-bend.svg</text>
+    <a href="../schematics/symbols/microstrip-left-bend.svg" aria-label="Open microstrip-left-bend.svg">
+      <g data-symbol-source="microstrip-left-bend.svg" transform="translate(200 7060)">
+{{SYMBOL:microstrip-left-bend.svg}}
       </g>
     </a>
     <text x="40" y="7280" font-size="16">mcross()</text>
-    <text x="480" y="7280" font-size="13" text-anchor="end">rf/microstrip-cross.svg</text>
-    <a href="../schematics/symbols/rf/microstrip-cross.svg" aria-label="Open rf/microstrip-cross.svg">
-      <g data-symbol-source="rf/microstrip-cross.svg" transform="translate(200 7360)">
-{{SYMBOL:rf/microstrip-cross.svg}}
+    <text x="480" y="7280" font-size="13" text-anchor="end">microstrip-cross.svg</text>
+    <a href="../schematics/symbols/microstrip-cross.svg" aria-label="Open microstrip-cross.svg">
+      <g data-symbol-source="microstrip-cross.svg" transform="translate(200 7360)">
+{{SYMBOL:microstrip-cross.svg}}
       </g>
     </a>
     <text x="40" y="7580" font-size="16">mtfr()</text>
-    <text x="480" y="7580" font-size="13" text-anchor="end">rf/microstrip-thin-film-resistor.svg</text>
-    <a href="../schematics/symbols/rf/microstrip-thin-film-resistor.svg" aria-label="Open rf/microstrip-thin-film-resistor.svg">
-      <g data-symbol-source="rf/microstrip-thin-film-resistor.svg" transform="translate(120 7600)">
-{{SYMBOL:rf/microstrip-thin-film-resistor.svg}}
+    <text x="480" y="7580" font-size="13" text-anchor="end">microstrip-thin-film-resistor.svg</text>
+    <a href="../schematics/symbols/microstrip-thin-film-resistor.svg" aria-label="Open microstrip-thin-film-resistor.svg">
+      <g data-symbol-source="microstrip-thin-film-resistor.svg" transform="translate(120 7600)">
+{{SYMBOL:microstrip-thin-film-resistor.svg}}
       </g>
     </a>
     <text x="40" y="7820" font-size="16">mvgnd()</text>
-    <text x="480" y="7820" font-size="13" text-anchor="end">rf/microstrip-via-to-ground.svg</text>
-    <a href="../schematics/symbols/rf/microstrip-via-to-ground.svg" aria-label="Open rf/microstrip-via-to-ground.svg">
-      <g data-symbol-source="rf/microstrip-via-to-ground.svg" transform="translate(140 7860)">
-{{SYMBOL:rf/microstrip-via-to-ground.svg}}
+    <text x="480" y="7820" font-size="13" text-anchor="end">microstrip-via-to-ground.svg</text>
+    <a href="../schematics/symbols/microstrip-via-to-ground.svg" aria-label="Open microstrip-via-to-ground.svg">
+      <g data-symbol-source="microstrip-via-to-ground.svg" transform="translate(140 7860)">
+{{SYMBOL:microstrip-via-to-ground.svg}}
       </g>
     </a>
     <text x="40" y="8080" font-size="16">mvia()</text>
-    <text x="480" y="8080" font-size="13" text-anchor="end">rf/microstrip-via-transition.svg</text>
-    <a href="../schematics/symbols/rf/microstrip-via-transition.svg" aria-label="Open rf/microstrip-via-transition.svg">
-      <g data-symbol-source="rf/microstrip-via-transition.svg" transform="translate(140 8120)">
-{{SYMBOL:rf/microstrip-via-transition.svg}}
+    <text x="480" y="8080" font-size="13" text-anchor="end">microstrip-via-transition.svg</text>
+    <a href="../schematics/symbols/microstrip-via-transition.svg" aria-label="Open microstrip-via-transition.svg">
+      <g data-symbol-source="microstrip-via-transition.svg" transform="translate(140 8120)">
+{{SYMBOL:microstrip-via-transition.svg}}
       </g>
     </a>
     <text id="transformers" x="40" y="8340" font-size="17" font-weight="bold">Transformers and low-pass filter</text>
     <text x="40" y="8380" font-size="16">trf()</text>
-    <text x="480" y="8380" font-size="13" text-anchor="end">rf/transformer.svg</text>
-    <a href="../schematics/symbols/rf/transformer.svg" aria-label="Open rf/transformer.svg">
-      <g data-symbol-source="rf/transformer.svg" transform="translate(120 8400)">
-{{SYMBOL:rf/transformer.svg}}
+    <text x="480" y="8380" font-size="13" text-anchor="end">transformer.svg</text>
+    <a href="../schematics/symbols/transformer.svg" aria-label="Open transformer.svg">
+      <g data-symbol-source="transformer.svg" transform="translate(120 8400)">
+{{SYMBOL:transformer.svg}}
       </g>
     </a>
     <text x="40" y="8640" font-size="16">trf4Port()</text>
-    <text x="480" y="8640" font-size="13" text-anchor="end">rf/transformer-four-port.svg</text>
-    <a href="../schematics/symbols/rf/transformer-four-port.svg" aria-label="Open rf/transformer-four-port.svg">
-      <g data-symbol-source="rf/transformer-four-port.svg" transform="translate(120 8660)">
-{{SYMBOL:rf/transformer-four-port.svg}}
+    <text x="480" y="8640" font-size="13" text-anchor="end">transformer-four-port.svg</text>
+    <a href="../schematics/symbols/transformer-four-port.svg" aria-label="Open transformer-four-port.svg">
+      <g data-symbol-source="transformer-four-port.svg" transform="translate(120 8660)">
+{{SYMBOL:transformer-four-port.svg}}
       </g>
     </a>
     <text x="40" y="8940" font-size="16">lpfGen()</text>
-    <text x="480" y="8940" font-size="13" text-anchor="end">rf/low-pass-network.svg</text>
-    <a href="../schematics/symbols/rf/low-pass-network.svg" aria-label="Open rf/low-pass-network.svg">
-      <g data-symbol-source="rf/low-pass-network.svg" transform="translate(120 8960)">
-{{SYMBOL:rf/low-pass-network.svg}}
+    <text x="480" y="8940" font-size="13" text-anchor="end">low-pass-network.svg</text>
+    <a href="../schematics/symbols/low-pass-network.svg" aria-label="Open low-pass-network.svg">
+      <g data-symbol-source="low-pass-network.svg" transform="translate(120 8960)">
+{{SYMBOL:low-pass-network.svg}}
       </g>
     </a>
     <text id="combined-rlc" x="40" y="9200" font-size="17" font-weight="bold">Older combined RLC components</text>
     <text x="40" y="9240" font-size="16">seSeRL()</text>
-    <text x="480" y="9240" font-size="13" text-anchor="end">rf/se-series-rl.svg</text>
-    <a href="../schematics/symbols/rf/se-series-rl.svg" aria-label="Open rf/se-series-rl.svg">
-      <g data-symbol-source="rf/se-series-rl.svg" transform="translate(50 9260)">
-{{SYMBOL:rf/se-series-rl.svg}}
+    <text x="480" y="9240" font-size="13" text-anchor="end">se-series-rl.svg</text>
+    <a href="../schematics/symbols/se-series-rl.svg" aria-label="Open se-series-rl.svg">
+      <g data-symbol-source="se-series-rl.svg" transform="translate(50 9260)">
+{{SYMBOL:se-series-rl.svg}}
       </g>
     </a>
     <text x="40" y="9540" font-size="16">sePaRL()</text>
-    <text x="480" y="9540" font-size="13" text-anchor="end">rf/se-parallel-rl.svg</text>
-    <a href="../schematics/symbols/rf/se-parallel-rl.svg" aria-label="Open rf/se-parallel-rl.svg">
-      <g data-symbol-source="rf/se-parallel-rl.svg" transform="translate(50 9560)">
-{{SYMBOL:rf/se-parallel-rl.svg}}
+    <text x="480" y="9540" font-size="13" text-anchor="end">se-parallel-rl.svg</text>
+    <a href="../schematics/symbols/se-parallel-rl.svg" aria-label="Open se-parallel-rl.svg">
+      <g data-symbol-source="se-parallel-rl.svg" transform="translate(50 9560)">
+{{SYMBOL:se-parallel-rl.svg}}
       </g>
     </a>
     <text x="40" y="9840" font-size="16">paSeRL()</text>
-    <text x="480" y="9840" font-size="13" text-anchor="end">rf/pa-series-rl.svg</text>
-    <a href="../schematics/symbols/rf/pa-series-rl.svg" aria-label="Open rf/pa-series-rl.svg">
-      <g data-symbol-source="rf/pa-series-rl.svg" transform="translate(60 9860)">
-{{SYMBOL:rf/pa-series-rl.svg}}
+    <text x="480" y="9840" font-size="13" text-anchor="end">pa-series-rl.svg</text>
+    <a href="../schematics/symbols/pa-series-rl.svg" aria-label="Open pa-series-rl.svg">
+      <g data-symbol-source="pa-series-rl.svg" transform="translate(60 9860)">
+{{SYMBOL:pa-series-rl.svg}}
       </g>
     </a>
     <text x="40" y="10300" font-size="16">paPaRL()</text>
-    <text x="480" y="10300" font-size="13" text-anchor="end">rf/pa-parallel-rl.svg</text>
-    <a href="../schematics/symbols/rf/pa-parallel-rl.svg" aria-label="Open rf/pa-parallel-rl.svg">
-      <g data-symbol-source="rf/pa-parallel-rl.svg" transform="translate(60 10320)">
-{{SYMBOL:rf/pa-parallel-rl.svg}}
+    <text x="480" y="10300" font-size="13" text-anchor="end">pa-parallel-rl.svg</text>
+    <a href="../schematics/symbols/pa-parallel-rl.svg" aria-label="Open pa-parallel-rl.svg">
+      <g data-symbol-source="pa-parallel-rl.svg" transform="translate(60 10320)">
+{{SYMBOL:pa-parallel-rl.svg}}
       </g>
     </a>
     <text x="40" y="10700" font-size="16">seSeRC()</text>
-    <text x="480" y="10700" font-size="13" text-anchor="end">rf/se-series-rc.svg</text>
-    <a href="../schematics/symbols/rf/se-series-rc.svg" aria-label="Open rf/se-series-rc.svg">
-      <g data-symbol-source="rf/se-series-rc.svg" transform="translate(50 10720)">
-{{SYMBOL:rf/se-series-rc.svg}}
+    <text x="480" y="10700" font-size="13" text-anchor="end">se-series-rc.svg</text>
+    <a href="../schematics/symbols/se-series-rc.svg" aria-label="Open se-series-rc.svg">
+      <g data-symbol-source="se-series-rc.svg" transform="translate(50 10720)">
+{{SYMBOL:se-series-rc.svg}}
       </g>
     </a>
     <text x="40" y="11000" font-size="16">sePaRC()</text>
-    <text x="480" y="11000" font-size="13" text-anchor="end">rf/se-parallel-rc.svg</text>
-    <a href="../schematics/symbols/rf/se-parallel-rc.svg" aria-label="Open rf/se-parallel-rc.svg">
-      <g data-symbol-source="rf/se-parallel-rc.svg" transform="translate(50 11020)">
-{{SYMBOL:rf/se-parallel-rc.svg}}
+    <text x="480" y="11000" font-size="13" text-anchor="end">se-parallel-rc.svg</text>
+    <a href="../schematics/symbols/se-parallel-rc.svg" aria-label="Open se-parallel-rc.svg">
+      <g data-symbol-source="se-parallel-rc.svg" transform="translate(50 11020)">
+{{SYMBOL:se-parallel-rc.svg}}
       </g>
     </a>
     <text x="40" y="11300" font-size="16">paSeRC()</text>
-    <text x="480" y="11300" font-size="13" text-anchor="end">rf/pa-series-rc.svg</text>
-    <a href="../schematics/symbols/rf/pa-series-rc.svg" aria-label="Open rf/pa-series-rc.svg">
-      <g data-symbol-source="rf/pa-series-rc.svg" transform="translate(60 11320)">
-{{SYMBOL:rf/pa-series-rc.svg}}
+    <text x="480" y="11300" font-size="13" text-anchor="end">pa-series-rc.svg</text>
+    <a href="../schematics/symbols/pa-series-rc.svg" aria-label="Open pa-series-rc.svg">
+      <g data-symbol-source="pa-series-rc.svg" transform="translate(60 11320)">
+{{SYMBOL:pa-series-rc.svg}}
       </g>
     </a>
     <text x="40" y="11720" font-size="16">paPaRC()</text>
-    <text x="480" y="11720" font-size="13" text-anchor="end">rf/pa-parallel-rc.svg</text>
-    <a href="../schematics/symbols/rf/pa-parallel-rc.svg" aria-label="Open rf/pa-parallel-rc.svg">
-      <g data-symbol-source="rf/pa-parallel-rc.svg" transform="translate(60 11740)">
-{{SYMBOL:rf/pa-parallel-rc.svg}}
+    <text x="480" y="11720" font-size="13" text-anchor="end">pa-parallel-rc.svg</text>
+    <a href="../schematics/symbols/pa-parallel-rc.svg" aria-label="Open pa-parallel-rc.svg">
+      <g data-symbol-source="pa-parallel-rc.svg" transform="translate(60 11740)">
+{{SYMBOL:pa-parallel-rc.svg}}
       </g>
     </a>
     <text x="40" y="12120" font-size="16">seSeLC()</text>
-    <text x="480" y="12120" font-size="13" text-anchor="end">rf/se-series-lc.svg</text>
-    <a href="../schematics/symbols/rf/se-series-lc.svg" aria-label="Open rf/se-series-lc.svg">
-      <g data-symbol-source="rf/se-series-lc.svg" transform="translate(50 12140)">
-{{SYMBOL:rf/se-series-lc.svg}}
+    <text x="480" y="12120" font-size="13" text-anchor="end">se-series-lc.svg</text>
+    <a href="../schematics/symbols/se-series-lc.svg" aria-label="Open se-series-lc.svg">
+      <g data-symbol-source="se-series-lc.svg" transform="translate(50 12140)">
+{{SYMBOL:se-series-lc.svg}}
       </g>
     </a>
     <text x="40" y="12420" font-size="16">sePaLC()</text>
-    <text x="480" y="12420" font-size="13" text-anchor="end">rf/se-parallel-lc.svg</text>
-    <a href="../schematics/symbols/rf/se-parallel-lc.svg" aria-label="Open rf/se-parallel-lc.svg">
-      <g data-symbol-source="rf/se-parallel-lc.svg" transform="translate(50 12440)">
-{{SYMBOL:rf/se-parallel-lc.svg}}
+    <text x="480" y="12420" font-size="13" text-anchor="end">se-parallel-lc.svg</text>
+    <a href="../schematics/symbols/se-parallel-lc.svg" aria-label="Open se-parallel-lc.svg">
+      <g data-symbol-source="se-parallel-lc.svg" transform="translate(50 12440)">
+{{SYMBOL:se-parallel-lc.svg}}
       </g>
     </a>
     <text x="40" y="12720" font-size="16">paSeLC()</text>
-    <text x="480" y="12720" font-size="13" text-anchor="end">rf/pa-series-lc.svg</text>
-    <a href="../schematics/symbols/rf/pa-series-lc.svg" aria-label="Open rf/pa-series-lc.svg">
-      <g data-symbol-source="rf/pa-series-lc.svg" transform="translate(60 12740)">
-{{SYMBOL:rf/pa-series-lc.svg}}
+    <text x="480" y="12720" font-size="13" text-anchor="end">pa-series-lc.svg</text>
+    <a href="../schematics/symbols/pa-series-lc.svg" aria-label="Open pa-series-lc.svg">
+      <g data-symbol-source="pa-series-lc.svg" transform="translate(60 12740)">
+{{SYMBOL:pa-series-lc.svg}}
       </g>
     </a>
     <text x="40" y="13140" font-size="16">paPaLC()</text>
-    <text x="480" y="13140" font-size="13" text-anchor="end">rf/pa-parallel-lc.svg</text>
-    <a href="../schematics/symbols/rf/pa-parallel-lc.svg" aria-label="Open rf/pa-parallel-lc.svg">
-      <g data-symbol-source="rf/pa-parallel-lc.svg" transform="translate(60 13160)">
-{{SYMBOL:rf/pa-parallel-lc.svg}}
+    <text x="480" y="13140" font-size="13" text-anchor="end">pa-parallel-lc.svg</text>
+    <a href="../schematics/symbols/pa-parallel-lc.svg" aria-label="Open pa-parallel-lc.svg">
+      <g data-symbol-source="pa-parallel-lc.svg" transform="translate(60 13160)">
+{{SYMBOL:pa-parallel-lc.svg}}
       </g>
     </a>
     <text x="40" y="13540" font-size="16">seSeRLC()</text>
-    <text x="480" y="13540" font-size="13" text-anchor="end">rf/se-series-rlc.svg</text>
-    <a href="../schematics/symbols/rf/se-series-rlc.svg" aria-label="Open rf/se-series-rlc.svg">
-      <g data-symbol-source="rf/se-series-rlc.svg" transform="translate(50 13560)">
-{{SYMBOL:rf/se-series-rlc.svg}}
+    <text x="480" y="13540" font-size="13" text-anchor="end">se-series-rlc.svg</text>
+    <a href="../schematics/symbols/se-series-rlc.svg" aria-label="Open se-series-rlc.svg">
+      <g data-symbol-source="se-series-rlc.svg" transform="translate(50 13560)">
+{{SYMBOL:se-series-rlc.svg}}
       </g>
     </a>
     <text x="40" y="13840" font-size="16">sePaRLC()</text>
-    <text x="480" y="13840" font-size="13" text-anchor="end">rf/se-parallel-rlc.svg</text>
-    <a href="../schematics/symbols/rf/se-parallel-rlc.svg" aria-label="Open rf/se-parallel-rlc.svg">
-      <g data-symbol-source="rf/se-parallel-rlc.svg" transform="translate(50 13860)">
-{{SYMBOL:rf/se-parallel-rlc.svg}}
+    <text x="480" y="13840" font-size="13" text-anchor="end">se-parallel-rlc.svg</text>
+    <a href="../schematics/symbols/se-parallel-rlc.svg" aria-label="Open se-parallel-rlc.svg">
+      <g data-symbol-source="se-parallel-rlc.svg" transform="translate(50 13860)">
+{{SYMBOL:se-parallel-rlc.svg}}
       </g>
     </a>
     <text x="40" y="14140" font-size="16">paSeRLC()</text>
-    <text x="480" y="14140" font-size="13" text-anchor="end">rf/pa-series-rlc.svg</text>
-    <a href="../schematics/symbols/rf/pa-series-rlc.svg" aria-label="Open rf/pa-series-rlc.svg">
-      <g data-symbol-source="rf/pa-series-rlc.svg" transform="translate(60 14160)">
-{{SYMBOL:rf/pa-series-rlc.svg}}
+    <text x="480" y="14140" font-size="13" text-anchor="end">pa-series-rlc.svg</text>
+    <a href="../schematics/symbols/pa-series-rlc.svg" aria-label="Open pa-series-rlc.svg">
+      <g data-symbol-source="pa-series-rlc.svg" transform="translate(60 14160)">
+{{SYMBOL:pa-series-rlc.svg}}
       </g>
     </a>
     <text x="40" y="14660" font-size="16">paPaRLC()</text>
-    <text x="480" y="14660" font-size="13" text-anchor="end">rf/pa-parallel-rlc.svg</text>
-    <a href="../schematics/symbols/rf/pa-parallel-rlc.svg" aria-label="Open rf/pa-parallel-rlc.svg">
-      <g data-symbol-source="rf/pa-parallel-rlc.svg" transform="translate(60 14680)">
-{{SYMBOL:rf/pa-parallel-rlc.svg}}
+    <text x="480" y="14660" font-size="13" text-anchor="end">pa-parallel-rlc.svg</text>
+    <a href="../schematics/symbols/pa-parallel-rlc.svg" aria-label="Open pa-parallel-rlc.svg">
+      <g data-symbol-source="pa-parallel-rlc.svg" transform="translate(60 14680)">
+{{SYMBOL:pa-parallel-rlc.svg}}
       </g>
     </a>
     <text id="diode" x="40" y="15060" font-size="17" font-weight="bold">Diode</text>
     <text x="40" y="15100" font-size="16">diode1N4148()</text>
-    <text x="480" y="15100" font-size="13" text-anchor="end">rf/diode-1n4148.svg</text>
-    <a href="../schematics/symbols/rf/diode-1n4148.svg" aria-label="Open rf/diode-1n4148.svg">
-      <g data-symbol-source="rf/diode-1n4148.svg" transform="translate(150 15120)">
-{{SYMBOL:rf/diode-1n4148.svg}}
+    <text x="480" y="15100" font-size="13" text-anchor="end">diode-1n4148.svg</text>
+    <a href="../schematics/symbols/diode-1n4148.svg" aria-label="Open diode-1n4148.svg">
+      <g data-symbol-source="diode-1n4148.svg" transform="translate(150 15120)">
+{{SYMBOL:diode-1n4148.svg}}
       </g>
     </a>
     <text id="digital" x="40" y="15330" font-size="22" font-weight="bold">Digital signals (5)</text>
     <text x="40" y="15380" font-size="16">waveform()</text>
-    <text x="480" y="15380" font-size="13" text-anchor="end">digital/waveform.svg</text>
-    <a href="../schematics/symbols/digital/waveform.svg" aria-label="Open digital/waveform.svg">
-      <g data-symbol-source="digital/waveform.svg" transform="translate(120 15400)">
-{{SYMBOL:digital/waveform.svg}}
+    <text x="480" y="15380" font-size="13" text-anchor="end">waveform.svg</text>
+    <a href="../schematics/symbols/waveform.svg" aria-label="Open waveform.svg">
+      <g data-symbol-source="waveform.svg" transform="translate(120 15400)">
+{{SYMBOL:waveform.svg}}
       </g>
     </a>
     <text x="40" y="15640" font-size="16">mod()</text>
-    <text x="480" y="15640" font-size="13" text-anchor="end">digital/mod.svg</text>
-    <a href="../schematics/symbols/digital/mod.svg" aria-label="Open digital/mod.svg">
-      <g data-symbol-source="digital/mod.svg" transform="translate(120 15660)">
-{{SYMBOL:digital/mod.svg}}
+    <text x="480" y="15640" font-size="13" text-anchor="end">mod.svg</text>
+    <a href="../schematics/symbols/mod.svg" aria-label="Open mod.svg">
+      <g data-symbol-source="mod.svg" transform="translate(120 15660)">
+{{SYMBOL:mod.svg}}
       </g>
     </a>
     <text x="40" y="15900" font-size="16">PN()</text>
-    <text x="480" y="15900" font-size="13" text-anchor="end">digital/pn.svg</text>
-    <a href="../schematics/symbols/digital/pn.svg" aria-label="Open digital/pn.svg">
-      <g data-symbol-source="digital/pn.svg" transform="translate(120 15920)">
-{{SYMBOL:digital/pn.svg}}
+    <text x="480" y="15900" font-size="13" text-anchor="end">pn.svg</text>
+    <a href="../schematics/symbols/pn.svg" aria-label="Open pn.svg">
+      <g data-symbol-source="pn.svg" transform="translate(120 15920)">
+{{SYMBOL:pn.svg}}
       </g>
     </a>
     <text x="40" y="16160" font-size="16">demod()</text>
-    <text x="480" y="16160" font-size="13" text-anchor="end">digital/demod.svg</text>
-    <a href="../schematics/symbols/digital/demod.svg" aria-label="Open digital/demod.svg">
-      <g data-symbol-source="digital/demod.svg" transform="translate(120 16180)">
-{{SYMBOL:digital/demod.svg}}
+    <text x="480" y="16160" font-size="13" text-anchor="end">demod.svg</text>
+    <a href="../schematics/symbols/demod.svg" aria-label="Open demod.svg">
+      <g data-symbol-source="demod.svg" transform="translate(120 16180)">
+{{SYMBOL:demod.svg}}
       </g>
     </a>
     <text x="40" y="16420" font-size="16">bitErrorRate()</text>
-    <text x="480" y="16420" font-size="13" text-anchor="end">digital/bit-error-rate.svg</text>
-    <a href="../schematics/symbols/digital/bit-error-rate.svg" aria-label="Open digital/bit-error-rate.svg">
-      <g data-symbol-source="digital/bit-error-rate.svg" transform="translate(120 16440)">
-{{SYMBOL:digital/bit-error-rate.svg}}
+    <text x="480" y="16420" font-size="13" text-anchor="end">bit-error-rate.svg</text>
+    <a href="../schematics/symbols/bit-error-rate.svg" aria-label="Open bit-error-rate.svg">
+      <g data-symbol-source="bit-error-rate.svg" transform="translate(120 16440)">
+{{SYMBOL:bit-error-rate.svg}}
       </g>
     </a>
     <text id="math" x="40" y="16690" font-size="22" font-weight="bold">Math: Fourier transforms (2)</text>
     <text x="40" y="16740" font-size="16">FFT()</text>
-    <text x="480" y="16740" font-size="13" text-anchor="end">digital/fft.svg</text>
-    <a href="../schematics/symbols/digital/fft.svg" aria-label="Open digital/fft.svg">
-      <g data-symbol-source="digital/fft.svg" transform="translate(120 16760)">
-{{SYMBOL:digital/fft.svg}}
+    <text x="480" y="16740" font-size="13" text-anchor="end">fft.svg</text>
+    <a href="../schematics/symbols/fft.svg" aria-label="Open fft.svg">
+      <g data-symbol-source="fft.svg" transform="translate(120 16760)">
+{{SYMBOL:fft.svg}}
       </g>
     </a>
     <text x="40" y="17000" font-size="16">invFFT()</text>
-    <text x="480" y="17000" font-size="13" text-anchor="end">digital/inverse-fft.svg</text>
-    <a href="../schematics/symbols/digital/inverse-fft.svg" aria-label="Open digital/inverse-fft.svg">
-      <g data-symbol-source="digital/inverse-fft.svg" transform="translate(120 17020)">
-{{SYMBOL:digital/inverse-fft.svg}}
+    <text x="480" y="17000" font-size="13" text-anchor="end">inverse-fft.svg</text>
+    <a href="../schematics/symbols/inverse-fft.svg" aria-label="Open inverse-fft.svg">
+      <g data-symbol-source="inverse-fft.svg" transform="translate(120 17020)">
+{{SYMBOL:inverse-fft.svg}}
+      </g>
+    </a>
+    <text id="combining" x="40" y="17270" font-size="22" font-weight="bold">Circuit combining (1)</text>
+    <text x="40" y="17320" font-size="16">cascade(), cas()</text>
+    <text x="480" y="17320" font-size="13" text-anchor="end">cascade.svg</text>
+    <a href="../schematics/symbols/cascade.svg" aria-label="Open cascade.svg">
+      <g data-symbol-source="cascade.svg" transform="translate(120 17340)">
+{{SYMBOL:cascade.svg}}
       </g>
     </a>
       </g>

@@ -1,9 +1,15 @@
-// Modified: 2026-10-19
+// Modified: 2026-10-26
 
 function isComplex(value) {
 	return value !== null && typeof value === 'object' &&
 		value.constructor && value.constructor.name === 'Complex' &&
 		typeof value.x === 'number' && typeof value.y === 'number';
+}
+
+function isPlainRecord(value) {
+	return value !== null && typeof value === 'object' && !Array.isArray(value) &&
+		(Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null) &&
+		Object.keys(value).length > 0;
 }
 
 function formatComplexCell(value) {
@@ -75,6 +81,12 @@ export function log(input, options = {}) {
 	} else if (input !== null && typeof input === 'object' &&
 		Array.isArray(input.m) && validRows(input.m, true)) {
 		pre.appendChild(createTable(input.m));
+	} else if (isPlainRecord(input)) {
+		try {
+			pre.textContent = JSON.stringify(input, null, 2);
+		} catch (error) {
+			pre.textContent = "nP.log can't read this input";
+		}
 	} else {
 		pre.textContent = "nP.log can't read this input";
 	}

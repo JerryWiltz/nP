@@ -21,7 +21,7 @@
   "components": [
     {
       "id": "diode",
-      "symbol": "rf/diode-1n4148.svg",
+      "symbol": "diode-1n4148.svg",
       "source": {
         "variable": "diode",
         "constructor": "diode1N4148"

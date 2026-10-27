@@ -21,7 +21,7 @@
   "components": [
     {
       "id": "tx",
-      "symbol": "digital/mod.svg",
+      "symbol": "mod.svg",
       "source": {
         "variable": "tx",
         "constructor": "mod"
@@ -55,7 +55,7 @@
     },
     {
       "id": "referenceRx",
-      "symbol": "digital/demod.svg",
+      "symbol": "demod.svg",
       "source": {
         "variable": "referenceRx",
         "constructor": "demod"
@@ -89,7 +89,7 @@
     },
     {
       "id": "shortRx",
-      "symbol": "digital/demod.svg",
+      "symbol": "demod.svg",
       "source": {
         "variable": "shortRx",
         "constructor": "demod"
@@ -123,7 +123,7 @@
     },
     {
       "id": "openRx",
-      "symbol": "digital/demod.svg",
+      "symbol": "demod.svg",
       "source": {
         "variable": "openRx",
         "constructor": "demod"

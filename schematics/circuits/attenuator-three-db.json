@@ -21,7 +21,7 @@
   "components": [
     {
       "id": "attenuator",
-      "symbol": "rf/attenuator.svg",
+      "symbol": "attenuator.svg",
       "source": {
         "variable": "attenuator",
         "constructor": "Attn"

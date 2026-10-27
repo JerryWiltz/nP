@@ -1,11 +1,12 @@
 #!/usr/bin/env node
-// Modified: 2026-10-25
+// Modified: 2026-10-27
 'use strict';
 
 const fs = require('fs');
 const path = require('path');
 const {listCanonicalSymbols, resolveSchematicPaths} = require('./symbol-library');
 const {checkGallery} = require('./generate-symbol-gallery');
+const {checkRuntimeSymbols} = require('./generate-runtime-symbols');
 
 const {symbolRoot, repositoryRoot} = resolveSchematicPaths(__dirname);
 
@@ -22,7 +23,7 @@ try {
   const catalog = JSON.parse(fs.readFileSync(
     path.join(repositoryRoot, 'schematics/symbol-catalog.json'), 'utf8'));
   const documentedHelpers = new Set([
-    'chebyLPgk', 'chebyLPLCs', 'chebyLPNsec', 'nodal', 'cascade'
+    'chebyLPgk', 'chebyLPLCs', 'chebyLPNsec', 'nodal'
   ]);
   const expected = new Set([
     ...publicNames('src/np-nport/src/index.js').filter(name => !documentedHelpers.has(name)),
@@ -49,10 +50,20 @@ try {
     ...Object.values(catalog.constructors),
     ...Object.values(catalog.symbolVariants || {}).flat()
   ]);
+  const signalSymbols = catalog.signalSymbols || [];
+  if (new Set(signalSymbols).size !== signalSymbols.length) {
+    throw new Error('signalSymbols contains duplicate filenames');
+  }
+  for (const filename of signalSymbols) {
+    if (!symbolNames.has(filename) || !mapped.has(filename)) {
+      throw new Error(`signal symbol is missing or unmapped: ${filename}`);
+    }
+  }
   for (const filename of symbolNames) {
     if (!mapped.has(filename)) throw new Error(`canonical symbol has no catalog mapping: ${filename}`);
   }
   const gallerySources = checkGallery();
+  const runtimeSymbolCount = checkRuntimeSymbols();
   const galleryNames = new Set(gallerySources);
   for (const filename of symbolNames) {
     if (!galleryNames.has(filename)) throw new Error(`canonical symbol is absent from gallery: ${filename}`);
@@ -68,7 +79,7 @@ try {
       ports: symbol.ports
     })), null, 2)}\n`);
   } else {
-    process.stdout.write(`Validated ${symbols.length} canonical symbol(s), ${actual.size} public mappings, and the gallery.\n`);
+    process.stdout.write(`Validated ${symbols.length} canonical symbol(s), ${actual.size} public mappings, the gallery, and ${runtimeSymbolCount} bundled runtime symbols.\n`);
   }
 } catch (error) {
   process.stderr.write(`validate-symbol-library: ${error.message}\n`);

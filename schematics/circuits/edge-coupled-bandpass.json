@@ -21,7 +21,7 @@
   "components": [
     {
       "id": "coupled1",
-      "symbol": "rf/coupled-transmission-line.svg",
+      "symbol": "coupled-transmission-line.svg",
       "source": {
         "variable": "coupled1",
         "constructor": "Tclin"
@@ -88,7 +88,7 @@
     },
     {
       "id": "coupled2",
-      "symbol": "rf/coupled-transmission-line.svg",
+      "symbol": "coupled-transmission-line.svg",
       "source": {
         "variable": "coupled2",
         "constructor": "Tclin"
@@ -155,7 +155,7 @@
     },
     {
       "id": "coupled3",
-      "symbol": "rf/coupled-transmission-line.svg",
+      "symbol": "coupled-transmission-line.svg",
       "source": {
         "variable": "coupled3",
         "constructor": "Tclin"
@@ -222,7 +222,7 @@
     },
     {
       "id": "open1",
-      "symbol": "rf/open.svg",
+      "symbol": "open.svg",
       "source": {
         "variable": "open",
         "constructor": "Open"
@@ -253,7 +253,7 @@
     },
     {
       "id": "open2",
-      "symbol": "rf/open.svg",
+      "symbol": "open.svg",
       "source": {
         "variable": "open",
         "constructor": "Open"
@@ -284,7 +284,7 @@
     },
     {
       "id": "open3",
-      "symbol": "rf/open.svg",
+      "symbol": "open.svg",
       "source": {
         "variable": "open",
         "constructor": "Open"
@@ -315,7 +315,7 @@
     },
     {
       "id": "open4",
-      "symbol": "rf/open.svg",
+      "symbol": "open.svg",
       "source": {
         "variable": "open",
         "constructor": "Open"
@@ -346,7 +346,7 @@
     },
     {
       "id": "open5",
-      "symbol": "rf/open.svg",
+      "symbol": "open.svg",
       "source": {
         "variable": "open",
         "constructor": "Open"
@@ -377,7 +377,7 @@
     },
     {
       "id": "open6",
-      "symbol": "rf/open.svg",
+      "symbol": "open.svg",
       "source": {
         "variable": "open",
         "constructor": "Open"

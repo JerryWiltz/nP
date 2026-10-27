@@ -21,7 +21,7 @@
   "components": [
     {
       "id": "qamThru",
-      "symbol": "rf/thru.svg",
+      "symbol": "thru.svg",
       "source": {
         "variable": "qamThru",
         "constructor": "Thru"

@@ -1,11 +1,11 @@
-<!-- Modified: 2026-10-15 -->
+<!-- Modified: 2026-10-27 -->
 # Microstrip Development Examples
 
-This companion to `microstripDevelopment.html` keeps five independently runnable `npjs` examples. Each section sets its analysis frequencies before constructing components. The model equations, assumptions, and source references live in `developmentDocs/microstrip/README.md`.
+This companion to `microstrip.html` keeps five independently runnable `npjs` examples. Each section sets its analysis frequencies before constructing components. The model equations, assumptions, and source references live in `developmentDocs/microstrip/README.md`.
 
 ## Microstrip Line Development
 
-This analysis evaluates a physical microstrip line and displays its output as a table, line chart, and Smith chart. Its executable harness is the `mlin` section of `dev/microstripDevelopment.html`.
+This analysis evaluates a physical microstrip line and displays its output as a table, line chart, and Smith chart. Its executable harness is the `mlin` section of `dev/microstrip.html`.
 
 ```npjs
 var fGlobal = nP.global;
@@ -74,7 +74,7 @@ nP.smithChart(smithChart);
 
 ## Coupled Microstrip Line Development
 
-This analysis evaluates a four-port coupled microstrip line, including through, coupled, matched, and isolated responses. Its executable harness is the `mclin` section of `dev/microstripDevelopment.html`.
+This analysis evaluates a four-port coupled microstrip line, including through, coupled, matched, and isolated responses. Its executable harness is the `mclin` section of `dev/microstrip.html`.
 
 ```npjs
 var g = nP.global;
@@ -138,7 +138,7 @@ nP.smithChart({
 
 ## Microstrip Tee Development
 
-This analysis evaluates the three-port physical microstrip tee and displays its S-parameters in three forms. Its executable harness is the `mtee` section of `dev/microstripDevelopment.html`.
+This analysis evaluates the three-port physical microstrip tee and displays its S-parameters in three forms. Its executable harness is the `mtee` section of `dev/microstrip.html`.
 
 ```npjs
 var g = nP.global;
@@ -187,7 +187,7 @@ const smithChart = nP.smithChart({
 
 ## Microstrip Tee Power Divider Development
 
-This analysis compares an ideal Wilkinson-style divider with a physical implementation using microstrip tees, lines, and a thin-film resistor. Its executable harness is the `power-divider` section of `dev/microstripDevelopment.html`.
+This analysis compares an ideal Wilkinson-style divider with a physical implementation using microstrip tees, lines, and a thin-film resistor. Its executable harness is the `power-divider` section of `dev/microstrip.html`.
 
 ```npjs
 var g = nP.global;
@@ -283,7 +283,7 @@ var chart = nP.lineChart({
 
 ## Microstrip Thin-Film Resistor Development
 
-This analysis compares ideal resistance, thin-film resistance, and microstrip transmission behavior. Its executable harness is the `mtfr` section of `dev/microstripDevelopment.html`.
+This analysis compares ideal resistance, thin-film resistance, and microstrip transmission behavior. Its executable harness is the `mtfr` section of `dev/microstrip.html`.
 
 ```npjs
 var g = nP.global;

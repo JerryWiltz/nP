@@ -1,7 +1,7 @@
-<!-- Modified: 2026-10-15 -->
+<!-- Modified: 2026-10-27 -->
 # Visualization Development
 
-This companion to `visualizationDevelopment.html` uses one diplexer to exercise a line chart, an SVG table, and a Smith chart. It also checks linear Cartesian axes and log-log axes. Run the single `npjs` block in Obsidian or use the HTML harness in a browser.
+This companion to `visualization.html` uses one diplexer to exercise a line chart, an SVG table, and a Smith chart. It also checks linear Cartesian axes and log-log axes. Run the single `npjs` block in Obsidian or use the HTML harness in a browser.
 
 ```npjs
 // Compact Manual example #1, page 27.

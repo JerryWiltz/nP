@@ -1,4 +1,4 @@
-// Modified: 2026-10-13
+// Modified: 2026-10-26
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global}  from '../../../np-global/src/global';
@@ -183,5 +183,6 @@ export function mtee(input = {}) { // microstrip tee nPort object
 		relativePermittivity: er, resistivity: rho * COPPER_RESISTIVITY,
 		lossTangent: tand, roughnessRms
 	}, analysis, {sources: [mtee.microstrip.source], validity: mtee.microstrip.validity});
+	mtee._schematic = {kind: 'component', symbol: 'microstrip-tee'};
 	return mtee;
 };

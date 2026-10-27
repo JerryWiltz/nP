@@ -1,4 +1,4 @@
-// Modified: 2026-10-23
+// Modified: 2026-10-27
 // Add an example with a unique id, title, category, and code. Array order sets
 // sidebar order within a category; stable ids preserve links and browser drafts.
 // Sidebar categories and their section order are listed in config.js.
@@ -12,7 +12,9 @@ var r1 = nP.R(25);
 
 var response = r1.out('s11dB', 's21dB');
 
-nP.log(response);` },
+nP.log(response);
+
+nP.schematic(r1);` },
   { id: 'rc-low-pass', title: 'RC low-pass', category: 'getting-started', code: `// RC low-pass
 
 var g = nP.global;
@@ -38,7 +40,9 @@ nP.lineChart({
   title: 'RC low-pass',
   metricPrefix: 'giga',
   showPoints: false
-});` },
+});
+
+nP.schematic(lowPass);` },
   { id: 'rlc-ladder', title: 'RLC ladder', category: 'rf-circuits', code: `// RLC ladder
 
 var g = nP.global;
@@ -66,7 +70,9 @@ nP.lineChart({
   title: 'RLC ladder',
   metricPrefix: 'giga',
   showPoints: false
-});` },
+});
+
+nP.schematic(ladder);` },
   { id: 'method-chaining-nport', title: 'Method chaining in nPort', category: 'rf-circuits', code: `// Method chaining in nPort
 
 nP.global.fList = nP.global.fGen(1e9, 5e9, 21);
@@ -90,7 +96,9 @@ nP.lineChart({
   title: 'Five cascaded two-ports',
   metricPrefix: 'giga',
   showPoints: false
-});` },
+});
+
+nP.schematic(chain);` },
   { id: 'vna-port1', title: 'VNA inductor S-parameters', category: 'rf-circuits', code: `// VNA inductor S-parameters
 
 var g = nP.global;
@@ -168,7 +176,9 @@ nP.lineTable({
 nP.lineTable({
   inputTable: referenceTable,
   title: 'VNA reference receiver R'
-});` },
+});
+
+nP.schematic(circuit);` },
   { id: 'vna-inductor-time', title: 'VNA inductor impulse response', category: 'rf-circuits', code: `// VNA inductor impulse response
 
 var g = nP.global();
@@ -262,7 +272,9 @@ nP.lineChart({
   metricPrefix: 'none',
   showPoints: false,
   showLabels: false
-});` },
+});
+
+nP.schematic(circuit);` },
   { id: 'vna-short-reflection', title: 'VNA cable fault location', category: 'rf-circuits', code: `// VNA cable fault location
 
 var g = nP.global();
@@ -395,7 +407,10 @@ nP.lineTable({
   inputTable: transitTable,
   title: 'Speed-of-light transit check: 2 km round trip',
   metricPrefix: 'none'
-});` },
+});
+
+nP.schematic(shortCircuit);
+nP.schematic(openCircuit);` },
   { id: 'tee-power-divider', title: 'Tee power divider', category: 'rf-circuits', code: `// Tee power divider
 
 var g = nP.global;
@@ -419,7 +434,9 @@ nP.lineChart({
   title: 'Tee power divider',
   metricPrefix: 'giga',
   showPoints: false
-});` },
+});
+
+nP.schematic(divider);` },
   { id: 'series-stub', title: 'Series branch with seriesTee', category: 'rf-circuits', code: `// Series branch with seriesTee
 
 nP.global.fList = nP.global.fGen(1e9, 3e9, 21);
@@ -438,7 +455,9 @@ var network = nP.nodal(
 nP.lineChart({
   inputTable: [network.out('s11dB', 's21dB')],
   title: 'Open series stub'
-});` },
+});
+
+nP.schematic(network);` },
   { id: 'coupled-line', title: 'Ideal coupled line', category: 'rf-circuits', code: `// Ideal coupled line
 
 nP.global.fList = nP.global.fGen(1e9, 3e9, 21);
@@ -448,7 +467,9 @@ var coupler = nP.Tclin(100, 30, 0.0373);
 nP.lineChart({
   inputTable: [coupler.out('s21dB', 's41dB')],
   title: 'Through and coupled ports'
-});` },
+});
+
+nP.schematic(coupler);` },
   { id: 'line-chart', title: 'Line chart', category: 'charts-tables', code: `// Line chart
 
 var g = nP.global;
@@ -466,7 +487,9 @@ nP.lineChart({
   title: 'Cascaded transmission',
   metricPrefix: 'giga',
   showPoints: false
-});` },
+});
+
+nP.schematic(network);` },
   { id: 'series-rc-smith-chart', title: 'Series RC Smith chart', category: 'charts-tables', code: `// Series RC Smith chart
 
 var g = nP.global;
@@ -494,7 +517,9 @@ nP.smithChart({
     left: 35
   },
   showPoints: true
-});` },
+});
+
+nP.schematic(seriesRC);` },
   { id: 'line-table', title: 'Line table', category: 'charts-tables', code: `// Line table
 
 nP.global.fList = nP.global.fGen(1e9, 3e9, 11);
@@ -506,7 +531,9 @@ var table = line.out('s11dB', 's21dB');
 nP.lineTable({
   inputTable: [table],
   title: 'Transmission line data'
-});` },
+});
+
+nP.schematic(line);` },
   { id: 'complex-arithmetic', title: 'Complex arithmetic', category: 'math', code: `// Complex arithmetic
 
 var a = nP.complex(3, 4);
@@ -730,7 +757,9 @@ var filter = nP.nodal(
 nP.lineChart({
   inputTable: [filter.out('s11dB', 's21dB')],
   title: 'Chebyshev low-pass'
-});` },
+});
+
+nP.schematic(filter);` },
   { id: 'microstrip-line', title: 'Microstrip line', category: 'microstrip', code: `// Microstrip line
 
 var g = nP.global;
@@ -754,7 +783,9 @@ nP.lineChart({
   title: 'Microstrip line',
   metricPrefix: 'giga',
   showPoints: false
-});` },
+});
+
+nP.schematic(line);` },
   { id: 'microstrip-coupler', title: 'Microstrip coupled line', category: 'microstrip', code: `// Microstrip coupled line
 
 nP.global.fList = nP.global.fGen(1e9, 5e9, 21);
@@ -764,7 +795,9 @@ var coupler = nP.mclin();
 nP.lineChart({
   inputTable: [coupler.out('s21dB', 's41dB')],
   title: 'Microstrip coupled line'
-});` },
+});
+
+nP.schematic(coupler);` },
   { id: 'microstrip-tee', title: 'Microstrip Tee', category: 'microstrip', code: `// Microstrip Tee
 
 nP.global.fList = nP.global.fGen(1e9, 5e9, 21);
@@ -774,7 +807,9 @@ var tee = nP.mtee();
 nP.lineChart({
   inputTable: [tee.out('s21dB', 's31dB')],
   title: 'Microstrip Tee branches'
-});` },
+});
+
+nP.schematic(tee);` },
   { id: 'microstrip-layout', title: 'Step, bend, and via', category: 'microstrip', code: `// Step, bend, and via
 
 nP.global.fList = nP.global.fGen(1e9, 5e9, 21);
@@ -788,7 +823,9 @@ var path = nP.cascade(step, bend, via);
 nP.lineChart({
   inputTable: [path.out('s11dB', 's21dB')],
   title: 'Microstrip layout path'
-});` },
+});
+
+nP.schematic(path);` },
   { id: 'microstrip-film-resistor', title: 'Thin-film resistor', category: 'microstrip', code: `// Thin-film resistor
 
 nP.global.fList = nP.global.fGen(1e9, 5e9, 21);
@@ -808,7 +845,9 @@ nP.log(resistanceOhms);
 nP.lineChart({
   inputTable: [resistor.out('s11dB', 's21dB')],
   title: 'Thin-film resistor'
-});` },
+});
+
+nP.schematic(resistor);` },
   { id: 'amplifier-noise', title: 'Amplifier noise figure', category: 'noise', code: `// Amplifier noise figure
 
 nP.global.fList = nP.global.fGen(1e9, 2e9, 11);
@@ -826,7 +865,9 @@ var chain = nP.nodal(
 nP.lineTable({
   inputTable: [chain.out('s21dB', 'NF21dB', 'noiseFloor')],
   title: 'Gain and noise'
-});` },
+});
+
+nP.schematic(chain);` },
   { id: 'noise-order', title: 'Amplifier versus attenuator order', category: 'noise', code: `// Amplifier versus attenuator order
 
 nP.global.fList = [1e9];
@@ -844,7 +885,10 @@ nP.log('Amplifier first:');
 nP.log(ampFirstTable);
 
 nP.log('Attenuator first:');
-nP.log(attenuatorFirstTable);` },
+nP.log(attenuatorFirstTable);
+
+nP.schematic(ampFirst);
+nP.schematic(attenuatorFirst);` },
   { id: 'two-tone-ip3', title: 'Two-tone IM3 and OIP3', category: 'intermodulation', code: `// Two-tone IM3 and OIP3
 
 nP.global.fList = nP.global.fGen(1e9, 1.1e9, 5);
@@ -869,7 +913,9 @@ var chain = nP.nodal(
 nP.lineTable({
   inputTable: [chain.out('IM3lower21dBm', 'OIP3lower21dBm')],
   title: 'Two-tone products'
-});` },
+});
+
+nP.schematic(chain);` },
   { id: 'diode-dc-rf', title: '1N4148 DC and RF', category: 'nonlinear', code: `// 1N4148 DC and RF
 
 nP.global.fList = nP.global.fGen(1e6, 1e9, 21);
@@ -888,7 +934,9 @@ nP.lineChart({
   xAxisTitle: 'Voltage (V)',
   yAxisTitle: 'Current (A)',
   metricPrefix: 'none'
-});` },
+});
+
+nP.schematic(diode);` },
   { id: 'am-envelope', title: 'AM sidebands and envelope', category: 'analog-modulation', code: `// AM sidebands and envelope
 
 var g = nP.global;
@@ -921,7 +969,9 @@ nP.lineChart({
   xAxisTitle: 'Time (ms)',
   yAxisTitle: 'V',
   metricPrefix: 'milli'
-});` },
+});
+
+nP.schematic({transmitter: tx, circuit: chain, receiver: rx});` },
   { id: 'fm-pm-sidebands', title: 'FM and PM sidebands', category: 'analog-modulation', code: `// FM and PM sidebands
 
 var g = nP.global;
@@ -1009,7 +1059,9 @@ nP.lineChart({
   xAxisTitle: 'Time (ns)',
   yAxisTitle: 'V',
   metricPrefix: 'none'
-});` },
+});
+
+nP.schematic({transmitter: tx, circuit: chain, receiver: rx});` },
   { id: 'pn7-waveform', title: 'PN7 clocked waveform', category: 'digital-signals', code: `// PN7 clocked waveform
 
 var context = nP.global();
@@ -1063,7 +1115,9 @@ nP.log('Sent:');
 nP.log(sentBits);
 
 nP.log('Received:');
-nP.log(receivedBits);` },
+nP.log(receivedBits);
+
+nP.schematic({transmitter: tx, circuit: chain, receiver: rx});` },
   { id: 'ber-attenuation', title: 'BER through an attenuator', category: 'digital-signals', code: `// BER through an attenuator
 
 var g = nP.global;
@@ -1089,7 +1143,9 @@ var ber = nP.bitErrorRate(tx, chain, {
 });
 
 nP.log('Measured BER:');
-nP.log(ber);` },
+nP.log(ber);
+
+nP.schematic({transmitter: tx, circuit: chain});` },
   { id: 'qam-ofdm', title: 'QAM and OFDM reception', category: 'digital-signals', code: `// QAM and OFDM reception
 
 var g = nP.global;
@@ -1141,5 +1197,8 @@ var ofdmRx = nP.demod(ofdmChain, {
 var ofdmBits = ofdmRx.out('bit string');
 
 nP.log('OFDM bits:');
-nP.log(ofdmBits);` },
+nP.log(ofdmBits);
+
+nP.schematic({transmitter: qam, circuit: qamChain, receiver: qamRx});
+nP.schematic({transmitter: ofdm, circuit: ofdmChain, receiver: ofdmRx});` },
 ];

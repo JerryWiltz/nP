@@ -21,7 +21,7 @@
   "components": [
     {
       "id": "line1",
-      "symbol": "rf/transmission-line.svg",
+      "symbol": "transmission-line.svg",
       "source": {
         "variable": "line1",
         "constructor": "Tlin"
@@ -63,7 +63,7 @@
     },
     {
       "id": "line2",
-      "symbol": "rf/transmission-line.svg",
+      "symbol": "transmission-line.svg",
       "source": {
         "variable": "line2",
         "constructor": "Tlin"

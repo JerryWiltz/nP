@@ -21,7 +21,7 @@
   "components": [
     {
       "id": "tx",
-      "symbol": "digital/mod.svg",
+      "symbol": "mod.svg",
       "source": {
         "variable": "tx",
         "constructor": "mod"
@@ -55,7 +55,7 @@
     },
     {
       "id": "ber",
-      "symbol": "digital/bit-error-rate.svg",
+      "symbol": "bit-error-rate.svg",
       "source": {
         "variable": "ber",
         "constructor": "bitErrorRate"

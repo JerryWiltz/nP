@@ -1,4 +1,4 @@
-// Modified: 2026-10-14
+// Modified: 2026-10-26
 import {complex} from '../../../np-math/src/complex';
 import {matrix, dim} from '../../../np-math/src/matrix';
 import {nPort} from '../nPort';
@@ -206,5 +206,6 @@ export function mstep(input = {}) {
 	step.physicalModel = physicalModelMetadata('microstrip', 'step-discontinuity', {
 		inputWidth: width1, outputWidth: width2, height: Height, thickness: Thickness
 	}, {relativePermittivity: er, resistivity: rho * COPPER_RESISTIVITY, lossTangent: tand, roughnessRms}, analysis);
+	step._schematic = {kind: 'component', symbol: 'microstrip-step'};
 	return step;
 };

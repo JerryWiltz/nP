@@ -1,4 +1,4 @@
-// Modified: 2026-10-14
+// Modified: 2026-10-26
 import {complex} from '../../../np-math/src/complex';
 import {matrix, dim} from '../../../np-math/src/matrix';
 import {nPort} from '../nPort';
@@ -49,6 +49,7 @@ var edwardsSteerBend = function (Width, Height, er) {
 export function mbend(input = {}) {
 	var options = normalizePhysicalModelOptions('mbend', input, [
 		{name: 'fList', defaultValue: global.fList},
+		{name: 'turn', defaultValue: 'right'},
 		{name: 'width', aliases: ['Width'], defaultValue: 0.023 * INCH_TO_METER}, {name: 'miterLength', defaultValue: undefined},
 		{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
 		{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
@@ -57,6 +58,9 @@ export function mbend(input = {}) {
 		{name: 'lossTangent', aliases: ['tand'], defaultValue: 0.001}, {name: 'roughnessRms', defaultValue: 0}
 	]);
 	var Width = options.width, miterLength = options.miterLength, Height = options.height, Thickness = options.thickness;
+	if (options.turn !== 'left' && options.turn !== 'right') {
+		throw new RangeError('nP.mbend(): turn must be "left" or "right".');
+	}
 	var er = options.relativePermittivity, rho = resistivityScale('mbend', input, options.rho, COPPER_RESISTIVITY);
 	var tand = options.lossTangent, roughnessRms = options.roughnessRms;
 	requirePositive('mbend', 'width', Width); requirePositive('mbend', 'height', Height); requireNonnegative('mbend', 'thickness', Thickness);
@@ -103,6 +107,7 @@ export function mbend(input = {}) {
 	bend.setspars(sparsArray);
 	bend.setglobal(settings);
 	bend.microstrip = {
+		turn: options.turn,
 		Width,
 		miterLength: actualMiterLength,
 		defaultMiterLength,
@@ -129,5 +134,6 @@ export function mbend(input = {}) {
 		width: Width, miterLength: actualMiterLength, height: Height, thickness: Thickness
 	}, {relativePermittivity: er, resistivity: rho * COPPER_RESISTIVITY, lossTangent: tand, roughnessRms}, analysis,
 	{validity: bend.microstrip.validity});
+	bend._schematic = {kind: 'component', symbol: `microstrip-${options.turn}-bend`};
 	return bend;
 };

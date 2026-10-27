@@ -21,7 +21,7 @@
   "components": [
     {
       "id": "resistor",
-      "symbol": "rf/microstrip-thin-film-resistor.svg",
+      "symbol": "microstrip-thin-film-resistor.svg",
       "source": {
         "variable": "resistor",
         "constructor": "mtfr"

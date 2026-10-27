@@ -21,7 +21,7 @@
   "components": [
     {
       "id": "step",
-      "symbol": "rf/microstrip-step.svg",
+      "symbol": "microstrip-step.svg",
       "source": {
         "variable": "step",
         "constructor": "mstep"
@@ -64,7 +64,7 @@
     },
     {
       "id": "bend",
-      "symbol": "rf/microstrip-right-bend.svg",
+      "symbol": "microstrip-right-bend.svg",
       "source": {
         "variable": "bend",
         "constructor": "mbend"
@@ -107,7 +107,7 @@
     },
     {
       "id": "via",
-      "symbol": "rf/microstrip-via-transition.svg",
+      "symbol": "microstrip-via-transition.svg",
       "source": {
         "variable": "via",
         "constructor": "mvia"

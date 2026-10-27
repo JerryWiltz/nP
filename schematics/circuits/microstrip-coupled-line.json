@@ -21,7 +21,7 @@
   "components": [
     {
       "id": "coupler",
-      "symbol": "rf/microstrip-coupled-line.svg",
+      "symbol": "microstrip-coupled-line.svg",
       "source": {
         "variable": "coupler",
         "constructor": "mclin"

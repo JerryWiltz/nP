@@ -21,7 +21,7 @@
   "components": [
     {
       "id": "line",
-      "symbol": "rf/transmission-line.svg",
+      "symbol": "transmission-line.svg",
       "source": {
         "variable": "line",
         "constructor": "Tlin"

@@ -1,4 +1,4 @@
-// Modified: 2026-10-13
+// Modified: 2026-10-26
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
@@ -20,5 +20,6 @@ export function L(L = 5e-9, options = {}) { // series inductor nPort object
 	};
 	lPort.setspars(sparsArray);
 	lPort.setglobal(settings);
+	lPort._schematic = {kind: 'component', symbol: 'inductor', value: L};
 	return lPort;
 };

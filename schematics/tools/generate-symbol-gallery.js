@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Modified: 2026-10-25
+// Modified: 2026-10-27
 'use strict';
 
 const fs = require('fs');
@@ -8,10 +8,10 @@ const {parseSymbol, resolveSchematicPaths} = require('./symbol-library');
 
 const {symbolRoot, repositoryRoot} = resolveSchematicPaths(__dirname);
 const templatePath = path.join(repositoryRoot, 'schematics/symbol-gallery.template.html');
-const galleryPath = path.join(repositoryRoot, 'dev/canonicalSymbolsDevelopment.html');
+const galleryPath = path.join(repositoryRoot, 'dev/canonicalSymbols.html');
 
 function gallerySources(template) {
-  return [...template.matchAll(/\{\{SYMBOL:((?:rf|digital)\/[a-z0-9-]+\.svg)\}\}/g)]
+  return [...template.matchAll(/\{\{SYMBOL:([a-z0-9-]+\.svg)\}\}/g)]
     .map(match => match[1]);
 }
 

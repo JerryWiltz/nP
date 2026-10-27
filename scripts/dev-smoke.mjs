@@ -1,4 +1,4 @@
-// Modified: 2026-09-30
+// Modified: 2026-10-27
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -12,11 +12,11 @@ const files = fs.readdirSync(devRoot)
     .map((name) => path.join(devRoot, name));
 
 const chartPages = new Set([
-    'diodeDevelopment.html',
-    'microstripDevelopment.html',
-    'nodalDevelopment.html',
-    'seriesTeeDevelopment.html',
-    'visualizationDevelopment.html'
+    'diode.html',
+    'microstrip.html',
+    'nodal.html',
+    'seriesTee.html',
+    'visualization.html'
 ]);
 
 const browser = await chromium.launch();

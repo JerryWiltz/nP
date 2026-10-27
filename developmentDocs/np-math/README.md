@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-23 -->
+<!-- Modified: 2026-10-27 -->
 # np-math Development Notes
 
 `src/np-math/` supplies the complex arithmetic and matrix operations used by every RF constructor and by `nP.nodal()`. These objects are deliberately small JavaScript structures rather than typed-array or external numerical-library abstractions.
@@ -155,6 +155,6 @@ Use tolerance-based comparisons for calculated floating-point results. A change 
 
 ## Related development pages
 
-- `dev/matrixDevelopment.html` is the browser harness.
-- `dev/matrixDevelopment.md` is the Obsidian `npjs` version.
+- `dev/matrix.html` is the browser harness.
+- `dev/matrix.md` is the Obsidian `npjs` version.
 - `test/math.test.js` contains the automated arithmetic and solver checks.

@@ -25,8 +25,8 @@
     "access": "public"
   },
   "scripts": {
-    "build": "rollup -c",
-    "build:plugin": "rollup -c rollup.plugin.config.js",
+    "build": "node schematics/tools/generate-runtime-symbols.js && rollup -c",
+    "build:plugin": "node schematics/tools/generate-runtime-symbols.js && rollup -c rollup.plugin.config.js",
     "test": "node --loader ./scripts/extensionless-loader.mjs --test",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
@@ -37,6 +37,7 @@
     "dev:new": "node scripts/create-dev-html.mjs",
     "dev:smoke": "node scripts/dev-smoke.mjs",
     "symbols:gallery": "node schematics/tools/generate-symbol-gallery.js",
+    "symbols:bundle": "node schematics/tools/generate-runtime-symbols.js",
     "symbols:check": "node schematics/tools/validate-symbol-library.js",
     "schematics:build": "node schematics/tools/build-example-schematics.js",
     "schematics:check": "node schematics/tools/check-example-schematics.js"

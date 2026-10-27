@@ -21,7 +21,7 @@
   "components": [
     {
       "id": "amp",
-      "symbol": "rf/amplifier.svg",
+      "symbol": "amplifier.svg",
       "source": {
         "variable": "amp",
         "constructor": "Amp"
@@ -63,7 +63,7 @@
     },
     {
       "id": "attenuator",
-      "symbol": "rf/attenuator.svg",
+      "symbol": "attenuator.svg",
       "source": {
         "variable": "attenuator",
         "constructor": "Attn"

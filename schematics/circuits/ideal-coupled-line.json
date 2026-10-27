@@ -21,7 +21,7 @@
   "components": [
     {
       "id": "coupler",
-      "symbol": "rf/coupled-transmission-line.svg",
+      "symbol": "coupled-transmission-line.svg",
       "source": {
         "variable": "coupler",
         "constructor": "Tclin"

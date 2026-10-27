@@ -21,7 +21,7 @@
   "components": [
     {
       "id": "line1",
-      "symbol": "rf/transmission-line.svg",
+      "symbol": "transmission-line.svg",
       "source": {
         "variable": "line1",
         "constructor": "Tlin"
@@ -63,7 +63,7 @@
     },
     {
       "id": "attenuator1",
-      "symbol": "rf/attenuator.svg",
+      "symbol": "attenuator.svg",
       "source": {
         "variable": "attenuator1",
         "constructor": "Attn"
@@ -105,7 +105,7 @@
     },
     {
       "id": "line2",
-      "symbol": "rf/transmission-line.svg",
+      "symbol": "transmission-line.svg",
       "source": {
         "variable": "line2",
         "constructor": "Tlin"
@@ -147,7 +147,7 @@
     },
     {
       "id": "attenuator2",
-      "symbol": "rf/attenuator.svg",
+      "symbol": "attenuator.svg",
       "source": {
         "variable": "attenuator2",
         "constructor": "Attn"
@@ -189,7 +189,7 @@
     },
     {
       "id": "line3",
-      "symbol": "rf/transmission-line.svg",
+      "symbol": "transmission-line.svg",
       "source": {
         "variable": "line3",
         "constructor": "Tlin"

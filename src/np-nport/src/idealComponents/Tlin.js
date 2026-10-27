@@ -1,4 +1,4 @@
-// Modified: 2026-10-13
+// Modified: 2026-10-26
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
@@ -33,5 +33,6 @@ export function Tlin(Z = 60, Length = 0.5 * 0.0254, options = {}) { // Z is in o
 	};
 	Tlin.setspars(sparsArray);
 	Tlin.setglobal(settings);
+	Tlin._schematic = {kind: 'component', symbol: 'transmission-line', impedance: Z, length: Length};
 	return Tlin;
 }

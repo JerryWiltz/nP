@@ -21,7 +21,7 @@
   "components": [
     {
       "id": "c1",
-      "symbol": "rf/parallel-capacitor.svg",
+      "symbol": "parallel-capacitor.svg",
       "source": {
         "variable": "c1",
         "constructor": "paC"
@@ -63,7 +63,7 @@
     },
     {
       "id": "l1",
-      "symbol": "rf/inductor.svg",
+      "symbol": "inductor.svg",
       "source": {
         "variable": "l1",
         "constructor": "seL"
@@ -105,7 +105,7 @@
     },
     {
       "id": "c2",
-      "symbol": "rf/parallel-capacitor.svg",
+      "symbol": "parallel-capacitor.svg",
       "source": {
         "variable": "c2",
         "constructor": "paC"

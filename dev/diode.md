@@ -1,7 +1,7 @@
-<!-- Modified: 2026-07-14 -->
+<!-- Modified: 2026-10-27 -->
 # Diode Development
 
-This analysis shows the RF S-parameters and DC I-V curve of the nP 1N4148 diode model. It is converted from `dev/diodeDevelopment.html`.
+This analysis shows the RF S-parameters and DC I-V curve of the nP 1N4148 diode model. It is converted from `dev/diode.html`.
 
 ```npjs
 var g = nP.global;

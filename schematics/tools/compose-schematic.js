@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Modified: 2026-10-25
+// Modified: 2026-10-27
 'use strict';
 
 const fs = require('fs');
@@ -13,6 +13,7 @@ const {validateRfConnectivity} = require('./validate-rf-connectivity');
 
 const {symbolRoot, repositoryRoot} = resolveSchematicPaths(__dirname);
 const symbolCatalog = require('../symbol-catalog.json');
+const signalSymbols = new Set(symbolCatalog.signalSymbols);
 
 function fail(message) {
   throw new Error(message);
@@ -133,7 +134,7 @@ function validateDescription(circuit) {
       fail(`${component.id}.source constructor does not map to ${component.symbol}`);
     }
     pointOnGrid(component.at, 20, `${component.id}.at`);
-    if (!component.symbol.startsWith(`${circuit.domain === 'rf' ? 'rf' : 'digital'}/`)) {
+    if (signalSymbols.has(component.symbol) !== (circuit.domain === 'signal')) {
       fail(`${component.id} symbol does not match the ${circuit.domain} diagram domain`);
     }
     const canonical = canonicalSymbol(component.symbol);
@@ -278,7 +279,7 @@ function validateDescription(circuit) {
     pointInsideMargin(label.at, circuit.viewBox, `label ${index}`);
   }
   for (const component of circuit.components) {
-    if (component.symbol === 'rf/short.svg' &&
+    if (component.symbol === 'short.svg' &&
         !(circuit.labels || []).some(label => label.componentId === component.id &&
           /^Short(?:\(\))?$/.test(label.text))) {
       fail(`${component.id} needs a Short label linked by componentId`);

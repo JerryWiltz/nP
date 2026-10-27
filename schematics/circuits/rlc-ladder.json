@@ -21,7 +21,7 @@
   "components": [
     {
       "id": "l1",
-      "symbol": "rf/inductor.svg",
+      "symbol": "inductor.svg",
       "source": {
         "variable": "l1",
         "constructor": "L"
@@ -64,7 +64,7 @@
     },
     {
       "id": "tee",
-      "symbol": "rf/tee.svg",
+      "symbol": "tee.svg",
       "source": {
         "variable": "tee",
         "constructor": "Tee"
@@ -119,7 +119,7 @@
     },
     {
       "id": "c1",
-      "symbol": "rf/capacitor.svg",
+      "symbol": "capacitor.svg",
       "source": {
         "variable": "c1",
         "constructor": "C"
@@ -162,7 +162,7 @@
     },
     {
       "id": "short",
-      "symbol": "rf/short.svg",
+      "symbol": "short.svg",
       "source": {
         "variable": "short",
         "constructor": "Short"
@@ -193,7 +193,7 @@
     },
     {
       "id": "l2",
-      "symbol": "rf/inductor.svg",
+      "symbol": "inductor.svg",
       "source": {
         "variable": "l2",
         "constructor": "L"

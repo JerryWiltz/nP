@@ -21,7 +21,7 @@
   "components": [
     {
       "id": "fm",
-      "symbol": "digital/mod.svg",
+      "symbol": "mod.svg",
       "source": {
         "variable": "fm",
         "constructor": "mod"
@@ -55,7 +55,7 @@
     },
     {
       "id": "pm",
-      "symbol": "digital/mod.svg",
+      "symbol": "mod.svg",
       "source": {
         "variable": "pm",
         "constructor": "mod"

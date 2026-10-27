@@ -1,4 +1,4 @@
-// Modified: 2026-10-13
+// Modified: 2026-10-26
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort'
 import {global}  from '../../../np-global/src/global';
@@ -36,5 +36,6 @@ export function seR(R = 75, temperature = global.Temp, options = {}) { // series
 	seR.setspars(sparsArray);
 	seR.noise = noiseArray;
 	seR.setglobal(settings);
+	seR._schematic = {kind: 'component', symbol: 'resistor', value: R};
 	return seR;
 };

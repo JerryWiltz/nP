@@ -1,4 +1,4 @@
-// Modified: 2026-10-13
+// Modified: 2026-10-26
 import {complex} from '../../../np-math/src/complex';
 import {global} from '../../../np-global/src/global';
 import {nPort} from '../nPort';
@@ -44,5 +44,6 @@ export function Attn(attenuationDb = 3, temperature = global.Temp, options = {})
 	attenuator.setglobal(settings);
 	attenuator.temperature = temperature;
 	attenuator._displayFrequencies = settings.fList.slice();
+	attenuator._schematic = {kind: 'component', symbol: 'attenuator', value: attenuationDb};
 	return attenuator;
 }

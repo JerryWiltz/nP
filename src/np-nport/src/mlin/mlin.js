@@ -1,4 +1,4 @@
-// Modified: 2026-10-13
+// Modified: 2026-10-26
 import { complex } from '../../../np-math/src/complex';
 import { nPort } from '../nPort';
 import { global } from '../../../np-global/src/global';
@@ -194,5 +194,6 @@ export function mlin(input = {}) {
 		lossTangent: tand,
 		roughnessRms
 	}, analysis);
+	mlin._schematic = {kind: 'component', symbol: 'microstrip-line', length: Length};
 	return mlin;
 };

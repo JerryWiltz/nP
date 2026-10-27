@@ -21,7 +21,7 @@
   "components": [
     {
       "id": "trapezoid",
-      "symbol": "digital/waveform.svg",
+      "symbol": "waveform.svg",
       "source": {
         "variable": "trapezoid",
         "constructor": "waveform"
@@ -47,7 +47,7 @@
     },
     {
       "id": "fft",
-      "symbol": "digital/fft.svg",
+      "symbol": "fft.svg",
       "source": {
         "variable": "fft",
         "constructor": "FFT"
@@ -81,7 +81,7 @@
     },
     {
       "id": "reconstructed",
-      "symbol": "digital/inverse-fft.svg",
+      "symbol": "inverse-fft.svg",
       "source": {
         "variable": "reconstructed",
         "constructor": "invFFT"

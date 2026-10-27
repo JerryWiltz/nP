@@ -1,7 +1,7 @@
-<!-- Modified: 2026-07-14 -->
+<!-- Modified: 2026-10-27 -->
 # Matrix Development
 
-This analysis exercises real and complex matrix inversion, multiplication, and addition. Its text outputs are rendered safely below the JavaScript. It is converted from `dev/matrixDevelopment.html`.
+This analysis exercises real and complex matrix inversion, multiplication, and addition. Its text outputs are rendered safely below the JavaScript. It is converted from `dev/matrix.html`.
 
 ```npjs
 function formatNumber(value) {

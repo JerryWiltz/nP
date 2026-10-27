@@ -1,4 +1,4 @@
-// Modified: 2026-10-25
+// Modified: 2026-10-27
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -71,7 +71,7 @@ test('a composed Short requires its visible component label', () => {
     viewBox: [0, 0, 240, 200],
     layout: {centerAxisX: 120, centerReference: 'Short body'},
     components: [{
-      id: 'short1', symbol: 'rf/short.svg', at: [80, 100],
+      id: 'short1', symbol: 'short.svg', at: [80, 100],
       connections: [{port: 1, node: 1, at: [80, 100], labelAt: [80, 60]}]
     }]
   };
@@ -81,21 +81,21 @@ test('a composed Short requires its visible component label', () => {
 });
 
 test('canonical symbols reject embedded raster images', () => {
-  const source = readFileSync(new URL('../schematics/symbols/rf/resistor.svg', import.meta.url), 'utf8');
+  const source = readFileSync(new URL('../schematics/symbols/resistor.svg', import.meta.url), 'utf8');
   const unsafe = source.replace('</svg>', '<image href="data:image/png;base64,AAAA"/></svg>');
   assert.throws(() => parseSymbol(unsafe), /unsafe canonical symbol/);
 });
 
 test('canonical symbols reject malformed XML', () => {
-  const source = readFileSync(new URL('../schematics/symbols/rf/resistor.svg', import.meta.url), 'utf8');
+  const source = readFileSync(new URL('../schematics/symbols/resistor.svg', import.meta.url), 'utf8');
   const malformed = source.replace('</svg>', '</g></svg>');
   assert.throws(() => parseSymbol(malformed), /not well-formed XML/);
 });
 
 test('the gallery can be regenerated from canonical SVGs', () => {
-  const published = readFileSync(new URL('../dev/canonicalSymbolsDevelopment.html', import.meta.url), 'utf8');
+  const published = readFileSync(new URL('../dev/canonicalSymbols.html', import.meta.url), 'utf8');
   assert.equal(generateGallery(), published);
-  assert.equal(checkGallery().length, 57);
+  assert.equal(checkGallery().length, 58);
 });
 
 test('every REPL example has an explicit schematic classification', () => {
@@ -117,8 +117,8 @@ test('every REPL example has an explicit schematic classification', () => {
 });
 
 test('microstrip bend port 2 follows the labeled turn direction', () => {
-  const leftSource = readFileSync(new URL('../schematics/symbols/rf/microstrip-left-bend.svg', import.meta.url), 'utf8');
-  const rightSource = readFileSync(new URL('../schematics/symbols/rf/microstrip-right-bend.svg', import.meta.url), 'utf8');
+  const leftSource = readFileSync(new URL('../schematics/symbols/microstrip-left-bend.svg', import.meta.url), 'utf8');
+  const rightSource = readFileSync(new URL('../schematics/symbols/microstrip-right-bend.svg', import.meta.url), 'utf8');
   const left = parseSymbol(leftSource).ports;
   const right = parseSymbol(rightSource).ports;
 
@@ -129,7 +129,7 @@ test('microstrip bend port 2 follows the labeled turn direction', () => {
 });
 
 test('symbols and circuit descriptions enforce the common grid and rotation', () => {
-  const source = readFileSync(new URL('../schematics/symbols/rf/resistor.svg', import.meta.url), 'utf8');
+  const source = readFileSync(new URL('../schematics/symbols/resistor.svg', import.meta.url), 'utf8');
   assert.throws(() => parseSymbol(source.replace('cx="60" cy="80"', 'cx="61" cy="80"')),
     /terminal off the 20-unit grid/);
   assert.throws(() => parseSymbol(source.replace('fill="#ffffff"', 'fill="#eeeeee"')),

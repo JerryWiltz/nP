@@ -21,7 +21,7 @@
   "components": [
     {
       "id": "amp2",
-      "symbol": "rf/amplifier.svg",
+      "symbol": "amplifier.svg",
       "source": {
         "variable": "amp2",
         "constructor": "Amp"

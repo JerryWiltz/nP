@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Modified: 2026-10-25
+// Modified: 2026-10-27
 'use strict';
 
 const fs = require('fs');
@@ -11,7 +11,7 @@ const {repositoryRoot} = resolveSchematicPaths(__dirname);
 
 function makeReceiver(id, signal, y, output) {
   return {
-    id, symbol: 'digital/demod.svg',
+    id, symbol: 'demod.svg',
     source: {variable: id, constructor: 'demod'},
     at: [460, y], sourceAnchor: [80, 80],
     connections: [
@@ -32,7 +32,7 @@ function makeVnaReceivers(cable = false) {
     viewBox: [0, 0, 760, 560],
     layout: {centerAxisX: 380, centerReference: 'RF fixture interface'},
     components: [
-      {id: 'tx', symbol: 'digital/mod.svg', source: {variable: 'tx', constructor: 'mod'},
+      {id: 'tx', symbol: 'mod.svg', source: {variable: 'tx', constructor: 'mod'},
         at: [160, 220], sourceAnchor: [80, 80],
         connections: [{port: 1, signal: 'grid', at: [160, 220]},
           {port: 2, signal: 'tx', at: [280, 220]}]},

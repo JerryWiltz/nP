@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-15 -->
+<!-- Modified: 2026-10-27 -->
 # The Path of `lineChart`
 
 This note documents how `nP.lineChart()` travels from its source in the nP repository into the nPort RF Analysis Obsidian plugin. It also explains the two different paths a chart request can take inside Obsidian: a verbatim JavaScript `npjs` block or a declarative JSON `np` block.
@@ -45,7 +45,7 @@ src/index.js
 
 The separately invoked `npm run build:plugin` command starts at `src/plugin.js` and produces `dist/nP.plugin.esm.js`. This host-safe entry point excludes legacy browser-development helpers and is not included in the public npm package.
 
-The `line-chart` section of `dev/visualizationDevelopment.html` is a development and verification harness, not the implementation of `lineChart()`. It loads `../dist/nP.js`, obtains the browser global `nP`, and calls `nP.lineChart(...)` to exercise the built library.
+The `line-chart` section of `dev/visualization.html` is a development and verification harness, not the implementation of `lineChart()`. It loads `../dist/nP.js`, obtains the browser global `nP`, and calls `nP.lineChart(...)` to exercise the built library.
 
 ## Crossing from nP into the Obsidian plugin
 

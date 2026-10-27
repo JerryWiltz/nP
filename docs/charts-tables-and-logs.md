@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-21 -->
+<!-- Modified: 2026-10-27 -->
 # Charts, tables, and logs
 
 Use `nP.lineChart()`, `nP.smithChart()`, and `nP.lineTable()` for visual results in a browser, or `nP.log()` for quick values. The charts and table accept the numeric tables returned by an [nPort's `.out()` method](./nport-object.md#read-results-with-out). Each call adds a display to the page.
@@ -363,6 +363,36 @@ Each chart and table has a **Copy as png** button. Click it, then paste the imag
 
 PNG copy needs browser image clipboard support; clipboard access also depends on the browser and page context. The [REPL instructions](./using-the-repl.md) cover using these controls with runnable examples.
 
+## Schematics
+
+`nP.schematic(circuit)` draws the supported nPort circuit from its construction metadata. Labels show three significant digits by default. Set `significantDigits` from 1 to 15 when a drawing needs more or less detail:
+
+```js
+nP.global.fList = [2e9];
+
+var l1 = nP.L(45.65360855435164e-9);
+nP.schematic(l1, {significantDigits: 4});
+```
+
+This option changes only the printed labels. The circuit calculation and numeric values in the returned `graph` and `topology` keep their original precision. The drawing opens at its natural scale with horizontal and vertical scrolling; **Fit drawing** shows the whole circuit, and **Actual size** restores the natural scale.
+
+For a transmitter, RF circuit, and receiver, pass the three objects together so the drawing includes the signal blocks:
+
+```js
+var g = nP.global;
+g.tList = g.tGen(0, 1e-3, 2);
+g.fList = [];
+
+var tx = nP.mod({mode: 'AM', carrierHz: 200e6, toneHz: 300});
+var attenuator = nP.Attn(3);
+var circuit = nP.cascade(attenuator, {signal: tx});
+var rx = nP.demod(circuit, {noise: false});
+
+nP.schematic({transmitter: tx, circuit: circuit, receiver: rx});
+```
+
+The MOD and DEMOD connectors in this drawing describe signal flow; they are not RF S-parameter ports. Omit `receiver` when the displayed path ends at the circuit.
+
 ## Quick output with `nP.log()`
 
 `nP.log(value)` adds a readable result to the page. Use it when you want to inspect a value while building a circuit, without setting up a chart or table. It takes **one value per call**.
@@ -383,6 +413,7 @@ Numbers are displayed to **four significant digits**. A complex number shows its
 - A one-dimensional array of strings, numbers, or `nP.complex()` values becomes a **one-column HTML table**.
 - A two-dimensional array becomes an **HTML table**. This includes the header and numeric rows returned by an nPort's `.out()` method. Its cells may contain strings, numbers, or complex values.
 - An `nP.matrix()` object becomes an HTML table of real numbers or complex values. Use a matrix with one consistent entry type.
+- A nonempty plain JavaScript object becomes indented JSON text, useful for inspecting `nP.schematic()` graph and topology results.
 
 ```js
 nP.log([1e9, 2e9, 3e9]); // one-column table
@@ -399,7 +430,7 @@ var m1 = nP.matrix([
 nP.log(m1); // two-by-two table
 ```
 
-`nP.log()` is a display helper, not a general JavaScript object inspector. An unsupported value, empty matrix, or malformed table displays `nP.log can't read this input` instead of throwing an error. To display circuit results, first call `.out()`, as in the example above.
+`nP.log()` displays plain objects as text rather than an interactive inspector. An unsupported value, empty matrix, or malformed table displays `nP.log can't read this input` instead of throwing an error. To display circuit results, first call `.out()`, as in the example above.
 
 ### Where the output goes
 

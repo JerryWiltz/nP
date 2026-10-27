@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-21 -->
+<!-- Modified: 2026-10-27 -->
 # nP constructor catalog
 
 This catalog covers the 52 public functions that produce n-port objects from `src/np-nport/src/index.js`, the digital waveform functions from `src/np-digital`, and the exported math and low-pass prototype functions. Each JS call below spells out the **current defaults** where they exist. Each argument or property appears on its own line. Units are in comments. Each constructor has its own heading and code block.
@@ -36,6 +36,14 @@ var filter = nP.lpfGen(undefined, {fList: frequencies});
 ```
 
 Each nPort stores a copy of its selected frequency list and analysis settings. Components in one `nodal()` or `cascade()` circuit must have matching frequency rows. Call `nP.global()` to create and select an independent circuit context. It holds its own `fList`, `tList`, `twoTone`, `Ro`, and `Temp`; `nP.global(g)` selects an earlier context `g` again. Existing `nP.global.fList` and related property calls use the selected context. `nP.global.tGen(start, stop, points)` returns a uniformly spaced time list in seconds, including both endpoints. Two-tone analysis still requires positive first-tone frequencies and a positive spacing.
+
+RF constructors used in the REPL record internal schematic metadata, including RLC parts, ideal lines and junctions, couplers, active parts, diode, and microstrip parts. `mbend({turn: 'left'})` selects a left-turn drawing; the default is a right turn. The turn changes only the drawing, not the bend S-parameters. `cas()` and `cascade()` preserve their construction tree. `nodal()` records each component placement's port-to-node assignments and the external port order. The runtime renderer uses a dedicated Wilkinson layout when that topology is present. Two-port circuits with a series path and simple shunt branches are laid out from their port-to-node connections; other nodal circuits use a grid-based connection view with a rail for each electrical node.
+
+`nP.schematic(circuit)` mounts the drawing and returns `{svg, graph, topology}`. The `svg` property is the displayed SVG element. `graph` contains component placements, nodes, wires, port coordinates, and the viewBox; cascades also include their construction tree. `topology` contains parts and their connections: port-to-port for cascades, and node membership for the supported nodal layout. Both objects are plain, JSON-serializable snapshots; editing them does not change the circuit or drawing.
+
+The default detail view expands a cascade into its components. For a circuit made by cascading completed circuits, `nP.schematic(combined, {view: 'blocks'})` displays reused cascade subcircuits as two-port `cascade` symbols. A bend between those blocks remains visible and can rotate the second symbol. If no cascade subcircuit is reused, block view collapses the immediate cascade operands. The source circuit's own detailed schematic remains separate. The same `view` option works with `schematicGraph()`, `schematicTopology()`, and `schematicSvg()`.
+
+The renderer groups nodes along each straight run. Circled node numbers share one row above a horizontal run or one column to the right of a vertical run; if symbol ink blocks a group, the whole row or column shifts by a grid step. It uses the symbol body and leads for clearance, so empty space inside a bend's bounding box does not force the numbers away from the wire.
 
 ## Lumped components
 
@@ -622,6 +630,7 @@ nP.mstep({
 ```js
 // mbend: microstrip bend
 nP.mbend({
+    turn: 'right',             // 'right' (default) or 'left'; schematic orientation only
     width: 23 * mil,              // m
     // miterLength: 0,            // m; omitted by default, effective value 0
     height: 25 * mil,             // m
@@ -874,7 +883,7 @@ var tx = nP.mod({
 
 When `fftList` is omitted, VNA mode replaces the selected context's `fList`. `tx.out('waveform')` shows the synthetic input impulse in nanoseconds; `tx.out('settings')` reports the sample rate, bin spacing, and maximum frequency. After attaching the source to a circuit, `nP.demod(circuit, {noise: false}).out('waveform')` gives the synthetic output impulse without any receiver code changes. A step response, windowing, and arbitrary pulse weighting are not yet provided.
 
-For the 68-character ASCII message in `dev/timeDomainDevelopment.html`, `tx.out('frequency count')` returns `2177`. Unknown selectors raise `RangeError`.
+For the 68-character ASCII message in `dev/timeDomain.html`, `tx.out('frequency count')` returns `2177`. Unknown selectors raise `RangeError`.
 
 For explicit on-off keying or two-level amplitude-shift keying, set `mode` to `'OOK'` or `'ASK'`. Both require a positive `carrierHz` below the sample Nyquist frequency. `dataMode` chooses the bit source and defaults to `'PN7'`; `message` infers `'ASCII'`, and `bits` infers `'bits'` when `dataMode` is omitted. A `PN()` waveform can instead be passed as `input`, with its bits mapped to the selected voltage levels.
 

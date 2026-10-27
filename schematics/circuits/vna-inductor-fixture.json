@@ -21,7 +21,7 @@
   "components": [
     {
       "id": "splitter",
-      "symbol": "rf/coupler-180.svg",
+      "symbol": "coupler-180.svg",
       "source": {
         "variable": "splitter",
         "constructor": "Coupler180"
@@ -88,7 +88,7 @@
     },
     {
       "id": "inputCoupler",
-      "symbol": "rf/coupler-180.svg",
+      "symbol": "coupler-180.svg",
       "source": {
         "variable": "inputCoupler",
         "constructor": "Coupler180"
@@ -155,7 +155,7 @@
     },
     {
       "id": "l1",
-      "symbol": "rf/inductor.svg",
+      "symbol": "inductor.svg",
       "source": {
         "variable": "l1",
         "constructor": "L"
@@ -198,7 +198,7 @@
     },
     {
       "id": "outputCoupler",
-      "symbol": "rf/coupler-180.svg",
+      "symbol": "coupler-180.svg",
       "source": {
         "variable": "outputCoupler",
         "constructor": "Coupler180"
@@ -265,7 +265,7 @@
     },
     {
       "id": "load1",
-      "symbol": "rf/load.svg",
+      "symbol": "load.svg",
       "source": {
         "variable": "load",
         "constructor": "Load"
@@ -296,7 +296,7 @@
     },
     {
       "id": "load2",
-      "symbol": "rf/load.svg",
+      "symbol": "load.svg",
       "source": {
         "variable": "load",
         "constructor": "Load"
@@ -327,7 +327,7 @@
     },
     {
       "id": "load3",
-      "symbol": "rf/load.svg",
+      "symbol": "load.svg",
       "source": {
         "variable": "load",
         "constructor": "Load"
@@ -358,7 +358,7 @@
     },
     {
       "id": "load4",
-      "symbol": "rf/load.svg",
+      "symbol": "load.svg",
       "source": {
         "variable": "load",
         "constructor": "Load"

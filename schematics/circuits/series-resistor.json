@@ -7,7 +7,7 @@
   "components": [
     {
       "id": "R1",
-      "symbol": "rf/resistor.svg",
+      "symbol": "resistor.svg",
       "at": [160, 140],
       "sourceAnchor": [60, 80],
       "connections": [

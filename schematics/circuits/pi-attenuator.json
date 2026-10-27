@@ -21,7 +21,7 @@
   "components": [
     {
       "id": "inputTee",
-      "symbol": "rf/tee.svg",
+      "symbol": "tee.svg",
       "source": {
         "variable": "inputTee",
         "constructor": "Tee"
@@ -76,7 +76,7 @@
     },
     {
       "id": "inputShunt",
-      "symbol": "rf/resistor.svg",
+      "symbol": "resistor.svg",
       "source": {
         "variable": "inputShunt",
         "constructor": "R"
@@ -119,7 +119,7 @@
     },
     {
       "id": "ground1",
-      "symbol": "rf/short.svg",
+      "symbol": "short.svg",
       "source": {
         "variable": "ground",
         "constructor": "Short"
@@ -150,7 +150,7 @@
     },
     {
       "id": "seriesR",
-      "symbol": "rf/resistor.svg",
+      "symbol": "resistor.svg",
       "source": {
         "variable": "seriesR",
         "constructor": "R"
@@ -193,7 +193,7 @@
     },
     {
       "id": "outputTee",
-      "symbol": "rf/tee.svg",
+      "symbol": "tee.svg",
       "source": {
         "variable": "outputTee",
         "constructor": "Tee"
@@ -248,7 +248,7 @@
     },
     {
       "id": "outputShunt",
-      "symbol": "rf/resistor.svg",
+      "symbol": "resistor.svg",
       "source": {
         "variable": "outputShunt",
         "constructor": "R"
@@ -291,7 +291,7 @@
     },
     {
       "id": "ground2",
-      "symbol": "rf/short.svg",
+      "symbol": "short.svg",
       "source": {
         "variable": "ground",
         "constructor": "Short"

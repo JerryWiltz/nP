@@ -1,4 +1,4 @@
-// Modified: 2026-10-21
+// Modified: 2026-10-26
 import {complex} from '../../../np-math/src/complex';
 import {global} from '../../../np-global/src/global';
 import {nPort} from '../nPort';
@@ -37,5 +37,6 @@ export function Coupler180(options = {}) {
 	coupler.setspars(sparsArray);
 	coupler.noise = noiseArray;
 	coupler.setglobal(settings);
+	coupler._schematic = {kind: 'component', symbol: 'coupler-180', value: couplingDb};
 	return coupler;
 }

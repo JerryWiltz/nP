@@ -1,4 +1,4 @@
-// Modified: 2026-10-19
+// Modified: 2026-10-26
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -77,6 +77,15 @@ test('log preserves supported scalar, output-table, and matrix formatting', () =
 		['1.000e+9', '-3.500']
 	]);
 	assert.deepEqual(tableCells(render(matrix([[complex(1, 2)]]))), [['1.000 +j2.000']]);
+});
+
+test('log displays nonempty plain objects as readable JSON text', () => {
+	var topology = {parts: [{id: 'R1', type: 'R', ohms: 25}], connections: [['Port 1', 'R1.1']]};
+	assert.equal(render(topology).textContent, JSON.stringify(topology, null, 2));
+
+	var circular = {name: 'loop'};
+	circular.self = circular;
+	assert.equal(render(circular).textContent, "nP.log can't read this input");
 });
 
 test('log uses its default output box or an explicit mount and returns the output element', () => {

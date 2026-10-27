@@ -21,7 +21,7 @@
   "components": [
     {
       "id": "pn",
-      "symbol": "digital/pn.svg",
+      "symbol": "pn.svg",
       "source": {
         "variable": "pn",
         "constructor": "PN"

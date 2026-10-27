@@ -1,4 +1,4 @@
-// Modified: 2026-10-08
+// Modified: 2026-10-26
 import {nPort} from '../nPort';
 import {applyInputSignal} from '../signal';
 
@@ -18,6 +18,7 @@ export function cascade(...nPorts) {
 		if (combined.signal) copy.signal = combined.signal;
 		copy._displayFrequencies = combined._displayFrequencies;
 		copy._intermod = combined._intermod;
+		copy._schematic = combined._schematic;
 		combined = copy;
 	}
 	return applyInputSignal(combined, signalOptions);

@@ -1,4 +1,4 @@
-// Modified: 2026-10-13
+// Modified: 2026-10-26
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
@@ -353,5 +353,6 @@ export function mclin(input = {}) {
 		relativePermittivity: er, resistivity: rho * COPPER_RESISTIVITY,
 		lossTangent: tand, roughnessRms
 	}, dispersion);
+	ctlin._schematic = {kind: 'component', symbol: 'microstrip-coupled-line'};
 	return ctlin;
 };

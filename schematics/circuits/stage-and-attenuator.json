@@ -21,7 +21,7 @@
   "components": [
     {
       "id": "r1",
-      "symbol": "rf/resistor.svg",
+      "symbol": "resistor.svg",
       "source": {
         "variable": "r1",
         "constructor": "R"
@@ -63,7 +63,7 @@
     },
     {
       "id": "l1",
-      "symbol": "rf/inductor.svg",
+      "symbol": "inductor.svg",
       "source": {
         "variable": "l1",
         "constructor": "L"
@@ -105,7 +105,7 @@
     },
     {
       "id": "attenuator",
-      "symbol": "rf/attenuator.svg",
+      "symbol": "attenuator.svg",
       "source": {
         "variable": "attenuator",
         "constructor": "Attn"

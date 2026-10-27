@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Modified: 2026-10-25
+// Modified: 2026-10-27
 'use strict';
 
 const fs = require('fs');
@@ -21,7 +21,7 @@ function makeIndependentModulators(name, title, exampleId, first, second) {
   };
   for (const [index, [variable, mode]] of [first, second].entries()) {
     const y = 160 + index * 180;
-    circuit.components.push({id: variable, symbol: 'digital/mod.svg',
+    circuit.components.push({id: variable, symbol: 'mod.svg',
       source: {variable, constructor: 'mod'}, at: [180, y], sourceAnchor: [80, 80],
       connections: [{port: 1, signal: `${variable}-grid`, at: [180, y]},
         {port: 2, signal: `${variable}-tones`, at: [300, y]}]});
@@ -47,11 +47,11 @@ function makeBerComparison() {
     viewBox: [0, 0, 760, 500],
     layout: {centerAxisX: 380, centerReference: 'transmit and receive comparison'},
     components: [
-      {id: 'tx', symbol: 'digital/mod.svg', source: {variable: 'tx', constructor: 'mod'},
+      {id: 'tx', symbol: 'mod.svg', source: {variable: 'tx', constructor: 'mod'},
         at: [160, 200], sourceAnchor: [80, 80],
         connections: [{port: 1, signal: 'grid', at: [160, 200]},
           {port: 2, signal: 'tx', at: [280, 200]}]},
-      {id: 'ber', symbol: 'digital/bit-error-rate.svg',
+      {id: 'ber', symbol: 'bit-error-rate.svg',
         source: {variable: 'ber', constructor: 'bitErrorRate'},
         at: [460, 260], sourceAnchor: [80, 80],
         connections: [{port: 1, signal: 'tx', at: [460, 260]},

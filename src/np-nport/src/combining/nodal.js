@@ -6,7 +6,7 @@ import {complex} from '../../../np-math/src/complex';
 import {connectionModel} from '../intermod';
 import {compatibleSignals, signalWithRows, applyInputSignal} from '../signal';
 
-// Modified: 2026-10-08
+// Modified: 2026-10-26
 var conjugate = function (value) { return complex(value.getR(), -value.getI()); };
 
 
@@ -158,5 +158,12 @@ export function nodal( ... componentConnections) { // componentConnections = [[n
 			return connectionRow.findIndex(function (value) { return value.getR() === 1; });
 		})
 	);
+	network._schematic = {
+		kind: 'nodal',
+		components: componentConnections.slice(0, m).map(function (entry) {
+			return {part: entry[0]._schematic, nodes: entry.slice(1)};
+		}),
+		externalNodes: componentConnections[m].slice(1)
+	};
 	return applyInputSignal(network, signalOptions);
 };

@@ -1,4 +1,4 @@
-// Modified: 2026-10-13
+// Modified: 2026-10-26
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort'
 import {global}  from '../../../np-global/src/global';
@@ -24,5 +24,6 @@ export function Tee(options = {}) { // a 3port dummy connection
 	}	
 	Tee.setspars(sparsArray);
 	Tee.setglobal(settings);
+	Tee._schematic = {kind: 'component', symbol: 'tee'};
 	return Tee;
 };

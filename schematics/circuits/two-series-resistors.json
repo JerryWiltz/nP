@@ -12,7 +12,7 @@
   "components": [
     {
       "id": "r1",
-      "symbol": "rf/resistor.svg",
+      "symbol": "resistor.svg",
       "source": {"variable": "r1", "constructor": "R"},
       "at": [160, 140],
       "sourceAnchor": [60, 80],
@@ -23,7 +23,7 @@
     },
     {
       "id": "r2",
-      "symbol": "rf/resistor.svg",
+      "symbol": "resistor.svg",
       "source": {"variable": "r2", "constructor": "R"},
       "at": [360, 140],
       "sourceAnchor": [60, 80],

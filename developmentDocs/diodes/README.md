@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-23 -->
+<!-- Modified: 2026-10-27 -->
 # Diode Development Notes
 
 Diode and nonlinear-device models live under `src/np-nport/src/diodes/`. The current public model is `nP.diode1N4148()`.
@@ -23,8 +23,8 @@ var dcOutput = diode.ivTable(-1, 1, 201);
 
 The development examples are:
 
-- `dev/diodeDevelopment.html` for direct browser execution.
-- `dev/diodeDevelopment.md` for the Obsidian `npjs` workflow.
+- `dev/diode.html` for direct browser execution.
+- `dev/diode.md` for the Obsidian `npjs` workflow.
 
 ## Current 1N4148 model
 

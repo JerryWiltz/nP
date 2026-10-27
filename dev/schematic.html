@@ -1,0 +1,45 @@
+<!doctype html>
+<!-- Modified: 2026-10-26 -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wilkinson power divider development</title>
+  <script src="../dist/nP.js"></script>
+  <style>
+    body { margin: 0; padding: 2rem; background: #fff; color: #202020; font-family: Arial, Helvetica, sans-serif; }
+    body > div + div { margin-top: 2rem; }
+  </style>
+  <script type="module">
+    // Wilkinson power divider
+    nP.global.fList = nP.global.fGen(4e9, 8e9, 41);
+
+    var inputTee = nP.Tee();
+    var outputTee1 = nP.Tee();
+    var outputTee2 = nP.Tee();
+    var branch1 = nP.Tlin(70.7, 0.49 * 0.0254);
+    var branch2 = nP.Tlin(70.7, 0.49 * 0.0254);
+    var isolationR = nP.R(100);
+
+    var divider = nP.nodal(
+        [inputTee, 1, 2, 3],
+        [branch1, 2, 4],
+        [branch2, 3, 5],
+        [outputTee1, 6, 4, 7],
+        [outputTee2, 8, 5, 9],
+        [isolationR, 6, 8],
+        ['out', 1, 7, 9]
+    );
+
+    nP.schematic(divider);
+
+    var response = divider.out('s11dB', 's21dB', 's31dB', 's23dB');
+    nP.lineChart({
+        inputTable: [response],
+        title: 'Wilkinson power divider',
+        metricPrefix: 'giga'
+    });
+  </script>
+</head>
+<body></body>
+</html>

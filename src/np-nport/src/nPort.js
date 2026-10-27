@@ -4,7 +4,7 @@ import {noiseAnalysis} from './noiseFigure';
 import {connectionModel, intermodAt, waveDbm, oipDbm} from './intermod';
 import {validateSignal, compatibleSignals, signalWithRows} from './signal';
 
-// Modified: 2026-10-15
+// Modified: 2026-10-26
 var conjugate = function (value) { return complex(value.getR(), -value.getI()); };
 
 export function nPort() { this._noise = undefined; this._signal = undefined; }; // base class for nPort objects
@@ -146,6 +146,7 @@ nPort.prototype = {
 		if (signalRows) casOut.signal = signalWithRows(signalTemplate, signalRows);
 		casOut._displayFrequencies = this._displayFrequencies || n2._displayFrequencies;
 		casOut._intermod = connectionModel([this, n2], [4, 2, 1, 5, 0, 3]);
+		casOut._schematic = {kind: 'cascade', left: this._schematic, right: n2._schematic};
 		return casOut;
 	},
 	out : function out (...selectors) {

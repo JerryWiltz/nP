@@ -21,7 +21,7 @@
   "components": [
     {
       "id": "r1",
-      "symbol": "rf/resistor.svg",
+      "symbol": "resistor.svg",
       "source": {
         "variable": "r1",
         "constructor": "R"

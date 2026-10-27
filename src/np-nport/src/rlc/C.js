@@ -1,4 +1,4 @@
-// Modified: 2026-10-14
+// Modified: 2026-10-26
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
@@ -25,5 +25,6 @@ export function C(C = 1e-12, options = {}) { // series capacitor nPort object
 	};
 	cPort.setspars(sparsArray);
 	cPort.setglobal(settings);
+	cPort._schematic = {kind: 'component', symbol: 'capacitor', value: C};
 	return cPort;
 };

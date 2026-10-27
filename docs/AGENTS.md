@@ -1,5 +1,5 @@
 # AGENTS.md
-<!-- Modified: 2026-10-25 -->
+<!-- Modified: 2026-10-27 -->
 
 Instructions for `docs/`. Follow the repository root `AGENTS.md` as well. These files are the user-facing VitePress site; `src/` is the authority for API behavior.
 
@@ -22,7 +22,7 @@ Instructions for `docs/`. Follow the repository root `AGENTS.md` as well. These 
 ## REPL
 
 - Runnable examples live in `.vitepress/theme/replExamples.js`; sidebar groups and ordering live in `.vitepress/config.js`.
-- `schematicMap.js` maps each circuit example to one or more shared SVGs; math-only examples are listed in `examplesWithoutCircuits`. Update the map and rebuild the inventory when an example's topology changes. Reuse an existing drawing only when its components, values, and connections still describe the example.
+- RF circuit examples render in the output frame with `nP.schematic(circuit)`. A simple transmitter and receiver example passes `{transmitter, circuit, receiver}` so MOD and DEMOD appear with the RF path. The separate SVG map is retained for the editable schematic inventory and other documentation pages.
 - Give each example a unique stable `id`, `title`, `category`, and runnable `code`. Preserve IDs because links and the REPL session buffer use them. Move array entries to reorder examples.
 - Make each example self-contained. Set analysis grids before creating dependent objects, use named parts and visible wiring, separate stages with blank lines, and display a useful result. Use the chart and table helpers' default output mount; do not add manual DOM setup just to show them.
 - Verify each changed snippet in the REPL. An example calling a chart or table helper should produce visible output. Do not require SVG output from code that remains unexecuted in an editor.

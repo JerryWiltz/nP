@@ -1,4 +1,4 @@
-// Modified: 2026-10-25
+// Modified: 2026-10-27
 'use strict';
 
 const crypto = require('crypto');
@@ -79,6 +79,11 @@ function parseSymbol(source, filename = 'symbol.svg') {
   const geometryStart = background.index + background[0].length;
   const geometry = source.slice(geometryStart, labelGroup.index).trim();
   if (!geometry) throw new Error(`${filename} has no component geometry`);
+  for (const textTag of geometry.matchAll(/<text\b[^>]*>/g)) {
+    if (!/\bstroke="none"/.test(textTag[0])) {
+      throw new Error(`${filename} internal text needs stroke="none" to keep its font weight in schematics`);
+    }
+  }
 
   const portNumbers = [...labelGroup[0].matchAll(/>\s*Port\s+([1-9][0-9]*)\s*<\/text>/g)]
     .map(match => Number(match[1]));
@@ -114,7 +119,7 @@ function parseSymbol(source, filename = 'symbol.svg') {
 }
 
 function readCanonicalSymbol(symbolRoot, filename) {
-  if (!/^(rf|digital)\/[a-z0-9-]+\.svg$/.test(filename)) {
+  if (!/^[a-z0-9-]+\.svg$/.test(filename)) {
     throw new Error(`invalid symbol filename: ${filename}`);
   }
   const sourcePath = path.join(symbolRoot, filename);
@@ -123,11 +128,10 @@ function readCanonicalSymbol(symbolRoot, filename) {
 }
 
 function listCanonicalSymbols(symbolRoot) {
-  return ['rf', 'digital'].flatMap(category =>
-    fs.readdirSync(path.join(symbolRoot, category))
-      .filter(filename => filename.endsWith('.svg'))
-      .sort()
-      .map(filename => readCanonicalSymbol(symbolRoot, `${category}/${filename}`)));
+  return fs.readdirSync(symbolRoot)
+    .filter(filename => filename.endsWith('.svg'))
+    .sort()
+    .map(filename => readCanonicalSymbol(symbolRoot, filename));
 }
 
 function resolveSchematicPaths(toolDirectory) {

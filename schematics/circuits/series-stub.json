@@ -21,7 +21,7 @@
   "components": [
     {
       "id": "seriesJunction",
-      "symbol": "rf/series-tee.svg",
+      "symbol": "series-tee.svg",
       "source": {
         "variable": "seriesJunction",
         "constructor": "seriesTee"
@@ -76,7 +76,7 @@
     },
     {
       "id": "line",
-      "symbol": "rf/transmission-line.svg",
+      "symbol": "transmission-line.svg",
       "source": {
         "variable": "line",
         "constructor": "Tlin"
@@ -119,7 +119,7 @@
     },
     {
       "id": "open",
-      "symbol": "rf/open.svg",
+      "symbol": "open.svg",
       "source": {
         "variable": "open",
         "constructor": "Open"

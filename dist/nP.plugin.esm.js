@@ -385,23 +385,283 @@ function matrix(mat) {
 	return matrixObject;
 }
 
-// Modified: 2026-10-03
-var global = {
-	fList:	[2e9],//[2e9, 4e9, 6e9, 8e9],
-	twoTone: undefined,
-	Ro:	50,
-	Temp:	293,
-	fGen: function fGen (fStart, fStop, points) {
-		var out = [];
-		var fStep = (fStop-fStart)/(points-1);
-		var fMax = fStart;
-		var i = 0;
-		for (i = 0; i < points; i++, fMax += fStep ) {
-			out.push(fMax);
+// Modified: 2026-10-13
+
+function fGen(fStart, fStop, points) {
+	var out = [];
+	var fStep = (fStop - fStart) / (points - 1);
+	var frequency = fStart;
+	for (var i = 0; i < points; i++, frequency += fStep) out.push(frequency);
+	return out;
+}
+
+function tGen(start, stop, points) {
+	if (!Number.isFinite(start) || !Number.isFinite(stop) ||
+		!Number.isInteger(points) || points < 2 || stop <= start) {
+		throw new RangeError('tGen needs a finite increasing interval and at least two points.');
+	}
+	var step = (stop - start) / (points - 1);
+	return Array.from({length: points}, function (_, index) { return start + index * step; });
+}
+
+function newContext() {
+	return {fList: [2e9], tList: [], twoTone: undefined, Ro: 50, Temp: 293,
+		fGen: fGen, tGen: tGen};
+}
+
+var contexts = new WeakSet();
+var activeContext = newContext();
+contexts.add(activeContext);
+
+// Calling global() creates and selects a circuit context. Calling it with a
+// previously returned context selects that circuit again.
+function global(context) {
+	if (arguments.length === 0) {
+		activeContext = newContext();
+		contexts.add(activeContext);
+	} else {
+		if (!context || typeof context !== 'object' || !contexts.has(context)) {
+			throw new TypeError('global expects a circuit context returned by global().');
 		}
-		return out;
-	},
-};
+		activeContext = context;
+	}
+	return activeContext;
+}
+
+// Preserve the existing property calls and expose the selected context's time grid.
+// Enumerable accessors also let existing settings snapshots use {...global}.
+['fList', 'tList', 'twoTone', 'Ro', 'Temp', 'fGen', 'tGen'].forEach(function (key) {
+	Object.defineProperty(global, key, {
+		enumerable: true,
+		get: function () { return activeContext[key]; },
+		set: function (value) { activeContext[key] = value; }
+	});
+});
+
+// Modified: 2026-10-20
+
+// A sampled signal has one uniformly spaced time for each amplitude value.
+function sampleRateFromTime(time, count, caller) {
+	if (!Array.isArray(time) || time.length < 2) {
+		throw new RangeError(caller + ' needs a tList with at least two sample times.');
+	}
+	if (count !== undefined && time.length !== count) {
+		throw new RangeError(caller + ' needs one tList time for each sample.');
+	}
+	var step = time[1] - time[0];
+	if (!Number.isFinite(step) || step <= 0 || !Number.isFinite(1 / step) ||
+		time.some(function (value, index) {
+			var expected = time[0] + index * step;
+			return !Number.isFinite(value) ||
+				Math.abs(value - expected) > Math.max(Math.abs(step) * 1e-6,
+					Math.abs(expected) * Number.EPSILON * 16);
+		})) {
+		throw new RangeError(caller + ' needs a uniformly spaced, increasing tList in seconds.');
+	}
+	return 1 / step;
+}
+
+// Modified: 2026-10-20
+
+var fftTimeGrid = Symbol('FFT time grid');
+
+function withOutput(values, axis, axisTitle, defaultSelector, lastIndex, realInput) {
+	Object.defineProperty(values, 'out', {
+		value: function (selector = defaultSelector, options = {}) {
+			if (selector !== 'real' && selector !== 'imaginary' && selector !== 'magnitude' &&
+				selector !== 'dBV') {
+				throw new RangeError('FFT output must be real, imaginary, magnitude, or dBV.');
+			}
+			if (!axis || axis.length !== values.length) {
+				throw new RangeError('A matching tList is needed to output inverse FFT samples.');
+			}
+			var floorDbv;
+			if (selector === 'dBV') {
+				if (axisTitle !== 'Frequency (Hz)' || !realInput) {
+					throw new RangeError('FFT dBV output requires real voltage samples.');
+				}
+				if (!options || Array.isArray(options) || typeof options !== 'object') {
+					throw new TypeError('FFT dBV options must be an object.');
+				}
+				floorDbv = options.floorDbv === undefined ? -80 : options.floorDbv;
+				if (!Number.isFinite(floorDbv)) {
+					throw new RangeError('FFT dBV floorDbv must be finite.');
+				}
+			}
+			var heading = selector === 'dBV' ? 'Amplitude (dBV)' :
+				selector.charAt(0).toUpperCase() + selector.slice(1);
+			var table = [[axisTitle, heading]];
+			for (var index = 0; index <= lastIndex; index++) {
+				var value = values[index];
+				var output;
+				if (selector === 'dBV') {
+					var rmsVolts = value.mag() / values.length;
+					if (index !== 0 && !(values.length % 2 === 0 && index === lastIndex)) {
+						rmsVolts *= Math.SQRT2;
+					}
+					output = Math.max(floorDbv, 20 * Math.log10(rmsVolts));
+				} else {
+					output = selector === 'real' ? value.getR() :
+						selector === 'imaginary' ? value.getI() : value.mag();
+				}
+				table.push([axis[index], output]);
+			}
+			return table;
+		}
+	});
+	return values;
+}
+
+// In-place radix-2 transform. Forward transforms are unscaled; inverse
+// transforms divide by the number of samples.
+function radix2(real, imaginary, inverse) {
+	var length = real.length;
+	for (var i = 1, j = 0; i < length; i++) {
+		var bit = length / 2;
+		while (j >= bit) {
+			j -= bit;
+			bit /= 2;
+		}
+		j += bit;
+		if (i < j) {
+			var swap = real[i]; real[i] = real[j]; real[j] = swap;
+			swap = imaginary[i]; imaginary[i] = imaginary[j]; imaginary[j] = swap;
+		}
+	}
+	for (var size = 2; size <= length; size *= 2) {
+		var angle = (inverse ? 2 : -2) * Math.PI / size;
+		var stepReal = Math.cos(angle);
+		var stepImaginary = Math.sin(angle);
+		for (var start = 0; start < length; start += size) {
+			var factorReal = 1;
+			var factorImaginary = 0;
+			for (var offset = 0; offset < size / 2; offset++) {
+				var upper = start + offset;
+				var lower = upper + size / 2;
+				var productReal = factorReal * real[lower] - factorImaginary * imaginary[lower];
+				var productImaginary = factorReal * imaginary[lower] + factorImaginary * real[lower];
+				real[lower] = real[upper] - productReal;
+				imaginary[lower] = imaginary[upper] - productImaginary;
+				real[upper] += productReal;
+				imaginary[upper] += productImaginary;
+				var nextReal = factorReal * stepReal - factorImaginary * stepImaginary;
+				factorImaginary = factorReal * stepImaginary + factorImaginary * stepReal;
+				factorReal = nextReal;
+			}
+		}
+	}
+	if (inverse) {
+		for (var index = 0; index < length; index++) {
+			real[index] /= length;
+			imaginary[index] /= length;
+		}
+	}
+}
+
+// Bluestein's chirp convolution lets the radix-2 transform handle any length.
+function bluestein(real, imaginary) {
+	var length = real.length;
+	var convolutionLength = 1;
+	while (convolutionLength < 2 * length - 1) convolutionLength *= 2;
+	var aReal = new Float64Array(convolutionLength);
+	var aImaginary = new Float64Array(convolutionLength);
+	var bReal = new Float64Array(convolutionLength);
+	var bImaginary = new Float64Array(convolutionLength);
+	for (var index = 0; index < length; index++) {
+		var angle = Math.PI * ((index * index) % (2 * length)) / length;
+		var cosine = Math.cos(angle);
+		var sine = Math.sin(angle);
+		aReal[index] = real[index] * cosine + imaginary[index] * sine;
+		aImaginary[index] = imaginary[index] * cosine - real[index] * sine;
+		bReal[index] = cosine;
+		bImaginary[index] = sine;
+		if (index > 0) {
+			bReal[convolutionLength - index] = cosine;
+			bImaginary[convolutionLength - index] = sine;
+		}
+	}
+	radix2(aReal, aImaginary, false);
+	radix2(bReal, bImaginary, false);
+	for (var bin = 0; bin < convolutionLength; bin++) {
+		var productReal = aReal[bin] * bReal[bin] - aImaginary[bin] * bImaginary[bin];
+		aImaginary[bin] = aReal[bin] * bImaginary[bin] + aImaginary[bin] * bReal[bin];
+		aReal[bin] = productReal;
+	}
+	radix2(aReal, aImaginary, true);
+	for (var output = 0; output < length; output++) {
+		var outputAngle = Math.PI * ((output * output) % (2 * length)) / length;
+		var outputCosine = Math.cos(outputAngle);
+		var outputSine = Math.sin(outputAngle);
+		real[output] = aReal[output] * outputCosine + aImaginary[output] * outputSine;
+		imaginary[output] = aImaginary[output] * outputCosine - aReal[output] * outputSine;
+	}
+}
+
+function transform(samples, inverse) {
+	if (!Array.isArray(samples) || samples.length === 0) {
+		throw new TypeError('FFT and invFFT require a nonempty array of numbers or complex values.');
+	}
+	var length = samples.length;
+	var real = new Float64Array(length);
+	var imaginary = new Float64Array(length);
+	for (var index = 0; index < length; index++) {
+		var sample = samples[index];
+		var sampleReal;
+		var sampleImaginary;
+		if (typeof sample === 'number') {
+			sampleReal = sample;
+			sampleImaginary = 0;
+		} else if (sample && typeof sample.getR === 'function' && typeof sample.getI === 'function') {
+			sampleReal = sample.getR();
+			sampleImaginary = sample.getI();
+		} else {
+			throw new TypeError('FFT and invFFT samples must be numbers or nP.complex() values.');
+		}
+		if (!Number.isFinite(sampleReal) || !Number.isFinite(sampleImaginary)) {
+			throw new RangeError('FFT and invFFT samples must be finite.');
+		}
+		real[index] = sampleReal;
+		imaginary[index] = inverse ? -sampleImaginary : sampleImaginary;
+	}
+	if ((length & (length - 1)) === 0) radix2(real, imaginary, false);
+	else bluestein(real, imaginary);
+	var result = new Array(length);
+	for (var bin = 0; bin < length; bin++) {
+		result[bin] = complex(inverse ? real[bin] / length : real[bin],
+			inverse ? -imaginary[bin] / length : imaginary[bin]);
+	}
+	return result;
+}
+
+// Internal transform for sampled signals whose time context is checked by their owner.
+function fftBins(samples) {
+	return transform(samples, false);
+}
+
+// X[k] = sum_n x[n] exp(-i 2πkn/N), with no forward scaling.
+// The public transform requires the selected time grid and labels every output bin.
+function FFT(samples) {
+	var result = fftBins(samples);
+	var sampleRateHz = sampleRateFromTime(global.tList, samples.length, 'FFT');
+	var count = result.length;
+	global.fList = Array.from({length: count}, function (_, bin) {
+		return (bin <= Math.floor(count / 2) ? bin : bin - count) * sampleRateHz / count;
+	});
+	Object.defineProperty(result, fftTimeGrid, {value: global.tList.slice()});
+	var realInput = samples.every(function (sample) {
+		return typeof sample === 'number' || sample.getI() === 0;
+	});
+	return withOutput(result, global.fList.slice(), 'Frequency (Hz)', 'magnitude',
+		Math.floor(count / 2), realInput);
+}
+
+// x[n] = (1/N) sum_k X[k] exp(+i 2πkn/N).
+function invFFT(spectrum) {
+	var result = transform(spectrum, true);
+	var time = spectrum && spectrum[fftTimeGrid] ? spectrum[fftTimeGrid].slice() :
+		Array.isArray(global.tList) ? global.tList.slice() : null;
+	return withOutput(result, time, 'Time (s)', 'real', result.length - 1);
+}
 
 function ascending$1(a, b) {
   return a == null || b == null ? NaN : a < b ? -1 : a > b ? 1 : a >= b ? 0 : NaN;
@@ -594,6 +854,19 @@ function tickStep(start, stop, count) {
   stop = +stop, start = +start, count = +count;
   const reverse = stop < start, inc = reverse ? tickIncrement(stop, start, count) : tickIncrement(start, stop, count);
   return (reverse ? -1 : 1) * (inc < 0 ? 1 / -inc : inc);
+}
+
+function min(values, valueof) {
+  let min;
+  {
+    for (const value of values) {
+      if (value != null
+          && (min > value || (min === undefined && value >= value))) {
+        min = value;
+      }
+    }
+  }
+  return min;
 }
 
 function identity$3(x) {
@@ -4971,7 +5244,7 @@ function appendTooltipRows(tooltip, rows) {
     });
 }
 
-// Modified: 2026-10-06
+// Modified: 2026-10-23
 
 function lineChart(options = {}) {
             // ======== Options & defaults ========
@@ -5022,8 +5295,11 @@ function lineChart(options = {}) {
                 yScale = 'linear',
                 xAxisPosition = 'bottom',
                 yAxisPosition = 'left',
+                plotType = 'line',
+                barWidth = 4,
+                barBaseline = 0,
                 showPoints = true,
-                showLabels = true,
+                showLabels = plotType !== 'bar',
                 showGrid = true,
                 gridColor = '#e0e0e0',
                 traceColor = true, // true for color, false for gray
@@ -5042,6 +5318,17 @@ function lineChart(options = {}) {
             } = options;
 
             const tables = normalizeInputTables(inputTable, 'lineChart', 'line');
+            if (plotType !== 'line' && plotType !== 'bar') {
+                throw new RangeError('lineChart: plotType must be line or bar.');
+            }
+            if (plotType === 'bar' && (!Number.isFinite(barWidth) || barWidth <= 0 ||
+                !Number.isFinite(barBaseline))) {
+                throw new RangeError('lineChart: barWidth must be positive and barBaseline must be finite.');
+            }
+            if (plotType === 'bar' && rawYRange &&
+                (barBaseline < Math.min(...rawYRange) || barBaseline > Math.max(...rawYRange))) {
+                throw new RangeError('lineChart: yRange must include barBaseline in bar mode.');
+            }
 
             // Starting font sizes since d3.axisBottom and d3.axisLeft will override the container styles
             const effectiveTitle = title ?? chartTitle ?? '';
@@ -5059,7 +5346,7 @@ function lineChart(options = {}) {
                 : requestedWidth;
             const height = width === requestedWidth
                 ? requestedHeight
-                : Math.round(requestedHeight * width / requestedWidth);
+                : Math.max(Math.min(requestedHeight, 320), Math.round(requestedHeight * width / requestedWidth));
             const isCompact = width < 420;
             const labelNames = showLabels
                 ? tables.flatMap(table => table[0].slice(1))
@@ -5076,12 +5363,13 @@ function lineChart(options = {}) {
                     // Reserve a title/control row above the plot and leave
                     // room for the rotated y-axis title and end labels.
                     top: Math.max(margin.top, 45),
-                    right: Math.max(margin.right, 60, labelRightMargin),
+                    right: Math.max(Math.min(margin.right, 58), labelRightMargin),
                     bottom: Math.max(margin.bottom, 45),
-                    left: Math.max(margin.left, 75)
+                    left: Math.min(margin.left, 58)
                 }
                 : {...margin, right: Math.max(margin.right, labelRightMargin)};
-            const tickCount = Math.max(5, Math.min(10, Math.floor((width - layoutMargin.left - layoutMargin.right) / 40)));
+            const xTickCount = Math.max(2, Math.min(10, Math.floor((width - layoutMargin.left - layoutMargin.right) / 60)));
+            const yTickCount = Math.max(3, Math.min(10, Math.floor((height - layoutMargin.top - layoutMargin.bottom) / 40)));
             const axisFontPx = effectiveFontSize;
             let txtLabels = selectAll([]);
 
@@ -5108,11 +5396,36 @@ function lineChart(options = {}) {
             const xValues = formattedData.flatMap(d => d.yValues.map(v => v.xValue));
             const yValues = formattedData.flatMap(d => d.yValues.map(v => v.yValue));
 
-            const xRange = rawXRange
-                ? rawXRange.map(v => v / pickScale)
-                : extent(xValues);
+            const distinctX = [...new Set(xValues)].sort((a, b) => a - b);
+            let xRange;
+            if (rawXRange) xRange = rawXRange.map(v => v / pickScale);
+            else if (plotType === 'bar') {
+                const first = distinctX[0];
+                const last = distinctX[distinctX.length - 1];
+                if (String(xScale).toLowerCase() === 'log') {
+                    if (first <= 0) throw new Error('xScale: log scale requires a positive domain.');
+                    const leftRatio = distinctX.length > 1 ? distinctX[1] / first : 1.1;
+                    const rightRatio = distinctX.length > 1 ? last / distinctX[distinctX.length - 2] : 1.1;
+                    xRange = [first / Math.sqrt(leftRatio), last * Math.sqrt(rightRatio)];
+                } else {
+                    const leftGap = distinctX.length > 1 ? distinctX[1] - first : Math.max(Math.abs(first) * 0.1, 1);
+                    const rightGap = distinctX.length > 1 ? last - distinctX[distinctX.length - 2] : leftGap;
+                    xRange = [first - leftGap / 2, last + rightGap / 2];
+                }
+            } else xRange = extent(xValues);
 
-            const yRange = rawYRange || extent(yValues);
+            const yRange = rawYRange || extent(plotType === 'bar'
+                ? [...yValues, barBaseline] : yValues);
+            if (!rawYRange && plotType === 'line' && String(yScale).toLowerCase() === 'linear') {
+                const span = yRange[1] - yRange[0];
+                const padding = 0.05 * (span || Math.max(Math.abs(yRange[0]), 1));
+                yRange[0] -= padding;
+                yRange[1] += padding;
+            }
+            if (plotType === 'bar' && String(yScale).toLowerCase() === 'log' &&
+                (barBaseline <= 0 || yValues.some(value => value <= 0))) {
+                throw new Error('lineChart: log yScale in bar mode needs a positive baseline and positive values.');
+            }
 
             // Dimensions
             const innerWidth = width - layoutMargin.left - layoutMargin.right;
@@ -5120,15 +5433,18 @@ function lineChart(options = {}) {
 
             function makeScale(scaleType, domain, range, axisName) {
                 const effectiveScaleType = String(scaleType).toLowerCase();
+                const niceDomain = axisName !== 'x' || !rawXRange;
 
                 if (effectiveScaleType === 'log') {
                     if (domain[0] <= 0 || domain[1] <= 0) {
                         throw new Error(`${axisName}Scale: log scale requires a positive domain.`);
                     }
-                    return log$1().domain(domain).nice().range(range);
+                    const scale = log$1().domain(domain).range(range);
+                    return niceDomain ? scale.nice() : scale;
                 }
 
-                return linear().domain(domain).nice().range(range);
+                const scale = linear().domain(domain).range(range);
+                return niceDomain ? scale.nice() : scale;
             }
 
             // Scales
@@ -5158,12 +5474,12 @@ function lineChart(options = {}) {
                     : 0;
 
             const xAxisGenerator = effectiveXAxisPosition === 'top'
-                ? axisTop(x).ticks(tickCount)
-                : axisBottom(x).ticks(tickCount);
+                ? axisTop(x).ticks(xTickCount)
+                : axisBottom(x).ticks(xTickCount);
 
             const yAxisGenerator = effectiveYAxisPosition === 'right'
-                ? axisRight(y).ticks(tickCount)
-                : axisLeft(y).ticks(tickCount);
+                ? axisRight(y).ticks(yTickCount)
+                : axisLeft(y).ticks(yTickCount);
 
 
             // color or gray plots
@@ -5246,65 +5562,61 @@ function lineChart(options = {}) {
       </svg>Copy as png
     `);
 
+            if (isCompact) button.text('PNG');
+
             button
-                .style('width', isCompact ? '28px' : null)
-                .style('overflow', isCompact ? 'hidden' : null)
                 .style('white-space', 'nowrap')
-                .style('padding', isCompact ? '4px' : '4px 8px');
+                .style('padding', isCompact ? '6px 8px' : '4px 8px');
 
             // New button function fire
             button.on('click', copyPNG);
 
             // --- One function to copy the current SVG as PNG to clipboard ---
             function copyPNG() {
-                const containerDiv = container.node();
-                const svgElement = containerDiv.querySelector('svg');
+                if (!navigator.clipboard || !window.ClipboardItem) {
+                    console.error('Clipboard API for images is not supported in this browser/context.');
+                    return;
+                }
 
-                const serializer = new XMLSerializer();
-                const svgString = serializer.serializeToString(svgElement);
+                const pngBlob = new Promise((resolve, reject) => {
+                    const svgElement = container.node().querySelector('svg');
+                    const svgString = new XMLSerializer().serializeToString(svgElement);
+                    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+                    const url = URL.createObjectURL(svgBlob);
+                    const img = new Image();
 
-                const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
-                const url = URL.createObjectURL(svgBlob);
-
-                const img = new Image();
-                img.onload = async () => {
-                    const canvas = document.createElement("canvas");
-                    // Use rendered size
-                    canvas.width = svgElement.clientWidth || +svgElement.getAttribute('width') || 800;
-                    canvas.height = svgElement.clientHeight || +svgElement.getAttribute('height') || 600;
-
-                    const ctx = canvas.getContext("2d");
-
-                    // ------ NEW: optional background fill (defaults to transparent) ------
-                    if (effectiveBackgroundColor && effectiveBackgroundColor !== 'transparent') {
-                        ctx.save();
-                        ctx.globalCompositeOperation = 'source-over';
-                        ctx.fillStyle = effectiveBackgroundColor;    // e.g., 'white', '#fff', 'rgba(0,0,0,0.5)'
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-                        ctx.restore();
-                    }
-                    // --------------------------------------------------------------------
-
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-                    URL.revokeObjectURL(url);
-
-                    canvas.toBlob(async (blob) => {
+                    img.onload = () => {
                         try {
-                            await navigator.clipboard.write([
-                                new ClipboardItem({ "image/png": blob })
-                            ]);
-                            //console.log("Image copied to clipboard!");
+                            const canvas = document.createElement('canvas');
+                            canvas.width = svgElement.clientWidth || +svgElement.getAttribute('width') || 800;
+                            canvas.height = svgElement.clientHeight || +svgElement.getAttribute('height') || 600;
+                            const ctx = canvas.getContext('2d');
+
+                            if (effectiveBackgroundColor && effectiveBackgroundColor !== 'transparent') {
+                                ctx.fillStyle = effectiveBackgroundColor;
+                                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                            }
+
+                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                            canvas.toBlob((blob) => {
+                                if (blob) resolve(blob);
+                                else reject(new Error('Failed to create PNG blob'));
+                            }, 'image/png');
                         } catch (err) {
-                            //console.error("Failed to copy image:", err);
+                            reject(err);
+                        } finally {
+                            URL.revokeObjectURL(url);
                         }
-                    }, "image/png");
-                };
-                img.onerror = (e) => {
-                    URL.revokeObjectURL(url);
-                    console.error("Failed to load serialized SVG into Image", e);
-                };
-                img.src = url;
+                    };
+                    img.onerror = (err) => {
+                        URL.revokeObjectURL(url);
+                        reject(err);
+                    };
+                    img.src = url;
+                });
+
+                navigator.clipboard.write([new ClipboardItem({ 'image/png': pngBlob })])
+                    .catch((err) => console.error('Failed to copy chart PNG:', err));
             }
 
             // Chart Title
@@ -5324,7 +5636,7 @@ function lineChart(options = {}) {
                 .attr('transform', `translate(0,${innerHeight})`)
                 .attr('class', 'xGrid')
                 .style('visibility', showGrid ? 'visible' : 'hidden')
-                .call(axisBottom(x).ticks(tickCount).tickSize(-innerHeight).tickFormat(''));
+                .call(axisBottom(x).ticks(xTickCount).tickSize(-innerHeight).tickFormat(''));
 
             xGridGroup.selectAll('path')
                 .attr('stroke', 'none');
@@ -5337,7 +5649,7 @@ function lineChart(options = {}) {
             const yGridGroup = g.append('g')
                 .attr('class', 'yGrid')
                 .style('visibility', showGrid ? 'visible' : 'hidden')
-                .call(axisLeft(y).ticks(tickCount).tickSize(-innerWidth).tickFormat(''));
+                .call(axisLeft(y).ticks(yTickCount).tickSize(-innerWidth).tickFormat(''));
 
             yGridGroup.selectAll('path')
                 .attr('stroke', 'none');
@@ -5396,39 +5708,60 @@ function lineChart(options = {}) {
                 .style('font-size', `${axisFontPx}px`)
                 .text(yAxisTitle);
 
-            // Line generator
-            const line$1 = line()
-                .x(d => x(d.xValue))
-                .y(d => y(d.yValue))
-                .curve(monotoneX);
-
-            // Draw Lines & Points
+            // Draw traces
             const groups = g.selectAll('.lineGroup')
                 .data(formattedData)
                 .join('g')
                 .attr('class', 'lineGroup');
 
-            // Lines
-            groups.append('path')
-                .attr('d', d => line$1(d.yValues))
-                .attr('fill', 'none')
-                .attr('stroke', d => color(d.yName))
-                .attr('stroke-width', traceWidth);
+            let marks;
+            if (plotType === 'bar') {
+                const pixelX = distinctX.map(value => x(value));
+                const gaps = pixelX.slice(1).map((value, index) => value - pixelX[index]);
+                const nearestGap = gaps.length ? min(gaps) : Infinity;
+                const actualBarWidth = Math.min(barWidth, nearestGap * 0.8 / formattedData.length);
+                const baselineY = y(barBaseline);
+                marks = groups.selectAll('line.bar')
+                    .data(d => d.yValues)
+                    .join('line')
+                    .attr('class', 'bar')
+                    .attr('x1', function (d) {
+                        const traceIndex = formattedData.indexOf(select(this.parentNode).datum());
+                        return x(d.xValue) + (traceIndex - (formattedData.length - 1) / 2) * actualBarWidth;
+                    })
+                    .attr('x2', function () { return this.getAttribute('x1'); })
+                    .attr('y1', baselineY)
+                    .attr('y2', d => y(d.yValue))
+                    .attr('stroke', function () { return color(select(this.parentNode).datum().yName); })
+                    .attr('stroke-width', actualBarWidth);
+            } else {
+                const line$1 = line()
+                    .x(d => x(d.xValue))
+                    .y(d => y(d.yValue))
+                    .curve(monotoneX);
+                groups.append('path')
+                    .attr('d', d => line$1(d.yValues))
+                    .attr('fill', 'none')
+                    .attr('stroke', d => color(d.yName))
+                    .attr('stroke-width', traceWidth);
+                if (showPoints) {
+                    marks = groups.selectAll('circle')
+                        .data(d => d.yValues)
+                        .join('circle')
+                        .attr('cx', d => x(d.xValue))
+                        .attr('cy', d => y(d.yValue))
+                        .attr('r', pointRadius)
+                        .attr('fill', function (d, i, nodes) {
+                            const groupData = select(nodes[i].parentNode).datum();
+                            return color(groupData.yName);
+                        });
+                }
+            }
 
-            // Points
-            if (showPoints) {
+            if (marks) {
                 let tooltip; // shared between handlers
 
-                groups.selectAll('circle')
-                    .data(d => d.yValues)
-                    .join('circle')
-                    .attr('cx', d => x(d.xValue))
-                    .attr('cy', d => y(d.yValue))
-                    .attr('r', pointRadius)
-                    .attr('fill', function (d, i, nodes) {
-                        const groupData = select(nodes[i].parentNode).datum();
-                        return color(groupData.yName);
-                    })
+                marks
                     .on('mouseenter', (event, d) => {
                         // ensure only one tooltip
                         container.select('.tooltip').remove();
@@ -5649,7 +5982,2497 @@ function lineChart(options = {}) {
 
         }
 
-// Modified: 2026-10-06
+// Generated by schematics/tools/generate-runtime-symbols.js from canonical SVGs.
+// Edit schematics/symbols/ and schematics/runtime-symbol-layout.json, then run npm run symbols:bundle.
+const schematicSymbols = {
+    "tee": {
+        "ports": [
+            [
+                120,
+                140
+            ],
+            [
+                80,
+                100
+            ],
+            [
+                160,
+                100
+            ]
+        ],
+        "bounds": [
+            76,
+            76,
+            164,
+            144
+        ],
+        "bodyBounds": [
+            100,
+            80,
+            140,
+            120
+        ],
+        "leads": [
+            [
+                [
+                    120,
+                    120
+                ],
+                [
+                    120,
+                    140
+                ]
+            ],
+            [
+                [
+                    80,
+                    100
+                ],
+                [
+                    100,
+                    100
+                ]
+            ],
+            [
+                [
+                    140,
+                    100
+                ],
+                [
+                    160,
+                    100
+                ]
+            ]
+        ],
+        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M80 100 H100 M140 100 H160 M120 120 V140\"/><rect x=\"100\" y=\"80\" width=\"40\" height=\"40\"/><circle cx=\"120\" cy=\"110\" r=\"3\" fill=\"#202020\" stroke=\"none\"/></g>"
+    },
+    "transmission-line": {
+        "ports": [
+            [
+                80,
+                80
+            ],
+            [
+                200,
+                80
+            ]
+        ],
+        "bounds": [
+            76,
+            61,
+            204,
+            99
+        ],
+        "bodyBounds": [
+            100,
+            65,
+            180,
+            95
+        ],
+        "leads": [
+            [
+                [
+                    80,
+                    80
+                ],
+                [
+                    100,
+                    80
+                ]
+            ],
+            [
+                [
+                    180,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g transform=\"translate(0 -10)\">\n<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M80 90 H100 M180 90 H200\"/><rect x=\"100\" y=\"75\" width=\"80\" height=\"30\"/></g>\n  </g>"
+    },
+    "capacitor": {
+        "ports": [
+            [
+                80,
+                80
+            ],
+            [
+                140,
+                80
+            ]
+        ],
+        "bounds": [
+            76,
+            66,
+            144,
+            94
+        ],
+        "bodyBounds": [
+            105,
+            70,
+            115,
+            90
+        ],
+        "leads": [
+            [
+                [
+                    80,
+                    80
+                ],
+                [
+                    105,
+                    80
+                ]
+            ],
+            [
+                [
+                    115,
+                    80
+                ],
+                [
+                    140,
+                    80
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\">\n    <path d=\"M80 80 H105 M115 80 H140 M105 70 V90 M115 70 V90\"/>\n  </g>"
+    },
+    "inductor": {
+        "ports": [
+            [
+                60,
+                80
+            ],
+            [
+                160,
+                80
+            ]
+        ],
+        "bounds": [
+            56,
+            58,
+            164,
+            94
+        ],
+        "bodyBounds": [
+            80,
+            60,
+            140,
+            90
+        ],
+        "leads": [
+            [
+                [
+                    60,
+                    80
+                ],
+                [
+                    80,
+                    80
+                ]
+            ],
+            [
+                [
+                    140,
+                    80
+                ],
+                [
+                    160,
+                    80
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M60 80 H80 C80 60 95 60 95 80 C95 60 110 60 110 80 C110 60 125 60 125 80 C125 60 140 60 140 80 H160\"/>\n  </g>"
+    },
+    "attenuator": {
+        "ports": [
+            [
+                100,
+                80
+            ],
+            [
+                160,
+                80
+            ]
+        ],
+        "bounds": [
+            96,
+            46,
+            164,
+            114
+        ],
+        "bodyBounds": [
+            120,
+            50,
+            140,
+            110
+        ],
+        "leads": [
+            [
+                [
+                    100,
+                    80
+                ],
+                [
+                    160,
+                    80
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M100 80 H160\"/>\n    <path d=\"M130 50 L140 55 L120 65 L140 75 L120 85 L140 95 L120 105 L130 110\"/>\n  </g>"
+    },
+    "amplifier": {
+        "ports": [
+            [
+                80,
+                80
+            ],
+            [
+                180,
+                80
+            ]
+        ],
+        "bounds": [
+            76,
+            56,
+            184,
+            104
+        ],
+        "bodyBounds": [
+            100,
+            60,
+            160,
+            100
+        ],
+        "leads": [
+            [
+                [
+                    80,
+                    80
+                ],
+                [
+                    100,
+                    80
+                ]
+            ],
+            [
+                [
+                    160,
+                    80
+                ],
+                [
+                    180,
+                    80
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g transform=\"translate(0 -10)\">\n<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M80 90 H100 M160 90 H180\"/><path d=\"M100 50 L160 90 L100 130 Z\"/><text x=\"120\" y=\"90\" font-family=\"Arial, Helvetica, sans-serif\" font-size=\"13\" fill=\"#202020\" stroke=\"none\" text-anchor=\"middle\" dominant-baseline=\"middle\">A</text>\n  </g>\n  </g>"
+    },
+    "thru": {
+        "ports": [
+            [
+                80,
+                80
+            ],
+            [
+                200,
+                80
+            ]
+        ],
+        "bounds": [
+            76,
+            61,
+            204,
+            99
+        ],
+        "bodyBounds": [
+            100,
+            65,
+            180,
+            95
+        ],
+        "leads": [
+            [
+                [
+                    80,
+                    80
+                ],
+                [
+                    100,
+                    80
+                ]
+            ],
+            [
+                [
+                    180,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g transform=\"translate(0 -10)\">\n<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M80 90 H100 M180 90 H200\"/><rect x=\"100\" y=\"75\" width=\"80\" height=\"30\"/><text x=\"140\" y=\"90\" font-family=\"Arial, Helvetica, sans-serif\" font-size=\"13\" fill=\"#202020\" stroke=\"none\" text-anchor=\"middle\" dominant-baseline=\"middle\">THRU</text>\n  </g>\n  </g>"
+    },
+    "microstrip-line": {
+        "ports": [
+            [
+                80,
+                80
+            ],
+            [
+                200,
+                80
+            ]
+        ],
+        "bounds": [
+            76,
+            61,
+            204,
+            99
+        ],
+        "bodyBounds": [
+            100,
+            65,
+            180,
+            95
+        ],
+        "leads": [
+            [
+                [
+                    80,
+                    80
+                ],
+                [
+                    100,
+                    80
+                ]
+            ],
+            [
+                [
+                    180,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<!-- Match the Tlin() body and lead layout. -->\n  <g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M80 80 H100 M180 80 H200\"/>\n    <rect x=\"100\" y=\"65\" width=\"80\" height=\"30\"/>\n  </g>"
+    },
+    "microstrip-step": {
+        "ports": [
+            [
+                0,
+                60
+            ],
+            [
+                120,
+                60
+            ]
+        ],
+        "bounds": [
+            -4,
+            42,
+            124,
+            78
+        ],
+        "bodyBounds": [
+            20,
+            46,
+            100,
+            74
+        ],
+        "leads": [
+            [
+                [
+                    0,
+                    60
+                ],
+                [
+                    20,
+                    60
+                ]
+            ],
+            [
+                [
+                    100,
+                    60
+                ],
+                [
+                    120,
+                    60
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<!-- Enlarge the compact copper silhouette without changing its proportions. -->\n  <g transform=\"translate(-60 -60) scale(2)\">\n    <path d=\"M40 53 H60 V57 H80 V63 H60 V67 H40 Z\" fill=\"#ffffff\" stroke=\"#202020\" stroke-width=\"1\"/>\n  </g>\n  <path d=\"M0 60 H20 M100 60 H120\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\"/>"
+    },
+    "microstrip-thin-film-resistor": {
+        "ports": [
+            [
+                80,
+                80
+            ],
+            [
+                200,
+                80
+            ]
+        ],
+        "bounds": [
+            76,
+            61,
+            204,
+            99
+        ],
+        "bodyBounds": [
+            100,
+            65,
+            180,
+            95
+        ],
+        "leads": [
+            [
+                [
+                    80,
+                    80
+                ],
+                [
+                    100,
+                    80
+                ]
+            ],
+            [
+                [
+                    180,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g transform=\"translate(0 -10)\">\n<path d=\"M80 90 H100 M180 90 H200\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\"/><rect x=\"100\" y=\"75\" width=\"80\" height=\"30\" fill=\"#ffffff\" stroke=\"#202020\" stroke-width=\"2\"/><text x=\"140\" y=\"90\" font-family=\"Arial, Helvetica, sans-serif\" font-size=\"13\" fill=\"#202020\" stroke=\"none\" text-anchor=\"middle\" dominant-baseline=\"middle\">mTFR</text>\n  </g>"
+    },
+    "diode-1n4148": {
+        "ports": [
+            [
+                80,
+                80
+            ],
+            [
+                140,
+                80
+            ]
+        ],
+        "bounds": [
+            76,
+            66,
+            144,
+            94
+        ],
+        "bodyBounds": [
+            100,
+            70,
+            120,
+            90
+        ],
+        "leads": [
+            [
+                [
+                    80,
+                    80
+                ],
+                [
+                    100,
+                    80
+                ]
+            ],
+            [
+                [
+                    120,
+                    80
+                ],
+                [
+                    140,
+                    80
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g transform=\"translate(0 -10)\">\n<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M80 90 H100 M120 90 H140\"/><path d=\"M100 80 L120 90 L100 100 Z\"/><path d=\"M120 80 V100\"/></g>\n  </g>"
+    },
+    "short": {
+        "ports": [
+            [
+                80,
+                80
+            ]
+        ],
+        "bounds": [
+            76,
+            56,
+            144,
+            104
+        ],
+        "bodyBounds": [
+            100,
+            60,
+            140,
+            100
+        ],
+        "leads": [
+            [
+                [
+                    80,
+                    80
+                ],
+                [
+                    100,
+                    80
+                ]
+            ]
+        ],
+        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M80 80 H100\"/><rect x=\"100\" y=\"60\" width=\"40\" height=\"40\"/></g>"
+    },
+    "open": {
+        "ports": [
+            [
+                120,
+                80
+            ]
+        ],
+        "bounds": [
+            116,
+            66,
+            164,
+            94
+        ],
+        "bodyBounds": [
+            140,
+            70,
+            160,
+            90
+        ],
+        "leads": [
+            [
+                [
+                    120,
+                    80
+                ],
+                [
+                    140,
+                    80
+                ]
+            ]
+        ],
+        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M120 80 H140\"/><circle cx=\"150\" cy=\"80\" r=\"10\"/></g>"
+    },
+    "load": {
+        "ports": [
+            [
+                80,
+                80
+            ]
+        ],
+        "bounds": [
+            76,
+            56,
+            164,
+            104
+        ],
+        "bodyBounds": [
+            100,
+            60,
+            140,
+            100
+        ],
+        "leads": [
+            [
+                [
+                    80,
+                    80
+                ],
+                [
+                    100,
+                    80
+                ]
+            ]
+        ],
+        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M80 80 H100\"/><rect x=\"100\" y=\"60\" width=\"40\" height=\"40\"/><path d=\"M108 92 L132 68\"/></g>"
+    },
+    "series-tee": {
+        "ports": [
+            [
+                80,
+                100
+            ],
+            [
+                160,
+                100
+            ],
+            [
+                120,
+                140
+            ]
+        ],
+        "bounds": [
+            76,
+            76,
+            164,
+            144
+        ],
+        "bodyBounds": [
+            100,
+            80,
+            140,
+            120
+        ],
+        "leads": [
+            [
+                [
+                    80,
+                    100
+                ],
+                [
+                    100,
+                    100
+                ]
+            ],
+            [
+                [
+                    140,
+                    100
+                ],
+                [
+                    160,
+                    100
+                ]
+            ],
+            [
+                [
+                    120,
+                    120
+                ],
+                [
+                    120,
+                    140
+                ]
+            ]
+        ],
+        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <!-- External leads and square component body. -->\n    <path d=\"M80 100 H100 M140 100 H160 M120 120 V140\"/>\n    <rect x=\"100\" y=\"80\" width=\"40\" height=\"40\"/>\n\n    <!-- Hand-drawn source: separated series path with port 3 directed into its gap. -->\n    <path d=\"M105 100 H115 M125 100 H135 M120 116 V105 M116 109 L120 105 L124 109\"/>\n\n    <!-- Port-1 orientation marker. -->\n    <circle cx=\"108\" cy=\"90\" r=\"3\" fill=\"#202020\" stroke=\"none\"/>\n  </g>"
+    },
+    "microstrip-tee": {
+        "ports": [
+            [
+                0,
+                60
+            ],
+            [
+                60,
+                0
+            ],
+            [
+                60,
+                120
+            ]
+        ],
+        "bounds": [
+            -4,
+            -4,
+            78,
+            124
+        ],
+        "bodyBounds": [
+            20,
+            20,
+            74,
+            100
+        ],
+        "leads": [
+            [
+                [
+                    0,
+                    60
+                ],
+                [
+                    20,
+                    60
+                ]
+            ],
+            [
+                [
+                    60,
+                    0
+                ],
+                [
+                    60,
+                    20
+                ]
+            ],
+            [
+                [
+                    60,
+                    100
+                ],
+                [
+                    60,
+                    120
+                ]
+            ]
+        ],
+        "geometry": "<!-- Enlarge the compact copper silhouette without changing its proportions. -->\n  <g transform=\"translate(-60 -60) scale(2)\">\n    <path d=\"M53 40 H67 V80 H53 V67 H40 V53 H53 Z\" fill=\"#ffffff\" stroke=\"#202020\" stroke-width=\"1\"/><circle cx=\"56\" cy=\"60\" r=\"1.5\" fill=\"#202020\" stroke=\"none\"/>\n  </g>\n  <path d=\"M0 60 H20 M60 0 V20 M60 100 V120\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\"/>"
+    },
+    "coupler-180": {
+        "ports": [
+            [
+                80,
+                100
+            ],
+            [
+                200,
+                100
+            ],
+            [
+                200,
+                140
+            ],
+            [
+                80,
+                140
+            ]
+        ],
+        "bounds": [
+            76,
+            81,
+            204,
+            159
+        ],
+        "bodyBounds": [
+            100,
+            85,
+            180,
+            155
+        ],
+        "leads": [
+            [
+                [
+                    80,
+                    100
+                ],
+                [
+                    100,
+                    100
+                ]
+            ],
+            [
+                [
+                    180,
+                    100
+                ],
+                [
+                    200,
+                    100
+                ]
+            ],
+            [
+                [
+                    180,
+                    140
+                ],
+                [
+                    200,
+                    140
+                ]
+            ],
+            [
+                [
+                    80,
+                    140
+                ],
+                [
+                    100,
+                    140
+                ]
+            ]
+        ],
+        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M80 100 H100 M180 100 H200 M180 140 H200 M80 140 H100\"/>\n    <rect x=\"100\" y=\"85\" width=\"80\" height=\"30\"/>\n    <rect x=\"100\" y=\"125\" width=\"80\" height=\"30\"/>\n    <text x=\"140\" y=\"140\" font-family=\"Arial, Helvetica, sans-serif\" font-size=\"13\" fill=\"#202020\" stroke=\"none\" text-anchor=\"middle\" dominant-baseline=\"middle\">180</text>\n  </g>"
+    },
+    "coupled-transmission-line": {
+        "ports": [
+            [
+                100,
+                100
+            ],
+            [
+                220,
+                100
+            ],
+            [
+                220,
+                140
+            ],
+            [
+                100,
+                140
+            ]
+        ],
+        "bounds": [
+            96,
+            81,
+            224,
+            159
+        ],
+        "bodyBounds": [
+            120,
+            85,
+            200,
+            155
+        ],
+        "leads": [
+            [
+                [
+                    100,
+                    100
+                ],
+                [
+                    120,
+                    100
+                ]
+            ],
+            [
+                [
+                    200,
+                    100
+                ],
+                [
+                    220,
+                    100
+                ]
+            ],
+            [
+                [
+                    200,
+                    140
+                ],
+                [
+                    220,
+                    140
+                ]
+            ],
+            [
+                [
+                    100,
+                    140
+                ],
+                [
+                    120,
+                    140
+                ]
+            ]
+        ],
+        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M100 100 H120 M200 100 H220 M100 140 H120 M200 140 H220\"/><rect x=\"120\" y=\"85\" width=\"80\" height=\"30\"/><rect x=\"120\" y=\"125\" width=\"80\" height=\"30\"/></g>"
+    },
+    "microstrip-coupled-line": {
+        "ports": [
+            [
+                100,
+                100
+            ],
+            [
+                220,
+                100
+            ],
+            [
+                220,
+                140
+            ],
+            [
+                100,
+                140
+            ]
+        ],
+        "bounds": [
+            96,
+            81,
+            224,
+            159
+        ],
+        "bodyBounds": [
+            120,
+            85,
+            200,
+            155
+        ],
+        "leads": [
+            [
+                [
+                    100,
+                    100
+                ],
+                [
+                    120,
+                    100
+                ]
+            ],
+            [
+                [
+                    200,
+                    100
+                ],
+                [
+                    220,
+                    100
+                ]
+            ],
+            [
+                [
+                    200,
+                    140
+                ],
+                [
+                    220,
+                    140
+                ]
+            ],
+            [
+                [
+                    100,
+                    140
+                ],
+                [
+                    120,
+                    140
+                ]
+            ]
+        ],
+        "geometry": "<!-- Match the Tclin() paired bodies and lead layout. -->\n  <g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M100 100 H120 M200 100 H220 M100 140 H120 M200 140 H220\"/>\n    <rect x=\"120\" y=\"85\" width=\"80\" height=\"30\"/>\n    <rect x=\"120\" y=\"125\" width=\"80\" height=\"30\"/>\n  </g>"
+    },
+    "cascade": {
+        "ports": [
+            [
+                80,
+                80
+            ],
+            [
+                200,
+                80
+            ]
+        ],
+        "bounds": [
+            76,
+            56,
+            204,
+            104
+        ],
+        "bodyBounds": [
+            100,
+            60,
+            180,
+            100
+        ],
+        "leads": [
+            [
+                [
+                    80,
+                    80
+                ],
+                [
+                    100,
+                    80
+                ]
+            ],
+            [
+                [
+                    180,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M80 80 H100 M180 80 H200\"/>\n    <rect x=\"100\" y=\"60\" width=\"80\" height=\"40\"/>\n    <text x=\"140\" y=\"80\" font-family=\"Arial, Helvetica, sans-serif\" font-size=\"13\" fill=\"#202020\" stroke=\"none\" text-anchor=\"middle\" dominant-baseline=\"middle\">cascade</text>\n  </g>"
+    },
+    "resistor": {
+        "ports": [
+            [
+                60,
+                80
+            ],
+            [
+                160,
+                80
+            ]
+        ],
+        "bounds": [
+            56,
+            66,
+            164,
+            94
+        ],
+        "bodyBounds": [
+            80,
+            70,
+            140,
+            90
+        ],
+        "leads": [
+            [
+                [
+                    60,
+                    80
+                ],
+                [
+                    80,
+                    80
+                ]
+            ],
+            [
+                [
+                    140,
+                    80
+                ],
+                [
+                    160,
+                    80
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M60 80 H80 L85 70 L95 90 L105 70 L115 90 L125 70 L135 90 L140 80 H160\"/>\n  </g>"
+    },
+    "microstrip-right-bend": {
+        "ports": [
+            [
+                0,
+                60
+            ],
+            [
+                60,
+                120
+            ]
+        ],
+        "bounds": [
+            -4,
+            42,
+            78,
+            124
+        ],
+        "bodyBounds": [
+            20,
+            46,
+            74,
+            100
+        ],
+        "leads": [
+            [
+                [
+                    0,
+                    60
+                ],
+                [
+                    20,
+                    60
+                ]
+            ],
+            [
+                [
+                    60,
+                    100
+                ],
+                [
+                    60,
+                    120
+                ]
+            ]
+        ],
+        "exit": [
+            0,
+            1
+        ],
+        "geometry": "<!-- Mirror the left-turn conductor vertically so port 2 exits downward. -->\n  <g transform=\"translate(-60 -60) scale(2)\">\n    <path d=\"M40 67 H53 V80 H67 V60 L60 53 H40 Z\" fill=\"#ffffff\" stroke=\"#202020\" stroke-width=\"1\"/>\n  </g>\n  <path d=\"M0 60 H20 M60 100 V120\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\"/>"
+    },
+    "microstrip-left-bend": {
+        "ports": [
+            [
+                0,
+                60
+            ],
+            [
+                60,
+                0
+            ]
+        ],
+        "bounds": [
+            -4,
+            -4,
+            78,
+            78
+        ],
+        "bodyBounds": [
+            20,
+            20,
+            74,
+            74
+        ],
+        "leads": [
+            [
+                [
+                    0,
+                    60
+                ],
+                [
+                    20,
+                    60
+                ]
+            ],
+            [
+                [
+                    60,
+                    20
+                ],
+                [
+                    60,
+                    0
+                ]
+            ]
+        ],
+        "exit": [
+            0,
+            -1
+        ],
+        "geometry": "<!-- Center both port faces on the conductor arms. -->\n  <g transform=\"translate(-60 -60) scale(2)\">\n    <path d=\"M40 53 H53 V40 H67 V60 L60 67 H40 Z\" fill=\"#ffffff\" stroke=\"#202020\" stroke-width=\"1\"/>\n  </g>\n  <path d=\"M0 60 H20 M60 0 V20\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\"/>"
+    },
+    "microstrip-via-transition": {
+        "ports": [
+            [
+                120,
+                40
+            ],
+            [
+                120,
+                140
+            ]
+        ],
+        "bounds": [
+            86,
+            36,
+            154,
+            144
+        ],
+        "bodyBounds": [
+            90,
+            60,
+            150,
+            120
+        ],
+        "leads": [
+            [
+                [
+                    120,
+                    40
+                ],
+                [
+                    120,
+                    60
+                ]
+            ],
+            [
+                [
+                    120,
+                    120
+                ],
+                [
+                    120,
+                    140
+                ]
+            ]
+        ],
+        "exit": [
+            0,
+            1
+        ],
+        "entry": [
+            0,
+            1
+        ],
+        "geometry": "<!-- Outlined via pad and bore, with leads to both grid terminals. -->\n  <circle cx=\"120\" cy=\"90\" r=\"30\" fill=\"#ffffff\" stroke=\"#202020\" stroke-width=\"2\"/>\n  <circle cx=\"120\" cy=\"90\" r=\"10\" fill=\"#ffffff\" stroke=\"#202020\" stroke-width=\"2\"/>\n  <path d=\"M120 40 V60 M120 120 V140\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\"/>"
+    },
+    "mod": {
+        "ports": [
+            [
+                80,
+                80
+            ],
+            [
+                200,
+                80
+            ]
+        ],
+        "bounds": [
+            76,
+            41,
+            204,
+            119
+        ],
+        "bodyBounds": [
+            100,
+            45,
+            180,
+            115
+        ],
+        "leads": [
+            [
+                [
+                    80,
+                    80
+                ],
+                [
+                    100,
+                    80
+                ]
+            ],
+            [
+                [
+                    180,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g transform=\"translate(0 -10)\">\n<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M80 90 H100 M180 90 H200\"/><rect x=\"100\" y=\"55\" width=\"80\" height=\"70\"/><text x=\"140\" y=\"90\" font-family=\"Arial, Helvetica, sans-serif\" font-size=\"13\" fill=\"#202020\" stroke=\"none\" text-anchor=\"middle\" dominant-baseline=\"middle\">MOD</text>\n  </g>\n  </g>"
+    },
+    "demod": {
+        "ports": [
+            [
+                80,
+                80
+            ],
+            [
+                200,
+                80
+            ]
+        ],
+        "bounds": [
+            76,
+            41,
+            204,
+            119
+        ],
+        "bodyBounds": [
+            100,
+            45,
+            180,
+            115
+        ],
+        "leads": [
+            [
+                [
+                    80,
+                    80
+                ],
+                [
+                    100,
+                    80
+                ]
+            ],
+            [
+                [
+                    180,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g transform=\"translate(0 -10)\">\n<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M80 90 H100 M180 90 H200\"/><rect x=\"100\" y=\"55\" width=\"80\" height=\"70\"/><text x=\"140\" y=\"90\" font-family=\"Arial, Helvetica, sans-serif\" font-size=\"13\" fill=\"#202020\" stroke=\"none\" text-anchor=\"middle\" dominant-baseline=\"middle\">DEMOD</text>\n  </g>\n  </g>"
+    }
+};
+
+// Modified: 2026-10-27
+
+const GRID = 20;
+const DEFAULT_SIGNIFICANT_DIGITS = 3;
+
+function schematicSignificantDigits(options) {
+    const digits = options.significantDigits ?? DEFAULT_SIGNIFICANT_DIGITS;
+    if (!Number.isInteger(digits) || digits < 1 || digits > 15) {
+        throw new TypeError('schematic() significantDigits must be an integer from 1 to 15.');
+    }
+    return digits;
+}
+
+function formatSchematicNumber(value, digits) {
+    return typeof value === 'number' && Number.isFinite(value) ?
+        String(Number(value.toPrecision(digits))) : String(value);
+}
+
+function componentLabel(part, id, digits) {
+    if (part.symbol === 'coupler-180' || part.value === undefined) return id;
+    const unit = part.symbol === 'resistor' ? ' Ω' : part.symbol === 'capacitor' ? ' F' :
+        part.symbol === 'inductor' ? ' H' : part.symbol === 'attenuator' ||
+        part.symbol === 'amplifier' ? ' dB' : '';
+    return `${id} = ${formatSchematicNumber(part.value, digits)}${unit}`;
+}
+
+function escapeXml(value) {
+    return String(value).replace(/[&<>"']/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;'
+    }[character]));
+}
+
+function flattenCascade(node, parts) {
+    if (!node) throw new TypeError('schematic() needs components with schematic metadata.');
+    if (node.kind === 'component') {
+        parts.push(node);
+        return parts;
+    }
+    if (node.kind !== 'cascade') throw new TypeError(`schematic() cannot draw ${node.kind} yet.`);
+    flattenCascade(node.left, parts);
+    flattenCascade(node.right, parts);
+    return parts;
+}
+
+function blockOperand(node) {
+    return node.kind === 'cascade' ? {kind: 'component', symbol: 'cascade'} : node;
+}
+
+function repeatedCascades(root) {
+    const counts = new Map();
+    function visit(node) {
+        if (node.kind !== 'cascade') return;
+        counts.set(node, (counts.get(node) || 0) + 1);
+        visit(node.left);
+        visit(node.right);
+    }
+    visit(root);
+    return new Set([...counts].filter(([, count]) => count > 1).map(([node]) => node));
+}
+
+function blockViewTree(node, repeated, depth) {
+    if (node.kind !== 'cascade') return node;
+    if (depth > 0 && (repeated.has(node) || (depth === 1 && repeated.size === 0))) {
+        return blockOperand(node);
+    }
+    return {kind: 'cascade', left: blockViewTree(node.left, repeated, depth + 1),
+        right: blockViewTree(node.right, repeated, depth + 1)};
+}
+
+function drawingRoot(root, view) {
+    if (view === 'detail') return root;
+    if (view !== 'blocks') throw new TypeError('schematic() view must be "detail" or "blocks".');
+    if (root.kind !== 'cascade') return root;
+    return blockViewTree(root, repeatedCascades(root), 0);
+}
+
+function rotateVector(vector, angle) {
+    if (angle === 90) return [-vector[1], vector[0]];
+    if (angle === 180) return [-vector[0], -vector[1]];
+    if (angle === 270) return [vector[1], -vector[0]];
+    return vector.slice();
+}
+
+function chooseSymbolOrientation(direction) {
+    if (direction[0] === 1) return 0;
+    if (direction[1] === 1) return 90;
+    if (direction[0] === -1) return 180;
+    return 270;
+}
+
+function transformedBounds(bounds, source, input, angle) {
+    const corners = [[bounds[0], bounds[1]], [bounds[2], bounds[1]],
+        [bounds[2], bounds[3]], [bounds[0], bounds[3]]];
+    const points = corners.map(point => {
+        const rotated = rotateVector([point[0] - source[0], point[1] - source[1]], angle);
+        return [input[0] + rotated[0], input[1] + rotated[1]];
+    });
+    return [Math.min(...points.map(point => point[0])), Math.min(...points.map(point => point[1])),
+        Math.max(...points.map(point => point[0])), Math.max(...points.map(point => point[1]))];
+}
+
+function transformedPoint(point, source, input, angle) {
+    const rotated = rotateVector([point[0] - source[0], point[1] - source[1]], angle);
+    return [input[0] + rotated[0], input[1] + rotated[1]];
+}
+
+function intersects(a, b, clearance = 0) {
+    return a[0] < b[2] + clearance && a[2] > b[0] - clearance &&
+        a[1] < b[3] + clearance && a[3] > b[1] - clearance;
+}
+
+function segmentBounds([start, end], thickness = 2) {
+    return [Math.min(start[0], end[0]) - thickness, Math.min(start[1], end[1]) - thickness,
+        Math.max(start[0], end[0]) + thickness, Math.max(start[1], end[1]) + thickness];
+}
+
+function labelBounds(text, x, y) {
+    const halfWidth = Math.ceil((text.length * 9) / 2);
+    return [x - halfWidth, y - 16, x + halfWidth, y + 4];
+}
+
+function circleBounds(x, y, radius = 12) {
+    return [x - radius, y - radius, x + radius, y + radius];
+}
+
+function nodeGroups(layout) {
+    const groups = [];
+    layout.nodes.forEach((point, index) => {
+        const angle = index < layout.placements.length ? layout.placements[index].angle :
+            chooseSymbolOrientation([
+                Math.sign(layout.end[0] - layout.placements[layout.placements.length - 1].output[0]),
+                Math.sign(layout.end[1] - layout.placements[layout.placements.length - 1].output[1])
+            ]);
+        const axis = angle % 180 === 0 ? 'horizontal' : 'vertical';
+        const baseline = axis === 'horizontal' ? point[1] : point[0];
+        const previous = groups.at(-1);
+        if (previous && previous.axis === axis && previous.baseline === baseline) {
+            previous.nodes.push({id: index + 1, point});
+        } else {
+            groups.push({axis, baseline, nodes: [{id: index + 1, point}]});
+        }
+    });
+    return groups;
+}
+
+function nodeGroupCandidates(group) {
+    const candidates = [];
+    for (let distance = 40; distance <= 400; distance += GRID) {
+        const members = group.nodes.map(node => {
+            const x = group.axis === 'horizontal' ? node.point[0] : group.baseline + distance;
+            const y = group.axis === 'horizontal' ? group.baseline - distance : node.point[1];
+            return {id: node.id, x, y, bounds: circleBounds(x, y)};
+        });
+        candidates.push({members, cost: distance * members.length});
+    }
+    return candidates;
+}
+
+function labelCandidates(text, bounds) {
+    const centerX = Math.round((bounds[0] + bounds[2]) / (2 * GRID)) * GRID;
+    const centerY = Math.round((bounds[1] + bounds[3]) / (2 * GRID)) * GRID;
+    const halfWidth = Math.ceil(text.length * 9 / 2);
+    const tall = bounds[3] - bounds[1] > bounds[2] - bounds[0];
+    const candidates = [];
+    for (let distance = GRID; distance <= 400; distance += GRID) {
+        for (const offset of [0, -GRID, GRID, -2 * GRID, 2 * GRID]) {
+            const horizontal = [
+                [centerX + offset, bounds[1] - distance - 4],
+                [centerX + offset, bounds[3] + distance + 16]
+            ];
+            const vertical = [
+                [bounds[2] + distance + halfWidth, centerY + offset + 6],
+                [bounds[0] - distance - halfWidth, centerY + offset + 6]
+            ];
+            const positions = tall ? vertical.concat(horizontal) : horizontal.concat(vertical);
+            positions.forEach(([x, y], preference) => {
+                candidates.push({x, y, bounds: labelBounds(text, x, y),
+                    cost: distance + Math.abs(offset) / 2 + preference * 4});
+            });
+        }
+    }
+    return candidates;
+}
+
+function candidateBounds(candidate) {
+    return candidate.members ? candidate.members.map(member => member.bounds) : [candidate.bounds];
+}
+
+function boxesClear(boxes, occupied) {
+    return boxes.every((box, index) =>
+        !occupied.some(other => intersects(box, other, 8)) &&
+        !boxes.slice(index + 1).some(other => intersects(box, other, 8)));
+}
+
+function annotationOptions(candidates, fixedBounds) {
+    return candidates.filter(candidate => boxesClear(candidateBounds(candidate), fixedBounds))
+        .sort((a, b) => a.cost - b.cost)
+        .slice(0, 32);
+}
+
+function chooseAnnotations(tasks, fixedBounds) {
+    let states = [{cost: 0, choices: [], occupied: fixedBounds}];
+    for (const task of tasks) {
+        const options = annotationOptions(task.candidates, fixedBounds);
+        const next = [];
+        for (const state of states) {
+            for (const option of options) {
+                const bounds = candidateBounds(option);
+                if (!boxesClear(bounds, state.occupied)) continue;
+                next.push({cost: state.cost + option.cost, choices: state.choices.concat(option),
+                    occupied: state.occupied.concat(bounds)});
+            }
+        }
+        if (!next.length) throw new RangeError('schematic() could not place annotations without a collision.');
+        next.sort((a, b) => a.cost - b.cost);
+        states = next.slice(0, 96);
+    }
+    return states[0].choices;
+}
+
+function annotateLayout(layout) {
+    const fixedBounds = layout.placements.flatMap(placement => placement.inkBounds)
+        .concat(layout.wires.map(wire => segmentBounds(wire)));
+    const labels = layout.placements.map(placement => ({
+        text: placement.label, component: placement.id,
+        candidates: labelCandidates(placement.label, placement.bounds)
+    }));
+    const externalLabels = [[0, 0], layout.end].map((point, index) => {
+        const text = `Port ${index + 1}`;
+        return {text, candidates: labelCandidates(text, circleBounds(...point, 4))};
+    });
+    const groups = nodeGroups(layout);
+    const tasks = groups.map(group => ({candidates: nodeGroupCandidates(group)}))
+        .concat(labels, externalLabels);
+    const choices = chooseAnnotations(tasks, fixedBounds);
+    const placedNodeNumbers = choices.slice(0, groups.length).flatMap(choice => choice.members)
+        .sort((a, b) => a.id - b.id);
+    let cursor = groups.length;
+    const placedLabels = labels.map(label => ({...choices[cursor++], text: label.text, component: label.component}));
+    const placedExternalLabels = externalLabels.map(label => ({...choices[cursor++], text: label.text}));
+    return {...layout, nodeNumbers: placedNodeNumbers, labels: placedLabels,
+        externalLabels: placedExternalLabels};
+}
+
+function layoutViewBox(layout) {
+    const bounds = layout.placements.map(placement => placement.bounds)
+        .concat(layout.wires.map(wire => segmentBounds(wire)))
+        .concat(layout.nodeNumbers.map(number => number.bounds))
+        .concat(layout.labels.map(label => label.bounds))
+        .concat(layout.externalLabels.map(label => label.bounds));
+    const minX = Math.floor((Math.min(...bounds.map(box => box[0])) - 40) / GRID) * GRID;
+    const minY = Math.floor((Math.min(...bounds.map(box => box[1])) - 40) / GRID) * GRID;
+    const maxX = Math.ceil((Math.max(...bounds.map(box => box[2])) + 40) / GRID) * GRID;
+    const maxY = Math.ceil((Math.max(...bounds.map(box => box[3])) + 40) / GRID) * GRID;
+    return [minX, minY, maxX - minX, maxY - minY];
+}
+
+function placeComponents(parts, digits) {
+    const placements = [];
+    const wires = [];
+    const nodes = [[0, 0]];
+    const counters = {};
+    let direction = [1, 0];
+    let previous = [0, 0];
+
+    for (const part of parts) {
+        const symbol = schematicSymbols[part.symbol];
+        if (!symbol) throw new TypeError(`schematic() has no bundled symbol for ${part.symbol}.`);
+        const angle = (chooseSymbolOrientation(direction) -
+            chooseSymbolOrientation(symbol.entry || [1, 0]) + 360) % 360;
+        let input;
+        let bounds;
+        let bodyBounds;
+        for (let gap = placements.length ? 0 : 60; gap <= 1000; gap += GRID) {
+            const candidate = [previous[0] + direction[0] * gap,
+                previous[1] + direction[1] * gap];
+            const candidateBody = transformedBounds(symbol.bodyBounds, symbol.ports[0], candidate, angle);
+            const collidesWithBody = placements.some(placed => intersects(candidateBody, placed.bodyBounds, 8));
+            const collidesWithWire = wires.some(wire => intersects(candidateBody, segmentBounds(wire), 4));
+            const connector = [previous, candidate];
+            const blocksConnector = gap > 0 && placements.slice(0, -1).some(placed =>
+                intersects(segmentBounds(connector), placed.bodyBounds, 4));
+            if (!collidesWithBody && !collidesWithWire && !blocksConnector) {
+                input = candidate;
+                bodyBounds = candidateBody;
+                bounds = transformedBounds(symbol.bounds, symbol.ports[0], candidate, angle);
+                break;
+            }
+        }
+        if (!input) throw new RangeError('schematic() could not place a component without a collision.');
+        if (input[0] !== previous[0] || input[1] !== previous[1]) wires.push([previous, input]);
+        if (placements.length) nodes.push(input);
+        const delta = rotateVector([
+            symbol.ports[1][0] - symbol.ports[0][0],
+            symbol.ports[1][1] - symbol.ports[0][1]
+        ], angle);
+        const output = [input[0] + delta[0], input[1] + delta[1]];
+        const prefix = ({resistor: 'R', capacitor: 'C', inductor: 'L', cascade: 'CAS',
+            'microstrip-right-bend': 'MB', 'microstrip-left-bend': 'MB',
+            'transmission-line': 'TLIN', 'microstrip-line': 'MLIN', attenuator: 'ATT',
+            amplifier: 'AMP', thru: 'THRU', 'microstrip-step': 'MSTEP',
+            'microstrip-via-transition': 'MVIA', 'microstrip-thin-film-resistor': 'MTFR',
+            'diode-1n4148': 'D', mod: 'MOD', demod: 'DEMOD'}[part.symbol] ||
+            part.symbol.toUpperCase().replace(/[^A-Z]/g, ''));
+        const id = `${prefix}${counters[prefix] = (counters[prefix] || 0) + 1}`;
+        const label = componentLabel(part, id, digits);
+        const inkBounds = [bodyBounds].concat(symbol.leads.map(lead => segmentBounds(
+            lead.map(point => transformedPoint(point, symbol.ports[0], input, angle)), 4)));
+        placements.push({part, symbol, input, output, angle, id, label, bounds, bodyBounds, inkBounds});
+        previous = output;
+        direction = rotateVector(symbol.exit, angle);
+    }
+
+    const end = [previous[0] + direction[0] * 60, previous[1] + direction[1] * 60];
+    wires.push([previous, end]);
+    nodes.push(end);
+    return {placements, wires, nodes, end};
+}
+
+function renderSymbol(placement) {
+    const {symbol, input, angle} = placement;
+    const source = symbol.ports[0];
+    const transform = `translate(${input[0]} ${input[1]}) rotate(${angle}) translate(${-source[0]} ${-source[1]})`;
+    return `<g transform="${transform}" fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${symbol.geometry}<circle cx="${source[0]}" cy="${source[1]}" r="4" fill="#202020"/><circle cx="${symbol.ports[1][0]}" cy="${symbol.ports[1][1]}" r="4" fill="#202020"/></g>`;
+}
+
+function renderNodes(layout) {
+    return layout.nodes.map((node, index) => {
+        const number = layout.nodeNumbers[index];
+        return `<circle cx="${node[0]}" cy="${node[1]}" r="4" fill="#202020"/><circle cx="${number.x}" cy="${number.y}" r="12" fill="#ffffff" stroke="#202020" stroke-width="2"/><text x="${number.x}" y="${number.y + 5}" text-anchor="middle">${number.id}</text>`;
+    }).join('');
+}
+
+function constructionTree(node, placements, cursor) {
+    if (node.kind === 'component') return {kind: 'component', id: placements[cursor.index++].id};
+    return {
+        kind: 'cascade',
+        left: constructionTree(node.left, placements, cursor),
+        right: constructionTree(node.right, placements, cursor)
+    };
+}
+
+function buildSchematicGraph(root, layout, viewBox) {
+    const components = layout.placements.map((placement, index) => ({
+        id: placement.id,
+        symbol: placement.part.symbol,
+        value: placement.part.value ?? null,
+        rotation: placement.angle,
+        bounds: placement.bounds.slice(),
+        bodyBounds: placement.bodyBounds.slice(),
+        inkBounds: placement.inkBounds.map(bounds => bounds.slice()),
+        ports: [
+            {port: 1, node: index + 1, at: placement.input.slice()},
+            {port: 2, node: index + 2, at: placement.output.slice()}
+        ]
+    }));
+    const connections = components.slice(1).map((component, index) => ({
+        node: index + 2,
+        from: {component: components[index].id, port: 2},
+        to: {component: component.id, port: 1}
+    }));
+    return {
+        kind: 'rf-cascade',
+        viewBox,
+        components,
+        nodes: layout.nodes.map((point, index) => ({id: index + 1, at: point.slice()})),
+        nodeNumbers: layout.nodeNumbers.map(number => ({id: number.id, at: [number.x, number.y], bounds: number.bounds.slice()})),
+        labels: layout.labels.concat(layout.externalLabels).map(label => ({text: label.text, at: [label.x, label.y], bounds: label.bounds.slice()})),
+        connections,
+        externalPorts: [
+            {port: 1, node: 1, at: [0, 0]},
+            {port: 2, node: layout.nodes.length, at: layout.end.slice()}
+        ],
+        wires: layout.wires.map((wire, index) => ({
+            node: index === 0 ? 1 : index === layout.wires.length - 1 ? layout.nodes.length :
+                layout.nodes.findIndex(point => point[0] === wire[1][0] && point[1] === wire[1][1]) + 1,
+            from: wire[0].slice(),
+            to: wire[1].slice()
+        })),
+        construction: constructionTree(root, layout.placements, {index: 0})
+    };
+}
+
+function buildSchematicTopology(graph) {
+    const parts = graph.components.map(component => ({id: component.id,
+        type: component.symbol, value: component.value}));
+    const connections = [[`Port ${graph.externalPorts[0].port}`, `${parts[0].id}.1`]];
+    for (const connection of graph.connections) {
+        connections.push([
+            `${connection.from.component}.${connection.from.port}`,
+            `${connection.to.component}.${connection.to.port}`
+        ]);
+    }
+    connections.push([`${parts[parts.length - 1].id}.2`, `Port ${graph.externalPorts[1].port}`]);
+    return {parts, connections};
+}
+
+function wilkinsonRoles(root) {
+    const entries = root.components;
+    const tees = entries.filter(entry => entry.part?.symbol === 'tee');
+    const lines = entries.filter(entry => entry.part?.symbol === 'transmission-line');
+    const resistors = entries.filter(entry => entry.part?.symbol === 'resistor');
+    if (entries.length !== 6 || root.externalNodes.length !== 3 ||
+        tees.length !== 3 || lines.length !== 2 || resistors.length !== 1) return null;
+    const input = tees.find(entry => entry.nodes[0] === root.externalNodes[0]);
+    if (!input) return null;
+    const branch1 = lines.find(entry => entry.nodes[0] === input.nodes[1]);
+    const branch2 = lines.find(entry => entry.nodes[0] === input.nodes[2]);
+    if (!branch1 || !branch2 || branch1 === branch2) return null;
+    const output1 = tees.find(entry => entry !== input &&
+        entry.nodes[1] === branch1.nodes[1] && entry.nodes[2] === root.externalNodes[1]);
+    const output2 = tees.find(entry => entry !== input &&
+        entry.nodes[1] === branch2.nodes[1] && entry.nodes[2] === root.externalNodes[2]);
+    const isolation = resistors[0];
+    if (!output1 || !output2 || output1 === output2 ||
+        isolation.nodes[0] !== output1.nodes[0] || isolation.nodes[1] !== output2.nodes[0]) return null;
+    return {input, branch1, branch2, output1, output2, isolation};
+}
+
+function nodalPlacement(id, entry, sourcePort, at, angle = 0, mirrorY = false) {
+    const symbol = schematicSymbols[entry.part.symbol];
+    const source = symbol.ports[sourcePort - 1];
+    const reflect = point => mirrorY ? [point[0], 200 - point[1]] : point;
+    const transformed = point => transformedPoint(reflect(point), reflect(source), at, angle);
+    return {
+        id, symbol: entry.part.symbol, part: entry.part, rotation: angle, mirrorY,
+        ports: symbol.ports.map((point, index) => ({port: index + 1, node: entry.nodes[index], at: transformed(point)})),
+        at: at.slice(), sourcePort
+    };
+}
+
+function nodalPath(node, points) {
+    return {node, points};
+}
+
+function flowPairs(symbol) {
+    if (symbol === 'tee' || symbol === 'microstrip-tee') return [[2, 3], [3, 2]];
+    if (symbol === 'series-tee') return [[1, 2], [2, 1]];
+    return schematicSymbols[symbol]?.ports.length === 2 ? [[1, 2], [2, 1]] : [];
+}
+
+function findFlowPath(root) {
+    const start = root.externalNodes[0];
+    const finish = root.externalNodes[1];
+    function visit(node, used, path) {
+        if (node === finish && path.length) return path;
+        for (let index = 0; index < root.components.length; index++) {
+            if (used.has(index)) continue;
+            const entry = root.components[index];
+            for (const [inputPort, outputPort] of flowPairs(entry.part.symbol)) {
+                if (entry.nodes[inputPort - 1] !== node) continue;
+                const next = visit(entry.nodes[outputPort - 1],
+                    new Set([...used, index]), path.concat({index, inputPort, outputPort}));
+                if (next) return next;
+            }
+        }
+        return null;
+    }
+    return visit(start, new Set(), []);
+}
+
+function flowPartId(part, counters) {
+    const prefix = ({resistor: 'R', capacitor: 'C', inductor: 'L', tee: 'TEE',
+        'series-tee': 'STEE', short: 'SHORT', open: 'OPEN',
+        'transmission-line': 'TLIN', amplifier: 'AMP', attenuator: 'ATT',
+        'microstrip-tee': 'MTEE'}[part.symbol] || part.symbol.toUpperCase().replace(/[^A-Z]/g, ''));
+    counters[prefix] = (counters[prefix] || 0) + 1;
+    return `${prefix}${counters[prefix]}`;
+}
+
+function flowTopology(root, placements, externalPorts) {
+    const nodeIds = [...new Set(root.components.flatMap(entry => entry.nodes).concat(root.externalNodes))];
+    return {
+        parts: placements.map(placement => ({id: placement.id, type: placement.symbol,
+            nodes: placement.ports.map(port => port.node), value: placement.part.value ?? null,
+            impedance: placement.part.impedance ?? null, length: placement.part.length ?? null})),
+        connections: nodeIds.map(node => ({node,
+            ports: placements.flatMap(placement => placement.ports.filter(port => port.node === node)
+                .map(port => `${placement.id}.${port.port}`)),
+            externalPorts: externalPorts.filter(port => port.node === node).map(port => port.port)}))
+    };
+}
+
+function buildFlowNodalModel(root, digits) {
+    if (root.externalNodes.length !== 2) return null;
+    const path = findFlowPath(root);
+    if (!path) return null;
+    const entries = root.components;
+    const used = new Set(path.map(step => step.index));
+    const counters = {};
+    const placements = [];
+    const wires = [];
+    const nodePositions = new Map();
+    const labels = [];
+    const mainPorts = [];
+    let cursorX = 120;
+
+    for (const step of path) {
+        const entry = entries[step.index];
+        const angle = step.inputPort < step.outputPort ? 0 : 180;
+        const placement = nodalPlacement(flowPartId(entry.part, counters), entry,
+            step.inputPort, [cursorX, 100], angle);
+        const output = placement.ports[step.outputPort - 1].at;
+        if (output[0] <= cursorX || output[1] !== 100) return null;
+        placements.push(placement);
+        mainPorts.push({step, placement});
+        labels.push({text: componentLabel(placement.part, placement.id, digits),
+            at: [(cursorX + output[0]) / 2, 10]});
+        cursorX = output[0] + 80;
+    }
+
+    const inputPoint = [40, 100];
+    const outputPoint = [cursorX, 100];
+    const externalPorts = [
+        {port: 1, node: root.externalNodes[0], at: inputPoint},
+        {port: 2, node: root.externalNodes[1], at: outputPoint}
+    ];
+    let previous = inputPoint;
+    for (const {step, placement} of mainPorts) {
+        const input = placement.ports[step.inputPort - 1];
+        wires.push(nodalPath(input.node, [previous, input.at]));
+        nodePositions.set(input.node, {at: [(previous[0] + input.at[0]) / 2, 100],
+            numberAt: [(previous[0] + input.at[0]) / 2, 60]});
+        previous = placement.ports[step.outputPort - 1].at;
+    }
+    wires.push(nodalPath(root.externalNodes[1], [previous, outputPoint]));
+    nodePositions.set(root.externalNodes[1], {at: [(previous[0] + outputPoint[0]) / 2, 100],
+        numberAt: [(previous[0] + outputPoint[0]) / 2, 60]});
+
+    let lowestY = 100;
+    for (const {step, placement} of mainPorts) {
+        const otherPorts = placement.ports.filter(port =>
+            port.port !== step.inputPort && port.port !== step.outputPort);
+        for (const branchPort of otherPorts) {
+            if (root.externalNodes.includes(branchPort.node)) return null;
+            let current = branchPort;
+            let branchY = branchPort.at[1] + 80;
+            const branchX = branchPort.at[0];
+            while (true) {
+                const matches = entries.map((entry, index) => ({entry, index}))
+                    .filter(item => !used.has(item.index) && item.entry.nodes.includes(current.node));
+                if (matches.length !== 1) return null;
+                const {entry, index} = matches[0];
+                if (entry.nodes.length > 2) return null;
+                const sourcePort = entry.nodes.indexOf(current.node) + 1;
+                const angle = sourcePort === 1 ? 90 : 270;
+                const child = nodalPlacement(flowPartId(entry.part, counters), entry,
+                    sourcePort, [branchX, branchY], angle);
+                const childInput = child.ports[sourcePort - 1];
+                if (childInput.at[0] !== current.at[0] || childInput.at[1] <= current.at[1]) return null;
+                placements.push(child);
+                used.add(index);
+                wires.push(nodalPath(current.node, [current.at, childInput.at]));
+                nodePositions.set(current.node, {at: [branchX, (current.at[1] + childInput.at[1]) / 2],
+                    numberAt: [branchX + 40, (current.at[1] + childInput.at[1]) / 2]});
+                labels.push({text: componentLabel(child.part, child.id, digits),
+                    at: [branchX + 110, branchY + 10]});
+                lowestY = Math.max(lowestY, branchY + 100);
+                if (entry.nodes.length === 1) break;
+                const outputPort = sourcePort === 1 ? 2 : 1;
+                current = child.ports[outputPort - 1];
+                branchY = current.at[1] + 80;
+            }
+        }
+    }
+    if (used.size !== entries.length) return null;
+    const nodes = [...nodePositions].map(([id, position]) => ({id, ...position}));
+    labels.push({text: 'Port 1', at: [40, 160]},
+        {text: 'Port 2', at: [outputPoint[0], 160]});
+    const graph = {kind: 'rf-nodal', viewBox: [0, -80, outputPoint[0] + 100,
+        Math.max(340, lowestY + 200)], components: placements, nodes, wires, labels, externalPorts};
+    return {graph, topology: flowTopology(root, placements, externalPorts)};
+}
+
+function nodalTree(root) {
+    const entries = root.components;
+    const byNode = new Map();
+    entries.forEach((entry, index) => entry.nodes.forEach((node, port) => {
+        if (!byNode.has(node)) byNode.set(node, []);
+        byNode.get(node).push({index, port: port + 1});
+    }));
+    const links = entries.map(() => []);
+    for (const [node, ends] of byNode) {
+        if (ends.length > 2) return null;
+        if (ends.length === 2) {
+            const [left, right] = ends;
+            if (left.index === right.index) return null;
+            links[left.index].push({index: right.index, ownPort: left.port,
+                otherPort: right.port, node});
+            links[right.index].push({index: left.index, ownPort: right.port,
+                otherPort: left.port, node});
+        }
+    }
+    const sources = byNode.get(root.externalNodes[0]) || [];
+    const source = sources.find(end => entries[end.index].nodes.length > 1) || sources[0];
+    if (!source) return null;
+    const parent = new Map([[source.index, null]]);
+    const depth = new Map([[source.index, 0]]);
+    const stack = [source.index];
+    while (stack.length) {
+        const index = stack.pop();
+        for (const link of links[index]) {
+            if (parent.get(index)?.index === link.index) continue;
+            if (parent.has(link.index)) return null;
+            parent.set(link.index, {index, ownPort: link.otherPort,
+                parentPort: link.ownPort, node: link.node});
+            depth.set(link.index, depth.get(index) + 1);
+            stack.push(link.index);
+        }
+    }
+    if (parent.size !== entries.length) return null;
+    const candidates = [...parent.keys()].filter(index => entries[index].nodes.length > 1);
+    const end = candidates.sort((a, b) => depth.get(b) - depth.get(a))[0] ?? source.index;
+    const spine = [];
+    for (let index = end; index !== undefined; index = parent.get(index)?.index) spine.unshift(index);
+    return {links, parent, source, spine, byNode};
+}
+
+function spineAngle(symbol, inputPort, outputPort) {
+    const input = symbol.ports[inputPort - 1];
+    if (!outputPort) {
+        const center = [(symbol.bodyBounds[0] + symbol.bodyBounds[2]) / 2,
+            (symbol.bodyBounds[1] + symbol.bodyBounds[3]) / 2];
+        return [0, 90, 180, 270].sort((left, right) =>
+            rotateVector([input[0] - center[0], input[1] - center[1]], left)[0] -
+            rotateVector([input[0] - center[0], input[1] - center[1]], right)[0])[0];
+    }
+    const output = symbol.ports[outputPort - 1];
+    const dx = output[0] - input[0];
+    const dy = output[1] - input[1];
+    if (!dx && !dy) return null;
+    if (dx && dy) {
+        const center = [(symbol.bodyBounds[0] + symbol.bodyBounds[2]) / 2,
+            (symbol.bodyBounds[1] + symbol.bodyBounds[3]) / 2];
+        const candidates = [0, 90, 180, 270].map(angle => ({angle,
+            advance: rotateVector([dx, dy], angle),
+            inputOutward: rotateVector([input[0] - center[0], input[1] - center[1]], angle)}));
+        const suitable = candidates.filter(candidate => candidate.advance[0] > 0);
+        suitable.sort((a, b) => a.inputOutward[0] - b.inputOutward[0]);
+        return suitable[0]?.angle ?? null;
+    }
+    return (360 - chooseSymbolOrientation([Math.sign(dx), Math.sign(dy)])) % 360;
+}
+
+function routeBetween(start, end, verticalFirst = false) {
+    if (start[0] === end[0] || start[1] === end[1]) return [start, end];
+    return verticalFirst ? [start, [start[0], end[1]], end] :
+        [start, [end[0], start[1]], end];
+}
+
+function wireNodePoint(points) {
+    const segments = points.slice(1).map((point, index) => [points[index], point]);
+    segments.sort((left, right) =>
+        (Math.abs(right[1][0] - right[0][0]) + Math.abs(right[1][1] - right[0][1])) -
+        (Math.abs(left[1][0] - left[0][0]) + Math.abs(left[1][1] - left[0][1])));
+    const [start, end] = segments[0];
+    return [0, 1].map(axis => Math.round((start[axis] + end[axis]) / (2 * GRID)) * GRID);
+}
+
+function treeLayoutBounds(placement) {
+    const symbol = schematicSymbols[placement.symbol];
+    return transformedBounds(symbol.bodyBounds, symbol.ports[placement.sourcePort - 1],
+        placement.at, placement.rotation);
+}
+
+function outwardPortDirection(placement, portNumber) {
+    const [left, top, right, bottom] = treeLayoutBounds(placement);
+    const [x, y] = placement.ports[portNumber - 1].at;
+    const distances = [
+        {distance: Math.max(0, left - x), vector: [-1, 0]},
+        {distance: Math.max(0, x - right), vector: [1, 0]},
+        {distance: Math.max(0, top - y), vector: [0, -1]},
+        {distance: Math.max(0, y - bottom), vector: [0, 1]}
+    ];
+    distances.sort((a, b) => b.distance - a.distance);
+    return distances[0].vector;
+}
+
+function treeNodeCandidates(point) {
+    const offsets = [[0, -40], [0, 40], [40, 0], [-40, 0],
+        [0, -60], [0, 60], [60, 0], [-60, 0]];
+    return offsets.map(([dx, dy], index) => ({x: point[0] + dx, y: point[1] + dy,
+        bounds: circleBounds(point[0] + dx, point[1] + dy), cost: 40 + index * 4}));
+}
+
+function buildTreeNodalModel(root, digits) {
+    const tree = nodalTree(root);
+    if (!tree) return null;
+    const entries = root.components;
+    const placements = [];
+    const placed = new Map();
+    const counters = {};
+    const spine = tree.spine;
+    let cursorX = 140;
+
+    for (let position = 0; position < spine.length; position++) {
+        const index = spine[position];
+        const entry = entries[index];
+        const inputPort = position ? tree.parent.get(index).ownPort : tree.source.port;
+        const next = spine[position + 1];
+        const outgoing = next === undefined ? null :
+            tree.links[index].find(link => link.index === next);
+        const symbol = schematicSymbols[entry.part.symbol];
+        const angle = spineAngle(symbol, inputPort, outgoing?.ownPort);
+        if (angle === null) return null;
+        const placement = nodalPlacement(flowPartId(entry.part, counters), entry,
+            inputPort, [cursorX, 100], angle);
+        placements.push(placement);
+        placed.set(index, placement);
+        cursorX = outgoing ? placement.ports[outgoing.ownPort - 1].at[0] + 160 :
+            Math.max(...placement.ports.map(port => port.at[0])) + 100;
+    }
+
+    const spineSet = new Set(spine);
+    const branchQueue = spine.slice();
+    while (branchQueue.length) {
+        const index = branchQueue.shift();
+        const parent = placed.get(index);
+        const centerY = (treeLayoutBounds(parent)[1] + treeLayoutBounds(parent)[3]) / 2;
+        for (const link of tree.links[index]) {
+            if (placed.has(link.index) || tree.parent.get(link.index)?.index !== index) continue;
+            const port = parent.ports[link.ownPort - 1];
+            const direction = port.at[1] < centerY ? -1 : 1;
+            const child = nodalPlacement(flowPartId(entries[link.index].part, counters),
+                entries[link.index], link.otherPort,
+                [port.at[0], port.at[1] + direction * 160], direction > 0 ? 90 : 270);
+            placements.push(child);
+            placed.set(link.index, child);
+            branchQueue.push(link.index);
+        }
+    }
+    if (placed.size !== entries.length) return null;
+
+    const wires = [];
+    const wireOwners = [];
+    const nodePoints = new Map();
+    for (const [index, relation] of tree.parent) {
+        if (!relation) continue;
+        const start = placed.get(relation.index).ports[relation.parentPort - 1].at;
+        const end = placed.get(index).ports[relation.ownPort - 1].at;
+        const verticalFirst = !spineSet.has(index);
+        const route = routeBetween(start, end, verticalFirst);
+        wires.push(nodalPath(relation.node, route));
+        wireOwners.push(new Set([index, relation.index]));
+        nodePoints.set(relation.node, wireNodePoint(route));
+    }
+
+    const externalPorts = root.externalNodes.map((node, index) => {
+        const end = tree.byNode.get(node)?.[0];
+        if (!end) return null;
+        const placement = placed.get(end.index);
+        const port = placement.ports[end.port - 1].at;
+        const direction = outwardPortDirection(placement, end.port);
+        const point = [port[0] + direction[0] * 100,
+            port[1] + direction[1] * 100];
+        const route = routeBetween(port, point, true);
+        wires.push(nodalPath(node, route));
+        wireOwners.push(new Set([end.index]));
+        nodePoints.set(node, wireNodePoint(route));
+        return {port: index + 1, node, at: point};
+    });
+    if (externalPorts.includes(null)) return null;
+
+    const bodyBounds = new Map([...placed].map(([index, placement]) =>
+        [index, treeLayoutBounds(placement)]));
+    const bodyEntries = [...bodyBounds];
+    if (bodyEntries.some(([index, bounds], position) => bodyEntries.slice(position + 1)
+        .some(([other, otherBounds]) => index !== other && intersects(bounds, otherBounds, 8)))) {
+        return null;
+    }
+    if (wires.some((wire, wireIndex) => wire.points.slice(1).some((point, segmentIndex) =>
+        bodyEntries.some(([index, bounds]) => !wireOwners[wireIndex].has(index) &&
+            intersects(bounds, segmentBounds([wire.points[segmentIndex], point]), 4))))) {
+        return null;
+    }
+
+    const nodeIds = [...tree.byNode.keys()];
+    const fixedBounds = placements.map(treeLayoutBounds)
+        .concat(wires.flatMap(wire => wire.points.slice(1).map((point, index) =>
+            segmentBounds([wire.points[index], point], 4))));
+    const nodeTasks = nodeIds.map(node => ({candidates: treeNodeCandidates(
+        nodePoints.get(node) || placed.get(tree.byNode.get(node)[0].index)
+            .ports[tree.byNode.get(node)[0].port - 1].at)}));
+    const labelTasks = placements.map(placement => {
+        const label = componentLabel(placement.part, placement.id, digits);
+        return {text: label, candidates: labelCandidates(label, treeLayoutBounds(placement))};
+    });
+    const portTasks = externalPorts.map(port => ({text: `Port ${port.port}`,
+        candidates: labelCandidates(`Port ${port.port}`, circleBounds(...port.at, 4))}));
+    const choices = chooseAnnotations(nodeTasks.concat(labelTasks, portTasks), fixedBounds);
+    const nodes = nodeIds.map((node, index) => ({id: node,
+        at: nodePoints.get(node) || placed.get(tree.byNode.get(node)[0].index)
+            .ports[tree.byNode.get(node)[0].port - 1].at,
+        numberAt: [choices[index].x, choices[index].y]}));
+    const labels = labelTasks.concat(portTasks).map((task, index) => ({
+        text: task.text, at: [choices[nodeIds.length + index].x,
+            choices[nodeIds.length + index].y]}));
+    const occupied = fixedBounds.concat(choices.map(choice => choice.bounds));
+    const minX = Math.floor((Math.min(...occupied.map(box => box[0])) - 40) / GRID) * GRID;
+    const minY = Math.floor((Math.min(...occupied.map(box => box[1])) - 40) / GRID) * GRID;
+    const maxX = Math.ceil((Math.max(...occupied.map(box => box[2])) + 40) / GRID) * GRID;
+    const maxY = Math.ceil((Math.max(...occupied.map(box => box[3])) + 40) / GRID) * GRID;
+    const graph = {kind: 'rf-nodal', viewBox: [minX, minY, maxX - minX, maxY - minY],
+        components: placements, nodes, wires, labels, externalPorts};
+    return {graph, topology: flowTopology(root, placements, externalPorts)};
+}
+
+function buildNodalModel(root, options, digits) {
+    if (options.view && options.view !== 'detail') {
+        throw new TypeError('schematic() nodal circuits currently support only the detail view.');
+    }
+    const roles = wilkinsonRoles(root);
+    if (!roles) {
+        const model = buildFlowNodalModel(root, digits) || buildTreeNodalModel(root, digits);
+        if (model) return model;
+        throw new RangeError('schematic() cannot make a readable layout for this nodal circuit yet.');
+    }
+    const placements = [
+        nodalPlacement('TEE1', roles.input, 1, [0, 0], 90),
+        nodalPlacement('TLIN1', roles.branch1, 1, [180, -160]),
+        nodalPlacement('TLIN2', roles.branch2, 1, [180, 160]),
+        nodalPlacement('TEE2', roles.output1, 2, [440, -160]),
+        nodalPlacement('TEE3', roles.output2, 2, [440, 160], 0, true),
+        nodalPlacement('R1', roles.isolation, 1, [480, -40], 90)
+    ];
+    const n = {
+        input: roles.input.nodes, branch1: roles.branch1.nodes, branch2: roles.branch2.nodes,
+        output1: roles.output1.nodes, output2: roles.output2.nodes
+    };
+    const wires = [
+        nodalPath(n.input[0], [[-100, 0], [0, 0]]),
+        nodalPath(n.input[1], [[40, -40], [120, -40], [120, -160], [180, -160]]),
+        nodalPath(n.input[2], [[40, 40], [120, 40], [120, 160], [180, 160]]),
+        nodalPath(n.branch1[1], [[300, -160], [440, -160]]),
+        nodalPath(n.branch2[1], [[300, 160], [440, 160]]),
+        nodalPath(n.output1[0], [[480, -120], [480, -40]]),
+        nodalPath(n.output2[0], [[480, 60], [480, 120]]),
+        nodalPath(n.output1[2], [[520, -160], [620, -160]]),
+        nodalPath(n.output2[2], [[520, 160], [620, 160]])
+    ];
+    const nodePoints = [
+        [n.input[0], [-100, 0], [-100, -40]],
+        [n.input[1], [120, -160], [120, -200]],
+        [n.input[2], [120, 160], [120, 200]],
+        [n.branch1[1], [370, -160], [370, -200]],
+        [n.branch2[1], [370, 160], [370, 200]],
+        [n.output1[0], [480, -100], [540, -100]],
+        [n.output1[2], [620, -160], [620, -200]],
+        [n.output2[0], [480, 100], [540, 100]],
+        [n.output2[2], [620, 160], [620, 200]]
+    ];
+    const labels = [
+        {text: 'TEE1', at: [20, -100]},
+        {text: `TLIN1 = ${formatSchematicNumber(roles.branch1.part.impedance, digits)} Ω`, at: [240, -240]},
+        {text: `TLIN2 = ${formatSchematicNumber(roles.branch2.part.impedance, digits)} Ω`, at: [240, 240]},
+        {text: 'TEE2', at: [480, -240]},
+        {text: 'TEE3', at: [480, 240]},
+        {text: componentLabel(roles.isolation.part, 'R1', digits), at: [600, 0]},
+        {text: 'Port 1', at: [-100, 60]},
+        {text: 'Port 2', at: [700, -160]},
+        {text: 'Port 3', at: [700, 160]}
+    ];
+    const nodes = nodePoints.map(([id, at, numberAt]) => ({id, at, numberAt}));
+    const graph = {
+        kind: 'rf-nodal', viewBox: [-180, -300, 960, 600], components: placements,
+        nodes, wires, labels,
+        externalPorts: root.externalNodes.map((node, index) => ({
+            port: index + 1, node, at: index === 0 ? [-100, 0] : [620, index === 1 ? -160 : 160]
+        }))
+    };
+    const topology = {
+        parts: placements.map(placement => ({id: placement.id, type: placement.symbol,
+            nodes: placement.ports.map(port => port.node), value: placement.part.value ?? null,
+            impedance: placement.part.impedance ?? null, length: placement.part.length ?? null})),
+        connections: nodes.map(node => ({node: node.id,
+            ports: placements.flatMap(placement => placement.ports.filter(port => port.node === node.id)
+                .map(port => `${placement.id}.${port.port}`)),
+            externalPorts: graph.externalPorts.filter(port => port.node === node.id).map(port => port.port)}))
+    };
+    return {graph, topology};
+}
+
+function buildSignalFlowModel(path, options, digits) {
+    const {transmitter, circuit, receiver} = path;
+    if (!transmitter || typeof transmitter.mode !== 'string' ||
+        !circuit?._schematic || receiver !== undefined && typeof receiver.out !== 'function') {
+        throw new TypeError('schematic() signal path needs a transmitter, circuit, and optional receiver.');
+    }
+    if (circuit.signal?.mode && circuit.signal.mode !== transmitter.mode) {
+        throw new TypeError('schematic() transmitter mode does not match the circuit signal.');
+    }
+    const rfRoot = drawingRoot(circuit._schematic, options.view || 'detail');
+    if (rfRoot.kind === 'nodal') {
+        throw new TypeError('schematic() signal path needs a two-port cascade circuit.');
+    }
+    const parts = [{kind: 'component', symbol: 'mod', value: transmitter.mode}]
+        .concat(flattenCascade(rfRoot, []));
+    if (receiver) parts.push({kind: 'component', symbol: 'demod', value: transmitter.mode});
+    const construction = parts.slice(1).reduce((left, right) =>
+        ({kind: 'cascade', left, right}), parts[0]);
+    const layout = annotateLayout(placeComponents(parts, digits));
+    const graph = buildSchematicGraph(construction, layout, layoutViewBox(layout));
+    graph.kind = 'signal-flow';
+    return {layout, graph, topology: buildSchematicTopology(graph)};
+}
+
+function buildSchematicModel(circuit, options = {}) {
+    const digits = schematicSignificantDigits(options);
+    if (circuit?.transmitter && circuit.circuit) {
+        return buildSignalFlowModel(circuit, options, digits);
+    }
+    const root = circuit && circuit._schematic;
+    if (!root) throw new TypeError('schematic() needs components with schematic metadata.');
+    if (root.kind === 'nodal') return buildNodalModel(root, options, digits);
+    if (root.kind === 'component' && schematicSymbols[root.symbol]?.ports.length !== 2) {
+        const portCount = schematicSymbols[root.symbol].ports.length;
+        const nodes = Array.from({length: portCount}, (_, index) => index + 1);
+        return buildNodalModel({components: [{part: root, nodes}],
+            externalNodes: nodes}, options, digits);
+    }
+    const shownRoot = drawingRoot(root, options.view || 'detail');
+    const parts = flattenCascade(shownRoot, []);
+    const layout = annotateLayout(placeComponents(parts, digits));
+    const graph = buildSchematicGraph(shownRoot, layout, layoutViewBox(layout));
+    return {layout, graph, topology: buildSchematicTopology(graph)};
+}
+
+function renderNodalSvg(model) {
+    const graph = model.graph;
+    const [minX, minY, width, height] = graph.viewBox;
+    const wires = graph.wires.map(wire => `<path d="${wire.points.map((point, index) =>
+        `${index ? 'L' : 'M'}${point[0]} ${point[1]}`).join(' ')}"/>`).join('');
+    const junctions = graph.wires.filter(wire => wire.points.length > 2).map(wire => {
+        const point = wire.points[wire.points.length - 1];
+        return `<circle cx="${point[0]}" cy="${point[1]}" r="4" fill="#202020"/>`;
+    }).join('');
+    const terminals = graph.externalPorts.map(port =>
+        `<circle cx="${port.at[0]}" cy="${port.at[1]}" r="4" fill="#202020"/>`).join('');
+    const symbols = graph.components.map(placement => {
+        const symbol = schematicSymbols[placement.symbol];
+        const source = symbol.ports[placement.sourcePort - 1];
+        const transform = `translate(${placement.at[0]} ${placement.at[1]}) rotate(${placement.rotation}) ` +
+            (placement.mirrorY ? `translate(${-source[0]} ${source[1] - 200}) translate(0 200) scale(1 -1)` :
+                `translate(${-source[0]} ${-source[1]})`);
+        const dots = symbol.ports.map(point => `<circle cx="${point[0]}" cy="${point[1]}" r="4" fill="#202020"/>`).join('');
+        return `<g transform="${transform}" fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${symbol.geometry}${dots}</g>`;
+    }).join('');
+    const nodes = graph.nodes.map(node => `<circle cx="${node.at[0]}" cy="${node.at[1]}" r="4" fill="#202020"/>` +
+        `<circle cx="${node.numberAt[0]}" cy="${node.numberAt[1]}" r="12" fill="#ffffff" stroke="#202020" stroke-width="2"/>` +
+        `<text x="${node.numberAt[0]}" y="${node.numberAt[1] + 5}" text-anchor="middle">${escapeXml(node.id)}</text>`).join('');
+    const labels = graph.labels.map(label => `<text x="${label.at[0]}" y="${label.at[1]}" text-anchor="middle">${escapeXml(label.text)}</text>`).join('');
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${minX} ${minY} ${width} ${height}" role="img" aria-label="Nodal nPort schematic"><rect x="${minX}" y="${minY}" width="${width}" height="${height}" fill="#ffffff"/><g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${wires}</g><g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="16">${symbols}${junctions}${terminals}${nodes}${labels}</g></svg>`;
+}
+
+function renderSchematicSvg(model) {
+    if (model.graph.kind === 'rf-nodal') return renderNodalSvg(model);
+    const {layout} = model;
+    const [minX, minY, width, height] = model.graph.viewBox;
+    const wires = layout.wires.map(([start, end]) =>
+        `<path d="M${start[0]} ${start[1]} L${end[0]} ${end[1]}"/>`).join('');
+    const symbols = layout.placements.map(renderSymbol).join('');
+    const labels = layout.labels.concat(layout.externalLabels).map(label =>
+        `<text x="${label.x}" y="${label.y}" text-anchor="middle">${escapeXml(label.text)}</text>`).join('');
+    const description = model.graph.kind === 'signal-flow' ? 'Signal path schematic' :
+        'Cascaded nPort schematic';
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${minX} ${minY} ${width} ${height}" role="img" aria-label="${description}"><rect x="${minX}" y="${minY}" width="${width}" height="${height}" fill="#ffffff"/><g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${wires}</g><g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="16">${symbols}${renderNodes(layout)}${labels}</g></svg>`;
+}
+
+function schematicPngBlob(svg) {
+    const source = new XMLSerializer().serializeToString(svg);
+    const url = URL.createObjectURL(new Blob([source], {type: 'image/svg+xml;charset=utf-8'}));
+    return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => {
+            try {
+                const viewBox = svg.viewBox.baseVal;
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.ceil(viewBox.width);
+                canvas.height = Math.ceil(viewBox.height);
+                const context = canvas.getContext('2d');
+                context.fillStyle = '#ffffff';
+                context.fillRect(0, 0, canvas.width, canvas.height);
+                context.drawImage(image, 0, 0, canvas.width, canvas.height);
+                canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Failed to create schematic PNG.')), 'image/png');
+            } catch (error) {
+                reject(error);
+            } finally {
+                URL.revokeObjectURL(url);
+            }
+        };
+        image.onerror = error => {
+            URL.revokeObjectURL(url);
+            reject(error);
+        };
+        image.src = url;
+    });
+}
+
+function copySchematicPng(svg) {
+    if (!navigator.clipboard || !window.ClipboardItem) {
+        console.error('Clipboard API for images is not supported in this browser/context.');
+        return;
+    }
+    const pngBlob = schematicPngBlob(svg);
+    navigator.clipboard.write([new ClipboardItem({'image/png': pngBlob})])
+        .catch(error => console.error('Failed to copy schematic PNG:', error));
+}
+
+function copyButtonHover(event) {
+    event.currentTarget.style.background = '#ccf2ff';
+}
+
+function copyButtonPress(event) {
+    event.currentTarget.style.background = '#00ace6';
+}
+
+function copyButtonLeave(event) {
+    event.currentTarget.style.background = 'none';
+}
+
+function styleSchematicButton(button) {
+    button.type = 'button';
+    button.style.background = 'none';
+    button.style.border = 'none';
+    button.style.padding = '4px 8px';
+    button.style.cursor = 'pointer';
+    button.style.display = 'inline-flex';
+    button.style.alignItems = 'center';
+    button.style.gap = '4px';
+    button.style.borderRadius = '6px';
+    button.style.fontFamily = 'Arial, Helvetica, sans-serif';
+    button.style.fontSize = '13px';
+    button.addEventListener('mouseover', copyButtonHover);
+    button.addEventListener('mouseout', copyButtonLeave);
+    button.addEventListener('mousedown', copyButtonPress);
+    button.addEventListener('mouseup', copyButtonHover);
+}
+
+function sizeSchematicSvg(svg, scale) {
+    const viewBox = svg.viewBox.baseVal;
+    svg.style.width = `${Math.max(1, Math.floor(viewBox.width * scale))}px`;
+    svg.style.height = `${Math.max(1, Math.floor(viewBox.height * scale))}px`;
+}
+
+function updateFittedSchematic(svg, viewport, button) {
+    if (button.dataset.fit !== 'true') return;
+    const viewBox = svg.viewBox.baseVal;
+    const fullHeight = Math.min(Math.ceil(viewBox.height), 600);
+    const scale = Math.min(1, viewport.clientWidth / viewBox.width,
+        fullHeight / viewBox.height);
+    if (Number.isFinite(scale) && scale > 0) {
+        sizeSchematicSvg(svg, scale);
+        viewport.style.height = `${Math.min(fullHeight, Math.ceil(viewBox.height * scale))}px`;
+    }
+}
+
+function toggleSchematicFit(svg, viewport, button) {
+    if (button.dataset.fit === 'true') {
+        button.dataset.fit = 'false';
+        button.textContent = 'Fit drawing';
+        button.setAttribute('aria-label', 'Fit drawing');
+        sizeSchematicSvg(svg, 1);
+        viewport.style.height = `${Math.min(Math.ceil(svg.viewBox.baseVal.height), 600)}px`;
+    } else {
+        button.dataset.fit = 'true';
+        button.textContent = 'Actual size';
+        button.setAttribute('aria-label', 'Actual size');
+        updateFittedSchematic(svg, viewport, button);
+        viewport.scrollLeft = 0;
+        viewport.scrollTop = 0;
+    }
+}
+
+function schematic(circuit, options = {}) {
+    const model = buildSchematicModel(circuit, options);
+    const markup = renderSchematicSvg(model);
+    const mount = typeof options.mount === 'string' ? document.querySelector(options.mount) : options.mount || document.body;
+    if (!mount) throw new TypeError('schematic() mount was not found.');
+    const container = document.createElement('div');
+    if (options.containerId) container.id = options.containerId;
+    container.style.position = 'relative';
+    const toolbar = document.createElement('div');
+    toolbar.style.display = 'flex';
+    toolbar.style.justifyContent = 'flex-end';
+    toolbar.style.gap = '8px';
+    const viewport = document.createElement('div');
+    viewport.style.width = '100%';
+    viewport.style.height = `${Math.min(Math.ceil(model.graph.viewBox[3]), 600)}px`;
+    viewport.style.overflow = 'auto';
+    viewport.innerHTML = markup;
+    const svg = viewport.querySelector('svg');
+    svg.style.display = 'block';
+    svg.style.maxWidth = 'none';
+    sizeSchematicSvg(svg, 1);
+    const button = document.createElement('button');
+    button.setAttribute('aria-label', 'Copy PNG');
+    styleSchematicButton(button);
+    button.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="5" y="5" width="11" height="12" rx="2" fill="none" stroke="currentColor"/><path d="M3 13 V4 Q3 2 5 2 H13" fill="none" stroke="currentColor"/></svg>Copy as png';
+    button.addEventListener('click', copySchematicPng.bind(null, svg));
+    const fitButton = document.createElement('button');
+    fitButton.setAttribute('aria-label', 'Fit drawing');
+    fitButton.textContent = 'Fit drawing';
+    fitButton.dataset.fit = 'false';
+    styleSchematicButton(fitButton);
+    fitButton.addEventListener('click', toggleSchematicFit.bind(null, svg, viewport, fitButton));
+    toolbar.appendChild(button);
+    toolbar.appendChild(fitButton);
+    container.appendChild(toolbar);
+    container.appendChild(viewport);
+    mount.appendChild(container);
+    if (typeof ResizeObserver !== 'undefined') {
+        new ResizeObserver(updateFittedSchematic.bind(null, svg, viewport, fitButton))
+            .observe(viewport);
+    }
+    return {svg, graph: model.graph, topology: model.topology};
+}
+
+// Modified: 2026-10-22
 
 function smithChart(options = {}) {
 	// ======== Options & defaults ========
@@ -5840,64 +8663,60 @@ function smithChart(options = {}) {
       </svg>Copy as png
 	    `);
 
+	if (isNarrowViewport) button.text('PNG');
+
 	button
-		.style('width', isNarrowViewport ? '28px' : null)
-		.style('overflow', isNarrowViewport ? 'hidden' : null)
 		.style('white-space', 'nowrap')
-		.style('padding', isNarrowViewport ? '4px' : '4px 8px');
+		.style('padding', isNarrowViewport ? '6px 8px' : '4px 8px');
 
 	// New button function fire
 	button.on('click', copyPNG);
 
 	function copyPNG() {
-		const containerDiv = container.node();
-		const svgElement = containerDiv.querySelector('svg');
+		if (!navigator.clipboard || !window.ClipboardItem) {
+			console.error('Clipboard API for images is not supported in this browser/context.');
+			return;
+		}
 
-		const serializer = new XMLSerializer();
-		const svgString = serializer.serializeToString(svgElement);
+		const pngBlob = new Promise((resolve, reject) => {
+			const svgElement = container.node().querySelector('svg');
+			const svgString = new XMLSerializer().serializeToString(svgElement);
+			const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+			const url = URL.createObjectURL(svgBlob);
+			const img = new Image();
 
-		const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-		const url = URL.createObjectURL(svgBlob);
-
-		const img = new Image();
-		img.onload = async () => {
-			const canvas = document.createElement('canvas');
-			// Use rendered size
-			canvas.width = svgElement.clientWidth || +svgElement.getAttribute('width') || 800;
-			canvas.height = svgElement.clientHeight || +svgElement.getAttribute('height') || 600;
-
-			const ctx = canvas.getContext('2d');
-
-			// ------ NEW: optional background fill (defaults to transparent) ------
-			if (effectiveBackgroundColor && effectiveBackgroundColor !== 'transparent') {
-				ctx.save();
-				ctx.globalCompositeOperation = 'source-over';
-				ctx.fillStyle = effectiveBackgroundColor;
-				ctx.fillRect(0, 0, canvas.width, canvas.height);
-				ctx.restore();
-			}
-			// --------------------------------------------------------------------
-
-			ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-			URL.revokeObjectURL(url);
-
-			canvas.toBlob(async (blob) => {
+			img.onload = () => {
 				try {
-					await navigator.clipboard.write([
-						new ClipboardItem({ 'image/png': blob })
-					]);
-					//console.log("Image copied to clipboard!");
+					const canvas = document.createElement('canvas');
+					canvas.width = svgElement.clientWidth || +svgElement.getAttribute('width') || 800;
+					canvas.height = svgElement.clientHeight || +svgElement.getAttribute('height') || 600;
+					const ctx = canvas.getContext('2d');
+
+					if (effectiveBackgroundColor && effectiveBackgroundColor !== 'transparent') {
+						ctx.fillStyle = effectiveBackgroundColor;
+						ctx.fillRect(0, 0, canvas.width, canvas.height);
+					}
+
+					ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+					canvas.toBlob((blob) => {
+						if (blob) resolve(blob);
+						else reject(new Error('Failed to create PNG blob'));
+					}, 'image/png');
 				} catch (err) {
-					//console.error("Failed to copy image:", err);
+					reject(err);
+				} finally {
+					URL.revokeObjectURL(url);
 				}
-			}, 'image/png');
-		};
-		img.onerror = (e) => {
-			URL.revokeObjectURL(url);
-			console.error("Failed to load serialized SVG into Image", e);
-		};
-		img.src = url;
+			};
+			img.onerror = (err) => {
+				URL.revokeObjectURL(url);
+				reject(err);
+			};
+			img.src = url;
+		});
+
+		navigator.clipboard.write([new ClipboardItem({ 'image/png': pngBlob })])
+			.catch((err) => console.error('Failed to copy Smith chart PNG:', err));
 	}
 
 	const txtChartTitle = svg.append('text')
@@ -6122,121 +8941,116 @@ function smithChart(options = {}) {
 // Modified: 2026-08-18
 const version = '0.0.48';
 
-function CplxToCell(complexNumber) {
-	return complexNumber.x.toPrecision(4) + (complexNumber.y.toPrecision(4) >= 0 ? " +j" + complexNumber.y.toPrecision(4) : " -j" + (-complexNumber.y).toPrecision(4));
-}
-function createArray(myArray) {
-	var row = 0, element = '', html = '';
+// Modified: 2026-10-26
 
-	html = "<table><tbody>"; // fill in the table with one column only
-	for (row = 0; row < myArray.length; row++) {
-		if ( typeof myArray[row] === 'string') {
-			element = myArray[row];
-		} else if ( typeof myArray[row] === 'number') {
-			element = myArray[row].toPrecision(4);
-		} else if ( myArray[row].constructor.name === 'Complex') {
-			element = CplxToCell(myArray[row]);
-		} else {
-			element = '** ** **';
-		}		html +="<tr>";
-		html += "<td style='text-align: center; border-style: solid; border-width: 1px' width='140px'>" + element;
-		html += "</td>";
-		html +="</tr>";
-	}	html += "</tbody></table>"; // finish the one column table
-	return html; // return the one column table
+function isComplex(value) {
+	return value !== null && typeof value === 'object' &&
+		value.constructor && value.constructor.name === 'Complex' &&
+		typeof value.x === 'number' && typeof value.y === 'number';
 }
 
-function createTable (myMatrix) {
-	var row = 0, col = 0, html = "";
-
-	html = "<table><tbody>"; // fill in the table
-	for (row = 0; row < myMatrix.length; row++) {
-		html +="<tr>";
-		for (col = 0; col < myMatrix[0].length; col++) {
-			html += "<td style='text-align: center; border-style: solid; border-width: 1px' width='140px'>" + myMatrix[row][col].toPrecision(4);
-			html += "</td>";
-		}		html +="</tr>";
-	}	html += "</tbody></table>"; // finish the table
-
-	return html; // return the table
+function isPlainRecord(value) {
+	return value !== null && typeof value === 'object' && !Array.isArray(value) &&
+		(Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null) &&
+		Object.keys(value).length > 0;
 }
 
-
-
-function createCplxTable (myMatrix) {
-	var row = 0, col = 0, html = "";
-
-	html = "<table><tbody>"; // fill in the table
-	for (row = 0; row < myMatrix.length; row++) {
-		html +="<tr>";
-		for (col = 0; col < myMatrix[0].length; col++) {
-			html += "<td style='text-align: center; border-style: solid; border-width: 1px' width='140px'>" + CplxToCell(myMatrix[row][col]);
-			html += "</td>";
-		}		html +="</tr>";
-	}	html += "</tbody></table>"; // finish the table
-
-	return html; // return the table
+function formatComplexCell(value) {
+	return value.x.toPrecision(4) +
+		(value.y >= 0 ? ' +j' : ' -j') +
+		Math.abs(value.y).toPrecision(4);
 }
 
-function lineTable$1(out) {
-	var row = 0, col = 0, element = '', html = '';
-
-	html = "<table><tbody>"; // fill in the table with one column only
-	for (row = 0; row < out.length; row++) {
-		html +="<tr>";
-		for (col = 0; col < out[0].length; col++) {
-			if ( typeof out[row][col] === 'string') {
-				element = out[row][col];
-			} else if ( typeof out[row][col] === 'number') {
-				element = out[row][col].toPrecision(4);
-			} else if ( out[row][col].constructor.name === 'Complex') {
-				element = CplxToCell(out[row][col]);
-			} else {
-				element = '** ** **';
-			}			html += "<td style='text-align: center; border-style: solid; border-width: 1px' width='140px'>" + element;
-			html += "</td>";
-		}
-		html +="</tr>";
-	}	html += "</tbody></table>"; // finish the one column table
-	return html; // return the one column table
+function formatCell(value) {
+	if (typeof value === 'string') return value;
+	if (typeof value === 'number') return value.toPrecision(4);
+	if (isComplex(value)) return formatComplexCell(value);
+	return null;
 }
 
-function log(input) {
+function validRows(rows, matrixOnly) {
+	if (!Array.isArray(rows) || rows.length === 0 ||
+		!Array.isArray(rows[0]) || rows[0].length === 0) return false;
+
+	var width = rows[0].length;
+	return rows.every(row => Array.isArray(row) && row.length === width &&
+		row.every(value => (!matrixOnly || typeof value === 'number' || isComplex(value)) &&
+			formatCell(value) !== null));
+}
+
+function createTable(rows) {
+	var table = document.createElement('table');
+	var body = document.createElement('tbody');
+	table.appendChild(body);
+
+	rows.forEach(row => {
+		var tr = document.createElement('tr');
+		body.appendChild(tr);
+		row.forEach(value => {
+			var td = document.createElement('td');
+			td.setAttribute('style', 'text-align: center; border-style: solid; border-width: 1px');
+			td.setAttribute('width', '140px');
+			td.textContent = formatCell(value);
+			tr.appendChild(td);
+		});
+	});
+
+	return table;
+}
+
+function log(input, options = {}) {
 	var pre = document.createElement('pre');
-	var output = '';
-	var classAttr = document.createAttribute('class');
+	pre.className = 'outputSection remove';
 
-	// added this for webpage
-	var outputBox = document.getElementsByClassName('outputBox')[0];
-
-	classAttr.value = 'outputSection remove'; // added another class name for elements to be removed
-	pre.setAttributeNode(classAttr);
-	if ( typeof input === 'string'){
-		output = input;
-	} else if ( typeof input === 'number'){
-		output = input.toPrecision(4);
-	} else if ( typeof input === 'boolean' ){
-		output = input;
-	} else if ( input instanceof Array && input.m === undefined && !(input[0] instanceof Array) ) { // linear array
-		output = createArray(input);
-	} else if (input instanceof Array && input[0] instanceof Array) { // lineTable
-		output = lineTable$1(input);
-	} else if ( input.constructor.name === 'Complex') {
-		var real = '', imaginary = '';
-		real = input.getR().toPrecision(4);
-		imaginary = input.getI() >= 0 ? 'j' + input.getI().toPrecision(4) : '-j' + (Math.abs(input.getI())).toPrecision(4);
-		output = real + ', ' + imaginary;
-	} else if ( typeof input === 'object' && input.m.constructor.name === 'Array' && !(input.m[0][0].constructor.name === 'Complex')) { // matrix of real numbers
-		output = createTable(input.m);
-	} else if ( typeof input === 'object' && input.m.constructor.name === 'Array' && input.m[0][0].constructor.name === 'Complex') { // matrix of Complex numbers
-		output = createCplxTable(input.m);
+	if (typeof input === 'string' || typeof input === 'number' || typeof input === 'boolean') {
+		pre.textContent = typeof input === 'number' ? input.toPrecision(4) : String(input);
+	} else if (isComplex(input)) {
+		pre.textContent = input.x.toPrecision(4) + ', ' +
+			(input.y >= 0 ? 'j' : '-j') + Math.abs(input.y).toPrecision(4);
+	} else if (Array.isArray(input)) {
+		if (input.length === 0) {
+			pre.appendChild(createTable([]));
+		} else if (Array.isArray(input[0])) {
+			if (validRows(input, false)) {
+				pre.appendChild(createTable(input));
+			} else {
+				pre.textContent = "nP.log can't read this input";
+			}
+		} else if (input.every(value => formatCell(value) !== null)) {
+			pre.appendChild(createTable(input.map(value => [value])));
+		} else {
+			pre.textContent = "nP.log can't read this input";
+		}
+	} else if (input !== null && typeof input === 'object' &&
+		Array.isArray(input.m) && validRows(input.m, true)) {
+		pre.appendChild(createTable(input.m));
+	} else if (isPlainRecord(input)) {
+		try {
+			pre.textContent = JSON.stringify(input, null, 2);
+		} catch (error) {
+			pre.textContent = "nP.log can't read this input";
+		}
 	} else {
-		output = "nP.log can't read this input";
-	}	pre.innerHTML = output;
-	outputBox === undefined ? document.body.appendChild(pre) : outputBox.appendChild(pre);
+		pre.textContent = "nP.log can't read this input";
+	}
+
+	var destination;
+	if (options && options.mount !== undefined) {
+		destination = typeof options.mount === 'string'
+			? document.querySelector(options.mount)
+			: options.mount;
+		if (!destination || typeof destination.appendChild !== 'function') {
+			throw new TypeError('nP.log(): mount must be a CSS selector or DOM element.');
+		}
+	} else {
+		destination = document.getElementsByClassName('outputBox')[0] || document.body;
+	}
+
+	destination.appendChild(pre);
+	return pre;
 }
 
-// Modified: 2026-10-06
+// Modified: 2026-10-22
 
 function lineTable(options = {}) {
 		// ======== Options & defaults ========
@@ -6350,6 +9164,7 @@ function lineTable(options = {}) {
 		const controlsWidth = isNarrowViewport ? 40 : 130;
 		const minOuterWidth = Math.ceil(titleWidth + controlsWidth + 10);
 		const outerWidth = Math.max(margin.left + tableWidth + margin.right, minOuterWidth);
+		const scrollTable = measuredMountWidth > 0 && outerWidth > measuredMountWidth;
 		const layoutTop = Math.max(margin.top, 72);
 		const outerHeight = layoutTop + tableHeight + margin.bottom;
 
@@ -6376,9 +9191,11 @@ function lineTable(options = {}) {
 				.append('div')
 				.attr('id', containerId || null)
 				.attr('class', 'line-table-container')
-				.style('display', 'inline-block')
+				.style('display', scrollTable ? 'block' : 'inline-block')
 				.style('position', 'relative')        // anchor for absolute button
+				.style('width', scrollTable ? '100%' : null)
 				.style('max-width', '100%')
+				.style('overflow-x', scrollTable ? 'auto' : null)
 				.style('box-sizing', 'border-box')
 				.style('font-family', fontFamily)
 				.style('font-size', `${effectiveFontSize}px`)
@@ -6425,20 +9242,20 @@ function lineTable(options = {}) {
 		async function copyPNG() {
 			const node = svg.node();
 			try {
-				const blob = await svgToPngBlob(node, outerWidth, outerHeight);
-				if (!blob) throw new Error('Failed to create PNG blob');
-
 				if (!navigator.clipboard || !window.ClipboardItem) {
 					throw new Error('Clipboard API for images is not supported in this browser/context.');
 				}
 
-				await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+				const pngBlob = svgToPngBlob(node, outerWidth, outerHeight).then((blob) => {
+					if (!blob) throw new Error('Failed to create PNG blob');
+					return blob;
+				});
+				await navigator.clipboard.write([new ClipboardItem({ 'image/png': pngBlob })]);
 
 				//console.log("Image copied to clipboard!");
 
 			} catch (err) {
-				//console.error(err);
-				//console.error("Failed to copy image:", err);
+				console.error('Failed to copy table PNG:', err);
 			}
 		}
 
@@ -6513,11 +9330,11 @@ function lineTable(options = {}) {
     </svg>Copy as png
 	    `);
 
+		if (isNarrowViewport) button.text('PNG');
+
 		button
-			.style('width', isNarrowViewport ? '28px' : null)
-			.style('overflow', isNarrowViewport ? 'hidden' : null)
 			.style('white-space', 'nowrap')
-			.style('padding', isNarrowViewport ? '4px' : '4px 8px');
+			.style('padding', '4px 8px');
 
 		const csvBtn = container.append('button')
 			.attr('aria-label', 'Copy CSV')
@@ -6546,11 +9363,11 @@ function lineTable(options = {}) {
 			'</svg>Copy as csv'
 		].join(''));
 
+		if (isNarrowViewport) csvBtn.text('CSV');
+
 		csvBtn
-			.style('width', isNarrowViewport ? '28px' : null)
-			.style('overflow', isNarrowViewport ? 'hidden' : null)
 			.style('white-space', 'nowrap')
-			.style('padding', isNarrowViewport ? '4px' : '4px 8px');
+			.style('padding', '4px 8px');
 
 
 		// ======== The SVG itself ========
@@ -6565,8 +9382,8 @@ function lineTable(options = {}) {
 				.attr('viewBox', `0 0 ${outerWidth} ${outerHeight}`)
 				.attr('preserveAspectRatio', 'xMinYMin meet')
 				.style('display', 'block')
-				.style('width', '100%')
-				.style('max-width', `${outerWidth}px`)
+				.style('width', scrollTable ? `${outerWidth}px` : '100%')
+				.style('max-width', scrollTable ? 'none' : `${outerWidth}px`)
 				.style('height', 'auto')
 				.style('font-family', fontFamily)
 				.style('font-size', `${effectiveFontSize}px`)
@@ -6819,6 +9636,21 @@ function analysisFrequencies(settings) {
 			});
 	});
 	return Array.from(frequencies).sort(function (a, b) { return a - b; });
+}
+
+// Modified: 2026-10-13
+
+// Capture the analysis settings when a component is constructed. An explicit
+// fList lets independent circuits use different grids without changing global.
+function componentSettings(global, options = {}) {
+	var fList = options.fList === undefined ? global.fList : options.fList;
+	if (!Array.isArray(fList)) throw new TypeError('fList must be an array of frequencies.');
+	return {
+		...global,
+		fList: fList.slice(),
+		tList: Array.isArray(global.tList) ? global.tList.slice() : global.tList,
+		twoTone: global.twoTone ? {...global.twoTone} : global.twoTone
+	};
 }
 
 // Modified: 2026-10-07
@@ -7233,10 +10065,205 @@ function oipDbm(result, product, outputPort) {
 	return 10 * Math.log10(intercept / 1e-3);
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-22
+
+function analogMode(mode) {
+	return ['AM', 'FM', 'PM', 'SSB', 'DSB-SC'].includes(mode);
+}
+
+function analogRowCount(signal) {
+	if (signal.mode === 'AM') return 3;
+	if (signal.mode === 'SSB') return 1;
+	if (signal.mode === 'DSB-SC') return 2;
+	return 2 * signal.sidebandOrder + 1;
+}
+
+function analogFrequency(signal, index) {
+	if (signal.mode === 'SSB') return signal.carrierHz +
+		(signal.sideband === 'USB' ? signal.toneHz : -signal.toneHz);
+	if (signal.mode === 'DSB-SC') return signal.carrierHz +
+		(index === 0 ? -signal.toneHz : signal.toneHz);
+	return signal.carrierHz + (index - (analogRowCount(signal) - 1) / 2) * signal.toneHz;
+}
+
+// A deterministic signal uses one complex outgoing-wave vector per S row.
+function validateSignal(signal, spars) {
+	var analog = signal && analogMode(signal.mode);
+	var frequencyVna = signal && signal.mode === 'VNA-frequency';
+	if (!signal || (!analog && !frequencyVna && (!Number.isInteger(signal.sampleCount) || signal.sampleCount < 1 ||
+		!Number.isFinite(signal.sampleRateHz) || signal.sampleRateHz <= 0)) ||
+		(analog && (!Number.isFinite(signal.carrierHz) || !Number.isFinite(signal.toneHz) ||
+			signal.carrierHz <= 0 || signal.toneHz <= 0 ||
+			(['AM', 'SSB', 'DSB-SC'].includes(signal.mode) && signal.carrierHz <= signal.toneHz) ||
+			!Array.isArray(signal.rows) || signal.rows.length !==
+				analogRowCount(signal) ||
+			(['FM', 'PM'].includes(signal.mode) && (!Number.isInteger(signal.sidebandOrder) ||
+				signal.sidebandOrder < 0)))) ||
+		!Number.isFinite(signal.referenceImpedanceOhms) || signal.referenceImpedanceOhms <= 0 ||
+		(signal.samplesPerBit !== undefined &&
+			(!Number.isInteger(signal.samplesPerBit) || signal.samplesPerBit < 1 ||
+				signal.sampleCount % signal.samplesPerBit !== 0)) ||
+		!Array.isArray(signal.rows) || (spars && signal.rows.length !== spars.length)) {
+		throw new RangeError('Signal metadata and frequency rows must match the nPort.');
+	}
+	for (var i = 0; i < signal.rows.length; i++) {
+		var row = signal.rows[i];
+		var portCount = spars ? Math.sqrt(spars[i].length - 1) : row && row.waves && row.waves.length;
+		if (!row || (spars && row.frequency !== spars[i][0]) ||
+			!Array.isArray(row.waves) || row.waves.length !== portCount ||
+			row.waves.some(function (wave) {
+				return !wave || typeof wave.getR !== 'function' || typeof wave.getI !== 'function' ||
+					!Number.isFinite(wave.getR()) || !Number.isFinite(wave.getI());
+			})) {
+			throw new RangeError('Signal waves must match the S-parameter frequency and port count.');
+		}
+	}
+	return signal;
+}
+
+function compatibleSignals(first, second) {
+	if (!first) return second;
+	if (!second) return first;
+	var firstAnalog = analogMode(first.mode);
+	var secondAnalog = analogMode(second.mode);
+	if ((first.mode === 'VNA-frequency' || second.mode === 'VNA-frequency') &&
+		(first.mode !== second.mode ||
+		first.referenceImpedanceOhms !== second.referenceImpedanceOhms ||
+		first.rows.length !== second.rows.length ||
+		first.rows.some(function (row, index) { return row.frequency !== second.rows[index].frequency; }))) {
+		throw new RangeError('VNA-frequency sources must have matching frequencies and reference impedances.');
+	}
+	if (first.mode !== second.mode && (firstAnalog || secondAnalog)) {
+		throw new RangeError('Analog and sampled digital signals, or different analog modes, cannot share one connection.');
+	}
+	if (firstAnalog && (first.toneHz !== second.toneHz ||
+		first.carrierHz !== second.carrierHz ||
+		first.sidebandOrder !== second.sidebandOrder ||
+		first.sideband !== second.sideband ||
+		first.referenceImpedanceOhms !== second.referenceImpedanceOhms)) {
+		throw new RangeError('Analog sources must have matching carrier, tone, sideband order, and reference impedance.');
+	}
+	if (!firstAnalog && (first.mode !== second.mode ||
+		first.sampleCount !== second.sampleCount ||
+		first.sampleRateHz !== second.sampleRateHz ||
+		first.encoding !== second.encoding ||
+		first.order !== second.order ||
+		first.fftSize !== second.fftSize ||
+		first.subcarrierCount !== second.subcarrierCount ||
+		first.symbolRate !== second.symbolRate ||
+		first.frequencyDeviationHz !== second.frequencyDeviationHz ||
+		first.bt !== second.bt ||
+		first.referenceImpedanceOhms !== second.referenceImpedanceOhms ||
+		(first.carrierHz || 0) !== (second.carrierHz || 0))) {
+		throw new RangeError('Digital sources must have matching sample counts, rates, carriers, and reference impedances.');
+	}
+	if (first.samplesPerBit !== second.samplesPerBit) {
+		return {...first, samplesPerBit: undefined};
+	}
+	return first;
+}
+
+function signalWithRows(template, rows) {
+	return {
+		mode: template.mode,
+		fList: template.fList,
+		dataMode: template.dataMode,
+		encoding: template.encoding,
+		toneHz: template.toneHz,
+		beta: template.beta,
+		sidebandOrder: template.sidebandOrder,
+		sidebandPowerTolerance: template.sidebandPowerTolerance,
+		modulationIndex: template.modulationIndex,
+		toneAmplitudeVolts: template.toneAmplitudeVolts,
+		sideband: template.sideband,
+		carrierAmplitudeVolts: template.carrierAmplitudeVolts,
+		frequencyDeviationHz: template.frequencyDeviationHz,
+		order: template.order,
+		bitsPerSymbol: template.bitsPerSymbol,
+		referenceSymbols: template.referenceSymbols,
+		bitCount: template.bitCount,
+		bt: template.bt,
+		subcarrierCount: template.subcarrierCount,
+		fftSize: template.fftSize,
+		symbolRate: template.symbolRate,
+		subcarrierMode: template.subcarrierMode,
+		sampleCount: template.sampleCount,
+		sampleRateHz: template.sampleRateHz,
+		referenceImpedanceOhms: template.referenceImpedanceOhms,
+		samplesPerBit: template.samplesPerBit,
+		carrierHz: template.carrierHz,
+		rows: rows
+	};
+}
+
+// Drive an external nPort input with a periodic, matched-source voltage spectrum.
+function applyInputSignal(network, options) {
+	if (!options || !options.signal) return network;
+	var source = options.signal;
+	var spars = network.getspars();
+	var portCount = Math.sqrt(spars[0].length - 1);
+	var inputPort = options.inputPort === undefined ? 1 : options.inputPort;
+	if (!Number.isInteger(inputPort) || inputPort < 1 || inputPort > portCount) {
+		throw new RangeError('Signal inputPort is outside the nPort dimensions.');
+	}
+	var analog = analogMode(source.mode);
+	var vna = source.mode === 'VNA-time';
+	var frequencyVna = source.mode === 'VNA-frequency';
+	var sidebandOrder = source.mode === 'AM' ? 1 : source.sidebandOrder;
+	if (!Array.isArray(source.fList) || !Array.isArray(source.spectrum) ||
+		source.fList.length !== spars.length || source.spectrum.length !== spars.length ||
+		(analog ? (!Number.isFinite(source.carrierHz) || !Number.isFinite(source.toneHz) ||
+			source.carrierHz <= 0 || source.toneHz <= 0 ||
+			(['AM', 'SSB', 'DSB-SC'].includes(source.mode) && source.carrierHz <= source.toneHz) ||
+			(['FM', 'PM', 'AM'].includes(source.mode) &&
+				(!Number.isInteger(sidebandOrder) || sidebandOrder < 0)) ||
+			spars.length !== analogRowCount(source) ||
+			source.fList.some(function (frequency, index) {
+				return frequency !== analogFrequency(source, index);
+			})) : frequencyVna ?
+			(source.fList.length === 0 || source.fList.some(function (frequency, index) {
+				return !Number.isFinite(frequency) || frequency < 0 ||
+					(index > 0 && frequency <= source.fList[index - 1]);
+			})) :
+			(!Number.isInteger(source.sampleCount) || source.sampleCount < 1 ||
+			(vna ? source.samplesPerBit !== undefined : source.mode === 'OFDM' ?
+				(!Number.isInteger(source.bitCount) || source.bitCount < 1 ||
+				!Number.isInteger(source.fftSize) || source.fftSize < 1 ||
+				 source.sampleCount % source.fftSize !== 0) :
+				(!Number.isInteger(source.samplesPerBit) || source.samplesPerBit < 1 ||
+				 source.sampleCount % source.samplesPerBit !== 0)) ||
+			spars.length !== Math.floor(source.sampleCount / 2) + 1 ||
+			!Number.isFinite(source.sampleRateHz) || source.sampleRateHz <= 0)) ||
+		!Number.isFinite(source.referenceImpedanceOhms) || source.referenceImpedanceOhms <= 0 ||
+		source.fList.some(function (frequency, index) { return frequency !== spars[index][0]; }) ||
+		source.spectrum.some(function (value) {
+			return !value || typeof value.getR !== 'function' || typeof value.getI !== 'function' ||
+				!Number.isFinite(value.getR()) || !Number.isFinite(value.getI());
+		})) {
+		throw new RangeError('Input signal frequencies and spectrum must match the nPort.');
+	}
+	if (network.global && network.global.Ro !== source.referenceImpedanceOhms) {
+		throw new RangeError('Signal input reference impedance must match the nPort.');
+	}
+	var template = compatibleSignals(network.signal, source);
+	var scale = Math.sqrt(source.referenceImpedanceOhms);
+	var rows = spars.map(function (sRow, index) {
+		var waves = [];
+		for (var port = 0; port < portCount; port++) {
+			var existing = network.signal ? network.signal.rows[index].waves[port] : complex(0, 0);
+			var response = sRow[1 + port * portCount + inputPort - 1].mul(source.spectrum[index]).div(complex(scale, 0));
+			waves[port] = existing.add(response);
+		}
+		return {frequency: sRow[0], waves: waves};
+	});
+	network.signal = signalWithRows(template, rows);
+	return network;
+}
+
+// Modified: 2026-10-26
 var conjugate$2 = function (value) { return complex(value.getR(), -value.getI()); };
 
-function nPort() { this._noise = undefined; }
+function nPort() { this._noise = undefined; this._signal = undefined; }
 var derivePassiveNoise = function (nPortObject) {
 	if (!nPortObject.spars) return undefined;
 	var temperature = nPortObject._noiseTemperature === undefined ? 293 : nPortObject._noiseTemperature;
@@ -7274,13 +10301,16 @@ var normalizeNoise = function (noiseData, spars) {
 nPort.prototype = {
 	constructor: nPort,
 	setglobal: function (global) {
-		this.global = global;
+		this.global = {...global, fList: Array.isArray(global.fList) ? global.fList.slice() : global.fList,
+			tList: Array.isArray(global.tList) ? global.tList.slice() : global.tList,
+			twoTone: global.twoTone ? {...global.twoTone} : global.twoTone};
 		this._noiseTemperature = global.Temp;
 		if (global.twoTone) this._displayFrequencies = global.fList.slice();
 	},
 	getglobal: function () {return this.global;},
 	setspars: function (sparsArray) {
 		if (this._noise !== undefined) normalizeNoise(this._noise, sparsArray);
+		if (this._signal !== undefined) validateSignal(this._signal, sparsArray);
 		this.spars = sparsArray;
 	},
 	getspars: function () { return this.spars; },
@@ -7291,6 +10321,8 @@ nPort.prototype = {
 		return this._noise;
 	},
 	set noise (noiseData) { this._noise = normalizeNoise(noiseData, this.spars); },
+	get signal() { return this._signal; },
+	set signal(signalData) { this._signal = validateSignal(signalData, this.spars); },
 	cas: function cas (n2) { // cascade two 2-ports along with method chaining since it returns an nPort
 		var freqCount = 0, one = complex(1,0),
 			sparsA = this.getspars(),
@@ -7312,6 +10344,10 @@ nPort.prototype = {
 		}		var noiseCovariance = [];
 		var noiseA = this.noise;
 		var noiseB = n2.noise;
+		var signalA = this.signal;
+		var signalB = n2.signal;
+		var signalTemplate = compatibleSignals(signalA, signalB);
+		var signalRows = signalTemplate ? [] : undefined;
 		for (freqCount = 0; freqCount < this.spars.length; freqCount++) {
 			sparsA[freqCount][1]; var a12 = sparsA[freqCount][2]; sparsA[freqCount][3]; var a22 = sparsA[freqCount][4];
 			var b11 = sparsB[freqCount][1], b21 = sparsB[freqCount][3];
@@ -7342,13 +10378,29 @@ nPort.prototype = {
 				}
 			}
 			noiseCovariance[freqCount] = {frequency: sparsA[freqCount][0], C: outputCovariance};
+			if (signalRows) {
+				var wavesA = signalA ? signalA.rows[freqCount].waves : [complex(0, 0), complex(0, 0)];
+				var wavesB = signalB ? signalB.rows[freqCount].waves : [complex(0, 0), complex(0, 0)];
+				var outputWaves = [];
+				for (var wavePort = 0; wavePort < 2; wavePort++) {
+					outputWaves[wavePort] = complex(0, 0);
+					for (var sourcePort = 0; sourcePort < 2; sourcePort++) {
+						outputWaves[wavePort] = outputWaves[wavePort]
+							.add(transferA[wavePort][sourcePort].mul(wavesA[sourcePort]))
+							.add(transferB[wavePort][sourcePort].mul(wavesB[sourcePort]));
+					}
+				}
+				signalRows[freqCount] = {frequency: sparsA[freqCount][0], waves: outputWaves};
+			}
 		}
 		var casOut = new nPort();
 		casOut.setspars(sparsArray);
 		casOut.setglobal(this.global);
 		casOut.noise = noiseCovariance;
+		if (signalRows) casOut.signal = signalWithRows(signalTemplate, signalRows);
 		casOut._displayFrequencies = this._displayFrequencies || n2._displayFrequencies;
 		casOut._intermod = connectionModel([this, n2], [4, 2, 1, 5, 0, 3]);
+		casOut._schematic = {kind: 'cascade', left: this._schematic, right: n2._schematic};
 		return casOut;
 	},
 	out : function out (...selectors) {
@@ -7359,6 +10411,8 @@ nPort.prototype = {
 		var parsed = selectors.map(function (selector) {
 			var match = /^s([1-9])([1-9])(dB|mag|ang|Re|Im)$/.exec(selector);
 			if (match) return {kind: 's', row: Number(match[1]) - 1, col: Number(match[2]) - 1, format: match[3]};
+			match = /^signal([1-9]\d*)(V|Deg|dBm)$/.exec(selector);
+			if (match) return {kind: 'signal', row: Number(match[1]) - 1, format: match[2]};
 			match = /^c([1-9])([1-9])(Re|Im|mag|dB)?$/.exec(selector);
 			if (match) return {kind: 'c', row: Number(match[1]) - 1, col: Number(match[2]) - 1, format: match[3] || 'Re'};
 			match = /^NF([1-9])([1-9])(dB)?$/.exec(selector);
@@ -7386,7 +10440,11 @@ nPort.prototype = {
 			if (selection.row >= portCount || selection.col >= portCount) {
 				throw new RangeError('nPort.out(): selected port is outside the n-port dimensions.');
 			}
-		});
+			if (selection.kind === 'signal' && (!this.signal ||
+				!['AM', 'FM', 'PM', 'SSB', 'DSB-SC'].includes(this.signal.mode))) {
+				throw new RangeError('Signal tone selectors require an analog signal on the nPort.');
+			}
+		}, this);
 		var output = [['Freq'].concat(selectors)];
 		for (var frequencyIndex = 0; frequencyIndex < spars.length; frequencyIndex++) {
 			var sparsRow = spars[frequencyIndex];
@@ -7399,7 +10457,14 @@ nPort.prototype = {
 				var selection = parsed[selectionIndex];
 				if ((selection.kind === 'c' || selection.kind === 'NF' ||
 					selection.kind === 'noiseFloor') && noiseRow === null) noiseRow = this.noise[frequencyIndex];
-				if (selection.kind === 'NF' || selection.kind === 'noiseFloor') {
+				if (selection.kind === 'signal') {
+					var voltage = this.signal.rows[frequencyIndex].waves[selection.row]
+						.mul(complex(Math.sqrt(this.signal.referenceImpedanceOhms), 0));
+					if (selection.format === 'V') row.push(voltage.mag());
+					else if (selection.format === 'Deg') row.push(voltage.ang());
+					else row.push(10 * Math.log10(voltage.mag() ** 2 /
+						(2 * this.signal.referenceImpedanceOhms * 1e-3)));
+				} else if (selection.kind === 'NF' || selection.kind === 'noiseFloor') {
 					var noiseKey = selection.row + ',' + selection.col;
 					if (!noiseResults[noiseKey]) {
 						noiseResults[noiseKey] = noiseAnalysis(sparsRow, noiseRow.C,
@@ -7491,7 +10556,7 @@ nPort.prototype = {
 	},
 };
 
-// Modified: 2026-10-07
+// Modified: 2026-10-26
 
 const Q = 1.602176634e-19;
 const K = 1.380649e-23;
@@ -7604,7 +10669,8 @@ function seriesTwoPortFromImpedance(frequency, impedance, ro) {
 function diode1N4148(options = {}) {
 	var p = normalizeOptions(options);
 	var diodePort = new nPort();
-	var frequencyList = analysisFrequencies(global);
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings);
 	var ro = global.Ro;
 	var twoZo = complex(2 * ro, 0);
 	var dc = diodeAdmittanceAtBias(p);
@@ -7665,7 +10731,7 @@ function diode1N4148(options = {}) {
 
 	diodePort.setspars(sparsArray);
 	diodePort.noise = noiseArray;
-	diodePort.setglobal(global);
+	diodePort.setglobal(settings);
 	diodePort._intermod = {
 		type: 'diode',
 		conductance: dc.conductance,
@@ -7713,20 +10779,23 @@ function diode1N4148(options = {}) {
 		return table;
 	};
 
+	diodePort._schematic = {kind: 'component', symbol: 'diode-1n4148'};
 	return diodePort;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-26
 
 const kB$4 = 1.380649e-23;
 
-function seR(R = 75, temperature = global.Temp) { // series resistor nPort object
+function seR(R = 75, temperature = global.Temp, options = {}) { // series resistor nPort object
 	if (typeof R === 'object') {
+		options = R;
 		temperature = R.temperature === undefined ? global.Temp : R.temperature;
 		R = R.resistance === undefined ? 75 : R.resistance;
 	}
 	var seR = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [], noiseArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(R, 0);
@@ -7746,21 +10815,24 @@ function seR(R = 75, temperature = global.Temp) { // series resistor nPort objec
 	}
 	seR.setspars(sparsArray);
 	seR.noise = noiseArray;
-	seR.setglobal(global);
+	seR.setglobal(settings);
+	seR._schematic = {kind: 'component', symbol: 'resistor', value: R};
 	return seR;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-26
 
 const kB$3 = 1.380649e-23;
 
-function R(R = 75, temperature = global.Temp) { // series resistor nPort object
+function R(R = 75, temperature = global.Temp, options = {}) { // series resistor nPort object
 	if (typeof R === 'object') {
+		options = R;
 		temperature = R.temperature === undefined ? global.Temp : R.temperature;
 		R = R.resistance === undefined ? 75 : R.resistance;
 	}
 	var rPort = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [], noiseArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(R, 0);
@@ -7780,21 +10852,24 @@ function R(R = 75, temperature = global.Temp) { // series resistor nPort object
 	}
 	rPort.setspars(sparsArray);
 	rPort.noise = noiseArray;
-	rPort.setglobal(global);
+	rPort.setglobal(settings);
+	rPort._schematic = {kind: 'component', symbol: 'resistor', value: R};
 	return rPort;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
 const kB$2 = 1.380649e-23;
 
-function paR(R = 75, temperature = global.Temp) { // parallel resistor nPort object
+function paR(R = 75, temperature = global.Temp, options = {}) { // parallel resistor nPort object
 	if (typeof R === 'object') {
+		options = R;
 		temperature = R.temperature === undefined ? global.Temp : R.temperature;
 		R = R.resistance === undefined ? 75 : R.resistance;
 	}
 	var paR = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [], noiseArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(R, 0);
@@ -7815,15 +10890,16 @@ function paR(R = 75, temperature = global.Temp) { // parallel resistor nPort obj
 	}
 	paR.setspars(sparsArray);
 	paR.noise = noiseArray;
-	paR.setglobal(global);
+	paR.setglobal(settings);
 	return paR;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function seL(L = 5e-9) { // series inductor nPort object
+function seL(L = 5e-9, options = {}) { // series inductor nPort object
 	var seL = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount]);
@@ -7833,15 +10909,16 @@ function seL(L = 5e-9) { // series inductor nPort object
 		s22 = s11;
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}	seL.setspars(sparsArray);
-	seL.setglobal(global);
+	seL.setglobal(settings);
 	return seL;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-26
 
-function L(L = 5e-9) { // series inductor nPort object
+function L(L = 5e-9, options = {}) { // series inductor nPort object
 	var lPort = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount]);
@@ -7851,17 +10928,51 @@ function L(L = 5e-9) { // series inductor nPort object
 		s22 = s11;
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}	lPort.setspars(sparsArray);
-	lPort.setglobal(global);
+	lPort.setglobal(settings);
+	lPort._schematic = {kind: 'component', symbol: 'inductor', value: L};
 	return lPort;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-14
 
-function paL(L = 5e-9) { // parallel capacitor nPort object
+// Exact 0 Hz limits for ideal series and shunt RLC branches.
+function dcTwoPort(mode, resistance, referenceImpedance) {
+	var reflection;
+	var transmission;
+	if (mode === 'open') {
+		reflection = 1;
+		transmission = 0;
+	} else if (mode === 'short') {
+		reflection = 0;
+		transmission = 1;
+	} else if (mode === 'shuntShort') {
+		reflection = -1;
+		transmission = 0;
+	} else if (mode === 'seriesR') {
+		reflection = resistance / (resistance + 2 * referenceImpedance);
+		transmission = 2 * referenceImpedance / (resistance + 2 * referenceImpedance);
+	} else if (mode === 'shuntR') {
+		reflection = -referenceImpedance / (2 * resistance + referenceImpedance);
+		transmission = 2 * resistance / (2 * resistance + referenceImpedance);
+	} else {
+		throw new RangeError('Unknown DC branch mode.');
+	}
+	return [complex(reflection, 0), complex(transmission, 0),
+		complex(transmission, 0), complex(reflection, 0)];
+}
+
+// Modified: 2026-10-14
+
+function paL(L = 5e-9, options = {}) { // parallel capacitor nPort object
 	var paL = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('shuntShort', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount]);
 		Y[freqCount] = Z[freqCount].inv();
 		s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
@@ -7871,17 +10982,22 @@ function paL(L = 5e-9) { // parallel capacitor nPort object
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
 	paL.setspars(sparsArray);
-	paL.setglobal(global);
+	paL.setglobal(settings);
 	return paL;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-14
 
-function seC(C = 1e-12) { // series capacitor nPort object
+function seC(C = 1e-12, options = {}) { // series capacitor nPort object
 	var seC = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('open', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = complex(0, -1/(2*Math.PI*C*frequencyList[freqCount]));
 		s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
 		s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
@@ -7889,17 +11005,22 @@ function seC(C = 1e-12) { // series capacitor nPort object
 		s22 = s11;
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}	seC.setspars(sparsArray);
-	seC.setglobal(global);
+	seC.setglobal(settings);
 	return seC;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-26
 
-function C(C = 1e-12) { // series capacitor nPort object
+function C(C = 1e-12, options = {}) { // series capacitor nPort object
 	var cPort = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('open', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = complex(0, -1/(2*Math.PI*C*frequencyList[freqCount]));
 		s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
 		s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
@@ -7907,17 +11028,23 @@ function C(C = 1e-12) { // series capacitor nPort object
 		s22 = s11;
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}	cPort.setspars(sparsArray);
-	cPort.setglobal(global);
+	cPort.setglobal(settings);
+	cPort._schematic = {kind: 'component', symbol: 'capacitor', value: C};
 	return cPort;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-14
 
-function paC(C = 1e-12) { // parallel capacitor nPort object
+function paC(C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var paC = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('short', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = complex(0, -1/(2*Math.PI*C*frequencyList[freqCount]));
 		Y[freqCount] = Z[freqCount].inv();
 		s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
@@ -7927,15 +11054,16 @@ function paC(C = 1e-12) { // parallel capacitor nPort object
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
 	paC.setspars(sparsArray);
-	paC.setglobal(global);
+	paC.setglobal(settings);
 	return paC;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function trf(N = 0.5) { // ideal transformer nPort object
+function trf(N = 0.5, options = {}) { // ideal transformer nPort object
 	var trf = new nPort;
-	var frequencyList = analysisFrequencies(global); global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings); global.Ro;
 	var freqCount = 0, s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		s11 = complex((N ** 2 - 1) / (N ** 2 + 1), 0);
@@ -7945,15 +11073,16 @@ function trf(N = 0.5) { // ideal transformer nPort object
 		sparsArray[freqCount] = [frequencyList[freqCount], s11, s12, s21, s22];
 	}
 	trf.setspars(sparsArray);
-	trf.setglobal(global);
+	trf.setglobal(settings);
 	return trf;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function trf4Port(N = 0.5) { // parallel resistor nPort object
+function trf4Port(N = 0.5, options = {}) { // parallel resistor nPort object
 	var trf4Port = new nPort;
-	var frequencyList = analysisFrequencies(global); global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings); global.Ro;
 	var freqCount = 0, sparsArray = [];
 	var s11, s12, s13, s14,
 		s21, s22, s23, s24,
@@ -7967,7 +11096,7 @@ function trf4Port(N = 0.5) { // parallel resistor nPort object
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44];
 	}
 	trf4Port.setspars(sparsArray);
-	trf4Port.setglobal(global);
+	trf4Port.setglobal(settings);
 	return trf4Port;
 }
 /*                Note: N2 = N**2 N = 0.5, N2 = 0.25
@@ -7978,11 +11107,12 @@ S12 = S21 = S34 = S43 =  N / (1 + N2)  //   0.5/1.25 = 0.4
 S13 = S22 = S31 = S44 =  1 / (1 + N2)  //     1/1.25 = 0.8
 */
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function seSeRL(R = 75, L = 5e-9) { // series inductor nPort object
+function seSeRL(R = 75, L = 5e-9, options = {}) { // series inductor nPort object
 	var seSeRL = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(R, 2*Math.PI*L*frequencyList[freqCount]);
@@ -7992,15 +11122,16 @@ function seSeRL(R = 75, L = 5e-9) { // series inductor nPort object
 		s22 = s11;
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}	seSeRL.setspars(sparsArray);
-	seSeRL.setglobal(global);
+	seSeRL.setglobal(settings);
 	return seSeRL;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function paSeRL(R = 75, L = 5e-9) { // parallel capacitor nPort object
+function paSeRL(R = 75, L = 5e-9, options = {}) { // parallel capacitor nPort object
 	var paSeRL = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(R, 2*Math.PI*L*frequencyList[freqCount]);
@@ -8012,17 +11143,22 @@ function paSeRL(R = 75, L = 5e-9) { // parallel capacitor nPort object
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
 	paSeRL.setspars(sparsArray);
-	paSeRL.setglobal(global);
+	paSeRL.setglobal(settings);
 	return paSeRL;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-14
 
-function seSeRC(R = 75, C = 1e-12) { // series inductor nPort object
+function seSeRC(R = 75, C = 1e-12, options = {}) { // series inductor nPort object
 	var seSeRC = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('open', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = complex(R, -1/(2*Math.PI*C*frequencyList[freqCount]));
 		s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
 		s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
@@ -8030,17 +11166,22 @@ function seSeRC(R = 75, C = 1e-12) { // series inductor nPort object
 		s22 = s11;
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}	seSeRC.setspars(sparsArray);
-	seSeRC.setglobal(global);
+	seSeRC.setglobal(settings);
 	return seSeRC;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-14
 
-function paSeRC(R = 75, C = 1e-12) { // parallel series-RC nPort object
+function paSeRC(R = 75, C = 1e-12, options = {}) { // parallel series-RC nPort object
 	var paSeRC = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('short', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = complex(R, -1/(2*Math.PI*C*frequencyList[freqCount]));
 		Y[freqCount] = Z[freqCount].inv();
 		s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
@@ -8050,17 +11191,22 @@ function paSeRC(R = 75, C = 1e-12) { // parallel series-RC nPort object
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
 	paSeRC.setspars(sparsArray);
-	paSeRC.setglobal(global);
+	paSeRC.setglobal(settings);
 	return paSeRC;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-14
 
-function seSeLC(L = 5e-9, C = 1e-12) { // series inductor nPort object
+function seSeLC(L = 5e-9, C = 1e-12, options = {}) { // series inductor nPort object
 	var seSeLC = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('open', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount] -1/(2*Math.PI*C*frequencyList[freqCount]));
 		s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
 		s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
@@ -8068,17 +11214,22 @@ function seSeLC(L = 5e-9, C = 1e-12) { // series inductor nPort object
 		s22 = s11;
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}	seSeLC.setspars(sparsArray);
-	seSeLC.setglobal(global);
+	seSeLC.setglobal(settings);
 	return seSeLC;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-14
 
-function paSeLC(L = 5e-9, C = 1e-12) { // parallel capacitor nPort object
+function paSeLC(L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var paSeLC = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('short', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount] -1/(2*Math.PI*C*frequencyList[freqCount]));
 		Y[freqCount] = Z[freqCount].inv();
 		s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
@@ -8088,17 +11239,22 @@ function paSeLC(L = 5e-9, C = 1e-12) { // parallel capacitor nPort object
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
 	paSeLC.setspars(sparsArray);
-	paSeLC.setglobal(global);
+	paSeLC.setglobal(settings);
 	return paSeLC;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-14
 
-function seSeRLC(R = 75, L = 5e-9, C = 1e-12) { // series inductor nPort object
+function seSeRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // series inductor nPort object
 	var seSeRLC = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('open', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = complex(R, 2*Math.PI*L*frequencyList[freqCount] -1/(2*Math.PI*C*frequencyList[freqCount]));
 		s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
 		s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
@@ -8106,17 +11262,22 @@ function seSeRLC(R = 75, L = 5e-9, C = 1e-12) { // series inductor nPort object
 		s22 = s11;
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}	seSeRLC.setspars(sparsArray);
-	seSeRLC.setglobal(global);
+	seSeRLC.setglobal(settings);
 	return seSeRLC;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-14
 
-function paSeRLC(R = 75, L = 5e-9, C = 1e-12) { // parallel capacitor nPort object
+function paSeRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var paSeRLC = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('short', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = complex(R, 2*Math.PI*L*frequencyList[freqCount] -1/(2*Math.PI*C*frequencyList[freqCount]));
 		Y[freqCount] = Z[freqCount].inv();
 		s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
@@ -8126,17 +11287,22 @@ function paSeRLC(R = 75, L = 5e-9, C = 1e-12) { // parallel capacitor nPort obje
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
 	paSeRLC.setspars(sparsArray);
-	paSeRLC.setglobal(global);
+	paSeRLC.setglobal(settings);
 	return paSeRLC;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-14
 
-function paPaRL(R = 75, L = 5e-9) { // parallel capacitor nPort object
+function paPaRL(R = 75, L = 5e-9, options = {}) { // parallel capacitor nPort object
 	var paPaRL = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('shuntShort', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = (  (complex(R,0).inv()).add(complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv())  ).inv();
 		Y[freqCount] = Z[freqCount].inv();
 		s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
@@ -8146,17 +11312,22 @@ function paPaRL(R = 75, L = 5e-9) { // parallel capacitor nPort object
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
 	paPaRL.setspars(sparsArray);
-	paPaRL.setglobal(global);
+	paPaRL.setglobal(settings);
 	return paPaRL;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-14
 
-function sePaRL(R = 75, L = 5e-9) { // parallel capacitor nPort object
+function sePaRL(R = 75, L = 5e-9, options = {}) { // parallel capacitor nPort object
 	var sePaRL = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('short', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = (  (complex(R,0).inv()).add(complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv())  ).inv();
 		s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
 		s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
@@ -8165,17 +11336,22 @@ function sePaRL(R = 75, L = 5e-9) { // parallel capacitor nPort object
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
 	sePaRL.setspars(sparsArray);
-	sePaRL.setglobal(global);
+	sePaRL.setglobal(settings);
 	return sePaRL;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-14
 
-function paPaRC(R = 75, C = 1e-12) { // parallel capacitor nPort object
+function paPaRC(R = 75, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var paPaRC = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('shuntR', R, Ro));
+			continue;
+		}
 		Z[freqCount] = (  (complex(R,0).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
 		Y[freqCount] = Z[freqCount].inv();
 		s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
@@ -8185,17 +11361,22 @@ function paPaRC(R = 75, C = 1e-12) { // parallel capacitor nPort object
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
 	paPaRC.setspars(sparsArray);
-	paPaRC.setglobal(global);
+	paPaRC.setglobal(settings);
 	return paPaRC;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-14
 
-function sePaRC(R = 75, C = 1e-12) { // parallel capacitor nPort object
+function sePaRC(R = 75, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var sePaRC = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('seriesR', R, Ro));
+			continue;
+		}
 		Z[freqCount] = (  (complex(R,0).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
 		s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
 		s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
@@ -8204,17 +11385,22 @@ function sePaRC(R = 75, C = 1e-12) { // parallel capacitor nPort object
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
 	sePaRC.setspars(sparsArray);
-	sePaRC.setglobal(global);
+	sePaRC.setglobal(settings);
 	return sePaRC;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-14
 
-function paPaLC(L = 5e-9, C = 1e-12) { // parallel capacitor nPort object
+function paPaLC(L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var paPaLC = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('shuntShort', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = (  (complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
 		Y[freqCount] = Z[freqCount].inv();
 		s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
@@ -8224,17 +11410,22 @@ function paPaLC(L = 5e-9, C = 1e-12) { // parallel capacitor nPort object
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
 	paPaLC.setspars(sparsArray);
-	paPaLC.setglobal(global);
+	paPaLC.setglobal(settings);
 	return paPaLC;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-14
 
-function sePaLC(L = 5e-9, C = 1e-12) { // parallel capacitor nPort object
+function sePaLC(L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var sePaLC = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('short', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = (  (complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
 		s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
 		s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
@@ -8243,17 +11434,22 @@ function sePaLC(L = 5e-9, C = 1e-12) { // parallel capacitor nPort object
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
 	sePaLC.setspars(sparsArray);
-	sePaLC.setglobal(global);
+	sePaLC.setglobal(settings);
 	return sePaLC;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-14
 
-function paPaRLC(R = 75, L = 5e-9, C = 1e-12) { // parallel capacitor nPort object
+function paPaRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var paPaRLC = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('shuntShort', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = ( (complex(R,0).inv()).add (complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
 		Y[freqCount] = Z[freqCount].inv();
 		s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
@@ -8263,17 +11459,22 @@ function paPaRLC(R = 75, L = 5e-9, C = 1e-12) { // parallel capacitor nPort obje
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
 	paPaRLC.setspars(sparsArray);
-	paPaRLC.setglobal(global);
+	paPaRLC.setglobal(settings);
 	return paPaRLC;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-14
 
-function sePaRLC(R = 75, L = 5e-9, C = 1e-12) { // parallel capacitor nPort object
+function sePaRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var sePaRLC = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+		if (frequencyList[freqCount] === 0) {
+			sparsArray[freqCount] = [0].concat(dcTwoPort('short', 0, Ro));
+			continue;
+		}
 		Z[freqCount] = ( (complex(R,0).inv()).add (complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
 		s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
 		s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
@@ -8282,31 +11483,31 @@ function sePaRLC(R = 75, L = 5e-9, C = 1e-12) { // parallel capacitor nPort obje
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
 	sePaRLC.setspars(sparsArray);
-	sePaRLC.setglobal(global);
+	sePaRLC.setglobal(settings);
 	return sePaRLC;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function lpfGen( filt =[50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50]) { // returns a table of spars for a low Pass Filter
+function lpfGen( filt =[50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50], options = {}) { // returns a table of spars for a low Pass Filter
 	var i = 0;
 	var filtTable = [];
 	filt.pop();
 	filt.shift();
 	for (i = 0; i < filt.length; i++) {
-		if (i % 2 === 0) {filtTable[i] = paC(filt[i]);}		if (i % 2 === 1) {filtTable[i] = seL(filt[i]);}	}	for (i = 0; i < filt.length - 1; i++) {
+		if (i % 2 === 0) {filtTable[i] = paC(filt[i], options);}		if (i % 2 === 1) {filtTable[i] = seL(filt[i], options);}	}	for (i = 0; i < filt.length - 1; i++) {
 		filtTable[i+1] = filtTable[i].cas(filtTable[i+1]);
 	}	return filtTable[ filtTable.length-1 ];
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-26
 
 const kB$1 = 1.380649e-23;
 
 // Matched, reciprocal attenuator. Noise is the covariance of its own outgoing waves.
-function Attn(attenuationDb = 3, temperature = global.Temp) {
+function Attn(attenuationDb = 3, temperature = global.Temp, options = {}) {
 	if (attenuationDb !== null && typeof attenuationDb === 'object') {
-		var options = attenuationDb;
+		options = attenuationDb;
 		attenuationDb = options.attenuationDb === undefined ? 3 : options.attenuationDb;
 		temperature = options.temperature === undefined ? global.Temp : options.temperature;
 	}
@@ -8322,7 +11523,8 @@ function Attn(attenuationDb = 3, temperature = global.Temp) {
 	var attenuator = new nPort();
 	var sparsArray = [];
 	var noiseArray = [];
-	var frequencies = analysisFrequencies(global);
+	var settings = componentSettings(global, options);
+	var frequencies = analysisFrequencies(settings);
 	for (var i = 0; i < frequencies.length; i++) {
 		var frequency = frequencies[i];
 		sparsArray[i] = [frequency, complex(0, 0), complex(transmission, 0), complex(transmission, 0), complex(0, 0)];
@@ -8336,13 +11538,14 @@ function Attn(attenuationDb = 3, temperature = global.Temp) {
 	}
 	attenuator.setspars(sparsArray);
 	attenuator.noise = noiseArray;
-	attenuator.setglobal(global);
+	attenuator.setglobal(settings);
 	attenuator.temperature = temperature;
-	attenuator._displayFrequencies = global.fList.slice();
+	attenuator._displayFrequencies = settings.fList.slice();
+	attenuator._schematic = {kind: 'component', symbol: 'attenuator', value: attenuationDb};
 	return attenuator;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-26
 
 const kB = 1.380649e-23;
 
@@ -8399,7 +11602,7 @@ function covarianceFromNoiseParameters(spars, fMinDb, gammaOpt, noiseResistanceO
 
 // Every form starts with the same frequency-flat S and noise parameters.
 // Object options replace only the named defaults; the positional form sets S21 and Fmin.
-function Amp(gainDb = 20, noiseFigureDb = 4, referenceTemperature = 290) {
+function Amp(gainDb = 20, noiseFigureDb = 4, referenceTemperature = 290, options = {}) {
 	var defaults = {
 		spars: [complex(0, 0), complex(0, 0), complex(10, 0), complex(0, 0)],
 		fMinDb: 4,
@@ -8409,7 +11612,6 @@ function Amp(gainDb = 20, noiseFigureDb = 4, referenceTemperature = 290) {
 	};
 	var specifiedSpars = defaults.spars;
 	var noiseParameters = defaults;
-	var options;
 	var oip2dBm;
 	var harmonicOip2dBm;
 	var oip3dBm;
@@ -8496,7 +11698,8 @@ function Amp(gainDb = 20, noiseFigureDb = 4, referenceTemperature = 290) {
 	var amplifier = new nPort();
 	var sparsArray = [];
 	var noiseArray = [];
-	var frequencies = analysisFrequencies(global);
+	var settings = componentSettings(global, options);
+	var frequencies = analysisFrequencies(settings);
 	for (var i = 0; i < frequencies.length; i++) {
 		var frequency = frequencies[i];
 		sparsArray[i] = [frequency].concat(specifiedSpars.map(function (s) { return s.copy(); }));
@@ -8509,9 +11712,9 @@ function Amp(gainDb = 20, noiseFigureDb = 4, referenceTemperature = 290) {
 	}
 	amplifier.setspars(sparsArray);
 	amplifier.noise = noiseArray;
-	amplifier.setglobal(global);
+	amplifier.setglobal(settings);
 	amplifier.referenceTemperature = referenceTemperature;
-	amplifier._displayFrequencies = global.fList.slice();
+	amplifier._displayFrequencies = settings.fList.slice();
 	amplifier._intermod = {
 		type: 'amp',
 		p2: ip2Watts,
@@ -8521,14 +11724,44 @@ function Amp(gainDb = 20, noiseFigureDb = 4, referenceTemperature = 290) {
 		phase2Harmonic: complex(Math.cos(harmonic2PhaseDeg * Math.PI / 180), Math.sin(harmonic2PhaseDeg * Math.PI / 180)),
 		phase3: complex(Math.cos(im3PhaseDeg * Math.PI / 180), Math.sin(im3PhaseDeg * Math.PI / 180))
 	};
+	amplifier._schematic = {kind: 'component', symbol: 'amplifier',
+		value: typeof gainDb === 'number' ? gainDb : options.gainDb};
 	return amplifier;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-26
 
-function Tee() { // a 3port dummy connection
+// Matched, lossless, zero-length two-port connection, including at DC.
+function Thru(options = {}) {
+	var thru = new nPort();
+	var sparsArray = [];
+	var noiseArray = [];
+	var settings = componentSettings(global, options);
+	var frequencies = analysisFrequencies(settings);
+	for (var i = 0; i < frequencies.length; i++) {
+		var frequency = frequencies[i];
+		sparsArray[i] = [frequency, complex(0, 0), complex(1, 0), complex(1, 0), complex(0, 0)];
+		noiseArray[i] = {
+			frequency: frequency,
+			C: [
+				[complex(0, 0), complex(0, 0)],
+				[complex(0, 0), complex(0, 0)]
+			]
+		};
+	}
+	thru.setspars(sparsArray);
+	thru.noise = noiseArray;
+	thru.setglobal(settings);
+	thru._schematic = {kind: 'component', symbol: 'thru'};
+	return thru;
+}
+
+// Modified: 2026-10-26
+
+function Tee(options = {}) { // a 3port dummy connection
 	var Tee = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); complex(2,0); var freqCount = 0, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		s11 = complex(-1/3,0);
@@ -8543,15 +11776,17 @@ function Tee() { // a 3port dummy connection
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s21, s22, s23, s31, s32, s33];
 	}
 	Tee.setspars(sparsArray);
-	Tee.setglobal(global);
+	Tee.setglobal(settings);
+	Tee._schematic = {kind: 'component', symbol: 'tee'};
 	return Tee;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function Tee4() { // a 4-port dummy connection
+function Tee4(options = {}) { // a 4-port dummy connection
 	var Tee4 = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); complex(2,0); var freqCount = 0, s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		s11 = s22 = s33 = s44 = complex(-1/2,0);
@@ -8560,15 +11795,16 @@ function Tee4() { // a 4-port dummy connection
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44];
 	}
 	Tee4.setspars(sparsArray);
-	Tee4.setglobal(global);
+	Tee4.setglobal(settings);
 	return Tee4;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function Tee5() { // an ideal five-port junction
+function Tee5(options = {}) { // an ideal five-port junction
 	var Tee5 = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); complex(2,0); var freqCount = 0, s11, s12, s13, s14, s15, s21, s22, s23, s24, s25, s31, s32, s33, s34, s35, s41, s42, s43, s44, s45, s51, s52, s53, s54, s55, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		s11 = s22 = s33 = s44 = s55 = complex(-0.6,0);
@@ -8577,17 +11813,18 @@ function Tee5() { // an ideal five-port junction
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s14, s15, s21, s22, s23, s24, s25, s31, s32, s33, s34, s35, s41, s42, s43, s44, s45, s51, s52, s53, s54, s55];
 	}
 	Tee5.setspars(sparsArray);
-	Tee5.setglobal(global);
+	Tee5.setglobal(settings);
 	return Tee5;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-26
 
 // Ideal three-port junction for attaching a one-port network in series.
 // Ports 1 and 2 form the through path; port 3 is the series branch.
-function seriesTee() {
+function seriesTee(options = {}) {
 	var junction = new nPort;
-	var frequencyList = analysisFrequencies(global);
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings);
 	var sparsArray = [];
 
 	for (var freqCount = 0; freqCount < frequencyList.length; freqCount++) {
@@ -8604,15 +11841,18 @@ function seriesTee() {
 	}
 
 	junction.setspars(sparsArray);
-	junction.setglobal(global);
+	junction.setglobal(settings);
+	junction._schematic = {kind: 'component', symbol: 'series-tee'};
 	return junction;
 }
 
-// Modified: 2026-10-03
+// Modified: 2026-10-26
 var conjugate = function (value) { return complex(value.getR(), -value.getI()); };
 
 
 function nodal( ... componentConnections) { // componentConnections = [[nPort1, n1, n2 ...], ... ['out', n1, n2, ...] ]
+	var signalOptions = !Array.isArray(componentConnections[componentConnections.length - 1]) ?
+		componentConnections.pop() : undefined;
 	var i = 0, j = 0, k = 0, row = 0, col = 0, offset = 0, base = 0;
 	var networkSpars = componentConnections[0][0].spars.map(function (row) {
 		return [row[0]];
@@ -8655,6 +11895,11 @@ function nodal( ... componentConnections) { // componentConnections = [[nPort1, 
 	}();
 	var network = new nPort();
 	var networkNoiseCovariance = [];
+	var signalTemplate;
+	for (var signalComponent = 0; signalComponent < m; signalComponent++) {
+		signalTemplate = compatibleSignals(signalTemplate, componentConnections[signalComponent][0].signal);
+	}
+	var networkSignalRows = signalTemplate ? [] : undefined;
 	for ( i = 0; i < numOfFreqs; i++) { // i is number of frequencies
 		offset = 0;
 		var WMatrix = matrix(dup(GammaArray));
@@ -8699,10 +11944,37 @@ function nodal( ... componentConnections) { // componentConnections = [[nPort1, 
 				}
 				Cout[j][k] = sum;
 			}		}		networkNoiseCovariance[i] = {frequency: networkSpars[i][0], C: Cout};
+		if (networkSignalRows) {
+			var componentWaves = Array.from({length: interconnectedPortCount}, function () {
+				return complex(0, 0);
+			});
+			var signalOffset = 0;
+			for (var signalChild = 0; signalChild < m; signalChild++) {
+				var childPortCount = componentConnections[signalChild].length - 1;
+				var childSignal = componentConnections[signalChild][0].signal;
+				if (childSignal) {
+					for (var childPort = 0; childPort < childPortCount; childPort++) {
+						componentWaves[signalOffset + childPort] = childSignal.rows[i].waves[childPort];
+					}
+				}
+				signalOffset += childPortCount;
+			}
+			var externalWaves = [];
+			for (var externalPort = 0; externalPort < externalPortCount; externalPort++) {
+				var totalWave = complex(0, 0);
+				for (var sourcePort = 0; sourcePort < interconnectedPortCount; sourcePort++) {
+					totalWave = totalWave.add(Winverse.m[interconnectedPortCount + externalPort][sourcePort]
+						.mul(componentWaves[sourcePort]));
+				}
+				externalWaves[externalPort] = totalWave;
+			}
+			networkSignalRows[i] = {frequency: networkSpars[i][0], waves: externalWaves};
+		}
 
 	}	network.setspars(networkSpars);
 	network.setglobal(componentConnections[0][0].global); // use the first component for global data
 	network.noise = networkNoiseCovariance;
+	if (networkSignalRows) network.signal = signalWithRows(signalTemplate, networkSignalRows);
 	var displayComponent = componentConnections.slice(0, m).find(function (entry) {
 		return entry[0]._displayFrequencies;
 	});
@@ -8713,71 +11985,97 @@ function nodal( ... componentConnections) { // componentConnections = [[nPort1, 
 			return connectionRow.findIndex(function (value) { return value.getR() === 1; });
 		})
 	);
-	return network;
+	network._schematic = {
+		kind: 'nodal',
+		components: componentConnections.slice(0, m).map(function (entry) {
+			return {part: entry[0]._schematic, nodes: entry.slice(1)};
+		}),
+		externalNodes: componentConnections[m].slice(1)
+	};
+	return applyInputSignal(network, signalOptions);
 }
 
-// Modified: 2026-10-03
+// Modified: 2026-10-26
 
 function cascade(...nPorts) {
+	var signalOptions = nPorts.length && !nPorts[nPorts.length - 1].getspars ? nPorts.pop() : undefined;
 	if (nPorts.length === 0) throw new TypeError('cascade() requires at least one nPort.');
 	var combined = nPorts[0];
 	for (var i = 1; i < nPorts.length; i++) {
 		// cas() combines S-parameters and noise, and keeps both nonlinear stages.
 		combined = combined.cas(nPorts[i]);
 	}
-	return combined;
+	if (signalOptions && signalOptions.signal && nPorts.length === 1) {
+		var copy = new nPort();
+		copy.setspars(combined.getspars());
+		copy.setglobal(combined.getglobal());
+		copy.noise = combined.noise;
+		if (combined.signal) copy.signal = combined.signal;
+		copy._displayFrequencies = combined._displayFrequencies;
+		copy._intermod = combined._intermod;
+		copy._schematic = combined._schematic;
+		combined = copy;
+	}
+	return applyInputSignal(combined, signalOptions);
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-26
 
-function Open() { // one port, open
+function Open(options = {}) { // one port, open
 	var Open = new nPort;
-	var frequencyList = analysisFrequencies(global); global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings); global.Ro;
 	var freqCount = 0, s11, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		s11 = complex(1,0);
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11];
 	}
 	Open.setspars(sparsArray);
-	Open.setglobal(global);
+	Open.setglobal(settings);
+	Open._schematic = {kind: 'component', symbol: 'open'};
 	return Open;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-26
 
-function Short() { //  one port, Short
+function Short(options = {}) { //  one port, Short
 	var Short = new nPort;
-	var frequencyList = analysisFrequencies(global); global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings); global.Ro;
 	var freqCount = 0, s11, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		s11 = complex(-1,0);
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11];
 	}
 	Short.setspars(sparsArray);
-	Short.setglobal(global);
+	Short.setglobal(settings);
+	Short._schematic = {kind: 'component', symbol: 'short'};
 	return Short;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-26
 
-function Load() { // one port, load
+function Load(options = {}) { // one port, load
 	var Load = new nPort;
-	var frequencyList = analysisFrequencies(global); global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings); global.Ro;
 	var freqCount = 0, s11, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		s11 = complex(0,0);
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11];
 	}
 	Load.setspars(sparsArray);
-	Load.setglobal(global);
+	Load.setglobal(settings);
+	Load._schematic = {kind: 'component', symbol: 'load'};
 	return Load;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
-function Shift90() { // lossless matched two-port with +90 degree through phase
+function Shift90(options = {}) { // lossless matched two-port with +90 degree through phase
 	var Shift90 = new nPort;
-	var frequencyList = analysisFrequencies(global); global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings); global.Ro;
 	var freqCount = 0, s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		s11 = complex(0,0);
@@ -8787,7 +12085,7 @@ function Shift90() { // lossless matched two-port with +90 degree through phase
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
 	Shift90.setspars(sparsArray);
-	Shift90.setglobal(global);
+	Shift90.setglobal(settings);
 	return Shift90;
 }
 
@@ -8803,11 +12101,12 @@ const VACUUM_IMPEDANCE = 120 * Math.PI;
 
 const COPPER_RESISTIVITY = 1.72e-8;
 
-// Modified: 2026-10-07
+// Modified: 2026-10-26
 
-function Tlin(Z = 60, Length = 0.5 * 0.0254) { // Z is in ohms and Length is in meters, sparameters of a physical transmission line
+function Tlin(Z = 60, Length = 0.5 * 0.0254, options = {}) { // Z is in ohms and Length is in meters, sparameters of a physical transmission line
 	var Tlin = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); complex(1,0); var two = complex(2,0), freqCount = 0, Ztlin = [], s11, s12, s21, s22, sparsArray = [];
 	var Atlin = {}, Btlin = {}, Ctlin = {}, Ds = {}, alpha = 0, beta = 0, gamma = {};
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
@@ -8829,15 +12128,17 @@ function Tlin(Z = 60, Length = 0.5 * 0.0254) { // Z is in ohms and Length is in 
 		s22 = s11;
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}	Tlin.setspars(sparsArray);
-	Tlin.setglobal(global);
+	Tlin.setglobal(settings);
+	Tlin._schematic = {kind: 'component', symbol: 'transmission-line', impedance: Z, length: Length};
 	return Tlin;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-26
 
-function Tclin(Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254) { // 1.4732 is the quarter wavelength at 2GHz, (1.3412 at 2.2 GHz)
+function Tclin(Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254, options = {}) { // 1.4732 is the quarter wavelength at 2GHz, (1.3412 at 2.2 GHz)
 	var ctlin = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0); Zo.inv(); complex(1,0); var two = complex(2,0), freqCount = 0, Zoetclin = [], Zootclin = [];
 	var s11oe, s12oe, s21oe, s22oe;
 	var s11oo, s12oo, s21oo, s22oo;
@@ -8892,8 +12193,47 @@ function Tclin(Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254) { // 1.4732 is the q
 
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44];
 	}	ctlin.setspars(sparsArray);
-	ctlin.setglobal(global);
+	ctlin.setglobal(settings);
+	ctlin._schematic = {kind: 'component', symbol: 'coupled-transmission-line', length: Length};
 	return ctlin;
+}
+
+// Modified: 2026-10-26
+
+// Matched, reciprocal 180-degree coupler with the same response at every frequency.
+// Port 1 drives port 2 (through) and port 4 (coupled); port 3 is isolated.
+function Coupler180(options = {}) {
+	if (!options || Array.isArray(options) || typeof options !== 'object') {
+		throw new TypeError('Coupler180 expects an options object.');
+	}
+	var couplingDb = options.couplingDb === undefined ? 10 * Math.log10(2) : options.couplingDb;
+	if (!Number.isFinite(couplingDb) || couplingDb < 0) {
+		throw new RangeError('Coupler180 couplingDb must be a finite, nonnegative number of dB.');
+	}
+	var coupling = 10 ** (-couplingDb / 20);
+	var through = Math.sqrt(1 - coupling * coupling);
+	var settings = componentSettings(global, options);
+	var frequencies = analysisFrequencies(settings);
+	var sparsArray = [];
+	var noiseArray = [];
+	for (var i = 0; i < frequencies.length; i++) {
+		sparsArray[i] = [frequencies[i],
+			complex(0, 0), complex(through, 0), complex(0, 0), complex(coupling, 0),
+			complex(through, 0), complex(0, 0), complex(coupling, 0), complex(0, 0),
+			complex(0, 0), complex(coupling, 0), complex(0, 0), complex(-through, 0),
+			complex(coupling, 0), complex(0, 0), complex(-through, 0), complex(0, 0)];
+		var covariance = [];
+		for (var row = 0; row < 4; row++) {
+			covariance[row] = Array.from({length: 4}, function () { return complex(0, 0); });
+		}
+		noiseArray[i] = {frequency: frequencies[i], C: covariance};
+	}
+	var coupler = new nPort();
+	coupler.setspars(sparsArray);
+	coupler.noise = noiseArray;
+	coupler.setglobal(settings);
+	coupler._schematic = {kind: 'component', symbol: 'coupler-180', value: couplingDb};
+	return coupler;
 }
 
 // Modified: 2026-09-06
@@ -8983,7 +12323,7 @@ var physicalModelMetadata = function (family, model, geometry, material, analysi
 	};
 };
 
-// Modified: 2026-10-07
+// Modified: 2026-10-26
 
 var pi$7 = Math.PI;
 
@@ -9061,6 +12401,7 @@ var singleLineDispersion$1 = function (u, er, erEff0, z0, frequency, Height) {
 function mlin(input = {}) {
 	if (arguments.length > 1) throw new TypeError('nP.mlin() accepts one options object.');
 	var options = normalizePhysicalModelOptions('mlin', input, [
+			{name: 'fList', defaultValue: global.fList},
 			{name: 'width', aliases: ['Width'], defaultValue: 0.023 * INCH_TO_METER},
 			{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
 			{name: 'length', aliases: ['Length'], defaultValue: 0.5 * INCH_TO_METER},
@@ -9080,7 +12421,8 @@ function mlin(input = {}) {
 	requirePositive('mlin', 'relativePermittivity', er); requireNonnegative('mlin', 'resistivity', rho * COPPER_RESISTIVITY);
 	requireNonnegative('mlin', 'lossTangent', tand); requireNonnegative('mlin', 'roughnessRms', roughnessRms); requireNonnegative('mlin', 'temperature', temperature);
 	var mlin = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro, 0), two = complex(2, 0), freqCount = 0, s11, s12, s21, s22, sparsArray = [], noiseArray = [];
 	var Atlin = {}, Btlin = {}, Ctlin = {}, Zmlin = {}, Ds = {}, alpha = 0, beta = 0, gamma = {};
 
@@ -9141,9 +12483,9 @@ function mlin(input = {}) {
 		noiseArray[freqCount] = {frequency: frequencyList[freqCount], C: passiveNoiseCovariance(sparsArray[freqCount], 2, temperature)};
 	}	mlin.setspars(sparsArray);
 	mlin.noise = noiseArray;
-	mlin.setglobal(global);
+	mlin.setglobal(settings);
 	var firstDisplayAnalysis = analysis.find(function (point) {
-		return point.frequency === global.fList[0];
+		return point.frequency === settings.fList[0];
 	});
 	mlin.microstrip = {
 		Width,
@@ -9168,10 +12510,11 @@ function mlin(input = {}) {
 		lossTangent: tand,
 		roughnessRms
 	}, analysis);
+	mlin._schematic = {kind: 'component', symbol: 'microstrip-line', length: Length};
 	return mlin;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-26
 
 var pi$6 = Math.PI;
 
@@ -9385,6 +12728,7 @@ var modeLosses = function (Width, Height, Thickness, Length, er, rho, tand, freq
 function mclin(input = {}) {
 	if (arguments.length > 1) throw new TypeError('nP.mclin() accepts one options object.');
 	var options = normalizePhysicalModelOptions('mclin', input, [
+			{name: 'fList', defaultValue: global.fList},
 			{name: 'width', aliases: ['Width'], defaultValue: 19.1155 * MIL_TO_METER},
 			{name: 'spacing', aliases: ['Space'], defaultValue: 5.82185 * MIL_TO_METER},
 			{name: 'height', aliases: ['Height'], defaultValue: 25 * MIL_TO_METER},
@@ -9404,7 +12748,8 @@ function mclin(input = {}) {
 	requirePositive('mclin', 'relativePermittivity', er); requireNonnegative('mclin', 'resistivity', rho * COPPER_RESISTIVITY);
 	requireNonnegative('mclin', 'lossTangent', tand); requireNonnegative('mclin', 'roughnessRms', roughnessRms); requireNonnegative('mclin', 'temperature', temperature);
 	var ctlin = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro, 0), two = complex(2, 0), freqCount = 0, Zoemclin = [], Zoomclin = [];
 	var s11oe, s12oe, s21oe, s22oe;
 	var s11oo, s12oo, s21oo, s22oo;
@@ -9486,9 +12831,9 @@ function mclin(input = {}) {
 
 	ctlin.setspars(sparsArray);
 	ctlin.noise = noiseArray;
-	ctlin.setglobal(global);
+	ctlin.setglobal(settings);
 	var firstDispersion = dispersion.find(function (point) {
-		return point.frequency === global.fList[0];
+		return point.frequency === settings.fList[0];
 	}) || {Zoe: quasiStatic.Zoe, Zoo: quasiStatic.Zoo, ereoe: quasiStatic.ereoe, ereoo: quasiStatic.ereoo};
 	ctlin.microstrip = {
 		Width,
@@ -9516,10 +12861,11 @@ function mclin(input = {}) {
 		relativePermittivity: er, resistivity: rho * COPPER_RESISTIVITY,
 		lossTangent: tand, roughnessRms
 	}, dispersion);
+	ctlin._schematic = {kind: 'component', symbol: 'microstrip-coupled-line'};
 	return ctlin;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-26
 
 var pi$5 = Math.PI;
 var DEFAULT_WIDTH = 0.023 * INCH_TO_METER;
@@ -9579,6 +12925,7 @@ var microstripLine$2 = function (width, Height, Thickness, er) {
 function mtee(input = {}) { // microstrip tee nPort object
 	if (arguments.length > 1) throw new TypeError('nP.mtee() accepts one options object.');
 	var options = normalizePhysicalModelOptions('mtee', input, [
+			{name: 'fList', defaultValue: global.fList},
 			{name: 'commonWidth', defaultValue: DEFAULT_WIDTH},
 			{name: 'branch1Width', defaultValue: DEFAULT_WIDTH},
 			{name: 'branch2Width', defaultValue: DEFAULT_WIDTH},
@@ -9599,7 +12946,8 @@ function mtee(input = {}) { // microstrip tee nPort object
 	requireNonnegative('mtee', 'resistivity', rho * COPPER_RESISTIVITY); requireNonnegative('mtee', 'lossTangent', tand);
 	requireNonnegative('mtee', 'roughnessRms', roughnessRms); requireNonnegative('mtee', 'temperature', temperature);
 	var mtee = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var freqCount = 0, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [], noiseArray = [];
 	var WidthA = branch1Width, WidthB = branch2Width, WidthSide = commonWidth;
 	var analysis = [];
@@ -9665,7 +13013,7 @@ function mtee(input = {}) { // microstrip tee nPort object
 	}
 	mtee.setspars(sparsArray);
 	mtee.noise = noiseArray;
-	mtee.setglobal(global);
+	mtee.setglobal(settings);
 	mtee.Ct = (100 / Math.tanh(0.0072 * armSide.Z) + 0.64 * armSide.Z - 261) * WidthSide * 1e-12;
 	mtee.microstrip = {
 		commonWidth,
@@ -9694,10 +13042,11 @@ function mtee(input = {}) { // microstrip tee nPort object
 		relativePermittivity: er, resistivity: rho * COPPER_RESISTIVITY,
 		lossTangent: tand, roughnessRms
 	}, analysis, {sources: [mtee.microstrip.source], validity: mtee.microstrip.validity});
+	mtee._schematic = {kind: 'component', symbol: 'microstrip-tee'};
 	return mtee;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-14
 
 var pi$4 = Math.PI;
 
@@ -9863,6 +13212,7 @@ var centerInductance = function (horizontalWidth, verticalWidth, Height) {
 
 function mcross(input = {}) {
 	var options = normalizePhysicalModelOptions('mcross', input, [
+		{name: 'fList', defaultValue: global.fList},
 		{name: 'leftWidth', defaultValue: 0.023 * INCH_TO_METER}, {name: 'topWidth', defaultValue: 0.023 * INCH_TO_METER},
 		{name: 'rightWidth', defaultValue: 0.023 * INCH_TO_METER}, {name: 'bottomWidth', defaultValue: 0.023 * INCH_TO_METER},
 		{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
@@ -9880,7 +13230,8 @@ function mcross(input = {}) {
 	requirePositive('mcross', 'height', Height); requireNonnegative('mcross', 'thickness', Thickness); requirePositive('mcross', 'relativePermittivity', er);
 	requireNonnegative('mcross', 'resistivity', rho * COPPER_RESISTIVITY); requireNonnegative('mcross', 'lossTangent', tand); requireNonnegative('mcross', 'roughnessRms', roughnessRms);
 	var cross = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var widths = [leftWidth, topWidth, rightWidth, bottomWidth];
 	var arms = widths.map(function (width) { return microstripLine$1(width, Height, Thickness, er); });
 	var sparsArray = [];
@@ -9905,6 +13256,25 @@ function mcross(input = {}) {
 	for (var freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		var freq = frequencyList[freqCount];
 		var omega = 2 * pi$4 * freq;
+		var maxNormalizedParasitic = Math.max(
+			...armInds.map(function (L) { return Math.abs(omega * L / Ro); }),
+			Math.abs(omega * Lcenter / Ro),
+			...armCaps.map(function (C) { return Math.abs(omega * C * Ro); })
+		);
+		// The nodal admittance reduction loses precision as 1/(omega L) grows.
+		// Use the junction limit while every parasitic effect is below 1 ppm.
+		if (maxNormalizedParasitic < 1e-6) {
+			var dcRow = [freq];
+			for (var dcPort = 0; dcPort < 4; dcPort++) {
+				for (var otherPort = 0; otherPort < 4; otherPort++) {
+					dcRow.push(complex(dcPort === otherPort ? -0.5 : 0.5, 0));
+				}
+			}
+			sparsArray[freqCount] = dcRow;
+			analysis[freqCount] = {frequency: freq, armCaps: armCaps.slice(),
+				armInds: armInds.slice(), Lcenter: Lcenter, Ct: Ct, Y: null};
+			continue;
+		}
 		var Y = emptyCplxMatrix(6);
 
 		stampAdmittance(Y, 0, 4, complex(0, -1 / (omega * armInds[0])));
@@ -9938,7 +13308,7 @@ function mcross(input = {}) {
 	}
 
 	cross.setspars(sparsArray);
-	cross.setglobal(global);
+	cross.setglobal(settings);
 	cross.Ct = Ct;
 	cross.microstrip = {
 		leftWidth,
@@ -9973,7 +13343,7 @@ function mcross(input = {}) {
 	return cross;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-26
 
 var pi$3 = Math.PI;
 
@@ -10086,6 +13456,7 @@ var stepInductanceNh = function (wideWidth, narrowWidth, Height) {
 
 function mstep(input = {}) {
 	var options = normalizePhysicalModelOptions('mstep', input, [
+		{name: 'fList', defaultValue: global.fList},
 		{name: 'inputWidth', aliases: ['width1'], defaultValue: 0.046 * INCH_TO_METER},
 		{name: 'outputWidth', aliases: ['width2'], defaultValue: 0.023 * INCH_TO_METER},
 		{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
@@ -10101,7 +13472,8 @@ function mstep(input = {}) {
 	requireNonnegative('mstep', 'thickness', Thickness); requirePositive('mstep', 'relativePermittivity', er);
 	requireNonnegative('mstep', 'resistivity', rho * COPPER_RESISTIVITY); requireNonnegative('mstep', 'lossTangent', tand); requireNonnegative('mstep', 'roughnessRms', roughnessRms);
 	var step = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var port1Line = microstripLine(width1, Height, Thickness, er);
 	var port2Line = microstripLine(width2, Height, Thickness, er);
 	var wideWidth = Math.max(width1, width2);
@@ -10117,6 +13489,11 @@ function mstep(input = {}) {
 
 	for (var freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		var frequency = frequencyList[freqCount];
+		if (frequency === 0) {
+			sparsArray[freqCount] = [0, complex(0, 0), complex(1, 0), complex(1, 0), complex(0, 0)];
+			analysis[freqCount] = {frequency, CsPf, LsNh, L1Nh, L2Nh, Z: null};
+			continue;
+		}
 		var z21 = complex(0, -1 / (2 * pi$3 * frequency * CsPf * 1e-12));
 		var z11 = complex(0, 2 * pi$3 * frequency * L1Nh * 1e-9).add(z21);
 		var z22 = complex(0, 2 * pi$3 * frequency * L2Nh * 1e-9).add(z21);
@@ -10138,7 +13515,7 @@ function mstep(input = {}) {
 	}
 
 	step.setspars(sparsArray);
-	step.setglobal(global);
+	step.setglobal(settings);
 	step.microstrip = {
 		width1,
 		width2,
@@ -10166,10 +13543,11 @@ function mstep(input = {}) {
 	step.physicalModel = physicalModelMetadata('microstrip', 'step-discontinuity', {
 		inputWidth: width1, outputWidth: width2, height: Height, thickness: Thickness
 	}, {relativePermittivity: er, resistivity: rho * COPPER_RESISTIVITY, lossTangent: tand, roughnessRms}, analysis);
+	step._schematic = {kind: 'component', symbol: 'microstrip-step'};
 	return step;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-26
 
 var pi$2 = Math.PI;
 
@@ -10211,6 +13589,8 @@ var edwardsSteerBend = function (Width, Height, er) {
 
 function mbend(input = {}) {
 	var options = normalizePhysicalModelOptions('mbend', input, [
+		{name: 'fList', defaultValue: global.fList},
+		{name: 'turn', defaultValue: 'right'},
 		{name: 'width', aliases: ['Width'], defaultValue: 0.023 * INCH_TO_METER}, {name: 'miterLength', defaultValue: undefined},
 		{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
 		{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
@@ -10219,6 +13599,9 @@ function mbend(input = {}) {
 		{name: 'lossTangent', aliases: ['tand'], defaultValue: 0.001}, {name: 'roughnessRms', defaultValue: 0}
 	]);
 	var Width = options.width, miterLength = options.miterLength, Height = options.height, Thickness = options.thickness;
+	if (options.turn !== 'left' && options.turn !== 'right') {
+		throw new RangeError('nP.mbend(): turn must be "left" or "right".');
+	}
 	var er = options.relativePermittivity, rho = resistivityScale('mbend', input, options.rho, COPPER_RESISTIVITY);
 	var tand = options.lossTangent, roughnessRms = options.roughnessRms;
 	requirePositive('mbend', 'width', Width); requirePositive('mbend', 'height', Height); requireNonnegative('mbend', 'thickness', Thickness);
@@ -10226,7 +13609,8 @@ function mbend(input = {}) {
 	requirePositive('mbend', 'relativePermittivity', er); requireNonnegative('mbend', 'resistivity', rho * COPPER_RESISTIVITY);
 	requireNonnegative('mbend', 'lossTangent', tand); requireNonnegative('mbend', 'roughnessRms', roughnessRms);
 	var bend = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var recommendedMiterFraction = 0.6;
 	var defaultMiterLength = 0;
 	var actualMiterLength = miterLength === undefined ? defaultMiterLength : miterLength;
@@ -10239,6 +13623,11 @@ function mbend(input = {}) {
 
 	for (var freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		var frequency = frequencyList[freqCount];
+		if (frequency === 0) {
+			sparsArray[freqCount] = [0, complex(0, 0), complex(1, 0), complex(1, 0), complex(0, 0)];
+			analysis[freqCount] = {frequency, CpF, LnH, Z: null};
+			continue;
+		}
 		var z21 = complex(0, -1 / (2 * pi$2 * frequency * CpF * 1e-12));
 		var z11 = complex(0, 2 * pi$2 * frequency * LnH * 1e-9).add(z21);
 		var Z = matrix([
@@ -10257,8 +13646,9 @@ function mbend(input = {}) {
 	}
 
 	bend.setspars(sparsArray);
-	bend.setglobal(global);
+	bend.setglobal(settings);
 	bend.microstrip = {
+		turn: options.turn,
 		Width,
 		miterLength: actualMiterLength,
 		defaultMiterLength,
@@ -10285,13 +13675,15 @@ function mbend(input = {}) {
 		width: Width, miterLength: actualMiterLength, height: Height, thickness: Thickness
 	}, {relativePermittivity: er, resistivity: rho * COPPER_RESISTIVITY, lossTangent: tand, roughnessRms}, analysis,
 	{validity: bend.microstrip.validity});
+	bend._schematic = {kind: 'component', symbol: `microstrip-${options.turn}-bend`};
 	return bend;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-26
 
 function mtfr(input = {}) {
 	var options = normalizePhysicalModelOptions('mtfr', input, [
+		{name: 'fList', defaultValue: global.fList},
 		{name: 'ohmsPerSquare', defaultValue: 50}, {name: 'width', aliases: ['Width'], defaultValue: 10 * MIL_TO_METER},
 		{name: 'length', aliases: ['Length'], defaultValue: 10 * MIL_TO_METER},
 		{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
@@ -10322,9 +13714,10 @@ function mtfr(input = {}) {
 	var halfLineLength = Length / (2 * sectionCount);
 	var halfLine = mlin({
 		width: Width, height: Height, length: halfLineLength, thickness: Thickness,
-		relativePermittivity: er, resistivity: 0, lossTangent: tand, roughnessRms: 0
+		relativePermittivity: er, resistivity: 0, lossTangent: tand, roughnessRms: 0,
+		fList: options.fList
 	});
-	var resistorSection = R(resistancePerSection);
+	var resistorSection = R({resistance: resistancePerSection, fList: options.fList});
 	var nPorts = [];
 
 	for (var section = 0; section < sectionCount; section++) {
@@ -10361,10 +13754,11 @@ function mtfr(input = {}) {
 		ohmsPerSquare, temperatureCoefficient, referenceTemperature: temperatureReference,
 		temperatureUnit, sections: sectionCount
 	});
+	filmResistor._schematic = {kind: 'component', symbol: 'microstrip-thin-film-resistor', value: resistance};
 	return filmResistor;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-13
 
 var pi$1 = Math.PI;
 
@@ -10383,6 +13777,7 @@ var viaResistanceDc$1 = function (Height, radius, Thickness, rho) {
 
 function mvgnd(input = {}) {
 	var options = normalizePhysicalModelOptions('mvgnd', input, [
+		{name: 'fList', defaultValue: global.fList},
 		{name: 'diameter', aliases: ['Diameter'], defaultValue: 100e-6},
 		{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
 		{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
@@ -10394,7 +13789,8 @@ function mvgnd(input = {}) {
 	requirePositive('mvgnd', 'thickness', Thickness); requireNonnegative('mvgnd', 'resistivity', rho);
 	if (Thickness > Diameter / 2) throw new RangeError('nP.mvgnd(): thickness must not exceed the via radius.');
 	var via = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var radius = Diameter / 2;
 	var L = viaInductance$1(Height, radius);
 	var Rdc = viaResistanceDc$1(Height, radius, Thickness, rho);
@@ -10418,7 +13814,7 @@ function mvgnd(input = {}) {
 	}
 
 	via.setspars(sparsArray);
-	via.setglobal(global);
+	via.setglobal(settings);
 	via.microstrip = {
 		Diameter,
 		radius,
@@ -10437,7 +13833,7 @@ function mvgnd(input = {}) {
 	return via;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-10-27
 
 var pi = Math.PI;
 
@@ -10504,6 +13900,7 @@ var abcdToS = function (abcd, Ro) {
 
 function mvia(input = {}) {
 	var options = normalizePhysicalModelOptions('mvia', input, [
+		{name: 'fList', defaultValue: global.fList},
 		{name: 'diameter', aliases: ['Diameter'], defaultValue: 100e-6},
 		{name: 'connectionHeight', defaultValue: 0.025 * INCH_TO_METER},
 		{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
@@ -10526,7 +13923,8 @@ function mvia(input = {}) {
 	if (Thickness > Diameter / 2) throw new RangeError('nP.mvia(): thickness must not exceed the via radius.');
 	if (antipadDiameter > 0 && padDiameter > 0 && antipadDiameter <= padDiameter) throw new RangeError('nP.mvia(): antipadDiameter must be greater than padDiameter.');
 	var via = new nPort;
-	var frequencyList = analysisFrequencies(global), Ro = global.Ro;
+	var settings = componentSettings(global, options);
+	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var radius = Diameter / 2;
 	var Lbarrel = viaInductance(connectionHeight, radius);
 	var Rdc = viaResistanceDc(connectionHeight, radius, Thickness, rho);
@@ -10562,7 +13960,7 @@ function mvia(input = {}) {
 	}
 
 	via.setspars(sparsArray);
-	via.setglobal(global);
+	via.setglobal(settings);
 	via.microstrip = {
 		Diameter,
 		radius,
@@ -10591,7 +13989,1905 @@ function mvia(input = {}) {
 		diameter: Diameter, connectionHeight, thickness: Thickness, padDiameter, antipadDiameter,
 		topPadHeight, bottomPadHeight, topStubLength, bottomStubLength
 	}, {relativePermittivity: er, resistivity: rho}, analysis, {validity: via.microstrip.validity});
+	via._schematic = {kind: 'component', symbol: 'microstrip-via-transition'};
 	return via;
 }
 
-export { Amp, Attn, C, L, Load, Open, R, Shift90, Short, Tclin, Tee, Tee4, Tee5, Tlin, cascade, chebyLPLCs, chebyLPNsec, chebyLPgk, complex, dim, diode1N4148, dup, global, lineChart, lineTable, log, lpfGen, matrix, mbend, mclin, mcross, mlin, mstep, mtee, mtfr, mvgnd, mvia, nodal, paC, paL, paPaLC, paPaRC, paPaRL, paPaRLC, paR, paSeLC, paSeRC, paSeRL, paSeRLC, seC, seL, sePaLC, sePaRC, sePaRL, sePaRLC, seR, seSeLC, seSeRC, seSeRL, seSeRLC, seriesTee, smithChart, trf, trf4Port, version };
+// Modified: 2026-10-08
+
+// Two independent standard-normal samples per pair of uniform draws.
+function normalSampler() {
+	var spare;
+	return function () {
+		if (spare !== undefined) {
+			var result = spare;
+			spare = undefined;
+			return result;
+		}
+		var radius = Math.sqrt(-2 * Math.log(1 - Math.random()));
+		var angle = 2 * Math.PI * Math.random();
+		spare = radius * Math.sin(angle);
+		return radius * Math.cos(angle);
+	};
+}
+
+// Return one real-waveform-compatible FFT noise draw in volts. The noise
+// analysis includes source, termination, and component covariance in W/Hz.
+function noiseWaveformSpectrum(stage, signal, inputPort, outputPort, options) {
+	var count = signal.sampleCount;
+	var binWidth = signal.sampleRateHz / count;
+	var sampleNormal = normalSampler();
+	var noiseRows = stage.noise;
+	var spectrum = new Array(signal.rows.length);
+	for (var bin = 0; bin < spectrum.length; bin++) {
+		var density = noiseAnalysis(stage.spars[bin], noiseRows[bin].C,
+			inputPort, outputPort, options).outputNoiseDensity;
+		var voltageDensity = density * signal.referenceImpedanceOhms;
+		var selfConjugate = bin === 0 || (count % 2 === 0 && bin === count / 2);
+		if (selfConjugate) {
+			// DC and Nyquist each represent half a positive-frequency bin.
+			var endpointStd = count * Math.sqrt(voltageDensity * binWidth / 2);
+			spectrum[bin] = complex(endpointStd * sampleNormal(), 0);
+		} else {
+			// A positive bin and its negative-frequency conjugate share one bin's power.
+			var quadratureStd = count * Math.sqrt(voltageDensity * binWidth) / 2;
+			spectrum[bin] = complex(quadratureStd * sampleNormal(), quadratureStd * sampleNormal());
+		}
+	}
+	return spectrum;
+}
+
+// Modified: 2026-10-22
+
+// Reconstruct the output signal and one independent noise realization.
+function receiveWaveform(stage, options = {}) {
+	if (!stage || !stage.signal || !Array.isArray(stage.spars)) {
+		throw new TypeError('demod requires an nPort containing a digital signal.');
+	}
+	if (!options || Array.isArray(options) || typeof options !== 'object') {
+		throw new TypeError('demod options must be an object.');
+	}
+	if (options.mode !== undefined) {
+		throw new RangeError('Select demod output with .out() instead of mode.');
+	}
+	if (options.noise !== undefined && typeof options.noise !== 'boolean') {
+		throw new TypeError('demod noise must be true or false.');
+	}
+	var signal = stage.signal;
+	var portCount = Math.sqrt(stage.spars[0].length - 1);
+	var outputPort = options.outputPort === undefined ? 2 : options.outputPort;
+	var inputPort = options.inputPort === undefined ? 1 : options.inputPort;
+	var vnaTime = signal.mode === 'VNA-time';
+	var referencePort = options.referencePort;
+	var referenceReceiver = options.referenceReceiver;
+	var referenceGain = options.referenceGain === undefined ? 1 : options.referenceGain;
+	if (vnaTime && (!Number.isFinite(referenceGain) || referenceGain <= 0)) {
+		throw new RangeError('VNA-time referenceGain must be positive and finite.');
+	}
+	if (vnaTime && referencePort !== undefined && (!Number.isInteger(referencePort) ||
+		referencePort < 1 || referencePort > portCount || referencePort === outputPort)) {
+		throw new RangeError('VNA-time referencePort must name another output port.');
+	}
+	if (vnaTime && referencePort !== undefined && referenceReceiver !== undefined) {
+		throw new RangeError('Select referencePort or referenceReceiver, not both.');
+	}
+	if (vnaTime && referenceReceiver !== undefined &&
+		(!referenceReceiver || typeof referenceReceiver.out !== 'function')) {
+		throw new TypeError('VNA-time referenceReceiver must be a demod result.');
+	}
+	if (!vnaTime && (referencePort !== undefined || referenceReceiver !== undefined ||
+		options.referenceGain !== undefined)) {
+		throw new RangeError('referencePort, referenceReceiver, and referenceGain are only for VNA reception.');
+	}
+	if (!Number.isInteger(outputPort) || outputPort < 1 || outputPort > portCount) {
+		throw new RangeError('demod outputPort is outside the nPort dimensions.');
+	}
+	if (!Number.isInteger(inputPort) || inputPort < 1 || inputPort > portCount) {
+		throw new RangeError('demod inputPort is outside the nPort dimensions.');
+	}
+	var count = signal.sampleCount;
+	if (signal.rows.length !== Math.floor(count / 2) + 1) {
+		throw new RangeError('Digital signal rows do not cover DC through Nyquist.');
+	}
+	var spectrum = new Array(count);
+	var voltageScale = Math.sqrt(signal.referenceImpedanceOhms);
+	var noiseSpectrum = options.noise === false ? null :
+		noiseWaveformSpectrum(stage, signal, inputPort, outputPort, options);
+	if (vnaTime && (referencePort !== undefined || referenceReceiver !== undefined) && noiseSpectrum) {
+		throw new RangeError('VNA reference normalization requires noise: false.');
+	}
+	var referenceSpectrum = referenceReceiver === undefined ? null : referenceReceiver.out('spectrum');
+	var referenceFrequencies = referenceReceiver === undefined ? null : referenceReceiver.out('frequencies');
+	if (referenceSpectrum && (!Array.isArray(referenceSpectrum) ||
+		referenceSpectrum.length !== signal.rows.length ||
+		!Array.isArray(referenceFrequencies) ||
+		referenceFrequencies.some(function (frequency, index) {
+			return frequency !== signal.rows[index].frequency;
+		}))) {
+		throw new RangeError('VNA referenceReceiver must use the same frequency grid.');
+	}
+	for (var bin = 0; bin < signal.rows.length; bin++) {
+		var wave = signal.rows[bin].waves[outputPort - 1];
+		var voltage = complex(wave.getR() * voltageScale, wave.getI() * voltageScale);
+		if (noiseSpectrum) voltage = voltage.add(noiseSpectrum[bin]);
+		if (vnaTime) {
+			if (referencePort !== undefined || referenceSpectrum) {
+				var reference = referenceSpectrum ? referenceSpectrum[bin] :
+					signal.rows[bin].waves[referencePort - 1].mul(complex(voltageScale, 0));
+				if (reference.mag() === 0) {
+					if (voltage.mag() !== 0) throw new RangeError('VNA reference receiver has zero signal.');
+					voltage = complex(0, 0);
+				} else voltage = voltage.div(reference);
+			}
+			voltage = voltage.mul(complex(referenceGain, 0));
+		}
+		var selfConjugate = bin === 0 || (count % 2 === 0 && bin === count / 2);
+		if (selfConjugate) {
+			if (Math.abs(voltage.getI()) > 1e-9 * Math.max(1, Math.abs(voltage.getR()))) {
+				throw new RangeError('DC and Nyquist output bins must be real to reconstruct a real waveform.');
+			}
+			spectrum[bin] = complex(voltage.getR(), 0);
+		} else {
+			spectrum[bin] = voltage;
+			spectrum[count - bin] = complex(voltage.getR(), -voltage.getI());
+		}
+	}
+	var samples = invFFT(spectrum);
+	return {
+		out: function (selector = 'waveform') {
+			if (selector === 'sample count') return count;
+			if (selector === 'frequency count') return signal.rows.length;
+			if (selector === 'frequencies') {
+				return signal.rows.map(function (row) { return row.frequency; });
+			}
+			if (selector === 'spectrum') {
+				return spectrum.slice(0, signal.rows.length).map(function (value) { return value.copy(); });
+			}
+			if (selector === 'bit count') {
+				if (signal.mode === 'OFDM') return signal.bitCount;
+				if (!Number.isInteger(signal.samplesPerBit) || signal.samplesPerBit < 1) {
+					throw new RangeError('Receiver bit count requires samplesPerBit metadata.');
+				}
+				return count / signal.samplesPerBit;
+			}
+			if (selector === 'bits' || selector === 'bit string' || selector === 'ASCII text') {
+				var samplesPerBit = signal.samplesPerBit;
+				if (!Number.isInteger(samplesPerBit) || samplesPerBit < 1 ||
+					count % samplesPerBit !== 0) {
+					throw new RangeError('Bit reception requires samplesPerBit metadata.');
+				}
+				var bitVoltages = [];
+				for (var bitStart = 0; bitStart < count; bitStart += samplesPerBit) {
+					bitVoltages.push(samples[bitStart + Math.floor(samplesPerBit / 2)].getR());
+				}
+				var threshold = options.thresholdVolts;
+				if (threshold === undefined) {
+					var sortedVoltages = bitVoltages.slice().sort(function (a, b) { return a - b; });
+					var lowCenter = sortedVoltages[Math.floor(sortedVoltages.length * 0.1)];
+					var highCenter = sortedVoltages[Math.floor(sortedVoltages.length * 0.9)];
+					if (lowCenter === highCenter) {
+						lowCenter = sortedVoltages[0];
+						highCenter = sortedVoltages[sortedVoltages.length - 1];
+					}
+					if (lowCenter === highCenter) {
+						throw new RangeError('ASCII reception needs two voltage levels or an explicit thresholdVolts.');
+					}
+					for (var iteration = 0; iteration < 12; iteration++) {
+						var split = (lowCenter + highCenter) / 2;
+						var lowSum = 0, lowCount = 0, highSum = 0, highCount = 0;
+						for (var voltageIndex = 0; voltageIndex < bitVoltages.length; voltageIndex++) {
+							if (bitVoltages[voltageIndex] <= split) {
+								lowSum += bitVoltages[voltageIndex];
+								lowCount++;
+							} else {
+								highSum += bitVoltages[voltageIndex];
+								highCount++;
+							}
+						}
+						if (lowCount === 0 || highCount === 0) break;
+						lowCenter = lowSum / lowCount;
+						highCenter = highSum / highCount;
+					}
+					threshold = (lowCenter + highCenter) / 2;
+				}
+				if (!Number.isFinite(threshold)) throw new RangeError('ASCII thresholdVolts must be finite.');
+				var bits = bitVoltages.map(function (voltage) { return voltage > threshold ? 1 : 0; });
+				if (selector === 'bits') return bits;
+				if (selector === 'bit string') return bits.join('');
+				if (bits.length % 8 !== 0) {
+					throw new RangeError('ASCII reception requires complete eight-bit bytes.');
+				}
+				var message = '';
+				for (var byte = 0; byte < bits.length; byte += 8) {
+					var code = 0;
+					for (var bit = 0; bit < 8; bit++) {
+						code = (code << 1) | bits[byte + bit];
+					}
+					message += code > 127 ? '\uFFFD' : String.fromCharCode(code);
+				}
+				return message;
+			}
+			if (selector !== 'waveform') {
+				throw new RangeError('Unknown demod output: ' + selector);
+			}
+			var output = [['Time (ns)', vnaTime &&
+				(referencePort !== undefined || referenceSpectrum) ?
+				'Normalized response' : 'Output (V)']];
+			for (var index = 0; index < count; index++) {
+				output.push([index * 1e9 / signal.sampleRateHz, samples[index].getR()]);
+			}
+			return output;
+		}
+	};
+}
+
+// Modified: 2026-10-22
+
+// Read one complex receiver phasor per swept frequency.
+function receiveVnaFrequency(stage, options = {}) {
+	if (!options || Array.isArray(options) || typeof options !== 'object') {
+		throw new TypeError('demod options must be an object.');
+	}
+	if (Object.keys(options).some(function (key) {
+		return key !== 'outputPort' && key !== 'referencePort' && key !== 'referenceReceiver' &&
+			key !== 'referenceGain' && key !== 'noise';
+	})) {
+		throw new TypeError('VNA-frequency demod accepts outputPort, referencePort, referenceReceiver, referenceGain, and noise.');
+	}
+	if (options.noise !== undefined && options.noise !== false) {
+		throw new RangeError('VNA-frequency reception currently requires noise: false.');
+	}
+	var signal = stage.signal;
+	var portCount = Math.sqrt(stage.spars[0].length - 1);
+	var outputPort = options.outputPort === undefined ? 2 : options.outputPort;
+	var referencePort = options.referencePort;
+	var referenceReceiver = options.referenceReceiver;
+	var referenceGain = options.referenceGain === undefined ? 1 : options.referenceGain;
+	if (!Number.isInteger(outputPort) || outputPort < 1 || outputPort > portCount) {
+		throw new RangeError('demod outputPort is outside the nPort dimensions.');
+	}
+	if (!Number.isFinite(referenceGain) || referenceGain <= 0) {
+		throw new RangeError('VNA-frequency referenceGain must be positive and finite.');
+	}
+	if (referencePort !== undefined && (!Number.isInteger(referencePort) ||
+		referencePort < 1 || referencePort > portCount || referencePort === outputPort)) {
+		throw new RangeError('VNA-frequency referencePort must name another output port.');
+	}
+	if (referencePort !== undefined && referenceReceiver !== undefined) {
+		throw new RangeError('Select referencePort or referenceReceiver, not both.');
+	}
+	if (referenceReceiver !== undefined &&
+		(!referenceReceiver || typeof referenceReceiver.out !== 'function')) {
+		throw new TypeError('VNA-frequency referenceReceiver must be a demod result.');
+	}
+	var voltageScale = complex(Math.sqrt(signal.referenceImpedanceOhms), 0);
+	var raw = signal.rows.map(function (row) {
+		return row.waves[outputPort - 1].mul(voltageScale);
+	});
+	var frequencies = signal.rows.map(function (row) { return row.frequency; });
+	var referenceValues = referenceReceiver === undefined ? null : referenceReceiver.out('response');
+	var referenceFrequencies = referenceReceiver === undefined ? null : referenceReceiver.out('frequencies');
+	if (referenceValues && (!Array.isArray(referenceValues) ||
+		referenceValues.length !== frequencies.length ||
+		!Array.isArray(referenceFrequencies) ||
+		referenceFrequencies.some(function (frequency, index) { return frequency !== frequencies[index]; }))) {
+		throw new RangeError('VNA referenceReceiver must use the same frequency grid.');
+	}
+	var response = raw.map(function (value, index) {
+		if (referencePort === undefined && !referenceValues) return value.mul(complex(referenceGain, 0));
+		var reference = referenceValues ? referenceValues[index] :
+			signal.rows[index].waves[referencePort - 1].mul(voltageScale);
+		if (reference.mag() === 0) throw new RangeError('VNA reference receiver has zero signal.');
+		return value.div(reference).mul(complex(referenceGain, 0));
+	});
+	return {
+		out: function (selector = 'response dB') {
+			if (selector === 'mode') return signal.mode;
+			if (selector === 'frequency count') return frequencies.length;
+			if (selector === 'frequencies') return frequencies.slice();
+			if (selector === 'spectrum') return raw.map(function (value) { return value.copy(); });
+			if (selector === 'response') return response.map(function (value) { return value.copy(); });
+			if (selector === 'response dB' || selector === 'response magnitude' ||
+				selector === 'response phase' || selector === 'response real' ||
+				selector === 'response imaginary') {
+				var label = selector === 'response dB' ? 'Response (dB)' :
+					selector === 'response magnitude' ? 'Response magnitude' :
+					selector === 'response phase' ? 'Response phase (deg)' :
+					selector === 'response real' ? 'Response real' : 'Response imaginary';
+				var table = [['Freq', label]];
+				for (var index = 0; index < frequencies.length; index++) {
+					var value = response[index];
+					table.push([frequencies[index], selector === 'response dB' ? value.mag20dB() :
+						selector === 'response magnitude' ? value.mag() :
+						selector === 'response phase' ? value.ang() :
+						selector === 'response real' ? value.getR() : value.getI()]);
+				}
+				return table;
+			}
+			throw new RangeError('Unknown VNA-frequency demod output: ' + selector);
+		}
+	};
+}
+
+// Modified: 2026-10-21
+
+function powerOfTwo(value) {
+	return Number.isInteger(value) && value > 0 && (value & (value - 1)) === 0;
+}
+
+function grayToIndex(gray) {
+	var index = gray;
+	for (var shifted = gray >> 1; shifted; shifted >>= 1) index ^= shifted;
+	return index;
+}
+
+function bitsValue(bits, start, count) {
+	var value = 0;
+	for (var bit = 0; bit < count; bit++) value = (value << 1) | bits[start + bit];
+	return value;
+}
+
+function symbolFromBits(bits, start, order) {
+	var axisBits = Math.log2(order) / 2;
+	var side = Math.sqrt(order);
+	var real = 2 * grayToIndex(bitsValue(bits, start, axisBits)) - side + 1;
+	var imaginary = 2 * grayToIndex(bitsValue(bits, start + axisBits, axisBits)) - side + 1;
+	var scale = Math.sqrt(2 * (order - 1) / 3);
+	return complex(real / scale, imaginary / scale);
+}
+
+function bitsFromSymbol(symbol, order) {
+	var axisBits = Math.log2(order) / 2;
+	var side = Math.sqrt(order);
+	var scale = Math.sqrt(2 * (order - 1) / 3);
+	var result = [];
+	for (var coordinate of [symbol.getR(), symbol.getI()]) {
+		var index = Math.max(0, Math.min(side - 1,
+			Math.round((coordinate * scale + side - 1) / 2)));
+		var gray = index ^ (index >> 1);
+		for (var shift = axisBits - 1; shift >= 0; shift--) result.push((gray >> shift) & 1);
+	}
+	return result;
+}
+
+function setSamples(tx, samples, fftList, sampleRateHz) {
+	tx.samples = samples;
+	tx.sampleCount = samples.length;
+	if (sampleRateHz !== undefined) tx.sampleRateHz = sampleRateHz;
+	tx.fList = Array.from({length: Math.floor(samples.length / 2) + 1}, function (_, bin) {
+		return bin * tx.sampleRateHz / samples.length;
+	});
+	tx.spectrum = fftBins(samples).slice(0, tx.fList.length);
+	if (fftList === undefined) global.fList = tx.fList.slice();
+	else {
+		fftList.length = 0;
+		tx.fList.forEach(function (frequency) { fftList.push(frequency); });
+	}
+}
+
+function carrierSample(symbol, frequency, index, sampleRateHz) {
+	var theta = 2 * Math.PI * frequency * index / sampleRateHz;
+	return symbol.getR() * Math.cos(theta) - symbol.getI() * Math.sin(theta);
+}
+
+function gaussianLevels(bits, samplesPerBit, bt) {
+	var levels = bits.flatMap(function (bit) {
+		return Array(samplesPerBit).fill(bit ? 1 : -1);
+	});
+	var sigma = samplesPerBit * Math.sqrt(Math.log(2)) / (2 * Math.PI * bt);
+	var radius = Math.ceil(4 * sigma);
+	var weights = Array.from({length: 2 * radius + 1}, function (_, index) {
+		var offset = index - radius;
+		return Math.exp(-offset * offset / (2 * sigma * sigma));
+	});
+	var sum = weights.reduce(function (total, weight) { return total + weight; }, 0);
+	return levels.map(function (_, index) {
+		var filtered = 0;
+		for (var offset = -radius; offset <= radius; offset++) {
+			filtered += weights[offset + radius] *
+				levels[((index + offset) % levels.length + levels.length) % levels.length];
+		}
+		return filtered / sum;
+	});
+}
+
+// Add symbol mapping or continuous-phase modulation to a bit source.
+function modulateAdvanced(tx, options, carrierHz) {
+	var mode = options.mode;
+	var amplitude = options.carrierAmplitudeVolts === undefined ? 1 : options.carrierAmplitudeVolts;
+	if (!Number.isFinite(amplitude) || amplitude <= 0) {
+		throw new RangeError(mode + ' needs positive carrierAmplitudeVolts.');
+	}
+	var samplesPerBit = tx.samplesPerBit;
+	var sampleRateHz = tx.sampleRateHz;
+	var samples = [];
+	var extras = {carrierAmplitudeVolts: amplitude};
+	if (mode === 'DPSK') {
+		var phaseSign = 1;
+		var signs = [phaseSign]; // Known reference symbol precedes the first data bit.
+		tx.bits.forEach(function (bit) {
+			if (bit) phaseSign = -phaseSign;
+			signs.push(phaseSign);
+		});
+		samples = signs.flatMap(function (sign, symbolIndex) {
+			return Array.from({length: samplesPerBit}, function (_, offset) {
+				var index = symbolIndex * samplesPerBit + offset;
+				return sign * amplitude * Math.cos(2 * Math.PI * carrierHz * index / sampleRateHz);
+			});
+		});
+		tx.referenceSymbols = 1;
+		extras.referenceSymbols = 1;
+	} else if (mode === 'QPSK' || mode === 'QAM') {
+		var order = mode === 'QPSK' ? 4 : (options.order === undefined ? 16 : options.order);
+		if (!powerOfTwo(order) || !Number.isInteger(Math.sqrt(order)) || order < 4 || order > 256) {
+			throw new RangeError('QAM order must be 4, 16, 64, or 256.');
+		}
+		var bitsPerSymbol = Math.log2(order);
+		var symbolCount = Math.ceil(tx.bits.length / bitsPerSymbol);
+		var pilot = complex((Math.sqrt(order) - 1) / Math.sqrt(2 * (order - 1) / 3),
+			(Math.sqrt(order) - 1) / Math.sqrt(2 * (order - 1) / 3));
+		var symbols = (mode === 'QAM' ? [pilot] : []).concat(
+			Array.from({length: symbolCount}, function (_, index) {
+				var paddedBits = tx.bits.slice(index * bitsPerSymbol, (index + 1) * bitsPerSymbol);
+				while (paddedBits.length < bitsPerSymbol) paddedBits.push(0);
+				return symbolFromBits(paddedBits, 0, order);
+			}));
+		var samplesPerSymbol = bitsPerSymbol * samplesPerBit;
+		samples = symbols.flatMap(function (symbol, symbolIndex) {
+			return Array.from({length: samplesPerSymbol}, function (_, offset) {
+				var index = symbolIndex * samplesPerSymbol + offset;
+				return amplitude * carrierSample(symbol, carrierHz, index, sampleRateHz);
+			});
+		});
+		tx.order = order;
+		tx.bitsPerSymbol = bitsPerSymbol;
+		tx.bitCount = tx.bits.length;
+		tx.symbolRate = sampleRateHz / samplesPerBit / bitsPerSymbol;
+		tx.referenceSymbols = mode === 'QAM' ? 1 : 0;
+		Object.assign(extras, {order: order, bitsPerSymbol: bitsPerSymbol,
+			referenceSymbols: tx.referenceSymbols,
+			symbolRate: sampleRateHz / samplesPerBit / bitsPerSymbol});
+	} else if (mode === 'MSK' || mode === 'GMSK') {
+		if (samplesPerBit < 4) {
+			throw new RangeError(mode + ' needs at least four samplesPerBit for phase-slope reception.');
+		}
+		var bitRate = sampleRateHz / samplesPerBit;
+		var deviationHz = bitRate / 4;
+		var bt = options.bt === undefined ? 0.3 : options.bt;
+		if (mode === 'GMSK' && (!Number.isFinite(bt) || bt < 0.1 || bt > 1)) {
+			throw new RangeError('GMSK bt must be from 0.1 through 1.');
+		}
+		var levels = mode === 'GMSK' ? gaussianLevels(tx.bits, samplesPerBit, bt) :
+			tx.bits.flatMap(function (bit) { return Array(samplesPerBit).fill(bit ? 1 : -1); });
+		var phase = 0;
+		samples = levels.map(function (level) {
+			var voltage = amplitude * Math.cos(phase);
+			phase += 2 * Math.PI * (carrierHz + deviationHz * level) / sampleRateHz;
+			return voltage;
+		});
+		tx.frequencyDeviationHz = deviationHz;
+		if (mode === 'GMSK') tx.bt = bt;
+		Object.assign(extras, {frequencyDeviationHz: deviationHz,
+			...(mode === 'GMSK' ? {bt: bt} : {})});
+	} else if (mode === 'OFDM') {
+		var subcarrierCount = options.subcarrierCount === undefined ? 64 : options.subcarrierCount;
+		var fftSize = options.fftSize === undefined ? 4 * subcarrierCount : options.fftSize;
+		var symbolRate = options.symbolRate === undefined ? 5e6 : options.symbolRate;
+		var subcarrierMode = options.subcarrierMode === undefined ? 'QPSK' : options.subcarrierMode;
+		var order = subcarrierMode === 'QPSK' ? 4 : subcarrierMode === 'QAM' ?
+			(options.order === undefined ? 16 : options.order) : 0;
+		if (!powerOfTwo(subcarrierCount) || subcarrierCount < 2 ||
+			!powerOfTwo(fftSize) || fftSize < 2 * subcarrierCount + 2 ||
+			!Number.isFinite(symbolRate) || symbolRate <= 0 ||
+			!powerOfTwo(order) || !Number.isInteger(Math.sqrt(order)) || order > 256) {
+			throw new RangeError('OFDM needs power-of-two subcarrierCount and fftSize, positive symbolRate, and QPSK or square QAM symbols.');
+		}
+		var bitsPerSymbol = Math.log2(order);
+		if (carrierHz <= subcarrierCount * symbolRate / 2 ||
+			carrierHz + subcarrierCount * symbolRate / 2 >= symbolRate * fftSize / 2 ||
+			Math.abs(carrierHz / symbolRate - Math.round(carrierHz / symbolRate)) > 1e-9) {
+			throw new RangeError('OFDM carrier must be bin-aligned and all subcarriers must lie between DC and Nyquist.');
+		}
+		var blockCount = Math.ceil(tx.bits.length / (subcarrierCount * bitsPerSymbol));
+		var slotCount = Math.ceil(tx.bits.length / bitsPerSymbol);
+		var blockRateHz = symbolRate * fftSize;
+		for (var block = 0; block < blockCount; block++) {
+			var blockSpectrum = Array.from({length: fftSize}, function () { return complex(0, 0); });
+			var scale = fftSize / Math.sqrt(subcarrierCount + 1);
+			blockSpectrum[0] = complex(scale, 0); // Pilot at the carrier.
+			for (var slot = 0; slot < subcarrierCount; slot++) {
+				var symbolIndex = block * subcarrierCount + slot;
+				if (symbolIndex >= slotCount) break;
+				var paddedBits = tx.bits.slice(symbolIndex * bitsPerSymbol,
+					(symbolIndex + 1) * bitsPerSymbol);
+				while (paddedBits.length < bitsPerSymbol) paddedBits.push(0);
+				var subcarrier = slot < subcarrierCount / 2 ? slot + 1 :
+					slot - subcarrierCount;
+				var location = (subcarrier + fftSize) % fftSize;
+				var symbol = symbolFromBits(paddedBits, 0, order);
+				blockSpectrum[location] = complex(scale * symbol.getR(), scale * symbol.getI());
+			}
+			var baseband = invFFT(blockSpectrum);
+			for (var sample = 0; sample < fftSize; sample++) {
+				var index = block * fftSize + sample;
+				samples.push(amplitude * carrierSample(baseband[sample], carrierHz,
+					index, blockRateHz));
+			}
+		}
+		tx.samplesPerBit = undefined;
+		tx.bitCount = tx.bits.length;
+		tx.subcarrierCount = subcarrierCount;
+		tx.fftSize = fftSize;
+		tx.symbolRate = symbolRate;
+		tx.subcarrierMode = subcarrierMode;
+		tx.order = order;
+		tx.bitsPerSymbol = bitsPerSymbol;
+		Object.assign(extras, {subcarrierCount: subcarrierCount, fftSize: fftSize,
+			symbolRate: symbolRate, subcarrierMode: subcarrierMode, order: order,
+			bitsPerSymbol: bitsPerSymbol, blockCount: blockCount});
+		setSamples(tx, samples, options.fftList, blockRateHz);
+	}
+	if (mode !== 'OFDM') {
+		if (carrierHz + (tx.frequencyDeviationHz || 0) >= sampleRateHz / 2) {
+			throw new RangeError(mode + ' carrier and deviation must remain below Nyquist.');
+		}
+		setSamples(tx, samples, options.fftList);
+	}
+	tx.dataMode = tx.mode;
+	tx.mode = mode;
+	tx.carrierHz = carrierHz;
+	tx.carrierAmplitudeVolts = amplitude;
+	return extras;
+}
+
+function correlator(samples, start, count, frequency, sampleRateHz) {
+	var real = 0, imaginary = 0;
+	for (var offset = 0; offset < count; offset++) {
+		var index = start + offset;
+		var theta = 2 * Math.PI * frequency * index / sampleRateHz;
+		real += samples[index + 1][1] * Math.cos(theta);
+		imaginary -= samples[index + 1][1] * Math.sin(theta);
+	}
+	return complex(2 * real / count, 2 * imaginary / count);
+}
+
+function analyticSamples(receiver, signal) {
+	var positive = receiver.out('spectrum');
+	var full = Array.from({length: signal.sampleCount}, function () { return complex(0, 0); });
+	for (var bin = 0; bin < positive.length; bin++) {
+		var factor = bin === 0 || (signal.sampleCount % 2 === 0 && bin === signal.sampleCount / 2) ? 1 : 2;
+		full[bin] = complex(factor * positive[bin].getR(), factor * positive[bin].getI());
+	}
+	return invFFT(full);
+}
+
+function ascii(bits) {
+	if (bits.length % 8 !== 0) throw new RangeError('ASCII reception requires complete eight-bit bytes.');
+	var text = '';
+	for (var byte = 0; byte < bits.length; byte += 8) {
+		var code = bitsValue(bits, byte, 8);
+		text += code > 127 ? '\uFFFD' : String.fromCharCode(code);
+	}
+	return text;
+}
+
+// All these receivers use the received waveform, never the transmitted bits.
+function demodulateAdvanced(receiver, signal) {
+	var mode = signal.mode;
+	var passband = receiver.out('waveform');
+	var sampleRateHz = signal.sampleRateHz;
+	var bits = [];
+	var symbols = [['Symbol', 'In-phase', 'Quadrature']];
+	if (mode === 'DPSK' || mode === 'QPSK' || mode === 'QAM') {
+		var symbolBits = mode === 'DPSK' ? 1 : signal.bitsPerSymbol;
+		var samplesPerSymbol = signal.samplesPerBit * symbolBits;
+		var observed = [];
+		for (var start = 0; start < signal.sampleCount; start += samplesPerSymbol) {
+			var value = correlator(passband, start, samplesPerSymbol,
+				signal.carrierHz, sampleRateHz);
+			observed.push(value);
+			symbols.push([observed.length - 1, value.getR(), value.getI()]);
+		}
+		if (mode === 'DPSK') {
+			for (var index = 1; index < observed.length; index++) {
+				var previous = observed[index - 1], current = observed[index];
+				bits.push(previous.getR() * current.getR() +
+					previous.getI() * current.getI() < 0 ? 1 : 0);
+			}
+		} else {
+			var gain = mode === 'QAM' ? observed[0].div(complex(
+				(Math.sqrt(signal.order) - 1) / Math.sqrt(2 * (signal.order - 1) / 3),
+				(Math.sqrt(signal.order) - 1) / Math.sqrt(2 * (signal.order - 1) / 3))) : null;
+			if (gain && gain.mag() < 1e-12) throw new RangeError('QAM reference symbol has no received energy.');
+			for (var index = signal.referenceSymbols || 0; index < observed.length; index++) {
+				bits.push(...bitsFromSymbol(gain ? observed[index].div(gain) : observed[index], signal.order));
+			}
+		}
+	} else if (mode === 'MSK' || mode === 'GMSK') {
+		var analytic = analyticSamples(receiver, signal);
+		var samplesPerBit = signal.samplesPerBit;
+		for (var start = 0; start < signal.sampleCount; start += samplesPerBit) {
+			var left = start + Math.floor(samplesPerBit / 4);
+			var right = start + Math.floor(3 * samplesPerBit / 4);
+			var first = analytic[left], last = analytic[right];
+			var delta = last.mul(complex(first.getR(), -first.getI()));
+			var angle = Math.atan2(delta.getI(), delta.getR()) -
+				2 * Math.PI * signal.carrierHz * (right - left) / sampleRateHz;
+			bits.push(Math.atan2(Math.sin(angle), Math.cos(angle)) > 0 ? 1 : 0);
+			symbols.push([bits.length - 1, Math.cos(angle), Math.sin(angle)]);
+		}
+	} else if (mode === 'OFDM') {
+		var fftSize = signal.fftSize;
+		var totalSlots = Math.ceil(signal.bitCount / signal.bitsPerSymbol);
+		for (var block = 0; block < signal.sampleCount / fftSize; block++) {
+			var pilot = correlator(passband, block * fftSize, fftSize,
+				signal.carrierHz, sampleRateHz);
+			if (pilot.mag() < 1e-12) throw new RangeError('OFDM pilot has no received energy.');
+			for (var slot = 0; slot < signal.subcarrierCount; slot++) {
+				var symbolIndex = block * signal.subcarrierCount + slot;
+				if (symbolIndex >= totalSlots) break;
+				var subcarrier = slot < signal.subcarrierCount / 2 ? slot + 1 :
+					slot - signal.subcarrierCount;
+				var measured = correlator(passband, block * fftSize, fftSize,
+					signal.carrierHz + subcarrier * signal.symbolRate, sampleRateHz);
+				var equalized = measured.div(pilot);
+				bits.push(...bitsFromSymbol(equalized, signal.order));
+				symbols.push([symbolIndex, equalized.getR(), equalized.getI()]);
+			}
+		}
+		bits.length = signal.bitCount;
+	}
+	if (signal.bitCount !== undefined) bits.length = signal.bitCount;
+	var baseband = bits.flatMap(function (bit) {
+		return Array(signal.samplesPerBit || 1).fill(bit);
+	});
+	return {
+		out: function (selector = 'waveform') {
+			if (selector === 'mode') return mode;
+			if (selector === 'data mode') return signal.dataMode;
+			if (selector === 'bits') return bits.slice();
+			if (selector === 'bit string') return bits.join('');
+			if (selector === 'bit count') return bits.length;
+			if (selector === 'ASCII text') return ascii(bits);
+			if (selector === 'symbols') return symbols.map(function (row) { return row.slice(); });
+			if (selector === 'carrier waveform' || selector === 'passband waveform') return passband;
+			if (selector === 'waveform') return [['Time (ns)', 'Output (V)']].concat(
+				baseband.map(function (value, index) { return [index * 1e9 / sampleRateHz, value]; }));
+			return receiver.out(selector);
+		}
+	};
+}
+
+// Modified: 2026-10-22
+
+// Connect a transmitter directly to the receiver using the transmitter's
+// original frequency grid and impedance, independent of the active context.
+function directStage(source) {
+	if (!source || !Array.isArray(source.fList) || source.fList.length === 0) {
+		throw new TypeError('demod requires an nPort with a signal or a mod() result.');
+	}
+	var stage = new nPort();
+	stage.setspars(source.fList.map(function (frequency) {
+		return [frequency, complex(0, 0), complex(1, 0), complex(1, 0), complex(0, 0)];
+	}));
+	stage.setglobal({fList: source.fList, Ro: source.referenceImpedanceOhms,
+		Temp: 290, tList: [], twoTone: undefined});
+	return applyInputSignal(stage, {signal: source, inputPort: 1});
+}
+
+function decideBits(levels, threshold) {
+	if (threshold === undefined) {
+		var sorted = levels.slice().sort(function (a, b) { return a - b; });
+		var lowCenter = sorted[Math.floor(sorted.length * 0.1)];
+		var highCenter = sorted[Math.floor(sorted.length * 0.9)];
+		if (lowCenter === highCenter) {
+			lowCenter = sorted[0];
+			highCenter = sorted[sorted.length - 1];
+		}
+		if (lowCenter === highCenter) {
+			throw new RangeError('Bit reception needs two voltage levels or an explicit thresholdVolts.');
+		}
+		for (var iteration = 0; iteration < 12; iteration++) {
+			var split = (lowCenter + highCenter) / 2;
+			var lowSum = 0, lowCount = 0, highSum = 0, highCount = 0;
+			levels.forEach(function (level) {
+				if (level <= split) { lowSum += level; lowCount++; }
+				else { highSum += level; highCount++; }
+			});
+			if (!lowCount || !highCount) break;
+			lowCenter = lowSum / lowCount;
+			highCenter = highSum / highCount;
+		}
+		threshold = (lowCenter + highCenter) / 2;
+	}
+	if (!Number.isFinite(threshold)) throw new RangeError('demod thresholdVolts must be finite.');
+	return levels.map(function (level) { return level > threshold ? 1 : 0; });
+}
+
+// Recover the envelope from the three propagated complex peak-voltage tones.
+function demodAM(stage, options) {
+	if (!options || Array.isArray(options) || typeof options !== 'object') {
+		throw new TypeError('demod options must be an object.');
+	}
+	if (options.noise !== undefined && options.noise !== false) {
+		throw new RangeError('AM envelope analysis does not yet generate random noise samples.');
+	}
+	if (options.mode !== undefined) {
+		throw new RangeError('Select AM demod output with .out() instead of mode.');
+	}
+	var portCount = Math.sqrt(stage.spars[0].length - 1);
+	var outputPort = options.outputPort === undefined ? 2 : options.outputPort;
+	var points = options.points === undefined ? 1001 : options.points;
+	if (!Number.isInteger(outputPort) || outputPort < 1 || outputPort > portCount ||
+		!Number.isInteger(points) || points < 3) {
+		throw new RangeError('AM demod needs a valid outputPort and at least three envelope points.');
+	}
+	var signal = stage.signal;
+	var voltageScale = complex(Math.sqrt(signal.referenceImpedanceOhms), 0);
+	var lower = signal.rows[0].waves[outputPort - 1].mul(voltageScale);
+	var carrier = signal.rows[1].waves[outputPort - 1].mul(voltageScale);
+	var upper = signal.rows[2].waves[outputPort - 1].mul(voltageScale);
+	if (carrier.mag() === 0) throw new RangeError('AM phase requires a nonzero output carrier.');
+	var envelope = [['Time (s)', 'Envelope (V)']];
+	var phase = [['Time (s)', 'Phase deviation (deg)']];
+	var peakPhase = 0;
+	var carrierPhase = Math.atan2(carrier.getI(), carrier.getR());
+	for (var index = 0; index < points; index++) {
+		var theta = 2 * Math.PI * index / (points - 1);
+		var cosine = Math.cos(theta), sine = Math.sin(theta);
+		var real = carrier.getR() + (lower.getR() + upper.getR()) * cosine +
+			(lower.getI() - upper.getI()) * sine;
+		var imaginary = carrier.getI() + (lower.getI() + upper.getI()) * cosine +
+			(upper.getR() - lower.getR()) * sine;
+		var difference = Math.atan2(imaginary, real) - carrierPhase;
+		difference = Math.atan2(Math.sin(difference), Math.cos(difference)) * 180 / Math.PI;
+		var time = index / ((points - 1) * signal.toneHz);
+		envelope.push([time, Math.hypot(real, imaginary)]);
+		phase.push([time, difference]);
+		peakPhase = Math.max(peakPhase, Math.abs(difference));
+	}
+	return {
+		out: function (selector) {
+			if (selector === 'envelope') return envelope.map(function (row) { return row.slice(); });
+			if (selector === 'phase') return phase.map(function (row) { return row.slice(); });
+			if (selector === 'amToPmDeg') return peakPhase;
+			if (selector === 'tones') return stage.out('signal' + outputPort + 'V',
+				'signal' + outputPort + 'Deg', 'signal' + outputPort + 'dBm');
+			if (selector === 'frequencies') return signal.rows.map(function (row) { return row.frequency; });
+			throw new RangeError('Unknown AM demod output: ' + selector);
+		}
+	};
+}
+
+// Coherently translate occupied sidebands back to the modulation frequency.
+function demodSuppressed(stage, options) {
+	if (!options || Array.isArray(options) || typeof options !== 'object') {
+		throw new TypeError('demod options must be an object.');
+	}
+	if (options.noise !== undefined && options.noise !== false) {
+		throw new RangeError('Suppressed-carrier analysis does not yet generate random noise samples.');
+	}
+	if (options.mode !== undefined) throw new RangeError('Select demod output with .out() instead of mode.');
+	var signal = stage.signal;
+	var outputPort = options.outputPort === undefined ? 2 : options.outputPort;
+	var portCount = Math.sqrt(stage.spars[0].length - 1);
+	var points = options.points === undefined ? 1001 : options.points;
+	if (!Number.isInteger(outputPort) || outputPort < 1 || outputPort > portCount ||
+		!Number.isInteger(points) || points < 3) {
+		throw new RangeError(signal.mode + ' demod needs a valid outputPort and at least three points.');
+	}
+	var scale = complex(Math.sqrt(signal.referenceImpedanceOhms), 0);
+	var tones = signal.rows.map(function (row) { return row.waves[outputPort - 1].mul(scale); });
+	var waveform = [['Time (s)', 'Recovered voltage (V)']];
+	var envelope = [['Time (s)', 'Envelope (V)']];
+	for (var index = 0; index < points; index++) {
+		var time = index / ((points - 1) * signal.toneHz);
+		var real = 0, imaginary = 0;
+		for (var toneIndex = 0; toneIndex < tones.length; toneIndex++) {
+			var offset = signal.rows[toneIndex].frequency - signal.carrierHz;
+			var theta = 2 * Math.PI * offset * time;
+			real += tones[toneIndex].getR() * Math.cos(theta) - tones[toneIndex].getI() * Math.sin(theta);
+			imaginary += tones[toneIndex].getR() * Math.sin(theta) +
+				tones[toneIndex].getI() * Math.cos(theta);
+		}
+		waveform.push([time, real]);
+		envelope.push([time, Math.hypot(real, imaginary)]);
+	}
+	return {out: function (selector) {
+		if (selector === 'mode') return signal.mode;
+		if (selector === 'waveform') return waveform.map(function (row) { return row.slice(); });
+		if (selector === 'envelope') return envelope.map(function (row) { return row.slice(); });
+		if (selector === 'tones') return stage.out('signal' + outputPort + 'V',
+			'signal' + outputPort + 'Deg', 'signal' + outputPort + 'dBm');
+		if (selector === 'frequencies') return signal.rows.map(function (row) { return row.frequency; });
+		throw new RangeError('Unknown ' + signal.mode + ' demod output: ' + selector);
+	}};
+}
+
+// Sum the propagated angle-modulation sidebands into a complex envelope.
+function demodAngle(stage, options) {
+	var mode = stage.signal.mode;
+	if (!options || Array.isArray(options) || typeof options !== 'object') {
+		throw new TypeError('demod options must be an object.');
+	}
+	if (options.noise !== undefined && options.noise !== false) {
+		throw new RangeError(mode + ' analysis does not yet generate random receiver noise samples.');
+	}
+	if (options.mode !== undefined) {
+		throw new RangeError('Select ' + mode + ' demod output with .out() instead of mode.');
+	}
+	var portCount = Math.sqrt(stage.spars[0].length - 1);
+	var outputPort = options.outputPort === undefined ? 2 : options.outputPort;
+	var points = options.points === undefined ? 1001 : options.points;
+	if (!Number.isInteger(outputPort) || outputPort < 1 || outputPort > portCount ||
+		!Number.isInteger(points) || points < 3) {
+		throw new RangeError(mode + ' demod needs a valid outputPort and at least three display points.');
+	}
+	var signal = stage.signal;
+	if (mode === 'PM' && points <= 2 * signal.beta + 1) {
+		throw new RangeError('PM needs more display points to unwrap its phase.');
+	}
+	var order = signal.sidebandOrder;
+	var scale = complex(Math.sqrt(signal.referenceImpedanceOhms), 0);
+	var tones = signal.rows.map(function (row) { return row.waves[outputPort - 1].mul(scale); });
+	var envelope = [['Time (s)', 'Envelope (V)']];
+	var phase = [['Time (s)', 'Phase deviation (deg, wrapped)']];
+	var deviation = [['Time (s)', 'Frequency deviation (Hz)']];
+	var referencePhase;
+	var peakDeviation = 0;
+	var rawPhases = [];
+	for (var index = 0; index < points; index++) {
+		var theta = 2 * Math.PI * index / (points - 1);
+		var real = 0, imaginary = 0, derivativeReal = 0, derivativeImaginary = 0;
+		for (var toneIndex = 0; toneIndex < tones.length; toneIndex++) {
+			var n = toneIndex - order;
+			var cosine = Math.cos(n * theta), sine = Math.sin(n * theta);
+			var componentReal = tones[toneIndex].getR() * cosine - tones[toneIndex].getI() * sine;
+			var componentImaginary = tones[toneIndex].getR() * sine + tones[toneIndex].getI() * cosine;
+			real += componentReal;
+			imaginary += componentImaginary;
+			derivativeReal += n * componentReal;
+			derivativeImaginary += n * componentImaginary;
+		}
+		var power = real * real + imaginary * imaginary;
+		if (power === 0) throw new RangeError(mode + ' demodulation requires a nonzero envelope.');
+		var time = index / ((points - 1) * signal.toneHz);
+		var currentPhase = Math.atan2(imaginary, real);
+		rawPhases.push(currentPhase);
+		if (referencePhase === undefined) referencePhase = currentPhase;
+		var difference = currentPhase - referencePhase;
+		difference = Math.atan2(Math.sin(difference), Math.cos(difference)) * 180 / Math.PI;
+		var frequencyDeviation = signal.toneHz *
+			(derivativeReal * real + derivativeImaginary * imaginary) / power;
+		envelope.push([time, Math.sqrt(power)]);
+		phase.push([time, difference]);
+		deviation.push([time, frequencyDeviation]);
+		peakDeviation = Math.max(peakDeviation, Math.abs(frequencyDeviation));
+	}
+	var peakPhaseRadians;
+	if (mode === 'PM') {
+		var unwrapped = [rawPhases[0]];
+		for (var phaseIndex = 1; phaseIndex < points; phaseIndex++) {
+			var step = rawPhases[phaseIndex] - rawPhases[phaseIndex - 1];
+			unwrapped.push(unwrapped[phaseIndex - 1] + Math.atan2(Math.sin(step), Math.cos(step)));
+		}
+		var center = unwrapped.slice(0, -1).reduce(function (sum, value) {
+			return sum + value;
+		}, 0) / (points - 1);
+		peakPhaseRadians = 0;
+		phase = [['Time (s)', 'Phase deviation (deg)']];
+		for (var phasePoint = 0; phasePoint < points; phasePoint++) {
+			var phaseRadians = unwrapped[phasePoint] - center;
+			phase.push([phasePoint / ((points - 1) * signal.toneHz),
+				phaseRadians * 180 / Math.PI]);
+			peakPhaseRadians = Math.max(peakPhaseRadians, Math.abs(phaseRadians));
+		}
+	}
+	return {
+		out: function (selector) {
+			if (selector === 'envelope') return envelope.map(function (row) { return row.slice(); });
+			if (selector === 'phase') return phase.map(function (row) { return row.slice(); });
+			if (selector === 'frequency deviation') return deviation.map(function (row) { return row.slice(); });
+			if (selector === 'peak frequency deviation Hz') return peakDeviation;
+			if (selector === 'peak phase deviation radians' && mode === 'PM') return peakPhaseRadians;
+			if (selector === 'tones') return stage.out('signal' + outputPort + 'V',
+				'signal' + outputPort + 'Deg', 'signal' + outputPort + 'dBm');
+			if (selector === 'frequencies') return signal.rows.map(function (row) { return row.frequency; });
+			throw new RangeError('Unknown ' + mode + ' demod output: ' + selector);
+		}
+	};
+}
+
+// Compare quadrature energy at the two FSK tones in each known bit interval.
+function demodFSK(receiver, signal) {
+	var samplesPerBit = signal.samplesPerBit;
+	if (!Number.isInteger(samplesPerBit) || samplesPerBit < 2 ||
+		signal.sampleCount % samplesPerBit !== 0 ||
+		!Number.isFinite(signal.frequencyDeviationHz) || signal.frequencyDeviationHz <= 0) {
+		throw new RangeError('FSK reception needs two valid tones and whole bit intervals.');
+	}
+	var samples = receiver.out('waveform');
+	var frequencies = [signal.carrierHz - signal.frequencyDeviationHz,
+		signal.carrierHz + signal.frequencyDeviationHz];
+	var bits = [];
+	var energies = [['Bit', 'Low-tone energy', 'High-tone energy']];
+	for (var start = 0; start < signal.sampleCount; start += samplesPerBit) {
+		var scores = frequencies.map(function (frequency) {
+			var inPhase = 0, quadrature = 0;
+			for (var offset = 0; offset < samplesPerBit; offset++) {
+				var index = start + offset;
+				var phase = 2 * Math.PI * frequency * index / signal.sampleRateHz;
+				inPhase += samples[index + 1][1] * Math.cos(phase);
+				quadrature += samples[index + 1][1] * Math.sin(phase);
+			}
+			return inPhase * inPhase + quadrature * quadrature;
+		});
+		bits.push(scores[1] > scores[0] ? 1 : 0);
+		energies.push([start / samplesPerBit, scores[0], scores[1]]);
+	}
+	return {
+		out: function (selector = 'waveform') {
+			if (selector === 'mode') return 'FSK';
+			if (selector === 'data mode') return signal.dataMode;
+			if (selector === 'bits') return bits.slice();
+			if (selector === 'bit string') return bits.join('');
+			if (selector === 'bit count') return bits.length;
+			if (selector === 'tone energies') return energies.map(function (row) { return row.slice(); });
+			if (selector === 'tone frequencies Hz') return frequencies.slice();
+			if (selector === 'ASCII text') {
+				if (bits.length % 8 !== 0) throw new RangeError('ASCII reception requires complete eight-bit bytes.');
+				var message = '';
+				for (var byte = 0; byte < bits.length; byte += 8) {
+					var code = 0;
+					for (var bit = 0; bit < 8; bit++) code = (code << 1) | bits[byte + bit];
+					message += code > 127 ? '\uFFFD' : String.fromCharCode(code);
+				}
+				return message;
+			}
+			return receiver.out(selector === 'carrier waveform' || selector === 'passband waveform' ?
+				'waveform' : selector);
+		}
+	};
+}
+
+// Recover baseband levels from a real carrier using the known carrier phase.
+function demod(stage, options = {}) {
+	if (!stage || !Array.isArray(stage.spars)) stage = directStage(stage);
+	if (stage.signal && stage.signal.mode === 'VNA-frequency') {
+		return receiveVnaFrequency(stage, options);
+	}
+	if (stage.signal && stage.signal.mode === 'AM') return demodAM(stage, options);
+	if (stage.signal && (stage.signal.mode === 'SSB' || stage.signal.mode === 'DSB-SC')) {
+		return demodSuppressed(stage, options);
+	}
+	if (stage.signal && (stage.signal.mode === 'FM' || stage.signal.mode === 'PM')) {
+		return demodAngle(stage, options);
+	}
+	var receiver = receiveWaveform(stage, options);
+	var signal = stage.signal;
+	if (['DPSK', 'QPSK', 'QAM', 'MSK', 'GMSK', 'OFDM'].includes(signal.mode)) {
+		return demodulateAdvanced(receiver, signal);
+	}
+	if (signal.mode === 'FSK') return demodFSK(receiver, signal);
+	var carrierHz = signal.carrierHz || 0;
+	if (carrierHz === 0) return receiver;
+	var samplesPerBit = signal.samplesPerBit;
+	if (!Number.isInteger(samplesPerBit) || samplesPerBit < 1 ||
+		signal.sampleCount % samplesPerBit !== 0) {
+		throw new RangeError('Carrier demodulation requires a whole number of samples per bit.');
+	}
+	var passband = receiver.out('waveform');
+	var sampleRateHz = signal.sampleRateHz;
+	var levels = [];
+	for (var bitStart = 0; bitStart < signal.sampleCount; bitStart += samplesPerBit) {
+		var numerator = 0, denominator = 0;
+		for (var offset = 0; offset < samplesPerBit; offset++) {
+			var index = bitStart + offset;
+			var reference = Math.cos(2 * Math.PI * carrierHz * index / sampleRateHz);
+			if (signal.mode === 'PSK' && signal.encoding === 'Manchester' &&
+				offset >= samplesPerBit / 2) reference = -reference;
+			numerator += passband[index + 1][1] * reference;
+			denominator += reference * reference;
+		}
+		if (denominator < 1e-12) throw new RangeError('Carrier has insufficient energy in a bit interval.');
+		levels.push(numerator / denominator);
+	}
+	var baseband = levels.flatMap(function (level) {
+		return Array(samplesPerBit).fill(level);
+	});
+	var bits;
+	var receivedBits = function () {
+		if (bits === undefined) {
+			if (signal.mode === 'PSK') {
+				var threshold = options.thresholdVolts === undefined ? 0 : options.thresholdVolts;
+				if (!Number.isFinite(threshold)) throw new RangeError('PSK thresholdVolts must be finite.');
+				bits = levels.map(function (level) { return level > threshold ? 1 : 0; });
+			} else {
+				bits = decideBits(levels, options.thresholdVolts);
+			}
+		}
+		return bits;
+	};
+	return {
+		out: function (selector = 'waveform') {
+			if (selector === 'mode') return signal.mode;
+			if (selector === 'data mode') return signal.dataMode || signal.mode;
+			if (selector === 'encoding' && signal.mode === 'PSK') return signal.encoding || 'NRZ';
+			if (selector === 'carrier waveform' || selector === 'passband waveform') {
+				return receiver.out('waveform');
+			}
+			if (selector === 'waveform') {
+				return [['Time (ns)', 'Output (V)']].concat(baseband.map(function (level, index) {
+					return [index * 1e9 / sampleRateHz, level];
+				}));
+			}
+			if (selector === 'bits') return receivedBits().slice();
+			if (selector === 'bit string') return receivedBits().join('');
+			if (selector === 'bit count') return levels.length;
+			if (selector === 'spectrum') return fftBins(baseband).slice(0, signal.rows.length);
+			if (selector === 'carrier spectrum') return receiver.out('spectrum');
+			if (selector === 'ASCII text') {
+				var bits = receivedBits();
+				if (bits.length % 8 !== 0) throw new RangeError('ASCII reception requires complete eight-bit bytes.');
+				var text = '';
+				for (var byte = 0; byte < bits.length; byte += 8) {
+					var code = 0;
+					for (var bit = 0; bit < 8; bit++) code = (code << 1) | bits[byte + bit];
+					text += code > 127 ? '\uFFFD' : String.fromCharCode(code);
+				}
+				return text;
+			}
+			return receiver.out(selector);
+		}
+	};
+}
+
+// Modified: 2026-10-14
+
+// Compare independent receiver decisions with a known transmitted bit pattern.
+function bitErrorRate(tx, stage, options = {}) {
+	if (!tx || !Array.isArray(tx.bits) || tx.bits.length === 0 ||
+		tx.bits.some(function (bit) { return bit !== 0 && bit !== 1; })) {
+		throw new TypeError('bitErrorRate requires transmitted bits from mod.');
+	}
+	if (!options || Array.isArray(options) || typeof options !== 'object') {
+		throw new TypeError('bitErrorRate options must be an object.');
+	}
+	var receptions = options.receptions === undefined ? 100 : options.receptions;
+	if (!Number.isInteger(receptions) || receptions < 1) {
+		throw new RangeError('bitErrorRate receptions must be a positive integer.');
+	}
+	var receiverOptions = {...options};
+	delete receiverOptions.receptions;
+	var receiver = receiverOptions.receiver === undefined ? demod : receiverOptions.receiver;
+	delete receiverOptions.receiver;
+	if (typeof receiver !== 'function') {
+		throw new TypeError('bitErrorRate receiver must be a function.');
+	}
+	var errors = 0;
+	for (var reception = 0; reception < receptions; reception++) {
+		var receivedBits = receiver(stage, receiverOptions).out('bits');
+		if (receivedBits.length !== tx.bits.length) {
+			throw new RangeError('Transmitted and received bit counts must match.');
+		}
+		for (var bit = 0; bit < receivedBits.length; bit++) {
+			if (receivedBits[bit] !== tx.bits[bit]) errors++;
+		}
+	}
+	return errors / (receptions * tx.bits.length);
+}
+
+// Modified: 2026-10-21
+
+
+// Feedback masks for maximal-length, left-shifting registers of 2–16 stages.
+var FEEDBACK_MASKS = {
+	2: 0x3, 3: 0x5, 4: 0x9, 5: 0x17, 6: 0x21,
+	7: 0x41, 8: 0x95, 9: 0x10d, 10: 0x20d, 11: 0x40b,
+	12: 0x829, 13: 0x100d, 14: 0x2015, 15: 0x4001, 16: 0x801f
+};
+
+function pnBits(stages = 7, seed = 2 ** stages - 1) {
+	if (!Number.isInteger(stages) || !FEEDBACK_MASKS[stages]) {
+		throw new RangeError('PN stages must be an integer from 2 through 16.');
+	}
+	var mask = 2 ** stages - 1;
+	if (!Number.isInteger(seed) || seed < 1 || seed > mask) {
+		throw new RangeError('PN' + stages + ' seed must be a nonzero ' + stages + '-bit integer.');
+	}
+	var bits = [];
+	var register = seed;
+	for (var i = 0; i < mask; i++) {
+		bits.push((register >> (stages - 1)) & 1);
+		var taps = register & FEEDBACK_MASKS[stages];
+		var feedback = 0;
+		while (taps) {
+			feedback ^= taps & 1;
+			taps >>= 1;
+		}
+		register = ((register << 1) | feedback) & mask;
+	}
+	if (register !== seed) throw new RangeError('PN' + stages + ' did not return to its seed.');
+	return bits;
+}
+
+// Advance the selected PN register once at each clock time.
+function PN(options = {}) {
+	if (!options || Array.isArray(options) || typeof options !== 'object') {
+		throw new TypeError('PN expects an options object.');
+	}
+	var stages = options.stages === undefined ? 7 : options.stages;
+	if (!Number.isInteger(stages) || !FEEDBACK_MASKS[stages]) {
+		throw new RangeError('PN stages must be an integer from 2 through 16.');
+	}
+	var periodLength = 2 ** stages - 1;
+	var time = options.time === undefined ? global.tList : options.time;
+	if (!Array.isArray(time) || time.length < periodLength || time.length % periodLength !== 0) {
+		throw new RangeError('PN time must contain a multiple of ' + periodLength + ' clock ticks.');
+	}
+	var step = time[1] - time[0];
+	if (!Number.isFinite(step) || step <= 0 || time.some(function (value, index) {
+		return !Number.isFinite(value) ||
+			Math.abs(value - (time[0] + index * step)) > Math.abs(step) * 1e-6;
+	})) {
+		throw new RangeError('PN time must be a uniformly spaced, increasing list in seconds.');
+	}
+	var lowVolts = options.lowVolts === undefined ? 0 : options.lowVolts;
+	var highVolts = options.highVolts === undefined ? 1 : options.highVolts;
+	if (!Number.isFinite(lowVolts) || !Number.isFinite(highVolts)) {
+		throw new RangeError('PN voltage levels must be finite.');
+	}
+	var period = pnBits(stages, options.seed === undefined ? periodLength : options.seed);
+	var bits = Array.from({length: time.length}, function (_, index) {
+		return period[index % period.length];
+	});
+	var samples = bits.map(function (bit) { return bit ? highVolts : lowVolts; });
+	var bitRate = 1 / step;
+	if (!Number.isFinite(bitRate)) {
+		throw new RangeError('PN clock spacing produces an invalid bit rate.');
+	}
+	var waveform = {
+		kind: 'PN', mode: 'PN' + stages, stages: stages, bits: bits, samples: samples,
+		time: time.slice(), samplesPerBit: 1, sampleRateHz: bitRate,
+		bitRate: bitRate, lowVolts: lowVolts, highVolts: highVolts
+	};
+	waveform.out = function (selector) {
+		if (selector === 'bits') return bits.slice();
+		if (selector === 'bit string') return bits.join('');
+		if (selector === 'samples') return samples.slice();
+		if (selector === 'time') return waveform.time.slice();
+		if (selector === 'bit count') return bits.length;
+		if (selector === 'sample count') return samples.length;
+		if (selector === 'bit rate') return bitRate;
+		if (selector === 'sample rate' || selector === 'clock rate') return bitRate;
+		if (selector === 'waveform') {
+			return [['Time (ns)', 'Output (V)']].concat(waveform.time.map(function (value, index) {
+				return [value * 1e9, samples[index]];
+			}));
+		}
+		throw new RangeError('Unknown PN output: ' + selector);
+	};
+	return waveform;
+}
+
+// Modified: 2026-10-20
+
+function patternBits(options) {
+	var mode = options.mode === undefined ? 'PN7' : options.mode;
+	var bits = [];
+	if (typeof mode === 'string' && /^PN\d+$/.test(mode)) {
+		var stages = Number(mode.slice(2));
+		bits = pnBits(stages, options.seed === undefined ? 2 ** stages - 1 : options.seed);
+	} else if (mode === 'ASCII') {
+		if (typeof options.message !== 'string' || options.message.length === 0) {
+			throw new TypeError('ASCII mode requires a nonempty message.');
+		}
+		for (var character = 0; character < options.message.length; character++) {
+			var code = options.message.charCodeAt(character);
+			if (code > 127) throw new RangeError('ASCII mode accepts only characters U+0000 through U+007F.');
+			for (var shift = 7; shift >= 0; shift--) bits.push((code >> shift) & 1);
+		}
+	} else if (mode === 'bits') {
+		if (typeof options.bits === 'string') {
+			if (!/^[01]+$/.test(options.bits)) throw new TypeError('bits mode requires a nonempty 0/1 string.');
+			bits = options.bits.split('').map(Number);
+		} else if (Array.isArray(options.bits) && options.bits.length > 0 &&
+			options.bits.every(function (bit) { return bit === 0 || bit === 1; })) {
+			bits = options.bits.slice();
+		} else {
+			throw new TypeError('bits mode requires a nonempty array of 0s and 1s or a 0/1 string.');
+		}
+	} else {
+		throw new RangeError('mod mode must be PN2 through PN16, ASCII, or bits.');
+	}
+	return {mode: mode, bits: bits};
+}
+
+// Describe an input waveform; the circuit itself remains an ordinary nPort.
+// mod() may fill a caller-owned list instead of replacing the global default.
+function createSourceWaveform(options = {}, fftList) {
+	if (!options || Array.isArray(options) || typeof options !== 'object') {
+		throw new TypeError('mod expects an options object.');
+	}
+	if (fftList !== undefined && !Array.isArray(fftList)) {
+		throw new TypeError('mod fftList must be an array.');
+	}
+	if (global.twoTone) throw new RangeError('Clear global.twoTone before digital waveform analysis.');
+	var input = options.input;
+	if (input !== undefined && (Object.keys(options).some(function (key) {
+		return key !== 'input' && key !== 'samplesPerBit';
+	}) || !input ||
+		input.kind !== 'PN' || !Number.isInteger(input.stages) ||
+		input.stages < 2 || input.stages > 16 || input.mode !== 'PN' + input.stages ||
+		!Array.isArray(input.bits) ||
+		!Array.isArray(input.samples) || !Array.isArray(input.time) ||
+		input.bits.length < 2 ** input.stages - 1 ||
+		input.bits.length % (2 ** input.stages - 1) !== 0 ||
+		input.samples.length !== input.time.length ||
+		input.samples.length !== input.bits.length ||
+		input.samples.some(function (sample) { return !Number.isFinite(sample); }))) {
+		throw new TypeError('mod input must be a PN clock waveform with only an optional samplesPerBit setting.');
+	}
+	var bitRate = input ? input.bitRate : options.bitRate === undefined ? 1e9 : options.bitRate;
+	var samplesPerBit = options.samplesPerBit === undefined ? 8 : options.samplesPerBit;
+	var lowVolts = input ? input.lowVolts : options.lowVolts === undefined ? 0 : options.lowVolts;
+	var highVolts = input ? input.highVolts : options.highVolts === undefined ? 1 : options.highVolts;
+	if (!Number.isFinite(bitRate) || bitRate <= 0 ||
+		!Number.isInteger(samplesPerBit) || samplesPerBit < 1 ||
+		!Number.isFinite(lowVolts) || !Number.isFinite(highVolts) ||
+		!Number.isFinite(global.Ro) || global.Ro <= 0) {
+		throw new RangeError('mod needs a positive bit rate, positive integer samples per bit, finite voltage levels, and positive global.Ro.');
+	}
+	var pattern = input ? {mode: input.mode, bits: input.bits.slice()} : patternBits(options);
+	var samples = input ? input.samples.flatMap(function (sample) {
+		return Array(samplesPerBit).fill(sample);
+	}) : pattern.bits.flatMap(function (bit) {
+		return Array(samplesPerBit).fill(bit ? highVolts : lowVolts);
+	});
+	var sampleCount = samples.length;
+	var sampleRateHz = bitRate * samplesPerBit;
+	if (!Number.isFinite(sampleRateHz)) throw new RangeError('mod sample rate must be finite.');
+	var spectrum = fftBins(samples);
+	var frequencyList = Array.from({length: Math.floor(sampleCount / 2) + 1}, function (_, bin) {
+		return bin * sampleRateHz / sampleCount;
+	});
+	if (fftList === undefined) {
+		global.fList = frequencyList;
+	} else {
+		fftList.length = 0;
+		for (var frequencyIndex = 0; frequencyIndex < frequencyList.length; frequencyIndex++) {
+			fftList.push(frequencyList[frequencyIndex]);
+		}
+	}
+	var tx = {
+		mode: pattern.mode,
+		bits: pattern.bits,
+		samples: samples,
+		fList: frequencyList,
+		spectrum: spectrum.slice(0, frequencyList.length),
+		sampleRateHz: sampleRateHz,
+		sampleCount: sampleCount,
+		samplesPerBit: samplesPerBit,
+		lowVolts: lowVolts,
+		highVolts: highVolts,
+		time: input ? input.time.flatMap(function (clockTime) {
+			return Array.from({length: samplesPerBit}, function (_, index) {
+				return clockTime + index / sampleRateHz;
+			});
+		}) : undefined,
+		referenceImpedanceOhms: global.Ro
+	};
+	tx.out = function (selector) {
+		if (selector === 'mode') return tx.mode;
+		if (selector === 'bit count') return tx.bits.length;
+		if (selector === 'sample count') return tx.sampleCount;
+		if (selector === 'frequency count') return tx.fList.length;
+		if (selector === 'frequencies') return tx.fList.slice();
+		if (selector === 'spectrum') return tx.spectrum.map(function (value) { return value.copy(); });
+		throw new RangeError('Unknown mod output: ' + selector);
+	};
+	return tx;
+}
+
+// Modified: 2026-10-22
+
+// Equal reference phasors on an FFT grid reconstruct a synthetic impulse.
+function vnaTimeSweep(options, sampleRateHz) {
+	var count = global.tList.length;
+	if (count < 4 || (count & (count - 1)) !== 0 || global.tList[0] !== 0) {
+		throw new RangeError('VNA-time needs a power-of-two tList of at least four points starting at zero.');
+	}
+	if (global.twoTone) throw new RangeError('Clear global.twoTone before VNA-time analysis.');
+	if (!Number.isFinite(global.Ro) || global.Ro <= 0) {
+		throw new RangeError('VNA-time needs a positive global.Ro.');
+	}
+	if (options.fftList !== undefined && !Array.isArray(options.fftList)) {
+		throw new TypeError('VNA-time fftList must be an array.');
+	}
+	if (Object.keys(options).some(function (key) {
+		return key !== 'mode' && key !== 'fftList';
+	})) {
+		throw new TypeError('VNA-time accepts only mode and optional fftList.');
+	}
+	var frequencyList = Array.from({length: count / 2 + 1}, function (_, bin) {
+		return bin * sampleRateHz / count;
+	});
+	var spectrum = frequencyList.map(function (_, bin) {
+		return complex(bin === count / 2 ? 0 : 1, 0);
+	});
+	if (options.fftList === undefined) global.fList = frequencyList.slice();
+	else {
+		options.fftList.length = 0;
+		frequencyList.forEach(function (frequency) { options.fftList.push(frequency); });
+	}
+	var time = global.tList.slice();
+	var tx = {
+		mode: 'VNA-time', fList: frequencyList, spectrum: spectrum,
+		sampleCount: count, sampleRateHz: sampleRateHz,
+		referenceImpedanceOhms: global.Ro
+	};
+	tx.out = function (selector) {
+		if (selector === 'mode') return tx.mode;
+		if (selector === 'sample count') return count;
+		if (selector === 'frequency count') return frequencyList.length;
+		if (selector === 'frequencies') return frequencyList.slice();
+		if (selector === 'spectrum') return spectrum.map(function (value) { return value.copy(); });
+		if (selector === 'settings') return {mode: 'VNA-time', sampleRateHz: sampleRateHz,
+			sampleCount: count, frequencyCount: frequencyList.length,
+			frequencyStepHz: sampleRateHz / count,
+			maximumFrequencyHz: sampleRateHz / 2};
+		if (selector === 'frequency table') return [['Bin', 'Frequency (Hz)']].concat(
+			frequencyList.map(function (frequency, bin) { return [bin, frequency]; }));
+		if (selector === 'waveform') {
+			var fullSpectrum = Array.from({length: count}, function (_, bin) {
+				return complex(bin === count / 2 ? 0 : 1, 0);
+			});
+			var samples = invFFT(fullSpectrum);
+			return [['Time (ns)', 'Input (V)']].concat(time.map(function (value, index) {
+				return [value * 1e9, samples[index].getR()];
+			}));
+		}
+		throw new RangeError('Unknown VNA-time output: ' + selector);
+	};
+	return tx;
+}
+
+// A stepped-frequency VNA has independent complex tones, with no time grid.
+function vnaFrequencySweep(options) {
+	if (Object.keys(options).some(function (key) { return key !== 'mode' && key !== 'fList'; })) {
+		throw new TypeError('VNA-frequency accepts only mode and fList.');
+	}
+	var frequencies = options.fList === undefined ? global.fList : options.fList;
+	if (!Array.isArray(frequencies) || frequencies.length === 0 ||
+		frequencies.some(function (frequency, index) {
+			return !Number.isFinite(frequency) || frequency < 0 ||
+				(index > 0 && frequency <= frequencies[index - 1]);
+		})) {
+		throw new RangeError('VNA-frequency needs a nonempty, increasing fList of nonnegative frequencies.');
+	}
+	if (global.twoTone) throw new RangeError('Clear global.twoTone before VNA-frequency analysis.');
+	if (!Number.isFinite(global.Ro) || global.Ro <= 0) {
+		throw new RangeError('VNA-frequency needs a positive global.Ro.');
+	}
+	var fList = frequencies.slice();
+	global.fList = fList.slice();
+	var spectrum = fList.map(function () { return complex(1, 0); });
+	var tx = {mode: 'VNA-frequency', fList: fList, spectrum: spectrum,
+		referenceImpedanceOhms: global.Ro};
+	tx.out = function (selector) {
+		if (selector === 'mode') return tx.mode;
+		if (selector === 'frequency count') return fList.length;
+		if (selector === 'frequencies') return fList.slice();
+		if (selector === 'spectrum') return spectrum.map(function (value) { return value.copy(); });
+		if (selector === 'settings') return {mode: tx.mode, frequencyCount: fList.length};
+		if (selector === 'frequency table') return [['Bin', 'Frequency (Hz)']].concat(
+			fList.map(function (frequency, index) { return [index, frequency]; }));
+		throw new RangeError('Unknown VNA-frequency output: ' + selector);
+	};
+	return tx;
+}
+
+// A single sinusoidal AM input has only a carrier and two sidebands.
+function analogAM(options) {
+	var carrierHz = options.carrierHz;
+	var toneHz = options.toneHz;
+	var modulationIndex = options.modulationIndex === undefined ? 0.5 : options.modulationIndex;
+	var carrierAmplitudeVolts = options.carrierAmplitudeVolts === undefined ? 1 : options.carrierAmplitudeVolts;
+	var fftList = options.fftList;
+	if (!Number.isFinite(carrierHz) || !Number.isFinite(toneHz) ||
+		carrierHz <= toneHz || toneHz <= 0 || !Number.isFinite(modulationIndex) ||
+		modulationIndex < 0 || modulationIndex > 1 ||
+		!Number.isFinite(carrierAmplitudeVolts) || carrierAmplitudeVolts <= 0 ||
+		!Number.isFinite(global.Ro) || global.Ro <= 0 ||
+		(fftList !== undefined && !Array.isArray(fftList))) {
+		throw new RangeError('AM needs carrierHz > toneHz > 0, modulationIndex from 0 to 1, positive carrierAmplitudeVolts and global.Ro, and an optional fftList array.');
+	}
+	if (global.twoTone) throw new RangeError('Clear global.twoTone before AM analysis.');
+	var fList = [carrierHz - toneHz, carrierHz, carrierHz + toneHz];
+	if (fftList) {
+		fftList.length = 0;
+		fList.forEach(function (frequency) { fftList.push(frequency); });
+	} else {
+		global.fList = fList.slice();
+	}
+	var sidebandVolts = carrierAmplitudeVolts * modulationIndex / 2;
+	var spectrum = [complex(sidebandVolts, 0), complex(carrierAmplitudeVolts, 0),
+		complex(sidebandVolts, 0)];
+	var tx = {
+		mode: 'AM', carrierHz: carrierHz, toneHz: toneHz,
+		modulationIndex: modulationIndex, carrierAmplitudeVolts: carrierAmplitudeVolts,
+		fList: fList, spectrum: spectrum, referenceImpedanceOhms: global.Ro
+	};
+	tx.out = function (selector) {
+		if (selector === 'settings') return {mode: 'AM', carrierHz: carrierHz, toneHz: toneHz,
+			modulationIndex: modulationIndex, carrierAmplitudeVolts: carrierAmplitudeVolts,
+			frequencyCount: 3};
+		if (selector === 'frequency count') return 3;
+		if (selector === 'frequencies') return fList.slice();
+		if (selector === 'spectrum') return spectrum.map(function (value) { return value.copy(); });
+		if (selector === 'frequency table') return [['Bin', 'Frequency (Hz)']].concat(
+			fList.map(function (frequency, index) { return [index, frequency]; }));
+		if (selector === 'tones') return [['Freq', 'Peak voltage (V)', 'Phase (deg)']].concat(
+			fList.map(function (frequency, index) {
+				return [frequency, spectrum[index].mag(), spectrum[index].ang()];
+			}));
+		throw new RangeError('Unknown AM output: ' + selector);
+	};
+	return tx;
+}
+
+// A pure tone needs only its occupied sideband frequencies.
+function analogSuppressed(options) {
+	var mode = options.mode;
+	var carrierHz = options.carrierHz;
+	var toneHz = options.toneHz;
+	var amplitude = options.toneAmplitudeVolts === undefined ? 1 : options.toneAmplitudeVolts;
+	var sideband = options.sideband === undefined ? 'USB' : options.sideband;
+	if (!Number.isFinite(carrierHz) || !Number.isFinite(toneHz) ||
+		carrierHz <= toneHz || toneHz <= 0 || !Number.isFinite(amplitude) || amplitude <= 0 ||
+		!Number.isFinite(global.Ro) || global.Ro <= 0 ||
+		(options.fftList !== undefined && !Array.isArray(options.fftList)) ||
+		(mode === 'SSB' ? sideband !== 'USB' && sideband !== 'LSB' : options.sideband !== undefined)) {
+		throw new RangeError(mode + ' needs carrierHz > toneHz > 0, positive toneAmplitudeVolts and global.Ro, and a valid sideband for SSB.');
+	}
+	if (global.twoTone) throw new RangeError('Clear global.twoTone before ' + mode + ' analysis.');
+	var fList = mode === 'SSB' ?
+		[carrierHz + (sideband === 'USB' ? toneHz : -toneHz)] :
+		[carrierHz - toneHz, carrierHz + toneHz];
+	var spectrum = mode === 'SSB' ? [complex(amplitude, 0)] :
+		[complex(amplitude / 2, 0), complex(amplitude / 2, 0)];
+	if (options.fftList) {
+		options.fftList.length = 0;
+		fList.forEach(function (frequency) { options.fftList.push(frequency); });
+	} else global.fList = fList.slice();
+	var tx = {mode: mode, carrierHz: carrierHz, toneHz: toneHz,
+		toneAmplitudeVolts: amplitude, sideband: mode === 'SSB' ? sideband : undefined,
+		fList: fList, spectrum: spectrum, referenceImpedanceOhms: global.Ro};
+	tx.out = function (selector) {
+		if (selector === 'settings') return {mode: mode, carrierHz: carrierHz,
+			toneHz: toneHz, toneAmplitudeVolts: amplitude,
+			...(mode === 'SSB' ? {sideband: sideband} : {}), frequencyCount: fList.length};
+		if (selector === 'frequency count') return fList.length;
+		if (selector === 'frequencies') return fList.slice();
+		if (selector === 'spectrum') return spectrum.map(function (value) { return value.copy(); });
+		if (selector === 'frequency table') return [['Bin', 'Frequency (Hz)']].concat(
+			fList.map(function (frequency, index) { return [index, frequency]; }));
+		if (selector === 'tones') return [['Freq', 'Peak voltage (V)', 'Phase (deg)']].concat(
+			fList.map(function (frequency, index) {
+				return [frequency, spectrum[index].mag(), spectrum[index].ang()];
+			}));
+		throw new RangeError('Unknown ' + mode + ' output: ' + selector);
+	};
+	return tx;
+}
+
+// Sample the slow phase waveform, not the RF carrier. FM uses beta sin(theta);
+// PM uses beta cos(theta), with beta measured in peak radians.
+function analogAngle(options) {
+	var mode = options.mode;
+	var carrierHz = options.carrierHz;
+	var toneHz = options.toneHz;
+	var beta = options.beta;
+	var carrierAmplitudeVolts = options.carrierAmplitudeVolts === undefined ? 1 : options.carrierAmplitudeVolts;
+	var tolerance = options.sidebandPowerTolerance === undefined ? 1e-6 : options.sidebandPowerTolerance;
+	var fftList = options.fftList;
+	if (!Number.isFinite(carrierHz) || carrierHz <= 0 ||
+		!Number.isFinite(toneHz) || toneHz <= 0 ||
+		!Number.isFinite(beta) || beta < 0 ||
+		!Number.isFinite(carrierAmplitudeVolts) || carrierAmplitudeVolts <= 0 ||
+		!Number.isFinite(tolerance) || tolerance <= 0 || tolerance >= 1 ||
+		!Number.isFinite(global.Ro) || global.Ro <= 0 ||
+		(fftList !== undefined && !Array.isArray(fftList))) {
+		throw new RangeError(mode + ' needs positive carrierHz, toneHz, carrierAmplitudeVolts and global.Ro, nonnegative beta, and sidebandPowerTolerance between 0 and 1.');
+	}
+	if (global.twoTone) throw new RangeError('Clear global.twoTone before ' + mode + ' analysis.');
+	var coefficientSamples = 256;
+	while (coefficientSamples < 16 * (Math.ceil(beta) + 12)) coefficientSamples *= 2;
+	if (coefficientSamples > 131072) {
+		throw new RangeError(mode + ' beta requires too many sideband coefficient samples.');
+	}
+	var phaseSamples = Array.from({length: coefficientSamples}, function (_, index) {
+		var theta = 2 * Math.PI * index / coefficientSamples;
+		var phase = beta * (mode === 'PM' ? Math.cos(theta) : Math.sin(theta));
+		return complex(Math.cos(phase), Math.sin(phase));
+	});
+	var coefficients = fftBins(phaseSamples);
+	var retainedPower = coefficients[0].mag() ** 2 / coefficientSamples ** 2;
+	var sidebandOrder = 0;
+	while (1 - retainedPower > tolerance && sidebandOrder < coefficientSamples / 2 - 1) {
+		sidebandOrder++;
+		retainedPower += (coefficients[sidebandOrder].mag() ** 2 +
+			coefficients[coefficientSamples - sidebandOrder].mag() ** 2) /
+			coefficientSamples ** 2;
+	}
+	if (1 - retainedPower > tolerance) {
+		throw new RangeError(mode + ' sideband tolerance could not be met.');
+	}
+	if (carrierHz <= sidebandOrder * toneHz) {
+		throw new RangeError(mode + ' lower sideband frequencies must remain positive.');
+	}
+	var fList = [];
+	var spectrum = [];
+	for (var order = -sidebandOrder; order <= sidebandOrder; order++) {
+		fList.push(carrierHz + order * toneHz);
+		var coefficient = coefficients[(order + coefficientSamples) % coefficientSamples];
+		spectrum.push(complex(carrierAmplitudeVolts * coefficient.getR() / coefficientSamples,
+			carrierAmplitudeVolts * coefficient.getI() / coefficientSamples));
+	}
+	if (fList.some(function (frequency, index) {
+		return !Number.isFinite(frequency) || (index > 0 && frequency <= fList[index - 1]);
+	})) {
+		throw new RangeError(mode + ' sideband frequencies must be finite and distinct.');
+	}
+	if (fftList) {
+		fftList.length = 0;
+		fList.forEach(function (frequency) { fftList.push(frequency); });
+	} else {
+		global.fList = fList.slice();
+	}
+	var tx = {
+		mode: mode, carrierHz: carrierHz, toneHz: toneHz, beta: beta,
+		carrierAmplitudeVolts: carrierAmplitudeVolts,
+		sidebandOrder: sidebandOrder, sidebandPowerTolerance: tolerance,
+		fList: fList, spectrum: spectrum, referenceImpedanceOhms: global.Ro
+	};
+	tx.out = function (selector) {
+		if (selector === 'settings') return {mode: mode, carrierHz: carrierHz, toneHz: toneHz,
+			beta: beta, frequencyDeviationHz: beta * toneHz,
+			...(mode === 'PM' ? {peakPhaseRadians: beta} : {}),
+			carrierAmplitudeVolts: carrierAmplitudeVolts,
+			sidebandOrder: sidebandOrder, sidebandPowerTolerance: tolerance,
+			frequencyCount: fList.length};
+		if (selector === 'frequency count') return fList.length;
+		if (selector === 'frequencies') return fList.slice();
+		if (selector === 'spectrum') return spectrum.map(function (value) { return value.copy(); });
+		if (selector === 'frequency table') return [['Bin', 'Frequency (Hz)']].concat(
+			fList.map(function (frequency, index) { return [index, frequency]; }));
+		if (selector === 'tones') return [['Freq', 'Peak voltage (V)', 'Phase (deg)']].concat(
+			fList.map(function (frequency, index) {
+				return [frequency, spectrum[index].mag(), spectrum[index].ang()];
+			}));
+		throw new RangeError('Unknown ' + mode + ' output: ' + selector);
+	};
+	return tx;
+}
+
+// Prepare a sampled digital waveform or sparse, single-tone analog source.
+function mod(options = {}) {
+	if (!options || Array.isArray(options) || typeof options !== 'object') {
+		throw new TypeError('mod expects an options object.');
+	}
+	if (options.mode === 'VNA') {
+		throw new RangeError('Use VNA-time or VNA-frequency as the mode.');
+	}
+	if (options.mode === 'VNA-frequency') return vnaFrequencySweep(options);
+	var sampleRateHz = sampleRateFromTime(global.tList, undefined, 'mod');
+	if (options.mode === 'VNA-time') return vnaTimeSweep(options, sampleRateHz);
+	if (options.mode === 'AM') return analogAM(options);
+	if (options.mode === 'SSB' || options.mode === 'DSB-SC') return analogSuppressed(options);
+	if (options.mode === 'FM' || options.mode === 'PM') return analogAngle(options);
+	var keyedMode = options.mode === 'OOK' || options.mode === 'ASK';
+	var fskMode = options.mode === 'FSK';
+	var pskMode = options.mode === 'PSK';
+	var advancedMode = ['DPSK', 'QPSK', 'QAM', 'MSK', 'GMSK', 'OFDM'].includes(options.mode);
+	var encoding = pskMode ? (options.encoding === undefined ? 'NRZ' : options.encoding) : undefined;
+	if (pskMode ? encoding !== 'NRZ' && encoding !== 'Manchester' :
+		options.encoding !== undefined) {
+		throw new RangeError('encoding must be NRZ or Manchester and is available only for PSK.');
+	}
+	var carrierHz = options.carrierHz === undefined ? 0 : options.carrierHz;
+	if (!Number.isFinite(carrierHz) || carrierHz < 0) {
+		throw new RangeError('mod carrierHz must be a nonnegative finite frequency.');
+	}
+	if ((keyedMode || fskMode || pskMode || advancedMode) && carrierHz === 0) {
+		throw new RangeError('Digital RF modes require a positive carrierHz.');
+	}
+	var txOptions = {...options};
+	delete txOptions.carrierHz;
+	delete txOptions.fftList;
+	if (keyedMode) {
+		var lowVolts = options.lowVolts === undefined ?
+			(options.mode === 'OOK' ? 0 : 0.5) : options.lowVolts;
+		var highVolts = options.highVolts === undefined ? 1 : options.highVolts;
+		if (!Number.isFinite(lowVolts) || !Number.isFinite(highVolts) ||
+			(options.mode === 'OOK' ? lowVolts !== 0 || highVolts <= 0 :
+				lowVolts <= 0 || highVolts <= lowVolts)) {
+			throw new RangeError('OOK requires 0 V off and positive on voltage; ASK requires two increasing positive voltage levels.');
+		}
+		var dataMode = options.dataMode === undefined ?
+			(options.message !== undefined ? 'ASCII' : options.bits !== undefined ? 'bits' : 'PN7') :
+			options.dataMode;
+		if (options.input) {
+			if (options.dataMode !== undefined || options.message !== undefined ||
+				options.bits !== undefined) {
+				throw new TypeError('OOK or ASK with a PN input cannot also select another data mode.');
+			}
+			var input = options.input;
+			txOptions = {input: {...input, lowVolts: lowVolts, highVolts: highVolts,
+				samples: Array.isArray(input.bits) ? input.bits.map(function (bit) {
+					return bit ? highVolts : lowVolts;
+				}) : input.samples}, samplesPerBit: options.samplesPerBit};
+		} else {
+			txOptions.mode = dataMode;
+			txOptions.lowVolts = lowVolts;
+			txOptions.highVolts = highVolts;
+			delete txOptions.dataMode;
+		}
+	}
+	if (fskMode || pskMode || advancedMode) {
+		if (options.input) {
+			if (options.dataMode !== undefined || options.message !== undefined ||
+				options.bits !== undefined) {
+				throw new TypeError(options.mode + ' with a PN input cannot also select another data mode.');
+			}
+			txOptions = {input: options.input, samplesPerBit: options.samplesPerBit};
+		} else {
+			txOptions.mode = options.dataMode === undefined ?
+				(options.message !== undefined ? 'ASCII' : options.bits !== undefined ? 'bits' : 'PN7') :
+				options.dataMode;
+			delete txOptions.dataMode;
+			delete txOptions.frequencyDeviationHz;
+			delete txOptions.carrierAmplitudeVolts;
+			delete txOptions.encoding;
+		}
+	}
+	if (options.mode === 'QPSK' || options.mode === 'QAM') {
+		var bitsPerSymbol = Math.log2(options.mode === 'QPSK' ? 4 :
+			(options.order === undefined ? 16 : options.order));
+		if (options.symbolRate !== undefined) {
+			if (!Number.isFinite(options.symbolRate) || options.symbolRate <= 0 ||
+				(options.bitRate !== undefined && options.bitRate !== options.symbolRate * bitsPerSymbol)) {
+				throw new RangeError('QPSK/QAM symbolRate must be positive and agree with bitRate.');
+			}
+			if (options.input && options.input.bitRate !== options.symbolRate * bitsPerSymbol) {
+				throw new RangeError('QPSK/QAM symbolRate must agree with the PN input clock rate.');
+			}
+			if (!options.input) txOptions.bitRate = options.symbolRate * bitsPerSymbol;
+		}
+	}
+	if (options.mode === 'OFDM' &&
+		(options.bitRate !== undefined || options.samplesPerBit !== undefined)) {
+		throw new RangeError('OFDM uses symbolRate and fftSize; bitRate and samplesPerBit do not apply.');
+	}
+	var tx = createSourceWaveform(txOptions, options.fftList);
+	var advancedSettings = advancedMode ? modulateAdvanced(tx, options, carrierHz) : null;
+	if (pskMode && encoding === 'Manchester' &&
+		(tx.samplesPerBit < 2 || tx.samplesPerBit % 2 !== 0)) {
+		throw new RangeError('Manchester PSK requires an even samplesPerBit of at least 2.');
+	}
+	var deviationHz = fskMode ? (options.frequencyDeviationHz === undefined ?
+		tx.sampleRateHz / tx.samplesPerBit / 2 : options.frequencyDeviationHz) : undefined;
+	var carrierAmplitudeVolts = (fskMode || pskMode) ? (options.carrierAmplitudeVolts === undefined ?
+		1 : options.carrierAmplitudeVolts) : undefined;
+	if (pskMode && (!Number.isFinite(carrierAmplitudeVolts) || carrierAmplitudeVolts <= 0)) {
+		throw new RangeError('PSK needs positive carrierAmplitudeVolts.');
+	}
+	if (fskMode && (!Number.isFinite(deviationHz) || deviationHz <= 0 ||
+		!Number.isFinite(carrierAmplitudeVolts) || carrierAmplitudeVolts <= 0 ||
+		carrierHz <= deviationHz)) {
+		throw new RangeError('FSK needs positive frequencyDeviationHz and carrierAmplitudeVolts, with carrierHz greater than deviation.');
+	}
+	if (!advancedMode && carrierHz + (fskMode ? deviationHz : 0) >= tx.sampleRateHz / 2) {
+		throw new RangeError('mod carrierHz must be below the sample Nyquist frequency.');
+	}
+	if (advancedMode) ; else if (fskMode) {
+		var phase = 0;
+		tx.samples = tx.bits.flatMap(function (bit) {
+			var frequency = carrierHz + (bit ? deviationHz : -deviationHz);
+			var phaseStep = 2 * Math.PI * frequency / tx.sampleRateHz;
+			return Array.from({length: tx.samplesPerBit}, function () {
+				var voltage = carrierAmplitudeVolts * Math.cos(phase);
+				phase += phaseStep;
+				return voltage;
+			});
+		});
+		tx.spectrum = fftBins(tx.samples).slice(0, tx.fList.length);
+	} else if (pskMode) {
+		tx.samples = tx.samples.map(function (_, index) {
+			var bit = tx.bits[Math.floor(index / tx.samplesPerBit)];
+			var secondHalf = index % tx.samplesPerBit >= tx.samplesPerBit / 2;
+			var polarity = (bit ? 1 : -1) *
+				(encoding === 'Manchester' && secondHalf ? -1 : 1);
+			return polarity * carrierAmplitudeVolts *
+				Math.cos(2 * Math.PI * carrierHz * index / tx.sampleRateHz);
+		});
+		tx.spectrum = fftBins(tx.samples).slice(0, tx.fList.length);
+	} else if (carrierHz !== 0) {
+		tx.samples = tx.samples.map(function (voltage, index) {
+			return voltage * Math.cos(2 * Math.PI * carrierHz * index / tx.sampleRateHz);
+		});
+		tx.spectrum = fftBins(tx.samples).slice(0, tx.fList.length);
+	}
+	var timeRateHz = sampleRateFromTime(global.tList, tx.sampleCount, 'mod');
+	if (Math.abs(timeRateHz - tx.sampleRateHz) > tx.sampleRateHz * 1e-6) {
+		throw new RangeError('mod tList spacing must match its waveform sample rate.');
+	}
+	tx.time = global.tList.slice();
+	var originalOut = tx.out;
+	if (keyedMode) {
+		tx.dataMode = tx.mode;
+		tx.mode = options.mode;
+	}
+	if (fskMode) {
+		tx.dataMode = tx.mode;
+		tx.mode = 'FSK';
+		tx.frequencyDeviationHz = deviationHz;
+		tx.carrierAmplitudeVolts = carrierAmplitudeVolts;
+	}
+	if (pskMode) {
+		tx.dataMode = tx.mode;
+		tx.mode = 'PSK';
+		tx.encoding = encoding;
+		tx.carrierAmplitudeVolts = carrierAmplitudeVolts;
+	}
+	tx.carrierHz = carrierHz;
+	tx.out = function (selector) {
+		if (selector === 'bit string') return tx.bits.join('');
+		if (selector === 'waveform') {
+			return [['Time (ns)', 'Output (V)']].concat(tx.samples.map(function (voltage, index) {
+				return [tx.time[index] * 1e9, voltage];
+			}));
+		}
+		if (selector === 'settings') {
+			return {
+				mode: tx.mode,
+				dataMode: tx.dataMode,
+				carrierHz: carrierHz,
+				...(advancedSettings || {}),
+				...(fskMode ? {frequencyDeviationHz: deviationHz,
+					lowFrequencyHz: carrierHz - deviationHz,
+					highFrequencyHz: carrierHz + deviationHz,
+					carrierAmplitudeVolts: carrierAmplitudeVolts} : {}),
+				...(pskMode ? {encoding: encoding,
+					carrierAmplitudeVolts: carrierAmplitudeVolts,
+					phaseZeroDeg: 180, phaseOneDeg: 0} : {}),
+				...(tx.samplesPerBit ? {bitRate: tx.sampleRateHz / tx.samplesPerBit,
+					samplesPerBit: tx.samplesPerBit} : {bitCount: tx.bitCount}),
+				sampleRateHz: tx.sampleRateHz,
+				sampleCount: tx.sampleCount,
+				frequencyCount: tx.fList.length,
+				...(tx.bitCount !== undefined ? {bitCount: tx.bitCount} : {}),
+				...(!advancedMode ? {lowVolts: tx.lowVolts, highVolts: tx.highVolts} : {})
+			};
+		}
+		if (selector === 'frequency table') {
+			return [['Bin', 'Frequency (Hz)']].concat(tx.fList.map(function (frequency, bin) {
+				return [bin, frequency];
+			}));
+		}
+		return originalOut(selector);
+	};
+	return tx;
+}
+
+// Modified: 2026-10-20
+
+// Sample one periodic voltage waveform on the selected time grid.
+function waveform(options = {}) {
+	if (!options || Array.isArray(options) || typeof options !== 'object') {
+		throw new TypeError('waveform expects an options object.');
+	}
+	var time = options.time === undefined ? global.tList : options.time;
+	if (!Array.isArray(time) || time.length < 2) {
+		throw new RangeError('waveform needs at least two time samples.');
+	}
+	var step = time[1] - time[0];
+	if (!Number.isFinite(step) || step <= 0 || !Number.isFinite(1 / step) || time.some(function (value, index) {
+		return !Number.isFinite(value) ||
+			Math.abs(value - (time[0] + index * step)) > Math.abs(step) * 1e-6;
+	})) {
+		throw new RangeError('waveform time must be a uniformly spaced, increasing list in seconds.');
+	}
+	var period = options.period;
+	if (!Number.isFinite(period) || period <= 0) {
+		throw new RangeError('waveform period must be a positive number of seconds.');
+	}
+	var shape = options.shape === undefined ? 'triangle' : options.shape;
+	var custom = shape === 'custom';
+	if (options.points !== undefined && !custom) {
+		throw new TypeError("waveform points require shape: 'custom'.");
+	}
+	if (custom && options.points === undefined) {
+		throw new TypeError("waveform shape: 'custom' requires points.");
+	}
+	var points;
+	var dutyCycle;
+	var lowVolts;
+	var highVolts;
+	if (custom) {
+		if (options.riseFraction !== undefined || options.dutyCycle !== undefined ||
+			options.lowVolts !== undefined ||
+			options.highVolts !== undefined || !Array.isArray(options.points) ||
+			options.points.length < 2 || options.points.some(function (point) {
+				return !Array.isArray(point) || point.length !== 2 ||
+					!Number.isFinite(point[0]) || !Number.isFinite(point[1]);
+			}) || options.points[0][0] !== 0 ||
+			Math.abs(options.points[options.points.length - 1][0] - period) > period * 1e-9 ||
+			options.points.some(function (point, index) {
+				return index > 0 && point[0] <= options.points[index - 1][0];
+			})) {
+			throw new RangeError('waveform points must run from 0 to period with increasing, finite time-voltage pairs.');
+		}
+		points = options.points.map(function (point) { return point.slice(); });
+	} else {
+		if (shape !== 'triangle' && shape !== 'square' && shape !== 'rectifiedSine') {
+			throw new RangeError('waveform shape must be triangle, square, rectifiedSine, or custom.');
+		}
+		lowVolts = options.lowVolts === undefined ? (shape === 'rectifiedSine' ? 0 : -1) : options.lowVolts;
+		highVolts = options.highVolts === undefined ? 1 : options.highVolts;
+		if (!Number.isFinite(lowVolts) || !Number.isFinite(highVolts)) {
+			throw new RangeError('waveform voltage levels must be finite.');
+		}
+		if (shape === 'triangle') {
+			var riseFraction = options.riseFraction === undefined ? 0.5 : options.riseFraction;
+			if (options.dutyCycle !== undefined || !Number.isFinite(riseFraction) ||
+				riseFraction <= 0 || riseFraction >= 1) {
+				throw new RangeError('triangle waveform needs 0 < riseFraction < 1 and no dutyCycle.');
+			}
+			points = [[0, lowVolts], [period * riseFraction, highVolts], [period, lowVolts]];
+		} else if (shape === 'square') {
+			dutyCycle = options.dutyCycle === undefined ? 0.5 : options.dutyCycle;
+			if (options.riseFraction !== undefined || !Number.isFinite(dutyCycle) ||
+				dutyCycle <= 0 || dutyCycle >= 1) {
+				throw new RangeError('square waveform needs 0 < dutyCycle < 1 and no riseFraction.');
+			}
+		} else if (options.riseFraction !== undefined || options.dutyCycle !== undefined) {
+			throw new RangeError('rectifiedSine waveform does not use riseFraction or dutyCycle.');
+		}
+	}
+	var samples = time.map(function (value) {
+		var phase = ((value % period) + period) % period;
+		if (shape === 'square') return phase < period * dutyCycle ? highVolts : lowVolts;
+		if (shape === 'rectifiedSine') {
+			return lowVolts + (highVolts - lowVolts) * Math.abs(Math.sin(2 * Math.PI * phase / period));
+		}
+		var segment = 1;
+		while (segment < points.length - 1 && phase > points[segment][0]) segment++;
+		var left = points[segment - 1];
+		var right = points[segment];
+		return left[1] + (right[1] - left[1]) * (phase - left[0]) / (right[0] - left[0]);
+	});
+	if (samples.some(function (value) { return !Number.isFinite(value); })) {
+		throw new RangeError('waveform sample voltages must be finite.');
+	}
+	var result = {
+		kind: 'waveform', shape: shape, period: period,
+		time: time.slice(), samples: samples, sampleRateHz: 1 / step
+	};
+	result.out = function (selector = 'waveform') {
+		if (selector === 'waveform') {
+			return [['Time (s)', 'Voltage (V)']].concat(result.time.map(function (value, index) {
+				return [value, samples[index]];
+			}));
+		}
+		if (selector === 'time') return result.time.slice();
+		if (selector === 'samples') return samples.slice();
+		if (selector === 'sample count') return samples.length;
+		if (selector === 'sample rate') return result.sampleRateHz;
+		if (selector === 'period') return period;
+		throw new RangeError('Unknown waveform output: ' + selector);
+	};
+	return result;
+}
+
+export { Amp, Attn, C, Coupler180, FFT, L, Load, Open, PN, R, Shift90, Short, Tclin, Tee, Tee4, Tee5, Thru, Tlin, bitErrorRate, cascade, chebyLPLCs, chebyLPNsec, chebyLPgk, complex, demod, dim, diode1N4148, dup, global, invFFT, lineChart, lineTable, log, lpfGen, matrix, mbend, mclin, mcross, mlin, mod, mstep, mtee, mtfr, mvgnd, mvia, nodal, paC, paL, paPaLC, paPaRC, paPaRL, paPaRLC, paR, paSeLC, paSeRC, paSeRL, paSeRLC, schematic, seC, seL, sePaLC, sePaRC, sePaRL, sePaRLC, seR, seSeLC, seSeRC, seSeRL, seSeRLC, seriesTee, smithChart, trf, trf4Port, version, waveform };

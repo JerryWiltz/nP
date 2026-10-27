@@ -21,7 +21,7 @@
   "components": [
     {
       "id": "line",
-      "symbol": "rf/microstrip-line.svg",
+      "symbol": "microstrip-line.svg",
       "source": {
         "variable": "line",
         "constructor": "mlin"

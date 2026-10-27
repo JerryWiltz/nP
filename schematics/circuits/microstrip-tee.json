@@ -21,7 +21,7 @@
   "components": [
     {
       "id": "tee",
-      "symbol": "rf/microstrip-tee.svg",
+      "symbol": "microstrip-tee.svg",
       "source": {
         "variable": "tee",
         "constructor": "mtee"

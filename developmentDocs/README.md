@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-23 -->
+<!-- Modified: 2026-10-27 -->
 # nP Development Documentation
 
 This directory contains internal engineering knowledge for developing nP. It records RF mathematics, equation-to-code translations, implementation decisions, data contracts, assumptions, units, references, and worked examples.
@@ -63,6 +63,7 @@ raw research → development documentation → AGENTS rules → source code and 
 - [`npmMaintenance.md`](npmMaintenance.md): maintenance and release checks for the published npm package and its Obsidian-plugin bundle.
 - [`physicalModelApi.md`](physicalModelApi.md): canonical options, units, compatibility, validation, and metadata for physical transmission-media models.
 - [`chartFunctions.md`](chartFunctions.md): inputs, options, defaults, and return values for `lineChart()`, `lineTable()`, and `smithChart()`.
+- [`schematicSystem.md`](schematicSystem.md): canonical symbols, bundled runtime drawings, public API, and schematic layout theory.
 - [`lineChartPath.md`](lineChartPath.md): the path from the nP chart source through the nPort RF Analysis Obsidian plugin.
 - [`np-math/`](np-math/): complex-number, matrix, and numerical-method documentation.
 - [`np-nport/`](np-nport/): n-port constructors, composition, fixtures, and port-convention documentation.
