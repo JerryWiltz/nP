@@ -1,0 +1,127 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 940 540"
+     role="img" aria-labelledby="title description">
+  <title id="title">Three-section edge-coupled bandpass filter</title>
+  <desc id="description">Guide REPL example circuit-examples: Three-section edge-coupled bandpass filter.</desc>
+  <metadata id="circuit-description">{&quot;title&quot;:&quot;Three-section edge-coupled bandpass filter&quot;,&quot;description&quot;:&quot;Guide REPL example circuit-examples: Three-section edge-coupled bandpass filter.&quot;,&quot;domain&quot;:&quot;rf&quot;,&quot;source&quot;:{&quot;file&quot;:&quot;docs/circuit-examples.md&quot;,&quot;result&quot;:&quot;filter&quot;,&quot;combination&quot;:&quot;nP.nodal(..., [&apos;out&apos;, 1, 9])&quot;,&quot;exampleId&quot;:&quot;circuit-examples&quot;},&quot;viewBox&quot;:[0,0,940,540],&quot;layout&quot;:{&quot;centerAxisX&quot;:470,&quot;centerReference&quot;:&quot;middle coupled section&quot;},&quot;components&quot;:[{&quot;id&quot;:&quot;coupled1&quot;,&quot;symbol&quot;:&quot;coupled-transmission-line.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;coupled1&quot;,&quot;constructor&quot;:&quot;Tclin&quot;},&quot;at&quot;:[160,180],&quot;sourceAnchor&quot;:[100,100],&quot;rotation&quot;:0,&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:1,&quot;at&quot;:[160,180],&quot;labelAt&quot;:[160,140]},{&quot;port&quot;:2,&quot;node&quot;:2,&quot;at&quot;:[280,180],&quot;labelAt&quot;:[380,140]},{&quot;port&quot;:3,&quot;node&quot;:3,&quot;at&quot;:[280,220],&quot;labelAt&quot;:[340,260]},{&quot;port&quot;:4,&quot;node&quot;:4,&quot;at&quot;:[160,220],&quot;labelAt&quot;:[200,280]}]},{&quot;id&quot;:&quot;coupled2&quot;,&quot;symbol&quot;:&quot;coupled-transmission-line.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;coupled2&quot;,&quot;constructor&quot;:&quot;Tclin&quot;},&quot;at&quot;:[400,220],&quot;sourceAnchor&quot;:[100,100],&quot;rotation&quot;:0,&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:3,&quot;at&quot;:[400,220],&quot;labelAt&quot;:[340,260]},{&quot;port&quot;:2,&quot;node&quot;:5,&quot;at&quot;:[520,220],&quot;labelAt&quot;:[620,160]},{&quot;port&quot;:3,&quot;node&quot;:6,&quot;at&quot;:[520,260],&quot;labelAt&quot;:[580,300]},{&quot;port&quot;:4,&quot;node&quot;:7,&quot;at&quot;:[400,260],&quot;labelAt&quot;:[440,320]}]},{&quot;id&quot;:&quot;coupled3&quot;,&quot;symbol&quot;:&quot;coupled-transmission-line.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;coupled3&quot;,&quot;constructor&quot;:&quot;Tclin&quot;},&quot;at&quot;:[640,260],&quot;sourceAnchor&quot;:[100,100],&quot;rotation&quot;:0,&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:6,&quot;at&quot;:[640,260],&quot;labelAt&quot;:[580,300]},{&quot;port&quot;:2,&quot;node&quot;:8,&quot;at&quot;:[760,260],&quot;labelAt&quot;:[860,180]},{&quot;port&quot;:3,&quot;node&quot;:9,&quot;at&quot;:[760,300],&quot;labelAt&quot;:[800,340]},{&quot;port&quot;:4,&quot;node&quot;:10,&quot;at&quot;:[640,300],&quot;labelAt&quot;:[680,360]}]},{&quot;id&quot;:&quot;open1&quot;,&quot;symbol&quot;:&quot;open.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;open&quot;,&quot;constructor&quot;:&quot;Open&quot;},&quot;at&quot;:[320,100],&quot;sourceAnchor&quot;:[120,80],&quot;rotation&quot;:0,&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:2,&quot;at&quot;:[320,100],&quot;labelAt&quot;:[380,140]}]},{&quot;id&quot;:&quot;open2&quot;,&quot;symbol&quot;:&quot;open.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;open&quot;,&quot;constructor&quot;:&quot;Open&quot;},&quot;at&quot;:[160,340],&quot;sourceAnchor&quot;:[120,80],&quot;rotation&quot;:0,&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:4,&quot;at&quot;:[160,340],&quot;labelAt&quot;:[200,280]}]},{&quot;id&quot;:&quot;open3&quot;,&quot;symbol&quot;:&quot;open.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;open&quot;,&quot;constructor&quot;:&quot;Open&quot;},&quot;at&quot;:[560,100],&quot;sourceAnchor&quot;:[120,80],&quot;rotation&quot;:0,&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:5,&quot;at&quot;:[560,100],&quot;labelAt&quot;:[620,160]}]},{&quot;id&quot;:&quot;open4&quot;,&quot;symbol&quot;:&quot;open.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;open&quot;,&quot;constructor&quot;:&quot;Open&quot;},&quot;at&quot;:[400,380],&quot;sourceAnchor&quot;:[120,80],&quot;rotation&quot;:0,&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:7,&quot;at&quot;:[400,380],&quot;labelAt&quot;:[440,320]}]},{&quot;id&quot;:&quot;open5&quot;,&quot;symbol&quot;:&quot;open.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;open&quot;,&quot;constructor&quot;:&quot;Open&quot;},&quot;at&quot;:[800,100],&quot;sourceAnchor&quot;:[120,80],&quot;rotation&quot;:0,&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:8,&quot;at&quot;:[800,100],&quot;labelAt&quot;:[860,180]}]},{&quot;id&quot;:&quot;open6&quot;,&quot;symbol&quot;:&quot;open.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;open&quot;,&quot;constructor&quot;:&quot;Open&quot;},&quot;at&quot;:[640,420],&quot;sourceAnchor&quot;:[120,80],&quot;rotation&quot;:0,&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:10,&quot;at&quot;:[640,420],&quot;labelAt&quot;:[680,360]}]}],&quot;wires&quot;:[{&quot;node&quot;:1,&quot;points&quot;:[[160,180],[100,180]]},{&quot;node&quot;:2,&quot;points&quot;:[[280,180],[320,180],[320,100]]},{&quot;node&quot;:3,&quot;points&quot;:[[280,220],[400,220]]},{&quot;node&quot;:4,&quot;points&quot;:[[160,220],[160,340]]},{&quot;node&quot;:5,&quot;points&quot;:[[520,220],[560,220],[560,100]]},{&quot;node&quot;:6,&quot;points&quot;:[[520,260],[640,260]]},{&quot;node&quot;:7,&quot;points&quot;:[[400,260],[400,380]]},{&quot;node&quot;:8,&quot;points&quot;:[[760,260],[800,260],[800,100]]},{&quot;node&quot;:9,&quot;points&quot;:[[760,300],[820,300]]},{&quot;node&quot;:10,&quot;points&quot;:[[640,300],[640,420]]}],&quot;terminals&quot;:[{&quot;node&quot;:1,&quot;at&quot;:[100,180]},{&quot;node&quot;:9,&quot;at&quot;:[820,300]}],&quot;labels&quot;:[{&quot;componentId&quot;:&quot;coupled1&quot;,&quot;text&quot;:&quot;coupled1&quot;,&quot;at&quot;:[220,70],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;coupled2&quot;,&quot;text&quot;:&quot;coupled2&quot;,&quot;at&quot;:[460,70],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;coupled3&quot;,&quot;text&quot;:&quot;coupled3&quot;,&quot;at&quot;:[700,70],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;open1&quot;,&quot;text&quot;:&quot;Open&quot;,&quot;at&quot;:[360,60],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;open2&quot;,&quot;text&quot;:&quot;Open&quot;,&quot;at&quot;:[210,380],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;open3&quot;,&quot;text&quot;:&quot;Open&quot;,&quot;at&quot;:[600,60],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;open4&quot;,&quot;text&quot;:&quot;Open&quot;,&quot;at&quot;:[450,420],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;open5&quot;,&quot;text&quot;:&quot;Open&quot;,&quot;at&quot;:[840,60],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;open6&quot;,&quot;text&quot;:&quot;Open&quot;,&quot;at&quot;:[690,460],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;Port 1&quot;,&quot;at&quot;:[100,240],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;Port 2&quot;,&quot;at&quot;:[820,400],&quot;anchor&quot;:&quot;middle&quot;}]}</metadata>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path data-wire="1" data-node="1" d="M160 180 L100 180"/>
+    <path data-wire="2" data-node="2" d="M280 180 L320 180 L320 100"/>
+    <path data-wire="3" data-node="3" d="M280 220 L400 220"/>
+    <path data-wire="4" data-node="4" d="M160 220 L160 340"/>
+    <path data-wire="5" data-node="5" d="M520 220 L560 220 L560 100"/>
+    <path data-wire="6" data-node="6" d="M520 260 L640 260"/>
+    <path data-wire="7" data-node="7" d="M400 260 L400 380"/>
+    <path data-wire="8" data-node="8" d="M760 260 L800 260 L800 100"/>
+    <path data-wire="9" data-node="9" d="M760 300 L820 300"/>
+    <path data-wire="10" data-node="10" d="M640 300 L640 420"/>
+    <circle data-external-terminal="1" cx="100" cy="180" r="4" fill="#202020" data-node="1"/>
+    <circle data-external-terminal="2" cx="820" cy="300" r="4" fill="#202020" data-node="9"/>
+    <!-- coupled1 from coupled-transmission-line.svg -->
+    <g data-component-id="coupled1" data-symbol-source="coupled-transmission-line.svg" data-symbol-sha256="31420f67cadfdfda6bedcfdff3ec4e87a428dc131e39eb9b5bf22b525f7a12d5" data-symbol-geometry-sha256="270905d70e0e65c92018ab9ffe38ef87c4a64968838cb5c0f430e729d6cc0171" transform="translate(160 180) rotate(0) translate(-100 -100)">
+      <!-- canonical-geometry-start -->
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M100 100 H120 M200 100 H220 M100 140 H120 M200 140 H220"/><rect x="120" y="85" width="80" height="30"/><rect x="120" y="125" width="80" height="30"/></g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <!-- coupled2 from coupled-transmission-line.svg -->
+    <g data-component-id="coupled2" data-symbol-source="coupled-transmission-line.svg" data-symbol-sha256="31420f67cadfdfda6bedcfdff3ec4e87a428dc131e39eb9b5bf22b525f7a12d5" data-symbol-geometry-sha256="270905d70e0e65c92018ab9ffe38ef87c4a64968838cb5c0f430e729d6cc0171" transform="translate(400 220) rotate(0) translate(-100 -100)">
+      <!-- canonical-geometry-start -->
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M100 100 H120 M200 100 H220 M100 140 H120 M200 140 H220"/><rect x="120" y="85" width="80" height="30"/><rect x="120" y="125" width="80" height="30"/></g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <!-- coupled3 from coupled-transmission-line.svg -->
+    <g data-component-id="coupled3" data-symbol-source="coupled-transmission-line.svg" data-symbol-sha256="31420f67cadfdfda6bedcfdff3ec4e87a428dc131e39eb9b5bf22b525f7a12d5" data-symbol-geometry-sha256="270905d70e0e65c92018ab9ffe38ef87c4a64968838cb5c0f430e729d6cc0171" transform="translate(640 260) rotate(0) translate(-100 -100)">
+      <!-- canonical-geometry-start -->
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M100 100 H120 M200 100 H220 M100 140 H120 M200 140 H220"/><rect x="120" y="85" width="80" height="30"/><rect x="120" y="125" width="80" height="30"/></g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <!-- open1 from open.svg -->
+    <g data-component-id="open1" data-symbol-source="open.svg" data-symbol-sha256="24ced853c7980b6a3cb5c20b7e9976c5ce0d239f12c73c4ec7cd06e74e2c6862" data-symbol-geometry-sha256="fc39f5c0c6848378f103db22ad79fe07b2ea40943f905497eab8e9ae5c02899e" transform="translate(320 100) rotate(0) translate(-120 -80)">
+      <!-- canonical-geometry-start -->
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round"><path d="M120 80 H140"/><circle cx="150" cy="80" r="10"/></g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <!-- open2 from open.svg -->
+    <g data-component-id="open2" data-symbol-source="open.svg" data-symbol-sha256="24ced853c7980b6a3cb5c20b7e9976c5ce0d239f12c73c4ec7cd06e74e2c6862" data-symbol-geometry-sha256="fc39f5c0c6848378f103db22ad79fe07b2ea40943f905497eab8e9ae5c02899e" transform="translate(160 340) rotate(0) translate(-120 -80)">
+      <!-- canonical-geometry-start -->
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round"><path d="M120 80 H140"/><circle cx="150" cy="80" r="10"/></g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <!-- open3 from open.svg -->
+    <g data-component-id="open3" data-symbol-source="open.svg" data-symbol-sha256="24ced853c7980b6a3cb5c20b7e9976c5ce0d239f12c73c4ec7cd06e74e2c6862" data-symbol-geometry-sha256="fc39f5c0c6848378f103db22ad79fe07b2ea40943f905497eab8e9ae5c02899e" transform="translate(560 100) rotate(0) translate(-120 -80)">
+      <!-- canonical-geometry-start -->
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round"><path d="M120 80 H140"/><circle cx="150" cy="80" r="10"/></g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <!-- open4 from open.svg -->
+    <g data-component-id="open4" data-symbol-source="open.svg" data-symbol-sha256="24ced853c7980b6a3cb5c20b7e9976c5ce0d239f12c73c4ec7cd06e74e2c6862" data-symbol-geometry-sha256="fc39f5c0c6848378f103db22ad79fe07b2ea40943f905497eab8e9ae5c02899e" transform="translate(400 380) rotate(0) translate(-120 -80)">
+      <!-- canonical-geometry-start -->
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round"><path d="M120 80 H140"/><circle cx="150" cy="80" r="10"/></g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <!-- open5 from open.svg -->
+    <g data-component-id="open5" data-symbol-source="open.svg" data-symbol-sha256="24ced853c7980b6a3cb5c20b7e9976c5ce0d239f12c73c4ec7cd06e74e2c6862" data-symbol-geometry-sha256="fc39f5c0c6848378f103db22ad79fe07b2ea40943f905497eab8e9ae5c02899e" transform="translate(800 100) rotate(0) translate(-120 -80)">
+      <!-- canonical-geometry-start -->
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round"><path d="M120 80 H140"/><circle cx="150" cy="80" r="10"/></g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <!-- open6 from open.svg -->
+    <g data-component-id="open6" data-symbol-source="open.svg" data-symbol-sha256="24ced853c7980b6a3cb5c20b7e9976c5ce0d239f12c73c4ec7cd06e74e2c6862" data-symbol-geometry-sha256="fc39f5c0c6848378f103db22ad79fe07b2ea40943f905497eab8e9ae5c02899e" transform="translate(640 420) rotate(0) translate(-120 -80)">
+      <!-- canonical-geometry-start -->
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round"><path d="M120 80 H140"/><circle cx="150" cy="80" r="10"/></g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <circle data-node-dot="1" cx="160" cy="180" r="4" fill="#202020"/>
+    <circle data-node-dot="2" cx="280" cy="180" r="4" fill="#202020"/>
+    <circle data-node-dot="3" cx="280" cy="220" r="4" fill="#202020"/>
+    <circle data-node-dot="4" cx="160" cy="220" r="4" fill="#202020"/>
+    <circle data-node-dot="3" cx="400" cy="220" r="4" fill="#202020"/>
+    <circle data-node-dot="5" cx="520" cy="220" r="4" fill="#202020"/>
+    <circle data-node-dot="6" cx="520" cy="260" r="4" fill="#202020"/>
+    <circle data-node-dot="7" cx="400" cy="260" r="4" fill="#202020"/>
+    <circle data-node-dot="6" cx="640" cy="260" r="4" fill="#202020"/>
+    <circle data-node-dot="8" cx="760" cy="260" r="4" fill="#202020"/>
+    <circle data-node-dot="9" cx="760" cy="300" r="4" fill="#202020"/>
+    <circle data-node-dot="10" cx="640" cy="300" r="4" fill="#202020"/>
+    <circle data-node-dot="2" cx="320" cy="100" r="4" fill="#202020"/>
+    <circle data-node-dot="4" cx="160" cy="340" r="4" fill="#202020"/>
+    <circle data-node-dot="5" cx="560" cy="100" r="4" fill="#202020"/>
+    <circle data-node-dot="7" cx="400" cy="380" r="4" fill="#202020"/>
+    <circle data-node-dot="8" cx="800" cy="100" r="4" fill="#202020"/>
+    <circle data-node-dot="10" cx="640" cy="420" r="4" fill="#202020"/>
+    <circle data-node-circle="1" cx="160" cy="140" r="12" fill="#ffffff"/>
+    <circle data-node-circle="2" cx="380" cy="140" r="12" fill="#ffffff"/>
+    <circle data-node-circle="3" cx="340" cy="260" r="12" fill="#ffffff"/>
+    <circle data-node-circle="4" cx="200" cy="280" r="12" fill="#ffffff"/>
+    <circle data-node-circle="5" cx="620" cy="160" r="12" fill="#ffffff"/>
+    <circle data-node-circle="6" cx="580" cy="300" r="12" fill="#ffffff"/>
+    <circle data-node-circle="7" cx="440" cy="320" r="12" fill="#ffffff"/>
+    <circle data-node-circle="8" cx="860" cy="180" r="12" fill="#ffffff"/>
+    <circle data-node-circle="9" cx="800" cy="340" r="12" fill="#ffffff"/>
+    <circle data-node-circle="10" cx="680" cy="360" r="12" fill="#ffffff"/>
+  </g>
+  <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    <text x="220" y="70" text-anchor="middle">coupled1</text>
+    <text x="460" y="70" text-anchor="middle">coupled2</text>
+    <text x="700" y="70" text-anchor="middle">coupled3</text>
+    <text x="360" y="60" text-anchor="middle">Open</text>
+    <text x="210" y="380" text-anchor="middle">Open</text>
+    <text x="600" y="60" text-anchor="middle">Open</text>
+    <text x="450" y="420" text-anchor="middle">Open</text>
+    <text x="840" y="60" text-anchor="middle">Open</text>
+    <text x="690" y="460" text-anchor="middle">Open</text>
+    <text x="100" y="240" text-anchor="middle">Port 1</text>
+    <text x="820" y="400" text-anchor="middle">Port 2</text>
+    <text data-node-label="1" x="160" y="145" text-anchor="middle">1</text>
+    <text data-node-label="2" x="380" y="145" text-anchor="middle">2</text>
+    <text data-node-label="3" x="340" y="265" text-anchor="middle">3</text>
+    <text data-node-label="4" x="200" y="285" text-anchor="middle">4</text>
+    <text data-node-label="5" x="620" y="165" text-anchor="middle">5</text>
+    <text data-node-label="6" x="580" y="305" text-anchor="middle">6</text>
+    <text data-node-label="7" x="440" y="325" text-anchor="middle">7</text>
+    <text data-node-label="8" x="860" y="185" text-anchor="middle">8</text>
+    <text data-node-label="9" x="800" y="345" text-anchor="middle">9</text>
+    <text data-node-label="10" x="680" y="365" text-anchor="middle">10</text>
+  </g>
+</svg>

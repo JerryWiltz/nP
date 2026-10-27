@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 440 360"
+     role="img" aria-labelledby="title description">
+  <title id="title">Microstrip line</title>
+  <desc id="description">Guide REPL example microstrip-line: Microstrip line.</desc>
+  <metadata id="circuit-description">{&quot;title&quot;:&quot;Microstrip line&quot;,&quot;description&quot;:&quot;Guide REPL example microstrip-line: Microstrip line.&quot;,&quot;domain&quot;:&quot;rf&quot;,&quot;source&quot;:{&quot;file&quot;:&quot;docs/.vitepress/theme/replExamples.js&quot;,&quot;result&quot;:&quot;line&quot;,&quot;combination&quot;:&quot;nP.cascade(line)&quot;,&quot;exampleId&quot;:&quot;microstrip-line&quot;},&quot;viewBox&quot;:[0,0,440,360],&quot;layout&quot;:{&quot;centerAxisX&quot;:220,&quot;centerReference&quot;:&quot;Microstrip line signal path&quot;},&quot;components&quot;:[{&quot;id&quot;:&quot;line&quot;,&quot;symbol&quot;:&quot;microstrip-line.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;line&quot;,&quot;constructor&quot;:&quot;mlin&quot;},&quot;at&quot;:[160,180],&quot;sourceAnchor&quot;:[80,80],&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:1,&quot;at&quot;:[160,180],&quot;labelAt&quot;:[160,120]},{&quot;port&quot;:2,&quot;node&quot;:2,&quot;at&quot;:[280,180],&quot;labelAt&quot;:[280,120]}]}],&quot;wires&quot;:[{&quot;node&quot;:1,&quot;points&quot;:[[100,180],[160,180]]},{&quot;node&quot;:2,&quot;points&quot;:[[280,180],[340,180]]}],&quot;terminals&quot;:[{&quot;node&quot;:1,&quot;at&quot;:[100,180]},{&quot;node&quot;:2,&quot;at&quot;:[340,180]}],&quot;labels&quot;:[{&quot;componentId&quot;:&quot;line&quot;,&quot;text&quot;:&quot;line: 12.7 mm&quot;,&quot;at&quot;:[220,60],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;Port 1&quot;,&quot;at&quot;:[100,240],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;Port 2&quot;,&quot;at&quot;:[340,240],&quot;anchor&quot;:&quot;middle&quot;}]}</metadata>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path data-wire="1" data-node="1" d="M100 180 L160 180"/>
+    <path data-wire="2" data-node="2" d="M280 180 L340 180"/>
+    <circle data-external-terminal="1" cx="100" cy="180" r="4" fill="#202020" data-node="1"/>
+    <circle data-external-terminal="2" cx="340" cy="180" r="4" fill="#202020" data-node="2"/>
+    <!-- line from microstrip-line.svg -->
+    <g data-component-id="line" data-symbol-source="microstrip-line.svg" data-symbol-sha256="1d4e7b30562295c71e797fd149a12e6e075b1b8c88aa7e8b46214a4176abe506" data-symbol-geometry-sha256="a4cac6f808dcf42b04b403907ef0af738c3dda4390021416d24dbba8593ca688" transform="translate(160 180) rotate(0) translate(-80 -80)">
+      <!-- canonical-geometry-start -->
+<!-- Match the Tlin() body and lead layout. -->
+  <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M80 80 H100 M180 80 H200"/>
+    <rect x="100" y="65" width="80" height="30"/>
+  </g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <circle data-node-dot="1" cx="160" cy="180" r="4" fill="#202020"/>
+    <circle data-node-dot="2" cx="280" cy="180" r="4" fill="#202020"/>
+    <circle data-node-circle="1" cx="160" cy="120" r="12" fill="#ffffff"/>
+    <circle data-node-circle="2" cx="280" cy="120" r="12" fill="#ffffff"/>
+  </g>
+  <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    <text x="220" y="60" text-anchor="middle">line: 12.7 mm</text>
+    <text x="100" y="240" text-anchor="middle">Port 1</text>
+    <text x="340" y="240" text-anchor="middle">Port 2</text>
+    <text data-node-label="1" x="160" y="125" text-anchor="middle">1</text>
+    <text data-node-label="2" x="280" y="125" text-anchor="middle">2</text>
+  </g>
+</svg>

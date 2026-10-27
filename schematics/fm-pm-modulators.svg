@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 600 500"
+     role="img" aria-labelledby="title description">
+  <title id="title">FM and PM sources</title>
+  <desc id="description">FM and PM sources: two independent modulated sources.</desc>
+  <metadata id="circuit-description">{&quot;title&quot;:&quot;FM and PM sources&quot;,&quot;description&quot;:&quot;FM and PM sources: two independent modulated sources.&quot;,&quot;domain&quot;:&quot;signal&quot;,&quot;source&quot;:{&quot;file&quot;:&quot;docs/.vitepress/theme/replExamples.js&quot;,&quot;result&quot;:&quot;fm, pm&quot;,&quot;combination&quot;:&quot;two independent nP.mod() calls&quot;,&quot;exampleId&quot;:&quot;fm-pm-sidebands&quot;},&quot;viewBox&quot;:[0,0,600,500],&quot;layout&quot;:{&quot;centerAxisX&quot;:300,&quot;centerReference&quot;:&quot;two modulator sources&quot;},&quot;components&quot;:[{&quot;id&quot;:&quot;fm&quot;,&quot;symbol&quot;:&quot;mod.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;fm&quot;,&quot;constructor&quot;:&quot;mod&quot;},&quot;at&quot;:[180,160],&quot;sourceAnchor&quot;:[80,80],&quot;connections&quot;:[{&quot;port&quot;:1,&quot;signal&quot;:&quot;fm-grid&quot;,&quot;at&quot;:[180,160]},{&quot;port&quot;:2,&quot;signal&quot;:&quot;fm-tones&quot;,&quot;at&quot;:[300,160]}]},{&quot;id&quot;:&quot;pm&quot;,&quot;symbol&quot;:&quot;mod.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;pm&quot;,&quot;constructor&quot;:&quot;mod&quot;},&quot;at&quot;:[180,340],&quot;sourceAnchor&quot;:[80,80],&quot;connections&quot;:[{&quot;port&quot;:1,&quot;signal&quot;:&quot;pm-grid&quot;,&quot;at&quot;:[180,340]},{&quot;port&quot;:2,&quot;signal&quot;:&quot;pm-tones&quot;,&quot;at&quot;:[300,340]}]}],&quot;wires&quot;:[{&quot;signal&quot;:&quot;fm-grid&quot;,&quot;points&quot;:[[100,160],[180,160]]},{&quot;signal&quot;:&quot;fm-tones&quot;,&quot;points&quot;:[[300,160],[380,160]]},{&quot;signal&quot;:&quot;pm-grid&quot;,&quot;points&quot;:[[100,340],[180,340]]},{&quot;signal&quot;:&quot;pm-tones&quot;,&quot;points&quot;:[[300,340],[380,340]]}],&quot;terminals&quot;:[{&quot;signal&quot;:&quot;fm-grid&quot;,&quot;at&quot;:[100,160]},{&quot;signal&quot;:&quot;fm-tones&quot;,&quot;at&quot;:[380,160]},{&quot;signal&quot;:&quot;pm-grid&quot;,&quot;at&quot;:[100,340]},{&quot;signal&quot;:&quot;pm-tones&quot;,&quot;at&quot;:[380,340]}],&quot;labels&quot;:[{&quot;componentId&quot;:&quot;fm&quot;,&quot;text&quot;:&quot;fm: FM&quot;,&quot;at&quot;:[240,90],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;analysis grid&quot;,&quot;at&quot;:[100,220],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;tones&quot;,&quot;at&quot;:[380,220],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;pm&quot;,&quot;text&quot;:&quot;pm: PM&quot;,&quot;at&quot;:[240,270],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;analysis grid&quot;,&quot;at&quot;:[100,400],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;tones&quot;,&quot;at&quot;:[380,400],&quot;anchor&quot;:&quot;middle&quot;}]}</metadata>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path data-wire="1" data-signal="fm-grid" d="M100 160 L180 160"/>
+    <path data-wire="2" data-signal="fm-tones" d="M300 160 L380 160"/>
+    <path data-wire="3" data-signal="pm-grid" d="M100 340 L180 340"/>
+    <path data-wire="4" data-signal="pm-tones" d="M300 340 L380 340"/>
+    <circle data-external-terminal="1" cx="100" cy="160" r="4" fill="#202020" data-signal="fm-grid"/>
+    <circle data-external-terminal="2" cx="380" cy="160" r="4" fill="#202020" data-signal="fm-tones"/>
+    <circle data-external-terminal="3" cx="100" cy="340" r="4" fill="#202020" data-signal="pm-grid"/>
+    <circle data-external-terminal="4" cx="380" cy="340" r="4" fill="#202020" data-signal="pm-tones"/>
+    <!-- fm from mod.svg -->
+    <g data-component-id="fm" data-symbol-source="mod.svg" data-symbol-sha256="ab82fbf7f4d083f0b3f275188229ac659dd2c799d4989197c40f4081ee7032fb" data-symbol-geometry-sha256="0417b29f0ec21b432981ba42d062fbe5ad4cd448fa5fc0dca12456cd578105ae" transform="translate(180 160) rotate(0) translate(-80 -80)">
+      <!-- canonical-geometry-start -->
+<g transform="translate(0 -10)">
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M80 90 H100 M180 90 H200"/><rect x="100" y="55" width="80" height="70"/><text x="140" y="90" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#202020" stroke="none" text-anchor="middle" dominant-baseline="middle">MOD</text>
+  </g>
+  </g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <!-- pm from mod.svg -->
+    <g data-component-id="pm" data-symbol-source="mod.svg" data-symbol-sha256="ab82fbf7f4d083f0b3f275188229ac659dd2c799d4989197c40f4081ee7032fb" data-symbol-geometry-sha256="0417b29f0ec21b432981ba42d062fbe5ad4cd448fa5fc0dca12456cd578105ae" transform="translate(180 340) rotate(0) translate(-80 -80)">
+      <!-- canonical-geometry-start -->
+<g transform="translate(0 -10)">
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M80 90 H100 M180 90 H200"/><rect x="100" y="55" width="80" height="70"/><text x="140" y="90" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#202020" stroke="none" text-anchor="middle" dominant-baseline="middle">MOD</text>
+  </g>
+  </g>
+      <!-- canonical-geometry-end -->
+    </g>
+
+  </g>
+  <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    <text x="240" y="90" text-anchor="middle">fm: FM</text>
+    <text x="100" y="220" text-anchor="middle">analysis grid</text>
+    <text x="380" y="220" text-anchor="middle">tones</text>
+    <text x="240" y="270" text-anchor="middle">pm: PM</text>
+    <text x="100" y="400" text-anchor="middle">analysis grid</text>
+    <text x="380" y="400" text-anchor="middle">tones</text>
+
+  </g>
+</svg>

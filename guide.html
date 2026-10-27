@@ -1,0 +1,35 @@
+<!doctype html>
+<!-- Modified: 2026-10-19 -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="refresh" content="0; url=./hello-nport.html">
+  <title>nP guide moved</title>
+  <script>
+    var routes = {
+      'np-global': 'global-settings.html',
+      'np-nport': 'nport-object.html',
+      'np-rlc': 'lumped-components.html',
+      'np-transformers': 'lumped-components.html#transformers',
+      'np-lowpass': 'filters.html',
+      'np-ideal-components': 'ideal-components.html',
+      'np-connections': 'connecting-nports.html',
+      'np-transmission-lines': 'ideal-components.html#a-lossless-line',
+      'np-microstrip': 'microstrip.html',
+      'np-math': 'math.html',
+      'np-chart': 'charts-tables-and-logs.html',
+      'an-nport-functions-example-a-wilkinson-power-divider': 'circuit-examples.html#wilkinson-power-divider',
+      'an-nport-functions-example-a-low-pass-filter-solved-four-ways': 'circuit-examples.html#low-pass-filter-four-ways',
+      'pi-attenuator-solved-with-np-nodal': 'circuit-examples.html#pi-attenuator',
+      'here-below-is-a-coupled-bandpass-filter-example': 'circuit-examples.html#edge-coupled-bandpass-filter'
+    };
+    var destination = routes[location.hash.slice(1)] || 'hello-nport.html';
+    location.replace('./' + destination + location.search);
+  </script>
+</head>
+<body>
+  <p>The guide has moved. <a href="./hello-nport.html">Start with Hello, nPort!</a></p>
+</body>
+</html>
