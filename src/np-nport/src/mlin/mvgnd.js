@@ -1,5 +1,6 @@
-// Modified: 2026-10-13
+// Modified: 2026-10-28
 import {complex} from '../../../np-math/src/complex';
+import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
@@ -77,5 +78,7 @@ export function mvgnd(input = {}) {
 	via.physicalModel = physicalModelMetadata('microstrip', 'via-to-ground', {
 		diameter: Diameter, height: Height, thickness: Thickness
 	}, {resistivity: rho}, analysis, {validity: via.microstrip.validity});
+	via._schematic = schematicPart('mvgnd', {labelPrefix: 'mvgnd',
+		diameter: Diameter, height: Height, thickness: Thickness, resistivity: rho});
 	return via;
 };

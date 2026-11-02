@@ -1,5 +1,6 @@
-// Modified: 2026-10-13
+// Modified: 2026-10-28
 import {complex} from '../../../np-math/src/complex';
+import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
@@ -21,5 +22,6 @@ export function paSeRL(R = 75, L = 5e-9, options = {}) { // parallel capacitor n
 	}
 	paSeRL.setspars(sparsArray);
 	paSeRL.setglobal(settings);
+	paSeRL._schematic = schematicPart('paSeRL', {labelPrefix: 'paSeRL', resistance: R, inductance: L});
 	return paSeRL;
 };

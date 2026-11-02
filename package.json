@@ -1,4 +1,5 @@
 {
+  "_modified": "2026-10-31",
   "name": "@jerrywiltz/np",
   "version": "0.0.48",
   "main": "./dist/nP.cjs",
@@ -25,8 +26,8 @@
     "access": "public"
   },
   "scripts": {
-    "build": "node schematics/tools/generate-runtime-symbols.js && rollup -c",
-    "build:plugin": "node schematics/tools/generate-runtime-symbols.js && rollup -c rollup.plugin.config.js",
+    "build": "node schematics/tools/generate-runtime-symbols.js && node --no-warnings --loader ./scripts/extensionless-loader.mjs schematics/tools/check-constructor-symbols.mjs && rollup -c",
+    "build:plugin": "node schematics/tools/generate-runtime-symbols.js && node --no-warnings --loader ./scripts/extensionless-loader.mjs schematics/tools/check-constructor-symbols.mjs && rollup -c rollup.plugin.config.js",
     "test": "node --loader ./scripts/extensionless-loader.mjs --test",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
@@ -38,7 +39,10 @@
     "dev:smoke": "node scripts/dev-smoke.mjs",
     "symbols:gallery": "node schematics/tools/generate-symbol-gallery.js",
     "symbols:bundle": "node schematics/tools/generate-runtime-symbols.js",
-    "symbols:check": "node schematics/tools/validate-symbol-library.js",
+    "shapes:bundle": "node schematics/tools/generate-runtime-shapes.js",
+    "shapes:check": "node schematics/tools/generate-runtime-shapes.js --check",
+    "shapes:preview": "node --no-warnings --loader ./scripts/extensionless-loader.mjs schematics/tools/generate-shape-previews.mjs",
+    "symbols:check": "node schematics/tools/validate-symbol-library.js && node --no-warnings --loader ./scripts/extensionless-loader.mjs schematics/tools/check-constructor-symbols.mjs",
     "schematics:build": "node schematics/tools/build-example-schematics.js",
     "schematics:check": "node schematics/tools/check-example-schematics.js"
   },

@@ -16,6 +16,13 @@ export const schematicSymbols = {
                 100
             ]
         ],
+        "flow": {
+            "throughPorts": [
+                2,
+                3
+            ],
+            "shuntPort": 1
+        },
         "bounds": [
             76,
             76,
@@ -737,6 +744,13 @@ export const schematicSymbols = {
                 120
             ]
         ],
+        "flow": {
+            "throughPorts": [
+                2,
+                3
+            ],
+            "shuntPort": 1
+        },
         "bounds": [
             -4,
             -4,
@@ -1059,6 +1073,57 @@ export const schematicSymbols = {
         ],
         "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M80 80 H100 M180 80 H200\"/>\n    <rect x=\"100\" y=\"60\" width=\"80\" height=\"40\"/>\n    <text x=\"140\" y=\"80\" font-family=\"Arial, Helvetica, sans-serif\" font-size=\"13\" fill=\"#202020\" stroke=\"none\" text-anchor=\"middle\" dominant-baseline=\"middle\">cascade</text>\n  </g>"
     },
+    "nodal": {
+        "ports": [
+            [
+                80,
+                80
+            ],
+            [
+                200,
+                80
+            ]
+        ],
+        "bounds": [
+            76,
+            56,
+            204,
+            104
+        ],
+        "bodyBounds": [
+            100,
+            60,
+            180,
+            100
+        ],
+        "leads": [
+            [
+                [
+                    80,
+                    80
+                ],
+                [
+                    100,
+                    80
+                ]
+            ],
+            [
+                [
+                    180,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M80 80 H100 M180 80 H200\"/>\n    <rect x=\"100\" y=\"60\" width=\"80\" height=\"40\"/>\n    <text x=\"140\" y=\"80\" font-family=\"Arial, Helvetica, sans-serif\" font-size=\"13\" fill=\"#202020\" stroke=\"none\" text-anchor=\"middle\" dominant-baseline=\"middle\">nodal</text>\n  </g>"
+    },
     "resistor": {
         "ports": [
             [
@@ -1368,5 +1433,1423 @@ export const schematicSymbols = {
             0
         ],
         "geometry": "<g transform=\"translate(0 -10)\">\n<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M80 90 H100 M180 90 H200\"/><rect x=\"100\" y=\"55\" width=\"80\" height=\"70\"/><text x=\"140\" y=\"90\" font-family=\"Arial, Helvetica, sans-serif\" font-size=\"13\" fill=\"#202020\" stroke=\"none\" text-anchor=\"middle\" dominant-baseline=\"middle\">DEMOD</text>\n  </g>\n  </g>"
+    },
+    "parallel-resistor": {
+        "ports": [
+            [
+                180,
+                80
+            ],
+            [
+                220,
+                80
+            ]
+        ],
+        "bounds": [
+            146,
+            76,
+            254,
+            260
+        ],
+        "bodyBounds": [
+            160,
+            80,
+            240,
+            246
+        ],
+        "leads": [
+            [
+                [
+                    180,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ],
+            [
+                [
+                    220,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g transform=\"translate(-10 0)\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M190 80 H230 M210 80 V110\"/>\n    <circle cx=\"210\" cy=\"80\" r=\"4\" fill=\"#202020\"/>\n    <g transform=\"translate(210 110) rotate(90)\"><path d=\"M0 0 H20 L25 -10 L35 10 L45 -10 L55 10 L65 -10 L75 10 L80 0 H100\"/></g>\n    <path d=\"M210 210 V230 M200 230 H220 M204 238 H216 M208 246 H212\"/>\n  </g>"
+    },
+    "parallel-inductor": {
+        "ports": [
+            [
+                180,
+                80
+            ],
+            [
+                220,
+                80
+            ]
+        ],
+        "bounds": [
+            146,
+            76,
+            254,
+            260
+        ],
+        "bodyBounds": [
+            160,
+            80,
+            240,
+            246
+        ],
+        "leads": [
+            [
+                [
+                    180,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ],
+            [
+                [
+                    220,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g transform=\"translate(-10 0)\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M190 80 H230 M210 80 V110\"/>\n    <circle cx=\"210\" cy=\"80\" r=\"4\" fill=\"#202020\"/>\n    <g transform=\"translate(210 110) rotate(90)\"><path d=\"M0 0 H20 C20 -20 35 -20 35 0 C35 -20 50 -20 50 0 C50 -20 65 -20 65 0 C65 -20 80 -20 80 0 H100\"/></g>\n    <path d=\"M210 210 V230 M200 230 H220 M204 238 H216 M208 246 H212\"/>\n  </g>"
+    },
+    "parallel-capacitor": {
+        "ports": [
+            [
+                180,
+                80
+            ],
+            [
+                220,
+                80
+            ]
+        ],
+        "bounds": [
+            146,
+            76,
+            254,
+            220
+        ],
+        "bodyBounds": [
+            160,
+            80,
+            240,
+            206
+        ],
+        "leads": [
+            [
+                [
+                    180,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ],
+            [
+                [
+                    220,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g transform=\"translate(-10 0)\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M190 80 H230 M210 80 V110\"/>\n    <circle cx=\"210\" cy=\"80\" r=\"4\" fill=\"#202020\"/>\n    <g transform=\"translate(210 110) rotate(90)\"><path d=\"M0 0 H25 M35 0 H60 M25 -10 V10 M35 -10 V10\"/></g>\n    <path d=\"M210 170 V190 M200 190 H220 M204 198 H216 M208 206 H212\"/>\n  </g>"
+    },
+    "transformer": {
+        "ports": [
+            [
+                80,
+                80
+            ],
+            [
+                200,
+                80
+            ]
+        ],
+        "bounds": [
+            76,
+            66,
+            204,
+            174
+        ],
+        "bodyBounds": [
+            90,
+            70,
+            190,
+            170
+        ],
+        "leads": [
+            [
+                [
+                    80,
+                    80
+                ],
+                [
+                    100,
+                    80
+                ]
+            ],
+            [
+                [
+                    180,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M80 80 H100 M180 80 H200 M100 80 C85 80 85 100 100 100 C85 100 85 120 100 120 C85 120 85 140 100 140 C85 140 85 160 100 160 M180 80 C195 80 195 100 180 100 C195 100 195 120 180 120 C195 120 195 140 180 140 C195 140 195 160 180 160 M137 70 V170 M143 70 V170\"/>\n  </g>"
+    },
+    "transformer-four-port": {
+        "ports": [
+            [
+                80,
+                80
+            ],
+            [
+                200,
+                80
+            ],
+            [
+                80,
+                160
+            ],
+            [
+                200,
+                160
+            ]
+        ],
+        "bounds": [
+            76,
+            66,
+            204,
+            174
+        ],
+        "bodyBounds": [
+            90,
+            70,
+            190,
+            170
+        ],
+        "leads": [
+            [
+                [
+                    80,
+                    80
+                ],
+                [
+                    100,
+                    80
+                ]
+            ],
+            [
+                [
+                    180,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ],
+            [
+                [
+                    80,
+                    160
+                ],
+                [
+                    100,
+                    160
+                ]
+            ],
+            [
+                [
+                    180,
+                    160
+                ],
+                [
+                    200,
+                    160
+                ]
+            ]
+        ],
+        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M80 80 H100 M180 80 H200 M80 160 H100 M180 160 H200 M100 80 C85 80 85 100 100 100 C85 100 85 120 100 120 C85 120 85 140 100 140 C85 140 85 160 100 160 M180 80 C195 80 195 100 180 100 C195 100 195 120 180 120 C195 120 195 140 180 140 C195 140 195 160 180 160 M137 70 V170 M143 70 V170\"/>\n  </g>"
+    },
+    "se-series-rl": {
+        "ports": [
+            [
+                100,
+                100
+            ],
+            [
+                340,
+                100
+            ]
+        ],
+        "bounds": [
+            96,
+            76,
+            344,
+            124
+        ],
+        "bodyBounds": [
+            120,
+            80,
+            320,
+            120
+        ],
+        "leads": [
+            [
+                [
+                    100,
+                    100
+                ],
+                [
+                    120,
+                    100
+                ]
+            ],
+            [
+                [
+                    320,
+                    100
+                ],
+                [
+                    340,
+                    100
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g transform=\"translate(10 -10)\">\n<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M90 110 H110 M310 110 H330\"/>\n    <path d=\"M110 110 H130 L135 100 L145 120 L155 100 L165 120 L175 100 L185 120 L190 110 H210\"/>\n    <path d=\"M210 110 H230 C230 90 245 90 245 110 C245 90 260 90 260 110 C260 90 275 90 275 110 C275 90 290 90 290 110 H310\"/>\n  </g>\n  </g>"
+    },
+    "pa-series-rl": {
+        "ports": [
+            [
+                180,
+                80
+            ],
+            [
+                220,
+                80
+            ]
+        ],
+        "bounds": [
+            146,
+            76,
+            254,
+            360
+        ],
+        "bodyBounds": [
+            160,
+            80,
+            240,
+            346
+        ],
+        "leads": [
+            [
+                [
+                    180,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ],
+            [
+                [
+                    220,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g transform=\"translate(-10 0)\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M190 80 H230 M210 80 V110\"/>\n    <circle cx=\"210\" cy=\"80\" r=\"4\" fill=\"#202020\"/>\n    <g transform=\"translate(210 110) rotate(90)\"><path d=\"M0 0 H20 L25 -10 L35 10 L45 -10 L55 10 L65 -10 L75 10 L80 0 H100\"/></g>\n    <g transform=\"translate(210 210) rotate(90)\"><path d=\"M0 0 H20 C20 -20 35 -20 35 0 C35 -20 50 -20 50 0 C50 -20 65 -20 65 0 C65 -20 80 -20 80 0 H100\"/></g>\n    <path d=\"M210 310 V330 M200 330 H220 M204 338 H216 M208 346 H212\"/>\n  </g>"
+    },
+    "se-series-rc": {
+        "ports": [
+            [
+                120,
+                100
+            ],
+            [
+                320,
+                100
+            ]
+        ],
+        "bounds": [
+            116,
+            76,
+            324,
+            124
+        ],
+        "bodyBounds": [
+            140,
+            80,
+            300,
+            120
+        ],
+        "leads": [
+            [
+                [
+                    120,
+                    100
+                ],
+                [
+                    140,
+                    100
+                ]
+            ],
+            [
+                [
+                    300,
+                    100
+                ],
+                [
+                    320,
+                    100
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g transform=\"translate(10 -10)\">\n<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M110 110 H130 M290 110 H310\"/>\n    <path d=\"M130 110 H150 L155 100 L165 120 L175 100 L185 120 L195 100 L205 120 L210 110 H230\"/>\n    <path d=\"M230 110 H255 M265 110 H290 M255 100 V120 M265 100 V120\"/>\n  </g>\n  </g>"
+    },
+    "pa-series-rc": {
+        "ports": [
+            [
+                180,
+                80
+            ],
+            [
+                220,
+                80
+            ]
+        ],
+        "bounds": [
+            146,
+            76,
+            254,
+            320
+        ],
+        "bodyBounds": [
+            160,
+            80,
+            240,
+            306
+        ],
+        "leads": [
+            [
+                [
+                    180,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ],
+            [
+                [
+                    220,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g transform=\"translate(-10 0)\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M190 80 H230 M210 80 V110\"/>\n    <circle cx=\"210\" cy=\"80\" r=\"4\" fill=\"#202020\"/>\n    <g transform=\"translate(210 110) rotate(90)\"><path d=\"M0 0 H20 L25 -10 L35 10 L45 -10 L55 10 L65 -10 L75 10 L80 0 H100\"/></g>\n    <g transform=\"translate(210 210) rotate(90)\"><path d=\"M0 0 H25 M35 0 H60 M25 -10 V10 M35 -10 V10\"/></g>\n    <path d=\"M210 270 V290 M200 290 H220 M204 298 H216 M208 306 H212\"/>\n  </g>"
+    },
+    "se-series-lc": {
+        "ports": [
+            [
+                120,
+                100
+            ],
+            [
+                320,
+                100
+            ]
+        ],
+        "bounds": [
+            116,
+            76,
+            324,
+            124
+        ],
+        "bodyBounds": [
+            140,
+            80,
+            300,
+            120
+        ],
+        "leads": [
+            [
+                [
+                    120,
+                    100
+                ],
+                [
+                    140,
+                    100
+                ]
+            ],
+            [
+                [
+                    300,
+                    100
+                ],
+                [
+                    320,
+                    100
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g transform=\"translate(10 -10)\">\n<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M110 110 H130 M290 110 H310\"/>\n    <path d=\"M130 110 H150 C150 90 165 90 165 110 C165 90 180 90 180 110 C180 90 195 90 195 110 C195 90 210 90 210 110 H230\"/>\n    <path d=\"M230 110 H255 M265 110 H290 M255 100 V120 M265 100 V120\"/>\n  </g>\n  </g>"
+    },
+    "pa-series-lc": {
+        "ports": [
+            [
+                180,
+                80
+            ],
+            [
+                220,
+                80
+            ]
+        ],
+        "bounds": [
+            146,
+            76,
+            254,
+            320
+        ],
+        "bodyBounds": [
+            160,
+            80,
+            240,
+            306
+        ],
+        "leads": [
+            [
+                [
+                    180,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ],
+            [
+                [
+                    220,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g transform=\"translate(-10 0)\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M190 80 H230 M210 80 V110\"/>\n    <circle cx=\"210\" cy=\"80\" r=\"4\" fill=\"#202020\"/>\n    <g transform=\"translate(210 110) rotate(90)\"><path d=\"M0 0 H20 C20 -20 35 -20 35 0 C35 -20 50 -20 50 0 C50 -20 65 -20 65 0 C65 -20 80 -20 80 0 H100\"/></g>\n    <g transform=\"translate(210 210) rotate(90)\"><path d=\"M0 0 H25 M35 0 H60 M25 -10 V10 M35 -10 V10\"/></g>\n    <path d=\"M210 270 V290 M200 290 H220 M204 298 H216 M208 306 H212\"/>\n  </g>"
+    },
+    "se-series-rlc": {
+        "ports": [
+            [
+                60,
+                100
+            ],
+            [
+                360,
+                100
+            ]
+        ],
+        "bounds": [
+            56,
+            76,
+            364,
+            124
+        ],
+        "bodyBounds": [
+            80,
+            80,
+            340,
+            120
+        ],
+        "leads": [
+            [
+                [
+                    60,
+                    100
+                ],
+                [
+                    80,
+                    100
+                ]
+            ],
+            [
+                [
+                    340,
+                    100
+                ],
+                [
+                    360,
+                    100
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g transform=\"translate(0 -10)\">\n<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M60 110 H80 M340 110 H360\"/>\n    <path d=\"M80 110 H100 L105 100 L115 120 L125 100 L135 120 L145 100 L155 120 L160 110 H180\"/>\n    <path d=\"M180 110 H200 C200 90 215 90 215 110 C215 90 230 90 230 110 C230 90 245 90 245 110 C245 90 260 90 260 110 H280\"/>\n    <path d=\"M280 110 H305 M315 110 H340 M305 100 V120 M315 100 V120\"/>\n  </g>\n  </g>"
+    },
+    "pa-series-rlc": {
+        "ports": [
+            [
+                180,
+                80
+            ],
+            [
+                220,
+                80
+            ]
+        ],
+        "bounds": [
+            146,
+            76,
+            254,
+            420
+        ],
+        "bodyBounds": [
+            160,
+            80,
+            240,
+            406
+        ],
+        "leads": [
+            [
+                [
+                    180,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ],
+            [
+                [
+                    220,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g transform=\"translate(-10 0)\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M190 80 H230 M210 80 V110\"/>\n    <circle cx=\"210\" cy=\"80\" r=\"4\" fill=\"#202020\"/>\n    <g transform=\"translate(210 110) rotate(90)\"><path d=\"M0 0 H20 L25 -10 L35 10 L45 -10 L55 10 L65 -10 L75 10 L80 0 H100\"/></g>\n    <g transform=\"translate(210 210) rotate(90)\"><path d=\"M0 0 H20 C20 -20 35 -20 35 0 C35 -20 50 -20 50 0 C50 -20 65 -20 65 0 C65 -20 80 -20 80 0 H100\"/></g>\n    <g transform=\"translate(210 310) rotate(90)\"><path d=\"M0 0 H25 M35 0 H60 M25 -10 V10 M35 -10 V10\"/></g>\n    <path d=\"M210 370 V390 M200 390 H220 M204 398 H216 M208 406 H212\"/>\n  </g>"
+    },
+    "pa-parallel-rl": {
+        "ports": [
+            [
+                180,
+                80
+            ],
+            [
+                220,
+                80
+            ]
+        ],
+        "bounds": [
+            146,
+            76,
+            254,
+            300
+        ],
+        "bodyBounds": [
+            160,
+            80,
+            240,
+            286
+        ],
+        "leads": [
+            [
+                [
+                    180,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ],
+            [
+                [
+                    220,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g transform=\"translate(-10 0)\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M190 80 H230 M210 80 V120 M170 120 H250 M170 260 H250 M210 260 V290 M200 290 H220 M204 298 H216 M208 306 H212\"/>\n    <path d=\"M170 120 V140 M170 240 V260\"/>\n    <circle cx=\"210\" cy=\"80\" r=\"4\" fill=\"#202020\"/>\n    <g transform=\"translate(170 140) rotate(90)\"><path d=\"M0 0 H20 L25 -10 L35 10 L45 -10 L55 10 L65 -10 L75 10 L80 0 H100\"/></g>\n    <path d=\"M250 120 V140 M250 240 V260\"/>\n    <g transform=\"translate(250 140) rotate(90)\"><path d=\"M0 0 H20 C20 -20 35 -20 35 0 C35 -20 50 -20 50 0 C50 -20 65 -20 65 0 C65 -20 80 -20 80 0 H100\"/></g>\n  </g>"
+    },
+    "se-parallel-rl": {
+        "ports": [
+            [
+                140,
+                120
+            ],
+            [
+                280,
+                120
+            ]
+        ],
+        "bounds": [
+            136,
+            65,
+            284,
+            175
+        ],
+        "bodyBounds": [
+            160,
+            75,
+            260,
+            165
+        ],
+        "leads": [
+            [
+                [
+                    140,
+                    120
+                ],
+                [
+                    160,
+                    120
+                ]
+            ],
+            [
+                [
+                    260,
+                    120
+                ],
+                [
+                    280,
+                    120
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g transform=\"translate(0 -5)\">\n<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M140 125 H160 M260 125 H280 M160 85 V165 M260 85 V165\"/>\n    <path d=\"M160 85 H180 L185 75 L195 95 L205 75 L215 95 L225 75 L235 95 L240 85 H260\"/>\n    <path d=\"M160 165 H180 C180 145 195 145 195 165 C195 145 210 145 210 165 C210 145 225 145 225 165 C225 145 240 145 240 165 H260\"/>\n  </g>\n  </g>"
+    },
+    "pa-parallel-rc": {
+        "ports": [
+            [
+                180,
+                80
+            ],
+            [
+                220,
+                80
+            ]
+        ],
+        "bounds": [
+            146,
+            76,
+            254,
+            300
+        ],
+        "bodyBounds": [
+            160,
+            80,
+            240,
+            286
+        ],
+        "leads": [
+            [
+                [
+                    180,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ],
+            [
+                [
+                    220,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g transform=\"translate(-10 0)\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M190 80 H230 M210 80 V120 M170 120 H250 M170 260 H250 M210 260 V290 M200 290 H220 M204 298 H216 M208 306 H212\"/>\n    <path d=\"M170 120 V140 M170 240 V260\"/>\n    <circle cx=\"210\" cy=\"80\" r=\"4\" fill=\"#202020\"/>\n    <g transform=\"translate(170 140) rotate(90)\"><path d=\"M0 0 H20 L25 -10 L35 10 L45 -10 L55 10 L65 -10 L75 10 L80 0 H100\"/></g>\n    <path d=\"M250 120 V160 M250 220 V260\"/>\n    <g transform=\"translate(250 160) rotate(90)\"><path d=\"M0 0 H25 M35 0 H60 M25 -10 V10 M35 -10 V10\"/></g>\n  </g>"
+    },
+    "se-parallel-rc": {
+        "ports": [
+            [
+                140,
+                120
+            ],
+            [
+                280,
+                120
+            ]
+        ],
+        "bounds": [
+            136,
+            65,
+            284,
+            175
+        ],
+        "bodyBounds": [
+            160,
+            75,
+            260,
+            165
+        ],
+        "leads": [
+            [
+                [
+                    140,
+                    120
+                ],
+                [
+                    160,
+                    120
+                ]
+            ],
+            [
+                [
+                    260,
+                    120
+                ],
+                [
+                    280,
+                    120
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g transform=\"translate(0 -5)\">\n<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M140 125 H160 M260 125 H280 M160 85 V165 M260 85 V165\"/>\n    <path d=\"M160 85 H180 L185 75 L195 95 L205 75 L215 95 L225 75 L235 95 L240 85 H260\"/>\n    <path d=\"M160 165 H180 M240 165 H260\"/>\n    <path d=\"M180 165 H205 M215 165 H240 M205 155 V175 M215 155 V175\"/>\n  </g>\n  </g>"
+    },
+    "pa-parallel-lc": {
+        "ports": [
+            [
+                180,
+                80
+            ],
+            [
+                220,
+                80
+            ]
+        ],
+        "bounds": [
+            146,
+            76,
+            254,
+            300
+        ],
+        "bodyBounds": [
+            160,
+            80,
+            240,
+            286
+        ],
+        "leads": [
+            [
+                [
+                    180,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ],
+            [
+                [
+                    220,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g transform=\"translate(-10 0)\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M190 80 H230 M210 80 V120 M170 120 H250 M170 260 H250 M210 260 V290 M200 290 H220 M204 298 H216 M208 306 H212\"/>\n    <path d=\"M170 120 V140 M170 240 V260\"/>\n    <circle cx=\"210\" cy=\"80\" r=\"4\" fill=\"#202020\"/>\n    <g transform=\"translate(170 140) rotate(90)\"><path d=\"M0 0 H20 C20 -20 35 -20 35 0 C35 -20 50 -20 50 0 C50 -20 65 -20 65 0 C65 -20 80 -20 80 0 H100\"/></g>\n    <path d=\"M250 120 V160 M250 220 V260\"/>\n    <g transform=\"translate(250 160) rotate(90)\"><path d=\"M0 0 H25 M35 0 H60 M25 -10 V10 M35 -10 V10\"/></g>\n  </g>"
+    },
+    "se-parallel-lc": {
+        "ports": [
+            [
+                140,
+                120
+            ],
+            [
+                280,
+                120
+            ]
+        ],
+        "bounds": [
+            136,
+            65,
+            284,
+            175
+        ],
+        "bodyBounds": [
+            160,
+            75,
+            260,
+            165
+        ],
+        "leads": [
+            [
+                [
+                    140,
+                    120
+                ],
+                [
+                    160,
+                    120
+                ]
+            ],
+            [
+                [
+                    260,
+                    120
+                ],
+                [
+                    280,
+                    120
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g transform=\"translate(0 -5)\">\n<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M140 125 H160 M260 125 H280 M160 85 V165 M260 85 V165\"/>\n    <path d=\"M160 85 H180 C180 65 195 65 195 85 C195 65 210 65 210 85 C210 65 225 65 225 85 C225 65 240 65 240 85 H260\"/>\n    <path d=\"M160 165 H180 M240 165 H260\"/>\n    <path d=\"M180 165 H205 M215 165 H240 M205 155 V175 M215 155 V175\"/>\n  </g>\n  </g>"
+    },
+    "pa-parallel-rlc": {
+        "ports": [
+            [
+                180,
+                80
+            ],
+            [
+                220,
+                80
+            ]
+        ],
+        "bounds": [
+            146,
+            76,
+            254,
+            300
+        ],
+        "bodyBounds": [
+            160,
+            80,
+            240,
+            286
+        ],
+        "leads": [
+            [
+                [
+                    180,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ],
+            [
+                [
+                    220,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g transform=\"translate(-10 0)\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M190 80 H230 M210 80 V120 M140 120 H280 M140 260 H280 M210 260 V290 M200 290 H220 M204 298 H216 M208 306 H212\"/>\n    <path d=\"M140 120 V140 M140 240 V260\"/>\n    <circle cx=\"210\" cy=\"80\" r=\"4\" fill=\"#202020\"/>\n    <g transform=\"translate(140 140) rotate(90)\"><path d=\"M0 0 H20 L25 -10 L35 10 L45 -10 L55 10 L65 -10 L75 10 L80 0 H100\"/></g>\n    <path d=\"M210 120 V140 M210 240 V260\"/>\n    <g transform=\"translate(210 140) rotate(90)\"><path d=\"M0 0 H20 C20 -20 35 -20 35 0 C35 -20 50 -20 50 0 C50 -20 65 -20 65 0 C65 -20 80 -20 80 0 H100\"/></g>\n    <path d=\"M280 120 V160 M280 220 V260\"/>\n    <g transform=\"translate(280 160) rotate(90)\"><path d=\"M0 0 H25 M35 0 H60 M25 -10 V10 M35 -10 V10\"/></g>\n  </g>"
+    },
+    "se-parallel-rlc": {
+        "ports": [
+            [
+                140,
+                120
+            ],
+            [
+                280,
+                120
+            ]
+        ],
+        "bounds": [
+            136,
+            65,
+            284,
+            175
+        ],
+        "bodyBounds": [
+            160,
+            75,
+            260,
+            165
+        ],
+        "leads": [
+            [
+                [
+                    140,
+                    120
+                ],
+                [
+                    160,
+                    120
+                ]
+            ],
+            [
+                [
+                    260,
+                    120
+                ],
+                [
+                    280,
+                    120
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g transform=\"translate(0 -5)\">\n<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M140 125 H160 M260 125 H280 M160 85 V165 M260 85 V165\"/>\n    <path d=\"M160 85 H160 M260 85 H260\"/>\n    <path d=\"M160 85 H180 L185 75 L195 95 L205 75 L215 95 L225 75 L235 95 L240 85 H260\"/>\n    <path d=\"M160 125 H160 M260 125 H260\"/>\n    <path d=\"M160 125 H180 C180 105 195 105 195 125 C195 105 210 105 210 125 C210 105 225 105 225 125 C225 105 240 105 240 125 H260\"/>\n    <path d=\"M160 165 H180 M240 165 H260\"/>\n    <path d=\"M180 165 H205 M215 165 H240 M205 155 V175 M215 155 V175\"/>\n  </g>\n  </g>"
+    },
+    "tee4": {
+        "ports": [
+            [
+                120,
+                160
+            ],
+            [
+                80,
+                120
+            ],
+            [
+                120,
+                80
+            ],
+            [
+                160,
+                120
+            ]
+        ],
+        "bounds": [
+            76,
+            76,
+            164,
+            164
+        ],
+        "bodyBounds": [
+            100,
+            100,
+            140,
+            140
+        ],
+        "leads": [
+            [
+                [
+                    120,
+                    160
+                ],
+                [
+                    120,
+                    140
+                ]
+            ],
+            [
+                [
+                    80,
+                    120
+                ],
+                [
+                    100,
+                    120
+                ]
+            ],
+            [
+                [
+                    120,
+                    80
+                ],
+                [
+                    120,
+                    100
+                ]
+            ],
+            [
+                [
+                    160,
+                    120
+                ],
+                [
+                    140,
+                    120
+                ]
+            ]
+        ],
+        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M80 120 H100 M120 80 V100 M140 120 H160 M120 140 V160\"/><rect x=\"100\" y=\"100\" width=\"40\" height=\"40\"/><circle cx=\"120\" cy=\"130\" r=\"3\" fill=\"#202020\" stroke=\"none\"/></g>"
+    },
+    "tee5": {
+        "ports": [
+            [
+                120,
+                160
+            ],
+            [
+                80,
+                120
+            ],
+            [
+                100,
+                80
+            ],
+            [
+                140,
+                80
+            ],
+            [
+                160,
+                120
+            ]
+        ],
+        "bounds": [
+            76,
+            76,
+            164,
+            164
+        ],
+        "bodyBounds": [
+            100,
+            100,
+            140,
+            140
+        ],
+        "leads": [
+            [
+                [
+                    120,
+                    160
+                ],
+                [
+                    120,
+                    140
+                ]
+            ],
+            [
+                [
+                    80,
+                    120
+                ],
+                [
+                    100,
+                    120
+                ]
+            ],
+            [
+                [
+                    100,
+                    80
+                ],
+                [
+                    100,
+                    100
+                ]
+            ],
+            [
+                [
+                    140,
+                    80
+                ],
+                [
+                    140,
+                    100
+                ]
+            ],
+            [
+                [
+                    160,
+                    120
+                ],
+                [
+                    140,
+                    120
+                ]
+            ]
+        ],
+        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M80 120 H100 M100 80 H110 V100 M140 80 H130 V100 M140 120 H160 M120 140 V160\"/><rect x=\"100\" y=\"100\" width=\"40\" height=\"40\"/><circle cx=\"120\" cy=\"130\" r=\"3\" fill=\"#202020\" stroke=\"none\"/></g>"
+    },
+    "shift-90": {
+        "ports": [
+            [
+                80,
+                80
+            ],
+            [
+                200,
+                80
+            ]
+        ],
+        "bounds": [
+            76,
+            61,
+            204,
+            99
+        ],
+        "bodyBounds": [
+            100,
+            65,
+            180,
+            95
+        ],
+        "leads": [
+            [
+                [
+                    80,
+                    80
+                ],
+                [
+                    100,
+                    80
+                ]
+            ],
+            [
+                [
+                    180,
+                    80
+                ],
+                [
+                    200,
+                    80
+                ]
+            ]
+        ],
+        "exit": [
+            1,
+            0
+        ],
+        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M80 80 H100 M180 80 H200\"/><rect x=\"100\" y=\"65\" width=\"80\" height=\"30\"/><text x=\"140\" y=\"80\" fill=\"#202020\" stroke=\"none\" font-family=\"Arial, Helvetica, sans-serif\" font-size=\"13\" text-anchor=\"middle\" dominant-baseline=\"middle\">+90°</text></g>"
+    },
+    "microstrip-cross": {
+        "ports": [
+            [
+                0,
+                60
+            ],
+            [
+                60,
+                0
+            ],
+            [
+                120,
+                60
+            ],
+            [
+                60,
+                120
+            ]
+        ],
+        "bounds": [
+            -4,
+            -4,
+            124,
+            124
+        ],
+        "bodyBounds": [
+            20,
+            20,
+            100,
+            100
+        ],
+        "leads": [
+            [
+                [
+                    0,
+                    60
+                ],
+                [
+                    20,
+                    60
+                ]
+            ],
+            [
+                [
+                    60,
+                    0
+                ],
+                [
+                    60,
+                    20
+                ]
+            ],
+            [
+                [
+                    120,
+                    60
+                ],
+                [
+                    100,
+                    60
+                ]
+            ],
+            [
+                [
+                    60,
+                    120
+                ],
+                [
+                    60,
+                    100
+                ]
+            ]
+        ],
+        "geometry": "<!-- Enlarge the compact copper silhouette without changing its proportions. -->\n  <g transform=\"translate(-60 -60) scale(2)\">\n    <path d=\"M53 40 H67 V53 H80 V67 H67 V80 H53 V67 H40 V53 H53 Z\" fill=\"#ffffff\" stroke=\"#202020\" stroke-width=\"1\"/><circle cx=\"56\" cy=\"60\" r=\"1.5\" fill=\"#202020\" stroke=\"none\"/>\n  </g>\n  <path d=\"M0 60 H20 M60 0 V20 M100 60 H120 M60 100 V120\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\"/>"
+    },
+    "microstrip-via-to-ground": {
+        "ports": [
+            [
+                120,
+                40
+            ]
+        ],
+        "bounds": [
+            86,
+            36,
+            154,
+            124
+        ],
+        "bodyBounds": [
+            90,
+            60,
+            150,
+            120
+        ],
+        "leads": [
+            [
+                [
+                    120,
+                    40
+                ],
+                [
+                    120,
+                    60
+                ]
+            ]
+        ],
+        "geometry": "<!-- Outlined via pad and bore, with a short lead to the grid terminal. -->\n  <circle cx=\"120\" cy=\"90\" r=\"30\" fill=\"#ffffff\" stroke=\"#202020\" stroke-width=\"2\"/>\n  <circle cx=\"120\" cy=\"90\" r=\"10\" fill=\"#ffffff\" stroke=\"#202020\" stroke-width=\"2\"/>\n  <path d=\"M120 40 V60\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\"/>"
     }
 };

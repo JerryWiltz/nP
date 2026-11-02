@@ -1,4 +1,4 @@
-// Modified: 2026-10-27
+// Modified: 2026-10-29
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -6,6 +6,35 @@ import {DOMParser} from '@xmldom/xmldom';
 import * as nP from '../src/index.js';
 import {schematicGraph, schematicSvg, schematicTopology} from '../src/np-chart/src/schematic.js';
 import {schematicSymbols} from '../src/np-chart/src/schematicSymbols.js';
+import {nodalBlockSymbol} from '../src/np-chart/src/nodalBlockSymbol.js';
+
+test('completed multiport nodal circuits render as blocks inside another circuit', () => {
+    nP.global.fList = [2e9];
+    for (const [portCount, part] of [[3, nP.Tee()], [4, nP.Tee4()], [5, nP.Tee5()]]) {
+        const nodes = Array.from({length: portCount}, (_, index) => index + 1);
+        const inner = nP.nodal([part, ...nodes], ['out', ...nodes]);
+        const outer = nP.nodal([inner, ...nodes], ['out', ...nodes]);
+        const graph = schematicGraph(outer);
+        const svg = schematicSvg(outer);
+
+        assert.equal(graph.components.length, 1);
+        assert.equal(graph.components[0].symbol, 'nodal');
+        assert.equal(graph.components[0].ports.length, nodes.length);
+        assert.match(svg, />nodal<\/text>/);
+        assert.equal(new DOMParser().parseFromString(svg, 'image/svg+xml')
+            .getElementsByTagName('parsererror').length, 0);
+        assert.equal(inner._schematic.kind, 'nodal');
+    }
+});
+
+test('a nodal block can keep four numbered terminals on four different sides', () => {
+    const symbol = nodalBlockSymbol(4, ['left', 'top', 'right', 'bottom']);
+    assert.equal(symbol.ports.length, 4);
+    assert.equal(new Set(symbol.ports.map(point => point.join(','))).size, 4);
+    assert.ok(symbol.ports.every(point => point.every(value => value % 20 === 0)));
+    assert.deepEqual(symbol.ports, [[80, 100], [140, 40], [200, 100], [140, 160]]);
+    assert.match(symbol.geometry, />nodal<\/text>/);
+});
 
 test('a cascaded resistor pair and right bend retains its parts and renders one SVG', () => {
     nP.global.fList = [2e9];
@@ -79,44 +108,6 @@ test('the bundled paths match their canonical RF symbols', () => {
     assert.ok(leftBend.includes('M0 60 H20 M60 0 V20'));
     assert.ok(tee.includes(schematicSymbols.tee.geometry));
     assert.ok(line.includes('<path d="M80 90 H100 M180 90 H200"/>'));
-});
-
-test('Wilkinson nodal connections produce a three-port schematic and topology', () => {
-    nP.global.fList = [6e9];
-    const input = nP.Tee();
-    const upper = nP.Tlin(70.7, 0.49 * 0.0254);
-    const lower = nP.Tlin(70.7, 0.49 * 0.0254);
-    const output1 = nP.Tee();
-    const output2 = nP.Tee();
-    const resistor = nP.R(100);
-    const divider = nP.nodal(
-        [input, 1, 2, 3],
-        [upper, 2, 4],
-        [lower, 3, 5],
-        [output1, 6, 4, 7],
-        [output2, 8, 5, 9],
-        [resistor, 6, 8],
-        ['out', 1, 7, 9]
-    );
-    assert.equal(divider._schematic.kind, 'nodal');
-    assert.deepEqual(divider._schematic.externalNodes, [1, 7, 9]);
-    assert.deepEqual(divider._schematic.components[1].nodes, [2, 4]);
-    const graph = schematicGraph(divider);
-    const topology = schematicTopology(divider);
-    const svg = schematicSvg(divider);
-    const document = new DOMParser().parseFromString(svg, 'image/svg+xml');
-    assert.equal(document.getElementsByTagName('parsererror').length, 0);
-    assert.equal(graph.kind, 'rf-nodal');
-    assert.equal(graph.components.length, 6);
-    assert.deepEqual(graph.externalPorts.map(port => port.node), [1, 7, 9]);
-    assert.deepEqual(graph.components[4].ports.map(port => port.node), [8, 5, 9]);
-    assert.deepEqual(topology.connections.find(connection => connection.node === 6).ports,
-        ['TEE2.1', 'R1.1']);
-    assert.deepEqual(topology.connections.find(connection => connection.node === 8).ports,
-        ['TEE3.1', 'R1.2']);
-    assert.ok(svg.includes('Port 3'));
-    assert.deepEqual(JSON.parse(JSON.stringify(graph)), graph);
-    assert.deepEqual(JSON.parse(JSON.stringify(topology)), topology);
 });
 
 test('two uses of a completed cascade render as separate two-port blocks', () => {

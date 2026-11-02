@@ -1,5 +1,6 @@
-// Modified: 2026-10-26
+// Modified: 2026-10-28
 import {complex} from '../../../np-math/src/complex';
+import {schematicPart} from '../schematicPart';
 import {matrix, dim} from '../../../np-math/src/matrix';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
@@ -134,6 +135,6 @@ export function mbend(input = {}) {
 		width: Width, miterLength: actualMiterLength, height: Height, thickness: Thickness
 	}, {relativePermittivity: er, resistivity: rho * COPPER_RESISTIVITY, lossTangent: tand, roughnessRms}, analysis,
 	{validity: bend.microstrip.validity});
-	bend._schematic = {kind: 'component', symbol: `microstrip-${options.turn}-bend`};
+	bend._schematic = schematicPart('mbend', {}, options.turn);
 	return bend;
 };

@@ -1,0 +1,17 @@
+{
+  "modified": "2026-10-30",
+  "name": "splitRejoin",
+  "topology": {
+    "externalPorts": 2,
+    "splitRejoin": {
+      "minimumPaths": 2
+    }
+  },
+  "layout": {
+    "minimumLaneGap": 80,
+    "junctionStageGap": 240,
+    "componentGap": 80,
+    "shuntGap": 80,
+    "centerOnAxis": true
+  }
+}

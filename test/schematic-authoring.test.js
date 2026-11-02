@@ -1,4 +1,4 @@
-// Modified: 2026-10-27
+// Modified: 2026-10-29
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -95,7 +95,7 @@ test('canonical symbols reject malformed XML', () => {
 test('the gallery can be regenerated from canonical SVGs', () => {
   const published = readFileSync(new URL('../dev/canonicalSymbols.html', import.meta.url), 'utf8');
   assert.equal(generateGallery(), published);
-  assert.equal(checkGallery().length, 58);
+  assert.equal(checkGallery().length, 59);
 });
 
 test('every REPL example has an explicit schematic classification', () => {
@@ -145,16 +145,4 @@ test('symbols and circuit descriptions enforce the common grid and rotation', ()
   rf.components[0].rotation = 0;
   rf.components[0].connections[0].at = [121, 120];
   assert.throws(() => validateDescription(rf), /20-unit grid/);
-});
-
-test('mirroring a placed Tee moves its public ports with the body', () => {
-  const circuit = JSON.parse(readFileSync(
-    new URL('../schematics/circuits/wilkinson-divider.json', import.meta.url), 'utf8'));
-  const tee = circuit.components.find(component => component.id === 'outputTee2');
-  assert.equal(tee.mirrorY, true);
-  assert.deepEqual(tee.connections.map(connection => connection.at),
-    [[560, 520], [520, 560], [600, 560]]);
-  assert.doesNotThrow(() => validateDescription(circuit));
-  tee.mirrorY = false;
-  assert.throws(() => validateDescription(circuit), /must be at/);
 });

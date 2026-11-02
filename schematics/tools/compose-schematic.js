@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Modified: 2026-10-27
+// Modified: 2026-10-28
 'use strict';
 
 const fs = require('fs');
@@ -130,7 +130,8 @@ function validateDescription(circuit) {
       fail(`${component.id}.source needs variable and constructor strings`);
     }
     if (component.source && symbolCatalog.constructors[component.source.constructor] !== component.symbol &&
-        !(symbolCatalog.symbolVariants[component.source.constructor] || []).includes(component.symbol)) {
+        !Object.values(symbolCatalog.symbolVariants[component.source.constructor] || {})
+          .includes(component.symbol)) {
       fail(`${component.id}.source constructor does not map to ${component.symbol}`);
     }
     pointOnGrid(component.at, 20, `${component.id}.at`);

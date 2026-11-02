@@ -1,5 +1,6 @@
-// Modified: 2026-10-26
+// Modified: 2026-10-28
 import {complex} from '../../../np-math/src/complex';
+import {schematicPart} from '../schematicPart';
 import {global} from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
 import {componentSettings} from '../componentSettings';
@@ -226,6 +227,6 @@ export function diode1N4148(options = {}) {
 		return table;
 	};
 
-	diodePort._schematic = {kind: 'component', symbol: 'diode-1n4148'};
+	diodePort._schematic = schematicPart('diode1N4148');
 	return diodePort;
 }

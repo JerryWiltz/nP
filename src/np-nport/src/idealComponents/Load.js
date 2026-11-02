@@ -1,5 +1,6 @@
-// Modified: 2026-10-26
+// Modified: 2026-10-28
 import {complex} from '../../../np-math/src/complex';
+import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort'
 import {global}  from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
@@ -16,6 +17,6 @@ export function Load(options = {}) { // one port, load
 	}	
 	Load.setspars(sparsArray);
 	Load.setglobal(settings);
-	Load._schematic = {kind: 'component', symbol: 'load'};
+	Load._schematic = schematicPart('Load');
 	return Load;
 };

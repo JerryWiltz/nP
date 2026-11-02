@@ -1,5 +1,6 @@
-// Modified: 2026-10-13
+// Modified: 2026-10-28
 import {complex} from '../../../np-math/src/complex';
+import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort'
 import {global}  from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
@@ -37,5 +38,6 @@ export function paR(R = 75, temperature = global.Temp, options = {}) { // parall
 	paR.setspars(sparsArray);
 	paR.noise = noiseArray;
 	paR.setglobal(settings);
+	paR._schematic = schematicPart('paR', {labelPrefix: 'paR', value: R});
 	return paR;
 };

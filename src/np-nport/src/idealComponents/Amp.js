@@ -1,5 +1,6 @@
-// Modified: 2026-10-26
+// Modified: 2026-10-28
 import {complex} from '../../../np-math/src/complex';
+import {schematicPart} from '../schematicPart';
 import {global} from '../../../np-global/src/global';
 import {nPort} from '../nPort';
 import {analysisFrequencies} from '../analysisFrequencies';
@@ -182,7 +183,6 @@ export function Amp(gainDb = 20, noiseFigureDb = 4, referenceTemperature = 290, 
 		phase2Harmonic: complex(Math.cos(harmonic2PhaseDeg * Math.PI / 180), Math.sin(harmonic2PhaseDeg * Math.PI / 180)),
 		phase3: complex(Math.cos(im3PhaseDeg * Math.PI / 180), Math.sin(im3PhaseDeg * Math.PI / 180))
 	};
-	amplifier._schematic = {kind: 'component', symbol: 'amplifier',
-		value: typeof gainDb === 'number' ? gainDb : options.gainDb};
+	amplifier._schematic = schematicPart('Amp', {value: typeof gainDb === 'number' ? gainDb : options.gainDb});
 	return amplifier;
 }

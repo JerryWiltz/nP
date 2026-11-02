@@ -1,5 +1,6 @@
-// Modified: 2026-10-13
+// Modified: 2026-10-28
 import {complex} from '../../../np-math/src/complex';
+import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
@@ -20,5 +21,6 @@ export function seSeRL(R = 75, L = 5e-9, options = {}) { // series inductor nPor
 	};
 	seSeRL.setspars(sparsArray);
 	seSeRL.setglobal(settings);
+	seSeRL._schematic = schematicPart('seSeRL', {labelPrefix: 'seSeRL', resistance: R, inductance: L});
 	return seSeRL;
 };

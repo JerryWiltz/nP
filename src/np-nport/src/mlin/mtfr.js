@@ -1,5 +1,6 @@
-// Modified: 2026-10-26
+// Modified: 2026-10-28
 import {cascade} from '../combining/cascade';
+import {schematicPart} from '../schematicPart';
 import {global} from '../../../np-global/src/global';
 import {R} from '../rlc/R';
 import {mlin} from './mlin';
@@ -79,6 +80,6 @@ export function mtfr(input = {}) {
 		ohmsPerSquare, temperatureCoefficient, referenceTemperature: temperatureReference,
 		temperatureUnit, sections: sectionCount
 	});
-	filmResistor._schematic = {kind: 'component', symbol: 'microstrip-thin-film-resistor', value: resistance};
+	filmResistor._schematic = schematicPart('mtfr', {value: resistance});
 	return filmResistor;
 };

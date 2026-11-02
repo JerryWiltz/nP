@@ -1,5 +1,6 @@
-// Modified: 2026-10-27
+// Modified: 2026-10-28
 import {complex} from '../../../np-math/src/complex';
+import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
@@ -161,6 +162,6 @@ export function mvia(input = {}) {
 		diameter: Diameter, connectionHeight, thickness: Thickness, padDiameter, antipadDiameter,
 		topPadHeight, bottomPadHeight, topStubLength, bottomStubLength
 	}, {relativePermittivity: er, resistivity: rho}, analysis, {validity: via.microstrip.validity});
-	via._schematic = {kind: 'component', symbol: 'microstrip-via-transition'};
+	via._schematic = schematicPart('mvia');
 	return via;
 };

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-27 -->
+<!-- Modified: 2026-11-01 -->
 
 # Schematics
 
@@ -13,6 +13,7 @@ Every symbol terminal and interconnect wire point uses the shared 20-unit grid. 
 - `symbol-gallery.template.html` fixes the vertical gallery order and placement. `tools/generate-symbol-gallery.js` inserts current canonical geometry into it and writes `dev/canonicalSymbols.html`.
 - `runtime-symbol-layout.json` supplies body bounds, lead segments, and flow directions for the runtime subset. `tools/generate-runtime-symbols.js` reads each corresponding canonical SVG and generates `src/np-chart/src/schematicSymbols.js` with its exact geometry and port coordinates.
 - `symbols/` contains every canonical SVG at one level. The catalog identifies which constructors use each symbol and lists signal-flow symbols in `signalSymbols`. A digital block's numbered connectors describe diagram flow, not electrical nPort ports.
+- `shapes/` retains the experimental `splitRejoin` pattern JSON and printable SVG previews. The `series` and `ladder` layout rules live in `schematic.js`; no runtime shape rule is loaded from JSON. `tools/generate-runtime-shapes.js` can bundle remaining experimental definitions, but the nP build does not import that bundle.
 - `circuits/` contains editable JSON descriptions with component placement, connections, labels, and wires.
 - `code-to-schematic.md` explains how to read an nP circuit file, trace its components and connections, and turn that description into a drawing.
 - `example-inventory.md` maps all 37 REPL examples to shared drawings or records that the example has no circuit. The REPL uses the matching `docs/.vitepress/theme/schematicMap.js` to display its images.
@@ -35,6 +36,8 @@ node schematics/tools/validate-schematic.js docs/public/schematics/waveform-fft.
 ```
 
 Run `symbols:gallery` and `symbols:bundle` after changing a canonical SVG. `symbols:check` parses all symbol XML, compares drawable public exports with the catalog, verifies every canonical SVG has a mapping, and checks both generated outputs for freshness. `npm run build` also regenerates the runtime symbol module before Rollup bundles it into nP. These tools use Node.js and do not require an SVG editor.
+
+The optional `shapes:bundle`, `shapes:preview`, and `shapes:check` scripts maintain the shape references and previews. They do not change the current runtime renderer.
 
 The example corresponds to `nP.R(75)` connected between circuit nodes 1 and 2. Its description demonstrates the format. For another circuit, copy the JSON structure, choose symbols from the catalog, and place each public constructor port at its exact canonical coordinate. The composer embeds symbol geometry and a copy of the description in the output SVG; the validator checks that geometry and its source hashes.
 

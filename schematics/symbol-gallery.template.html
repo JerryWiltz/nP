@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Modified: 2026-10-27 -->
+<!-- Modified: 2026-10-29 -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -14,7 +14,7 @@
     p { line-height: 1.5; }
     nav a { margin-right: 1.5rem; }
     main { overflow-x: auto; }
-    .symbol-sheet { display: block; width: 520px; height: 17520px; }
+    .symbol-sheet { display: block; width: 520px; height: 17920px; }
     a { color: #13558d; }
     a:focus-visible { outline: 3px solid #13558d; outline-offset: 2px; }
   </style>
@@ -22,13 +22,13 @@
 <body>
   <header>
     <h1>Canonical symbols</h1>
-    <p>All 58 canonical SVGs, ordered like the Guide API. Select a symbol to open its editable source drawing.</p>
+    <p>All 59 canonical SVGs, ordered like the Guide API. Select a symbol to open its editable source drawing.</p>
     <nav aria-label="Symbol groups"><a href="#rf">RF constructors</a><a href="#digital">Digital signals</a><a href="#math">Math</a><a href="#combining">Circuit combining</a></nav>
   </header>
   <main>
-    <svg class="symbol-sheet" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 17520" role="img" aria-labelledby="sheet-title sheet-description">
+    <svg class="symbol-sheet" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 17920" role="img" aria-labelledby="sheet-title sheet-description">
       <title id="sheet-title">Canonical nPort symbols</title>
-      <desc id="sheet-description">All 58 canonical symbols in Guide API order on one shared SVG canvas.</desc>
+      <desc id="sheet-description">All 59 canonical symbols in Guide API order on one shared SVG canvas.</desc>
       <rect width="100%" height="100%" fill="#ffffff"/>
       <g fill="#202020" font-family="Arial, Helvetica, sans-serif">
     <text id="rf" x="40" y="50" font-size="22" font-weight="bold">RF constructors (50)</text>
@@ -441,12 +441,19 @@
 {{SYMBOL:inverse-fft.svg}}
       </g>
     </a>
-    <text id="combining" x="40" y="17270" font-size="22" font-weight="bold">Circuit combining (1)</text>
+    <text id="combining" x="40" y="17270" font-size="22" font-weight="bold">Circuit combining (2)</text>
     <text x="40" y="17320" font-size="16">cascade(), cas()</text>
     <text x="480" y="17320" font-size="13" text-anchor="end">cascade.svg</text>
     <a href="../schematics/symbols/cascade.svg" aria-label="Open cascade.svg">
       <g data-symbol-source="cascade.svg" transform="translate(120 17340)">
 {{SYMBOL:cascade.svg}}
+      </g>
+    </a>
+    <text x="40" y="17620" font-size="16">nodal()</text>
+    <text x="480" y="17620" font-size="13" text-anchor="end">nodal.svg</text>
+    <a href="../schematics/symbols/nodal.svg" aria-label="Open nodal.svg">
+      <g data-symbol-source="nodal.svg" transform="translate(120 17640)">
+{{SYMBOL:nodal.svg}}
       </g>
     </a>
       </g>

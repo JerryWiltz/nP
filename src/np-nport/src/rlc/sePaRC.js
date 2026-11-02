@@ -1,5 +1,6 @@
-// Modified: 2026-10-14
+// Modified: 2026-10-28
 import {complex} from '../../../np-math/src/complex';
+import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
@@ -25,5 +26,6 @@ export function sePaRC(R = 75, C = 1e-12, options = {}) { // parallel capacitor 
 	}
 	sePaRC.setspars(sparsArray);
 	sePaRC.setglobal(settings);
+	sePaRC._schematic = schematicPart('sePaRC', {labelPrefix: 'sePaRC', resistance: R, capacitance: C});
 	return sePaRC;
 };

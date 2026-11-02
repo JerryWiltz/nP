@@ -1,0 +1,97 @@
+<!doctype html>
+<!-- Modified: 2026-10-31 -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Network-only split and rejoin schematics</title>
+  <script src="../dist/nP.js"></script>
+  <style>
+    body { margin: 0; padding: 2rem; font-family: Arial, Helvetica, sans-serif; color: #202020; }
+  </style>
+</head>
+<body>
+  <h1>Network-only split and rejoin schematics</h1>
+  <h2>Nested three-port tees</h2>
+  <div id="split-rejoin"></div>
+  <h2>Four-port splitter and combiner</h2>
+  <div id="split-rejoin-tee4"></div>
+  <h2>Five-port splitter and combiner</h2>
+  <div id="split-rejoin-tee5"></div>
+  <script>
+    var g = nP.global;
+    g.fList = [2e9];
+
+    var split = nP.Tee();
+    var upperSplit = nP.Tee();
+    var lowerSplit = nP.Tee();
+    var upperShunt = nP.Tee();
+    var lowerShunt = nP.Tee();
+    var upperJoin = nP.Tee();
+    var lowerJoin = nP.Tee();
+    var join = nP.Tee();
+    var r1 = nP.R(50);
+    var r2 = nP.R(50);
+    var r3 = nP.R(50);
+    var r4 = nP.R(50);
+    var r5 = nP.R(100);
+    var r6 = nP.R(100);
+    var short1 = nP.Short();
+    var short2 = nP.Short();
+
+    var circuit = nP.nodal(
+      [split, 1, 2, 3],
+      [upperSplit, 2, 4, 5],
+      [lowerSplit, 3, 6, 7],
+      [r1, 4, 8],
+      [r2, 8, 9],
+      [upperShunt, 10, 5, 11],
+      [r5, 10, 12],
+      [short1, 12],
+      [r3, 6, 13],
+      [r4, 13, 14],
+      [lowerShunt, 15, 7, 16],
+      [r6, 15, 17],
+      [short2, 17],
+      [upperJoin, 18, 11, 9],
+      [lowerJoin, 19, 16, 14],
+      [join, 20, 19, 18],
+      ['out', 1, 20]
+    );
+    nP.schematic(circuit, {
+      mount: '#split-rejoin'
+    });
+
+    var tee4Circuit = nP.nodal(
+      [nP.Tee4(), 1, 2, 3, 4],
+      [nP.R(50), 2, 5],
+      [nP.L(5e-9), 3, 6],
+      [nP.C(1e-12), 4, 7],
+      [nP.Tee4(), 8, 7, 6, 5],
+      ['out', 1, 8]
+    );
+    nP.schematic(tee4Circuit, {
+      mount: '#split-rejoin-tee4'
+    });
+
+    var tee5Circuit = nP.nodal(
+      [nP.Tee5(), 1, 2, 3, 4, 5],
+      [nP.R(50), 2, 6],
+      [nP.L(5e-9), 6, 7],
+      [nP.Tee(), 8, 3, 9],
+      [nP.C(1e-12), 8, 10],
+      [nP.Short(), 10],
+      [nP.Tlin(50, 0.01), 4, 11],
+      [nP.R(75), 11, 12],
+      [nP.Tee(), 13, 5, 14],
+      [nP.R(100), 13, 15],
+      [nP.Short(), 15],
+      [nP.Tee5(), 16, 14, 12, 9, 7],
+      ['out', 1, 16]
+    );
+    nP.schematic(tee5Circuit, {
+      mount: '#split-rejoin-tee5'
+    });
+  </script>
+</body>
+</html>

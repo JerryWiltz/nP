@@ -1,5 +1,6 @@
-// Modified: 2026-10-13
+// Modified: 2026-10-28
 import {complex} from '../../../np-math/src/complex';
+import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort'
 import {global}  from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
@@ -18,5 +19,6 @@ export function Tee4(options = {}) { // a 4-port dummy connection
 	}	
 	Tee4.setspars(sparsArray);
 	Tee4.setglobal(settings);
+	Tee4._schematic = schematicPart('Tee4', {labelPrefix: 'Tee4'});
 	return Tee4;
 };

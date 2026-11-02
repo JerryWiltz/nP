@@ -1,5 +1,6 @@
-// Modified: 2026-10-26
+// Modified: 2026-10-28
 import {complex} from '../../../np-math/src/complex';
+import {schematicPart} from '../schematicPart';
 import {global} from '../../../np-global/src/global';
 import {nPort} from '../nPort';
 import {analysisFrequencies} from '../analysisFrequencies';
@@ -26,6 +27,6 @@ export function Thru(options = {}) {
 	thru.setspars(sparsArray);
 	thru.noise = noiseArray;
 	thru.setglobal(settings);
-	thru._schematic = {kind: 'component', symbol: 'thru'};
+	thru._schematic = schematicPart('Thru');
 	return thru;
 }

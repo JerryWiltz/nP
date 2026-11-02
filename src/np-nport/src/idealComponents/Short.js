@@ -1,5 +1,6 @@
-// Modified: 2026-10-26
+// Modified: 2026-10-28
 import {complex} from '../../../np-math/src/complex';
+import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort'
 import {global}  from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
@@ -16,6 +17,6 @@ export function Short(options = {}) { //  one port, Short
 	}	
 	Short.setspars(sparsArray);
 	Short.setglobal(settings);
-	Short._schematic = {kind: 'component', symbol: 'short'};
+	Short._schematic = schematicPart('Short');
 	return Short;
 };

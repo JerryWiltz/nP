@@ -1,45 +1,130 @@
 <!doctype html>
-<!-- Modified: 2026-10-26 -->
+<!-- Modified: 2026-11-01 -->
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Wilkinson power divider development</title>
+  <title>Schematic development</title>
   <script src="../dist/nP.js"></script>
   <style>
-    body { margin: 0; padding: 2rem; background: #fff; color: #202020; font-family: Arial, Helvetica, sans-serif; }
-    body > div + div { margin-top: 2rem; }
+    body {
+      margin: 0;
+      padding: 24px;
+      color: #202020;
+      background: #fff;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    section {
+      margin: 24px 0;
+      padding: 16px 0;
+      border-top: 1px solid #ccc;
+    }
+
+    h1,
+    h2,
+    p {
+      margin: 0 0 12px;
+    }
+
+    h2 {
+      font-size: 18px;
+    }
+
+    .layout {
+      color: #555;
+      font-size: 13px;
+    }
+
+    .error {
+      color: #a00000;
+      white-space: pre-wrap;
+    }
   </style>
-  <script type="module">
-    // Wilkinson power divider
-    nP.global.fList = nP.global.fGen(4e9, 8e9, 41);
-
-    var inputTee = nP.Tee();
-    var outputTee1 = nP.Tee();
-    var outputTee2 = nP.Tee();
-    var branch1 = nP.Tlin(70.7, 0.49 * 0.0254);
-    var branch2 = nP.Tlin(70.7, 0.49 * 0.0254);
-    var isolationR = nP.R(100);
-
-    var divider = nP.nodal(
-        [inputTee, 1, 2, 3],
-        [branch1, 2, 4],
-        [branch2, 3, 5],
-        [outputTee1, 6, 4, 7],
-        [outputTee2, 8, 5, 9],
-        [isolationR, 6, 8],
-        ['out', 1, 7, 9]
-    );
-
-    nP.schematic(divider);
-
-    var response = divider.out('s11dB', 's21dB', 's31dB', 's23dB');
-    nP.lineChart({
-        inputTable: [response],
-        title: 'Wilkinson power divider',
-        metricPrefix: 'giga'
-    });
-  </script>
 </head>
-<body></body>
+
+<body>
+  <h1>Schematic development</h1>
+  <p>Series, ladder, branchline, and combined examples pass engineering layout hints to
+    <code>nP.schematic()</code>. Other networks use connection-only layout.
+    Detected loops use closed paths where possible; the general layout routes
+    remaining connections between their numbered terminals.
+  </p>
+  <p><a href="#series-then-ladder">Jump to the two-shape example: series (1→4), ladder (4→11)</a></p>
+  <p>Branchline examples:
+    <a href="#branch-series-top">one cell with a resistor</a> ·
+    <a href="#branchline-two-cell">two cells</a> ·
+    <a href="#branchline-microstrip">microstrip</a>
+  </p>
+  <div id="cases"></div>
+  <script type="module">
+    import { buildSchematicCases } from './schematicCases.js';
+    import { buildSchematicStressCases } from './schematicStressCases.js';
+
+    var cases = buildSchematicCases(nP).concat(buildSchematicStressCases(nP));
+    var shapesById = {
+      'series-resistors': 'series',
+      'rlc-cascade': 'series',
+      'bend-path': 'series',
+      'rc-low-pass': 'ladder',
+      'pi-filter': 'ladder',
+      'rc-high-pass': 'ladder',
+      'rl-shunt': 'ladder',
+      'two-shunt-ladder': 'ladder',
+      't-attenuator': 'ladder',
+      'pi-attenuator': 'ladder',
+      'three-shunt-ladder': 'ladder',
+      'branch-series-top': 'branchline',
+      'branch-series-opposite': 'branchline',
+      'branch-reordered': 'branchline',
+      'branchline-two-cell': 'branchline',
+      'branchline-microstrip': 'branchline'
+    };
+    var collection = document.getElementById('cases');
+    for (var item of cases) {
+      var section = document.createElement('section');
+      var heading = document.createElement('h2');
+      var status = document.createElement('p');
+      var mount = document.createElement('div');
+      section.id = item.id;
+      heading.textContent = item.title;
+      status.className = 'layout';
+      section.appendChild(heading);
+      section.appendChild(status);
+      section.appendChild(mount);
+      collection.appendChild(section);
+      try {
+        var shape = shapesById[item.id];
+        var shapes = item.shapes || (shape ? [shape] : null);
+        var options = { mount: mount };
+        if (shapes) options.shapes = shapes;
+        var drawing = nP.schematic(item.circuit, options);
+        var layoutName = drawing.graph.layout === 'node-routes' ?
+          'General node routing' : drawing.graph.layout === 'closed-loop' ?
+            'Closed-loop layout' : drawing.graph.layout === 'parallel-branches' ?
+              'Parallel-branch layout' : drawing.graph.layout === 'parallel-paths' ?
+                'Parallel-path layout' : drawing.graph.layout === 'branchline' ?
+                  `${drawing.graph.cells}-cell branchline layout` : 'Connected-wire layout';
+        var loopAnalysis = drawing.topology.loopAnalysis;
+        var loopCount = loopAnalysis ? loopAnalysis.cycles.length : null;
+        var loopLabel = loopCount === 0 ? 'no loops' :
+          loopCount === 1 ? '1 loop' : `${loopCount} loops`;
+        var shapeNames = [];
+        if (shapes) {
+          for (var segment of shapes) {
+            shapeNames.push(typeof segment === 'string' ? segment : segment.name);
+          }
+        }
+        var shapeLabel = shapes ? `${shapeNames.join(' → ')} guidance` : 'network-only';
+        status.textContent = loopCount === null ? `${shapeLabel} · ${layoutName}` :
+          `${shapeLabel} · ${layoutName} · ${loopLabel}`;
+      } catch (error) {
+        status.className = 'error';
+        status.textContent = error.message;
+      }
+    }
+  </script>
+</body>
+
 </html>

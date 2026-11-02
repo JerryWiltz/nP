@@ -1,0 +1,93 @@
+<!doctype html>
+<!-- Modified: 2026-11-01 -->
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Series schematic guidance</title>
+  <script src="../dist/nP.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 2rem;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #202020;
+    }
+
+    section {
+      margin: 2rem 0 3rem;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Series schematic guidance</h1>
+  <section>
+    <h2>Two resistors from the reference sketch</h2>
+    <div id="reference"></div>
+  </section>
+  <section>
+    <h2>A path with a right-angle bend</h2>
+    <div id="bend"></div>
+  </section>
+  <section>
+    <h2>Nested resistor networks as blocks</h2>
+    <div id="expanded"></div>
+  </section>
+  <script>
+    var r1 = nP.R(50);
+    var r2 = nP.R(50);
+    var reference = nP.nodal(
+      [r1, 1, 2],
+      [r2, 2, 3],
+      ['out', 1, 3]
+    );
+    nP.schematic(reference, {
+      shapes: ['series'],
+      mount: '#reference'
+    });
+
+    var resistor = nP.R(50);
+    var bend = nP.mbend();
+    var inductor = nP.L(5e-9);
+    var turned = nP.nodal(
+      [resistor, 1, 2],
+      [bend, 2, 3],
+      [inductor, 3, 4],
+      ['out', 1, 4]
+    );
+    nP.schematic(turned, {
+      shapes: ['series'],
+      mount: '#bend'
+    });
+
+    var r3 = nP.R(50), r4 = nP.R(50), r5 = nP.R(50);
+    var a = nP.nodal(
+      [r1, 1, 2],
+      [r2, 2, 3],
+      ['out', 1, 3]
+    );
+    var b = nP.nodal(
+      [a, 1, 2],
+      [r3, 2, 3],
+      ['out', 1, 3]
+    );
+    var c = nP.nodal(
+      [b, 1, 2],
+      [r4, 2, 3],
+      ['out', 1, 3]
+    );
+    var d = nP.nodal(
+      [c, 1, 2],
+      [r5, 2, 3],
+      ['out', 1, 3]
+    );
+    nP.schematic(d, {
+      shapes: ['series'],
+      mount: '#expanded'
+    });
+  </script>
+</body>
+
+</html>

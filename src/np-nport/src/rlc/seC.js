@@ -1,5 +1,6 @@
-// Modified: 2026-10-14
+// Modified: 2026-10-28
 import {complex} from '../../../np-math/src/complex';
+import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
@@ -25,5 +26,6 @@ export function seC(C = 1e-12, options = {}) { // series capacitor nPort object
 	};
 	seC.setspars(sparsArray);
 	seC.setglobal(settings);
+	seC._schematic = schematicPart('seC', {labelPrefix: 'seC', value: C});
 	return seC;
 };

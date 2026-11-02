@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "constructors": {
     "cascade": "cascade.svg",
+    "nodal": "nodal.svg",
     "R": "resistor.svg",
     "seR": "resistor.svg",
     "paR": "parallel-resistor.svg",
@@ -63,10 +64,10 @@
     "invFFT": "inverse-fft.svg"
   },
   "symbolVariants": {
-    "mbend": [
-      "microstrip-left-bend.svg",
-      "microstrip-right-bend.svg"
-    ]
+    "mbend": {
+      "left": "microstrip-left-bend.svg",
+      "right": "microstrip-right-bend.svg"
+    }
   },
   "signalSymbols": [
     "bit-error-rate.svg",

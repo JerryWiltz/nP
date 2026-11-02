@@ -1,5 +1,6 @@
-// Modified: 2026-10-14
+// Modified: 2026-10-28
 import {complex} from '../../../np-math/src/complex';
+import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
@@ -26,5 +27,6 @@ export function paL(L = 5e-9, options = {}) { // parallel capacitor nPort object
 	}
 	paL.setspars(sparsArray);
 	paL.setglobal(settings);
+	paL._schematic = schematicPart('paL', {labelPrefix: 'paL', value: L});
 	return paL;
 };

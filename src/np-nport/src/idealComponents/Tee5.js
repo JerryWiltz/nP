@@ -1,5 +1,6 @@
-// Modified: 2026-10-13
+// Modified: 2026-10-28
 import {complex} from '../../../np-math/src/complex';
+import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort'
 import {global}  from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
@@ -18,5 +19,6 @@ export function Tee5(options = {}) { // an ideal five-port junction
 	}	
 	Tee5.setspars(sparsArray);
 	Tee5.setglobal(settings);
+	Tee5._schematic = schematicPart('Tee5', {labelPrefix: 'Tee5'});
 	return Tee5;
 };

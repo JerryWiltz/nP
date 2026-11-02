@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-27 -->
+<!-- Modified: 2026-11-01 -->
 
 # Schematic authoring rules
 
@@ -8,8 +8,11 @@ Read and follow `schematics/svg-style-guide.md` for exact SVG dimensions, snappi
 ## Sources of truth
 
 - Current nP source defines constructor names, parameters, and public port order. The schematic description defines a circuit's components, values, nodes, and connections. The canonical SVG library defines symbol geometry. Resolve any disagreement before publishing a drawing.
+- `shapes/*.json` records proposed reusable layout patterns, not component choices or electrical connections. These files and their printable previews are design references; the renderer does not load JSON shape files. The implemented `series` and `ladder` guidance lives in `schematic.js`. Keep any remaining shape JSON and its preview internally consistent when editing either one.
 - When given a hand-drawn symbol, use the image to determine its shape and connections. Check the constructor's public port order in source and resolve ambiguities before drawing. Redraw it with the canonical SVG rules; do not trace the image's pixels.
 - Keep every drawable public RF or digital API in `symbol-catalog.json`. Two APIs may map to one symbol when their visible topology is identical. Keep distinct topologies as distinct symbols. `mbend()` has left and right visual variants.
+- The RF constructor-to-symbol map is generated from `symbol-catalog.json`. Constructors call `schematicPart(publicName, parameters)` and never repeat the SVG filename. Give option-dependent variants explicit keys in `symbolVariants`; `mbend()` uses `left` and `right`. The symbol check verifies runtime geometry and nPort port counts.
+- For a new three-port line junction that can introduce a ladder shunt, record `flow.throughPorts` and `flow.shuntPort` in `runtime-symbol-layout.json`. Keep those public port numbers distinct. The renderer chooses 90-degree rotations and reflections from the canonical port geometry; do not encode a constructor-specific drawing angle.
 - RF component ports, including those on `trf()` and `trf4Port()`, are nPort ports. Connectors on digital blocks and `FFT()`/`invFFT()` are **diagram connectors**, not S-parameter ports or `nP.nodal()` arguments. State each connector's signal meaning in the symbol description or accompanying note. Some blocks, especially `mod()`, have mode-dependent inputs.
 
 ## SVG and layout

@@ -1,0 +1,69 @@
+<!doctype html>
+<!-- Modified: 2026-11-01 -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ladder schematic guidance</title>
+  <script src="../dist/nP.js"></script>
+  <style>
+    body { margin: 0; padding: 2rem; font-family: Arial, Helvetica, sans-serif; color: #202020; }
+  </style>
+</head>
+<body>
+  <h1>Ladder schematic guidance</h1>
+  <h2>Ideal transmission line shunts</h2>
+  <div id="ladder"></div>
+  <h2>Microstrip junction and lines</h2>
+  <div id="microstrip-ladder"></div>
+  <script>
+    var g = nP.global;
+    g.fList = [2e9];
+
+    var tee1 = nP.Tee();
+    var tee2 = nP.Tee();
+    var tee3 = nP.Tee();
+    var shuntR = nP.R(100);
+    var seriesR1 = nP.R(50);
+    var shuntRL = nP.sePaRL(100, 5e-9);
+    var seriesR2 = nP.R(75);
+    var shuntLine = nP.Tlin(50, 0.01);
+    var short = nP.Short();
+    var open = nP.Open();
+    var circuit = nP.nodal(
+      [tee1, 4, 1, 2],
+      [shuntR, 4, 5],
+      [short, 5],
+      [seriesR1, 2, 3],
+      [tee2, 6, 3, 7],
+      [shuntRL, 6, 8],
+      [short, 8],
+      [seriesR2, 7, 9],
+      [tee3, 10, 9, 11],
+      [shuntLine, 10, 12],
+      [open, 12],
+      ['out', 1, 11]
+    );
+    nP.schematic(circuit, {
+      shapes: ['ladder'],
+      mount: '#ladder'
+    });
+
+    var microstripJunction = nP.mtee();
+    var microstripShunt = nP.mlin({length: 0.01});
+    var microstripMain = nP.mlin({length: 0.02});
+    var microstripShort = nP.mvgnd();
+    var microstripLadder = nP.nodal(
+      [microstripJunction, 20, 17, 18],
+      [microstripShunt, 20, 21],
+      [microstripShort, 21],
+      [microstripMain, 18, 19],
+      ['out', 17, 19]
+    );
+    nP.schematic(microstripLadder, {
+      shapes: ['ladder'],
+      mount: '#microstrip-ladder'
+    });
+  </script>
+</body>
+</html>

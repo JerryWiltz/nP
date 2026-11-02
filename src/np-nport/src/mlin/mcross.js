@@ -1,5 +1,6 @@
-// Modified: 2026-10-14
+// Modified: 2026-10-28
 import {complex} from '../../../np-math/src/complex';
+import {schematicPart} from '../schematicPart';
 import {matrix, dim} from '../../../np-math/src/matrix';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
@@ -300,5 +301,6 @@ export function mcross(input = {}) {
 		leftWidth, topWidth, rightWidth, bottomWidth, height: Height, thickness: Thickness
 	}, {relativePermittivity: er, resistivity: rho * COPPER_RESISTIVITY, lossTangent: tand, roughnessRms}, analysis,
 	{sources: [cross.microstrip.source], validity: cross.microstrip.validity});
+	cross._schematic = schematicPart('mcross', {labelPrefix: 'mcross'});
 	return cross;
 };

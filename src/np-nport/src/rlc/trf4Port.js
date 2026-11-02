@@ -1,5 +1,6 @@
-// Modified: 2026-10-13
+// Modified: 2026-10-28
 import {complex} from '../../../np-math/src/complex';
+import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort'
 import {global}  from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
@@ -23,6 +24,7 @@ export function trf4Port(N = 0.5, options = {}) { // parallel resistor nPort obj
 	}
 	trf4Port.setspars(sparsArray);
 	trf4Port.setglobal(settings);
+	trf4Port._schematic = schematicPart('trf4Port', {labelPrefix: 'trf4Port', turnsRatio: N});
 	return trf4Port;
 };
 

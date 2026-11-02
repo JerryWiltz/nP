@@ -1,5 +1,5 @@
 # AGENTS.md
-<!-- Modified: 2026-10-25 -->
+<!-- Modified: 2026-10-28 -->
 
 Instructions for `/home/jerrywiltz/cad-development/nP`. Read this file and any `AGENTS.md` in the directory being changed. Use current source and tests for API behavior; keep detailed engineering explanations in `developmentDocs/`.
 
@@ -40,6 +40,7 @@ Treat these as user-message shorthands when they reach the agent as text; they a
 ## RF conventions
 
 - Ideal constructors use uppercase-first names such as `Tlin()`, `Tclin()`, `Tee()`, `Short()`, and `Open()`. Physical microstrip constructors use lowercase names such as `mlin()` and `mclin()`. Ideal source filenames match public constructor names.
+- RF constructors use `schematicPart(publicName, parameters)` for `_schematic` metadata. The symbol ID comes from the generated map based on `schematics/symbol-catalog.json`; do not duplicate an SVG filename in a constructor. Add a canonical symbol and runtime layout for new drawable constructors.
 - `Tee()` port 1 is the common/shunt branch. A shunt branch runs from that port through its component to `Short()`. `seriesTee()` inserts a one-port as a floating series branch. Name electrical parts `r1`, `l1`, `c1`, etc., and put each `nodal()` connection on its own line.
 - Coupled-line ports are clockwise from upper left: 1 upper left, 2 upper right, 3 lower right, 4 lower left. From port 1, port 2 is through, port 4 coupled, and port 3 isolated.
 - Reuse constants from `src/np-nport/src/physicalConstants.js`. Physical-model options use canonical lower-camel-case SI names; `resistivity` is absolute ohm-meters. Preserve documented aliases, reject conflicting or unknown properties, and keep `.physicalModel` metadata. See `developmentDocs/physicalModelApi.md`.

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-27 -->
+<!-- Modified: 2026-11-01 -->
 # Development pages
 
 The HTML files in this directory are executable browser harnesses that load
@@ -8,17 +8,20 @@ source changes, then keep a changed harness and its companion note aligned.
 
 | Harness | Focus | Companion note |
 | --- | --- | --- |
-| `canonicalSymbols.html` | All 58 canonical SVG symbols in Guide API order | — |
+| `canonicalSymbols.html` | All 59 canonical SVG symbols in Guide API order | — |
 | `chartDefaults.html` | Built-in line chart, line table, and Smith chart defaults | — |
 | `diode.html` | 1N4148 RF S-parameters and DC I-V | `diode.md` |
 | `edgeCoupledFilter.html` | Coupled-line filter with amplifier cascade | — |
 | `intermodAnalysis.html` | Two-tone amplifier then attenuator sweep: IP3 from nodal and cascade | `intermodAnalysis.md` |
+| `ladder.html` | `ladder` guidance for ideal and microstrip line networks | `ladder.md` |
 | `manchester.html` | Manchester PSK transmit, cascade, and demodulation example | — |
 | `matrix.html` | Real and complex matrix operations | `matrix.md` |
 | `microstrip.html` | Microstrip line, coupled line, tee, divider, and thin-film resistor | `microstrip.md` |
 | `nodal.html` | Series and parallel nodal connections | `nodal.md` |
 | `noiseAnalysis.html` | Three amplifier constructor forms compared through nodal and cascade NF and output noise floor | `noiseAnalysis.md` |
-| `schematic.html` | Runtime Wilkinson power divider schematic and S-parameter response | — |
+| `schematic.html` | Guided and network-only schematics for 32 direct and stress circuits | `schematic.md` |
+| `seriesOf2Ports.html` | `series` guidance for two-port chains, bends, and nested networks | `seriesOf2Ports.md` |
+| `splitRejoin.html` | Network-only parallel paths with tee junctions | `splitRejoin.md` |
 | `seriesTee.html` | Series tee regression harness | — |
 | `timeDomain.html` | ASCII BER comparison and clocked PN7 through an attenuator and `demod()` | `timeDomain.md` |
 | `visualization.html` | Line chart, line table, and Smith chart smoke harness | `visualization.md` |

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Modified: 2026-10-27
+// Modified: 2026-10-29
 'use strict';
 
 const fs = require('fs');
@@ -23,7 +23,7 @@ try {
   const catalog = JSON.parse(fs.readFileSync(
     path.join(repositoryRoot, 'schematics/symbol-catalog.json'), 'utf8'));
   const documentedHelpers = new Set([
-    'chebyLPgk', 'chebyLPLCs', 'chebyLPNsec', 'nodal'
+    'chebyLPgk', 'chebyLPLCs', 'chebyLPNsec'
   ]);
   const expected = new Set([
     ...publicNames('src/np-nport/src/index.js').filter(name => !documentedHelpers.has(name)),
@@ -42,13 +42,13 @@ try {
   }
   for (const [name, variants] of Object.entries(catalog.symbolVariants || {})) {
     if (!actual.has(name)) throw new Error(`symbol variant has no catalog entry: ${name}`);
-    for (const variant of variants) {
+    for (const variant of Object.values(variants)) {
       if (!symbolNames.has(variant)) throw new Error(`symbol variant is missing: ${variant}`);
     }
   }
   const mapped = new Set([
     ...Object.values(catalog.constructors),
-    ...Object.values(catalog.symbolVariants || {}).flat()
+    ...Object.values(catalog.symbolVariants || {}).flatMap(variants => Object.values(variants))
   ]);
   const signalSymbols = catalog.signalSymbols || [];
   if (new Set(signalSymbols).size !== signalSymbols.length) {

@@ -1,5 +1,6 @@
-// Modified: 2026-10-13
+// Modified: 2026-10-28
 import {complex} from '../../../np-math/src/complex';
+import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
@@ -20,5 +21,6 @@ export function seL(L = 5e-9, options = {}) { // series inductor nPort object
 	};
 	seL.setspars(sparsArray);
 	seL.setglobal(settings);
+	seL._schematic = schematicPart('seL', {labelPrefix: 'seL', value: L});
 	return seL;
 };

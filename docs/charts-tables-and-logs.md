@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-27 -->
+<!-- Modified: 2026-10-31 -->
 # Charts, tables, and logs
 
 Use `nP.lineChart()`, `nP.smithChart()`, and `nP.lineTable()` for visual results in a browser, or `nP.log()` for quick values. The charts and table accept the numeric tables returned by an [nPort's `.out()` method](./nport-object.md#read-results-with-out). Each call adds a display to the page.
@@ -374,7 +374,7 @@ var l1 = nP.L(45.65360855435164e-9);
 nP.schematic(l1, {significantDigits: 4});
 ```
 
-This option changes only the printed labels. The circuit calculation and numeric values in the returned `graph` and `topology` keep their original precision. The drawing opens at its natural scale with horizontal and vertical scrolling; **Fit drawing** shows the whole circuit, and **Actual size** restores the natural scale.
+This option changes only the printed labels. The circuit calculation and numeric values in the returned `graph` and `topology` keep their original precision. The drawing opens at its natural scale and grows to its full height; wide drawings scroll horizontally. **Fit drawing** scales to the available width, and **Actual size** restores the natural scale.
 
 For a transmitter, RF circuit, and receiver, pass the three objects together so the drawing includes the signal blocks:
 
