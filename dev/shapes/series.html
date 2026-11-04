@@ -1,12 +1,12 @@
 <!doctype html>
-<!-- Modified: 2026-11-01 -->
+<!-- Modified: 2026-11-02 -->
 <html lang="en">
 
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Series schematic guidance</title>
-  <script src="../dist/nP.js"></script>
+  <script src="../../dist/nP.js"></script>
   <style>
     body {
       margin: 0;
@@ -36,6 +36,9 @@
     <div id="expanded"></div>
   </section>
   <script>
+    var g = nP.global;
+    g.fList = [2e9];
+
     var r1 = nP.R(50);
     var r2 = nP.R(50);
     var reference = nP.nodal(

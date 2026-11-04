@@ -1,0 +1,131 @@
+<!doctype html>
+<!-- Modified: 2026-11-02 -->
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Branchline schematic guidance</title>
+  <script src="../../dist/nP.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 2rem;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #202020;
+    }
+
+    section {
+      margin: 2rem 0 3rem;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Branchline schematic guidance</h1>
+  <section>
+    <h2>One-cell ideal branchline with series arm components</h2>
+    <div id="branchline-one-cell"></div>
+  </section>
+  <section>
+    <h2>Two-cell ideal branchline</h2>
+    <div id="branchline-two-cell"></div>
+  </section>
+  <section>
+    <h2>One-cell microstrip branchline</h2>
+    <div id="branchline-microstrip"></div>
+  </section>
+  <script>
+    // Branchline schematic examples
+    var g = nP.global;
+    g.fList = [2e9];
+
+    var tee1 = nP.Tee();
+    var tee2 = nP.Tee();
+    var tee3 = nP.Tee();
+    var tee4 = nP.Tee();
+    var topLine = nP.Tlin(35.35, 0.025);
+    var leftLine = nP.Tlin(50, 0.025);
+    var rightLine = nP.Tlin(50, 0.025);
+    var bottomLine = nP.Tlin(35.35, 0.025);
+    var topResistor = nP.R(10);
+    var bottomResistor = nP.R(15);
+    var oneCell = nP.nodal(
+      [tee1, 5, 1, 2],
+      [topLine, 2, 13],
+      [topResistor, 13, 3],
+      [tee2, 6, 3, 4],
+      [leftLine, 5, 7],
+      [rightLine, 6, 8],
+      [tee3, 7, 10, 9],
+      [bottomLine, 10, 14],
+      [bottomResistor, 14, 11],
+      [tee4, 8, 12, 11],
+      ['out', 1, 4, 12, 9]
+    );
+    nP.schematic(oneCell, {
+      shapes: ['branchline'],
+      mount: '#branchline-one-cell'
+    });
+
+    var tee5 = nP.Tee();
+    var tee6 = nP.Tee();
+    var tee7 = nP.Tee();
+    var tee8 = nP.Tee();
+    var tee9 = nP.Tee();
+    var tee10 = nP.Tee();
+    var topLine1 = nP.Tlin(50, 0.025);
+    var topLine2 = nP.Tlin(50, 0.025);
+    var bottomLine1 = nP.Tlin(50, 0.025);
+    var bottomLine2 = nP.Tlin(50, 0.025);
+    var leftLine2 = nP.Tlin(50, 0.025);
+    var middleLine = nP.Tlin(50, 0.025);
+    var rightLine2 = nP.Tlin(50, 0.025);
+    var twoCell = nP.nodal(
+      [tee5, 11, 1, 12],
+      [topLine1, 12, 13],
+      [tee6, 14, 13, 15],
+      [topLine2, 15, 16],
+      [tee7, 17, 16, 2],
+      [leftLine2, 11, 21],
+      [tee8, 21, 22, 4],
+      [bottomLine1, 22, 23],
+      [tee9, 24, 25, 23],
+      [bottomLine2, 25, 26],
+      [tee10, 27, 3, 26],
+      [middleLine, 14, 24],
+      [rightLine2, 17, 27],
+      ['out', 1, 2, 3, 4]
+    );
+    nP.schematic(twoCell, {
+      shapes: ['branchline'],
+      mount: '#branchline-two-cell'
+    });
+
+    var microstripTee1 = nP.mtee();
+    var microstripTee2 = nP.mtee();
+    var microstripTee3 = nP.mtee();
+    var microstripTee4 = nP.mtee();
+    var microstripTop = nP.mlin();
+    var microstripLeft = nP.mlin();
+    var microstripBottom = nP.mlin();
+    var microstripRight = nP.mlin();
+    var microstripBranchline = nP.nodal(
+      [microstripTee1, 5, 1, 2],
+      [microstripTop, 2, 3],
+      [microstripTee2, 6, 3, 4],
+      [microstripLeft, 5, 7],
+      [microstripTee3, 7, 9, 10],
+      [microstripBottom, 10, 11],
+      [microstripTee4, 8, 11, 12],
+      [microstripRight, 6, 8],
+      ['out', 1, 4, 12, 9]
+    );
+    nP.schematic(microstripBranchline, {
+      shapes: ['branchline'],
+      mount: '#branchline-microstrip'
+    });
+  </script>
+</body>
+
+</html>

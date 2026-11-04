@@ -1,15 +1,22 @@
 <!doctype html>
-<!-- Modified: 2026-11-01 -->
+<!-- Modified: 2026-11-02 -->
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Ladder schematic guidance</title>
-  <script src="../dist/nP.js"></script>
+  <script src="../../dist/nP.js"></script>
   <style>
-    body { margin: 0; padding: 2rem; font-family: Arial, Helvetica, sans-serif; color: #202020; }
+    body {
+      margin: 0;
+      padding: 2rem;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #202020;
+    }
   </style>
 </head>
+
 <body>
   <h1>Ladder schematic guidance</h1>
   <h2>Ideal transmission line shunts</h2>
@@ -50,8 +57,8 @@
     });
 
     var microstripJunction = nP.mtee();
-    var microstripShunt = nP.mlin({length: 0.01});
-    var microstripMain = nP.mlin({length: 0.02});
+    var microstripShunt = nP.mlin({ length: 0.01 });
+    var microstripMain = nP.mlin({ length: 0.02 });
     var microstripShort = nP.mvgnd();
     var microstripLadder = nP.nodal(
       [microstripJunction, 20, 17, 18],
@@ -61,9 +68,10 @@
       ['out', 17, 19]
     );
     nP.schematic(microstripLadder, {
-      shapes: ['ladder'],
+      //shapes: ['ladder'],
       mount: '#microstrip-ladder'
     });
   </script>
 </body>
+
 </html>

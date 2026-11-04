@@ -1,4 +1,4 @@
-// Modified: 2026-10-27
+// Modified: 2026-11-02
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -6,10 +6,14 @@ import { chromium } from 'playwright';
 
 const repoRoot = path.resolve(new URL('..', import.meta.url).pathname);
 const devRoot = path.join(repoRoot, 'dev');
-const files = fs.readdirSync(devRoot)
+const topLevelFiles = fs.readdirSync(devRoot)
     .filter((name) => name.endsWith('.html'))
-    .sort()
     .map((name) => path.join(devRoot, name));
+const shapeFiles = fs.readdirSync(path.join(devRoot, 'shapes'))
+    .filter((name) => name.endsWith('.html'))
+    .map((name) => path.join(devRoot, 'shapes', name));
+const files = topLevelFiles.concat(shapeFiles)
+    .sort();
 
 const chartPages = new Set([
     'diode.html',
@@ -45,7 +49,7 @@ for (const file of files) {
         errors.push(`navigation: ${error.message}`);
     }
 
-    results.push({ file: path.basename(file), errors });
+    results.push({ file: path.relative(devRoot, file), errors });
     await page.close();
 }
 

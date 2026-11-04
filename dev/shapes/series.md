@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-01 -->
+<!-- Modified: 2026-11-02 -->
 # Series schematic guidance
 
 This harness exercises the `series` shape guidance. The reference is the user's

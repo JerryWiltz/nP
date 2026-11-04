@@ -1,5 +1,5 @@
 {
-  "_modified": "2026-10-31",
+  "_modified": "2026-11-03",
   "name": "@jerrywiltz/np",
   "version": "0.0.48",
   "main": "./dist/nP.cjs",
@@ -39,8 +39,6 @@
     "dev:smoke": "node scripts/dev-smoke.mjs",
     "symbols:gallery": "node schematics/tools/generate-symbol-gallery.js",
     "symbols:bundle": "node schematics/tools/generate-runtime-symbols.js",
-    "shapes:bundle": "node schematics/tools/generate-runtime-shapes.js",
-    "shapes:check": "node schematics/tools/generate-runtime-shapes.js --check",
     "shapes:preview": "node --no-warnings --loader ./scripts/extensionless-loader.mjs schematics/tools/generate-shape-previews.mjs",
     "symbols:check": "node schematics/tools/validate-symbol-library.js && node --no-warnings --loader ./scripts/extensionless-loader.mjs schematics/tools/check-constructor-symbols.mjs",
     "schematics:build": "node schematics/tools/build-example-schematics.js",
