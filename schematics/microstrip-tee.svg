@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 600 440"
+     role="img" aria-labelledby="title description">
+  <title id="title">Microstrip Tee</title>
+  <desc id="description">Guide REPL example microstrip-tee: Microstrip Tee.</desc>
+  <metadata id="circuit-description">{&quot;title&quot;:&quot;Microstrip Tee&quot;,&quot;description&quot;:&quot;Guide REPL example microstrip-tee: Microstrip Tee.&quot;,&quot;domain&quot;:&quot;rf&quot;,&quot;source&quot;:{&quot;file&quot;:&quot;docs/.vitepress/theme/replExamples.js&quot;,&quot;result&quot;:&quot;tee&quot;,&quot;combination&quot;:&quot;tee&quot;,&quot;exampleId&quot;:&quot;microstrip-tee&quot;},&quot;viewBox&quot;:[0,0,600,440],&quot;layout&quot;:{&quot;centerAxisX&quot;:300,&quot;centerReference&quot;:&quot;tee body&quot;},&quot;components&quot;:[{&quot;id&quot;:&quot;tee&quot;,&quot;symbol&quot;:&quot;microstrip-tee.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;tee&quot;,&quot;constructor&quot;:&quot;mtee&quot;},&quot;at&quot;:[280,200],&quot;sourceAnchor&quot;:[0,60],&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:1,&quot;at&quot;:[280,200],&quot;labelAt&quot;:[260,160]},{&quot;port&quot;:2,&quot;node&quot;:2,&quot;at&quot;:[340,140],&quot;labelAt&quot;:[360,100]},{&quot;port&quot;:3,&quot;node&quot;:3,&quot;at&quot;:[340,260],&quot;labelAt&quot;:[360,300]}]}],&quot;wires&quot;:[{&quot;node&quot;:1,&quot;points&quot;:[[280,200],[220,200]]},{&quot;node&quot;:2,&quot;points&quot;:[[340,140],[400,140]]},{&quot;node&quot;:3,&quot;points&quot;:[[340,260],[400,260]]}],&quot;terminals&quot;:[{&quot;node&quot;:1,&quot;at&quot;:[220,200]},{&quot;node&quot;:2,&quot;at&quot;:[400,140]},{&quot;node&quot;:3,&quot;at&quot;:[400,260]}],&quot;labels&quot;:[{&quot;text&quot;:&quot;Port 1&quot;,&quot;at&quot;:[220,300],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;Port 2&quot;,&quot;at&quot;:[400,100],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;Port 3&quot;,&quot;at&quot;:[400,340],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;tee&quot;,&quot;text&quot;:&quot;tee: mtee()&quot;,&quot;at&quot;:[300,70],&quot;anchor&quot;:&quot;middle&quot;}]}</metadata>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path data-wire="1" data-node="1" d="M280 200 L220 200"/>
+    <path data-wire="2" data-node="2" d="M340 140 L400 140"/>
+    <path data-wire="3" data-node="3" d="M340 260 L400 260"/>
+    <circle data-external-terminal="1" cx="220" cy="200" r="4" fill="#202020" data-node="1"/>
+    <circle data-external-terminal="2" cx="400" cy="140" r="4" fill="#202020" data-node="2"/>
+    <circle data-external-terminal="3" cx="400" cy="260" r="4" fill="#202020" data-node="3"/>
+    <!-- tee from microstrip-tee.svg -->
+    <g data-component-id="tee" data-symbol-source="microstrip-tee.svg" data-symbol-sha256="8d3286e99da61d6726bc8af318fba950e029f1f202c0ec22e75d6ccea8674eb5" data-symbol-geometry-sha256="7f897ffa3b6eddd81b1aae1e0530c5805910c1701dc330928d1b7e3c149a099b" transform="translate(280 200) rotate(0) translate(0 -60)">
+      <!-- canonical-geometry-start -->
+<!-- Enlarge the compact copper silhouette without changing its proportions. -->
+  <g transform="translate(-60 -60) scale(2)">
+    <path d="M53 40 H67 V80 H53 V67 H40 V53 H53 Z" fill="#ffffff" stroke="#202020" stroke-width="1"/><circle cx="56" cy="60" r="1.5" fill="#202020" stroke="none"/>
+  </g>
+  <path d="M0 60 H20 M60 0 V20 M60 100 V120" fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round"/>
+      <!-- canonical-geometry-end -->
+    </g>
+    <circle data-node-dot="1" cx="280" cy="200" r="4" fill="#202020"/>
+    <circle data-node-dot="2" cx="340" cy="140" r="4" fill="#202020"/>
+    <circle data-node-dot="3" cx="340" cy="260" r="4" fill="#202020"/>
+    <circle data-node-circle="1" cx="260" cy="160" r="12" fill="#ffffff"/>
+    <circle data-node-circle="2" cx="360" cy="100" r="12" fill="#ffffff"/>
+    <circle data-node-circle="3" cx="360" cy="300" r="12" fill="#ffffff"/>
+  </g>
+  <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    <text x="220" y="300" text-anchor="middle">Port 1</text>
+    <text x="400" y="100" text-anchor="middle">Port 2</text>
+    <text x="400" y="340" text-anchor="middle">Port 3</text>
+    <text x="300" y="70" text-anchor="middle">tee: mtee()</text>
+    <text data-node-label="1" x="260" y="165" text-anchor="middle">1</text>
+    <text data-node-label="2" x="360" y="105" text-anchor="middle">2</text>
+    <text data-node-label="3" x="360" y="305" text-anchor="middle">3</text>
+  </g>
+</svg>

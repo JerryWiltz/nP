@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 620 620"
+     role="img" aria-labelledby="title description">
+  <title id="title">Step, bend, and via path</title>
+  <desc id="description">Guide REPL example microstrip-layout: Step, bend, and via path.</desc>
+  <metadata id="circuit-description">{&quot;title&quot;:&quot;Step, bend, and via path&quot;,&quot;description&quot;:&quot;Guide REPL example microstrip-layout: Step, bend, and via path.&quot;,&quot;domain&quot;:&quot;rf&quot;,&quot;source&quot;:{&quot;file&quot;:&quot;docs/.vitepress/theme/replExamples.js&quot;,&quot;result&quot;:&quot;path&quot;,&quot;combination&quot;:&quot;nP.nodal(..., [&apos;out&apos;, 1, 4])&quot;,&quot;exampleId&quot;:&quot;microstrip-layout&quot;},&quot;viewBox&quot;:[0,0,620,620],&quot;layout&quot;:{&quot;centerAxisX&quot;:310,&quot;centerReference&quot;:&quot;right-turn bend&quot;},&quot;components&quot;:[{&quot;id&quot;:&quot;step&quot;,&quot;symbol&quot;:&quot;microstrip-step.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;step&quot;,&quot;constructor&quot;:&quot;mstep&quot;},&quot;at&quot;:[160,180],&quot;sourceAnchor&quot;:[0,60],&quot;rotation&quot;:0,&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:1,&quot;at&quot;:[160,180],&quot;labelAt&quot;:[160,140]},{&quot;port&quot;:2,&quot;node&quot;:2,&quot;at&quot;:[280,180],&quot;labelAt&quot;:[330,140]}]},{&quot;id&quot;:&quot;bend&quot;,&quot;symbol&quot;:&quot;microstrip-right-bend.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;bend&quot;,&quot;constructor&quot;:&quot;mbend&quot;},&quot;at&quot;:[380,180],&quot;sourceAnchor&quot;:[0,60],&quot;rotation&quot;:0,&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:2,&quot;at&quot;:[380,180],&quot;labelAt&quot;:[330,140]},{&quot;port&quot;:2,&quot;node&quot;:3,&quot;at&quot;:[440,240],&quot;labelAt&quot;:[480,280]}]},{&quot;id&quot;:&quot;via&quot;,&quot;symbol&quot;:&quot;microstrip-via-transition.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;via&quot;,&quot;constructor&quot;:&quot;mvia&quot;},&quot;at&quot;:[440,340],&quot;sourceAnchor&quot;:[120,40],&quot;rotation&quot;:0,&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:3,&quot;at&quot;:[440,340],&quot;labelAt&quot;:[480,280]},{&quot;port&quot;:2,&quot;node&quot;:4,&quot;at&quot;:[440,440],&quot;labelAt&quot;:[480,460]}]}],&quot;wires&quot;:[{&quot;node&quot;:1,&quot;points&quot;:[[160,180],[100,180]]},{&quot;node&quot;:2,&quot;points&quot;:[[280,180],[380,180]]},{&quot;node&quot;:3,&quot;points&quot;:[[440,240],[440,340]]},{&quot;node&quot;:4,&quot;points&quot;:[[440,440],[440,500]]}],&quot;terminals&quot;:[{&quot;node&quot;:1,&quot;at&quot;:[100,180]},{&quot;node&quot;:4,&quot;at&quot;:[440,500]}],&quot;labels&quot;:[{&quot;componentId&quot;:&quot;step&quot;,&quot;text&quot;:&quot;step&quot;,&quot;at&quot;:[220,70],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;bend&quot;,&quot;text&quot;:&quot;bend&quot;,&quot;at&quot;:[420,70],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;via&quot;,&quot;text&quot;:&quot;via&quot;,&quot;at&quot;:[500,380],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;Port 1&quot;,&quot;at&quot;:[100,240],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;Port 2&quot;,&quot;at&quot;:[440,560],&quot;anchor&quot;:&quot;middle&quot;}]}</metadata>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path data-wire="1" data-node="1" d="M160 180 L100 180"/>
+    <path data-wire="2" data-node="2" d="M280 180 L380 180"/>
+    <path data-wire="3" data-node="3" d="M440 240 L440 340"/>
+    <path data-wire="4" data-node="4" d="M440 440 L440 500"/>
+    <circle data-external-terminal="1" cx="100" cy="180" r="4" fill="#202020" data-node="1"/>
+    <circle data-external-terminal="2" cx="440" cy="500" r="4" fill="#202020" data-node="4"/>
+    <!-- step from microstrip-step.svg -->
+    <g data-component-id="step" data-symbol-source="microstrip-step.svg" data-symbol-sha256="f91c8ec763f11762dc4d37ad2c609f619feeb45f87a455ef6c1c588c351d97fc" data-symbol-geometry-sha256="03678065d922429efbb9dde802a143ee0546f9c7f18413831fcd79a0970d0bce" transform="translate(160 180) rotate(0) translate(0 -60)">
+      <!-- canonical-geometry-start -->
+<!-- Enlarge the compact copper silhouette without changing its proportions. -->
+  <g transform="translate(-60 -60) scale(2)">
+    <path d="M40 53 H60 V57 H80 V63 H60 V67 H40 Z" fill="#ffffff" stroke="#202020" stroke-width="1"/>
+  </g>
+  <path d="M0 60 H20 M100 60 H120" fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round"/>
+      <!-- canonical-geometry-end -->
+    </g>
+    <!-- bend from microstrip-right-bend.svg -->
+    <g data-component-id="bend" data-symbol-source="microstrip-right-bend.svg" data-symbol-sha256="e7d4fb5a5ef6862434966cb365eb406f7ab74c3426a04b86e37dfc0bc26557c8" data-symbol-geometry-sha256="b6f6a294c73eb3f7d71c9261c171091800c8f9f35df68ab5831bb110668d4d70" transform="translate(380 180) rotate(0) translate(0 -60)">
+      <!-- canonical-geometry-start -->
+<!-- Mirror the left-turn conductor vertically so port 2 exits downward. -->
+  <g transform="translate(-60 -60) scale(2)">
+    <path d="M40 67 H53 V80 H67 V60 L60 53 H40 Z" fill="#ffffff" stroke="#202020" stroke-width="1"/>
+  </g>
+  <path d="M0 60 H20 M60 100 V120" fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round"/>
+      <!-- canonical-geometry-end -->
+    </g>
+    <!-- via from microstrip-via-transition.svg -->
+    <g data-component-id="via" data-symbol-source="microstrip-via-transition.svg" data-symbol-sha256="5c20e84fba62a5efb8c44ed6a32f95e62ce9937e950b9f26b96dbce0e855ce25" data-symbol-geometry-sha256="9d1b8af58a394dbbef595e6394d5a3c8beb74e3bcd2abf051d7b9228c05a88e3" transform="translate(440 340) rotate(0) translate(-120 -40)">
+      <!-- canonical-geometry-start -->
+<!-- Outlined via pad and bore, with leads to both grid terminals. -->
+  <circle cx="120" cy="90" r="30" fill="#ffffff" stroke="#202020" stroke-width="2"/>
+  <circle cx="120" cy="90" r="10" fill="#ffffff" stroke="#202020" stroke-width="2"/>
+  <path d="M120 40 V60 M120 120 V140" fill="none" stroke="#202020" stroke-width="2"/>
+      <!-- canonical-geometry-end -->
+    </g>
+    <circle data-node-dot="1" cx="160" cy="180" r="4" fill="#202020"/>
+    <circle data-node-dot="2" cx="280" cy="180" r="4" fill="#202020"/>
+    <circle data-node-dot="2" cx="380" cy="180" r="4" fill="#202020"/>
+    <circle data-node-dot="3" cx="440" cy="240" r="4" fill="#202020"/>
+    <circle data-node-dot="3" cx="440" cy="340" r="4" fill="#202020"/>
+    <circle data-node-dot="4" cx="440" cy="440" r="4" fill="#202020"/>
+    <circle data-node-circle="1" cx="160" cy="140" r="12" fill="#ffffff"/>
+    <circle data-node-circle="2" cx="330" cy="140" r="12" fill="#ffffff"/>
+    <circle data-node-circle="3" cx="480" cy="280" r="12" fill="#ffffff"/>
+    <circle data-node-circle="4" cx="480" cy="460" r="12" fill="#ffffff"/>
+  </g>
+  <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    <text x="220" y="70" text-anchor="middle">step</text>
+    <text x="420" y="70" text-anchor="middle">bend</text>
+    <text x="500" y="380" text-anchor="middle">via</text>
+    <text x="100" y="240" text-anchor="middle">Port 1</text>
+    <text x="440" y="560" text-anchor="middle">Port 2</text>
+    <text data-node-label="1" x="160" y="145" text-anchor="middle">1</text>
+    <text data-node-label="2" x="330" y="145" text-anchor="middle">2</text>
+    <text data-node-label="3" x="480" y="285" text-anchor="middle">3</text>
+    <text data-node-label="4" x="480" y="465" text-anchor="middle">4</text>
+  </g>
+</svg>

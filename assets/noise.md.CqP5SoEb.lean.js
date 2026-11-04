@@ -1,0 +1,1 @@
+import{_ as i,o as a,c as e,a0 as t}from"./chunks/framework.D0vMsDwd.js";const E=JSON.parse('{"title":"Noise","description":"","frontmatter":{},"headers":[],"relativePath":"noise.md","filePath":"noise.md"}'),n={name:"noise.md"};function h(l,s,p,k,r,o){return a(),e("div",null,s[0]||(s[0]=[t("",28)]))}const c=i(n,[["render",h]]);export{E as __pageData,c as default};

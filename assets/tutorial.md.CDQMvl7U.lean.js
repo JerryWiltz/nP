@@ -1,0 +1,1 @@
+import{_ as i,o as a,c as n,a0 as t}from"./chunks/framework.D0vMsDwd.js";const o=JSON.parse('{"title":"Tutorial","description":"","frontmatter":{},"headers":[],"relativePath":"tutorial.md","filePath":"tutorial.md"}'),h={name:"tutorial.md"};function l(e,s,k,p,r,E){return a(),n("div",null,s[0]||(s[0]=[t("",12)]))}const g=i(h,[["render",l]]);export{o as __pageData,g as default};

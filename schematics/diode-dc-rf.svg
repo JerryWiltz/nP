@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 380 360"
+     role="img" aria-labelledby="title description">
+  <title id="title">Biased 1N4148 diode</title>
+  <desc id="description">Guide REPL example diode-dc-rf: Biased 1N4148 diode.</desc>
+  <metadata id="circuit-description">{&quot;title&quot;:&quot;Biased 1N4148 diode&quot;,&quot;description&quot;:&quot;Guide REPL example diode-dc-rf: Biased 1N4148 diode.&quot;,&quot;domain&quot;:&quot;rf&quot;,&quot;source&quot;:{&quot;file&quot;:&quot;docs/.vitepress/theme/replExamples.js&quot;,&quot;result&quot;:&quot;diode&quot;,&quot;combination&quot;:&quot;nP.cascade(diode)&quot;,&quot;exampleId&quot;:&quot;diode-dc-rf&quot;},&quot;viewBox&quot;:[0,0,380,360],&quot;layout&quot;:{&quot;centerAxisX&quot;:190,&quot;centerReference&quot;:&quot;Biased 1N4148 diode signal path&quot;},&quot;components&quot;:[{&quot;id&quot;:&quot;diode&quot;,&quot;symbol&quot;:&quot;diode-1n4148.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;diode&quot;,&quot;constructor&quot;:&quot;diode1N4148&quot;},&quot;at&quot;:[160,180],&quot;sourceAnchor&quot;:[80,80],&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:1,&quot;at&quot;:[160,180],&quot;labelAt&quot;:[160,120]},{&quot;port&quot;:2,&quot;node&quot;:2,&quot;at&quot;:[220,180],&quot;labelAt&quot;:[220,120]}]}],&quot;wires&quot;:[{&quot;node&quot;:1,&quot;points&quot;:[[100,180],[160,180]]},{&quot;node&quot;:2,&quot;points&quot;:[[220,180],[280,180]]}],&quot;terminals&quot;:[{&quot;node&quot;:1,&quot;at&quot;:[100,180]},{&quot;node&quot;:2,&quot;at&quot;:[280,180]}],&quot;labels&quot;:[{&quot;componentId&quot;:&quot;diode&quot;,&quot;text&quot;:&quot;diode: 1N4148 at 0.5 V&quot;,&quot;at&quot;:[190,60],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;Port 1&quot;,&quot;at&quot;:[100,240],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;Port 2&quot;,&quot;at&quot;:[280,240],&quot;anchor&quot;:&quot;middle&quot;}]}</metadata>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path data-wire="1" data-node="1" d="M100 180 L160 180"/>
+    <path data-wire="2" data-node="2" d="M220 180 L280 180"/>
+    <circle data-external-terminal="1" cx="100" cy="180" r="4" fill="#202020" data-node="1"/>
+    <circle data-external-terminal="2" cx="280" cy="180" r="4" fill="#202020" data-node="2"/>
+    <!-- diode from diode-1n4148.svg -->
+    <g data-component-id="diode" data-symbol-source="diode-1n4148.svg" data-symbol-sha256="ccb299c40008f48a3e49cb2a33af721e97b81494f85b41582aced5ce02905704" data-symbol-geometry-sha256="8768fb6f268bc0f8eb83716cd061f8cc86778e777ad4fe56def9785ef3d43d7c" transform="translate(160 180) rotate(0) translate(-80 -80)">
+      <!-- canonical-geometry-start -->
+<g transform="translate(0 -10)">
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M80 90 H100 M120 90 H140"/><path d="M100 80 L120 90 L100 100 Z"/><path d="M120 80 V100"/></g>
+  </g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <circle data-node-dot="1" cx="160" cy="180" r="4" fill="#202020"/>
+    <circle data-node-dot="2" cx="220" cy="180" r="4" fill="#202020"/>
+    <circle data-node-circle="1" cx="160" cy="120" r="12" fill="#ffffff"/>
+    <circle data-node-circle="2" cx="220" cy="120" r="12" fill="#ffffff"/>
+  </g>
+  <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    <text x="190" y="60" text-anchor="middle">diode: 1N4148 at 0.5 V</text>
+    <text x="100" y="240" text-anchor="middle">Port 1</text>
+    <text x="280" y="240" text-anchor="middle">Port 2</text>
+    <text data-node-label="1" x="160" y="125" text-anchor="middle">1</text>
+    <text data-node-label="2" x="220" y="125" text-anchor="middle">2</text>
+  </g>
+</svg>
