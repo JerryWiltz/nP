@@ -1,4 +1,4 @@
-// Modified: 2026-11-06
+// Modified: 2026-11-08
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as nP from '../src/index.js';
@@ -57,11 +57,11 @@ function assertElectricalDrawing(graph) {
     }
 }
 
-test('all development nodals use the generic ORI board and preserve complete wire connectivity', () => {
+test('all development nodals can explicitly use the generic ORI board and preserve complete wire connectivity', () => {
     for (const item of buildSchematicCases(nP).concat(buildSchematicStressCases(nP))) {
         if (item.circuit._schematic.kind !== 'nodal') continue;
         const before = item.circuit._schematic.components.map(entry => entry.nodes.slice());
-        const graph = schematicGraph(item.circuit);
+        const graph = schematicGraph(item.circuit, {shapes: ['generic']});
         assert.equal(graph.layout, 'generic', item.id);
         assert.equal(graph.board.interpreter, 'ORI', item.id);
         assert.equal(graph.shape, undefined);
@@ -83,11 +83,12 @@ test('the transformer divider renders with no shape and retains explicit powerDi
         [nP.R(100), 30, 31],
         ['out', 1, 2, 3]
     );
-    const generic = schematicGraph(circuit);
-    assert.equal(generic.components.length, 5);
-    assert.equal(generic.board.regions.length, 1);
-    assertElectricalDrawing(generic);
+    const automatic = schematicGraph(circuit);
+    assert.equal(automatic.components.length, 5);
+    assert.equal(automatic.shape, 'powerDivider');
+    assertElectricalDrawing(automatic);
     const guided = schematicGraph(circuit, {shapes: ['powerDivider']});
+    assert.deepEqual(automatic, guided);
     assert.equal(guided.shape, 'powerDivider');
     assert.equal(guided.board.interpreter, 'ORI');
 });

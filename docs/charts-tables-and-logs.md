@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-31 -->
+<!-- Modified: 2026-11-08 -->
 # Charts, tables, and logs
 
 Use `nP.lineChart()`, `nP.smithChart()`, and `nP.lineTable()` for visual results in a browser, or `nP.log()` for quick values. The charts and table accept the numeric tables returned by an [nPort's `.out()` method](./nport-object.md#read-results-with-out). Each call adds a display to the page.
@@ -365,16 +365,107 @@ PNG copy needs browser image clipboard support; clipboard access also depends on
 
 ## Schematics
 
-`nP.schematic(circuit)` draws the supported nPort circuit from its construction metadata. Labels show three significant digits by default. Set `significantDigits` from 1 to 15 when a drawing needs more or less detail:
+### Put shape groups beside the connections
+
+For a familiar engineering layout, put each shape name around its connection rows in `nP.nodal()`, then draw the completed network with **`nP.schematic(network)`**. You do not need to supply shape names or boundary nodes again in the schematic call.
 
 ```js
-nP.global.fList = [2e9];
+// Series–ladder–series: one network, repeated shape names, reused components
+var g = nP.global;
+g.fList = [2e9];
 
+var r1 = nP.R(75);
+var r2 = nP.R(50);
+var c1 = nP.C(1e-12);
+var tee1 = nP.Tee();
+var short1 = nP.Short();
+var network = nP.nodal(
+  {series: [
+    [r1, 1, 2],
+    [r2, 2, 3]
+  ]},
+  {ladder: [
+    [tee1, 4, 3, 5],
+    [c1, 4, 6],
+    [short1, 6],
+    [r2, 5, 7]
+  ]},
+  {series: [
+    [r1, 7, 8]
+  ]},
+  ['out', 1, 8]
+);
+
+var drawing = nP.schematic(network);
+var detected = drawing.detected;
+nP.log(detected);
+```
+
+The shape name describes how the engineer expects that section to look. Ordinary node numbers specify every electrical connection. The renderer finds where each group connects to its neighbors and derives the section boundaries automatically. Use separate objects when a shape repeats; do not repeat a property inside one JavaScript object, because the later property would replace the earlier one.
+
+Each group belongs to one final nodal network. It adds no intermediate nPort, extra electrical node or network block. The same component object can appear in several groups, as `r1` and `r2` do above; each connection row remains a separate occurrence. Grouped and ordinary flat syntax use the same electrical calculations. Keep `['out', ...]` outside the groups as the final connection row; optional signal settings still follow it.
+
+| Shape name | Engineering arrangement |
+| --- | --- |
+| `series` | A continuous path of two-port components, with bends when present |
+| `ladder` | A main path with tee-led, downward terminated shunts |
+| `bridgedT` | A main path with upper bridges and downward terminated shunts |
+| `branchline` | Rectangular transmission-line cells with four external ports |
+| `edgeCoupledFilter` | A staircase of coupled sections with explicit terminations |
+| `powerDivider` | The supported transformer or single-stage Wilkinson divider |
+| `powerCombiner` | The corresponding reflected combining arrangement |
+
+A group must fit the actual connections supported by its board. Put all two-port rows in groups when composing sections. Direct junctions such as `Tee()` and `Tee4()`, and one-port terminations, may remain ordinary rows outside groups. Group values contain component rows; nested group objects are not part of this syntax. Section-level crossover routing remains deferred.
+
+### Existing flat syntax and blind detection
+
+The ordinary `nP.nodal([part, ...nodes], ..., ['out', ...nodes])` syntax remains supported. Without groups or a schematic shape option, detection tries the registered whole-network boards, then uses the generic layout if no complete match is found. Automatic decomposition of an entirely ungrouped network is not implemented.
+
+`drawing.detected` reports an independent shape-options object. With grouped input, detection examines the component membership of each group without reading its declared shape name, and returns recognized sections with inferred boundaries. A single group covering the complete network can return a single shape name. A declared group shape controls rendering unless an explicit `schematic()` shape option overrides it. A mismatch is reported rather than quietly changing the requested engineering arrangement.
+
+Passive standalone dividers and combiners have the same topology, so blind detection defaults to `powerDivider`. A `{powerCombiner: [...]}` group requests the reflected view while keeping the simple drawing call. In a composition, neighboring groups can also establish which interface faces the input side.
+
+### Returned API, labels and controls
+
+The return object contains `{svg, graph, topology, detected, error}`. `svg` is the displayed SVG element; `graph` contains drawing geometry and `topology` summarizes electrical connections. The detected object has the same form as the existing shape options and can be reused. On failure, the function displays an inline error and returns null drawing properties with an `Error` in `error`; its independent detected result is retained and later JavaScript continues. A drawing error does not change the already-computed network's electrical results.
+
+### Dot options
+
+The default drawing shows external-port dots and numbered-node dots, with component-terminal dots hidden:
+
+```js
+// These are the defaults; schematic(network) uses them automatically
+nP.schematic(network, {
+  dots: {
+    ports: true,
+    nodes: true,
+    terminals: false
+  }
+});
+```
+
+| Option | Default | Controls |
+| --- | --- | --- |
+| `dots.ports` | `true` | Solid dots at external ports such as Port 1 and Port 2 |
+| `dots.nodes` | `true` | Solid dots on wires identifying numbered electrical nodes |
+| `dots.terminals` | `false` | Solid dots where wires meet component leads |
+
+Omitted fields keep their defaults. Use `dots: {terminals: true}` to show the component connections as well. Each field accepts a boolean. These switches apply to nodal, grouped, cascade, and MOD/DEMOD drawings. They change the rendered dots without changing the layout, topology or circuit calculation. Circled node-number labels are separate and remain visible. Actual wire-junction dots and dots inside canonical symbol artwork remain visible so connection meaning and symbol artwork are preserved.
+
+### Labels and drawing controls
+
+Labels show three significant digits by default. Set `significantDigits` from 1 to 15 when a drawing needs more or less detail:
+
+```js
+// Label precision changes the drawing text
+nP.global.fList = [2e9];
 var l1 = nP.L(45.65360855435164e-9);
 nP.schematic(l1, {significantDigits: 4});
 ```
 
-This option changes only the printed labels. The circuit calculation and numeric values in the returned `graph` and `topology` keep their original precision. The drawing opens at its natural scale and grows to its full height; wide drawings scroll horizontally. **Fit drawing** scales to the available width, and **Actual size** restores the natural scale.
+The precision option changes only printed labels. The circuit calculation and numeric values in `graph` and `topology` keep their original precision. The drawing opens at its natural scale and grows to its full height; wide drawings scroll horizontally. **Fit drawing** scales to the available width, and **Actual size** restores the natural scale. **Copy as png** copies the whole drawing.
+
+### Transmitter, RF circuit and receiver
 
 For a transmitter, RF circuit, and receiver, pass the three objects together so the drawing includes the signal blocks:
 
@@ -391,7 +482,7 @@ var rx = nP.demod(circuit, {noise: false});
 nP.schematic({transmitter: tx, circuit: circuit, receiver: rx});
 ```
 
-The MOD and DEMOD connectors in this drawing describe signal flow; they are not RF S-parameter ports. Omit `receiver` when the displayed path ends at the circuit.
+The MOD and DEMOD connectors describe signal flow; they are not RF S-parameter ports. Omit `receiver` when the displayed path ends at the circuit.
 
 ## Quick output with `nP.log()`
 

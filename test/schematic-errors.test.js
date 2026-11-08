@@ -1,4 +1,4 @@
-// Modified: 2026-11-06
+// Modified: 2026-11-08
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as nP from '../src/index.js';
@@ -61,4 +61,25 @@ test('an invalid mount selector still displays its error on the page and returns
         globalThis.document = originalDocument;
         console.error = originalError;
     }
+});
+
+test('invalid stored group guidance reports a drawing error while retaining blind recognition and RF results', () => {
+    const originalDocument = globalThis.document, originalError = console.error;
+    const mount = element('div');
+    globalThis.document = {body: mount, createElement: element};
+    console.error = () => {};
+    try {
+        nP.global.fList = [2e9];
+        const r1 = nP.R(75);
+        const network = nP.nodal({notAShape: [[r1, 1, 2]]}, ['out', 1, 2]);
+        const failed = nP.schematic(network);
+        const response = network.out('s21dB');
+        const valid = nP.schematic(nP.nodal({series: [[r1, 1, 2]]}, ['out', 1, 2]));
+        assert.match(failed.error.message, /unknown shape "notAShape"/);
+        assert.deepEqual(failed.detected, {shapes: ['series']});
+        assert.equal(failed.graph, null);
+        assert.equal(mount.children[0].attributes.role, 'alert');
+        assert.equal(response.length, 2);
+        assert.equal(valid.error, null);
+    } finally { globalThis.document = originalDocument; console.error = originalError; }
 });

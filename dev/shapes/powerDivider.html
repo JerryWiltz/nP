@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Modified: 2026-11-07 -->
+<!-- Modified: 2026-11-08 -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -13,22 +13,28 @@
 </head>
 <body>
   <h1>Power-divider schematic guidance</h1>
-  <p>The first three networks request the same powerDivider shape. The last example
+  <p>The first three networks are detected as powerDivider without shape hints. The last example
     connects a divider, combiner and ladder in one nodal network. The transformer variant
     remains in <a href="../trf5Port.html">the transformer divider page</a>.</p>
   <section>
     <h2>Ideal two-way Wilkinson divider at 2 GHz</h2>
     <div id="ideal-divider"></div>
+    <p>Independent detection:</p>
+    <div id="ideal-divider-detected"></div>
   </section>
   <section>
     <h2>Microstrip junctions and lines</h2>
     <p>These dimensions illustrate symbol layout rather than a tuned physical design.</p>
     <div id="microstrip-divider"></div>
+    <p>Independent detection:</p>
+    <div id="microstrip-divider-detected"></div>
   </section>
   <section>
     <h2>Different component counts in the two arms</h2>
     <p>Additional series parts exercise automatic spacing; this network is not a matched divider.</p>
     <div id="extended-divider"></div>
+    <p>Independent detection:</p>
+    <div id="extended-divider-detected"></div>
   </section>
   <section>
     <h2>Divider followed by a combiner and ladder — one nodal network</h2>
@@ -36,6 +42,8 @@
       ladder. All seventeen component occurrences belong to one nodal call, guided
       by three shapes. The ladder values illustrate layout rather than a tuned filter.</p>
     <div id="divider-combiner"></div>
+    <p>Independent detection:</p>
+    <div id="divider-combiner-detected"></div>
   </section>
   <script>
     // Ideal Wilkinson power divider
@@ -60,10 +68,11 @@
       [r1, 30, 31],
       ['out', 1, 2, 3]
     );
-    nP.schematic(idealDivider, {
-      shapes: ['powerDivider'],
+    var idealDividerDrawing = nP.schematic(idealDivider, {
       mount: '#ideal-divider'
     });
+    var idealDividerDrawingDetected = idealDividerDrawing.detected;
+    nP.log(idealDividerDrawingDetected, {mount: '#ideal-divider-detected'});
 
     // Microstrip Wilkinson arrangement
     var inputMtee = nP.mtee();
@@ -81,10 +90,11 @@
       [r2, 30, 31],
       ['out', 1, 2, 3]
     );
-    nP.schematic(microstripDivider, {
-      shapes: ['powerDivider'],
+    var microstripDividerDrawing = nP.schematic(microstripDivider, {
       mount: '#microstrip-divider'
     });
+    var microstripDividerDrawingDetected = microstripDividerDrawing.detected;
+    nP.log(microstripDividerDrawingDetected, {mount: '#microstrip-divider-detected'});
 
     // Multiple series components with unequal arm lengths
     var extendedInputTee = nP.Tee();
@@ -108,10 +118,11 @@
       [r4, 30, 31],
       ['out', 1, 2, 3]
     );
-    nP.schematic(extendedDivider, {
-      shapes: ['powerDivider'],
+    var extendedDividerDrawing = nP.schematic(extendedDivider, {
       mount: '#extended-divider'
     });
+    var extendedDividerDrawingDetected = extendedDividerDrawing.detected;
+    nP.log(extendedDividerDrawingDetected, {mount: '#extended-divider-detected'});
 
     // Wilkinson divider, combiner and LC ladder in one nodal network
     var combinerCommonTee = nP.Tee();
@@ -148,7 +159,7 @@
       [l2, 61, 2],
       ['out', 1, 2]
     );
-    nP.schematic(dividerCombinerLadder, {
+    var dividerCombinerDrawing = nP.schematic(dividerCombinerLadder, {
       shapes: [
         {name: 'powerDivider', from: 1, to: [40, 41]},
         {name: 'powerCombiner', from: [40, 41], to: 50},
@@ -156,6 +167,10 @@
       ],
       mount: '#divider-combiner'
     });
+    var dividerCombinerDrawingDetected = dividerCombinerDrawing.detected;
+    var dividerCombinerDetectionReport = dividerCombinerDrawingDetected ||
+      'No whole-network shape detected. This example uses explicit sections.';
+    nP.log(dividerCombinerDetectionReport, {mount: '#divider-combiner-detected'});
   </script>
 </body>
 </html>

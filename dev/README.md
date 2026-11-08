@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-07 -->
+<!-- Modified: 2026-11-08 -->
 # Development pages
 
 The HTML files in this directory are executable browser harnesses. Top-level
@@ -34,10 +34,12 @@ Individual schematic-shape harnesses live in `shapes/`:
 | `shapes/branchline.html` | One-cell, multi-cell, and microstrip `branchline` layouts | `shapes/branchline.md` |
 | `shapes/bridgedT.html` | Upper bridges, downward shunts, variable component counts, Tee4 junctions and microstrip parts | `shapes/bridgedT.md` |
 | `shapes/edgeCoupledFilter.html` | Ideal/microstrip staircases, vertical flip, variable section counts and actual terminations | `shapes/edgeCoupledFilter.md` |
-| `shapes/series.html` | `series` guidance for two-port chains, bends, and nested networks | `shapes/series.md` |
-| `shapes/ladder.html` | `ladder` guidance for ideal and microstrip line networks | `shapes/ladder.md` |
+| `shapes/parallelComposition.html` | Sequential, parallel and nested shape sections; direct tees, separate outputs and deferred-crossover errors | `shapes/parallelComposition.md` |
+| `shapes/groupedNetworks.html` | Shape groups in nodal: inferred boundaries, series–ladder–series, component reuse, divider/combiner paths and terminal-dot comparison | `shapes/groupedNetworks.md` |
+| `shapes/series.html` | `series` guidance and blind detection for two-port chains, bends, and nested networks | `shapes/series.md` |
+| `shapes/ladder.html` | Blind `ladder` detection for ideal and microstrip line networks | `shapes/ladder.md` |
 | `shapes/powerDivider.html` | Wilkinson variants and a divider/combiner/ladder in one nodal network with three guided shapes | `shapes/powerDivider.md` |
-| `shapes/powerCombiner.html` | Reflected transformer and Wilkinson boards, microstrip symbols and variable arm lengths | `shapes/powerCombiner.md` |
+| `shapes/powerCombiner.html` | Explicit reflected views, independent divider detection, microstrip symbols and variable arm lengths | `shapes/powerCombiner.md` |
 | `shapes/splitRejoin.html` | Network-only parallel paths with tee junctions | `shapes/splitRejoin.md` |
 
 The diode, matrix, nodal, and visualization notes mirror their harness scripts. The time-domain note contains the PN7 signal setup; its harness adds logging and plots. The microstrip note keeps equivalent standalone examples with different chart mount IDs. The noise and intermodulation notes are worked derivations with different example settings from their harnesses; they share the [Gupta connection-scattering derivation](../developmentDocs/guptaConnectionScattering.md).

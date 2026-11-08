@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Modified: 2026-11-07 -->
+<!-- Modified: 2026-11-08 -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -18,24 +18,34 @@
   <section>
     <h2>Three ideal coupled sections</h2>
     <div id="ideal-filter"></div>
+    <p>Independent detection:</p>
+    <div id="ideal-filter-detected"></div>
   </section>
   <section>
     <h2>The same network stepping upward</h2>
     <div id="flipped-filter"></div>
+    <p>Independent detection:</p>
+    <div id="flipped-filter-detected"></div>
   </section>
   <section>
     <h2>Microstrip coupled sections</h2>
     <p>Default dimensions illustrate symbol layout rather than a tuned physical filter.</p>
     <div id="microstrip-filter"></div>
+    <p>Independent detection:</p>
+    <div id="microstrip-filter-detected"></div>
   </section>
   <section>
     <h2>Seven sections in one nodal network</h2>
     <div id="longer-filter"></div>
+    <p>Independent detection:</p>
+    <div id="longer-filter-detected"></div>
   </section>
   <section>
     <h2>Explicit short and load terminations</h2>
     <p>This variation exercises symbol clearance; it is not the standard open-ended filter.</p>
     <div id="alternate-terminations"></div>
+    <p>Independent detection:</p>
+    <div id="alternate-terminations-detected"></div>
   </section>
   <script>
     // Three-section ideal edge-coupled filter
@@ -60,17 +70,19 @@
       [open, 10],
       ['out', 1, 9]
     );
-    nP.schematic(idealFilter, {
-      shapes: ['edgeCoupledFilter'],
+    var idealFilterDrawing = nP.schematic(idealFilter, {
       mount: '#ideal-filter'
     });
+    var idealFilterDrawingDetected = idealFilterDrawing.detected;
+    nP.log(idealFilterDrawingDetected, {mount: '#ideal-filter-detected'});
 
     // Same electrical network, reflected vertically
-    nP.schematic(idealFilter, {
-      shapes: ['edgeCoupledFilter'],
+    var flippedFilterDrawing = nP.schematic(idealFilter, {
       flipVertical: true,
       mount: '#flipped-filter'
     });
+    var flippedFilterDrawingDetected = flippedFilterDrawing.detected;
+    nP.log(flippedFilterDrawingDetected, {mount: '#flipped-filter-detected'});
 
     // Microstrip edge-coupled filter arrangement
     var microstrip1 = nP.mclin();
@@ -88,10 +100,11 @@
       [open, 10],
       ['out', 1, 9]
     );
-    nP.schematic(microstripFilter, {
-      shapes: ['edgeCoupledFilter'],
+    var microstripFilterDrawing = nP.schematic(microstripFilter, {
       mount: '#microstrip-filter'
     });
+    var microstripFilterDrawingDetected = microstripFilterDrawing.detected;
+    nP.log(microstripFilterDrawingDetected, {mount: '#microstrip-filter-detected'});
 
     // Seven coupled sections, using individual component occurrences
     var longerFilter = nP.nodal(
@@ -118,10 +131,11 @@
       [open, 22],
       ['out', 1, 21]
     );
-    nP.schematic(longerFilter, {
-      shapes: ['edgeCoupledFilter'],
+    var longerFilterDrawing = nP.schematic(longerFilter, {
       mount: '#longer-filter'
     });
+    var longerFilterDrawingDetected = longerFilterDrawing.detected;
+    nP.log(longerFilterDrawingDetected, {mount: '#longer-filter-detected'});
 
     // Coupled-section arrangement with explicit alternative terminations
     var short = nP.Short();
@@ -135,10 +149,11 @@
       [open, 7],
       ['out', 1, 6]
     );
-    nP.schematic(terminatedSections, {
-      shapes: ['edgeCoupledFilter'],
+    var alternateTerminationsDrawing = nP.schematic(terminatedSections, {
       mount: '#alternate-terminations'
     });
+    var alternateTerminationsDrawingDetected = alternateTerminationsDrawing.detected;
+    nP.log(alternateTerminationsDrawingDetected, {mount: '#alternate-terminations-detected'});
   </script>
 </body>
 </html>

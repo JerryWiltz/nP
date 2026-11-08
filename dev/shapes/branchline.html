@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Modified: 2026-11-04 -->
+<!-- Modified: 2026-11-08 -->
 <html lang="en">
 
 <head>
@@ -26,18 +26,26 @@
   <section>
     <h2>One-cell ideal branchline with series arm components</h2>
     <div id="branchline-one-cell"></div>
+    <p>Independent detection:</p>
+    <div id="branchline-one-cell-detected"></div>
   </section>
   <section>
     <h2>Two-cell ideal branchline</h2>
     <div id="branchline-two-cell"></div>
+    <p>Independent detection:</p>
+    <div id="branchline-two-cell-detected"></div>
   </section>
   <section>
     <h2>One-cell microstrip branchline</h2>
     <div id="branchline-microstrip"></div>
+    <p>Independent detection:</p>
+    <div id="branchline-microstrip-detected"></div>
   </section>
   <section>
     <h2>One-cell microstrip branchline with four series resistors</h2>
     <div id="branchline-microstrip-four-resistors"></div>
+    <p>Independent detection:</p>
+    <div id="branchline-microstrip-four-resistors-detected"></div>
   </section>
   <script>
     // Branchline schematic examples
@@ -67,10 +75,11 @@
       [tee4, 8, 12, 11],
       ['out', 1, 4, 12, 9]
     );
-    nP.schematic(oneCell, {
-      shapes: ['branchline'],
+    var branchlineOneCellDrawing = nP.schematic(oneCell, {
       mount: '#branchline-one-cell'
     });
+    var branchlineOneCellDrawingDetected = branchlineOneCellDrawing.detected;
+    nP.log(branchlineOneCellDrawingDetected, {mount: '#branchline-one-cell-detected'});
 
     var tee5 = nP.Tee();
     var tee6 = nP.Tee();
@@ -101,10 +110,11 @@
       [rightLine2, 17, 27],
       ['out', 1, 2, 3, 4]
     );
-    nP.schematic(twoCell, {
-      shapes: ['branchline'],
+    var branchlineTwoCellDrawing = nP.schematic(twoCell, {
       mount: '#branchline-two-cell'
     });
+    var branchlineTwoCellDrawingDetected = branchlineTwoCellDrawing.detected;
+    nP.log(branchlineTwoCellDrawingDetected, {mount: '#branchline-two-cell-detected'});
 
     var microstripTee1 = nP.mtee();
     var microstripTee2 = nP.mtee();
@@ -125,10 +135,11 @@
       [microstripRight, 6, 8],
       ['out', 1, 4, 12, 9]
     );
-    nP.schematic(microstripBranchline, {
-      shapes: ['branchline'],
+    var branchlineMicrostripDrawing = nP.schematic(microstripBranchline, {
       mount: '#branchline-microstrip'
     });
+    var branchlineMicrostripDrawingDetected = branchlineMicrostripDrawing.detected;
+    nP.log(branchlineMicrostripDrawingDetected, {mount: '#branchline-microstrip-detected'});
 
     var microstripTee5 = nP.mtee();
     var microstripTee6 = nP.mtee();
@@ -157,10 +168,11 @@
       [microstripRightWithResistors, 6, 8],
       ['out', 1, 4, 12, 9]
     );
-    nP.schematic(microstripBranchlineWithResistors, {
-      shapes: ['branchline'],
+    var branchlineMicrostripFourResistorsDrawing = nP.schematic(microstripBranchlineWithResistors, {
       mount: '#branchline-microstrip-four-resistors'
     });
+    var branchlineMicrostripFourResistorsDrawingDetected = branchlineMicrostripFourResistorsDrawing.detected;
+    nP.log(branchlineMicrostripFourResistorsDrawingDetected, {mount: '#branchline-microstrip-four-resistors-detected'});
   </script>
 </body>
 

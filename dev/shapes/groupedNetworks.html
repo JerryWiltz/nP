@@ -1,0 +1,138 @@
+<!doctype html>
+<!-- Modified: 2026-11-08 -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shape groups in nodal networks</title>
+  <script src="../../dist/nP.js"></script>
+  <style>
+    body { margin: 0; padding: 2rem; font-family: Arial, Helvetica, sans-serif; color: #202020; }
+    section { margin: 2rem 0 3rem; }
+  </style>
+</head>
+<body>
+  <h1>Shape groups in nodal networks</h1>
+  <p>Put shape names beside the component connection rows, then draw the completed
+    network. Each network has one nodal analysis. The schematic derives its section
+    boundaries from the connections; no schematic call supplies shapes or boundaries.</p>
+  <section>
+    <h2>Series–ladder–series</h2>
+    <div id="series-ladder-series"></div>
+    <p>Independent detection of the component groups:</p>
+    <div id="series-ladder-series-detected"></div>
+  </section>
+  <section>
+    <h2>Two series groups reuse the same resistor object four times</h2>
+    <div id="reused-resistor"></div>
+    <p>Independent detection:</p>
+    <div id="reused-resistor-detected"></div>
+  </section>
+  <section>
+    <h2>Wilkinson divider and combiner around series and ladder paths</h2>
+    <p>Default dots: external ports and numbered nodes are shown; component terminals are hidden.</p>
+    <div id="parallel-groups"></div>
+    <p>Independent detection:</p>
+    <div id="parallel-groups-detected"></div>
+  </section>
+  <section>
+    <h2>The same network with component-terminal dots enabled</h2>
+    <p>Only the terminal-dot option changes. Component positions, wires and node labels are identical.</p>
+    <div id="parallel-terminal-dots"></div>
+  </section>
+  <script>
+    // Series–ladder–series with shape names beside the electrical connections
+    var g = nP.global;
+    g.fList = [2e9];
+    var r1 = nP.R(75);
+    var r2 = nP.R(50);
+    var c1 = nP.C(1e-12);
+    var tee1 = nP.Tee();
+    var short1 = nP.Short();
+    var network = nP.nodal(
+      {series: [
+        [r1, 1, 2],
+        [r2, 2, 3]
+      ]},
+      {ladder: [
+        [tee1, 4, 3, 5],
+        [c1, 4, 6],
+        [short1, 6],
+        [r2, 5, 7]
+      ]},
+      {series: [
+        [r1, 7, 8]
+      ]},
+      ['out', 1, 8]
+    );
+    var drawing = nP.schematic(network, {mount: '#series-ladder-series'});
+    var detected = drawing.detected;
+    nP.log(detected, {mount: '#series-ladder-series-detected'});
+
+    // The same resistor object appears in both series groups
+    var reused = nP.nodal(
+      {series: [
+        [r1, 1, 2],
+        [r1, 2, 3]
+      ]},
+      {series: [
+        [r1, 3, 4],
+        [r1, 4, 5]
+      ]},
+      ['out', 1, 5]
+    );
+    var reusedDrawing = nP.schematic(reused, {mount: '#reused-resistor'});
+    var reusedDetected = reusedDrawing.detected;
+    nP.log(reusedDetected, {mount: '#reused-resistor-detected'});
+
+    // Wilkinson power divider and combiner with independently shaped paths
+    var dividerInputTee = nP.Tee();
+    var dividerUpperTee = nP.Tee();
+    var dividerLowerTee = nP.Tee();
+    var combinerOutputTee = nP.Tee();
+    var combinerUpperTee = nP.Tee();
+    var combinerLowerTee = nP.Tee();
+    // Quarter wavelength in free space at 2 GHz, in meters.
+    var quarterWaveLength = 0.03747405725;
+    var line1 = nP.Tlin(50 * Math.sqrt(2), quarterWaveLength);
+    var r3 = nP.R(100);
+    var parallel = nP.nodal(
+      {powerDivider: [
+        [dividerInputTee, 1, 100, 101],
+        [line1, 100, 110],
+        [line1, 101, 111],
+        [dividerUpperTee, 120, 110, 10],
+        [dividerLowerTee, 121, 111, 20],
+        [r3, 120, 121]
+      ]},
+      {series: [
+        [r1, 10, 30]
+      ]},
+      {ladder: [
+        [tee1, 21, 20, 22],
+        [c1, 21, 23],
+        [short1, 23],
+        [r2, 22, 40]
+      ]},
+      {powerCombiner: [
+        [combinerOutputTee, 2, 200, 201],
+        [line1, 200, 210],
+        [line1, 201, 211],
+        [combinerUpperTee, 220, 210, 30],
+        [combinerLowerTee, 221, 211, 40],
+        [r3, 220, 221]
+      ]},
+      ['out', 1, 2]
+    );
+    var parallelDrawing = nP.schematic(parallel, {mount: '#parallel-groups'});
+    var parallelDetected = parallelDrawing.detected;
+    nP.log(parallelDetected, {mount: '#parallel-groups-detected'});
+
+    // Compare the same network with optional component-terminal dots
+    var terminalDotsDrawing = nP.schematic(parallel, {
+      mount: '#parallel-terminal-dots',
+      dots: {terminals: true}
+    });
+  </script>
+</body>
+</html>

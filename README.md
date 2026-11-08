@@ -1,7 +1,7 @@
-<!-- Modified: 2026-10-23 -->
+<!-- Modified: 2026-11-08 -->
 # nP
 
-JavaScript tools for RF and microwave network analysis. Build n-port circuits, calculate S-parameters, model sampled signals, and display results as line charts, tables, or Smith charts. nP runs in browsers and is distributed as ESM, CommonJS, and UMD bundles.
+JavaScript tools for RF and microwave network analysis. Build n-port circuits, draw schematics, calculate S-parameters, model sampled signals, and display results as line charts, tables, or Smith charts. nP runs in browsers and is distributed as ESM, CommonJS, and UMD bundles.
 
 nP is under active development. The current version is `0.0.48`; APIs may evolve before a stable release.
 
@@ -53,6 +53,26 @@ This example builds a series resistor and inductor, extracts their S-parameters,
 
 The normal flow is to set analysis frequencies, create components, connect them with `nP.nodal()` or a two-port cascade, call `.out(...)`, and display the resulting table. See [Hello, nPort!](docs/hello-nport.md), [Connecting nPorts](docs/connecting-nports.md), and the [circuit examples](docs/circuit-examples.md) for more circuits.
 
+## Schematics
+
+Put shape names beside connection rows in `nodal()`, then draw the completed network. Using the R–L components from the quick start:
+
+```js
+// Shape guidance stays beside the circuit connections
+var drawnCircuit = nP.nodal(
+    {series: [
+        [r1, 1, 2],
+        [l1, 2, 3]
+    ]},
+    ['out', 1, 3]
+);
+nP.schematic(drawnCircuit);
+```
+
+Several groups can describe arrangements such as series–ladder–series, using separate objects for repeated shape names. The renderer derives section boundaries from the ordinary electrical connections. Groups preserve component reuse and produce one nodal network. Existing flat `nodal()` syntax remains supported; without groups, `schematic()` tries whole-network detection and then the generic layout. Its returned `detected` object reports independent recognition.
+
+The drawing includes **Copy as png** and **Fit drawing** buttons. See [Schematics](docs/charts-tables-and-logs.md#schematics) for the grouped workflow and the [shape vocabulary](developmentDocs/schematicShapeVocabulary.md) for supported arrangements and limits.
+
 ## Module usage
 
 ```js
@@ -73,11 +93,14 @@ Use `nP.global.tList` to define uniform sample times before calling `waveform()`
 
 ```js
 var g = nP.global;
+// 256 samples at 256 kHz cover one 1 ms period, excluding the repeated endpoint.
+// tGen includes both endpoints, so the last time is 255 / 256000 seconds.
 g.tList = g.tGen(0, 255e-3 / 256, 256);
 g.fList = [];
 
 var square = nP.waveform({shape: 'square', period: 1e-3});
 var samples = square.out('samples');
+// FFT populates g.fList with the frequencies of the output bins.
 var spectrum = nP.FFT(samples);
 
 var timeTable = square.out('waveform');
@@ -92,7 +115,7 @@ nP.lineChart({inputTable: [frequencyTable], title: 'Square-wave spectrum', metri
 
 | Area | Main API | Detailed guide |
 | --- | --- | --- |
-| Analysis settings | `global`, `fGen()`, `tGen()` | [Global settings](docs/global-settings.md) |
+| Analysis settings | `global`, `global.fGen()`, `global.tGen()` | [Global settings](docs/global-settings.md) |
 | Lumped and ideal RF parts | `R()`, `L()`, `C()`, `Tee()`, `Tlin()`, `Tclin()`, `Coupler180()` | [RF constructors](docs/rf-constructors.md) |
 | Network assembly | `nodal()`, `cascade()`, `nPort.cas()` | [Connecting nPorts](docs/connecting-nports.md) |
 | S-parameters and output tables | `nPort.out()` | [nPort object](docs/nport-object.md) |
@@ -102,6 +125,7 @@ nP.lineChart({inputTable: [frequencyTable], title: 'Square-wave spectrum', metri
 | Digital signals | `waveform()`, `PN()`, `mod()`, `demod()`, `bitErrorRate()` | [Digital signals](docs/digital-signals.md) |
 | Math | `complex()`, `matrix()`, `FFT()`, `invFFT()` | [Math](docs/math.md), [FFT in nPort](docs/tech-notes-fft-in-nport.md) |
 | Visualization | `lineChart()`, `lineTable()`, `smithChart()`, `log()` | [Charts, tables, and logs](docs/charts-tables-and-logs.md) |
+| Schematics | `schematic()` | [Schematics](docs/charts-tables-and-logs.md#schematics), [Shape vocabulary](developmentDocs/schematicShapeVocabulary.md) |
 
 The older combined RLC constructors remain available for compatibility. New circuit examples favor named individual parts and explicit `nP.nodal()` connections.
 
@@ -113,12 +137,12 @@ The related **nPort RF Analysis** Obsidian plugin executes nP examples inside Ma
 
 ## Development
 
-Requirements: a current Node.js release and npm.
+Use Node.js 22 and npm to match CI. For a cloned repository, `npm ci` installs the dependency versions recorded in the lockfile.
 
 ```sh
 git clone https://github.com/JerryWiltz/nP.git
 cd nP
-npm install
+npm ci
 npm test
 npm run build
 ```

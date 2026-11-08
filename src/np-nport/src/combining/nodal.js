@@ -5,14 +5,16 @@ import {dup} from '../../../np-math/src/matrix';
 import {complex} from '../../../np-math/src/complex';
 import {connectionModel} from '../intermod';
 import {compatibleSignals, signalWithRows, applyInputSignal} from '../signal';
+import {nodalConnections} from './nodalConnections';
 
-// Modified: 2026-10-26
+// Modified: 2026-11-08
 var conjugate = function (value) { return complex(value.getR(), -value.getI()); };
 
 
 export function nodal( ... componentConnections) { // componentConnections = [[nPort1, n1, n2 ...], ... ['out', n1, n2, ...] ]
-	var signalOptions = !Array.isArray(componentConnections[componentConnections.length - 1]) ?
-		componentConnections.pop() : undefined;
+	var normalized = nodalConnections(componentConnections);
+	componentConnections = normalized.connections;
+	var signalOptions = normalized.signalOptions;
 	var i = 0, j = 0, k = 0, row = 0, col = 0, offset = 0, base = 0;
 	var networkSpars = componentConnections[0][0].spars.map(function (row) {
 		return [row[0]];
@@ -163,7 +165,8 @@ export function nodal( ... componentConnections) { // componentConnections = [[n
 		components: componentConnections.slice(0, m).map(function (entry) {
 			return {part: entry[0]._schematic, nodes: entry.slice(1)};
 		}),
-		externalNodes: componentConnections[m].slice(1)
+		externalNodes: componentConnections[m].slice(1),
+		...(normalized.groups.length ? {groups: normalized.groups} : {})
 	};
 	return applyInputSignal(network, signalOptions);
 };

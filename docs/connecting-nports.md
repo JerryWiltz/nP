@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-25 -->
+<!-- Modified: 2026-11-08 -->
 # Connecting nPorts
 
 Constructors such as `nP.R()`, `nP.L()`, and `nP.Tee()` return [nPort objects](./nport-object.md). Connect those objects to make a larger circuit, then call `.out()` on the result. Set the [analysis frequencies](./global-settings.md#frequency-list) before creating the components.
@@ -12,6 +12,34 @@ Constructors such as `nP.R()`, `nP.L()`, and `nP.Tee()` return [nPort objects](.
 | `first.cas(second)` | Cascading exactly two two-port nPorts; returns a new nPort and can be chained. |
 
 Each method returns an nPort with the combined S-parameters. The result also carries the combined noise and any compatible attached signal or known intermodulation sources. See [Noise](./noise.md) and [Intermodulation](./intermodulation.md) for those measurements.
+
+## Shape groups for schematics
+
+When a network will be drawn, you can place shape names around its connection rows. The final result is still one nodal nPort:
+
+```js
+// Two shaped sections, one nodal analysis
+nP.global.fList = [2e9];
+var r1 = nP.R(75);
+var r2 = nP.R(50);
+var c1 = nP.C(1e-12);
+var network = nP.nodal(
+  {series: [
+    [r1, 1, 2],
+    [r2, 2, 3]
+  ]},
+  {series: [
+    [c1, 3, 4],
+    [r1, 4, 5]
+  ]},
+  ['out', 1, 5]
+);
+nP.schematic(network);
+```
+
+Shape names guide the drawing; the node numbers determine connectivity. Repeated names use separate objects. A component can be reused across groups because each row records its own occurrence. The existing flat syntax remains supported, and both forms use the same electrical matrices. Optional signal options still follow the output row.
+
+See [Schematics](./charts-tables-and-logs.md#schematics) for the shape vocabulary, series–ladder–series workflow, independent detection results and current composition limits.
 
 ## Wire components with `nodal()`
 

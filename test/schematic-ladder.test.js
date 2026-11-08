@@ -1,4 +1,4 @@
-// Modified: 2026-11-07
+// Modified: 2026-11-08
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DOMParser} from '@xmldom/xmldom';
@@ -25,12 +25,12 @@ test('network-only layout follows the ladder connectivity and places three shunt
     const graph = schematicGraph(circuit);
     const topology = schematicTopology(circuit);
     assert.equal(graph.kind, 'rf-nodal');
-    assert.equal(graph.shape, undefined);
+    assert.equal(graph.shape, 'ladder');
     assert.equal(graph.components.length, 11);
     assert.equal(graph.board.interpreter, 'ORI');
-    assert.equal(graph.layout, 'generic');
-    assert.deepEqual(graph.components.map(part => part.ports.map(port => port.node)),
-        circuit._schematic.components.map(entry => entry.nodes));
+    assert.equal(graph.layout, 'ladder');
+    assert.deepEqual(graph.components.map(part => JSON.stringify(part.ports.map(port => port.node))).sort(),
+        circuit._schematic.components.map(entry => JSON.stringify(entry.nodes)).sort());
     assert.deepEqual(graph.externalPorts.map(port => port.node), [1, 11]);
     assert.equal(topology.parts.length, 11);
     assert.equal(topology.connections.length, 12);
@@ -48,8 +48,8 @@ test('network-only ladder accepts different series and shunt components', () => 
     );
     const graph = schematicGraph(circuit);
     assert.equal(graph.board.interpreter, 'ORI');
-    assert.deepEqual(graph.components.map(part => part.ports.map(port => port.node)),
-        circuit._schematic.components.map(entry => entry.nodes));
+    assert.deepEqual(graph.components.map(part => JSON.stringify(part.ports.map(port => port.node))).sort(),
+        circuit._schematic.components.map(entry => JSON.stringify(entry.nodes)).sort());
 });
 
 test('a simple series path renders without a shunt branch', () => {

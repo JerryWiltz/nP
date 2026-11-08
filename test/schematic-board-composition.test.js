@@ -1,4 +1,4 @@
-// Modified: 2026-11-07
+// Modified: 2026-11-08
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as nP from '../src/index.js';
@@ -133,21 +133,158 @@ test('composition accepts data-only aliases rather than testing RF shape names',
 });
 
 test('composition rejects incomplete regions, invalid boundary counts and unclaimed parts', () => {
-    for (const change of ['missingBoundary', 'wrongCount', 'unclaimedPart', 'wrongOrder', 'wrongNode']) {
+    for (const change of ['missingBoundary', 'wrongCount', 'unclaimedPart', 'wrongNode']) {
         const {circuit, shapes} = connectedNetwork();
         if (change === 'missingBoundary') shapes[0].to = 40;
         if (change === 'wrongCount') shapes[1].from = [40, 41, 30];
         if (change === 'unclaimedPart') circuit._schematic.components.push({part: nP.R(50)._schematic, nodes: [800, 801]});
-        if (change === 'wrongOrder') shapes.reverse();
         if (change === 'wrongNode') shapes[0].to = [40, 999];
         assert.throws(() => schematicGraph(circuit, {shapes}), /Schematic board composition/);
     }
 });
 
-test('incompatible interface spacing reports an error rather than stretching or dropping parts', () => {
+test('composition routes unequal interface spacing without stretching or dropping parts', () => {
     const {circuit, shapes} = connectedNetwork();
     const resistor = circuit._schematic.components.at(-1);
     resistor.nodes[1] = 132;
     circuit._schematic.components.push({part: nP.R(100)._schematic, nodes: [132, 131]});
-    assert.throws(() => schematicGraph(circuit, {shapes}), /matching port spacing and ordering/);
+    assertConnected(schematicGraph(circuit, {shapes}));
+});
+
+function parallelNetwork({nested = false, separate = false, amplifier = false, ladder = false} = {}) {
+    const tee = nP.Tee(), resistor = nP.R(50), rows = [[tee, 1, 10, 20]];
+    const shapes = [];
+    if (nested) {
+        rows.push([tee, 10, 11, 12], [resistor, 11, 30], [resistor, 12, 40]);
+        shapes.push({name: 'series', from: 11, to: 30}, {name: 'series', from: 12, to: 40});
+    } else {
+        rows.push([amplifier ? nP.Amp() : resistor, 10, 30]);
+        shapes.push({name: 'series', from: 10, to: 30});
+    }
+    if (ladder) {
+        rows.push([tee, 22, 20, 23], [resistor, 22, 24], [nP.Short(), 24], [resistor, 23, 50]);
+        shapes.push({name: 'ladder', from: 20, to: 50});
+    } else {
+        rows.push([resistor, 20, 50]);
+        shapes.push({name: 'series', from: 20, to: 50});
+    }
+    if (!separate) rows.push(nested ? [nP.Tee4(), 2, 30, 40, 50] : [tee, 2, 30, 50]);
+    const outputs = separate ? (nested ? [1, 30, 40, 50] : [1, 30, 50]) : [1, 2];
+    return {circuit: nP.nodal(...rows, ['out', ...outputs]), shapes};
+}
+
+for (const options of [{}, {ladder: true}, {amplifier: true}, {nested: true},
+    {nested: true, ladder: true}, {separate: true}, {nested: true, separate: true}]) {
+    test(`parallel and nested composition uses actual node and port identities: ${JSON.stringify(options)}`, () => {
+        const {circuit, shapes} = parallelNetwork(options);
+        const before = JSON.stringify(circuit._schematic);
+        const graph = schematicGraph(circuit, {shapes});
+        assertConnected(graph);
+        assert.equal(graph.components.length, circuit._schematic.components.length);
+        assert.deepEqual(graph.components.map(part => part.ports.map(port => port.node)),
+            circuit._schematic.components.map(entry => entry.nodes));
+        assert.deepEqual(graph.externalPorts.map(port => port.node), circuit._schematic.externalNodes);
+        assert.deepEqual(graph.crossings, []);
+        assert.equal(JSON.stringify(circuit._schematic), before);
+        const shuffled = schematicGraph(circuit, {shapes: shapes.slice().reverse()});
+        assertConnected(shuffled);
+        assert.deepEqual(shuffled.components.map(part => part.ports), graph.components.map(part => part.ports));
+    });
+}
+
+for (const count of [3, 4]) {
+    test(`a direct junction can split into ${count} separately guided tracks`, () => {
+        const r1 = nP.R(50), tee = count === 3 ? nP.Tee4() : nP.Tee5();
+        const inputs = Array.from({length: count}, (_, index) => 10 + index);
+        const outputs = inputs.map(node => node + 20);
+        const circuit = nP.nodal([tee, 1, ...inputs],
+            ...inputs.map((node, index) => [r1, node, outputs[index]]),
+            [tee, 2, ...outputs], ['out', 1, 2]);
+        const shapes = inputs.map((node, index) => ({name: 'series', from: node, to: outputs[index]}));
+        const graph = schematicGraph(circuit, {shapes});
+        assertConnected(graph);
+        assert.deepEqual(graph.crossings, []);
+    });
+}
+
+test('measured divider and combiner boards accommodate independently shaped amplifier paths', () => {
+    const {circuit, shapes} = connectedNetwork();
+    const rows = circuit._schematic.components;
+    for (const row of rows.slice(6)) row.nodes = row.nodes.map(node => node === 40 ? 70 : node === 41 ? 71 : node);
+    rows.push({part: nP.Amp()._schematic, nodes: [40, 70]},
+        {part: nP.Amp(10)._schematic, nodes: [41, 71]});
+    shapes[1].from = [70, 71];
+    shapes.splice(1, 0, {name: 'series', from: 40, to: 70}, {name: 'series', from: 41, to: 71});
+    const graph = schematicGraph(circuit, {shapes});
+    assertConnected(graph);
+    assert.equal(graph.components.filter(part => part.symbol === 'amplifier').length, 2);
+    assert.deepEqual(graph.crossings, []);
+});
+
+test('nested paths can rejoin before joining the remaining outer track', () => {
+    const tee = nP.Tee(), r1 = nP.R(50);
+    const circuit = nP.nodal([tee, 1, 10, 20], [tee, 10, 11, 12],
+        [r1, 11, 30], [r1, 12, 40], [tee, 60, 30, 40], [r1, 60, 70],
+        [r1, 20, 50], [tee, 2, 70, 50], ['out', 1, 2]);
+    const shapes = [{name: 'series', from: 11, to: 30}, {name: 'series', from: 12, to: 40},
+        {name: 'series', from: 60, to: 70}, {name: 'series', from: 20, to: 50}];
+    const graph = schematicGraph(circuit, {shapes});
+    assertConnected(graph);
+    assert.deepEqual(graph.crossings, []);
+});
+
+test('a downward shunt reserves clearance below its track without raising the main path', () => {
+    const {circuit, shapes} = parallelNetwork({ladder: true});
+    const graph = schematicGraph(circuit, {shapes});
+    const inputJunction = graph.components[0], outputJunction = graph.components.at(-1);
+    const ladderJunction = graph.components.find(part => part.ports.some(port => port.node === 22));
+    const axis = ladderJunction.ports.find(port => port.node === 20).at[1];
+    // Both boundary nets should turn down from their junction, then run flat
+    // along the ladder's actual through axis, without an upward step into it.
+    for (const [node, junction] of [[20, inputJunction], [50, outputJunction]]) {
+        const terminal = junction.ports.find(port => port.node === node);
+        assert.ok(axis > terminal.at[1]);
+        const wires = graph.wires.filter(wire => wire.node === node);
+        assert.ok(wires.flatMap(wire => wire.points).every(point =>
+            point[1] >= terminal.at[1] && point[1] <= axis));
+        assert.ok(wires.some(wire => wire.points.every(point => point[1] === axis)));
+        assert.ok(wires.filter(wire => wire.points[0][1] === wire.points[1][1])
+            .every(wire => wire.points[0][1] === axis));
+    }
+    assertConnected(graph);
+});
+
+test('parallel junctions have equal upper and lower vertical legs on the placement grid', () => {
+    for (const ladder of [false, true]) {
+        const {circuit, shapes} = parallelNetwork({ladder});
+        const graph = schematicGraph(circuit, {shapes});
+        for (const [junction, upperNode, lowerNode] of [
+            [graph.components[0], 10, 20], [graph.components.at(-1), 30, 50]
+        ]) {
+            const upper = junction.ports.find(port => port.node === upperNode);
+            const lower = junction.ports.find(port => port.node === lowerNode);
+            const upperY = graph.components.find(part => part !== junction &&
+                part.ports.some(port => port.node === upperNode)).ports.find(port => port.node === upperNode).at[1];
+            const lowerY = graph.components.find(part => part !== junction &&
+                part.ports.some(port => port.node === lowerNode)).ports.find(port => port.node === lowerNode).at[1];
+            assert.equal(upper.at[1] - upperY, lowerY - lower.at[1]);
+            assert.ok(upper.at[1] > upperY);
+        }
+        assertConnected(graph);
+    }
+});
+
+test('crossed track order reports a crossover error and the public call returns normally', () => {
+    const {circuit, shapes} = parallelNetwork();
+    const combiner = circuit._schematic.components.at(-1);
+    [combiner.nodes[1], combiner.nodes[2]] = [combiner.nodes[2], combiner.nodes[1]];
+    assert.throws(() => schematicGraph(circuit, {shapes}), /crossover/);
+    const original = console.error;
+    console.error = () => {};
+    try {
+        const failed = nP.schematic(circuit, {shapes});
+        assert.match(failed.error.message, /crossover/);
+        assert.equal(failed.graph, null);
+        assert.ok(nP.R(50).out('s21dB').length > 1);
+    } finally { console.error = original; }
 });

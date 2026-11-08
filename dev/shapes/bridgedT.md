@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-07 -->
+<!-- Modified: 2026-11-08 -->
 # Bridged-T schematic guidance
 
 Open `bridgedT.html` for five networks using the same shape request:
@@ -27,3 +27,8 @@ The shared path-spacing operation measures bridge symbol spans and wire boxes. I
 The shared connection operation reserves upper tracks from actual component bounds and the declared clearance. Disjoint intervals can share a track. Shorter intervals take inner tracks first, leaving enclosing bridges farther out. It places bridge components with ORI's existing tile operation and joins each end using the existing corner-wire operation. Every corner has no dot and is separated from symbols by straight wire boxes. Grid alignment, labels, node numbers, SVG rendering and PNG copying use the common code.
 
 The same operations can draw connections below and shunts above by changing the data directions; a test exercises that arrangement under another board name. `interface: {from: [1], to: [2]}` also makes the board available to the shared node-bounded composition operation. Named shape selection remains explicit: an unhinted call continues to use the generic board.
+
+
+## Blind detection
+
+The whole-network examples now omit shape hints and log `drawing.detected`. ORI uses the independently detected board; the equivalent explicit call remains valid. Any example composing several bounded sections keeps its explicit section list, because automatic composition detection is not enabled.

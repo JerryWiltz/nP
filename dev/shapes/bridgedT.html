@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Modified: 2026-11-07 -->
+<!-- Modified: 2026-11-08 -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -13,30 +13,40 @@
 </head>
 <body>
   <h1>Bridged-T schematic guidance</h1>
-  <p>Every example requests bridgedT: the main path runs left to right, bridges
+  <p>Every example is detected as bridgedT: the main path runs left to right, bridges
     run above it and terminated shunts run downward. Values illustrate layout
     rather than a tuned attenuator or filter.</p>
   <section>
     <h2>Resistive bridged-T</h2>
     <div id="basic-bridge"></div>
+    <p>Independent detection:</p>
+    <div id="basic-bridge-detected"></div>
   </section>
   <section>
     <h2>Five-part bridge and multi-component shunt</h2>
     <p>The main path widens from the actual bridge length.</p>
     <div id="multi-part-bridge"></div>
+    <p>Independent detection:</p>
+    <div id="multi-part-bridge-detected"></div>
   </section>
   <section>
     <h2>Four-port junctions with upper bridges and lower shunts</h2>
     <p>Tee4 ports 2 and 4 form the main path; port 3 faces up and port 1 faces down.</p>
     <div id="four-port-junctions"></div>
+    <p>Independent detection:</p>
+    <div id="four-port-junctions-detected"></div>
   </section>
   <section>
     <h2>Two bridged sections in one nodal network</h2>
     <div id="repeated-bridges"></div>
+    <p>Independent detection:</p>
+    <div id="repeated-bridges-detected"></div>
   </section>
   <section>
     <h2>Microstrip junctions, lines and ground via</h2>
     <div id="microstrip-bridge"></div>
+    <p>Independent detection:</p>
+    <div id="microstrip-bridge-detected"></div>
   </section>
   <script>
     // Resistive bridged-T
@@ -63,10 +73,11 @@
       [short, 13],
       ['out', 1, 6]
     );
-    nP.schematic(resistiveBridge, {
-      shapes: ['bridgedT'],
+    var basicBridgeDrawing = nP.schematic(resistiveBridge, {
       mount: '#basic-bridge'
     });
+    var basicBridgeDrawingDetected = basicBridgeDrawing.detected;
+    nP.log(basicBridgeDrawingDetected, {mount: '#basic-bridge-detected'});
 
     // Five-part bridge and multi-component shunt
     var l1 = nP.L(5e-9);
@@ -89,10 +100,11 @@
       [short, 31],
       ['out', 1, 6]
     );
-    nP.schematic(extendedBridge, {
-      shapes: ['bridgedT'],
+    var multiPartBridgeDrawing = nP.schematic(extendedBridge, {
       mount: '#multi-part-bridge'
     });
+    var multiPartBridgeDrawingDetected = multiPartBridgeDrawing.detected;
+    nP.log(multiPartBridgeDrawingDetected, {mount: '#multi-part-bridge-detected'});
 
     // Tee4 junctions carry bridge and shunt connections at the same main-path position
     var junction1 = nP.Tee4();
@@ -108,10 +120,11 @@
       [short, 22],
       ['out', 1, 6]
     );
-    nP.schematic(fourPortBridge, {
-      shapes: ['bridgedT'],
+    var fourPortJunctionsDrawing = nP.schematic(fourPortBridge, {
       mount: '#four-port-junctions'
     });
+    var fourPortJunctionsDrawingDetected = fourPortJunctionsDrawing.detected;
+    nP.log(fourPortJunctionsDrawingDetected, {mount: '#four-port-junctions-detected'});
 
     // Repeated bridged sections in one nodal network
     var r5 = nP.R(10);
@@ -135,10 +148,11 @@
       [short, 113],
       ['out', 1, 206]
     );
-    nP.schematic(repeatedBridge, {
-      shapes: ['bridgedT'],
+    var repeatedBridgesDrawing = nP.schematic(repeatedBridge, {
       mount: '#repeated-bridges'
     });
+    var repeatedBridgesDrawingDetected = repeatedBridgesDrawing.detected;
+    nP.log(repeatedBridgesDrawingDetected, {mount: '#repeated-bridges-detected'});
 
     // Microstrip bridged arrangement
     var mtee1 = nP.mtee();
@@ -160,10 +174,11 @@
       [groundVia, 13],
       ['out', 1, 6]
     );
-    nP.schematic(microstripBridge, {
-      shapes: ['bridgedT'],
+    var microstripBridgeDrawing = nP.schematic(microstripBridge, {
       mount: '#microstrip-bridge'
     });
+    var microstripBridgeDrawingDetected = microstripBridgeDrawing.detected;
+    nP.log(microstripBridgeDrawingDetected, {mount: '#microstrip-bridge-detected'});
   </script>
 </body>
 </html>

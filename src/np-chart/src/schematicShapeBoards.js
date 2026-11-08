@@ -1,4 +1,4 @@
-// Modified: 2026-11-07
+// Modified: 2026-11-08
 // Declarative board settings consumed by the schematic layout interpreter.
 export const schematicShapeBoards = {
     generic: {
@@ -39,6 +39,7 @@ export const schematicShapeBoards = {
     series: {
         name: 'series',
         version: 1,
+        detect: true,
         interface: {from: [1], to: [2]},
         match: {
             externalPortCount: 2,
@@ -65,6 +66,7 @@ export const schematicShapeBoards = {
     ladder: {
         name: 'ladder',
         version: 1,
+        detect: true,
         interface: {from: [1], to: [2]},
         match: {
             externalPortCount: 2,
@@ -104,6 +106,7 @@ export const schematicShapeBoards = {
     edgeCoupledFilter: {
         name: 'edgeCoupledFilter',
         version: 1,
+        detect: true,
         interface: {from: [1], to: [2]},
         match: {
             externalPortCount: 2,
@@ -141,6 +144,7 @@ export const schematicShapeBoards = {
     bridgedT: {
         name: 'bridgedT',
         version: 1,
+        detect: true,
         interface: {from: [1], to: [2]},
         match: {
             externalPortCount: 2,
@@ -187,6 +191,7 @@ export const schematicShapeBoards = {
     branchline: {
         name: 'branchline',
         version: 1,
+        detect: true,
         interface: {from: [1, 4], to: [2, 3]},
         match: {
             externalPortCount: 4,
@@ -232,6 +237,7 @@ export const schematicShapeBoards = {
     powerCombiner: {
         name: 'powerCombiner',
         version: 1,
+        detect: true,
         interface: {from: [2, 3], to: [1]},
         use: 'powerDivider',
         transform: {mirrorX: true}
@@ -241,6 +247,8 @@ export const schematicShapeBoards = {
         layout: 'transformer-power-divider',
         variant: 'transformer',
         version: 1,
+        detect: true,
+        detectionPriority: 10,
         interface: {from: [1], to: [2, 3]},
         match: {
             externalPortCount: 3,

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-07 -->
+<!-- Modified: 2026-11-08 -->
 # Power-divider schematic guidance
 
 Open `powerDivider.html` to compare three single-stage, two-way Wilkinson arrangements:
@@ -7,7 +7,7 @@ Open `powerDivider.html` to compare three single-stage, two-way Wilkinson arrang
 - The same connections using `mtee()` and `mlin()` symbols. Its illustrative dimensions are not a tuned physical design.
 - Two arms containing different numbers and types of two-port components. This tests layout coverage and spacing rather than matching or isolation performance.
 
-The first three examples call:
+The first three examples now use blind detection. Their equivalent explicit request is:
 
 ```js
 nP.schematic(network, {
@@ -45,6 +45,11 @@ nP.schematic(dividerCombinerLadder, {
 });
 ```
 
-The shared ORI composition operation treats these node numbers as section boundaries. It binds each of the three regions to its existing board, aligns corresponding interface wire endpoints, and combines the geometry before common annotation and SVG rendering. Internal interface ports do not become external ports in the final drawing. All components retain their original numbered electrical terminals, and every component must belong to exactly one section. The divider–combiner pair alone has essentially 0 dB transmission at 2 GHz; adding the ladder changes the final network's response.
+The shared ORI composition operation treats these node numbers as section boundaries. It binds each of the three regions to its existing board, measures and positions complete sections, connects their interface endpoints, and combines the geometry before common annotation and SVG rendering. Internal interface ports do not become external ports in the final drawing. All components retain their original numbered electrical terminals, and every component must belong to exactly one section. The divider–combiner pair alone has essentially 0 dB transmission at 2 GHz; adding the ladder changes the final network's response.
 
-This first composition operation requires adjacent interfaces to have matching port spacing and ordering. It translates complete boards rather than stretching symbols or adding circuit-specific coordinates. A mismatched interface reports an error. The broader unguided splitter/combiner baseline in `../trf5Port.html` remains unchanged.
+The composition operation now supports unequal interface spacing, parallel paths and nested splits. It measures and translates complete boards, then routes the connecting wires without stretching symbols or adding circuit-specific coordinates. Crossed track order and connections that cannot be routed without a crossover report an error. The dedicated examples are in `parallelComposition.html`. The broader unguided splitter/combiner baseline in `../trf5Port.html` remains unchanged.
+
+
+## Blind detection
+
+The whole-network examples now omit shape hints and log `drawing.detected`. ORI uses the independently detected board; the equivalent explicit call remains valid. Any example composing several bounded sections keeps its explicit section list, because automatic composition detection is not enabled.

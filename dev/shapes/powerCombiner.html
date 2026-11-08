@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Modified: 2026-11-07 -->
+<!-- Modified: 2026-11-08 -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -13,26 +13,35 @@
 </head>
 <body>
   <h1>Power-combiner schematic guidance</h1>
+  <p>The divider and combiner share electrical connections. Blind detection defaults to powerDivider; explicit powerCombiner guidance selects the reflected view.</p>
   <p>Each network requests powerCombiner. Port 2 is the upper input, port 3 the lower
     input, and port 1 the common output on the right. Electrical port numbers are
     preserved. ORI reuses and reflects the corresponding powerDivider board.</p>
   <section>
     <h2>Transformer combiner</h2>
     <div id="transformer-combiner"></div>
+    <p>Independent detection:</p>
+    <div id="transformer-combiner-detected"></div>
   </section>
   <section>
     <h2>Ideal Wilkinson combiner at 2 GHz</h2>
     <div id="wilkinson-combiner"></div>
+    <p>Independent detection:</p>
+    <div id="wilkinson-combiner-detected"></div>
   </section>
   <section>
     <h2>Microstrip junctions and lines</h2>
     <p>These dimensions illustrate symbol layout rather than a tuned physical design.</p>
     <div id="microstrip-combiner"></div>
+    <p>Independent detection:</p>
+    <div id="microstrip-combiner-detected"></div>
   </section>
   <section>
     <h2>Different component counts in the two arms</h2>
     <p>Additional series parts exercise spacing; this network is not a matched combiner.</p>
     <div id="variable-arms-combiner"></div>
+    <p>Independent detection:</p>
+    <div id="variable-arms-combiner-detected"></div>
   </section>
   <script>
     // Transformer power combiner
@@ -54,10 +63,12 @@
       [r1, 30, 31],
       ['out', 1, 2, 3]
     );
-    nP.schematic(transformerCombiner, {
+    var transformerCombinerDrawing = nP.schematic(transformerCombiner, {
       shapes: ['powerCombiner'],
       mount: '#transformer-combiner'
     });
+    var transformerCombinerDrawingDetected = transformerCombinerDrawing.detected;
+    nP.log(transformerCombinerDrawingDetected, {mount: '#transformer-combiner-detected'});
 
     // Ideal Wilkinson power combiner
     var commonTee = nP.Tee();
@@ -77,10 +88,12 @@
       [r2, 30, 31],
       ['out', 1, 2, 3]
     );
-    nP.schematic(wilkinsonCombiner, {
+    var wilkinsonCombinerDrawing = nP.schematic(wilkinsonCombiner, {
       shapes: ['powerCombiner'],
       mount: '#wilkinson-combiner'
     });
+    var wilkinsonCombinerDrawingDetected = wilkinsonCombinerDrawing.detected;
+    nP.log(wilkinsonCombinerDrawingDetected, {mount: '#wilkinson-combiner-detected'});
 
     // Microstrip Wilkinson arrangement
     var commonMtee = nP.mtee();
@@ -98,10 +111,12 @@
       [r3, 30, 31],
       ['out', 1, 2, 3]
     );
-    nP.schematic(microstripCombiner, {
+    var microstripCombinerDrawing = nP.schematic(microstripCombiner, {
       shapes: ['powerCombiner'],
       mount: '#microstrip-combiner'
     });
+    var microstripCombinerDrawingDetected = microstripCombinerDrawing.detected;
+    nP.log(microstripCombinerDrawingDetected, {mount: '#microstrip-combiner-detected'});
 
     // Multiple series components with unequal arm lengths
     var extendedCommonTee = nP.Tee();
@@ -125,10 +140,12 @@
       [r5, 30, 31],
       ['out', 1, 2, 3]
     );
-    nP.schematic(extendedCombiner, {
+    var variableArmsCombinerDrawing = nP.schematic(extendedCombiner, {
       shapes: ['powerCombiner'],
       mount: '#variable-arms-combiner'
     });
+    var variableArmsCombinerDrawingDetected = variableArmsCombinerDrawing.detected;
+    nP.log(variableArmsCombinerDrawingDetected, {mount: '#variable-arms-combiner-detected'});
   </script>
 </body>
 </html>

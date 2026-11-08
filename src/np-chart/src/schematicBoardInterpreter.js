@@ -1,4 +1,4 @@
-// Modified: 2026-11-07
+// Modified: 2026-11-08
 import {layoutAutomaticBoard} from './schematicBoardGraph';
 import {composeSchematicBoards} from './schematicBoardComposition';
 
@@ -1047,6 +1047,51 @@ function reflectBoardResult(result, definition, source) {
         layout: definition.layout || definition.name, board}};
 }
 
+function boardAdjacency(root, definition, geometry) {
+    if (!root || !Array.isArray(root.components) || !root.components.length ||
+        !Array.isArray(root.externalNodes) || root.externalNodes.length !== definition.match.externalPortCount ||
+        new Set(root.externalNodes).size !== root.externalNodes.length) return null;
+    const adjacency = new Map();
+    for (let index = 0; index < root.components.length; index++) {
+        const entry = root.components[index];
+        if (!Array.isArray(entry.nodes) || geometry.symbol(entry)?.ports.length !== entry.nodes.length) return null;
+        entry.nodes.forEach((node, port) => {
+            if (!adjacency.has(node)) adjacency.set(node, []);
+            adjacency.get(node).push({index, inputPort: port + 1});
+        });
+    }
+    for (const [node, terminals] of adjacency) {
+        if (terminals.length + root.externalNodes.filter(value => value === node).length !== 2) return null;
+    }
+    return root.externalNodes.some(node => !adjacency.has(node)) ? null : adjacency;
+}
+
+// Structural matching only: no placement, coordinates, annotations or SVG.
+// Detection and layout use the same binding operations and board predicates.
+export function matchSchematicBoard(root, definition, geometry, references = []) {
+    if (!definition || definition.version !== 1 || references.includes(definition)) return false;
+    const visited = references.concat(definition);
+    if (definition.use) return matchSchematicBoard(root, geometry.boards?.[definition.use], geometry, visited);
+    if (definition.alternatives) {
+        const {alternatives, ...primary} = definition;
+        return [primary, ...alternatives].some(choice => matchSchematicBoard(root, choice, geometry, visited));
+    }
+    if (definition.board?.automatic || definition.sections || !definition.match) return false;
+    const adjacency = boardAdjacency(root, definition, geometry);
+    if (!adjacency) return false;
+    if (definition.match.slots) return !!bindBoardSlots(root, definition.match.slots, definition.board.wires);
+    if (definition.board.rows || definition.board.anchors) {
+        const network = collectBoardConnections(root, definition.match, adjacency);
+        if (!network) return false;
+        const template = expandBoardSlots(definition.board, network.anchors.length);
+        return !!(template && template.links.length === network.edges.length &&
+            template.ports.length === root.externalNodes.length &&
+            new Set(template.ports.map(port => port.port)).size === root.externalNodes.length &&
+            assignBoardSlots(template, network, root));
+    }
+    return !!(definition.match.paths && bindBoardPaths(root, definition.match, adjacency, geometry));
+}
+
 export function interpretSchematicBoard(root, definition, geometry, references = []) {
     if (definition.version !== 1) boardError('unsupported language version.');
     if (references.includes(definition)) boardError('circular board reference.');
@@ -1104,22 +1149,9 @@ export function interpretSchematicBoard(root, definition, geometry, references =
         }
         return layoutAutomaticBoard(root, definition, geometry);
     }
-    if (root.externalNodes.length !== match.externalPortCount ||
-        new Set(root.externalNodes).size !== root.externalNodes.length) return null;
     // A wire box joins two terminals. Junctions belong to component symbols.
-    const adjacency = new Map();
-    for (let index = 0; index < root.components.length; index++) {
-        const entry = root.components[index];
-        if (geometry.symbol(entry).ports.length !== entry.nodes.length) return null;
-        entry.nodes.forEach((node, port) => {
-            if (!adjacency.has(node)) adjacency.set(node, []);
-            adjacency.get(node).push({index, inputPort: port + 1});
-        });
-    }
-    for (const [node, terminals] of adjacency) {
-        if (terminals.length + root.externalNodes.filter(value => value === node).length !== 2) return null;
-    }
-    if (root.externalNodes.some(node => !adjacency.has(node))) return null;
+    const adjacency = boardAdjacency(root, definition, geometry);
+    if (!adjacency) return null;
     if (match.slots) return placeNamedBoardSlots(root, definition, geometry);
     if (definition.board.rows || definition.board.anchors) return placeBoardConnections(root, definition, adjacency, geometry);
     const bindings = bindBoardPaths(root, match, adjacency, geometry);

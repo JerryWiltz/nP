@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-07 -->
+<!-- Modified: 2026-11-08 -->
 # Edge-coupled filter schematic guidance
 
 Open `edgeCoupledFilter.html` for five drawings: a three-section ideal filter, the same network flipped vertically, microstrip sections, seven sections in one nodal network, and alternative short/load terminations. The existing top-level `dev/edgeCoupledFilter.html` noise-analysis page is separate and unchanged.
@@ -35,3 +35,8 @@ The board declares allowed `portPairs`, repeated component/wire boxes, and tile 
 Dense terminal groups use the common annotation search. If its bounded search cannot place every annotation, ORI uses the existing wider spacing fallback for guided and generic boards. Node dots remain on their electrical wires; labels and circled node numbers remain clear of symbols, wires and other annotations.
 
 The definition contains no JavaScript matcher or drawing callback. The same numbered-port, terminal-direction and reflection operations accept another board name or upward advancement declared in data. The board's single-node input/output interface also permits series sections before or after the filter within one nodal network.
+
+
+## Blind detection
+
+The whole-network examples now omit shape hints and log `drawing.detected`. ORI uses the independently detected board; the equivalent explicit call remains valid. Any example composing several bounded sections keeps its explicit section list, because automatic composition detection is not enabled.

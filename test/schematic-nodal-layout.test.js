@@ -1,4 +1,4 @@
-// Modified: 2026-11-06
+// Modified: 2026-11-08
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as nP from '../src/index.js';
@@ -168,7 +168,7 @@ test('a ring stays closed when its component rows and node numbers change', () =
     const circuit = buildSchematicStressCases(nP)
         .find(item => item.id === 'branch-reordered').circuit;
     const graph = schematicGraph(circuit);
-    assert.equal(graph.layout, 'generic');
+    assert.equal(graph.layout, 'branchline');
     assert.equal(schematicTopology(circuit).loopAnalysis.cycles.length, 1);
     assert.deepEqual(graph.components.map(part => part.ports.map(port => port.node)),
         circuit._schematic.components.map(entry => entry.nodes));

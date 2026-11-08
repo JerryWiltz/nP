@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Modified: 2026-11-02 -->
+<!-- Modified: 2026-11-08 -->
 <html lang="en">
 
 <head>
@@ -24,18 +24,31 @@
 <body>
   <h1>Series schematic guidance</h1>
   <section>
-    <h2>Two resistors from the reference sketch</h2>
+    <h2>Two resistors with blind series detection</h2>
     <div id="reference"></div>
+    <p>No shape is supplied. The detector returns:</p>
+    <div id="reference-detected"></div>
+  </section>
+  <section>
+    <h2>Repeat drawing of the same network</h2>
+    <div id="automatic"></div>
+    <p>The detected series shape controls this drawing:</p>
+    <div id="automatic-detected"></div>
   </section>
   <section>
     <h2>A path with a right-angle bend</h2>
     <div id="bend"></div>
+    <p>The detector follows the two-port path through the bend:</p>
+    <div id="bend-detected"></div>
   </section>
   <section>
     <h2>Nested resistor networks as blocks</h2>
     <div id="expanded"></div>
+    <p>The detector treats the upstream network as a two-port block:</p>
+    <div id="expanded-detected"></div>
   </section>
   <script>
+    // Two resistors with blind series detection
     var g = nP.global;
     g.fList = [2e9];
 
@@ -46,11 +59,20 @@
       [r2, 2, 3],
       ['out', 1, 3]
     );
-    nP.schematic(reference, {
-      shapes: ['series'],
+    var referenceDrawing = nP.schematic(reference, {
       mount: '#reference'
     });
+    var referenceDetected = referenceDrawing.detected;
+    nP.log(referenceDetected, {mount: '#reference-detected'});
 
+    // The same series network without a shape hint
+    var automaticDrawing = nP.schematic(reference, {
+      mount: '#automatic'
+    });
+    var automaticDetected = automaticDrawing.detected;
+    nP.log(automaticDetected, {mount: '#automatic-detected'});
+
+    // A path with a right-angle bend and no shape hint
     var resistor = nP.R(50);
     var bend = nP.mbend();
     var inductor = nP.L(5e-9);
@@ -60,11 +82,13 @@
       [inductor, 3, 4],
       ['out', 1, 4]
     );
-    nP.schematic(turned, {
-      shapes: ['series'],
+    var turnedDrawing = nP.schematic(turned, {
       mount: '#bend'
     });
+    var turnedDetected = turnedDrawing.detected;
+    nP.log(turnedDetected, {mount: '#bend-detected'});
 
+    // Nested resistor networks with no shape hint
     var r3 = nP.R(50), r4 = nP.R(50), r5 = nP.R(50);
     var a = nP.nodal(
       [r1, 1, 2],
@@ -86,10 +110,11 @@
       [r5, 2, 3],
       ['out', 1, 3]
     );
-    nP.schematic(d, {
-      shapes: ['series'],
+    var nestedDrawing = nP.schematic(d, {
       mount: '#expanded'
     });
+    var nestedDetected = nestedDrawing.detected;
+    nP.log(nestedDetected, {mount: '#expanded-detected'});
   </script>
 </body>
 

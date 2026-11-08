@@ -1,4 +1,4 @@
-// Modified: 2026-11-07
+// Modified: 2026-11-08
 // General graph operations for ORI's automatic board. No RF circuit patterns.
 const AXES = [[1, 0], [0, 1], [-1, 0], [0, -1]];
 
@@ -285,15 +285,17 @@ function simplifyRoute(points) {
         (point[1] - points[index - 1][1]) * (points[index + 1][0] - point[0]));
 }
 
-function automaticRoute(start, finish, bounds, obstacles, occupied, node, board) {
+export function automaticRoute(start, finish, bounds, obstacles, occupied, node, board) {
     if (same(start, finish)) return [start];
     const points = [start, finish].concat(bounds.flatMap(box => [[box[0], box[1]], [box[2], box[3]]]));
     const min = [0, 1].map(axis => Math.floor((Math.min(...points.map(p => p[axis])) - board.routingMargin) / board.grid) * board.grid);
     const max = [0, 1].map(axis => Math.ceil((Math.max(...points.map(p => p[axis])) + board.routingMargin) / board.grid) * board.grid);
     const key = (point, direction) => `${point[0]},${point[1]},${direction}`;
-    const startKey = key(start, -1), target = finish.join(','), queue = [];
+    const initialDirection = board.startDirection ? AXES.findIndex(axis => same(axis, board.startDirection)) : -1;
+    const finishDirection = board.finishDirection ? AXES.findIndex(axis => same(axis, board.finishDirection)) : -1;
+    const startKey = key(start, initialDirection), target = finish.join(','), queue = [];
     const best = new Map([[startKey, 0]]), previous = new Map();
-    heapPush(queue, {point: start, cost: 0, score: 0, direction: -1, key: startKey});
+    heapPush(queue, {point: start, cost: 0, score: 0, direction: initialDirection, key: startKey});
     while (queue.length) {
         const item = heapPop(queue), currentKey = item.key;
         if (item.cost !== best.get(currentKey)) continue;
@@ -315,8 +317,9 @@ function automaticRoute(start, finish, bounds, obstacles, occupied, node, board)
                 !same(point, finish) && obstacles.has(pointKey)) return;
             const axis = direction[0] ? 1 : 2;
             if ([point, item.point].some(at => [...(occupied.get(at.join(',')) || [])].some(([id, mask]) =>
-                id !== node && (mask & axis || mask === 3)))) return;
-            const cost = item.cost + board.grid + (item.direction !== -1 && item.direction !== index ? board.bendCost : 0);
+                id !== node && (board.allowCrossings === false || mask & axis || mask === 3)))) return;
+            const cost = item.cost + board.grid + (item.direction !== -1 && item.direction !== index ? board.bendCost : 0) +
+                (same(point, finish) && finishDirection !== -1 && index !== finishDirection ? board.bendCost : 0);
             if (best.has(nextKey) && best.get(nextKey) <= cost) return;
             best.set(nextKey, cost); previous.set(nextKey, {key: currentKey, point: item.point});
             heapPush(queue, {point, cost, direction: index,
@@ -326,7 +329,7 @@ function automaticRoute(start, finish, bounds, obstacles, occupied, node, board)
     throw new RangeError('ORI could not route an automatic board connection.');
 }
 
-function recordBoardRoute(points, node, occupied, grid) {
+export function recordBoardRoute(points, node, occupied, grid) {
     for (let index = 1; index < points.length; index++) {
         const a = points[index - 1], b = points[index];
         const axis = a[0] === b[0] ? 2 : 1;
@@ -341,7 +344,7 @@ function recordBoardRoute(points, node, occupied, grid) {
     }
 }
 
-function graphWireBoxes(result, node, points, board, id) {
+export function graphWireBoxes(result, node, points, board, id) {
     const path = simplifyRoute(points.filter((point, index) => !index || !same(point, points[index - 1])));
     if (path.length < 2) return;
     // Reserve a corner box at each bend; ordinary wires separate corners from symbols.

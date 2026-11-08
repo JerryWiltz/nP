@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-07 -->
+<!-- Modified: 2026-11-08 -->
 # Power-combiner schematic guidance
 
 Open `powerCombiner.html` to compare four networks using `shapes: ['powerCombiner']`:
@@ -37,3 +37,8 @@ The reflected geometry uses the same component and wire boxes, terminal spacing,
 Both ideal examples retain matched ports, isolated input ports and reciprocal paths of magnitude 1/√2 between either input and the common port. This is the individual S-parameter path magnitude; coherent combining depends on both applied input signals and their phases.
 
 This shape covers the existing three-port transformer and single-stage Wilkinson arrangements. The fourth example in `powerDivider.html` composes divider and combiner boards within one nodal network using node-bounded shape sections. Their shared interfaces must have matching port spacing and ordering. The generic splitter/combiner example in `../trf5Port.html` is retained as its separate baseline.
+
+
+## Blind detection
+
+Every drawing logs its independent `drawing.detected` result. The passive divider and combiner have the same topology and port numbering, so detection defaults to `{shapes: ['powerDivider']}`. The explicit combiner guidance still controls the reflected layout; it does not enter detection.

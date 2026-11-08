@@ -1,0 +1,164 @@
+<!doctype html>
+<!-- Modified: 2026-11-08 -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Parallel and nested shape composition</title>
+  <script src="../../dist/nP.js"></script>
+  <style>
+    body { margin: 0; padding: 2rem; font-family: Arial, Helvetica, sans-serif; color: #202020; }
+    section { margin: 2rem 0 3rem; }
+  </style>
+</head>
+<body>
+  <h1>Parallel and nested shape composition</h1>
+  <p>Every example uses one nodal network. Shape boundaries guide individual paths;
+    the shared composer places the actual junctions and connects the sections.
+    These examples exercise layout, rather than matched RF designs.</p>
+  <section>
+    <h2>Two resistor paths between ideal tees</h2>
+    <div id="parallel"></div>
+  </section>
+  <section>
+    <h2>Series and ladder paths between ideal tees</h2>
+    <div id="different-paths"></div>
+  </section>
+  <section>
+    <h2>Nested splitter, two amplifiers and a ladder feeding Tee4</h2>
+    <div id="nested"></div>
+  </section>
+  <section>
+    <h2>Three paths ending at separate output ports</h2>
+    <div id="separate-outputs"></div>
+  </section>
+  <section>
+    <h2>Crossed track order: expected inline error</h2>
+    <p>Crossover routing is deferred. Click the button to show the error; the final drawing below must still appear.</p>
+    <button id="try-crossover" type="button">Demonstrate crossover error</button>
+    <div id="crossed"></div>
+  </section>
+  <section>
+    <h2>A successful drawing after the error</h2>
+    <div id="after-error"></div>
+  </section>
+  <script>
+    // Two resistor paths between ideal tees
+    var g = nP.global;
+    g.fList = [2e9];
+    var inputTee = nP.Tee();
+    var outputTee = nP.Tee();
+    var r1 = nP.R(50);
+    var r2 = nP.R(75);
+    var parallel = nP.nodal(
+      [inputTee, 1, 10, 20],
+      [r1, 10, 30],
+      [r2, 20, 40],
+      [outputTee, 2, 30, 40],
+      ['out', 1, 2]
+    );
+    nP.schematic(parallel, {
+      shapes: [
+        {name: 'series', from: 10, to: 30},
+        {name: 'series', from: 20, to: 40}
+      ],
+      mount: '#parallel'
+    });
+
+    // Series and ladder on separate tracks
+    var shuntTee = nP.Tee();
+    var c1 = nP.C(1e-12);
+    var short1 = nP.Short();
+    var differentPaths = nP.nodal(
+      [inputTee, 1, 10, 20],
+      [r1, 10, 30],
+      [shuntTee, 21, 20, 22],
+      [c1, 21, 23],
+      [short1, 23],
+      [r2, 22, 40],
+      [outputTee, 2, 30, 40],
+      ['out', 1, 2]
+    );
+    nP.schematic(differentPaths, {
+      shapes: [
+        {name: 'series', from: 10, to: 30},
+        {name: 'ladder', from: 20, to: 40}
+      ],
+      mount: '#different-paths'
+    });
+
+    // Nested splitter with two amplifiers and a third, ladder track
+    var nestedTee = nP.Tee();
+    var outputTee4 = nP.Tee4();
+    var amp1 = nP.Amp(10);
+    var amp2 = nP.Amp(15);
+    var nested = nP.nodal(
+      [inputTee, 1, 10, 20],
+      [nestedTee, 10, 11, 12],
+      [amp1, 11, 30],
+      [amp2, 12, 40],
+      [shuntTee, 21, 20, 22],
+      [c1, 21, 23],
+      [short1, 23],
+      [r2, 22, 50],
+      [outputTee4, 2, 30, 40, 50],
+      ['out', 1, 2]
+    );
+    nP.schematic(nested, {
+      shapes: [
+        {name: 'series', from: 11, to: 30},
+        {name: 'series', from: 12, to: 40},
+        {name: 'ladder', from: 20, to: 50}
+      ],
+      mount: '#nested'
+    });
+
+    // Three separate outputs: splitting does not require recombination
+    var threeOutputs = nP.nodal(
+      [inputTee, 1, 10, 20],
+      [nestedTee, 10, 11, 12],
+      [r1, 11, 30],
+      [r2, 12, 40],
+      [r1, 20, 50],
+      ['out', 1, 30, 40, 50]
+    );
+    nP.schematic(threeOutputs, {
+      shapes: [
+        {name: 'series', from: 11, to: 30},
+        {name: 'series', from: 12, to: 40},
+        {name: 'series', from: 20, to: 50}
+      ],
+      mount: '#separate-outputs'
+    });
+
+    // Crossed track order must report an error and allow the next call to run
+    var crossed = nP.nodal(
+      [inputTee, 1, 10, 20],
+      [r1, 10, 30],
+      [r2, 20, 40],
+      [outputTee, 2, 40, 30],
+      ['out', 1, 2]
+    );
+    // Run the deliberate error only on request, so normal page loading stays clean.
+    function demonstrateCrossover() {
+      nP.schematic(crossed, {
+        shapes: [
+          {name: 'series', from: 10, to: 30},
+          {name: 'series', from: 20, to: 40}
+        ],
+        mount: '#crossed'
+      });
+
+      // A successful drawing after the expected error
+      nP.schematic(parallel, {
+        shapes: [
+          {name: 'series', from: 20, to: 40},
+          {name: 'series', from: 10, to: 30}
+        ],
+        mount: '#after-error'
+      });
+    }
+    document.getElementById('try-crossover').addEventListener('click', demonstrateCrossover);
+  </script>
+</body>
+</html>

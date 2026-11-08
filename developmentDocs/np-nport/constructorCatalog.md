@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-04 -->
+<!-- Modified: 2026-11-08 -->
 # nP constructor catalog
 
 This catalog covers the 54 public functions that produce n-port objects from `src/np-nport/src/index.js`, the digital waveform functions from `src/np-digital`, and the exported math and low-pass prototype functions. Each JS call below spells out the **current defaults** where they exist. Each argument or property appears on its own line. Units are in comments. Each constructor has its own heading and code block.
@@ -37,11 +37,13 @@ var filter = nP.lpfGen(undefined, {fList: frequencies});
 
 Each nPort stores a copy of its selected frequency list and analysis settings. Components in one `nodal()` or `cascade()` circuit must have matching frequency rows. Call `nP.global()` to create and select an independent circuit context. It holds its own `fList`, `tList`, `twoTone`, `Ro`, and `Temp`; `nP.global(g)` selects an earlier context `g` again. Existing `nP.global.fList` and related property calls use the selected context. `nP.global.tGen(start, stop, points)` returns a uniformly spaced time list in seconds, including both endpoints. Two-tone analysis still requires positive first-tone frequencies and a positive spacing.
 
-The 51 symbol-backed direct RF component constructors record internal schematic metadata and have bundled runtime symbols. Composite RLC parts retain their resistance, inductance, and capacitance values in schematic metadata; transformers retain their turns ratio. `lpfGen()` inherits a cascade tree from the components it constructs. `mbend({turn: 'left'})` selects a left-turn drawing; the default is a right turn. The turn changes only the drawing, not the bend S-parameters. `cas()` and `cascade()` preserve their construction tree. `nodal()` records each component placement's port-to-node assignments and the external port order. When a completed nodal nPort is used as a component, the renderer gives it a `nodal` block with the matching number of ports. Two-port circuits with a series path and simple shunt branches are laid out from their port-to-node connections; tree-shaped multiport circuits use their node connections for placement. Nodal circuits with loops do not yet have a public runtime layout.
+The 51 symbol-backed direct RF component constructors record internal schematic metadata and have bundled runtime symbols. Composite RLC parts retain their resistance, inductance, and capacitance values in schematic metadata; transformers retain their turns ratio. `lpfGen()` inherits a cascade tree from the components it constructs. `mbend({turn: 'left'})` selects a left-turn drawing; the default is a right turn. The turn changes only the drawing, not the bend S-parameters. `cas()` and `cascade()` preserve their construction tree. `nodal()` records each component placement's port-to-node assignments and the external port order. When a completed nodal nPort is used as a component, the renderer gives it a `nodal` block with the matching number of ports. Two-port circuits with a series path and simple shunt branches are laid out from their port-to-node connections; tree-shaped multiport circuits use their node connections for placement. Nodal circuits with loops use ORI's generic board or explicit shape guidance.
 
 Constructor source calls `schematicPart(publicName, parameters)` instead of naming an SVG. The generated constructor map reads `schematics/symbol-catalog.json`, and the symbol check verifies that the selected runtime symbol has the same port count as the returned nPort.
 
-`nP.schematic(circuit)` mounts the drawing and returns `{svg, graph, topology}`. The `svg` property is the displayed SVG element. `graph` contains component placements, nodes, wires, port coordinates, and the viewBox; cascades also include their construction tree. `topology` contains parts and their connections: port-to-port for cascades, and node membership for the supported nodal layout. Both objects are plain, JSON-serializable snapshots; editing them does not change the circuit or drawing.
+`nP.schematic(circuit)` mounts the drawing and returns `{svg, graph, topology, detected, error}`. `detected` independently reports a reusable shape-options object or null; the detector recognizes complete networks fitting the named boards, including ideal and microstrip ladder, bridge, branchline, edge-coupled and divider arrangements. Explicit shapes control layout without influencing detection, while an omitted shape uses the detected board or falls back to the generic board when no whole-network shape matches. Passive divider and combiner connections are indistinguishable, so the automatic default is powerDivider; explicit powerCombiner still selects the reflected view. Grouped nodal rows provide section membership; the renderer recognizes those groups and infers boundaries. Automatic grouping of entirely unannotated networks remains future work. `error` is null on success; on failure the drawing properties are null and the error is returned so later JavaScript can continue. The `svg` property is the displayed SVG element. `graph` contains component placements, nodes, wires, port coordinates, and the viewBox; cascades also include their construction tree. `topology` contains parts and their connections: port-to-port for cascades, and node membership for the supported nodal layout. Both objects are plain, JSON-serializable snapshots; editing them does not change the circuit or drawing.
+
+`nP.schematic(network)` defaults to `dots: {ports: true, nodes: true, terminals: false}`. Set `dots: {terminals: true}` to add dots where wires meet component leads; fields omitted from `dots` keep their defaults. These boolean options change presentation only and work with nodal, grouped, cascade and signal-path drawings. Circled node-number labels, actual wire-junction dots and intrinsic canonical-symbol artwork remain visible. See [Dot options](../../docs/charts-tables-and-logs.md#dot-options).
 
 The default detail view expands a cascade into its components. For a circuit made by cascading completed circuits, `nP.schematic(combined, {view: 'blocks'})` displays reused cascade subcircuits as two-port `cascade` symbols. A bend between those blocks remains visible and can rotate the second symbol. If no cascade subcircuit is reused, block view collapses the immediate cascade operands. The source circuit's own detailed schematic remains separate. The same `view` option works with `schematicGraph()`, `schematicTopology()`, and `schematicSvg()`.
 
@@ -1552,6 +1554,28 @@ nP.nodal(
 );
 // returns an nPort object
 ```
+
+`nodal()` also accepts shape-group objects, mixed with ordinary connection rows. Groups are flattened once before the existing electrical calculation and retained as occurrence metadata for schematics:
+
+```js
+// Grouped nodal: repeated shapes and component reuse
+nP.global.fList = [2e9];
+var r1 = nP.R(75);
+var r2 = nP.R(50);
+var network = nP.nodal(
+    {series: [
+        [r1, 1, 2],
+        [r2, 2, 3]
+    ]},
+    {series: [
+        [r1, 3, 4]
+    ]},
+    ['out', 1, 4]
+);
+nP.schematic(network);
+```
+
+The result is one nPort with the same S-parameters, noise and signal calculations as the equivalent flat rows. Each group records its shape name and component occurrence indices in `_schematic.groups`; reusing a component does not merge occurrences. Repeated shape names use separate objects. Keep one final output row outside groups. `{signal: tx, inputPort: 1}` remains an optional argument after the output row. Group names are drawing guidance and are checked by the renderer, so an incorrect name does not change the electrical calculation. All two-port rows must be grouped for composed drawing; direct junctions and one-port terminations can remain ordinary rows. See [Schematic shape vocabulary](../schematicShapeVocabulary.md) for supported names and interface-inference limits.
 
 `nP.lineChart()`, `nP.lineTable()`, and `nP.smithChart()` are display functions, not electrical n-port constructors.
 

@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Modified: 2026-11-06 -->
+<!-- Modified: 2026-11-08 -->
 <html lang="en">
 
 <head>
@@ -21,8 +21,12 @@
   <h1>Ladder schematic guidance</h1>
   <h2>Ideal transmission line shunts</h2>
   <div id="ladder"></div>
+    <p>Independent detection:</p>
+    <div id="ladder-detected"></div>
   <h2>Microstrip junction and lines</h2>
   <div id="microstrip-ladder"></div>
+    <p>Independent detection:</p>
+    <div id="microstrip-ladder-detected"></div>
   <script>
     var g = nP.global;
     g.fList = [2e9];
@@ -51,10 +55,11 @@
       [open, 12],
       ['out', 1, 11]
     );
-    nP.schematic(circuit, {
-      shapes: ['ladder'],
+    var ladderDrawing = nP.schematic(circuit, {
       mount: '#ladder'
     });
+    var ladderDrawingDetected = ladderDrawing.detected;
+    nP.log(ladderDrawingDetected, {mount: '#ladder-detected'});
 
     var microstripJunction = nP.mtee();
     var microstripShunt = nP.mlin({ length: 0.01 });
@@ -67,10 +72,11 @@
       [microstripMain, 18, 19],
       ['out', 17, 19]
     );
-    nP.schematic(microstripLadder, {
-      shapes: ['ladder'],
+    var microstripLadderDrawing = nP.schematic(microstripLadder, {
       mount: '#microstrip-ladder'
     });
+    var microstripLadderDrawingDetected = microstripLadderDrawing.detected;
+    nP.log(microstripLadderDrawingDetected, {mount: '#microstrip-ladder-detected'});
   </script>
 </body>
 

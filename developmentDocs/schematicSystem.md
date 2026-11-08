@@ -1,11 +1,11 @@
-<!-- Modified: 2026-11-07 -->
+<!-- Modified: 2026-11-08 -->
 # Schematic system
 
 This note explains how an nP network becomes a recognizable RF schematic. It starts with two series resistors, follows their data through the one reusable interpreter (ORI), and then explains the board language and graph algorithms behind the drawing.
 
 ## Overview: drawing two series resistors
 
-This example shows the main runtime workflow: create an RF network with `nodal()`, then call `nP.schematic()` to draw it. The `series` shape option guides the layout. The example sets a frequency for the RF calculation; the schematic itself uses connection metadata and symbol geometry rather than the numerical S-parameters.
+This example shows the main runtime workflow: create an RF network with `nodal()`, then call `nP.schematic()` to draw it. The `series` shape option guides the layout. Blind shape detection can also recognize this network without that option. The example sets a frequency for the RF calculation; the schematic itself uses connection metadata and symbol geometry rather than the numerical S-parameters.
 
 ```js
 var g = nP.global;
@@ -27,11 +27,59 @@ var drawing = nP.schematic(seriesCircuit, {
 The constructors attach resistor symbol and value metadata to `r1` and `r2`. `nodal()` records their port-to-node assignments and external nodes `[1, 3]`. The `shapes: ['series']` option asks the renderer to arrange this connection as a left-to-right series path. It guides the drawing without changing the electrical network.
 
 
+### Primary workflow: shape groups beside the electrical rows
+
+For larger schematics, the engineer can put shape names beside the connection rows in `nodal()`, using a separate object for each section. A name such as `series` can repeat. The final call remains `nP.schematic(network)`. The full series–ladder–series example is in the [public schematic section](../docs/charts-tables-and-logs.md#schematics) and [groupedNetworks.html](../dev/shapes/groupedNetworks.html).
+
+The grouped input is normalized once before the electrical calculation. For example, two series groups containing four resistor occurrences retain this additional metadata:
+
+```js
+circuit._schematic.groups = [
+    {name: 'series', components: [0, 1]},
+    {name: 'series', components: [2, 3]}
+];
+```
+
+`components` contains zero-based indices into `circuit._schematic.components`. It identifies occurrences, so the same constructor object may be reused in several groups. The normalized flat rows feed the unchanged Gamma/W construction, inversion, noise and signal calculations. No extra nPort, matrix row or electrical node represents a shape group.
+
+The runtime flow is:
+
+```text
+grouped nodal rows
+  → nodalConnections() → flat rows + group occurrence indices
+  → ordinary Gamma/W construction and inversion → one nPort
+  → schematic(network)
+      → detectSchematicShapes() → groupedSchematicShapes() using membership only
+      → groupedSchematicShapes(..., declared = true) using the declared names
+      → inferred {shapes: [{name, from, to}, ...]}
+      → existing ORI composer → drawing graph → SVG
+```
+
+`groupRegions()` finds each group's boundary nodes from electrical incidence. `boundaryDepths()` measures progress from external port 1 in a graph whose units are groups and remaining direct components. `interfaceCandidates()` tries permutations of a group's boundary nodes against numbered interfaces declared by board data and the shared structural matcher. `chooseGroupInterfaces()` searches compatible directions, capped at 10,000 search states; `validateSchematicSections()` reuses the composer's electrical-flow checks without creating geometry. The chosen sections then enter the existing measured-board composition operation. An inability to resolve interfaces becomes an inline drawing error rather than a changed connection.
+
+The blind route never consults the group names. Thus its detected result may differ from an invalid declaration or from a topologically indistinguishable presentation choice. The declared names guide layout unless `options.shapes` explicitly overrides them. In a connected divider/combiner composition, neighboring group interfaces can establish the combining role; for a standalone passive divider/combiner, blind detection retains the default divider presentation.
+
+Direct junction and one-port termination rows may remain outside groups. Composed rendering requires all two-port occurrences to be grouped. Group values contain rows rather than nested group objects. A single group covering the whole network keeps its numbered external ports and uses a single-board request. Existing flat syntax continues to work with whole-network detection and generic fallback. Discovering arbitrary groups from a wholly unannotated network is still future work.
+
+### Independent shape detection
+
+`schematicShapeDetector.js` examines the network and definitions marked `detect: true` in `schematicShapeBoards.js`. Its arguments contain no user options. ORI's shared `matchSchematicBoard()` performs structural binding only; detection does not call placement, annotation or SVG functions. All seven named boards participate: `series`, `ladder`, `bridgedT`, `branchline`, `edgeCoupledFilter`, `powerDivider` and `powerCombiner`. Structural matching covers path/attachment boards, connected-lane boards, named slots, alternatives and references through the same binding operations used by layout. It does not inspect S-parameters or supplied shape hints. Membership supplied by grouped nodal rows enables independent section recognition and inferred boundaries. Automatic decomposition of an entirely ungrouped network remains future work.
+
+For the resistor example above, `drawing.detected` is:
+
+```js
+{shapes: ['series']}
+```
+
+This object has the same form as the input options. `nP.schematic(seriesCircuit, drawing.detected)` can reuse it. `nP.schematic(seriesCircuit)` uses the detected series board automatically. An explicit `shapes` option still controls layout, while detection independently reports the same result. Even supplying a conflicting hint does not change detection; a failed drawing retains its detected result. Without an enabled match, the result is null and an unhinted nodal network uses the generic board. Detection checks complete coverage; recognizing one subnetwork is not sufficient to select a whole-network board. See [series.html](../dev/shapes/series.html) for network-only series examples and their logged detection results.
+
+The registry's optional `detectionPriority` chooses a preferred view when several boards match the same connections; ties use shape-name order. A passive divider/combiner is the important example: the network cannot distinguish a divider drawing from its reflected combiner view. `powerDivider` has the higher priority. Supplying `powerCombiner` still controls layout, while the independent detected result remains `powerDivider`. Other equally applicable views should use the same data-level policy rather than a constructor-name test in the detector.
+
 ### Drawing failures and downstream JavaScript
 
 The browser-facing `nP.schematic()` catches drawing failures, logs the original error to the console, and displays a message in the requested output area. It then returns normally, so the engineer's following `lineTable()`, `lineChart()` or other JavaScript statements can execute without a caller-side `try/catch`.
 
-A successful return contains `{svg, graph, topology, error: null}`. On failure, it contains `{svg: null, graph: null, topology: null, error}`. The message is inserted as text. If the requested mount is missing or its selector is invalid, the message falls back to the document body when available. Errors in lower-level source-module helpers such as `schematicGraph()` still throw; the browser API provides the display-and-continue boundary.
+A successful return contains `{svg, graph, topology, detected, error: null}`. On failure, it contains `{svg: null, graph: null, topology: null, detected, error}`. The message is inserted as text. If the requested mount is missing or its selector is invalid, the message falls back to the document body when available. Errors in lower-level source-module helpers such as `schematicGraph()` still throw; the browser API provides the display-and-continue boundary.
 
 ### Layout and render
 
@@ -60,7 +108,7 @@ These are the data structures in order, from electrical input to visible SVG:
 5. **Electrical topology.** This is a connection summary: which component ports share each node, plus loop analysis. It is returned for inspection; the SVG renderer does not use it.
 6. **SVG.** `renderNodalSvg(model)` reads `model.graph` and produces the picture.
 
-There is one drawing graph, not a separate “model graph” and “drawing graph.” The word *model* refers to the wrapper returned by a layout builder. `model.graph` and the public `drawing.graph` refer to the same drawing-graph data; temporary placement, adjacency, and search structures are not additional returned graphs.
+There is one drawing graph, not a separate “model graph” and “drawing graph.” The word *model* refers to the wrapper returned by a layout builder. `model.graph` and the public `drawing.graph` refer to the same drawing-graph data; `drawing.detected` is a separate shape-selection result, not another drawing graph; temporary placement, adjacency, and search structures are not additional returned graphs.
 
 For guided nodal drawings, the implemented data flow is:
 
@@ -179,6 +227,8 @@ The significant calls for this example occur in this order:
 
 ```text
 schematic()
+  → detectedShapes() → detectSchematicShapes()
+      → matchSchematicBoard() → shared structural binding (no layout)
   → mountSchematic()
   → buildSchematicModel()
     → buildNodalModel()
@@ -381,9 +431,13 @@ nP.schematic(network, {
 });
 ```
 
-ORI delegates a section list to the shared `composeSchematicBoards()` operation in `schematicBoardComposition.js`. Each board declares its interface as data: the divider maps `from` to numbered port 1 and `to` to ports 2/3; the combiner maps `from` to ports 2/3 and `to` to port 1. The composer builds electrical adjacency, treats the supplied boundary nodes as cuts, and traces unclaimed components into each region in input-to-output order. It constructs temporary metadata views for matching, without calling `nodal()` again or introducing network blocks.
+ORI delegates a section list to the shared `composeSchematicBoards()` operation in `schematicBoardComposition.js`. Each board declares its interface as data: the divider maps `from` to numbered port 1 and `to` to ports 2/3; the combiner maps `from` to ports 2/3 and `to` to port 1. The composer builds electrical adjacency, treats the supplied boundary nodes as cuts, and finds the connected component regions independently of the shape-list order. It constructs temporary metadata views for matching, without calling `nodal()` again or introducing network blocks.
 
-Each region runs through the existing ORI board operations. The composer translates the next board so its matching interface wire endpoints meet the preceding board's endpoints. All shared endpoints must agree on the translation and placement grid; incompatible spacing or ordering reports an error. The first implementation does not stretch symbols, rescale arms or route between incompatible interfaces. Tile IDs are namespaced by section so separate corner boxes remain distinct. The merged model has one set of labels and node numbers, only the final network's external ports, and `graph.board.sections` describing the regions. All component occurrences must be accounted for exactly once. The tests also exercise surrounding series and ladder sections and data-only board aliases; this operation does not recognize a divider/combiner by its RF name.
+Each region runs through the existing ORI board operations and is measured before composition. The composer builds a directed graph of sections and direct junction components, assigns topological columns and hierarchical tracks, and reserves clearance above and below each board's electrical connection axis using its complete bounds. The axis, rather than the bounding-box midpoint, controls placement; a downward shunt therefore does not lift a ladder's main path. Track axes are spaced on twice the placement-grid interval so their midpoints remain on the 10-unit placement grid; centering a junction does not introduce unequal vertical legs. This supports parallel and nested paths as well as a sequence. It translates complete boards and adds connecting wires on the common grid; it does not stretch symbols or rescale arms. Before positioning, the composer trims redundant straight section input/output leads to the section envelope. Adjacent groups then share an ordinary wire span, rather than stacking two display leads and a fixed gap. Rank spacing starts at 80 units and reserves more channels when several boundary wires share a cut. Symbol geometry and internal group wires are preserved. Sections need not have matching port spacing. Boundary routing includes departure and arrival lead directions in its bend cost, so it can extend a junction lead directly to the correct track instead of adding steps. Boundary order that requires a crossover reports an error in this first stage. Direct junctions such as `Tee()` and `Tee4()` use canonical geometry and numbered terminals without a new shape definition. Tile IDs are namespaced by section so separate corner boxes remain distinct. The merged model has one set of labels and node numbers, only the final network's external ports, and `graph.board.sections` describing the regions. All component occurrences must be accounted for exactly once. The tests also exercise surrounding series and ladder sections, parallel and nested paths, separate outputs, direct multiport junctions, and data-only board aliases; this operation does not recognize a divider/combiner by its RF name.
+
+Before routing between sections, `alignSectionInterfaces()` checks horizontal terminals that face each other. Their shared wire should have one height. It builds equations for whole-section vertical translations and `interfaceShifts()` propagates those differences through the connected constraint graph. An external port or multiport board anchors the group. This keeps a resistor or ladder path level with compatible divider/combiner ports instead of adding short dips and rises. `interfaceClearance()` checks the translated section envelopes before committing the changes. Conflicting fixed port pitches or insufficient clearance retain their original positions and use ordinary routing; symbols are never resized to force agreement. Vertical-facing junction leads still turn naturally toward their tracks.
+
+For the signature and first-stage limits, see [Parallel and nested paths](schematicShapeVocabulary.md#parallel-and-nested-paths--first-stage-without-crossovers). The dedicated harness is [parallelComposition.html](../dev/shapes/parallelComposition.html). The public error boundary displays a composition failure and lets later JavaScript continue. Crossover routing between sections is deferred.
 
 Symbol dimensions use a **20-unit construction module**, with a **10-unit placement grid** for terminals, anchors and wires. Ordinary canonical pins remain **20 units**; finer internal artwork coordinates are allowed where curves, zigzags or plate gaps require them. A 100-unit resistor has a midpoint 50 units from either terminal. The finer grid permits a transformer terminal axis to align with that midpoint without changing the resistor artwork.
 
@@ -432,10 +486,14 @@ The import chain is:
 schematicSymbols.js ────────────┐
 nodalBlockSymbol.js ────────────┤
 schematicShapeBoards.js ────────┼→ schematic.js → src/np-chart/index.js → src/index.js
-schematicBoardInterpreter.js ───┘
+schematicBoardInterpreter.js ───┤
+schematicShapeDetector.js ──────┤
+schematicGroups.js ────────────┘
         ↑
 schematicBoardGraph.js (generic graph operations)
 schematicBoardComposition.js (node-bounded board sections)
+
+np-nport/src/combining/nodalConnections.js → nodal.js → _schematic.groups
 ```
 
 The same symbol-generation command writes `src/np-nport/src/schematicSymbolMap.js` from `schematics/symbol-catalog.json`. Each direct RF constructor calls `schematicPart(publicName, parameters)`; that helper reads the generated map, so constructor source does not repeat the SVG filename. The catalog gives `mbend()` explicit `left` and `right` variant keys. `symbols:check` and both Rollup builds instantiate all 51 direct RF constructors and compare each returned nPort's port count and symbol ID with the runtime symbol. `lpfGen()` inherits its cascade metadata from `paC()` and `seL()`.
@@ -456,13 +514,17 @@ Only `schematic` is exported through `src/np-chart/index.js` as `nP.schematic`. 
 
 | Function | Result |
 | --- | --- |
-| `nP.schematic(circuit, options)` | Builds the RF circuit model, mounts an SVG and controls, and returns `{svg, graph, topology, error}`. On success, `error` is null. `svg` is the mounted DOM element. |
+| `nP.schematic(circuit, options)` | Builds the RF circuit model, mounts an SVG and controls, and returns `{svg, graph, topology, detected, error}`. On success, `error` is null. `svg` is the mounted DOM element. |
 | `nP.schematic({transmitter, circuit, receiver}, options)` | Draws a two-port RF cascade between MOD and DEMOD blocks. `receiver` may be omitted when the displayed path ends at the RF circuit. |
 | `schematicGraph(circuit, options)` | Returns the computed drawing graph without mounting it. |
 | `schematicTopology(circuit, options)` | Returns the parts and electrical connections without mounting a drawing. |
 | `schematicSvg(circuit, options)` | Returns the SVG markup string without mounting it. |
 
 `schematic()` mounts to `document.body` by default. `options.mount` may be a CSS selector or an element, and `options.containerId` names its wrapper. The default `view: 'detail'` expands a cascade into its components. `view: 'blocks'` can show completed cascade operands as reusable two-port blocks; nodal drawings currently support only the detail view. The returned `graph` and `topology` are plain serializable objects. Changing them after the call does not redraw the SVG or alter the nPort.
+
+Schematic dot presentation is resolved by `schematicDots()` with defaults `{ports: true, nodes: true, terminals: false}`. `options.dots` can override individual boolean fields; unknown fields and non-boolean values report an option error. The resolved settings live on the internal model as `model.dots`, outside `model.graph` and `model.topology`, so visibility changes do not change their geometry or connections. `schematicDot()` writes the solid markers and tags them with `data-schematic-dot` categories for inspection.
+
+`renderNodalSvg()` independently controls external-port dots, numbered-node dots on wires, and component-terminal dots. In the cascade and signal-path routes, `renderSymbol()` controls terminal markers and `renderNodes()` distinguishes the external endpoint markers from internal node markers; coincident external/node endpoints are drawn once according to `dots.ports`. Circled number labels are always drawn. Actual wire-junction markers and canonical artwork (including intrinsic dots) remain visible. The mounted SVG, including these settings, is what the PNG-copy operation serializes. [groupedNetworks.html](../dev/shapes/groupedNetworks.html) compares the same divider/combiner circuit with terminal dots off and on.
 
 Schematic labels use three significant digits by default. `options.significantDigits` accepts an integer from 1 to 15. The formatter changes only label text; component values in `graph` and `topology` retain the constructor's full numeric value.
 
@@ -478,7 +540,7 @@ The REPL calls `nP.schematic(circuit)` in its output iframe, alongside chart and
 
 ## Generic board and specific shape guidance
 
-For a nodal network, `nP.schematic(network)` now selects the **generic board** in `schematicShapeBoards.js` and runs ORI. Supplying `shapes: ['series']`, `['ladder']`, `['bridgedT']`, `['edgeCoupledFilter']`, `['branchline']`, `['powerDivider']` or `['powerCombiner']` selects a more specific board using the same interpreter. The generic route does not try these RF patterns or choose a shape by constructor names.
+For a nodal network, `nP.schematic(network)` first runs independent detection. A recognized whole-network shape selects its board; otherwise it selects the **generic board** in `schematicShapeBoards.js` and runs ORI. Supplying `shapes: ['series']`, `['ladder']`, `['bridgedT']`, `['edgeCoupledFilter']`, `['branchline']`, `['powerDivider']` or `['powerCombiner']` selects a more specific board using the same interpreter. The generic route does not try these RF patterns or choose a shape by constructor names.
 
 The generic board declares left-to-right flow, downward branches, rectangular loop arrangement, the 10-unit grid, component spacing, wire escape length, corner size and routing policy. `schematicBoardGraph.js` implements shared graph operations used by ORI for this policy. It contains no transformer-divider, Wilkinson or other RF-circuit matcher.
 
@@ -524,7 +586,7 @@ The following source-module functions support the current routes. ORI functions 
     <tr><td><code>interpretSchematicBoard()</code><br>(Outside schematic.js)</td><td>ORI entry point in schematicBoardInterpreter.js; interprets board features rather than selecting by an RF shape name.</td></tr>
     <tr><td><code>reflectBoardResult()</code><br>(Outside schematic.js)</td><td>Applies a referenced board's axis reflections to complete bound geometry before annotation placement, preserving numbered terminals.</td></tr>
     <tr><td><code>reflectBoardPoint()</code><br>(Outside schematic.js)</td><td>Reflects a coordinate or offset across the declared axes; shared by component, wire, node and external-port geometry.</td></tr>
-    <tr><td><code>composeSchematicBoards()</code><br>(Outside schematic.js)</td><td>Shared operation in schematicBoardComposition.js: isolates node-bounded regions, interprets their existing boards, aligns compatible interfaces and merges geometry without network blocks.</td></tr>
+    <tr><td><code>composeSchematicBoards()</code><br>(Outside schematic.js)</td><td>Shared operation in schematicBoardComposition.js: isolates node-bounded regions, interprets their existing boards, measures and places sequential, parallel and nested sections, draws direct junctions, and routes boundary wires without crossovers or network blocks.</td></tr>
     <tr><td><code>unusedBoardPorts()</code><br>(Outside schematic.js)</td><td>Enumerates junction terminals outside a bound main path's through-port pairs.</td></tr>
     <tr><td><code>bindBoardLinks()</code><br>(Outside schematic.js)</td><td>Binds declared rejoining connections and reserves their components and endpoints before terminated attachments are traced.</td></tr>
     <tr><td><code>traceBoardLink()</code><br>(Outside schematic.js)</td><td>Follows two-port components from an unused path port to another unused port, preserving numbered terminals.</td></tr>
@@ -567,9 +629,9 @@ Keep the two-resistor example at the start of this note in mind. Its electrical 
 | Loop without a hint | Low-link analysis identifies a cyclic block | Generic ORI places the region on a rectangular perimeter; a named board supplies more specific engineering intent |
 | Branchline coupler | Junctions and arm chains fit the rows, lanes and external ports declared in the board | ORI matches anchors to board cells and fits the actual arm components between their numbered terminals |
 | Transformer power divider | Five component slots and their numbered-port connections fit the transformer board | ORI places the named roles, aligns the input and bridge centerlines, and routes straight/corner wire boxes |
-| Network drawn without a shape hint | The caller supplies connections without a named board | Use the generic board's graph regions and obstacle routing; connectivity alone does not imply every RF drawing convention |
+| Network drawn without a shape hint | The caller supplies connections without a named board | Try enabled whole-network structural detection, then use the generic board if unmatched; connectivity alone does not imply every RF drawing convention |
 
-The guided rows describe specific ORI boards. The unhinted rows describe the generic board's graph regions and routing. A topologically valid route can still look unfamiliar. A shape request supplies visual intent when connectivity alone leaves multiple plausible drawings. A conflicting explicit hint reports an error rather than silently choosing the generic board.
+The guided rows describe specific ORI boards. Unhinted networks that do not match an enabled detector use the generic board's graph regions and routing. A topologically valid route can still look unfamiliar. A shape request supplies visual intent when connectivity alone leaves multiple plausible drawings. A conflicting explicit hint reports an error rather than silently choosing the generic board.
 
 An RF circuit has **components, ports, and electrical nodes**. A supported constructor supplies a component with ordered ports and attaches a `_schematic` record naming its drawing symbol and relevant values. A node number in `nodal()` identifies one electrical connection shared by every listed port with that number. This is a connectivity statement, not a coordinate. Several ports can share one node even if their symbols are drawn far apart.
 
@@ -596,7 +658,7 @@ In layouts that use the annotation search, component labels, external-port label
 
 An explicit `options.shapes` request is checked first. Supported named boards are `series`, `ladder`, `bridgedT`, `edgeCoupledFilter`, `branchline`, `powerDivider` and `powerCombiner`. Node-bounded sections can compose boards with compatible interfaces. The scalar-bounded series/ladder pair uses the same ORI composer as other sections. The `powerDivider` family checks its transformer and Wilkinson descriptions against the component and node connections; `powerCombiner` references that family and reflects its geometry. Each request validates that the actual connections fit; a mismatch throws an error rather than silently selecting another shape.
 
-Without a shape request, a nodal network uses the generic ORI board. Its graph decomposition and routing sequence is described in section 4 below. The former flow, tree, parallel, junction-path, single-loop and graph fallback builders have been removed. `buildNodalModel()` now has one interpreter route for every nodal drawing.
+Without a shape request, a nodal network uses the detected board when one is available, otherwise the generic ORI board. Its graph decomposition and routing sequence is described in section 4 below. The former flow, tree, parallel, junction-path, single-loop and graph fallback builders have been removed. `buildNodalModel()` now has one interpreter route for every nodal drawing.
 
 ### Graph algorithms and routing
 
@@ -719,10 +781,10 @@ The current explicit-shape call sequence crosses two main modules: `schematic.js
 3. **Build electrical adjacency and check coverage conditions.** ORI verifies the language version, external-port count, distinct external nodes and agreement between symbol ports and network rows. It constructs the node-to-terminal adjacency map. Its current board operations require each wire node to join two terminals when external terminals are counted; a multiway junction is represented by an explicit junction component such as a tee. This is a current interpreter restriction, not a restriction on what `nodal()` can simulate.
 4. **Bind the network using operations requested by the data.** A family with `alternatives` tries its data definitions in order. A definition with `match.slots` uses named-slot matching. A definition with `board.rows` or `board.anchors` uses connected-board matching. Other current definitions use path matching, then any declared rejoining connections, then terminated attachments. ORI chooses these operations from language features, not from a comparison with names such as `branchline` or `powerDivider`.
 5. **Expand and place the board.** Repetitions expand into actual boxes. Canonical port geometry determines rotations and reflections. Lane lengths include the real symbols and wire boxes; fixed-end lanes distribute remaining space into their end wires. All transformed terminals must satisfy the 10-unit placement grid.
-6. **Apply declared centerlines and create the routes.** Named-slot placement first establishes initial relative positions, then `alignBoardCenterlines()` translates the declared members into alignment. External leads and straight/corner routes are generated from the resulting terminals. Path and connected-board operations generate their wires while walking their fitted tiles. A referencing definition then applies its declared reflection to the completed geometry with `reflectBoardResult()`. These guided routes do not invoke the fallback maze router.
+6. **Apply declared centerlines and create the routes.** Named-slot placement first establishes initial relative positions, then `alignBoardCenterlines()` translates the declared members into alignment. External leads and straight/corner routes are generated from the resulting terminals. Path and connected-board operations generate their wires while walking their fitted tiles. A referencing definition then applies its declared reflection to the completed geometry with `reflectBoardResult()`. Single-board guided routes do not invoke the fallback maze router. Composition reuses its grid router with crossovers disabled to connect independently measured board interfaces.
 7. **Finish the drawing graph.** Back in `buildInterpretedBoardModel()`, shared code checks component bounds, creates annotation candidates, runs `chooseAnnotations()`, records circled node-number positions and labels, and calls `boardBoxes()` to expose the interpreted boxes. It computes the `viewBox` and assembles `model.graph`.
 8. **Summarize the topology.** `flowTopology()` groups the placed occurrence IDs by their original electrical node assignments. It calls `nodalLoopAnalysis()` to attach the spanning forest, closing edges and cycles. In this guided route, that cycle analysis reports the topology after layout; it did not choose the shape.
-9. **Render and mount.** `renderSchematicSvg()` dispatches the completed nodal model to `renderNodalSvg()`. The renderer reads `model.graph` and bundled symbol artwork and produces SVG. Public `schematic()` mounts that SVG, adds the toolbar and returns `{svg, graph, topology, error}`. On success, `error` is null.
+9. **Render and mount.** `renderSchematicSvg()` dispatches the completed nodal model to `renderNodalSvg()`. The renderer reads `model.graph` and bundled symbol artwork and produces SVG. Public `schematic()` mounts that SVG, adds the toolbar and returns `{svg, graph, topology, detected, error}`. On success, `error` is null.
 
 The operation order within stage 4 and stage 5 depends on the board features:
 
@@ -806,7 +868,7 @@ These names describe algorithm families observable in the implementation. The ex
 
 `wireCrossings()` detects strict intersections between horizontal and vertical segments belonging to different nodes. `renderNodalSvg()` masks each crossing with a small white rectangle, then draws a straight horizontal segment over it. The crossover is therefore shown as a gap with a continuous straight line, not a hop arc.
 
-`renderSchematicSvg()` builds SVG markup as a string and uses `escapeXml()` for displayed text. `schematicSvg()`, `schematicGraph()`, and `schematicTopology()` return the SVG markup, layout graph, and connection data without mounting the drawing; these are source-module exports. The public `schematic()` function mounts the SVG and toolbar, and returns `{svg, graph, topology, error}`. On success, `error` is null. PNG copy serializes the mounted SVG, draws it through an image and canvas, creates a PNG `Blob`, and passes it to the Clipboard API. A `ResizeObserver` updates a fitted drawing when its viewport changes. Component values in labels are formatted with `toPrecision()`; that formatting does not change the nPort values.
+`renderSchematicSvg()` builds SVG markup as a string and uses `escapeXml()` for displayed text. `schematicSvg()`, `schematicGraph()`, and `schematicTopology()` return the SVG markup, layout graph, and connection data without mounting the drawing; these are source-module exports. The public `schematic()` function mounts the SVG and toolbar, and returns `{svg, graph, topology, detected, error}`. On success, `error` is null. PNG copy serializes the mounted SVG, draws it through an image and canvas, creates a PNG `Blob`, and passes it to the Clipboard API. A `ResizeObserver` updates a fitted drawing when its viewport changes. Component values in labels are formatted with `toPrecision()`; that formatting does not change the nPort values.
 
 When a completed `nodal()` nPort is connected as one part of a larger nodal circuit, it appears as a `nodal` block. The canonical SVG is the two-port reference. `nodalBlockSymbol()` generates the same rectangular form for other port counts, with 20-unit leads and stable port numbering; its geometry can put individual ports on any of the four sides. The current automatic layout starts with port 1 on the left and the remaining ports on the right, then may rotate or reflect the whole block. The nested circuit's full `_schematic` connection record remains available. A top-level nodal circuit still expands to its component drawing.
 
