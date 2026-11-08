@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-25 -->
+<!-- Modified: 2026-11-07 -->
 
 # From nP code to a schematic
 
@@ -33,4 +33,4 @@ node schematics/tools/validate-schematic.js docs/public/schematics/NAME.svg
 
 The RF validator checks each routed node's component ports, external terminals, wire connectivity, and dangling ends. The SVG validator checks that the file matches its JSON and current canonical symbols, plus selected clearances. Neither tool proves that the JSON matches executable JavaScript or that the drawing looks good. Compare the port-level connection list with the source code, parse the SVG as XML, and inspect its rendered appearance before publication. A general automatic JavaScript extractor would need an explicit supported syntax and handling for dynamic expressions; it is not part of this workflow yet.
 
-For the repository examples, `npm run schematics:build` rebuilds descriptions and SVGs from the hand-reviewed layout specifications in `schematics/tools/`, then updates `example-inventory.md`. It does not execute or parse the example JavaScript; changes to an example's components or connections require updating the corresponding specification and reviewing the rendered result.
+For static documentation drawings, `npm run schematics:build` rebuilds the 13 published descriptions and SVGs from the hand-reviewed layout specifications in `schematics/tools/`. It does not execute or parse the example JavaScript; changes to an example's components or connections require updating the corresponding specification and reviewing the rendered result. The three authoring fixtures use the individual compose command above. `npm run schematics:check` validates all 16 drawings and checks live documentation image references. REPL examples use `nP.schematic()` at runtime instead of this static authoring workflow.

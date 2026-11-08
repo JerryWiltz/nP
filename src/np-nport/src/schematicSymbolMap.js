@@ -13,6 +13,7 @@ export const schematicSymbolMap = {
     "paC": "parallel-capacitor",
     "trf": "transformer",
     "trf4Port": "transformer-four-port",
+    "trfAuto": "transformer-auto",
     "seSeRL": "se-series-rl",
     "paSeRL": "pa-series-rl",
     "seSeRC": "se-series-rc",

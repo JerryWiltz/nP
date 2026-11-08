@@ -1220,6 +1220,10 @@ export const schematicSymbols = {
                 ]
             ]
         ],
+        "entry": [
+            1,
+            0
+        ],
         "exit": [
             0,
             1
@@ -1270,6 +1274,10 @@ export const schematicSymbols = {
                     0
                 ]
             ]
+        ],
+        "entry": [
+            1,
+            0
         ],
         "exit": [
             0,
@@ -1636,7 +1644,7 @@ export const schematicSymbols = {
             1,
             0
         ],
-        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M80 80 H100 M180 80 H200 M100 80 C85 80 85 100 100 100 C85 100 85 120 100 120 C85 120 85 140 100 140 C85 140 85 160 100 160 M180 80 C195 80 195 100 180 100 C195 100 195 120 180 120 C195 120 195 140 180 140 C195 140 195 160 180 160 M137 70 V170 M143 70 V170\"/>\n  </g>"
+        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M80 80 H100 H115 M180 80 H200 M180 80 H165 M115 80 C130 80 130 100 115 100 C130 100 130 120 115 120 C130 120 130 140 115 140 C130 140 130 160 115 160 M165 80 C150 80 150 100 165 100 C150 100 150 120 165 120 C150 120 150 140 165 140 C150 140 150 160 165 160 M137 70 V170 M143 70 V170\"/>\n  </g>"
     },
     "transformer-four-port": {
         "ports": [
@@ -1711,7 +1719,68 @@ export const schematicSymbols = {
                 ]
             ]
         ],
-        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M80 80 H100 M180 80 H200 M80 160 H100 M180 160 H200 M100 80 C85 80 85 100 100 100 C85 100 85 120 100 120 C85 120 85 140 100 140 C85 140 85 160 100 160 M180 80 C195 80 195 100 180 100 C195 100 195 120 180 120 C195 120 195 140 180 140 C195 140 195 160 180 160 M137 70 V170 M143 70 V170\"/>\n  </g>"
+        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M80 80 H100 H115 M180 80 H200 M180 80 H165 M80 160 H100 H115 M180 160 H200 M180 160 H165 M115 80 C130 80 130 100 115 100 C130 100 130 120 115 120 C130 120 130 140 115 140 C130 140 130 160 115 160 M165 80 C150 80 150 100 165 100 C150 100 150 120 165 120 C150 120 150 140 165 140 C150 140 150 160 165 160 M137 70 V170 M143 70 V170\"/>\n  </g>"
+    },
+    "transformer-auto": {
+        "ports": [
+            [
+                220,
+                140
+            ],
+            [
+                140,
+                80
+            ],
+            [
+                140,
+                200
+            ]
+        ],
+        "bounds": [
+            56,
+            56,
+            244,
+            224
+        ],
+        "bodyBounds": [
+            112,
+            90,
+            220,
+            190
+        ],
+        "leads": [
+            [
+                [
+                    220,
+                    140
+                ],
+                [
+                    200,
+                    140
+                ]
+            ],
+            [
+                [
+                    140,
+                    80
+                ],
+                [
+                    140,
+                    100
+                ]
+            ],
+            [
+                [
+                    140,
+                    200
+                ],
+                [
+                    140,
+                    180
+                ]
+            ]
+        ],
+        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M140 80 V100 C125 100 125 120 140 120 C125 120 125 140 140 140 C125 140 125 160 140 160 C125 160 125 180 140 180 V200 M112 90 V190 M118 90 V190 M140 140 H200 H220\"/>\n  </g>"
     },
     "se-series-rl": {
         "ports": [

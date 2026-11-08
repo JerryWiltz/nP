@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Modified: 2026-10-28
+// Modified: 2026-11-06
 'use strict';
 
 const fs = require('fs');
@@ -85,8 +85,8 @@ function validateDescription(circuit) {
     fail('viewBox must contain four finite numbers');
   }
   const [, , width, height] = circuit.viewBox;
-  if (width <= 0 || height <= 0 || width % 20 || height % 20) {
-    fail('viewBox width and height must be positive multiples of 20');
+  if (width <= 0 || height <= 0 || width % 10 || height % 10) {
+    fail('viewBox width and height must be positive multiples of 10');
   }
   if (!circuit.layout || typeof circuit.layout !== 'object' ||
       !Number.isFinite(circuit.layout.centerAxisX) ||
@@ -134,7 +134,7 @@ function validateDescription(circuit) {
           .includes(component.symbol)) {
       fail(`${component.id}.source constructor does not map to ${component.symbol}`);
     }
-    pointOnGrid(component.at, 20, `${component.id}.at`);
+    pointOnGrid(component.at, 10, `${component.id}.at`);
     if (signalSymbols.has(component.symbol) !== (circuit.domain === 'signal')) {
       fail(`${component.id} symbol does not match the ${circuit.domain} diagram domain`);
     }
@@ -161,7 +161,7 @@ function validateDescription(circuit) {
       if (ports.has(connection.port)) fail(`${component.id} repeats port ${connection.port}`);
       ports.add(connection.port);
       numberPair(connection.at, `${component.id} port ${connection.port}`);
-      pointOnGrid(connection.at, 20, `${component.id} port ${connection.port}`);
+      pointOnGrid(connection.at, 10, `${component.id} port ${connection.port}`);
       pointInsideMargin(connection.at, circuit.viewBox, `${component.id} port ${connection.port}`);
       if (circuit.domain === 'rf') {
         if (!Number.isInteger(connection.node) || connection.node < 1 ||
@@ -209,7 +209,7 @@ function validateDescription(circuit) {
     }
     wire.points.forEach((point, pointIndex) => {
       numberPair(point, `wire ${index} point ${pointIndex}`);
-      pointOnGrid(point, 20, `wire ${index} point ${pointIndex}`);
+      pointOnGrid(point, 10, `wire ${index} point ${pointIndex}`);
       pointInsideMargin(point, circuit.viewBox, `wire ${index} point ${pointIndex}`);
     });
     for (let pointIndex = 1; pointIndex < wire.points.length; pointIndex += 1) {
@@ -221,7 +221,7 @@ function validateDescription(circuit) {
     }
   }
   for (const [index, terminal] of (circuit.terminals || []).entries()) {
-    pointOnGrid(terminal.at, 20, `terminal ${index + 1}`);
+    pointOnGrid(terminal.at, 10, `terminal ${index + 1}`);
     pointInsideMargin(terminal.at, circuit.viewBox, `terminal ${index + 1}`);
     if (circuit.domain === 'signal') {
       if (typeof terminal.signal !== 'string' || !terminal.signal.trim()) {

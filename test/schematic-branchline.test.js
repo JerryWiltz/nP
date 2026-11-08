@@ -1,4 +1,4 @@
-// Modified: 2026-11-01
+// Modified: 2026-11-06
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DOMParser} from '@xmldom/xmldom';
@@ -12,6 +12,7 @@ for (const name of ['branch-series-top', 'branch-series-opposite', 'branch-reord
     test(`branchline guidance draws ${name} as a rectangle`, () => {
         const circuit = cases.get(name);
         const graph = schematicGraph(circuit, {shapes: ['branchline']});
+        assert.equal(graph.board.interpreter, 'ORI');
         assert.equal(graph.layout, 'branchline');
         assert.equal(graph.shape, 'branchline');
         assert.equal(graph.cells, 1);
@@ -19,7 +20,7 @@ for (const name of ['branch-series-top', 'branch-series-opposite', 'branch-reord
         graph.components.forEach((part, index) => {
             assert.deepEqual(part.ports.map(port => port.node), circuit._schematic.components[index].nodes);
         });
-        assert.deepEqual(new Set(graph.wires.map(wire => wire.node)),
+        assert.deepEqual(new Set(graph.nodes.map(node => node.id)),
             new Set(circuit._schematic.components.flatMap(entry => entry.nodes)));
         assert.equal(schematicTopology(circuit, {shapes: ['branchline']}).loopAnalysis.cycles.length, 1);
         assert.equal(new DOMParser().parseFromString(schematicSvg(circuit, {shapes: ['branchline']}),
@@ -50,5 +51,5 @@ test('branchline guidance rotates microstrip junctions and lines', () => {
 
 test('branchline guidance rejects a network without rectangular cells', () => {
     assert.throws(() => schematicGraph(cases.get('three-shunt-ladder'),
-        {shapes: ['branchline']}), /does not match a drawable branchline/);
+        {shapes: ['branchline']}), /does not match the "branchline" pattern/);
 });

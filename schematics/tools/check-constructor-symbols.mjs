@@ -1,4 +1,4 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-04
 import {readFileSync} from 'node:fs';
 import {dirname, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -10,7 +10,8 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const source = readFileSync(resolve(root, 'src/np-nport/src/index.js'), 'utf8');
 const catalog = JSON.parse(readFileSync(resolve(root, 'schematics/symbol-catalog.json'), 'utf8'));
 const names = [...source.matchAll(/export \{(\w+)\} from '\.\/(.*?)';/g)]
-    .filter(([, , module]) => !module.startsWith('filters/') && !module.startsWith('combining/'))
+    .filter(([, name, module]) => !module.startsWith('filters/') &&
+        !module.startsWith('combining/'))
     .map(([, name]) => name);
 
 function checkPart(name, part, expected) {

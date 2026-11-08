@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Modified: 2026-11-02 -->
+<!-- Modified: 2026-11-04 -->
 <html lang="en">
 
 <head>
@@ -34,6 +34,10 @@
   <section>
     <h2>One-cell microstrip branchline</h2>
     <div id="branchline-microstrip"></div>
+  </section>
+  <section>
+    <h2>One-cell microstrip branchline with four series resistors</h2>
+    <div id="branchline-microstrip-four-resistors"></div>
   </section>
   <script>
     // Branchline schematic examples
@@ -124,6 +128,38 @@
     nP.schematic(microstripBranchline, {
       shapes: ['branchline'],
       mount: '#branchline-microstrip'
+    });
+
+    var microstripTee5 = nP.mtee();
+    var microstripTee6 = nP.mtee();
+    var microstripTee7 = nP.mtee();
+    var microstripTee8 = nP.mtee();
+    var microstripTopWithResistors = nP.mlin();
+    var microstripLeftWithResistors = nP.mlin();
+    var microstripBottomWithResistors = nP.mlin();
+    var microstripRightWithResistors = nP.mlin();
+    var seriesResistor1 = nP.R(50);
+    var seriesResistor2 = nP.R(50);
+    var seriesResistor3 = nP.R(50);
+    var seriesResistor4 = nP.R(50);
+    var microstripBranchlineWithResistors = nP.nodal(
+      [microstripTee5, 5, 1, 2],
+      [microstripTopWithResistors, 2, 13],
+      [seriesResistor1, 13, 14],
+      [seriesResistor2, 14, 15],
+      [seriesResistor3, 15, 16],
+      [seriesResistor4, 16, 3],
+      [microstripTee6, 6, 3, 4],
+      [microstripLeftWithResistors, 5, 7],
+      [microstripTee7, 7, 9, 10],
+      [microstripBottomWithResistors, 10, 11],
+      [microstripTee8, 8, 11, 12],
+      [microstripRightWithResistors, 6, 8],
+      ['out', 1, 4, 12, 9]
+    );
+    nP.schematic(microstripBranchlineWithResistors, {
+      shapes: ['branchline'],
+      mount: '#branchline-microstrip-four-resistors'
     });
   </script>
 </body>

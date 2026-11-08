@@ -1,4 +1,4 @@
-// Modified: 2026-10-29
+// Modified: 2026-11-06
 import {schematicSymbols} from './schematicSymbols.js';
 
 const PORT_SPACING = 80;
@@ -63,6 +63,7 @@ export function nodalBlockSymbol(portCount, portSides) {
 }
 
 export function symbolForSchematicEntry(entry) {
+    if (entry.part?.kind === 'cascade') return schematicSymbols.cascade;
     return entry.part?.kind === 'nodal' ? nodalBlockSymbol(entry.nodes.length) :
         schematicSymbols[entry.part?.symbol];
 }

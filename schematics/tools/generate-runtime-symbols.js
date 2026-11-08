@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Modified: 2026-11-01
+// Modified: 2026-11-04
 'use strict';
 
 const fs = require('fs');
@@ -12,11 +12,11 @@ const outputPath = path.join(repositoryRoot, 'src/np-chart/src/schematicSymbols.
 const constructorMapPath = path.join(repositoryRoot, 'src/np-nport/src/schematicSymbolMap.js');
 const nportIndexPath = path.join(repositoryRoot, 'src/np-nport/src/index.js');
 const catalog = require('../symbol-catalog.json');
-
 function directRfConstructors() {
   const source = fs.readFileSync(nportIndexPath, 'utf8');
   return [...source.matchAll(/export \{(\w+)\} from '\.\/(.*?)';/g)]
-    .filter(([, , module]) => !module.startsWith('filters/') && !module.startsWith('combining/'))
+    .filter(([, name, module]) => !module.startsWith('filters/') &&
+      !module.startsWith('combining/'))
     .map(([, name]) => name);
 }
 

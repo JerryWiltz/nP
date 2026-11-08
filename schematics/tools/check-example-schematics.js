@@ -1,15 +1,31 @@
 #!/usr/bin/env node
-// Modified: 2026-10-25
+// Modified: 2026-11-07
 'use strict';
 
 const fs = require('fs');
 const path = require('path');
 const {execFileSync} = require('child_process');
-const {pathToFileURL} = require('url');
 const {compose} = require('./compose-schematic');
 const {parseXml, resolveSchematicPaths} = require('./symbol-library');
 
 const {repositoryRoot} = resolveSchematicPaths(__dirname);
+
+function documentationReferences(directory = path.join(repositoryRoot, 'docs')) {
+  const references = new Set();
+  for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
+    const filename = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      if (['_archive', 'public', '.vitepress'].includes(entry.name)) continue;
+      for (const name of documentationReferences(filename)) references.add(name);
+    } else if (entry.name.endsWith('.md')) {
+      const markdown = fs.readFileSync(filename, 'utf8');
+      for (const match of markdown.matchAll(/\/schematics\/([a-z0-9-]+)\.svg\b/g)) {
+        references.add(match[1]);
+      }
+    }
+  }
+  return references;
+}
 
 async function check() {
   const circuitRoot = path.join(repositoryRoot, 'schematics/circuits');
@@ -27,28 +43,13 @@ async function check() {
     parseXml(svg, `${name}.svg`);
     if (compose(description) !== svg) throw new Error(`${name}.svg is stale`);
   }
-  const themeRoot = path.join(repositoryRoot, 'docs/.vitepress/theme');
-  const [{examples}, {schematicMap, examplesWithoutCircuits}] = await Promise.all([
-    import(pathToFileURL(path.join(themeRoot, 'replExamples.js')).href),
-    import(pathToFileURL(path.join(themeRoot, 'schematicMap.js')).href)
-  ]);
-  const ids = new Set(examples.map(example => example.id));
-  if (ids.size !== examples.length) throw new Error('REPL example ids must be unique');
-  for (const id of ids) {
-    const mapped = schematicMap[id];
-    if (Boolean(mapped) === examplesWithoutCircuits.has(id)) {
-      throw new Error(`${id} needs exactly one schematic classification`);
-    }
-    for (const name of mapped || []) {
-      if (!svgNames.includes(name)) throw new Error(`${id} references missing schematic ${name}`);
-    }
-  }
-  for (const id of [...Object.keys(schematicMap), ...examplesWithoutCircuits]) {
-    if (!ids.has(id)) throw new Error(`unknown REPL example ${id}`);
+  const referenced = documentationReferences();
+  for (const name of referenced) {
+    if (!svgNames.includes(name)) throw new Error(`documentation references missing schematic ${name}`);
   }
   execFileSync(process.execPath, [path.join(__dirname, 'validate-schematic.js'),
     ...svgNames.map(name => path.join(svgRoot, `${name}.svg`))], {stdio: 'inherit'});
-  process.stdout.write(`Checked ${jsonNames.length} schematics and ${examples.length} REPL examples.\n`);
+  process.stdout.write(`Checked ${jsonNames.length} static schematics and ${referenced.size} documentation drawings.\n`);
 }
 
 if (require.main === module) {
@@ -58,4 +59,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = {check};
+module.exports = {check, documentationReferences};

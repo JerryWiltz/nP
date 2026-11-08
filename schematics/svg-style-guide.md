@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-25 -->
+<!-- Modified: 2026-11-06 -->
 
 # SVG schematic style guide
 
@@ -20,7 +20,7 @@ All dimensions are SVG `viewBox` units. The detailed family rules below describe
 
 | Symbol or feature | Standard dimensions | Exception or placement rule |
 | --- | --- | --- |
-| Electrical grid and ordinary pins | 20-unit grid; 20-unit visible pin | Terminals and wire points stay on the grid. |
+| Electrical grid and ordinary pins | 10-unit grid; 20-unit visible pin | Terminals and wire points stay on the grid. |
 | `R()` / `seR()` | 100 between terminals; 60 × 20 zigzag body | 20-unit pin at each end. |
 | `L()` / `seL()` | 100 between terminals; 60-wide, four-loop body | 20-unit pin at each end. |
 | `C()` / `seC()` | 60 between terminals; 10-unit plate gap | Two 25-unit leads preserve grid-aligned terminals. |
@@ -28,12 +28,14 @@ All dimensions are SVG `viewBox` units. The detailed family rules below describe
 | `Thru()`, `Shift90()`, `Tlin()`, `mlin()`, `mtfr()` | 80 × 30 body | External pins are 20 units; `mtfr()` reads `mTFR`. |
 | `Tclin()`, `mclin()`, `Coupler180()` | Two 80 × 30 bodies, 10 apart | Four 20-unit pins; `180` is in the lower coupler body. |
 | `Attn()` | 60-unit through line | Stylized vertical resistor has no top or bottom pins. |
-| Complete circuits | 40-unit minimum content margin | Labels may use the 10-unit half-grid. |
+| Complete circuits | 40-unit minimum content margin | Labels use the 10-unit grid. |
 
-- All dimensions below are **SVG `viewBox` units**, not fixed screen pixels. The browser scales them to the rendered size. A `viewBox` width and height must each be a positive multiple of 20.
-- Use one 20-unit electrical grid for every canonical symbol and complete circuit. Every symbol terminal, component anchor, interconnect wire point, junction, external port, and electrical node must have coordinates divisible by 20. This includes compact and multiport symbols after placement and rotation.
+- All dimensions below are **SVG `viewBox` units**, not fixed screen pixels. The browser scales them to the rendered size. A `viewBox` width and height must each be a positive multiple of 10.
+- Use one 10-unit electrical placement grid for every canonical symbol and complete circuit. Every symbol terminal, component anchor, interconnect wire point, junction, external port, and electrical node must have coordinates divisible by 10. This includes compact and multiport symbols after placement and rotation.
+- The placement grid is independent of pin length: ordinary pins remain 20 units. Existing canonical artwork retains its dimensions. A midpoint between terminals 100 units apart can lie on the 10-unit grid even when it falls between the former 20-unit grid lines.
+- For named-slot boards, express shared electrical centerlines in `board.centerlines`. A relation names an `x` or `y` coordinate, a reference terminal or midpoint between two terminal roles, and the terminals to align. ORI translates the corresponding components after initial placement and before routing. Centerline relations take precedence over initial board offsets. Electrical node assignments and numbered ports remain attached to their components. Conflicting relations or translations incompatible with the placement grid must report an error.
 - Canonical symbol pins are visibly 20 units long, measured from each terminal-dot center to the first body edge or marked junction. The standalone `C()`/`seC()` symbol uses 25-unit leads to fit a 10-unit plate gap between grid-aligned terminal dots. `Attn()` is a stylized icon with a continuous through line and no separate pin-to-body segment. A continuous unbounded rail does not make its first 20 units visually identifiable as a pin. Circuit interconnects begin at terminal dots and are separate from symbol pins.
-- Use a 10-unit half-grid for **complete-diagram labels** and ordinary internal symbol details. Canonical reference symbols may keep their established label coordinates. Use a 5-unit quarter-grid only for internal shape details such as capacitor plates or inductor loops; these are not terminals or interconnect wires.
+- Use the 10-unit placement grid for **complete-diagram labels** and ordinary internal symbol details. Canonical reference symbols may keep their established label coordinates. Use a 5-unit detail grid only for internal shape details such as capacitor plates or inductor loops; these are not terminals or interconnect wires.
 - Rotate complete symbols only in 90-degree increments around a grid-aligned anchor. A horizontal resistor may thus be placed vertically without changing its body, leads, or port order. Do not scale a symbol to make its terminals meet the grid.
 - A placed `Tee()` may use `mirrorY: true` when its common port must face upward. Mirror its geometry and public port coordinates together; the port numbers remain attached to their original branches. Use the placement only where it gives a clearer routed circuit, such as the lower junction in a Wilkinson divider.
 - Leave at least 40 `viewBox` units between visible content of a **complete diagram** and each canvas edge. Canonical reference symbols use their own compact canvases. Keep labels and captions inside the canvas with clear visual margins. Prefer left-to-right signal flow and vertical shunt branches. Use horizontal and vertical wires; diagonals belong only inside a canonical component symbol.
@@ -65,7 +67,7 @@ All dimensions are SVG `viewBox` units. The detailed family rules below describe
 
 - Use `Thru()`'s 80-by-30 outlined body and 20-unit pins for `Shift90()`, `Tlin()`, and `mlin()`. Match `mlin()` to `Tlin()` in its 280-by-180 canvas, terminal coordinates, and label positions. Use two 80-by-30 bodies with a 10-unit vertical gap for each four-port coupled symbol: `Tclin()`, `mclin()`, and `Coupler180()`. Match `mclin()` to `Tclin()` in its 320-by-220 canvas, 20-unit pins, clockwise port order, and label positions. Put `180` inside `Coupler180()`'s lower body between ports 4 and 3. Use the constructor title and an appropriate parameter caption to distinguish the physical model.
 - Draw `mtfr()` with the same 80-by-30 body and 20-unit pins as `Thru()`, with `mTFR` centered inside its unshaded body.
-- Draw `Attn()` as a vertical resistor zigzag with no top or bottom leads. Run a 60-unit horizontal port-1-to-port-2 line through the zigzag's center, with both terminal dots on the 20-unit grid. This is an attenuation icon, not a literal resistor connection.
+- Draw `Attn()` as a vertical resistor zigzag with no top or bottom leads. Run a 60-unit horizontal port-1-to-port-2 line through the zigzag's center, with both terminal dots on the 10-unit grid. This is an attenuation icon, not a literal resistor connection.
 - Keep right-turn and left-turn `mbend()` symbols separate. With port 1 entering from the left, the right-turn variant exits downward at port 2 and the left-turn variant exits upward. Center each port on its 14-unit-wide conductor arm. Use a 14-by-14 inner corner, a 13-unit extension toward each port, and a 7-by-7 chamfer at the outside corner. Mirror the conductor vertically to obtain the opposite turn. Enlarge this compact copper silhouette twofold in the reference SVG so its body remains legible beside 20-unit pins. Rotate an entire symbol to place it. Both variants model the same reciprocal constructor.
 - Build `mcross()` from a 14-by-14 center square and one 6-by-14 extension on each side. Its unscaled copper footprint is 26 by 26 units; enlarge the silhouette twofold in the reference SVG. Public ports are left 1, top 2, right 3, bottom 4. Put a small port-1 marker inside the center near the left edge, distinct from its terminal dot.
 - Build `mtee()` from a 14-by-14 center square and 6-by-14 extensions on the left, top, and bottom. Its unscaled copper footprint is 20 by 26 units; enlarge the silhouette twofold in the reference SVG. Public ports are common left 1, upper branch 2, lower branch 3. Mark port 1 inside the center near the left edge. Rotate its complete geometry and labels together; do not mirror it or relabel branches as input and output.
@@ -86,7 +88,7 @@ All dimensions are SVG `viewBox` units. The detailed family rules below describe
 - Every complete diagram declares `domain` as `rf` or `signal` and supplies `layout.centerAxisX` and `layout.centerReference`. The center axis must equal the `viewBox` vertical midpoint. Both RF and signal diagrams use the flat `symbols/` directory; the diagram domain determines whether connectors are electrical ports or signal-flow connections. Draw a mixed system as separate electrical and signal-flow diagrams until a mixed-domain format is defined.
 - In an RF diagram, each component connection has a positive integer `node` and a 10-grid `labelAt` position. Connections on the same node may be at different coordinates, joined by wires tagged with that `node`. External terminals carry the same node number. Keep one shared `labelAt` for the node's circled number. RF wires and terminals do not carry a signal name. Show component connection dots and one circled number per node.
 - In a signal diagram, each connector has a nonempty string `signal` instead of `node` or `labelAt`. Each wire and external terminal names its signal. Wires for each signal must form one connected route whose endpoints reach its declared connectors and terminals. Signal diagrams do not draw circled RF node numbers. Use labels to show data types such as samples or spectrum.
-- Place every component anchor, transformed canonical terminal, and interconnect wire point on the 20-unit grid. Diagram labels use the 10-unit grid. The composer checks described points and label anchors against the 40-unit margin; the validator also estimates label extents. Inspect symbol bodies and text visually because their full rendered bounds are not inferred by the tools.
+- Place every component anchor, transformed canonical terminal, and interconnect wire point on the 10-unit grid. Diagram labels use the 10-unit grid. The composer checks described points and label anchors against the 40-unit margin; the validator also estimates label extents. Inspect symbol bodies and text visually because their full rendered bounds are not inferred by the tools.
 
 ## Labels, circuit nodes, and external ports
 

@@ -15,6 +15,7 @@ export {paC} from './rlc/paC';
 
 export {trf} from './rlc/trf';
 export {trf4Port} from './rlc/trf4Port';
+export {trfAuto} from './rlc/trfAuto';
 
 export {seSeRL} from './rlc/seSeRL';
 export {paSeRL} from './rlc/paSeRL';

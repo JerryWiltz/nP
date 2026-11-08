@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-23 -->
+<!-- Modified: 2026-11-04 -->
 # np-nport Development Notes
 
 `src/np-nport/` contains the common n-port object, lumped components, ideal fixtures, transmission lines, physical microstrip models, noise and intermodulation helpers, and network-composition functions.
@@ -94,7 +94,7 @@ The ideal Tee-family matrices are lossless and use exact junction coefficients w
 
 ### Transformers
 
-`trf()` and `trf4Port()` provide ideal transformer models. Tests should include inverse-ratio cascades, expected match, reciprocity, and lossless transmission.
+`trf()` and `trf4Port()` provide ideal transformer models. `trfAuto()` is an ideal three-port center-tapped autotransformer with port 1 at the tap and ports 2 and 3 at the winding ends. Its canonical symbol is part of the shared symbol catalog and runtime schematic library. Tests should include inverse-ratio cascades, expected match, reciprocity, and lossless transmission.
 
 ### Microstrip
 

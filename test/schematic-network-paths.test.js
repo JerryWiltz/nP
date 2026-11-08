@@ -1,4 +1,4 @@
-// Modified: 2026-10-31
+// Modified: 2026-11-06
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DOMParser} from '@xmldom/xmldom';
@@ -18,7 +18,7 @@ test('network-only layout follows two resistors despite reordered nodal rows', (
     assert.deepEqual(graph.components.map(part => part.symbol), ['resistor', 'resistor']);
     assert.deepEqual(graph.externalPorts.map(port => port.node), [45, 1]);
     assert.deepEqual(new Set(graph.nodes.map(node => node.id)), new Set([45, 37, 1]));
-    assert.deepEqual(schematicTopology(circuit).connections.find(item => item.node === 37).ports,
+    assert.deepEqual(schematicTopology(circuit).connections.find(item => item.node === 37).ports.slice().sort(),
         ['R1.2', 'R2.1']);
     assert.equal(new DOMParser().parseFromString(schematicSvg(circuit), 'image/svg+xml')
         .getElementsByTagName('parsererror').length, 0);

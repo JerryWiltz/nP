@@ -14,6 +14,7 @@
     "paC": "parallel-capacitor.svg",
     "trf": "transformer.svg",
     "trf4Port": "transformer-four-port.svg",
+    "trfAuto": "transformer-auto.svg",
     "seSeRL": "se-series-rl.svg",
     "paSeRL": "pa-series-rl.svg",
     "seSeRC": "se-series-rc.svg",

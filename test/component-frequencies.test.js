@@ -1,4 +1,4 @@
-// Modified: 2026-10-21
+// Modified: 2026-11-04
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -19,6 +19,7 @@ test('every built-in n-port constructor accepts its own frequency list', () => {
 		['L', 'seL', 'paL', 'C', 'seC', 'paC', 'trf', 'trf4Port'].forEach(function (name) {
 			cases.push([name, function () { return nP[name](undefined, options); }]);
 		});
+		cases.push(['trfAuto', function () { return nP.trfAuto(options); }]);
 		['seSeRL', 'sePaRL', 'paSeRL', 'paPaRL', 'seSeRC', 'sePaRC', 'paSeRC', 'paPaRC',
 			'seSeLC', 'sePaLC', 'paSeLC', 'paPaLC'].forEach(function (name) {
 			cases.push([name, function () { return nP[name](undefined, undefined, options); }]);
@@ -39,7 +40,7 @@ test('every built-in n-port constructor accepts its own frequency list', () => {
 		cases.push(['diode1N4148', function () { return nP.diode1N4148(options); }]);
 		cases.push(['lpfGen', function () { return nP.lpfGen(undefined, options); }]);
 
-		assert.equal(cases.length, 52);
+		assert.equal(cases.length, 53);
 		cases.forEach(function ([name, make]) {
 			var component = make();
 			assert.deepEqual(component.spars.map(function (row) { return row[0]; }), fList, name + ' S frequencies');

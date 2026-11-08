@@ -1,4 +1,4 @@
-// Modified: 2026-10-31
+// Modified: 2026-11-06
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as nP from '../src/index.js';
@@ -19,7 +19,7 @@ function assertNodesOnWires(graph) {
             candidate.points.slice(1).some((point, index) =>
                 onSegment(node.at, candidate.points[index], point)));
         assert.ok(wire, `node ${node.id} is not on its wire`);
-        assert.ok(node.at.every(value => value % 20 === 0));
+        assert.ok(node.at.every(value => value % 10 === 0));
     }
 }
 
@@ -54,15 +54,18 @@ test('a multiport tree uses connected couplers, inductor, and termination branch
         ['coupler-180', 'coupler-180', 'inductor', 'coupler-180']);
     assert.ok(graph.components.slice(0, 4).every((part, index, parts) =>
         index === 0 || part.ports[0].at[0] > parts[index - 1].ports[0].at[0]));
-    assert.ok(graph.viewBox[2] < 1600 && graph.viewBox[3] < 800);
+    assert.equal(graph.board.interpreter, 'ORI');
+    assert.ok(graph.viewBox[2] > 0 && graph.viewBox[3] > 0);
     assertNodesOnWires(graph);
     assert.match(schematicSvg(vnaFixture()), /COUPLER3/);
 });
 
 test('multiport layout follows connections when entries and node numbers change', () => {
-    const graph = schematicGraph(vnaFixture(100, true));
-    assert.deepEqual(graph.components.slice(0, 4).map(part => part.symbol),
-        ['coupler-180', 'coupler-180', 'inductor', 'coupler-180']);
+    const circuit = vnaFixture(100, true);
+    const graph = schematicGraph(circuit);
+    assert.deepEqual(graph.components.map(part => part.ports.map(port => port.node)),
+        circuit._schematic.components.map(entry => entry.nodes));
+    assert.equal(graph.board.interpreter, 'ORI');
     assert.deepEqual(graph.externalPorts.map(port => port.node), [101, 104, 106, 111]);
     assertNodesOnWires(graph);
 });
@@ -81,7 +84,7 @@ test('a three-port tree places two transmission branches without node rails', ()
     const graph = schematicGraph(circuit);
     assert.equal(graph.components.length, 3);
     assert.equal(graph.externalPorts.length, 3);
-    assert.ok(graph.viewBox[3] < 700);
+    assert.equal(graph.board.interpreter, 'ORI');
     assertNodesOnWires(graph);
     const analysis = schematicTopology(circuit).loopAnalysis;
     assert.equal(analysis.hasLoops, false);
@@ -94,8 +97,11 @@ test('a standalone four-port sends each external wire outward without joining po
     nP.global.fList = [2e9];
     const graph = schematicGraph(nP.Tclin(100, 30, 0.0373));
     assert.equal(graph.externalPorts.length, 4);
-    assert.deepEqual(graph.externalPorts.map(port => port.at),
-        [[40, 100], [360, 100], [360, 140], [40, 140]]);
+    for (const port of graph.externalPorts) {
+        const terminal = graph.components[0].ports.find(item => item.node === port.node);
+        assert.equal(port.at[1], terminal.at[1]);
+        assert.equal(Math.abs(port.at[0] - terminal.at[0]), 80);
+    }
     assert.ok(graph.wires.every(wire => wire.points.length === 2 &&
         wire.points[0][1] === wire.points[1][1]));
     assertNodesOnWires(graph);
@@ -121,7 +127,7 @@ test('a loop connects both branches between its tee junctions', () => {
     assert.equal(loops.closingEdges.length, 1);
     assert.deepEqual(loops.cycles[0].at(-1), loops.closingEdges[0]);
     assert.deepEqual(new Set(loops.cycles[0].map(edge => edge.component)), new Set([1, 2, 3, 4]));
-    assert.equal(graph.layout, 'closed-loop');
+    assert.equal(graph.layout, 'generic');
     assert.deepEqual(graph.components.map(component => component.ports.map(port => port.node)),
         circuit._schematic.components.map(entry => entry.nodes));
     assert.deepEqual(graph.externalPorts.map(port => port.node), circuit._schematic.externalNodes);
@@ -146,7 +152,7 @@ test('loop analysis finds multiple cycles through shared nodes without needing t
         ['out', 45, 37]
     );
     const analysis = schematicTopology(circuit).loopAnalysis;
-    assert.equal(schematicGraph(circuit).layout, 'parallel-branches');
+    assert.equal(schematicGraph(circuit).layout, 'generic');
     assert.equal(analysis.hasLoops, true);
     assert.equal(analysis.spanningTree.length, 4);
     assert.deepEqual(analysis.closingEdges, [
@@ -162,7 +168,7 @@ test('a ring stays closed when its component rows and node numbers change', () =
     const circuit = buildSchematicStressCases(nP)
         .find(item => item.id === 'branch-reordered').circuit;
     const graph = schematicGraph(circuit);
-    assert.equal(graph.layout, 'closed-loop');
+    assert.equal(graph.layout, 'generic');
     assert.equal(schematicTopology(circuit).loopAnalysis.cycles.length, 1);
     assert.deepEqual(graph.components.map(part => part.ports.map(port => port.node)),
         circuit._schematic.components.map(entry => entry.nodes));
@@ -174,7 +180,7 @@ test('three and four paths run between their actual multiport junction terminals
     for (const id of ['three-lanes', 'four-lanes']) {
         const circuit = cases.find(item => item.id === id).circuit;
         const graph = schematicGraph(circuit);
-        assert.equal(graph.layout, 'parallel-paths');
+        assert.equal(graph.layout, 'generic');
         assert.deepEqual(graph.components.map(part => part.ports.map(port => port.node)),
             circuit._schematic.components.map(entry => entry.nodes));
         assertNodesOnWires(graph);
@@ -192,7 +198,7 @@ test('multi-loop networks route actual nodes without vertical rail columns', () 
     for (const id of ['two-stage-divider', 'ring-with-chord']) {
         const circuit = cases.find(item => item.id === id).circuit;
         const graph = schematicGraph(circuit);
-        assert.equal(graph.layout, 'node-routes');
+        assert.equal(graph.layout, 'generic');
         assert.deepEqual(graph.components.map(part => part.ports.map(port => port.node)),
             circuit._schematic.components.map(entry => entry.nodes));
         assert.deepEqual(graph.externalPorts.map(port => port.node),

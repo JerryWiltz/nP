@@ -1,0 +1,123 @@
+<!doctype html>
+<!-- Modified: 2026-11-06 -->
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Transformer hybrid power divider</title>
+  <script src="../dist/nP.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 2rem;
+      color: #202020;
+      background: #fff;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    section {
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Transformer hybrid power divider</h1>
+  <p>T1 transforms the 50 Ω input to the 25 Ω center-tap impedance of T2. T2 is the
+    center-tapped autotransformer. Two Tee junctions connect the 100 Ω isolation resistor
+    across the outputs. All three external ports use a 50 Ω reference.</p>
+
+  <section>
+    <h2>Transformer power-divider schematic</h2>
+    <div id="divider-schematic"></div>
+  </section>
+
+  <section>
+    <h2>Three-port S-parameters at 2 GHz</h2>
+    <div id="divider-results"></div>
+  </section>
+
+  <section>
+    <h2>Next test: splitter followed by a combiner</h2>
+    <p>One nodal network contains both transformer arrangements. The two splitter
+      outputs feed the corresponding combiner inputs. This call omits shape guidance
+      to show the current generic layout; combining two guided shapes is not yet supported.</p>
+    <div id="splitter-combiner-schematic"></div>
+    <div id="splitter-combiner-results"></div>
+  </section>
+
+  <script>
+    // Transformer hybrid power divider
+    var g = nP.global;
+    g.fList = [2e9];
+    g.Ro = 50;
+
+    var t1 = nP.trf(Math.sqrt(2));
+    var t2 = nP.trfAuto();
+    var outputTee2 = nP.Tee();
+    var outputTee3 = nP.Tee();
+    var isolationResistor = nP.R(100);
+    var hybridDivider = nP.nodal(
+      [t1, 1, 10],
+      [t2, 10, 20, 21],
+      [outputTee2, 30, 20, 2],
+      [outputTee3, 31, 21, 3],
+      [isolationResistor, 30, 31],
+      ['out', 1, 2, 3]
+    );
+
+    var dividerSchematic = nP.schematic(hybridDivider, {
+      shapes: ['powerDivider'],
+      mount: '#divider-schematic'
+    });
+
+    var dividerOut = hybridDivider.out(
+      's11dB', 's21dB', 's31dB', 's22dB', 's33dB', 's23dB'
+    );
+    nP.lineTable({
+      inputTable: [dividerOut],
+      mount: '#divider-results',
+      title: 'Hybrid power divider S-parameters',
+      fontFamily: 'Arial, Helvetica, sans-serif',
+      fontSize: 14
+    });
+
+    // Transformer splitter followed by the same circuit used as a combiner
+    var t3 = nP.trf(Math.sqrt(2));
+    var t4 = nP.trfAuto();
+    var combinerTee2 = nP.Tee();
+    var combinerTee3 = nP.Tee();
+    var combinerResistor = nP.R(100);
+
+    // Reuse the first example's individual parts, not its completed nodal network.
+    // Nodes 40 and 41 join the two paths between splitter and combiner.
+    var splitterCombiner = nP.nodal(
+      [t1, 1, 10],
+      [t2, 10, 20, 21],
+      [outputTee2, 30, 20, 40],
+      [outputTee3, 31, 21, 41],
+      [isolationResistor, 30, 31],
+      [combinerTee2, 130, 40, 120],
+      [combinerTee3, 131, 41, 121],
+      [combinerResistor, 130, 131],
+      [t4, 110, 120, 121],
+      [t3, 2, 110],
+      ['out', 1, 2]
+    );
+
+    var splitterCombinerOut = splitterCombiner.out('s11dB', 's21dB', 's12dB', 's22dB');
+    var splitterCombinerSchematic = nP.schematic(splitterCombiner, {
+      mount: '#splitter-combiner-schematic'
+    });
+    nP.lineTable({
+      inputTable: [splitterCombinerOut],
+      mount: '#splitter-combiner-results',
+      title: 'Splitter and combiner: two-port S-parameters',
+      fontFamily: 'Arial, Helvetica, sans-serif',
+      fontSize: 14
+    });
+  </script>
+</body>
+
+</html>

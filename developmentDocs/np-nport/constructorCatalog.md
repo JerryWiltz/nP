@@ -1,7 +1,7 @@
-<!-- Modified: 2026-10-28 -->
+<!-- Modified: 2026-11-04 -->
 # nP constructor catalog
 
-This catalog covers the 52 public functions that produce n-port objects from `src/np-nport/src/index.js`, the digital waveform functions from `src/np-digital`, and the exported math and low-pass prototype functions. Each JS call below spells out the **current defaults** where they exist. Each argument or property appears on its own line. Units are in comments. Each constructor has its own heading and code block.
+This catalog covers the 54 public functions that produce n-port objects from `src/np-nport/src/index.js`, the digital waveform functions from `src/np-digital`, and the exported math and low-pass prototype functions. Each JS call below spells out the **current defaults** where they exist. Each argument or property appears on its own line. Units are in comments. Each constructor has its own heading and code block.
 
 Parameter spelling follows the public API. Legacy positional names such as `R`, `N`, `Z`, and `Length` retain their source capitalization; physical options use `lowerCamelCase` property names. Positional argument order matters. Named object properties follow one presentation order: geometry, material and loss, then temperature.
 
@@ -37,7 +37,7 @@ var filter = nP.lpfGen(undefined, {fList: frequencies});
 
 Each nPort stores a copy of its selected frequency list and analysis settings. Components in one `nodal()` or `cascade()` circuit must have matching frequency rows. Call `nP.global()` to create and select an independent circuit context. It holds its own `fList`, `tList`, `twoTone`, `Ro`, and `Temp`; `nP.global(g)` selects an earlier context `g` again. Existing `nP.global.fList` and related property calls use the selected context. `nP.global.tGen(start, stop, points)` returns a uniformly spaced time list in seconds, including both endpoints. Two-tone analysis still requires positive first-tone frequencies and a positive spacing.
 
-All 50 direct RF component constructors record internal schematic metadata and have bundled runtime symbols. Composite RLC parts retain their resistance, inductance, and capacitance values in that metadata; transformers retain their turns ratio. `lpfGen()` inherits a cascade tree from the components it constructs. `mbend({turn: 'left'})` selects a left-turn drawing; the default is a right turn. The turn changes only the drawing, not the bend S-parameters. `cas()` and `cascade()` preserve their construction tree. `nodal()` records each component placement's port-to-node assignments and the external port order. When a completed nodal nPort is used as a component, the renderer gives it a `nodal` block with the matching number of ports. Two-port circuits with a series path and simple shunt branches are laid out from their port-to-node connections; tree-shaped multiport circuits use their node connections for placement. Nodal circuits with loops do not yet have a public runtime layout.
+The 51 symbol-backed direct RF component constructors record internal schematic metadata and have bundled runtime symbols. Composite RLC parts retain their resistance, inductance, and capacitance values in schematic metadata; transformers retain their turns ratio. `lpfGen()` inherits a cascade tree from the components it constructs. `mbend({turn: 'left'})` selects a left-turn drawing; the default is a right turn. The turn changes only the drawing, not the bend S-parameters. `cas()` and `cascade()` preserve their construction tree. `nodal()` records each component placement's port-to-node assignments and the external port order. When a completed nodal nPort is used as a component, the renderer gives it a `nodal` block with the matching number of ports. Two-port circuits with a series path and simple shunt branches are laid out from their port-to-node connections; tree-shaped multiport circuits use their node connections for placement. Nodal circuits with loops do not yet have a public runtime layout.
 
 Constructor source calls `schematicPart(publicName, parameters)` instead of naming an SVG. The generated constructor map reads `schematics/symbol-catalog.json`, and the symbol check verifies that the selected runtime symbol has the same port count as the returned nPort.
 
@@ -363,6 +363,16 @@ nP.trf4Port(
 );
 // returns an nPort object
 ```
+
+### `trfAuto`
+
+```js
+// trfAuto: ideal three-port center-tapped autotransformer
+nP.trfAuto();
+// returns a three-port nPort object
+```
+
+Port 1 is the center tap; ports 2 and 3 are the winding ends. The two half-windings are series-aiding, giving a 2:1 full-winding to half-winding turns ratio. Every port uses the configured reference impedance. Its canonical schematic symbol is bundled with the constructor.
 
 ## Ideal components and fixtures
 

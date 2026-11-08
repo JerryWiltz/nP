@@ -1,20 +1,16 @@
 #!/usr/bin/env node
-// Modified: 2026-10-25
+// Modified: 2026-11-07
 'use strict';
 
-const {generate: generateLinear} = require('./generate-repl-schematics');
+const {generate: generateLinear} = require('./generate-linear-schematics');
 const {generate: generateNodal} = require('./generate-nodal-schematics');
 const {generate: generateVnaReceivers} = require('./generate-vna-receivers');
-const {generate: generateSignalExamples} = require('./generate-signal-examples');
-const {inventory} = require('./generate-example-inventory');
 
 async function build() {
   generateLinear();
   generateNodal();
   generateVnaReceivers();
-  generateSignalExamples();
-  const count = await inventory();
-  process.stdout.write(`Built schematic inventory for ${count} REPL examples.\n`);
+  process.stdout.write('Built documentation schematics.\n');
 }
 
 if (require.main === module) {

@@ -1,4 +1,4 @@
-// Modified: 2026-10-29
+// Modified: 2026-11-06
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -31,7 +31,7 @@ test('a nodal block can keep four numbered terminals on four different sides', (
     const symbol = nodalBlockSymbol(4, ['left', 'top', 'right', 'bottom']);
     assert.equal(symbol.ports.length, 4);
     assert.equal(new Set(symbol.ports.map(point => point.join(','))).size, 4);
-    assert.ok(symbol.ports.every(point => point.every(value => value % 20 === 0)));
+    assert.ok(symbol.ports.every(point => point.every(value => value % 10 === 0)));
     assert.deepEqual(symbol.ports, [[80, 100], [140, 40], [200, 100], [140, 160]]);
     assert.match(symbol.geometry, />nodal<\/text>/);
 });
@@ -62,7 +62,7 @@ test('a cascaded resistor pair and right bend retains its parts and renders one 
 
     const graph = schematicGraph(circuit);
     assert.equal(graph.kind, 'rf-cascade');
-    assert.ok(graph.viewBox.every(value => value % 20 === 0));
+    assert.ok(graph.viewBox.every(value => value % 10 === 0));
     assert.ok(graph.viewBox[2] > 0 && graph.viewBox[3] > 0);
     assert.deepEqual(graph.components.map(component => component.id), ['R1', 'R2', 'MB1']);
     assert.deepEqual(graph.components[2].ports[1], {port: 2, node: 4, at: [320, 60]});
@@ -210,7 +210,7 @@ test('reusing a resistor after a bend creates a rotated second placement', () =>
     const svg = schematicSvg(circuit);
     assert.match(svg, /R3 = 25 Ω/);
     assert.equal(graph.nodeNumbers.length, graph.nodes.length);
-    assert.ok(graph.nodeNumbers.every(number => number.at.every(value => value % 20 === 0)));
+    assert.ok(graph.nodeNumbers.every(number => number.at.every(value => value % 10 === 0)));
 });
 
 function overlaps(a, b, clearance = 0) {

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Modified: 2026-10-25
+// Modified: 2026-11-07
 'use strict';
 
 const fs = require('fs');
@@ -15,69 +15,6 @@ const sourceFile = 'docs/.vitepress/theme/replExamples.js';
 // port node numbers, rotation, visible label, label position]. Reused source
 // objects have separate drawing ids but keep the same source variable.
 const specifications = [
-  {
-    name: 'rc-low-pass', example: 'rc-low-pass', title: 'RC low-pass', result: 'lowPass',
-    viewBox: [0, 0, 640, 560], center: 'series path midpoint',
-    parts: [
-      ['r1', 'R', 'r1', [160, 220], [1, 2], 0, 'r1 = 50 Ω', [210, 70]],
-      ['tee', 'Tee', 'tee', [400, 260], [4, 2, 3], 0, 'tee', [400, 150]],
-      ['c1', 'C', 'c1', [400, 320], [4, 5], 90, 'c1 = 3.17 pF', [490, 360]],
-      ['short', 'Short', 'short', [400, 440], [5], 0, 'Short', [460, 490]]
-    ],
-    out: [[1, [100, 220]], [3, [520, 220]]],
-    labelsAt: {1: [160, 180], 2: [320, 180], 3: [480, 180], 4: [440, 300], 5: [460, 400]}
-  },
-  {
-    name: 'rlc-ladder', example: 'rlc-ladder', title: 'RLC ladder', result: 'ladder',
-    viewBox: [0, 0, 760, 560], center: 'Tee shunt branch',
-    parts: [
-      ['l1', 'L', 'l1', [140, 220], [1, 2], 0, 'l1 = 9.57 nH', [190, 70]],
-      ['tee', 'Tee', 'tee', [380, 260], [4, 2, 3], 0, 'tee', [380, 150]],
-      ['c1', 'C', 'c1', [380, 320], [4, 5], 90, 'c1 = 3.17 pF', [470, 360]],
-      ['short', 'Short', 'short', [380, 440], [5], 0, 'Short', [440, 490]],
-      ['l2', 'L', 'l2', [500, 220], [3, 6], 0, 'l2 = 9.57 nH', [550, 70]]
-    ],
-    out: [[1, [80, 220]], [6, [680, 220]]],
-    labelsAt: {1: [140, 180], 2: [290, 180], 3: [460, 180], 4: [420, 300], 5: [440, 400], 6: [600, 180]}
-  },
-  {
-    name: 'tee-power-divider', example: 'tee-power-divider', title: 'Tee power divider', result: 'divider',
-    viewBox: [0, 0, 760, 500], center: 'Tee common port',
-    parts: [
-      ['tee', 'Tee', 'tee', [380, 300], [1, 2, 3], 0, 'tee', [380, 160]],
-      ['branch1', 'Tlin', 'branch1', [160, 260], [4, 2], 0, 'branch1 = 25.4 mm', [220, 90]],
-      ['branch2', 'Tlin', 'branch2', [480, 260], [3, 5], 0, 'branch2 = 25.4 mm', [540, 90]]
-    ],
-    out: [[1, [380, 400]], [4, [100, 260]], [5, [660, 260]]],
-    outLabelAt: [[380, 440], [100, 320], [660, 320]],
-    labelsAt: {1: [420, 350], 2: [310, 220], 3: [450, 220], 4: [160, 220], 5: [600, 220]}
-  },
-  {
-    name: 'series-stub', example: 'series-stub', title: 'Open series stub', result: 'network',
-    viewBox: [0, 0, 600, 620], center: 'seriesTee through port 2',
-    parts: [
-      ['seriesJunction', 'seriesTee', 'seriesJunction', [220, 200], [1, 2, 3], 0, 'seriesTee', [260, 90]],
-      ['line', 'Tlin', 'line', [260, 320], [3, 4], 90, 'line = 25.4 mm', [370, 380]],
-      ['open', 'Open', 'open', [260, 500], [4], 0, 'Open', [320, 540]]
-    ],
-    out: [[1, [120, 200]], [2, [400, 200]]],
-    labelsAt: {1: [180, 160], 2: [340, 160], 3: [300, 280], 4: [300, 470]}
-  },
-  {
-    name: 'chebyshev-ladder', example: 'chebyshev-ladder', title: 'Chebyshev low-pass ladder', result: 'filter',
-    viewBox: [0, 0, 720, 600], center: 'series path midpoint',
-    parts: [
-      ['tee1', 'Tee', 'tee', [180, 300], [1, 2, 3], 0, 'tee', [180, 170]],
-      ['c1', 'C', 'c1', [180, 360], [1, 4], 90, 'c1 16.418 pF', [280, 390]],
-      ['short1', 'Short', 'short', [180, 480], [4], 0, 'Short', [230, 540]],
-      ['l1', 'L', 'l1', [320, 260], [3, 5], 0, 'l1 = 45.654 nH', [370, 150]],
-      ['tee2', 'Tee', 'tee', [540, 300], [6, 5, 7], 0, 'tee', [540, 170]],
-      ['c2', 'C', 'c2', [540, 360], [6, 8], 90, 'c2 16.418 pF', [620, 390]],
-      ['short2', 'Short', 'short', [540, 480], [8], 0, 'Short', [590, 540]]
-    ],
-    out: [[2, [80, 260]], [7, [640, 260]]],
-    labelsAt: {1: [220, 330], 2: [120, 220], 3: [270, 220], 4: [260, 440], 5: [460, 220], 6: [580, 330], 7: [600, 220], 8: [620, 440]}
-  },
   {
     name: 'vna-inductor-fixture', example: 'vna-port1', title: 'VNA inductor fixture', result: 'circuit',
     viewBox: [0, 0, 1280, 520], center: 'RF path between input coupler and inductor',
@@ -130,17 +67,6 @@ const specifications = [
     outLabelAt: [[100, 120], [100, 400], [600, 400]],
     labelsAt: {1: [160, 160], 2: [350, 160], 3: [340, 280], 4: [80, 280], 5: [610, 160], 6: [640, 280], 7: [520, 300], 8: [860, 160]},
     routes: {4: [[100, 240]], 6: [[600, 240]], 3: [[300, 240]], 7: [[480, 240]]}
-  },
-  {
-    name: 'microstrip-layout-path', example: 'microstrip-layout', title: 'Step, bend, and via path', result: 'path',
-    viewBox: [0, 0, 620, 620], center: 'right-turn bend',
-    parts: [
-      ['step', 'mstep', 'step', [160, 180], [1, 2], 0, 'step', [220, 70]],
-      ['bend', 'mbend', 'bend', [380, 180], [2, 3], 0, 'bend', [420, 70]],
-      ['via', 'mvia', 'via', [440, 340], [3, 4], 0, 'via', [500, 380]]
-    ],
-    out: [[1, [100, 180]], [4, [440, 500]]],
-    labelsAt: {1: [160, 140], 2: [330, 140], 3: [480, 280], 4: [480, 460]}
   },
   {
     name: 'wilkinson-divider', example: 'circuit-examples', sourceFile: 'docs/circuit-examples.md',

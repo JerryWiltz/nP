@@ -1,4 +1,4 @@
-// Modified: 2026-10-27
+// Modified: 2026-11-06
 'use strict';
 
 const crypto = require('crypto');
@@ -48,8 +48,8 @@ function parseSymbol(source, filename = 'symbol.svg') {
   const viewBox = /viewBox="([^"]+)"/.exec(source);
   const bounds = viewBox && viewBox[1].trim().split(/\s+/).map(Number);
   if (!bounds || bounds.length !== 4 || bounds.some(number => !Number.isFinite(number)) ||
-      bounds[2] <= 0 || bounds[3] <= 0 || bounds[2] % 20 || bounds[3] % 20) {
-    throw new Error(`${filename} needs a viewBox with 20-unit grid dimensions`);
+      bounds[2] <= 0 || bounds[3] <= 0 || bounds[2] % 10 || bounds[3] % 10) {
+    throw new Error(`${filename} needs viewBox dimensions that are positive multiples of 10`);
   }
   for (const match of source.matchAll(/rotate\(([^)]*)\)/g)) {
     const degrees = Number(match[1].trim().split(/[\s,]+/)[0]);
@@ -102,8 +102,8 @@ function parseSymbol(source, filename = 'symbol.svg') {
   if (terminals.length !== portNumbers.length) {
     throw new Error(`${filename} has ${portNumbers.length} port labels but ${terminals.length} terminal dots`);
   }
-  if (terminals.some(terminal => terminal.x % 20 || terminal.y % 20)) {
-    throw new Error(`${filename} has a terminal off the 20-unit grid`);
+  if (terminals.some(terminal => terminal.x % 10 || terminal.y % 10)) {
+    throw new Error(`${filename} has a terminal off the 10-unit grid`);
   }
 
   return {

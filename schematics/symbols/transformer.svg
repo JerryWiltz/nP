@@ -1,10 +1,10 @@
-<!-- Modified: 2026-10-24 -->
+<!-- Modified: 2026-11-05 -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 200" role="img" aria-labelledby="title description">
   <title id="title">nP trf two-port transformer symbol</title>
   <desc id="description">An ideal two-port transformer with primary port 1 on the upper left and secondary port 2 on the upper right.</desc>
   <rect width="100%" height="100%" fill="#ffffff"/>
   <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M80 80 H100 M180 80 H200 M100 80 C85 80 85 100 100 100 C85 100 85 120 100 120 C85 120 85 140 100 140 C85 140 85 160 100 160 M180 80 C195 80 195 100 180 100 C195 100 195 120 180 120 C195 120 195 140 180 140 C195 140 195 160 180 160 M137 70 V170 M143 70 V170"/>
+    <path d="M80 80 H100 H115 M180 80 H200 M180 80 H165 M115 80 C130 80 130 100 115 100 C130 100 130 120 115 120 C130 120 130 140 115 140 C130 140 130 160 115 160 M165 80 C150 80 150 100 165 100 C150 100 150 120 165 120 C150 120 150 140 165 140 C150 140 150 160 165 160 M137 70 V170 M143 70 V170"/>
   </g>
   <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
     <text x="140" y="30">trf()</text><text x="80" y="65">Port 1</text><text x="200" y="65">Port 2</text>

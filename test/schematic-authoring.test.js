@@ -1,22 +1,23 @@
-// Modified: 2026-10-29
+// Modified: 2026-11-07
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync, readdirSync} from 'node:fs';
 import {createRequire} from 'node:module';
-import {examples} from '../docs/.vitepress/theme/replExamples.js';
-import {schematicMap, examplesWithoutCircuits} from '../docs/.vitepress/theme/schematicMap.js';
 
 const require = createRequire(import.meta.url);
 const {compose, validateDescription} = require('../schematics/tools/compose-schematic.js');
 const {parseSymbol} = require('../schematics/tools/symbol-library.js');
 const {checkGallery, generateGallery} = require('../schematics/tools/generate-symbol-gallery.js');
+const {documentationReferences} = require('../schematics/tools/check-example-schematics.js');
 
 function circuit(name) {
   return JSON.parse(readFileSync(new URL(`../schematics/circuits/${name}.json`, import.meta.url), 'utf8'));
 }
 
 test('RF and signal diagrams recompose to their published SVGs', () => {
-  for (const name of ['series-resistor', 'two-series-resistors', 'waveform-fft']) {
+  const names = readdirSync(new URL('../schematics/circuits/', import.meta.url))
+    .filter(name => name.endsWith('.json')).map(name => name.slice(0, -5));
+  for (const name of names) {
     const description = circuit(name);
     const published = readFileSync(new URL(`../docs/public/schematics/${name}.svg`, import.meta.url), 'utf8');
     assert.equal(compose(description), published);
@@ -59,7 +60,7 @@ test('domain, layout, grid, and signal routes are required', () => {
   assert.throws(() => validateDescription(signal), /signal name only/);
   delete signal.components[0].connections[0].node;
   signal.wires[0].points[0] = [241, 140];
-  assert.throws(() => validateDescription(signal), /20-unit grid/);
+  assert.throws(() => validateDescription(signal), /10-unit grid/);
   signal.wires[0].points = [[240, 140], [260, 140]];
   signal.wires.push({signal: 'samples', points: [[300, 140], [320, 140]]});
   assert.throws(() => validateDescription(signal), /disconnected wires/);
@@ -95,24 +96,16 @@ test('canonical symbols reject malformed XML', () => {
 test('the gallery can be regenerated from canonical SVGs', () => {
   const published = readFileSync(new URL('../dev/canonicalSymbols.html', import.meta.url), 'utf8');
   assert.equal(generateGallery(), published);
-  assert.equal(checkGallery().length, 59);
+  assert.equal(checkGallery().length, 60);
 });
 
-test('every REPL example has an explicit schematic classification', () => {
-  const ids = new Set(examples.map(example => example.id));
-  assert.equal(ids.size, examples.length);
-  for (const id of ids) {
-    assert.notEqual(Boolean(schematicMap[id]), examplesWithoutCircuits.has(id));
-    for (const name of schematicMap[id] || []) {
-      const description = JSON.parse(readFileSync(
-        new URL(`../schematics/circuits/${name}.json`, import.meta.url), 'utf8'));
-      const published = readFileSync(
-        new URL(`../docs/public/schematics/${name}.svg`, import.meta.url), 'utf8');
-      assert.equal(compose(description), published, `${id}: ${name}`);
-    }
-  }
-  for (const id of [...Object.keys(schematicMap), ...examplesWithoutCircuits]) {
-    assert.ok(ids.has(id), `unknown example ${id}`);
+test('documentation schematic references resolve to current descriptions and SVGs', () => {
+  const references = documentationReferences();
+  assert.ok(references.size > 0);
+  for (const name of references) {
+    const published = readFileSync(
+      new URL(`../docs/public/schematics/${name}.svg`, import.meta.url), 'utf8');
+    assert.equal(compose(circuit(name)), published, name);
   }
 });
 
@@ -131,7 +124,7 @@ test('microstrip bend port 2 follows the labeled turn direction', () => {
 test('symbols and circuit descriptions enforce the common grid and rotation', () => {
   const source = readFileSync(new URL('../schematics/symbols/resistor.svg', import.meta.url), 'utf8');
   assert.throws(() => parseSymbol(source.replace('cx="60" cy="80"', 'cx="61" cy="80"')),
-    /terminal off the 20-unit grid/);
+    /terminal off the 10-unit grid/);
   assert.throws(() => parseSymbol(source.replace('fill="#ffffff"', 'fill="#eeeeee"')),
     /only dark ink, white, or no fill/);
   assert.throws(() => parseSymbol(source.replace('font-size="13"', 'font-size="8"')),
@@ -144,5 +137,27 @@ test('symbols and circuit descriptions enforce the common grid and rotation', ()
   assert.throws(() => validateDescription(rf), /multiple of 90/);
   rf.components[0].rotation = 0;
   rf.components[0].connections[0].at = [121, 120];
-  assert.throws(() => validateDescription(rf), /20-unit grid/);
+  assert.throws(() => validateDescription(rf), /10-unit grid/);
+});
+
+test('canonical terminal placement accepts half of the former grid step', () => {
+  const source = readFileSync(new URL('../schematics/symbols/resistor.svg', import.meta.url), 'utf8');
+  assert.doesNotThrow(() => parseSymbol(source.replace('cx="60" cy="80"', 'cx="70" cy="80"')));
+});
+
+test('a complete circuit may be translated ten units without breaking connectivity', () => {
+  const description = circuit('two-series-resistors');
+  description.viewBox[0] += 10;
+  description.layout.centerAxisX += 10;
+  for (const component of description.components) {
+    component.at[0] += 10;
+    for (const connection of component.connections) {
+      connection.at[0] += 10;
+      connection.labelAt[0] += 10;
+    }
+  }
+  for (const wire of description.wires) for (const point of wire.points) point[0] += 10;
+  for (const terminal of description.terminals || []) terminal.at[0] += 10;
+  for (const label of description.labels || []) label.at[0] += 10;
+  assert.doesNotThrow(() => validateDescription(description));
 });

@@ -1,9 +1,9 @@
-// Modified: 2026-10-08
+// Modified: 2026-11-04
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { global } from '../src/np-global/index.js';
-import { seR, R, paR, L, C, Open, Short, Load, Thru, Shift90, Tee, seriesTee, Tlin, Tclin, nodal, cascade, trf, mlin, mclin, mtee, mcross, mstep, mbend, mtfr, mvgnd, mvia } from '../src/np-nport/index.js';
+import { seR, R, paR, L, C, Open, Short, Load, Thru, Shift90, Tee, seriesTee, Tlin, Tclin, nodal, cascade, trf, trfAuto, mlin, mclin, mtee, mcross, mstep, mbend, mtfr, mvgnd, mvia } from '../src/np-nport/index.js';
 
 const closeTo = (actual, expected, tolerance = 1e-12) => {
 	assert.ok(
@@ -67,6 +67,42 @@ test('Thru and nodal preserve the ideal two-port S-matrix and zero noise at DC',
 					closeTo(value.getR(), 0);
 					closeTo(value.getI(), 0);
 				}
+			}
+		}
+	});
+});
+
+test('trfAuto and its hybrid splitter produce the ideal 50 ohm divider response', () => {
+	withGlobal({ fList: [2e9], Ro: 50 }, () => {
+		const transformer = trfAuto();
+		assert.equal(transformer._schematic.symbol, 'transformer-auto');
+		const matrix = transformer.getspars()[0].slice(1).map(function (value) {
+			return value.getR();
+		});
+		assert.deepEqual(matrix, [
+			-1 / 3, 2 / 3, 2 / 3,
+			2 / 3, 2 / 3, -1 / 3,
+			2 / 3, -1 / 3, 2 / 3
+		]);
+
+		const divider = nodal(
+			[trf(Math.sqrt(2)), 1, 10],
+			[transformer, 10, 20, 21],
+			[Tee(), 20, 2, 30],
+			[Tee(), 21, 3, 31],
+			[R(100), 30, 31],
+			['out', 1, 2, 3]
+		);
+		const result = divider.getspars()[0].slice(1);
+		const expected = [
+			[0, 1 / Math.sqrt(2), 1 / Math.sqrt(2)],
+			[1 / Math.sqrt(2), 0, 0],
+			[1 / Math.sqrt(2), 0, 0]
+		];
+		for (var row = 0; row < expected.length; row++) {
+			for (var column = 0; column < expected[row].length; column++) {
+				closeTo(result[row * 3 + column].getR(), expected[row][column], 1e-12);
+				closeTo(result[row * 3 + column].getI(), 0, 1e-12);
 			}
 		}
 	});

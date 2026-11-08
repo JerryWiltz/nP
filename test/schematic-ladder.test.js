@@ -1,4 +1,4 @@
-// Modified: 2026-11-01
+// Modified: 2026-11-07
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DOMParser} from '@xmldom/xmldom';
@@ -27,9 +27,10 @@ test('network-only layout follows the ladder connectivity and places three shunt
     assert.equal(graph.kind, 'rf-nodal');
     assert.equal(graph.shape, undefined);
     assert.equal(graph.components.length, 11);
-    assert.deepEqual(graph.components.slice(0, 5).map(part => part.symbol),
-        ['tee', 'resistor', 'tee', 'resistor', 'tee']);
-    assert.ok(graph.components.slice(5).every(part => part.ports[0].at[1] > 100));
+    assert.equal(graph.board.interpreter, 'ORI');
+    assert.equal(graph.layout, 'generic');
+    assert.deepEqual(graph.components.map(part => part.ports.map(port => port.node)),
+        circuit._schematic.components.map(entry => entry.nodes));
     assert.deepEqual(graph.externalPorts.map(port => port.node), [1, 11]);
     assert.equal(topology.parts.length, 11);
     assert.equal(topology.connections.length, 12);
@@ -46,8 +47,9 @@ test('network-only ladder accepts different series and shunt components', () => 
         ['out', 1, 3]
     );
     const graph = schematicGraph(circuit);
-    assert.deepEqual(graph.components.map(part => part.symbol),
-        ['tee', 'inductor', 'capacitor', 'short']);
+    assert.equal(graph.board.interpreter, 'ORI');
+    assert.deepEqual(graph.components.map(part => part.ports.map(port => port.node)),
+        circuit._schematic.components.map(entry => entry.nodes));
 });
 
 test('a simple series path renders without a shunt branch', () => {
@@ -159,21 +161,33 @@ test('node boundaries guide series then ladder in one reordered nodal network', 
     );
     const shapes = [{name: 'series', from: 1, to: 4},
         {name: 'ladder', from: 4, to: 11}];
+    const before = JSON.stringify(circuit._schematic);
     const graph = schematicGraph(circuit, {shapes});
     assert.deepEqual(graph.shapes, shapes);
-    assert.deepEqual(graph.components.map(part => part.symbol),
-        ['resistor', 'resistor', 'tee', 'transmission-line', 'capacitor', 'short']);
+    assert.equal(graph.layout, 'board-composition');
+    assert.equal(graph.board.interpreter, 'ORI');
+    assert.deepEqual(graph.board.sections.map(section => section.name), ['series', 'ladder']);
+    assert.deepEqual(graph.components.map(part => part.ports.map(port => port.node)),
+        circuit._schematic.components.map(entry => entry.nodes));
+    assert.deepEqual(graph.components.map(part => part.symbol).sort(),
+        ['resistor', 'resistor', 'tee', 'transmission-line', 'capacitor', 'short'].sort());
     assert.deepEqual(graph.externalPorts.map(port => port.node), [1, 11]);
+    const flipped = schematicGraph(circuit, {shapes, flipVertical: true});
+    assert.deepEqual(flipped.shapes, shapes);
+    assert.equal(flipped.board.interpreter, 'ORI');
+    assert.deepEqual(flipped.components.map(part => part.ports.map(port => port.at)),
+        graph.components.map(part => part.ports.map(port => [port.at[0], -port.at[1]])));
+    assert.equal(JSON.stringify(circuit._schematic), before);
     assert.equal(new DOMParser().parseFromString(schematicSvg(circuit, {shapes}),
         'image/svg+xml').getElementsByTagName('parsererror').length, 0);
     assert.throws(() => schematicGraph(circuit, {shapes: [
         {name: 'series', from: 1, to: 5},
         {name: 'ladder', from: 5, to: 11}
-    ]}), /node boundary does not divide/);
+    ]}), /boundaries do not isolate/);
     assert.throws(() => schematicGraph(circuit, {shapes: [
         {name: 'series', from: 1, to: 4},
         {name: 'ladder', from: 6, to: 11}
-    ]}), /share one boundary node/);
+    ]}), /section boundaries/);
 });
 
 test('shape guidance rejects a branch that lacks a two-port shunt element', () => {

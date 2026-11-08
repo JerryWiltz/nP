@@ -1,0 +1,161 @@
+<!doctype html>
+<!-- Modified: 2026-11-07 -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Power-divider schematic guidance</title>
+  <script src="../../dist/nP.js"></script>
+  <style>
+    body { margin: 0; padding: 2rem; font-family: Arial, Helvetica, sans-serif; color: #202020; }
+    section { margin: 2rem 0 3rem; }
+  </style>
+</head>
+<body>
+  <h1>Power-divider schematic guidance</h1>
+  <p>The first three networks request the same powerDivider shape. The last example
+    connects a divider, combiner and ladder in one nodal network. The transformer variant
+    remains in <a href="../trf5Port.html">the transformer divider page</a>.</p>
+  <section>
+    <h2>Ideal two-way Wilkinson divider at 2 GHz</h2>
+    <div id="ideal-divider"></div>
+  </section>
+  <section>
+    <h2>Microstrip junctions and lines</h2>
+    <p>These dimensions illustrate symbol layout rather than a tuned physical design.</p>
+    <div id="microstrip-divider"></div>
+  </section>
+  <section>
+    <h2>Different component counts in the two arms</h2>
+    <p>Additional series parts exercise automatic spacing; this network is not a matched divider.</p>
+    <div id="extended-divider"></div>
+  </section>
+  <section>
+    <h2>Divider followed by a combiner and ladder — one nodal network</h2>
+    <p>Nodes 40 and 41 connect the two paths; node 50 joins the combiner to the LC
+      ladder. All seventeen component occurrences belong to one nodal call, guided
+      by three shapes. The ladder values illustrate layout rather than a tuned filter.</p>
+    <div id="divider-combiner"></div>
+  </section>
+  <script>
+    // Ideal Wilkinson power divider
+    var g = nP.global;
+    g.fList = [2e9];
+    g.Ro = 50;
+
+    var inputTee = nP.Tee();
+    var upperTee = nP.Tee();
+    var lowerTee = nP.Tee();
+    // One quarter wavelength in free space at 2 GHz, in meters.
+    var quarterWaveLength = 0.03747405725;
+    var upperLine = nP.Tlin(50 * Math.sqrt(2), quarterWaveLength);
+    var lowerLine = nP.Tlin(50 * Math.sqrt(2), quarterWaveLength);
+    var r1 = nP.R(100);
+    var idealDivider = nP.nodal(
+      [inputTee, 1, 10, 11],
+      [upperLine, 10, 20],
+      [lowerLine, 11, 21],
+      [upperTee, 30, 20, 2],
+      [lowerTee, 31, 21, 3],
+      [r1, 30, 31],
+      ['out', 1, 2, 3]
+    );
+    nP.schematic(idealDivider, {
+      shapes: ['powerDivider'],
+      mount: '#ideal-divider'
+    });
+
+    // Microstrip Wilkinson arrangement
+    var inputMtee = nP.mtee();
+    var upperMtee = nP.mtee();
+    var lowerMtee = nP.mtee();
+    var upperMicrostrip = nP.mlin();
+    var lowerMicrostrip = nP.mlin();
+    var r2 = nP.R(100);
+    var microstripDivider = nP.nodal(
+      [inputMtee, 1, 10, 11],
+      [upperMicrostrip, 10, 20],
+      [lowerMicrostrip, 11, 21],
+      [upperMtee, 30, 20, 2],
+      [lowerMtee, 31, 21, 3],
+      [r2, 30, 31],
+      ['out', 1, 2, 3]
+    );
+    nP.schematic(microstripDivider, {
+      shapes: ['powerDivider'],
+      mount: '#microstrip-divider'
+    });
+
+    // Multiple series components with unequal arm lengths
+    var extendedInputTee = nP.Tee();
+    var extendedUpperTee = nP.Tee();
+    var extendedLowerTee = nP.Tee();
+    var upperLine1 = nP.Tlin(70.7, 0.01);
+    var upperLine2 = nP.Tlin(70.7, 0.02);
+    var lowerLine1 = nP.Tlin(70.7, 0.03);
+    var r3 = nP.R(5);
+    var c1 = nP.C(2e-12);
+    var r4 = nP.R(100);
+    var extendedDivider = nP.nodal(
+      [extendedInputTee, 1, 10, 11],
+      [upperLine1, 10, 12],
+      [r3, 12, 13],
+      [upperLine2, 13, 20],
+      [lowerLine1, 11, 14],
+      [c1, 14, 21],
+      [extendedUpperTee, 30, 20, 2],
+      [extendedLowerTee, 31, 21, 3],
+      [r4, 30, 31],
+      ['out', 1, 2, 3]
+    );
+    nP.schematic(extendedDivider, {
+      shapes: ['powerDivider'],
+      mount: '#extended-divider'
+    });
+
+    // Wilkinson divider, combiner and LC ladder in one nodal network
+    var combinerCommonTee = nP.Tee();
+    var combinerUpperTee = nP.Tee();
+    var combinerLowerTee = nP.Tee();
+    var combinerUpperLine = nP.Tlin(50 * Math.sqrt(2), quarterWaveLength);
+    var combinerLowerLine = nP.Tlin(50 * Math.sqrt(2), quarterWaveLength);
+    var r5 = nP.R(100);
+    var l1 = nP.L(5e-9);
+    var l2 = nP.L(5e-9);
+    var ladderTee = nP.Tee();
+    var c2 = nP.C(1e-12);
+    var ladderShort = nP.Short();
+    // Reuse individual parts from the first example, not the idealDivider network.
+    // Nodes 40 and 41 join the divider outputs to the combiner inputs.
+    // Node 50 joins the combiner output to the ladder input.
+    var dividerCombinerLadder = nP.nodal(
+      [inputTee, 1, 10, 11],
+      [upperLine, 10, 20],
+      [lowerLine, 11, 21],
+      [upperTee, 30, 20, 40],
+      [lowerTee, 31, 21, 41],
+      [r1, 30, 31],
+      [combinerCommonTee, 50, 110, 111],
+      [combinerUpperLine, 110, 120],
+      [combinerLowerLine, 111, 121],
+      [combinerUpperTee, 130, 120, 40],
+      [combinerLowerTee, 131, 121, 41],
+      [r5, 130, 131],
+      [l1, 50, 60],
+      [ladderTee, 62, 60, 61],
+      [c2, 62, 63],
+      [ladderShort, 63],
+      [l2, 61, 2],
+      ['out', 1, 2]
+    );
+    nP.schematic(dividerCombinerLadder, {
+      shapes: [
+        {name: 'powerDivider', from: 1, to: [40, 41]},
+        {name: 'powerCombiner', from: [40, 41], to: 50},
+        {name: 'ladder', from: 50, to: 2}
+      ],
+      mount: '#divider-combiner'
+    });
+  </script>
+</body>
+</html>

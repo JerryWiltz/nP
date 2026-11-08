@@ -1,0 +1,134 @@
+<!doctype html>
+<!-- Modified: 2026-11-07 -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Power-combiner schematic guidance</title>
+  <script src="../../dist/nP.js"></script>
+  <style>
+    body { margin: 0; padding: 2rem; font-family: Arial, Helvetica, sans-serif; color: #202020; }
+    section { margin: 2rem 0 3rem; }
+  </style>
+</head>
+<body>
+  <h1>Power-combiner schematic guidance</h1>
+  <p>Each network requests powerCombiner. Port 2 is the upper input, port 3 the lower
+    input, and port 1 the common output on the right. Electrical port numbers are
+    preserved. ORI reuses and reflects the corresponding powerDivider board.</p>
+  <section>
+    <h2>Transformer combiner</h2>
+    <div id="transformer-combiner"></div>
+  </section>
+  <section>
+    <h2>Ideal Wilkinson combiner at 2 GHz</h2>
+    <div id="wilkinson-combiner"></div>
+  </section>
+  <section>
+    <h2>Microstrip junctions and lines</h2>
+    <p>These dimensions illustrate symbol layout rather than a tuned physical design.</p>
+    <div id="microstrip-combiner"></div>
+  </section>
+  <section>
+    <h2>Different component counts in the two arms</h2>
+    <p>Additional series parts exercise spacing; this network is not a matched combiner.</p>
+    <div id="variable-arms-combiner"></div>
+  </section>
+  <script>
+    // Transformer power combiner
+    var g = nP.global;
+    g.fList = [2e9];
+    g.Ro = 50;
+
+    var t1 = nP.trf(Math.sqrt(2));
+    var t2 = nP.trfAuto();
+    var upperTee = nP.Tee();
+    var lowerTee = nP.Tee();
+    var r1 = nP.R(100);
+    // Port 1 remains the common port. The shape changes drawing direction only.
+    var transformerCombiner = nP.nodal(
+      [t1, 1, 10],
+      [t2, 10, 20, 21],
+      [upperTee, 30, 20, 2],
+      [lowerTee, 31, 21, 3],
+      [r1, 30, 31],
+      ['out', 1, 2, 3]
+    );
+    nP.schematic(transformerCombiner, {
+      shapes: ['powerCombiner'],
+      mount: '#transformer-combiner'
+    });
+
+    // Ideal Wilkinson power combiner
+    var commonTee = nP.Tee();
+    var upperOutputTee = nP.Tee();
+    var lowerOutputTee = nP.Tee();
+    // One quarter wavelength in free space at 2 GHz, in meters.
+    var quarterWaveLength = 0.03747405725;
+    var upperLine = nP.Tlin(50 * Math.sqrt(2), quarterWaveLength);
+    var lowerLine = nP.Tlin(50 * Math.sqrt(2), quarterWaveLength);
+    var r2 = nP.R(100);
+    var wilkinsonCombiner = nP.nodal(
+      [commonTee, 1, 10, 11],
+      [upperLine, 10, 20],
+      [lowerLine, 11, 21],
+      [upperOutputTee, 30, 20, 2],
+      [lowerOutputTee, 31, 21, 3],
+      [r2, 30, 31],
+      ['out', 1, 2, 3]
+    );
+    nP.schematic(wilkinsonCombiner, {
+      shapes: ['powerCombiner'],
+      mount: '#wilkinson-combiner'
+    });
+
+    // Microstrip Wilkinson arrangement
+    var commonMtee = nP.mtee();
+    var upperMtee = nP.mtee();
+    var lowerMtee = nP.mtee();
+    var upperMicrostrip = nP.mlin();
+    var lowerMicrostrip = nP.mlin();
+    var r3 = nP.R(100);
+    var microstripCombiner = nP.nodal(
+      [commonMtee, 1, 10, 11],
+      [upperMicrostrip, 10, 20],
+      [lowerMicrostrip, 11, 21],
+      [upperMtee, 30, 20, 2],
+      [lowerMtee, 31, 21, 3],
+      [r3, 30, 31],
+      ['out', 1, 2, 3]
+    );
+    nP.schematic(microstripCombiner, {
+      shapes: ['powerCombiner'],
+      mount: '#microstrip-combiner'
+    });
+
+    // Multiple series components with unequal arm lengths
+    var extendedCommonTee = nP.Tee();
+    var extendedUpperTee = nP.Tee();
+    var extendedLowerTee = nP.Tee();
+    var upperLine1 = nP.Tlin(70.7, 0.01);
+    var upperLine2 = nP.Tlin(70.7, 0.02);
+    var lowerLine1 = nP.Tlin(70.7, 0.03);
+    var r4 = nP.R(5);
+    var c1 = nP.C(2e-12);
+    var r5 = nP.R(100);
+    var extendedCombiner = nP.nodal(
+      [extendedCommonTee, 1, 10, 11],
+      [upperLine1, 10, 12],
+      [r4, 12, 13],
+      [upperLine2, 13, 20],
+      [lowerLine1, 11, 14],
+      [c1, 14, 21],
+      [extendedUpperTee, 30, 20, 2],
+      [extendedLowerTee, 31, 21, 3],
+      [r5, 30, 31],
+      ['out', 1, 2, 3]
+    );
+    nP.schematic(extendedCombiner, {
+      shapes: ['powerCombiner'],
+      mount: '#variable-arms-combiner'
+    });
+  </script>
+</body>
+</html>
