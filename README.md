@@ -71,7 +71,7 @@ nP.schematic(drawnCircuit);
 
 Several groups can describe arrangements such as series–ladder–series, using separate objects for repeated shape names. The renderer derives section boundaries from the ordinary electrical connections. Groups preserve component reuse and produce one nodal network. Existing flat `nodal()` syntax remains supported; without groups, `schematic()` tries whole-network detection and then the generic layout. Its returned `detected` object reports independent recognition.
 
-The drawing includes **Copy as png** and **Fit drawing** buttons. See [Schematics](docs/charts-tables-and-logs.md#schematics) for the grouped workflow and the [shape vocabulary](developmentDocs/schematicShapeVocabulary.md) for supported arrangements and limits.
+The drawing includes **Copy as png** and **Fit drawing** buttons. See [Schematics](docs/schematics.md) for the grouped workflow and the [shape vocabulary](developmentDocs/schematicShapeVocabulary.md) for supported arrangements and limits.
 
 ## Module usage
 
@@ -125,7 +125,7 @@ nP.lineChart({inputTable: [frequencyTable], title: 'Square-wave spectrum', metri
 | Digital signals | `waveform()`, `PN()`, `mod()`, `demod()`, `bitErrorRate()` | [Digital signals](docs/digital-signals.md) |
 | Math | `complex()`, `matrix()`, `FFT()`, `invFFT()` | [Math](docs/math.md), [FFT in nPort](docs/tech-notes-fft-in-nport.md) |
 | Visualization | `lineChart()`, `lineTable()`, `smithChart()`, `log()` | [Charts, tables, and logs](docs/charts-tables-and-logs.md) |
-| Schematics | `schematic()` | [Schematics](docs/charts-tables-and-logs.md#schematics), [Shape vocabulary](developmentDocs/schematicShapeVocabulary.md) |
+| Schematics | `schematic()` | [Schematics](docs/schematics.md), [Shape vocabulary](developmentDocs/schematicShapeVocabulary.md) |
 
 The older combined RLC constructors remain available for compatibility. New circuit examples favor named individual parts and explicit `nP.nodal()` connections.
 

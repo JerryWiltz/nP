@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-20 -->
+<!-- Modified: 2026-11-08 -->
 # Tutorial
 
 These examples assume that the `nP` browser bundle has been loaded or the package has been imported as `nP`. The [Introduction](./introduction.md) explains the two analysis paths.
@@ -39,10 +39,17 @@ var chain = nP.cascade(attenuator, {signal: tx});
 var rx = nP.demod(chain, {noise: false});
 
 nP.log(rx.out('ASCII text'));
-nP.lineChart({inputTable: rx.out('waveform'), title: 'Received waveform'});
+var receivedWaveform = rx.out('waveform');
+nP.lineChart({
+    inputTable: [receivedWaveform],
+    title: 'Received waveform',
+    metricPrefix: 'none',
+    xAxisTitle: 'Time (ns)',
+    yAxisTitle: 'Voltage (V)'
+});
 ```
 
-The clean reception above makes the signal path easy to inspect. By default, `demod()` includes a new random thermal-noise waveform on each call. For a repeated bit-error measurement, use `nP.bitErrorRate(tx, chain, {receptions: 100})`.
+The waveform table already uses nanoseconds, so `metricPrefix: 'none'` leaves those values unchanged. The clean reception above makes the signal path easy to inspect. By default, `demod()` includes a new random thermal-noise waveform on each call. For a repeated bit-error measurement, use `nP.bitErrorRate(tx, chain, {receptions: 100})`.
 
 ## Continue exploring
 

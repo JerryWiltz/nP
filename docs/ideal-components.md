@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-21 -->
+<!-- Modified: 2026-11-08 -->
 # Ideal components
 
 Ideal components provide connections, terminations, lossless lines, and simple gain or loss blocks. Set the frequency list before constructing them. Each returns an [nPort object](./nport-object.md) that can be connected with [`nodal()` or `cascade()`](./connecting-nports.md).
@@ -29,14 +29,17 @@ These calls need no electrical values. They use the current `nP.global.fList` un
 nP.global.fList = nP.global.fGen(1e9, 3e9, 21);
 
 var line = nP.Tlin(50, 0.0254); // 50 Ω, 1 in
-var response = line.out('s11dB', 's21dB');
+var response = line.out('s11mag', 's21mag');
 
 nP.lineChart({
     inputTable: [response],
     title: 'Ideal 50 Ω line',
-    metricPrefix: 'giga'
+    metricPrefix: 'giga',
+    yAxisTitle: 'S-parameter magnitude'
 });
 ```
+
+The matched line has zero reflection and unity transmission magnitude. Its reflection in dB is `-Infinity`, which cannot be plotted by `lineChart()`; linear magnitudes keep this ideal example finite.
 
 `nP.Tclin()` is a lossless **four-port coupled line**. Its defaults are **100 Ω even-mode impedance**, **30 Ω odd-mode impedance**, and **0.037338 m** length (1.47 in). Call `nP.Tclin(90, 35, 0.0254)` for a 90 Ω / 35 Ω pair that is 1 in long.
 
@@ -51,7 +54,7 @@ From input port 1, port 2 is through, port 4 is coupled, and port 3 is isolated.
 
 ## An ideal directional coupler
 
-`nP.Coupler180()` is a matched, reciprocal, lossless four-port with the same real S-matrix at every frequency, including DC. It defaults to an exact equal-power split (about 3.0103 dB coupling); use `nP.Coupler180({couplingDb: 10})` for a 10 dB coupled path. It uses the port order shown above: input 1 goes through to 2 and forward coupled to 4, while 3 is isolated. A reflection entering port 2 couples to port 3. Its 180° phase convention makes it suitable for real-valued time-domain reconstruction. It is an ideal model rather than a physical coupled line; see the [VNA reflection example](./digital-signals.md#vna-time-domain-reflection).
+`nP.Coupler180()` is a matched, reciprocal, lossless four-port with the same real S-matrix at every frequency, including DC. It defaults to an exact equal-power split (about 3.0103 dB coupling); use `nP.Coupler180({couplingDb: 10})` for a 10 dB coupled path. It uses the port order shown above: input 1 goes through to 2 and forward coupled to 4, while 3 is isolated. A reflection entering port 2 couples to port 3. Its 180° phase convention makes it suitable for real-valued time-domain reconstruction. It is an ideal model rather than a physical coupled line; see the [VNA reflection example](./digital-signals.md#vna-cable-fault-location).
 
 ## Attenuator and amplifier
 

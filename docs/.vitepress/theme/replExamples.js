@@ -1,8 +1,8 @@
-// Modified: 2026-10-27
+// Modified: 2026-11-08
 // Add an example with a unique id, title, category, and code. Array order sets
 // sidebar order within a category; stable ids preserve links and browser drafts.
 // Sidebar categories and their section order are listed in config.js.
-// REPL example authoring rules are in docs/AGENTS.md under "REPL Examples".
+// REPL example authoring rules are in docs/AGENTS.md under "REPL".
 export const examples = [
   { id: 'frequency-sweep', title: 'Frequency sweep', category: 'getting-started', code: `// Frequency sweep
 
@@ -43,6 +43,77 @@ nP.lineChart({
 });
 
 nP.schematic(lowPass);` },
+  { id: 'schematic-shape-detection', title: 'Schematic shape detection', category: 'getting-started', code: `// Schematic shape detection
+
+nP.global.fList = [2e9];
+
+var r1 = nP.R(25);
+var r2 = nP.R(50);
+var network = nP.nodal(
+  [r1, 1, 2],
+  [r2, 2, 3],
+  ['out', 1, 3]
+);
+
+var response = network.out('s11mag', 's21mag');
+nP.lineTable({inputTable: [response], title: 'Two series resistors'});
+
+// No shape hint: the detector recognizes the complete series path.
+var drawing = nP.schematic(network);
+var detectedOptions = drawing.detected;
+nP.log('Independently detected shape options:');
+nP.log(detectedOptions);` },
+  { id: 'schematic-groups-and-dots', title: 'Schematic groups and dots', category: 'rf-circuits', code: `// Schematic groups and dots
+
+var g = nP.global;
+g.fList = g.fGen(100e6, 2e9, 41);
+
+var r1 = nP.R(75);
+var r2 = nP.R(50);
+var c1 = nP.C(1e-12);
+var tee1 = nP.Tee();
+var short1 = nP.Short();
+
+// Three shape groups in one electrical network; component objects are reused.
+var network = nP.nodal(
+  {series: [
+    [r1, 1, 2],
+    [r2, 2, 3]
+  ]},
+  {ladder: [
+    [tee1, 4, 3, 5],
+    [c1, 4, 6],
+    [short1, 6],
+    [r2, 5, 7]
+  ]},
+  {series: [
+    [r1, 7, 8]
+  ]},
+  ['out', 1, 8]
+);
+
+var response = network.out('s11dB', 's21dB');
+nP.lineChart({
+  inputTable: [response],
+  title: 'Series–ladder–series response',
+  metricPrefix: 'giga',
+  showPoints: false
+});
+
+// Default dots: external ports and numbered nodes on, component terminals off.
+nP.log('Default dots:');
+var drawing = nP.schematic(network);
+var detectedOptions = drawing.detected;
+nP.log('Detection uses group membership without reading the group names:');
+nP.log(detectedOptions);
+
+// The same network and positions, with optional component-terminal dots.
+nP.log('Component-terminal dots enabled:');
+var terminalDrawing = nP.schematic(network, {
+  dots: {
+    terminals: true
+  }
+});` },
   { id: 'rlc-ladder', title: 'RLC ladder', category: 'rf-circuits', code: `// RLC ladder
 
 var g = nP.global;

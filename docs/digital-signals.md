@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-25 -->
+<!-- Modified: 2026-11-08 -->
 # Digital signals
 
 Use `nP.mod()` to make a signal, send it through an n-port circuit, and use `nP.demod()` to recover the output. `nP.PN()` makes a clocked pseudorandom bit pattern when you need control over the clock ticks. `nP.bitErrorRate()` measures the fraction of received bits in error.
@@ -191,11 +191,19 @@ The output port defaults to **2**, and the input port defaults to **1**. Set `ou
 `nP.bitErrorRate(tx, chain)` compares the known transmitted bits with **100 independent receptions** by default and returns the error fraction from **0 to 1**. Set `receptions` to change the number of trials. Receiver options such as `noise`, `outputPort`, and `thresholdVolts` can be passed in the same object.
 
 ```js
-var ber = nP.bitErrorRate(tx, chain, {receptions: 100});
+// Bit error rate: create a matching transmitter and circuit together
+var berContext = nP.global();
+berContext.tList = berContext.tGen(0, 31 / 8e9, 32);
+berContext.fList = [];
+
+var berTx = nP.mod({mode: 'bits', bits: '1010'});
+var berAttenuator = nP.Attn(3);
+var berChain = nP.cascade(berAttenuator, {signal: berTx});
+var ber = nP.bitErrorRate(berTx, berChain, {receptions: 100});
 nP.log(ber);
 ```
 
-Each reception calls `demod()` again, so a noisy result can differ between runs. For a signal-only check, pass `{noise: false}`. The transmitter and circuit must carry the same bit pattern and frequency grid.
+This example creates its own analysis context, transmitter, and circuit, so it can run independently of the earlier examples. Each reception calls `demod()` again, so a noisy result can differ between runs. For a signal-only check, pass `{noise: false}`. The transmitter and circuit must carry the same bit pattern and frequency grid.
 
 ## VNA cable fault location
 

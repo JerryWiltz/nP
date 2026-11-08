@@ -33,7 +33,7 @@ This is one nodal analysis and one nPort. `nodalConnections.js` flattens the com
 
 All two-port occurrences must be in groups for composed rendering; ordinary direct junction and one-port termination rows may remain outside groups. Group values are arrays of component rows, not nested groups. A single group covering the complete network uses the ordinary single-board route with its existing external port numbers. Multi-group interface inference has a bounded search and retains the composer's current forward-flow and no-crossover limits. An entirely ungrouped network still gets whole-network detection followed by generic fallback; discovering arbitrary groups automatically remains future work.
 
-See [groupedNetworks.html](../dev/shapes/groupedNetworks.html) for series–ladder–series, repeated series groups with component reuse, and parallel series/ladder groups. The [public schematic section](../docs/charts-tables-and-logs.md#schematics) introduces this workflow and its available shape names.
+See [groupedNetworks.html](../dev/shapes/groupedNetworks.html) for series–ladder–series, repeated series groups with component reuse, and parallel series/ladder groups. The [public schematic guide](../docs/schematics.md) introduces this workflow and its available shape names.
 
 ## Implemented boards
 

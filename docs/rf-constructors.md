@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-21 -->
+<!-- Modified: 2026-11-08 -->
 # RF Constructors
 
 Set the frequencies first. Then make each part of the circuit. These calls return [nPort objects](./nport-object.md) that you can [connect](./connecting-nports.md).
@@ -190,6 +190,8 @@ var transformer2 = nP.trf(2);      // turns ratio: 2
 var transformer4a = nP.trf4Port();  // default turns ratio: 0.5
 var transformer4b = nP.trf4Port(2); // turns ratio: 2
 
+var autoTransformer = nP.trfAuto(); // three-port, center-tapped; fixed 2:1 full/half winding
+
 var filter1 = nP.lpfGen(); // default 50 Ω C-L-C low-pass:
                            // 16.418 pF, 45.654 nH, 16.418 pF
 var filter2 = nP.lpfGen([
@@ -200,6 +202,8 @@ var filter2 = nP.lpfGen([
     50       // load resistance, Ω
 ]);
 ```
+
+`trfAuto()` is an ideal, reciprocal, lossless three-port autotransformer. Port 1 is the center tap; ports 2 and 3 are the winding ends. Its full-winding to half-winding turns ratio is fixed at 2:1; it does not take a positional turns-ratio argument. All three ports use the selected reference impedance, normally 50 Ω. An optional `{fList: frequencies}` overrides the analysis frequencies. The [transformer divider example](./lumped-components.md#center-tapped-autotransformer) combines it with `trf()`, two Tees, and an isolation resistor.
 
 `lpfGen()` removes the first and last entries from a supplied filter array. If you need that array afterward, pass a copy with `values.slice()`.
 

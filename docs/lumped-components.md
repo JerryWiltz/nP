@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-19 -->
+<!-- Modified: 2026-11-08 -->
 # Lumped components
 
 Lumped resistors, inductors, capacitors, and transformers are n-port building blocks. Set `nP.global.fList` first, then construct and connect the parts. The values below use ohms, henries, and farads.
@@ -74,6 +74,38 @@ var twoPort = nP.trf();        // 0.5 turns ratio
 var twoPort2 = nP.trf(2);     // 2 turns ratio
 var fourPort = nP.trf4Port(); // 0.5 turns ratio
 ```
+
+### Center-tapped autotransformer
+
+`nP.trfAuto()` is an ideal, reciprocal, lossless three-port. Port 1 is the center tap; ports 2 and 3 are the winding ends. Its full-winding to half-winding turns ratio is fixed at **2:1**, with all ports referenced to the selected `Ro` (normally 50 Ω). Unlike `trf()` and `trf4Port()`, it has no adjustable turns-ratio argument. Call `nP.trfAuto({fList: frequencies})` to override its frequency list.
+
+For an equal two-way divider, `trf(Math.sqrt(2))` transforms the 50 Ω input to the 25 Ω center-tap impedance of the loaded autotransformer. Two Tees connect a 100 Ω isolation resistor across the outputs:
+
+```js
+// Ideal transformer power divider
+nP.global.fList = [2e9];
+nP.global.Ro = 50;
+
+var t1 = nP.trf(Math.sqrt(2));
+var t2 = nP.trfAuto();
+var upperTee = nP.Tee();
+var lowerTee = nP.Tee();
+var r1 = nP.R(100);
+var divider = nP.nodal(
+    [t1, 1, 10],
+    [t2, 10, 20, 21],
+    [upperTee, 30, 20, 2],
+    [lowerTee, 31, 21, 3],
+    [r1, 30, 31],
+    ['out', 1, 2, 3]
+);
+
+var response = divider.out('s11mag', 's21mag', 's31mag', 's22mag', 's33mag', 's23mag');
+nP.lineTable({inputTable: [response], title: 'Transformer divider magnitudes'});
+nP.schematic(divider);
+```
+
+The ideal divider has zero reflection at all three ports, output magnitudes `|S21| = |S31| = 1 / √2` (about −3.0103 dB), and zero output-to-output transmission `S23`, within floating-point precision. Linear magnitudes keep the perfect matches and isolation finite in the displayed table. The autotransformer alone does not have those divider properties; the matching transformer and resistor complete the circuit.
 
 ## Combined RLC constructors
 

@@ -29,7 +29,7 @@ The constructors attach resistor symbol and value metadata to `r1` and `r2`. `no
 
 ### Primary workflow: shape groups beside the electrical rows
 
-For larger schematics, the engineer can put shape names beside the connection rows in `nodal()`, using a separate object for each section. A name such as `series` can repeat. The final call remains `nP.schematic(network)`. The full series–ladder–series example is in the [public schematic section](../docs/charts-tables-and-logs.md#schematics) and [groupedNetworks.html](../dev/shapes/groupedNetworks.html).
+For larger schematics, the engineer can put shape names beside the connection rows in `nodal()`, using a separate object for each section. A name such as `series` can repeat. The final call remains `nP.schematic(network)`. The full series–ladder–series example is in the [public schematic guide](../docs/schematics.md) and [groupedNetworks.html](../dev/shapes/groupedNetworks.html).
 
 The grouped input is normalized once before the electrical calculation. For example, two series groups containing four resistor occurrences retain this additional metadata:
 

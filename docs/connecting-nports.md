@@ -39,7 +39,7 @@ nP.schematic(network);
 
 Shape names guide the drawing; the node numbers determine connectivity. Repeated names use separate objects. A component can be reused across groups because each row records its own occurrence. The existing flat syntax remains supported, and both forms use the same electrical matrices. Optional signal options still follow the output row.
 
-See [Schematics](./charts-tables-and-logs.md#schematics) for the shape vocabulary, series–ladder–series workflow, independent detection results and current composition limits.
+See [Schematics](./schematics.md) for the shape vocabulary, series–ladder–series workflow, independent detection results and current composition limits.
 
 ## Wire components with `nodal()`
 

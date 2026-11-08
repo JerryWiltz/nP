@@ -1,4 +1,4 @@
-// Modified: 2026-10-22
+// Modified: 2026-11-08
 import { examples } from './theme/replExamples.js'
 
 function replSidebarItems(category) {
@@ -95,6 +95,7 @@ export default {
                     { text: 'nPort object', link: '/nport-object' },
                     { text: 'RF Constructors', link: '/rf-constructors' },
                     { text: 'Connecting nPorts', link: '/connecting-nports' },
+                    { text: 'Schematics', link: '/schematics' },
                     { text: 'Charts, tables, and logs', link: '/charts-tables-and-logs' },
                     { text: 'Noise', link: '/noise' },
                     { text: 'Intermodulation', link: '/intermodulation' },
