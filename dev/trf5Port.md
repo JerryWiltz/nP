@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-06 -->
+<!-- Modified: 2026-11-09 -->
 # Transformer hybrid power divider
 
 `trf5Port.html` builds the DigiKey hybrid divider with nP components. T1 is
@@ -16,6 +16,9 @@ input on the left, outputs on the right, and the isolation resistor bridging
 the output branches. This shape selector is intended to cover transformer,
 resistive, and Wilkinson divider patterns as they are added.
 
+The tables display reflection and isolation as linear magnitudes so ideal zeros
+remain finite. Transmission remains in dB, showing the −3.01 dB output split.
+
 The transformer shape now uses ORI, alongside series, ladder and branchline. Its definition in `schematicShapeBoards.js` contains named slots, port alternatives, relative terminal positions and wire routes. The shared interpreter matches and lays out those slots; there is no transformer-divider-specific JavaScript builder. Corner wire boxes carry no node dot. Straight wire boxes separate the resistor from both tee common terminals.
 
 The placement grid is 10 units; ordinary symbol pins remain 20 units. The board's centerline relation aligns the input transformer axis and autotransformer tap with the midpoint between the isolation resistor's terminals. ORI applies the relation before routing, without changing canonical symbol dimensions.
@@ -32,11 +35,11 @@ the combining direction.
 
 For an ideal matched pair with direct, equal-phase connections, the result has
 unit transmission magnitude (0 dB) and zero reflection magnitude. The table shows
-the four two-port S-parameters; ideal zero magnitudes appear as negative infinity
-in dB.
+the four two-port S-parameters, with reflection in linear magnitude and transmission
+in dB. This avoids passing negative infinity from `20 * log10(0)` to `lineTable()`.
 
 The second `nP.schematic()` call deliberately supplies no shape hint. It exercises
 the current generic ORI board, leaving all ten components visible. Its layout is
-an unguided baseline, not a claim that the renderer already composes a guided
-splitter with a mirrored combiner. That two-shape capability is still pending;
-the renderer and board definitions are unchanged for this test.
+an unguided baseline. For guided divider/combiner composition, see
+[`shapes/powerDivider.html`](shapes/powerDivider.html). The renderer and board
+definitions are unchanged for this test.

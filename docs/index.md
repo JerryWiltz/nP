@@ -15,6 +15,9 @@ hero:
       text: Get started
       link: /hello-nport
     - theme: alt
+      text: What's new in 0.49.0
+      link: /whats-new-0-49-0
+    - theme: alt
       text: View on GitHub
       link: https://github.com/JerryWiltz/nP
 
@@ -61,7 +64,11 @@ features:
     linkText: View chart APIs
 ---
 
-<!-- Modified: 2026-11-08 -->
+<!-- Modified: 2026-11-09 -->
+
+## What's new in nP 0.49.0
+
+See [What's new in nP 0.49.0](./whats-new-0-49-0.md) for SVG schematics, time-grid and digital workflows, FFT reconstruction, and VNA examples.
 
 ## Start here
 

@@ -1,7 +1,7 @@
 {
-  "_modified": "2026-11-03",
+  "_modified": "2026-11-09",
   "name": "@jerrywiltz/np",
-  "version": "0.0.48",
+  "version": "0.49.0",
   "main": "./dist/nP.cjs",
   "module": "./dist/nP.esm.js",
   "browser": "./dist/nP.js",
@@ -20,6 +20,7 @@
     "dist/nP.esm.js",
     "dist/nP.cjs",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "publishConfig": {

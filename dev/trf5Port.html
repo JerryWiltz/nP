@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Modified: 2026-11-06 -->
+<!-- Modified: 2026-11-09 -->
 <html lang="en">
 
 <head>
@@ -35,6 +35,8 @@
 
   <section>
     <h2>Three-port S-parameters at 2 GHz</h2>
+    <p>Reflection and isolation use linear magnitude so an ideal zero stays finite.
+      Transmission uses dB to show the −3.01 dB split.</p>
     <div id="divider-results"></div>
   </section>
 
@@ -42,7 +44,7 @@
     <h2>Next test: splitter followed by a combiner</h2>
     <p>One nodal network contains both transformer arrangements. The two splitter
       outputs feed the corresponding combiner inputs. This call omits shape guidance
-      to show the current generic layout; combining two guided shapes is not yet supported.</p>
+      to show the generic layout. Guided compositions are demonstrated in the shape harnesses.</p>
     <div id="splitter-combiner-schematic"></div>
     <div id="splitter-combiner-results"></div>
   </section>
@@ -73,7 +75,7 @@
     });
 
     var dividerOut = hybridDivider.out(
-      's11dB', 's21dB', 's31dB', 's22dB', 's33dB', 's23dB'
+      's11mag', 's21dB', 's31dB', 's22mag', 's33mag', 's23mag'
     );
     nP.lineTable({
       inputTable: [dividerOut],
@@ -106,7 +108,7 @@
       ['out', 1, 2]
     );
 
-    var splitterCombinerOut = splitterCombiner.out('s11dB', 's21dB', 's12dB', 's22dB');
+    var splitterCombinerOut = splitterCombiner.out('s11mag', 's21dB', 's12dB', 's22mag');
     var splitterCombinerSchematic = nP.schematic(splitterCombiner, {
       mount: '#splitter-combiner-schematic'
     });

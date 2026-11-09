@@ -13301,8 +13301,8 @@
 		};
 	}
 
-	// Modified: 2026-08-18
-	const version = '0.0.48';
+	// Modified: 2026-11-09
+	const version = '0.49.0';
 
 	// Modified: 2026-10-26
 

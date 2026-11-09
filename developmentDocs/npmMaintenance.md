@@ -1,9 +1,9 @@
-<!-- Modified: 2026-10-15 -->
+<!-- Modified: 2026-11-09 -->
 # npm package maintenance
 
-`@jerrywiltz/np` is already published. The current public release is `0.0.48`.
-This note records maintenance work for the package; it is not a plan for an
-initial npm release.
+`@jerrywiltz/np` is already published. The current source release version is
+`0.49.0`; confirm registry publication with `npm view @jerrywiltz/np version`.
+This note records maintenance and release checks for the package.
 
 ## Published surface
 
@@ -17,7 +17,7 @@ dist/nP.js         UMD browser bundle and global `nP`
 ```
 
 The `files` field in `package.json` publishes the three `dist/` bundles,
-`README.md`, and `LICENSE`. Development pages, research notes, and the
+`README.md`, `CHANGELOG.md`, and `LICENSE`. Development pages, research notes, and the
 host-safe plugin bundle are deliberately outside the npm package.
 
 The normal library-release checks are:

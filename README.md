@@ -1,9 +1,15 @@
-<!-- Modified: 2026-11-08 -->
+<!-- Modified: 2026-11-09 -->
 # nP
 
 JavaScript tools for RF and microwave network analysis. Build n-port circuits, draw schematics, calculate S-parameters, model sampled signals, and display results as line charts, tables, or Smith charts. nP runs in browsers and is distributed as ESM, CommonJS, and UMD bundles.
 
-nP is under active development. The current version is `0.0.48`; APIs may evolve before a stable release.
+nP is under active development. The current version is `0.49.0`; APIs may evolve before a stable release.
+
+## What's new in nP 0.49.0
+
+This release brings SVG schematics drawn from your networks, a shared time grid with `tList` and `tGen()`, waveform sampling and FFT/inverse FFT, and mod/demod workflows for digital signals and VNA measurements. It also adds noise and intermodulation analysis, RF components, and expanded engineering documentation with runnable examples.
+
+See the illustrated [What's new in nP 0.49.0](https://github.com/JerryWiltz/nP/blob/master/docs/whats-new-0-49-0.md) and the [release notes](https://github.com/JerryWiltz/nP/blob/master/CHANGELOG.md#0490--2026-11-09). The [GitHub Pages documentation](https://jerrywiltz.github.io/nP/) contains the Guide, engineering Tech Notes, and live REPL.
 
 ## Install
 

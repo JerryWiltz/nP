@@ -1,4 +1,4 @@
-// Modified: 2026-11-08
+// Modified: 2026-11-09
 import { examples } from './theme/replExamples.js'
 
 function replSidebarItems(category) {
@@ -24,6 +24,7 @@ export default {
         logo: { src: '/nPortLogo.svg', alt: 'nP home' },
         siteTitle: false,
         nav: [
+            { text: "What's new", link: '/whats-new-0-49-0' },
             { text: 'Guide', link: '/hello-nport' },
             { text: 'REPL', link: '/repl.html', activeMatch: '^$' },
             { text: 'Tech Notes', link: '/tech-notes' },
@@ -71,6 +72,7 @@ export default {
             {
                 text: 'Getting Started',
                 items: [
+                    { text: "What's new in 0.49.0", link: '/whats-new-0-49-0' },
                     { text: 'Hello nPort', link: '/hello-nport' },
                     { text: 'Introduction', link: '/introduction' }
                 ]
