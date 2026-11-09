@@ -19,10 +19,11 @@ var circuit = nP.nodal(
 );
 
 var response = circuit.out('s11dB', 's21dB');
+nP.schematic(circuit);
 nP.lineChart({inputTable: [response], title: 'Series R-L response'});
 ```
 
-`response` is a table whose first row names the columns. You can also pass it to `nP.lineTable()`.
+`nP.schematic(circuit)` draws the connected resistor and inductor, including the node numbers used above. `response` is a table whose first row names the columns. You can also pass it to `nP.lineTable()`. The [Schematics guide](./schematics.md) explains the drawing controls and shape guidance.
 
 ## Send a digital signal through a circuit
 
@@ -38,8 +39,11 @@ var attenuator = nP.Attn(3);
 var chain = nP.cascade(attenuator, {signal: tx});
 var rx = nP.demod(chain, {noise: false});
 
-nP.log(rx.out('ASCII text'));
+var receivedText = rx.out('ASCII text');
 var receivedWaveform = rx.out('waveform');
+var signalPath = {transmitter: tx, circuit: chain, receiver: rx};
+nP.log(receivedText);
+nP.schematic(signalPath);
 nP.lineChart({
     inputTable: [receivedWaveform],
     title: 'Received waveform',
@@ -49,7 +53,7 @@ nP.lineChart({
 });
 ```
 
-The waveform table already uses nanoseconds, so `metricPrefix: 'none'` leaves those values unchanged. The clean reception above makes the signal path easy to inspect. By default, `demod()` includes a new random thermal-noise waveform on each call. For a repeated bit-error measurement, use `nP.bitErrorRate(tx, chain, {receptions: 100})`.
+The schematic shows the MOD source, attenuator, and DEMOD receiver. Their diagram connectors describe signal flow. The waveform table already uses nanoseconds, so `metricPrefix: 'none'` leaves those values unchanged. The clean reception above makes the signal path easy to inspect. By default, `demod()` includes a new random thermal-noise waveform on each call. For a repeated bit-error measurement, use `nP.bitErrorRate(tx, chain, {receptions: 100})`.
 
 ## Continue exploring
 

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-19 -->
+<!-- Modified: 2026-11-08 -->
 # Microstrip
 
 Physical microstrip constructors use substrate, conductor, and geometry inputs to produce frequency-dependent n-ports. Use lowercase names such as `nP.mlin()` for these models. For a lossless line with no physical substrate, use [`nP.Tlin()`](./ideal-components.md#a-lossless-line).
@@ -19,8 +19,9 @@ var line = nP.mlin({
     relativePermittivity: 10
 });
 
+var response = line.out('s11dB', 's21dB');
 nP.lineChart({
-    inputTable: [line.out('s11dB', 's21dB')],
+    inputTable: [response],
     title: 'Physical microstrip line',
     metricPrefix: 'giga'
 });
@@ -71,8 +72,10 @@ These constructors return ordinary n-ports with `.out(...)`. They also expose `.
 
 ```js
 var line = nP.mlin();
-nP.log(line.physicalModel.geometry);
-nP.log(line.physicalModel.material);
+var geometry = line.physicalModel.geometry;
+var material = line.physicalModel.material;
+nP.log(geometry);
+nP.log(material);
 ```
 
 Use named properties and the same dimensions for components you intend to connect. An optional `fList` property overrides the selected frequency list for one component, but all n-ports in the same analysis must have matching frequency rows. For the full option lists and model assumptions, see [RF Constructors](./rf-constructors.md#physical-microstrip).

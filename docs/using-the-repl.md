@@ -3,7 +3,7 @@ title: Using the REPL
 outline: [2, 2]
 ---
 
-<!-- Modified: 2026-10-18 -->
+<!-- Modified: 2026-11-08 -->
 
 # Using the REPL
 
@@ -23,16 +23,30 @@ For circuits that depend on frequency, set `nP.global.fList` before creating com
 
 1. Open the [REPL](./repl.md) and choose an example in its left sidebar. Its JavaScript loads into the editor.
 2. Read or edit the code, then press **Run**.
-3. Inspect **Output**. A chart or table appears there when the example calls `nP.lineChart()`, `nP.smithChart()`, or `nP.lineTable()`.
+3. Inspect **Output**. `nP.schematic()` adds a circuit drawing; `nP.lineChart()`, `nP.smithChart()`, and `nP.lineTable()` add calculated results. An example can show several drawings, charts, and tables together.
 
 You can also begin with an empty editor and type your own circuit. Selecting a different example replaces the editor contents. **Reset example** restores the currently selected example; **Clear** removes the selection and leaves the editor blank.
 
+The [Circuit examples](./circuit-examples.md) page pairs explanations and illustrations with **Open in REPL** links. Each link loads the same code shown in the Guide; press **Run** to draw its schematic and calculate its results.
+
+## View a schematic
+
+Examples calling `nP.schematic(network)` draw that network in **Output**. Its node numbers match the connections supplied to `nP.nodal()`; cascades show generated connection numbers. The drawing starts at its natural scale, grows to its full height, and scrolls horizontally when it is wider than the output area.
+
+Each schematic has its own toolbar:
+
+- **Fit drawing** scales the whole drawing to the available width.
+- **Actual size** appears after fitting and restores its natural scale.
+- **Copy as png** copies the complete drawing, including portions outside the visible width.
+
+These controls change only the display. The network's components and electrical results stay the same. See [Schematics](./schematics.md) for shape guidance, dot options, and the returned drawing API.
+
 ## Copy and paste PNG or CSV
 
-Charts and tables provide their own copy buttons inside **Output**:
+Schematics, charts, and tables provide their own copy buttons inside **Output**:
 
-- On a line chart, Smith chart, or line table, click **Copy PNG** to put an image on the clipboard. Switch to an application that accepts pasted images and press **Ctrl+V** (or use that application's Paste command).
-- On a line table, click **Copy CSV** to put comma-separated table text on the clipboard. Paste it into a spreadsheet or text editor.
+- On a schematic, line chart, Smith chart, or line table, click **Copy as png** to put an image on the clipboard. Switch to an application that accepts pasted images and press **Ctrl+V** (or use that application's Paste command).
+- On a line table, click **Copy as csv** to put comma-separated table text on the clipboard. Paste it into a spreadsheet or text editor.
 
 These buttons copy to the clipboard; they do not save a `.png` or `.csv` file. Your browser may ask for clipboard permission. Clipboard copying works on the published HTTPS site and on a local `localhost` preview when the browser supports the relevant clipboard format.
 

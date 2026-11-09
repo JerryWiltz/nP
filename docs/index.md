@@ -61,7 +61,7 @@ features:
     linkText: View chart APIs
 ---
 
-<!-- Modified: 2026-10-19 -->
+<!-- Modified: 2026-11-08 -->
 
 ## Start here
 
@@ -85,7 +85,10 @@ The browser bundle is also available as `dist/nP.js` and exposes the global `nP`
 2. Create components as n-port objects.
 3. Connect them with `nP.nodal()` or `nP.cascade()`.
 4. Extract data with `.out(...)`.
-5. Display the result with `nP.lineChart()`, `nP.lineTable()`, or `nP.smithChart()`.
+5. Draw the network with `nP.schematic(network)`.
+6. Display the result with `nP.lineChart()`, `nP.lineTable()`, or `nP.smithChart()`.
+
+The [Schematics guide](./schematics.md) explains how the network's connections become a drawing, how to use its controls, and how to guide the layout of larger circuits.
 
 Start with the [Introduction](./introduction.md), then follow the [Tutorial](./tutorial.md) for RF and digital signal examples. The [RF Constructors](./rf-constructors.md) page introduces the component families; [Circuit examples](./circuit-examples.md) shows complete RF networks. Physical-model design notes and equation provenance are maintained in the repository's [`developmentDocs/`](https://github.com/JerryWiltz/nP/tree/master/developmentDocs) directory.
 

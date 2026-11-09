@@ -69,8 +69,9 @@ var amplifier = nP.Amp(15, 3);
 var attenuator = nP.Attn(6);
 var chain = nP.cascade(amplifier, attenuator);
 
+var response = chain.out('s21dB', 'NF21dB');
 nP.lineTable({
-    inputTable: [chain.out('s21dB', 'NF21dB')],
+    inputTable: [response],
     title: 'Gain and noise figure'
 });
 ```

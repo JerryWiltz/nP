@@ -58,8 +58,9 @@ var ladder = nP.nodal(
     ['out', 1, 6]
 );
 
+var response = ladder.out('s11dB', 's21dB');
 nP.lineChart({
-    inputTable: [ladder.out('s11dB', 's21dB')],
+    inputTable: [response],
     title: 'L-C-L ladder',
     metricPrefix: 'giga'
 });

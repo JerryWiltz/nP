@@ -17,11 +17,12 @@ var triangle = nP.waveform({
     period: period
 });
 
+var triangleTable = triangle.out('waveform');
 nP.lineChart({
-    inputTable: [triangle.out('waveform')],
+    inputTable: [triangleTable],
     title: 'Triangle wave',
     metricPrefix: 'milli',
-    xAxisTitle: 'Time',
+    xAxisTitle: 'Time (ms)',
     yAxisTitle: 'Voltage (V)'
 });
 ```
@@ -40,7 +41,8 @@ var rectified = nP.waveform({
     shape: 'rectifiedSine',
     period: period
 });
-var fft = nP.FFT(rectified.out('samples'));
+var rectifiedSamples = rectified.out('samples');
+var fft = nP.FFT(rectifiedSamples);
 var harmonics = fft.out('dBV');
 
 nP.lineChart({
@@ -72,11 +74,15 @@ var attenuator = nP.Attn(3);
 var chain = nP.cascade(attenuator, {signal: tx});
 var rx = nP.demod(chain, {noise: false});
 
-nP.log(rx.out('ASCII text'));
+var receivedText = rx.out('ASCII text');
+var receivedWaveform = rx.out('waveform');
+nP.log(receivedText);
 nP.lineChart({
-    inputTable: rx.out('waveform'),
+    inputTable: [receivedWaveform],
     title: 'Received waveform',
-    metricPrefix: 'none'
+    metricPrefix: 'none',
+    xAxisTitle: 'Time (ns)',
+    yAxisTitle: 'Voltage (V)'
 });
 ```
 
@@ -161,10 +167,13 @@ var circuit = nP.global();
 circuit.tList = circuit.tGen(0, 6e-9, 7); // PN3: seven 1 ns ticks
 
 var pn = nP.PN({stages: 3});
+var pnWaveform = pn.out('waveform');
 nP.lineChart({
-    inputTable: pn.out('waveform'),
+    inputTable: [pnWaveform],
     title: 'PN3 clocked waveform',
-    metricPrefix: 'none'
+    metricPrefix: 'none',
+    xAxisTitle: 'Time (ns)',
+    yAxisTitle: 'Voltage (V)'
 });
 ```
 
@@ -180,8 +189,10 @@ var rx = nP.demod(chain, {
     outputPort: 2
 });
 
-nP.log(rx.out('ASCII text'));
-nP.log(rx.out('bits'));
+var receivedText = rx.out('ASCII text');
+var receivedBits = rx.out('bits');
+nP.log(receivedText);
+nP.log(receivedBits);
 ```
 
 The output port defaults to **2**, and the input port defaults to **1**. Set `outputPort` or `inputPort` for a different circuit port. `thresholdVolts` overrides the automatically estimated bit-decision threshold. `rx.out('waveform')` returns received voltage versus time in nanoseconds; `out('bits')` returns decided bits, `out('bit string')` returns those bits as consecutive characters, and `out('ASCII text')` decodes complete eight-bit bytes. Transmitters from `mod()` also support `out('bit string')`. Other useful outputs include `'bit count'`, `'sample count'`, `'frequency count'`, `'frequencies'`, and `'spectrum'`. For carrier modes, `'carrier waveform'` returns the received passband samples while `'waveform'` returns the recovered levels. ASCII decoding has no clock recovery or error correction.

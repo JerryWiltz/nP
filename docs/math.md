@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-22 -->
+<!-- Modified: 2026-11-08 -->
 # Math
 
 The math API provides complex numbers, matrices, and Fourier transforms. These functions are also used by the RF and digital calculations, but you can call them directly through `nP`.
@@ -15,10 +15,15 @@ var resistor = nP.complex(50, 0);
 var inductor = nP.complex(0, 2 * Math.PI * frequency * inductance);
 var impedance = resistor.add(inductor);
 
-nP.log(impedance.getR()); // 50 ohms
-nP.log(impedance.getI()); // about 62.83 ohms
-nP.log(impedance.mag());  // magnitude in ohms
-nP.log(impedance.ang());  // angle in degrees
+var realOhms = impedance.getR();
+var imaginaryOhms = impedance.getI();
+var magnitudeOhms = impedance.mag();
+var phaseDegrees = impedance.ang();
+
+nP.log(realOhms);      // 50 ohms
+nP.log(imaginaryOhms); // about 62.83 ohms
+nP.log(magnitudeOhms); // magnitude in ohms
+nP.log(phaseDegrees);  // angle in degrees
 ```
 
 The real and imaginary parts are available as `.x` and `.y`, or through `getR()` and `getI()`. Arithmetic methods return **new** complex values; `setR()` and `setI()` change the existing value and return it.
@@ -47,8 +52,10 @@ var a = nP.matrix([
 ]);
 var inverse = a.invert();
 
-nP.log(inverse.m[0][0]); // 0.5
-nP.log(inverse.m[1][1]); // 0.25
+var inverse00 = inverse.m[0][0];
+var inverse11 = inverse.m[1][1];
+nP.log(inverse00); // 0.5
+nP.log(inverse11); // 0.25
 ```
 
 For matrices of numbers, use `add()`, `sub()`, `mul()`, `transpose()`, and `invert()`. Each returns a matrix object. `invert()` returns a new matrix and leaves the input matrix's rows intact. Supply compatible dimensions for addition or multiplication and a nonsingular square matrix for inversion.
@@ -63,8 +70,10 @@ var equations = nP.matrix([
 ]);
 var solution = equations.solveGaussFB();
 
-nP.log(solution.m[0][0]); // x = 2
-nP.log(solution.m[1][0]); // y = 1
+var x = solution.m[0][0];
+var y = solution.m[1][0];
+nP.log(x); // 2
+nP.log(y); // 1
 ```
 
 `solveGaussFB()` also leaves the original rows intact.
@@ -80,8 +89,10 @@ var z = nP.matrix([
 ]);
 var inverseZ = z.invertCplx();
 
-nP.log(inverseZ.m[0][0].getR()); // 0.02
-nP.log(inverseZ.m[1][1].getI()); // -0.04
+var inverseReal = inverseZ.m[0][0].getR();
+var inverseImaginary = inverseZ.m[1][1].getI();
+nP.log(inverseReal);      // 0.02
+nP.log(inverseImaginary); // -0.04
 ```
 
 `invertCplx()` and `solveGaussFBCplx()` return new matrices without changing the input rows.
@@ -97,8 +108,10 @@ values[0][0] = 1;
 var copiedRows = nP.dup(values);
 copiedRows[0][0] = 3;
 
-nP.log(values[0][0]);     // still 1
-nP.log(copiedRows[0][0]); // 3
+var originalValue = values[0][0];
+var copiedValue = copiedRows[0][0];
+nP.log(originalValue); // still 1
+nP.log(copiedValue);   // 3
 ```
 
 `dup()` copies the array structure, not the objects stored in its cells. For complex entries, a cell in the copy still refers to the same complex object until you replace it or copy that value separately.
@@ -115,11 +128,13 @@ var samples = [1, 0, 0, 0];
 var spectrum = nP.FFT(samples);
 var recovered = nP.invFFT(spectrum);
 
+var magnitudeTable = spectrum.out('magnitude');
+var recoveredTable = recovered.out('real');
 nP.log('FFT bins:');
-nP.log(spectrum.out('magnitude')); // Frequency (Hz), Magnitude
+nP.log(magnitudeTable); // Frequency (Hz), Magnitude
 
 nP.log('Recovered time samples:');
-nP.log(recovered.out('real'));      // Time (s), Real
+nP.log(recoveredTable); // Time (s), Real
 ```
 
 The forward transform is unscaled; the inverse divides by the sample count. If you sampled at rate `Fs` with `N` samples, bin `k` corresponds to `k × Fs / N` hertz through Nyquist. Bins above Nyquist represent negative frequencies at `(k − N) × Fs / N`. The returned values are complex even when the input samples are real. `spectrum.out('magnitude')` returns the nonnegative bins from DC through Nyquist with their raw, unscaled magnitudes. For real voltage samples, `spectrum.out('dBV')` returns a one-sided RMS voltage spectrum in dBV, ready for a chart with `yAxisTitle: 'Amplitude (dBV)'`. DC and Nyquist use `|X[k]| / N`; other nonnegative bins use `√2 |X[k]| / N`. Zero and very small bins are shown at −80 dBV by default; set another floor with `spectrum.out('dBV', {floorDbv: -100})`. `recovered.out('real')` returns every time and real sample value. Both transforms also accept `'real'`, `'imaginary'`, or `'magnitude'`; the defaults are magnitude for FFT and real for inverse FFT. The inverse transform does not change either global list.

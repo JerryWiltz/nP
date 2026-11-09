@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-22 -->
+<!-- Modified: 2026-11-08 -->
 # mod() in nPort
 
 Modulation turns information into a signal that can travel through a system. For digital data, each bit or group of bits selects a voltage level, a carrier amplitude, a carrier frequency, or a phase. The resulting signal can be viewed as **voltage versus time** or as **frequency components** that a circuit acts on. `nP.mod()` prepares both views for nP's digital signal workflow.
@@ -59,11 +59,12 @@ nP.lineChart({
 });
 nP.lineTable({
   inputTable: frequencyTable,
-  title: 'Transmit frequency bins'
+  title: 'Transmit frequency bins',
+  metricPrefix: 'none'
 });
 ```
 
-The first eight samples are 1 V, the next eight are 0 V, and so on. The waveform table's times are already in **nanoseconds**, so the chart uses `metricPrefix: 'none'`. `tx.out('settings')` reports the bit rate, samples per bit, sample rate, and counts. `tx.out('spectrum')` returns the nonnegative complex bins; they are raw transform values, not a dBV table.
+The first eight samples are 1 V, the next eight are 0 V, and so on. The waveform table's times are already in **nanoseconds**, so the chart uses `metricPrefix: 'none'`. The frequency table starts with a bin number, so its `metricPrefix: 'none'` preserves those integers and leaves the frequency column in hertz. `tx.out('settings')` reports the bit rate, samples per bit, sample rate, and counts. `tx.out('spectrum')` returns the nonnegative complex bins; they are raw transform values, not a dBV table.
 
 ## From transmitter to circuit
 

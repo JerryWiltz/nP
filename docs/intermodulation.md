@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-19 -->
+<!-- Modified: 2026-11-08 -->
 # Intermodulation
 
 An amplifier can carry output intercept specifications for a one-pass, two-tone intermodulation analysis. Connect components with `nP.nodal()` or `nP.cascade()`, then request product powers or intercepts with `.out(...)`. For noise figure and output noise density, see [Noise](./noise.md).
@@ -77,7 +77,9 @@ var ip3 = ampThenAtten.out('OIP3lower21dBm');
 nP.lineChart({
     inputTable: [ip3],
     title: 'Output IP3 versus first-tone frequency',
-    metricPrefix: 'giga'
+    metricPrefix: 'giga',
+    xAxisTitle: 'First-tone frequency (GHz)',
+    yAxisTitle: 'Output IP3 (dBm)'
 });
 ```
 

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-22 -->
+<!-- Modified: 2026-11-08 -->
 # Introduction
 
 ## What is nP?
@@ -7,7 +7,7 @@ nP is a JavaScript library for constructing, analyzing, and visualizing RF and m
 
 ## What can you build?
 
-You can combine resistors, capacitors, inductors, ideal connections, transmission lines, microstrip models, amplifiers, and other components. nP can report S-parameters, noise, and intermodulation results, and it can propagate digital or analog waveforms through a circuit. Charts, tables, and Smith charts display the results.
+You can combine resistors, capacitors, inductors, ideal connections, transmission lines, microstrip models, amplifiers, and other components. nP can report S-parameters, noise, and intermodulation results, and it can propagate digital or analog waveforms through a circuit. `nP.schematic()` draws the connected network; charts, tables, and Smith charts display its calculated results.
 
 ## How nP works
 
@@ -17,7 +17,8 @@ The common RF analysis path is:
 2. Create n-port components.
 3. Connect them with `nP.nodal()` or `nP.cascade()`.
 4. Select results with `.out(...)`.
-5. Display the output with a chart or table.
+5. Draw the network with `nP.schematic(network)`.
+6. Display the output with a chart or table.
 
 Components capture their frequency settings when they are created, so components in one network need matching frequency rows.
 
@@ -43,8 +44,11 @@ var circuit = nP.nodal(
 );
 
 var response = circuit.out('s11dB', 's21dB');
+nP.schematic(circuit);
 nP.lineChart({inputTable: [response], title: 'Series R-L response'});
 ```
+
+The schematic draws the resistor and inductor with the node numbers from `nodal()`. The chart shows their calculated response. Both displays come from the same `circuit` object. See [Schematics](./schematics.md) for drawing controls and layout guidance for larger networks.
 
 ## Where to go next
 

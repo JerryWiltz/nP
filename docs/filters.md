@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-19 -->
+<!-- Modified: 2026-11-08 -->
 # Filters
 
 The low-pass helpers calculate a Chebyshev prototype, scale it to component values, and build a two-port filter. Set the analysis frequencies before creating the final n-port.
@@ -54,8 +54,9 @@ var gValues = nP.chebyLPgk(3, 0.1);
 var values = nP.chebyLPLCs(gValues, 200e6, 50);
 var filter = nP.lpfGen(values.slice());
 
+var response = filter.out('s21dB');
 nP.lineChart({
-    inputTable: [filter.out('s21dB')],
+    inputTable: [response],
     title: 'Designed Chebyshev low-pass',
     metricPrefix: 'giga'
 });

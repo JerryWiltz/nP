@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-25 -->
+<!-- Modified: 2026-11-08 -->
 # Diodes and active components
 
 The public active-device constructors are `nP.Amp()` and `nP.diode1N4148()`. An amplifier is a configurable two-port gain and noise model. The diode combines a DC I–V curve with a small-signal RF n-port around one chosen bias point.
@@ -82,9 +82,13 @@ The returned `.diode` metadata includes normalized parameters and the calculated
 
 ```js
 var diode = nP.diode1N4148({biasVoltage: 0.5});
-nP.log(diode.diode.bias.current);          // amperes
-nP.log(diode.diode.bias.dynamicResistance); // ohms
-nP.log(diode.diode.bias.totalCapacitance);  // farads
+var biasCurrent = diode.diode.bias.current;
+var dynamicResistance = diode.diode.bias.dynamicResistance;
+var totalCapacitance = diode.diode.bias.totalCapacitance;
+
+nP.log(biasCurrent);       // amperes
+nP.log(dynamicResistance); // ohms
+nP.log(totalCapacitance);  // farads
 ```
 
 The diode also supplies noise covariance and weak-signal IM2, IM3, and second-harmonic sources when used in the corresponding analyses. Its RF model is linearized at one bias point; it does not simulate large-signal switching, compression, or transient charge storage. See [Noise](./noise.md#diode-noise) and [Intermodulation](./intermodulation.md#diode-intermodulation).

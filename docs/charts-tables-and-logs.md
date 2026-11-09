@@ -377,7 +377,9 @@ See [Schematics](./schematics.md) for circuit drawings, shape guidance, node dot
 nP.log('Hello, nPort!');       // text
 nP.log(1.234567);              // a number: displayed as 1.235
 nP.log(true);                  // a boolean: displayed as true
-nP.log(nP.complex(5, -7));     // one complex number
+
+var z1 = nP.complex(5, -7);
+nP.log(z1);                  // one complex number
 ```
 
 Numbers are displayed to **four significant digits**. A complex number shows its real and imaginary parts, also to four significant digits. Strings are displayed as literal text, so characters such as `<` and `>` do not become HTML markup.
@@ -390,7 +392,8 @@ Numbers are displayed to **four significant digits**. A complex number shows its
 - A nonempty plain JavaScript object becomes indented JSON text, useful for inspecting `nP.schematic()` graph and topology results.
 
 ```js
-nP.log([1e9, 2e9, 3e9]); // one-column table
+var frequencies = [1e9, 2e9, 3e9];
+nP.log(frequencies); // one-column table
 
 nP.global.fList = [1e9, 2e9];
 var r1 = nP.R(50);
