@@ -49,6 +49,13 @@ the plugin repository's `vendor/nP.esm.js`, where the plugin build incorporates
 it into `main.js`. Rebuilding nP does not update an existing plugin checkout.
 Record the nP version used by each plugin release.
 
+The restricted entry also exports `schematicSvg()`, `schematicGraph()`, and
+`schematicTopology()` for isolated calculations. They return SVG text or ordinary
+data without mounting a drawing. Host-side chart and `schematic()` exports remain
+DOM-capable; the bundle is not a sandbox and is not entirely DOM-free. See
+[the plugin bundle audit](pluginBundleAudit.md) for the 0.49.0 exports, worker
+checks, remaining browser capabilities, and the separate plugin integration work.
+
 ## Maintenance backlog
 
 ### Explicit import extensions

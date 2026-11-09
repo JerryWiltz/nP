@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-08 -->
+<!-- Modified: 2026-11-09 -->
 # Schematic system
 
 This note explains how an nP network becomes a recognizable RF schematic. It starts with two series resistors, follows their data through the one reusable interpreter (ORI), and then explains the board language and graph algorithms behind the drawing.
@@ -506,7 +506,7 @@ The same symbol-generation command writes `src/np-nport/src/schematicSymbolMap.j
 | `dist/nP.esm.js` | ES module package import. |
 | `dist/nP.cjs` | CommonJS package import. |
 
-The bundles include the renderer, ORI and its shared graph/composition operations, board definitions and runtime symbol geometry. The browser does not fetch canonical SVGs or separate shape-definition files when `nP.schematic()` runs. The REPL loads a copy of `dist/nP.js` at `docs/public/nP.js`; that copy must be refreshed after browser behavior changes. The separate `src/plugin.js` entry point also re-exports `np-chart`, so `npm run build:plugin` can build the schematic API into `dist/nP.plugin.esm.js` when that separately maintained bundle is updated. The npm package's declared public files are the three main `dist/nP.*` bundles, not the canonical SVG directory or the plugin bundle.
+The bundles include the renderer, ORI and its shared graph/composition operations, board definitions and runtime symbol geometry. The browser does not fetch canonical SVGs or separate shape-definition files when `nP.schematic()` runs. The REPL loads a copy of `dist/nP.js` at `docs/public/nP.js`; that copy must be refreshed after browser behavior changes. The separate `src/plugin.js` entry point also re-exports `np-chart` and explicitly exports the DOM-free `schematicSvg()`, `schematicGraph()`, and `schematicTopology()` helpers. `npm run build:plugin` includes those APIs in `dist/nP.plugin.esm.js`; a worker can produce an SVG string or drawing data without calling the DOM-based `schematic()` mount and toolbar code. The npm package's declared public files are the three main `dist/nP.*` bundles, not the canonical SVG directory or the plugin bundle. See [the plugin bundle audit](pluginBundleAudit.md) for the worker/host boundary and required integration in the separate Obsidian repository.
 
 ## Public API and source-module functions
 

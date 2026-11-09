@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-27 -->
+<!-- Modified: 2026-11-09 -->
 # nP Development Documentation
 
 This directory contains internal engineering knowledge for developing nP. It records RF mathematics, equation-to-code translations, implementation decisions, data contracts, assumptions, units, references, and worked examples.
@@ -61,6 +61,7 @@ raw research → development documentation → AGENTS rules → source code and 
 - [`seriesParallelResistorSourceModel.md`](seriesParallelResistorSourceModel.md): one physical resistor-noise source represented as two-port waves for series and parallel topologies.
 - [`kurokawaPowerWavesSynopsis.md`](kurokawaPowerWavesSynopsis.md): synopsis and equation-by-equation explanation of Kurokawa's power-wave and scattering-matrix paper.
 - [`npmMaintenance.md`](npmMaintenance.md): maintenance and release checks for the published npm package and its Obsidian-plugin bundle.
+- [`pluginBundleAudit.md`](pluginBundleAudit.md): restricted 0.49.0 exports, DOM-free schematic generation, worker verification, and remaining browser capabilities.
 - [`physicalModelApi.md`](physicalModelApi.md): canonical options, units, compatibility, validation, and metadata for physical transmission-media models.
 - [`chartFunctions.md`](chartFunctions.md): inputs, options, defaults, and return values for `lineChart()`, `lineTable()`, and `smithChart()`.
 - [`schematicSystem.md`](schematicSystem.md): canonical symbols, bundled runtime drawings, public API, and schematic layout theory.
