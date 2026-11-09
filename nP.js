@@ -1,0 +1,20552 @@
+(function (global, factory) {
+	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
+	typeof define === 'function' && define.amd ? define(['exports'], factory) :
+	(global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.nP = {}));
+})(this, (function (exports) { 'use strict';
+
+	function Complex() {}
+
+	Complex.prototype = {
+		constructor: Complex,
+		set: function(real, imaginary) { this.x = real; this.y = imaginary; return this; },
+
+		getR: function () {return this.x;},	  
+		getI: function () {return this.y;}, 
+
+		setR: function (R) {this.x = R; return this;},
+		setI: function (I) {this.y = I; return this;},
+
+		add: function (c2) {return complex(this.x + c2.x, this.y + c2.y);},
+		sub: function (c2) {return complex(this.x - c2.x, this.y - c2.y);},
+		mul: function (c2) {return complex(this.x * c2.x - this.y * c2.y, this.x * c2.y + this.y * c2.x);},
+		div: function (c2) {
+			var denominator = c2.x * c2.x + c2.y * c2.y;
+			return complex(
+				(this.x * c2.x + this.y * c2.y) / denominator,
+				(c2.x * this.y - this.x * c2.y) / denominator
+			);
+		},
+		inv: function () {
+			var denominator = this.x * this.x + this.y * this.y;
+			return complex(this.x / denominator, -this.y / denominator);
+		},
+		neg: function () {return complex(-this.x, -this.y);},
+		copy: function () {return complex(this.x, this.y);},
+
+		mag: function () {return Math.sqrt(this.x * this.x + this.y * this.y);},
+		ang: function () {return Math.atan2(this.y, this.x) * (180/Math.PI);},
+		mag10dB: function () {return 10 * Math.log(this.mag()) / Math.LN10;},
+		mag20dB: function () {return 20 * Math.log(this.mag()) / Math.LN10;},
+
+		sinhCplx: function () {return complex(Math.sinh(this.x) * Math.cos(this.y), Math.cosh(this.x) * Math.sin(this.y));},
+		coshCplx: function () {return complex(Math.cosh(this.x) * Math.cos(this.y), Math.sinh(this.x) * Math.sin(this.y));}
+	};
+
+	function complex(real, imaginary) {
+		var complexNumber = new Complex;
+		complexNumber.set(real, imaginary);
+		return complexNumber;
+	}
+
+	// Modified: 2026-09-16
+
+	function Matrix() { }
+
+	function dim(rows, cols, initial) { // used by nodal()
+		var row = 0, col = 0, a = [], A = [];
+		for (row = 0; row < rows; row++) {
+			a = [];
+			for (col = 0; col < cols; col++) {
+				a[col] = initial;
+			}		A[row] = a;
+		}	return A;
+	}
+	function dup(copied) { // used by nodal()
+		var row, col, B = dim(copied.length, copied[0].length, 0);
+		for (row = 0; row < copied.length; row++) {
+			for (col = 0; col < copied[0].length; col++) {
+				B[row][col] = copied[row][col];
+			}	}	return B;
+	}
+	//pivotSort for maximizing the lower triangle pivot numbers
+	function pivotSort(array, pivot) {
+
+		function maxKey(array, pivot) {
+			var key = 0, i = 0;
+			var current = 0, maximum = 0;
+			for (i = pivot; i < array.length; i++) {
+				current = Math.abs(array[i][pivot]);
+				if (current > maximum) {
+					maximum = current;
+					key = i; // will be row
+				}
+			}
+			return key;
+		}
+
+		function swapNumbers(array, key, pivot) {
+			// if Key === 0 do nothing
+			// if key does not === 0, swap it with key = 0
+
+			var temp0 = array[pivot];
+			var temp1 = array[key];
+
+			if (key === pivot) ;
+			else {
+				array[pivot] = temp1;
+				array[key] = temp0;
+			}
+
+		}
+		swapNumbers(array, maxKey(array, pivot), pivot);
+
+	}
+	//pivotSortCplx for maximizing the lower triangle pivot numbers
+	function pivotSortCplx(array, pivot) {
+
+		function maxKey(array, pivot) {
+			var key = 0, i = 0;
+			var current = 0, maximum = 0;
+			for (i = pivot; i < array.length; i++) {
+				current = array[i][pivot].mag();
+				if (current > maximum) {
+					maximum = current;
+					key = i; // will be row
+				}
+			}
+			return key;
+		}
+
+		function swapNumbers(array, key, pivot) {
+			// if Key === 0 do nothing
+			// if key does not === 0, swap it with key = 0
+
+			var temp0 = array[pivot];
+			var temp1 = array[key];
+
+			if (key === pivot) ;
+			else {
+				array[pivot] = temp1;
+				array[key] = temp0;
+			}
+
+		}
+		swapNumbers(array, maxKey(array, pivot), pivot);
+
+	}
+	Matrix.prototype = {
+		set: function (mat) { this.m = mat; return this; },
+		dimension: function (tableRow, tableCol, initial) {
+			return matrix(dim(tableRow, tableCol, initial));
+		},
+
+		copyMatrix: function copyMatrix() {
+			return matrix(dup(this.m));
+		},
+
+		transpose: function transpose() {
+			var A = this.m,
+				numRows = A.length,
+				numCols = A[0].length,
+				T = dim(numCols, numRows, 0),
+				row = 0, col = 0;
+			for (row = 0; row < numRows; row++) {
+				for (col = 0; col < numCols; col++) {
+					T[col][row] = A[row][col];
+				}		}		return matrix(T);
+		},
+
+		transposeCplx: function transposeCplx() {
+			var A = this.m,
+				numRows = A.length,
+				numCols = A[0].length,
+				T = dim(numCols, numRows, complex(0, 0)),
+				row = 0, col = 0;
+			for (row = 0; row < numRows; row++) {
+				for (col = 0; col < numCols; col++) {
+					T[col][row] = complex(A[row][col].getR(), -A[row][col].getI());
+				}		}		return matrix(T);
+		},
+
+		add: function add(matrixB) {
+			var A = this.m,
+				B = matrixB.m,
+				C = dim(A.length, A[0].length, 0),
+				numRows = A.length,
+				numCols = A[0].length,
+				row = 0, col = 0;
+			for (row = 0; row < numRows; row++) {
+				for (col = 0; col < numCols; col++) {
+					C[row][col] = A[row][col] + B[row][col];
+				}		}		return matrix(C);
+		},
+
+		addCplx: function addCplx(matrixB) {
+			var A = this.m,
+				B = matrixB.m,
+				C = dim(A.length, A[0].length, complex(0, 0)),
+				numRows = A.length,
+				numCols = A[0].length,
+				row = 0, col = 0;
+			for (row = 0; row < numRows; row++) {
+				for (col = 0; col < numCols; col++) {
+					C[row][col] = A[row][col].add(B[row][col]);
+				}		}		return matrix(C);
+		},
+
+		sub: function sub(matrixB) {
+			var A = this.m,
+				B = matrixB.m,
+				C = dim(A.length, A[0].length, 0),
+				numRows = A.length,
+				numCols = A[0].length,
+				row = 0, col = 0;
+			for (row = 0; row < numRows; row++) {
+				for (col = 0; col < numCols; col++) {
+					C[row][col] = A[row][col] - B[row][col];
+				}		}		return matrix(C);
+		},
+
+		subCplx: function subCplx(matrixB) {
+			var A = this.m,
+				B = matrixB.m,
+				C = dim(A.length, A[0].length, complex(0, 0)),
+				numRows = A.length,
+				numCols = A[0].length,
+				row = 0, col = 0;
+			for (row = 0; row < numRows; row++) {
+				for (col = 0; col < numCols; col++) {
+					C[row][col] = A[row][col].sub(B[row][col]);
+				}		}		return matrix(C);
+		},
+
+		mul: function mul(matrixB) {
+			var A = this.m,
+				B = matrixB.m,
+				C = dim(A.length, B[0].length, 0);
+				A[0].length;
+				B.length;
+				var row = 0, col = 0, n = 0;
+			for (row = 0; row < A.length; row++) {
+				for (col = 0; col < B[0].length; col++) {
+					for (n = 0; n < B.length; n++) {
+						C[row][col] += A[row][n] * B[n][col];
+					}			}		}		return matrix(C);
+		},
+
+		mulCplx: function mulCplx(matrixB) {
+			var A = this.m,
+				B = matrixB.m,
+				C = dim(A.length, B[0].length, complex(0, 0));
+				A[0].length;
+				B.length;
+				var row = 0, col = 0, n = 0;
+			for (row = 0; row < A.length; row++) {
+				for (col = 0; col < B[0].length; col++) {
+					for (n = 0; n < B.length; n++) {
+						C[row][col] = C[row][col].add(A[row][n].mul(B[n][col]));
+					}			}		}		return matrix(C);
+		},
+
+
+		solveGaussFB: function solveGaussFB() {
+			var A = dup(this.m),
+				a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
+				row = 0, col = 0, accum = 0;
+
+			for (constRow = 0; constRow < numRows; constRow++) { // FORWARD ELIMINATION - this row stays the same
+				pivotSort(A, constRow);
+				for (row = constRow + 1; row < numRows; row++) { // this row moves down
+					a = -A[row][constRow] / A[constRow][constRow]; // this computes "a"
+					for (col = 0; col < numCols; col++) { // this sweeps across the columns
+						A[row][col] = A[row][col] + a * A[constRow][col];
+					}			}		}
+			for (row = numRows - 1; row > -1; row--) { // BACK SUBSTITUTION
+				accum = 0;
+				for (col = numRows - 1; col > row; col--) {
+					accum = accum + A[row][col] * A[col][numCols - 1];
+				}
+				A[row][numCols - 1] = (1 / A[row][row]) * (A[row][numCols - 1] - accum);
+			}
+
+			for (row = 0; row < numRows; row++) { // get to the right column of A
+				for (col = 0; col < numCols - 1; col++) {
+					A[row].shift();
+				}		}		return matrix(A);
+		},
+
+
+		solveGaussFBCplx: function solveGaussFBCplx() {
+			var A = dup(this.m),
+				a = complex(0, 0), numRows = A.length, numCols = A[0].length, constRow = 0,
+				row = 0, col = 0, accum = complex(0, 0);
+
+			for (constRow = 0; constRow < numRows; constRow++) { // FORWARD ELIMINATION - this row stays the same
+				pivotSortCplx(A, constRow);
+				for (row = constRow + 1; row < numRows; row++) { // this row moves down
+					a = A[row][constRow].div(A[constRow][constRow]).neg();
+					for (col = 0; col < numCols; col++) { // this sweeps across the columns
+						A[row][col] = A[row][col].add(a.mul(A[constRow][col]));
+					}			}		}
+			for (row = numRows - 1; row > -1; row--) { // BACK SUBSTITUTION
+				accum = complex(0, 0);
+				for (col = numRows - 1; col > row; col--) {
+					accum = accum.add(A[row][col].mul(A[col][numCols - 1]));
+				}			A[row][numCols - 1] = (complex(1, 0)).div(A[row][row]).mul(A[row][numCols - 1].sub(accum));
+			}
+			for (row = 0; row < numRows; row++) { // get to the right column of A
+				for (col = 0; col < numCols - 1; col++) {
+					A[row].shift();
+				}		}		return matrix(A);
+		},
+
+
+		invert: function invert() {
+			var A = dup(this.m),
+				a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
+				row = 0, col = 0;
+			//append a 0 Matrix to Matrix, A
+			for (row = 0; row < numRows; row++) {
+				for (col = numRows; col < 2 * numRows; col++) {
+					A[row][col] = 0;
+				}		}		//update numCols since Matrix, A is now wider;
+			numCols = A[0].length;
+			//add diagonal 1's to append array, A
+			for (row = 0; row < numRows; row++) {
+				A[row][row + numRows] = 1;
+			}		// Real variable forward lower Elimination routine
+			for (constRow = 0; constRow < numRows; constRow++) { // this row stays the same
+				pivotSort(A, constRow);
+				for (row = constRow + 1; row < numRows; row++) { // this row moves down
+					a = -A[row][constRow] / A[constRow][constRow]; // this computes "a"
+					for (col = 0; col < numCols; col++) { // this sweeps across the columns
+						A[row][col] = A[row][col] + a * A[constRow][col];
+					}			}		}		// Real variable forward unity diagonal routine
+			for (constRow = 0; constRow < numRows; constRow++) { // this row stays the same
+				a = 1 / A[constRow][constRow];
+				for (row = constRow; row < numRows; row++) { // this row moves down
+					for (col = 0; col < numCols; col++) { // this sweeps across the columns
+						A[row][col] = a * A[row][col];
+					}			}		}		// Real variable forward upper Elimination routine
+			for (constRow = numRows - 1; constRow > 0; constRow--) { // 2 , 1, 0 this row stays the same
+				for (row = 0; row < constRow; row++) { // 0, 1  this row moves down
+					a = -A[row][constRow] / A[constRow][constRow];
+					for (col = 0; col < numCols; col++) { // this sweeps across the columns
+						A[row][col] = A[row][col] + a * A[constRow][col];
+					}			}		}		for (row = 0; row < numRows; row++) { // get to the right column of A
+				for (col = 0; col < numCols / 2; col++) {
+					A[row].shift();
+				}		}		return matrix(A);
+		},
+
+		invertCplx: function invertCplx() {
+			var A = dup(this.m),
+				a = complex(0, 0), numRows = A.length, numCols = A[0].length, constRow = 0,
+				row = 0, col = 0;
+			//append a 0 Matrix to Matrix, A
+			for (row = 0; row < numRows; row++) {
+				for (col = numRows; col < 2 * numRows; col++) {
+					A[row][col] = complex(0, 0);
+				}		}
+			//update numCols since Matrix, A is now wider;
+			numCols = A[0].length;
+
+			// add diagonal 1s to appended array, A
+			for (row = 0; row < numRows; row++) {
+				A[row][row + numRows] = complex(1, 0);
+			}
+
+			// Real variable forward lower Elimination routine
+			for (constRow = 0; constRow < numRows; constRow++) { // this row stays the same
+				pivotSortCplx(A, constRow);
+				for (row = constRow + 1; row < numRows; row++) { // this row moves down
+					a = A[row][constRow].div(A[constRow][constRow]).neg();
+					for (col = 0; col < numCols; col++) { // this sweeps across the columns
+						A[row][col] = A[row][col].add(a.mul(A[constRow][col]));
+					}			}		}
+			// Real variable forward unity diagonal routine
+			for (constRow = 0; constRow < numRows; constRow++) { // this row stays the same
+				a = A[constRow][constRow].inv();
+				for (row = constRow; row < numRows; row++) { // this row moves down
+					for (col = 0; col < numCols; col++) { // this sweeps across the columns
+						A[row][col] = a.mul(A[row][col]);
+					}			}		}
+			// Real variable forward upper Elimination routine
+			for (constRow = numRows - 1; constRow > 0; constRow--) { // 2 , 1, 0 this row stays the same
+				for (row = 0; row < constRow; row++) { // 0, 1  this row moves down
+					a = A[row][constRow].div(A[constRow][constRow]).neg();
+					for (col = 0; col < numCols; col++) { // this sweeps across the columns
+						A[row][col] = A[row][col].add(a.mul(A[constRow][col]));
+					}			}		}
+			for (row = 0; row < numRows; row++) { // get to the right column of A
+				for (col = 0; col < numCols / 2; col++) {
+					A[row].shift();
+				}		}		return matrix(A);
+		},
+	};
+
+	function matrix(mat) {
+		var matrixObject = new Matrix;
+		matrixObject.set(mat);
+		return matrixObject;
+	}
+
+	// Modified: 2026-10-13
+
+	function fGen(fStart, fStop, points) {
+		var out = [];
+		var fStep = (fStop - fStart) / (points - 1);
+		var frequency = fStart;
+		for (var i = 0; i < points; i++, frequency += fStep) out.push(frequency);
+		return out;
+	}
+
+	function tGen(start, stop, points) {
+		if (!Number.isFinite(start) || !Number.isFinite(stop) ||
+			!Number.isInteger(points) || points < 2 || stop <= start) {
+			throw new RangeError('tGen needs a finite increasing interval and at least two points.');
+		}
+		var step = (stop - start) / (points - 1);
+		return Array.from({length: points}, function (_, index) { return start + index * step; });
+	}
+
+	function newContext() {
+		return {fList: [2e9], tList: [], twoTone: undefined, Ro: 50, Temp: 293,
+			fGen: fGen, tGen: tGen};
+	}
+
+	var contexts = new WeakSet();
+	var activeContext = newContext();
+	contexts.add(activeContext);
+
+	// Calling global() creates and selects a circuit context. Calling it with a
+	// previously returned context selects that circuit again.
+	function global(context) {
+		if (arguments.length === 0) {
+			activeContext = newContext();
+			contexts.add(activeContext);
+		} else {
+			if (!context || typeof context !== 'object' || !contexts.has(context)) {
+				throw new TypeError('global expects a circuit context returned by global().');
+			}
+			activeContext = context;
+		}
+		return activeContext;
+	}
+
+	// Preserve the existing property calls and expose the selected context's time grid.
+	// Enumerable accessors also let existing settings snapshots use {...global}.
+	['fList', 'tList', 'twoTone', 'Ro', 'Temp', 'fGen', 'tGen'].forEach(function (key) {
+		Object.defineProperty(global, key, {
+			enumerable: true,
+			get: function () { return activeContext[key]; },
+			set: function (value) { activeContext[key] = value; }
+		});
+	});
+
+	// Modified: 2026-10-20
+
+	// A sampled signal has one uniformly spaced time for each amplitude value.
+	function sampleRateFromTime(time, count, caller) {
+		if (!Array.isArray(time) || time.length < 2) {
+			throw new RangeError(caller + ' needs a tList with at least two sample times.');
+		}
+		if (count !== undefined && time.length !== count) {
+			throw new RangeError(caller + ' needs one tList time for each sample.');
+		}
+		var step = time[1] - time[0];
+		if (!Number.isFinite(step) || step <= 0 || !Number.isFinite(1 / step) ||
+			time.some(function (value, index) {
+				var expected = time[0] + index * step;
+				return !Number.isFinite(value) ||
+					Math.abs(value - expected) > Math.max(Math.abs(step) * 1e-6,
+						Math.abs(expected) * Number.EPSILON * 16);
+			})) {
+			throw new RangeError(caller + ' needs a uniformly spaced, increasing tList in seconds.');
+		}
+		return 1 / step;
+	}
+
+	// Modified: 2026-10-20
+
+	var fftTimeGrid = Symbol('FFT time grid');
+
+	function withOutput(values, axis, axisTitle, defaultSelector, lastIndex, realInput) {
+		Object.defineProperty(values, 'out', {
+			value: function (selector = defaultSelector, options = {}) {
+				if (selector !== 'real' && selector !== 'imaginary' && selector !== 'magnitude' &&
+					selector !== 'dBV') {
+					throw new RangeError('FFT output must be real, imaginary, magnitude, or dBV.');
+				}
+				if (!axis || axis.length !== values.length) {
+					throw new RangeError('A matching tList is needed to output inverse FFT samples.');
+				}
+				var floorDbv;
+				if (selector === 'dBV') {
+					if (axisTitle !== 'Frequency (Hz)' || !realInput) {
+						throw new RangeError('FFT dBV output requires real voltage samples.');
+					}
+					if (!options || Array.isArray(options) || typeof options !== 'object') {
+						throw new TypeError('FFT dBV options must be an object.');
+					}
+					floorDbv = options.floorDbv === undefined ? -80 : options.floorDbv;
+					if (!Number.isFinite(floorDbv)) {
+						throw new RangeError('FFT dBV floorDbv must be finite.');
+					}
+				}
+				var heading = selector === 'dBV' ? 'Amplitude (dBV)' :
+					selector.charAt(0).toUpperCase() + selector.slice(1);
+				var table = [[axisTitle, heading]];
+				for (var index = 0; index <= lastIndex; index++) {
+					var value = values[index];
+					var output;
+					if (selector === 'dBV') {
+						var rmsVolts = value.mag() / values.length;
+						if (index !== 0 && !(values.length % 2 === 0 && index === lastIndex)) {
+							rmsVolts *= Math.SQRT2;
+						}
+						output = Math.max(floorDbv, 20 * Math.log10(rmsVolts));
+					} else {
+						output = selector === 'real' ? value.getR() :
+							selector === 'imaginary' ? value.getI() : value.mag();
+					}
+					table.push([axis[index], output]);
+				}
+				return table;
+			}
+		});
+		return values;
+	}
+
+	// In-place radix-2 transform. Forward transforms are unscaled; inverse
+	// transforms divide by the number of samples.
+	function radix2(real, imaginary, inverse) {
+		var length = real.length;
+		for (var i = 1, j = 0; i < length; i++) {
+			var bit = length / 2;
+			while (j >= bit) {
+				j -= bit;
+				bit /= 2;
+			}
+			j += bit;
+			if (i < j) {
+				var swap = real[i]; real[i] = real[j]; real[j] = swap;
+				swap = imaginary[i]; imaginary[i] = imaginary[j]; imaginary[j] = swap;
+			}
+		}
+		for (var size = 2; size <= length; size *= 2) {
+			var angle = (inverse ? 2 : -2) * Math.PI / size;
+			var stepReal = Math.cos(angle);
+			var stepImaginary = Math.sin(angle);
+			for (var start = 0; start < length; start += size) {
+				var factorReal = 1;
+				var factorImaginary = 0;
+				for (var offset = 0; offset < size / 2; offset++) {
+					var upper = start + offset;
+					var lower = upper + size / 2;
+					var productReal = factorReal * real[lower] - factorImaginary * imaginary[lower];
+					var productImaginary = factorReal * imaginary[lower] + factorImaginary * real[lower];
+					real[lower] = real[upper] - productReal;
+					imaginary[lower] = imaginary[upper] - productImaginary;
+					real[upper] += productReal;
+					imaginary[upper] += productImaginary;
+					var nextReal = factorReal * stepReal - factorImaginary * stepImaginary;
+					factorImaginary = factorReal * stepImaginary + factorImaginary * stepReal;
+					factorReal = nextReal;
+				}
+			}
+		}
+		if (inverse) {
+			for (var index = 0; index < length; index++) {
+				real[index] /= length;
+				imaginary[index] /= length;
+			}
+		}
+	}
+
+	// Bluestein's chirp convolution lets the radix-2 transform handle any length.
+	function bluestein(real, imaginary) {
+		var length = real.length;
+		var convolutionLength = 1;
+		while (convolutionLength < 2 * length - 1) convolutionLength *= 2;
+		var aReal = new Float64Array(convolutionLength);
+		var aImaginary = new Float64Array(convolutionLength);
+		var bReal = new Float64Array(convolutionLength);
+		var bImaginary = new Float64Array(convolutionLength);
+		for (var index = 0; index < length; index++) {
+			var angle = Math.PI * ((index * index) % (2 * length)) / length;
+			var cosine = Math.cos(angle);
+			var sine = Math.sin(angle);
+			aReal[index] = real[index] * cosine + imaginary[index] * sine;
+			aImaginary[index] = imaginary[index] * cosine - real[index] * sine;
+			bReal[index] = cosine;
+			bImaginary[index] = sine;
+			if (index > 0) {
+				bReal[convolutionLength - index] = cosine;
+				bImaginary[convolutionLength - index] = sine;
+			}
+		}
+		radix2(aReal, aImaginary, false);
+		radix2(bReal, bImaginary, false);
+		for (var bin = 0; bin < convolutionLength; bin++) {
+			var productReal = aReal[bin] * bReal[bin] - aImaginary[bin] * bImaginary[bin];
+			aImaginary[bin] = aReal[bin] * bImaginary[bin] + aImaginary[bin] * bReal[bin];
+			aReal[bin] = productReal;
+		}
+		radix2(aReal, aImaginary, true);
+		for (var output = 0; output < length; output++) {
+			var outputAngle = Math.PI * ((output * output) % (2 * length)) / length;
+			var outputCosine = Math.cos(outputAngle);
+			var outputSine = Math.sin(outputAngle);
+			real[output] = aReal[output] * outputCosine + aImaginary[output] * outputSine;
+			imaginary[output] = aImaginary[output] * outputCosine - aReal[output] * outputSine;
+		}
+	}
+
+	function transform(samples, inverse) {
+		if (!Array.isArray(samples) || samples.length === 0) {
+			throw new TypeError('FFT and invFFT require a nonempty array of numbers or complex values.');
+		}
+		var length = samples.length;
+		var real = new Float64Array(length);
+		var imaginary = new Float64Array(length);
+		for (var index = 0; index < length; index++) {
+			var sample = samples[index];
+			var sampleReal;
+			var sampleImaginary;
+			if (typeof sample === 'number') {
+				sampleReal = sample;
+				sampleImaginary = 0;
+			} else if (sample && typeof sample.getR === 'function' && typeof sample.getI === 'function') {
+				sampleReal = sample.getR();
+				sampleImaginary = sample.getI();
+			} else {
+				throw new TypeError('FFT and invFFT samples must be numbers or nP.complex() values.');
+			}
+			if (!Number.isFinite(sampleReal) || !Number.isFinite(sampleImaginary)) {
+				throw new RangeError('FFT and invFFT samples must be finite.');
+			}
+			real[index] = sampleReal;
+			imaginary[index] = inverse ? -sampleImaginary : sampleImaginary;
+		}
+		if ((length & (length - 1)) === 0) radix2(real, imaginary, false);
+		else bluestein(real, imaginary);
+		var result = new Array(length);
+		for (var bin = 0; bin < length; bin++) {
+			result[bin] = complex(inverse ? real[bin] / length : real[bin],
+				inverse ? -imaginary[bin] / length : imaginary[bin]);
+		}
+		return result;
+	}
+
+	// Internal transform for sampled signals whose time context is checked by their owner.
+	function fftBins(samples) {
+		return transform(samples, false);
+	}
+
+	// X[k] = sum_n x[n] exp(-i 2πkn/N), with no forward scaling.
+	// The public transform requires the selected time grid and labels every output bin.
+	function FFT(samples) {
+		var result = fftBins(samples);
+		var sampleRateHz = sampleRateFromTime(global.tList, samples.length, 'FFT');
+		var count = result.length;
+		global.fList = Array.from({length: count}, function (_, bin) {
+			return (bin <= Math.floor(count / 2) ? bin : bin - count) * sampleRateHz / count;
+		});
+		Object.defineProperty(result, fftTimeGrid, {value: global.tList.slice()});
+		var realInput = samples.every(function (sample) {
+			return typeof sample === 'number' || sample.getI() === 0;
+		});
+		return withOutput(result, global.fList.slice(), 'Frequency (Hz)', 'magnitude',
+			Math.floor(count / 2), realInput);
+	}
+
+	// x[n] = (1/N) sum_k X[k] exp(+i 2πkn/N).
+	function invFFT(spectrum) {
+		var result = transform(spectrum, true);
+		var time = spectrum && spectrum[fftTimeGrid] ? spectrum[fftTimeGrid].slice() :
+			Array.isArray(global.tList) ? global.tList.slice() : null;
+		return withOutput(result, time, 'Time (s)', 'real', result.length - 1);
+	}
+
+	function ascending$1(a, b) {
+	  return a == null || b == null ? NaN : a < b ? -1 : a > b ? 1 : a >= b ? 0 : NaN;
+	}
+
+	function descending(a, b) {
+	  return a == null || b == null ? NaN
+	    : b < a ? -1
+	    : b > a ? 1
+	    : b >= a ? 0
+	    : NaN;
+	}
+
+	function bisector(f) {
+	  let compare1, compare2, delta;
+
+	  // If an accessor is specified, promote it to a comparator. In this case we
+	  // can test whether the search value is (self-) comparable. We can’t do this
+	  // for a comparator (except for specific, known comparators) because we can’t
+	  // tell if the comparator is symmetric, and an asymmetric comparator can’t be
+	  // used to test whether a single value is comparable.
+	  if (f.length !== 2) {
+	    compare1 = ascending$1;
+	    compare2 = (d, x) => ascending$1(f(d), x);
+	    delta = (d, x) => f(d) - x;
+	  } else {
+	    compare1 = f === ascending$1 || f === descending ? f : zero$3;
+	    compare2 = f;
+	    delta = f;
+	  }
+
+	  function left(a, x, lo = 0, hi = a.length) {
+	    if (lo < hi) {
+	      if (compare1(x, x) !== 0) return hi;
+	      do {
+	        const mid = (lo + hi) >>> 1;
+	        if (compare2(a[mid], x) < 0) lo = mid + 1;
+	        else hi = mid;
+	      } while (lo < hi);
+	    }
+	    return lo;
+	  }
+
+	  function right(a, x, lo = 0, hi = a.length) {
+	    if (lo < hi) {
+	      if (compare1(x, x) !== 0) return hi;
+	      do {
+	        const mid = (lo + hi) >>> 1;
+	        if (compare2(a[mid], x) <= 0) lo = mid + 1;
+	        else hi = mid;
+	      } while (lo < hi);
+	    }
+	    return lo;
+	  }
+
+	  function center(a, x, lo = 0, hi = a.length) {
+	    const i = left(a, x, lo, hi - 1);
+	    return i > lo && delta(a[i - 1], x) > -delta(a[i], x) ? i - 1 : i;
+	  }
+
+	  return {left, center, right};
+	}
+
+	function zero$3() {
+	  return 0;
+	}
+
+	function number$2(x) {
+	  return x === null ? NaN : +x;
+	}
+
+	const ascendingBisect = bisector(ascending$1);
+	const bisectRight = ascendingBisect.right;
+	bisector(number$2).center;
+
+	function extent(values, valueof) {
+	  let min;
+	  let max;
+	  {
+	    for (const value of values) {
+	      if (value != null) {
+	        if (min === undefined) {
+	          if (value >= value) min = max = value;
+	        } else {
+	          if (min > value) min = value;
+	          if (max < value) max = value;
+	        }
+	      }
+	    }
+	  }
+	  return [min, max];
+	}
+
+	class InternMap extends Map {
+	  constructor(entries, key = keyof) {
+	    super();
+	    Object.defineProperties(this, {_intern: {value: new Map()}, _key: {value: key}});
+	    if (entries != null) for (const [key, value] of entries) this.set(key, value);
+	  }
+	  get(key) {
+	    return super.get(intern_get(this, key));
+	  }
+	  has(key) {
+	    return super.has(intern_get(this, key));
+	  }
+	  set(key, value) {
+	    return super.set(intern_set(this, key), value);
+	  }
+	  delete(key) {
+	    return super.delete(intern_delete(this, key));
+	  }
+	}
+
+	function intern_get({_intern, _key}, value) {
+	  const key = _key(value);
+	  return _intern.has(key) ? _intern.get(key) : value;
+	}
+
+	function intern_set({_intern, _key}, value) {
+	  const key = _key(value);
+	  if (_intern.has(key)) return _intern.get(key);
+	  _intern.set(key, value);
+	  return value;
+	}
+
+	function intern_delete({_intern, _key}, value) {
+	  const key = _key(value);
+	  if (_intern.has(key)) {
+	    value = _intern.get(key);
+	    _intern.delete(key);
+	  }
+	  return value;
+	}
+
+	function keyof(value) {
+	  return value !== null && typeof value === "object" ? value.valueOf() : value;
+	}
+
+	const e10 = Math.sqrt(50),
+	    e5 = Math.sqrt(10),
+	    e2 = Math.sqrt(2);
+
+	function tickSpec(start, stop, count) {
+	  const step = (stop - start) / Math.max(0, count),
+	      power = Math.floor(Math.log10(step)),
+	      error = step / Math.pow(10, power),
+	      factor = error >= e10 ? 10 : error >= e5 ? 5 : error >= e2 ? 2 : 1;
+	  let i1, i2, inc;
+	  if (power < 0) {
+	    inc = Math.pow(10, -power) / factor;
+	    i1 = Math.round(start * inc);
+	    i2 = Math.round(stop * inc);
+	    if (i1 / inc < start) ++i1;
+	    if (i2 / inc > stop) --i2;
+	    inc = -inc;
+	  } else {
+	    inc = Math.pow(10, power) * factor;
+	    i1 = Math.round(start / inc);
+	    i2 = Math.round(stop / inc);
+	    if (i1 * inc < start) ++i1;
+	    if (i2 * inc > stop) --i2;
+	  }
+	  if (i2 < i1 && 0.5 <= count && count < 2) return tickSpec(start, stop, count * 2);
+	  return [i1, i2, inc];
+	}
+
+	function ticks(start, stop, count) {
+	  stop = +stop, start = +start, count = +count;
+	  if (!(count > 0)) return [];
+	  if (start === stop) return [start];
+	  const reverse = stop < start, [i1, i2, inc] = reverse ? tickSpec(stop, start, count) : tickSpec(start, stop, count);
+	  if (!(i2 >= i1)) return [];
+	  const n = i2 - i1 + 1, ticks = new Array(n);
+	  if (reverse) {
+	    if (inc < 0) for (let i = 0; i < n; ++i) ticks[i] = (i2 - i) / -inc;
+	    else for (let i = 0; i < n; ++i) ticks[i] = (i2 - i) * inc;
+	  } else {
+	    if (inc < 0) for (let i = 0; i < n; ++i) ticks[i] = (i1 + i) / -inc;
+	    else for (let i = 0; i < n; ++i) ticks[i] = (i1 + i) * inc;
+	  }
+	  return ticks;
+	}
+
+	function tickIncrement(start, stop, count) {
+	  stop = +stop, start = +start, count = +count;
+	  return tickSpec(start, stop, count)[2];
+	}
+
+	function tickStep(start, stop, count) {
+	  stop = +stop, start = +start, count = +count;
+	  const reverse = stop < start, inc = reverse ? tickIncrement(stop, start, count) : tickIncrement(start, stop, count);
+	  return (reverse ? -1 : 1) * (inc < 0 ? 1 / -inc : inc);
+	}
+
+	function min(values, valueof) {
+	  let min;
+	  {
+	    for (const value of values) {
+	      if (value != null
+	          && (min > value || (min === undefined && value >= value))) {
+	        min = value;
+	      }
+	    }
+	  }
+	  return min;
+	}
+
+	function identity$3(x) {
+	  return x;
+	}
+
+	var top = 1,
+	    right = 2,
+	    bottom = 3,
+	    left = 4,
+	    epsilon$2 = 1e-6;
+
+	function translateX(x) {
+	  return "translate(" + x + ",0)";
+	}
+
+	function translateY(y) {
+	  return "translate(0," + y + ")";
+	}
+
+	function number$1(scale) {
+	  return d => +scale(d);
+	}
+
+	function center(scale, offset) {
+	  offset = Math.max(0, scale.bandwidth() - offset * 2) / 2;
+	  if (scale.round()) offset = Math.round(offset);
+	  return d => +scale(d) + offset;
+	}
+
+	function entering() {
+	  return !this.__axis;
+	}
+
+	function axis(orient, scale) {
+	  var tickArguments = [],
+	      tickValues = null,
+	      tickFormat = null,
+	      tickSizeInner = 6,
+	      tickSizeOuter = 6,
+	      tickPadding = 3,
+	      offset = typeof window !== "undefined" && window.devicePixelRatio > 1 ? 0 : 0.5,
+	      k = orient === top || orient === left ? -1 : 1,
+	      x = orient === left || orient === right ? "x" : "y",
+	      transform = orient === top || orient === bottom ? translateX : translateY;
+
+	  function axis(context) {
+	    var values = tickValues == null ? (scale.ticks ? scale.ticks.apply(scale, tickArguments) : scale.domain()) : tickValues,
+	        format = tickFormat == null ? (scale.tickFormat ? scale.tickFormat.apply(scale, tickArguments) : identity$3) : tickFormat,
+	        spacing = Math.max(tickSizeInner, 0) + tickPadding,
+	        range = scale.range(),
+	        range0 = +range[0] + offset,
+	        range1 = +range[range.length - 1] + offset,
+	        position = (scale.bandwidth ? center : number$1)(scale.copy(), offset),
+	        selection = context.selection ? context.selection() : context,
+	        path = selection.selectAll(".domain").data([null]),
+	        tick = selection.selectAll(".tick").data(values, scale).order(),
+	        tickExit = tick.exit(),
+	        tickEnter = tick.enter().append("g").attr("class", "tick"),
+	        line = tick.select("line"),
+	        text = tick.select("text");
+
+	    path = path.merge(path.enter().insert("path", ".tick")
+	        .attr("class", "domain")
+	        .attr("stroke", "currentColor"));
+
+	    tick = tick.merge(tickEnter);
+
+	    line = line.merge(tickEnter.append("line")
+	        .attr("stroke", "currentColor")
+	        .attr(x + "2", k * tickSizeInner));
+
+	    text = text.merge(tickEnter.append("text")
+	        .attr("fill", "currentColor")
+	        .attr(x, k * spacing)
+	        .attr("dy", orient === top ? "0em" : orient === bottom ? "0.71em" : "0.32em"));
+
+	    if (context !== selection) {
+	      path = path.transition(context);
+	      tick = tick.transition(context);
+	      line = line.transition(context);
+	      text = text.transition(context);
+
+	      tickExit = tickExit.transition(context)
+	          .attr("opacity", epsilon$2)
+	          .attr("transform", function(d) { return isFinite(d = position(d)) ? transform(d + offset) : this.getAttribute("transform"); });
+
+	      tickEnter
+	          .attr("opacity", epsilon$2)
+	          .attr("transform", function(d) { var p = this.parentNode.__axis; return transform((p && isFinite(p = p(d)) ? p : position(d)) + offset); });
+	    }
+
+	    tickExit.remove();
+
+	    path
+	        .attr("d", orient === left || orient === right
+	            ? (tickSizeOuter ? "M" + k * tickSizeOuter + "," + range0 + "H" + offset + "V" + range1 + "H" + k * tickSizeOuter : "M" + offset + "," + range0 + "V" + range1)
+	            : (tickSizeOuter ? "M" + range0 + "," + k * tickSizeOuter + "V" + offset + "H" + range1 + "V" + k * tickSizeOuter : "M" + range0 + "," + offset + "H" + range1));
+
+	    tick
+	        .attr("opacity", 1)
+	        .attr("transform", function(d) { return transform(position(d) + offset); });
+
+	    line
+	        .attr(x + "2", k * tickSizeInner);
+
+	    text
+	        .attr(x, k * spacing)
+	        .text(format);
+
+	    selection.filter(entering)
+	        .attr("fill", "none")
+	        .attr("font-size", 10)
+	        .attr("font-family", "sans-serif")
+	        .attr("text-anchor", orient === right ? "start" : orient === left ? "end" : "middle");
+
+	    selection
+	        .each(function() { this.__axis = position; });
+	  }
+
+	  axis.scale = function(_) {
+	    return arguments.length ? (scale = _, axis) : scale;
+	  };
+
+	  axis.ticks = function() {
+	    return tickArguments = Array.from(arguments), axis;
+	  };
+
+	  axis.tickArguments = function(_) {
+	    return arguments.length ? (tickArguments = _ == null ? [] : Array.from(_), axis) : tickArguments.slice();
+	  };
+
+	  axis.tickValues = function(_) {
+	    return arguments.length ? (tickValues = _ == null ? null : Array.from(_), axis) : tickValues && tickValues.slice();
+	  };
+
+	  axis.tickFormat = function(_) {
+	    return arguments.length ? (tickFormat = _, axis) : tickFormat;
+	  };
+
+	  axis.tickSize = function(_) {
+	    return arguments.length ? (tickSizeInner = tickSizeOuter = +_, axis) : tickSizeInner;
+	  };
+
+	  axis.tickSizeInner = function(_) {
+	    return arguments.length ? (tickSizeInner = +_, axis) : tickSizeInner;
+	  };
+
+	  axis.tickSizeOuter = function(_) {
+	    return arguments.length ? (tickSizeOuter = +_, axis) : tickSizeOuter;
+	  };
+
+	  axis.tickPadding = function(_) {
+	    return arguments.length ? (tickPadding = +_, axis) : tickPadding;
+	  };
+
+	  axis.offset = function(_) {
+	    return arguments.length ? (offset = +_, axis) : offset;
+	  };
+
+	  return axis;
+	}
+
+	function axisTop(scale) {
+	  return axis(top, scale);
+	}
+
+	function axisRight(scale) {
+	  return axis(right, scale);
+	}
+
+	function axisBottom(scale) {
+	  return axis(bottom, scale);
+	}
+
+	function axisLeft(scale) {
+	  return axis(left, scale);
+	}
+
+	var noop = {value: () => {}};
+
+	function dispatch() {
+	  for (var i = 0, n = arguments.length, _ = {}, t; i < n; ++i) {
+	    if (!(t = arguments[i] + "") || (t in _) || /[\s.]/.test(t)) throw new Error("illegal type: " + t);
+	    _[t] = [];
+	  }
+	  return new Dispatch(_);
+	}
+
+	function Dispatch(_) {
+	  this._ = _;
+	}
+
+	function parseTypenames$1(typenames, types) {
+	  return typenames.trim().split(/^|\s+/).map(function(t) {
+	    var name = "", i = t.indexOf(".");
+	    if (i >= 0) name = t.slice(i + 1), t = t.slice(0, i);
+	    if (t && !types.hasOwnProperty(t)) throw new Error("unknown type: " + t);
+	    return {type: t, name: name};
+	  });
+	}
+
+	Dispatch.prototype = dispatch.prototype = {
+	  constructor: Dispatch,
+	  on: function(typename, callback) {
+	    var _ = this._,
+	        T = parseTypenames$1(typename + "", _),
+	        t,
+	        i = -1,
+	        n = T.length;
+
+	    // If no callback was specified, return the callback of the given type and name.
+	    if (arguments.length < 2) {
+	      while (++i < n) if ((t = (typename = T[i]).type) && (t = get$1(_[t], typename.name))) return t;
+	      return;
+	    }
+
+	    // If a type was specified, set the callback for the given type and name.
+	    // Otherwise, if a null callback was specified, remove callbacks of the given name.
+	    if (callback != null && typeof callback !== "function") throw new Error("invalid callback: " + callback);
+	    while (++i < n) {
+	      if (t = (typename = T[i]).type) _[t] = set$1(_[t], typename.name, callback);
+	      else if (callback == null) for (t in _) _[t] = set$1(_[t], typename.name, null);
+	    }
+
+	    return this;
+	  },
+	  copy: function() {
+	    var copy = {}, _ = this._;
+	    for (var t in _) copy[t] = _[t].slice();
+	    return new Dispatch(copy);
+	  },
+	  call: function(type, that) {
+	    if ((n = arguments.length - 2) > 0) for (var args = new Array(n), i = 0, n, t; i < n; ++i) args[i] = arguments[i + 2];
+	    if (!this._.hasOwnProperty(type)) throw new Error("unknown type: " + type);
+	    for (t = this._[type], i = 0, n = t.length; i < n; ++i) t[i].value.apply(that, args);
+	  },
+	  apply: function(type, that, args) {
+	    if (!this._.hasOwnProperty(type)) throw new Error("unknown type: " + type);
+	    for (var t = this._[type], i = 0, n = t.length; i < n; ++i) t[i].value.apply(that, args);
+	  }
+	};
+
+	function get$1(type, name) {
+	  for (var i = 0, n = type.length, c; i < n; ++i) {
+	    if ((c = type[i]).name === name) {
+	      return c.value;
+	    }
+	  }
+	}
+
+	function set$1(type, name, callback) {
+	  for (var i = 0, n = type.length; i < n; ++i) {
+	    if (type[i].name === name) {
+	      type[i] = noop, type = type.slice(0, i).concat(type.slice(i + 1));
+	      break;
+	    }
+	  }
+	  if (callback != null) type.push({name: name, value: callback});
+	  return type;
+	}
+
+	var xhtml = "http://www.w3.org/1999/xhtml";
+
+	var namespaces = {
+	  svg: "http://www.w3.org/2000/svg",
+	  xhtml: xhtml,
+	  xlink: "http://www.w3.org/1999/xlink",
+	  xml: "http://www.w3.org/XML/1998/namespace",
+	  xmlns: "http://www.w3.org/2000/xmlns/"
+	};
+
+	function namespace(name) {
+	  var prefix = name += "", i = prefix.indexOf(":");
+	  if (i >= 0 && (prefix = name.slice(0, i)) !== "xmlns") name = name.slice(i + 1);
+	  return namespaces.hasOwnProperty(prefix) ? {space: namespaces[prefix], local: name} : name; // eslint-disable-line no-prototype-builtins
+	}
+
+	function creatorInherit(name) {
+	  return function() {
+	    var document = this.ownerDocument,
+	        uri = this.namespaceURI;
+	    return uri === xhtml && document.documentElement.namespaceURI === xhtml
+	        ? document.createElement(name)
+	        : document.createElementNS(uri, name);
+	  };
+	}
+
+	function creatorFixed(fullname) {
+	  return function() {
+	    return this.ownerDocument.createElementNS(fullname.space, fullname.local);
+	  };
+	}
+
+	function creator(name) {
+	  var fullname = namespace(name);
+	  return (fullname.local
+	      ? creatorFixed
+	      : creatorInherit)(fullname);
+	}
+
+	function none() {}
+
+	function selector(selector) {
+	  return selector == null ? none : function() {
+	    return this.querySelector(selector);
+	  };
+	}
+
+	function selection_select(select) {
+	  if (typeof select !== "function") select = selector(select);
+
+	  for (var groups = this._groups, m = groups.length, subgroups = new Array(m), j = 0; j < m; ++j) {
+	    for (var group = groups[j], n = group.length, subgroup = subgroups[j] = new Array(n), node, subnode, i = 0; i < n; ++i) {
+	      if ((node = group[i]) && (subnode = select.call(node, node.__data__, i, group))) {
+	        if ("__data__" in node) subnode.__data__ = node.__data__;
+	        subgroup[i] = subnode;
+	      }
+	    }
+	  }
+
+	  return new Selection$1(subgroups, this._parents);
+	}
+
+	// Given something array like (or null), returns something that is strictly an
+	// array. This is used to ensure that array-like objects passed to d3.selectAll
+	// or selection.selectAll are converted into proper arrays when creating a
+	// selection; we don’t ever want to create a selection backed by a live
+	// HTMLCollection or NodeList. However, note that selection.selectAll will use a
+	// static NodeList as a group, since it safely derived from querySelectorAll.
+	function array$1(x) {
+	  return x == null ? [] : Array.isArray(x) ? x : Array.from(x);
+	}
+
+	function empty() {
+	  return [];
+	}
+
+	function selectorAll(selector) {
+	  return selector == null ? empty : function() {
+	    return this.querySelectorAll(selector);
+	  };
+	}
+
+	function arrayAll(select) {
+	  return function() {
+	    return array$1(select.apply(this, arguments));
+	  };
+	}
+
+	function selection_selectAll(select) {
+	  if (typeof select === "function") select = arrayAll(select);
+	  else select = selectorAll(select);
+
+	  for (var groups = this._groups, m = groups.length, subgroups = [], parents = [], j = 0; j < m; ++j) {
+	    for (var group = groups[j], n = group.length, node, i = 0; i < n; ++i) {
+	      if (node = group[i]) {
+	        subgroups.push(select.call(node, node.__data__, i, group));
+	        parents.push(node);
+	      }
+	    }
+	  }
+
+	  return new Selection$1(subgroups, parents);
+	}
+
+	function matcher(selector) {
+	  return function() {
+	    return this.matches(selector);
+	  };
+	}
+
+	function childMatcher(selector) {
+	  return function(node) {
+	    return node.matches(selector);
+	  };
+	}
+
+	var find = Array.prototype.find;
+
+	function childFind(match) {
+	  return function() {
+	    return find.call(this.children, match);
+	  };
+	}
+
+	function childFirst() {
+	  return this.firstElementChild;
+	}
+
+	function selection_selectChild(match) {
+	  return this.select(match == null ? childFirst
+	      : childFind(typeof match === "function" ? match : childMatcher(match)));
+	}
+
+	var filter = Array.prototype.filter;
+
+	function children() {
+	  return Array.from(this.children);
+	}
+
+	function childrenFilter(match) {
+	  return function() {
+	    return filter.call(this.children, match);
+	  };
+	}
+
+	function selection_selectChildren(match) {
+	  return this.selectAll(match == null ? children
+	      : childrenFilter(typeof match === "function" ? match : childMatcher(match)));
+	}
+
+	function selection_filter(match) {
+	  if (typeof match !== "function") match = matcher(match);
+
+	  for (var groups = this._groups, m = groups.length, subgroups = new Array(m), j = 0; j < m; ++j) {
+	    for (var group = groups[j], n = group.length, subgroup = subgroups[j] = [], node, i = 0; i < n; ++i) {
+	      if ((node = group[i]) && match.call(node, node.__data__, i, group)) {
+	        subgroup.push(node);
+	      }
+	    }
+	  }
+
+	  return new Selection$1(subgroups, this._parents);
+	}
+
+	function sparse(update) {
+	  return new Array(update.length);
+	}
+
+	function selection_enter() {
+	  return new Selection$1(this._enter || this._groups.map(sparse), this._parents);
+	}
+
+	function EnterNode(parent, datum) {
+	  this.ownerDocument = parent.ownerDocument;
+	  this.namespaceURI = parent.namespaceURI;
+	  this._next = null;
+	  this._parent = parent;
+	  this.__data__ = datum;
+	}
+
+	EnterNode.prototype = {
+	  constructor: EnterNode,
+	  appendChild: function(child) { return this._parent.insertBefore(child, this._next); },
+	  insertBefore: function(child, next) { return this._parent.insertBefore(child, next); },
+	  querySelector: function(selector) { return this._parent.querySelector(selector); },
+	  querySelectorAll: function(selector) { return this._parent.querySelectorAll(selector); }
+	};
+
+	function constant$2(x) {
+	  return function() {
+	    return x;
+	  };
+	}
+
+	function bindIndex(parent, group, enter, update, exit, data) {
+	  var i = 0,
+	      node,
+	      groupLength = group.length,
+	      dataLength = data.length;
+
+	  // Put any non-null nodes that fit into update.
+	  // Put any null nodes into enter.
+	  // Put any remaining data into enter.
+	  for (; i < dataLength; ++i) {
+	    if (node = group[i]) {
+	      node.__data__ = data[i];
+	      update[i] = node;
+	    } else {
+	      enter[i] = new EnterNode(parent, data[i]);
+	    }
+	  }
+
+	  // Put any non-null nodes that don’t fit into exit.
+	  for (; i < groupLength; ++i) {
+	    if (node = group[i]) {
+	      exit[i] = node;
+	    }
+	  }
+	}
+
+	function bindKey(parent, group, enter, update, exit, data, key) {
+	  var i,
+	      node,
+	      nodeByKeyValue = new Map,
+	      groupLength = group.length,
+	      dataLength = data.length,
+	      keyValues = new Array(groupLength),
+	      keyValue;
+
+	  // Compute the key for each node.
+	  // If multiple nodes have the same key, the duplicates are added to exit.
+	  for (i = 0; i < groupLength; ++i) {
+	    if (node = group[i]) {
+	      keyValues[i] = keyValue = key.call(node, node.__data__, i, group) + "";
+	      if (nodeByKeyValue.has(keyValue)) {
+	        exit[i] = node;
+	      } else {
+	        nodeByKeyValue.set(keyValue, node);
+	      }
+	    }
+	  }
+
+	  // Compute the key for each datum.
+	  // If there a node associated with this key, join and add it to update.
+	  // If there is not (or the key is a duplicate), add it to enter.
+	  for (i = 0; i < dataLength; ++i) {
+	    keyValue = key.call(parent, data[i], i, data) + "";
+	    if (node = nodeByKeyValue.get(keyValue)) {
+	      update[i] = node;
+	      node.__data__ = data[i];
+	      nodeByKeyValue.delete(keyValue);
+	    } else {
+	      enter[i] = new EnterNode(parent, data[i]);
+	    }
+	  }
+
+	  // Add any remaining nodes that were not bound to data to exit.
+	  for (i = 0; i < groupLength; ++i) {
+	    if ((node = group[i]) && (nodeByKeyValue.get(keyValues[i]) === node)) {
+	      exit[i] = node;
+	    }
+	  }
+	}
+
+	function datum(node) {
+	  return node.__data__;
+	}
+
+	function selection_data(value, key) {
+	  if (!arguments.length) return Array.from(this, datum);
+
+	  var bind = key ? bindKey : bindIndex,
+	      parents = this._parents,
+	      groups = this._groups;
+
+	  if (typeof value !== "function") value = constant$2(value);
+
+	  for (var m = groups.length, update = new Array(m), enter = new Array(m), exit = new Array(m), j = 0; j < m; ++j) {
+	    var parent = parents[j],
+	        group = groups[j],
+	        groupLength = group.length,
+	        data = arraylike(value.call(parent, parent && parent.__data__, j, parents)),
+	        dataLength = data.length,
+	        enterGroup = enter[j] = new Array(dataLength),
+	        updateGroup = update[j] = new Array(dataLength),
+	        exitGroup = exit[j] = new Array(groupLength);
+
+	    bind(parent, group, enterGroup, updateGroup, exitGroup, data, key);
+
+	    // Now connect the enter nodes to their following update node, such that
+	    // appendChild can insert the materialized enter node before this node,
+	    // rather than at the end of the parent node.
+	    for (var i0 = 0, i1 = 0, previous, next; i0 < dataLength; ++i0) {
+	      if (previous = enterGroup[i0]) {
+	        if (i0 >= i1) i1 = i0 + 1;
+	        while (!(next = updateGroup[i1]) && ++i1 < dataLength);
+	        previous._next = next || null;
+	      }
+	    }
+	  }
+
+	  update = new Selection$1(update, parents);
+	  update._enter = enter;
+	  update._exit = exit;
+	  return update;
+	}
+
+	// Given some data, this returns an array-like view of it: an object that
+	// exposes a length property and allows numeric indexing. Note that unlike
+	// selectAll, this isn’t worried about “live” collections because the resulting
+	// array will only be used briefly while data is being bound. (It is possible to
+	// cause the data to change while iterating by using a key function, but please
+	// don’t; we’d rather avoid a gratuitous copy.)
+	function arraylike(data) {
+	  return typeof data === "object" && "length" in data
+	    ? data // Array, TypedArray, NodeList, array-like
+	    : Array.from(data); // Map, Set, iterable, string, or anything else
+	}
+
+	function selection_exit() {
+	  return new Selection$1(this._exit || this._groups.map(sparse), this._parents);
+	}
+
+	function selection_join(onenter, onupdate, onexit) {
+	  var enter = this.enter(), update = this, exit = this.exit();
+	  if (typeof onenter === "function") {
+	    enter = onenter(enter);
+	    if (enter) enter = enter.selection();
+	  } else {
+	    enter = enter.append(onenter + "");
+	  }
+	  if (onupdate != null) {
+	    update = onupdate(update);
+	    if (update) update = update.selection();
+	  }
+	  if (onexit == null) exit.remove(); else onexit(exit);
+	  return enter && update ? enter.merge(update).order() : update;
+	}
+
+	function selection_merge(context) {
+	  var selection = context.selection ? context.selection() : context;
+
+	  for (var groups0 = this._groups, groups1 = selection._groups, m0 = groups0.length, m1 = groups1.length, m = Math.min(m0, m1), merges = new Array(m0), j = 0; j < m; ++j) {
+	    for (var group0 = groups0[j], group1 = groups1[j], n = group0.length, merge = merges[j] = new Array(n), node, i = 0; i < n; ++i) {
+	      if (node = group0[i] || group1[i]) {
+	        merge[i] = node;
+	      }
+	    }
+	  }
+
+	  for (; j < m0; ++j) {
+	    merges[j] = groups0[j];
+	  }
+
+	  return new Selection$1(merges, this._parents);
+	}
+
+	function selection_order() {
+
+	  for (var groups = this._groups, j = -1, m = groups.length; ++j < m;) {
+	    for (var group = groups[j], i = group.length - 1, next = group[i], node; --i >= 0;) {
+	      if (node = group[i]) {
+	        if (next && node.compareDocumentPosition(next) ^ 4) next.parentNode.insertBefore(node, next);
+	        next = node;
+	      }
+	    }
+	  }
+
+	  return this;
+	}
+
+	function selection_sort(compare) {
+	  if (!compare) compare = ascending;
+
+	  function compareNode(a, b) {
+	    return a && b ? compare(a.__data__, b.__data__) : !a - !b;
+	  }
+
+	  for (var groups = this._groups, m = groups.length, sortgroups = new Array(m), j = 0; j < m; ++j) {
+	    for (var group = groups[j], n = group.length, sortgroup = sortgroups[j] = new Array(n), node, i = 0; i < n; ++i) {
+	      if (node = group[i]) {
+	        sortgroup[i] = node;
+	      }
+	    }
+	    sortgroup.sort(compareNode);
+	  }
+
+	  return new Selection$1(sortgroups, this._parents).order();
+	}
+
+	function ascending(a, b) {
+	  return a < b ? -1 : a > b ? 1 : a >= b ? 0 : NaN;
+	}
+
+	function selection_call() {
+	  var callback = arguments[0];
+	  arguments[0] = this;
+	  callback.apply(null, arguments);
+	  return this;
+	}
+
+	function selection_nodes() {
+	  return Array.from(this);
+	}
+
+	function selection_node() {
+
+	  for (var groups = this._groups, j = 0, m = groups.length; j < m; ++j) {
+	    for (var group = groups[j], i = 0, n = group.length; i < n; ++i) {
+	      var node = group[i];
+	      if (node) return node;
+	    }
+	  }
+
+	  return null;
+	}
+
+	function selection_size() {
+	  let size = 0;
+	  for (const node of this) ++size; // eslint-disable-line no-unused-vars
+	  return size;
+	}
+
+	function selection_empty() {
+	  return !this.node();
+	}
+
+	function selection_each(callback) {
+
+	  for (var groups = this._groups, j = 0, m = groups.length; j < m; ++j) {
+	    for (var group = groups[j], i = 0, n = group.length, node; i < n; ++i) {
+	      if (node = group[i]) callback.call(node, node.__data__, i, group);
+	    }
+	  }
+
+	  return this;
+	}
+
+	function attrRemove$1(name) {
+	  return function() {
+	    this.removeAttribute(name);
+	  };
+	}
+
+	function attrRemoveNS$1(fullname) {
+	  return function() {
+	    this.removeAttributeNS(fullname.space, fullname.local);
+	  };
+	}
+
+	function attrConstant$1(name, value) {
+	  return function() {
+	    this.setAttribute(name, value);
+	  };
+	}
+
+	function attrConstantNS$1(fullname, value) {
+	  return function() {
+	    this.setAttributeNS(fullname.space, fullname.local, value);
+	  };
+	}
+
+	function attrFunction$1(name, value) {
+	  return function() {
+	    var v = value.apply(this, arguments);
+	    if (v == null) this.removeAttribute(name);
+	    else this.setAttribute(name, v);
+	  };
+	}
+
+	function attrFunctionNS$1(fullname, value) {
+	  return function() {
+	    var v = value.apply(this, arguments);
+	    if (v == null) this.removeAttributeNS(fullname.space, fullname.local);
+	    else this.setAttributeNS(fullname.space, fullname.local, v);
+	  };
+	}
+
+	function selection_attr(name, value) {
+	  var fullname = namespace(name);
+
+	  if (arguments.length < 2) {
+	    var node = this.node();
+	    return fullname.local
+	        ? node.getAttributeNS(fullname.space, fullname.local)
+	        : node.getAttribute(fullname);
+	  }
+
+	  return this.each((value == null
+	      ? (fullname.local ? attrRemoveNS$1 : attrRemove$1) : (typeof value === "function"
+	      ? (fullname.local ? attrFunctionNS$1 : attrFunction$1)
+	      : (fullname.local ? attrConstantNS$1 : attrConstant$1)))(fullname, value));
+	}
+
+	function defaultView(node) {
+	  return (node.ownerDocument && node.ownerDocument.defaultView) // node is a Node
+	      || (node.document && node) // node is a Window
+	      || node.defaultView; // node is a Document
+	}
+
+	function styleRemove$1(name) {
+	  return function() {
+	    this.style.removeProperty(name);
+	  };
+	}
+
+	function styleConstant$1(name, value, priority) {
+	  return function() {
+	    this.style.setProperty(name, value, priority);
+	  };
+	}
+
+	function styleFunction$1(name, value, priority) {
+	  return function() {
+	    var v = value.apply(this, arguments);
+	    if (v == null) this.style.removeProperty(name);
+	    else this.style.setProperty(name, v, priority);
+	  };
+	}
+
+	function selection_style(name, value, priority) {
+	  return arguments.length > 1
+	      ? this.each((value == null
+	            ? styleRemove$1 : typeof value === "function"
+	            ? styleFunction$1
+	            : styleConstant$1)(name, value, priority == null ? "" : priority))
+	      : styleValue(this.node(), name);
+	}
+
+	function styleValue(node, name) {
+	  return node.style.getPropertyValue(name)
+	      || defaultView(node).getComputedStyle(node, null).getPropertyValue(name);
+	}
+
+	function propertyRemove(name) {
+	  return function() {
+	    delete this[name];
+	  };
+	}
+
+	function propertyConstant(name, value) {
+	  return function() {
+	    this[name] = value;
+	  };
+	}
+
+	function propertyFunction(name, value) {
+	  return function() {
+	    var v = value.apply(this, arguments);
+	    if (v == null) delete this[name];
+	    else this[name] = v;
+	  };
+	}
+
+	function selection_property(name, value) {
+	  return arguments.length > 1
+	      ? this.each((value == null
+	          ? propertyRemove : typeof value === "function"
+	          ? propertyFunction
+	          : propertyConstant)(name, value))
+	      : this.node()[name];
+	}
+
+	function classArray(string) {
+	  return string.trim().split(/^|\s+/);
+	}
+
+	function classList(node) {
+	  return node.classList || new ClassList(node);
+	}
+
+	function ClassList(node) {
+	  this._node = node;
+	  this._names = classArray(node.getAttribute("class") || "");
+	}
+
+	ClassList.prototype = {
+	  add: function(name) {
+	    var i = this._names.indexOf(name);
+	    if (i < 0) {
+	      this._names.push(name);
+	      this._node.setAttribute("class", this._names.join(" "));
+	    }
+	  },
+	  remove: function(name) {
+	    var i = this._names.indexOf(name);
+	    if (i >= 0) {
+	      this._names.splice(i, 1);
+	      this._node.setAttribute("class", this._names.join(" "));
+	    }
+	  },
+	  contains: function(name) {
+	    return this._names.indexOf(name) >= 0;
+	  }
+	};
+
+	function classedAdd(node, names) {
+	  var list = classList(node), i = -1, n = names.length;
+	  while (++i < n) list.add(names[i]);
+	}
+
+	function classedRemove(node, names) {
+	  var list = classList(node), i = -1, n = names.length;
+	  while (++i < n) list.remove(names[i]);
+	}
+
+	function classedTrue(names) {
+	  return function() {
+	    classedAdd(this, names);
+	  };
+	}
+
+	function classedFalse(names) {
+	  return function() {
+	    classedRemove(this, names);
+	  };
+	}
+
+	function classedFunction(names, value) {
+	  return function() {
+	    (value.apply(this, arguments) ? classedAdd : classedRemove)(this, names);
+	  };
+	}
+
+	function selection_classed(name, value) {
+	  var names = classArray(name + "");
+
+	  if (arguments.length < 2) {
+	    var list = classList(this.node()), i = -1, n = names.length;
+	    while (++i < n) if (!list.contains(names[i])) return false;
+	    return true;
+	  }
+
+	  return this.each((typeof value === "function"
+	      ? classedFunction : value
+	      ? classedTrue
+	      : classedFalse)(names, value));
+	}
+
+	function textRemove() {
+	  this.textContent = "";
+	}
+
+	function textConstant$1(value) {
+	  return function() {
+	    this.textContent = value;
+	  };
+	}
+
+	function textFunction$1(value) {
+	  return function() {
+	    var v = value.apply(this, arguments);
+	    this.textContent = v == null ? "" : v;
+	  };
+	}
+
+	function selection_text(value) {
+	  return arguments.length
+	      ? this.each(value == null
+	          ? textRemove : (typeof value === "function"
+	          ? textFunction$1
+	          : textConstant$1)(value))
+	      : this.node().textContent;
+	}
+
+	function htmlRemove() {
+	  this.innerHTML = "";
+	}
+
+	function htmlConstant(value) {
+	  return function() {
+	    this.innerHTML = value;
+	  };
+	}
+
+	function htmlFunction(value) {
+	  return function() {
+	    var v = value.apply(this, arguments);
+	    this.innerHTML = v == null ? "" : v;
+	  };
+	}
+
+	function selection_html(value) {
+	  return arguments.length
+	      ? this.each(value == null
+	          ? htmlRemove : (typeof value === "function"
+	          ? htmlFunction
+	          : htmlConstant)(value))
+	      : this.node().innerHTML;
+	}
+
+	function raise() {
+	  if (this.nextSibling) this.parentNode.appendChild(this);
+	}
+
+	function selection_raise() {
+	  return this.each(raise);
+	}
+
+	function lower() {
+	  if (this.previousSibling) this.parentNode.insertBefore(this, this.parentNode.firstChild);
+	}
+
+	function selection_lower() {
+	  return this.each(lower);
+	}
+
+	function selection_append(name) {
+	  var create = typeof name === "function" ? name : creator(name);
+	  return this.select(function() {
+	    return this.appendChild(create.apply(this, arguments));
+	  });
+	}
+
+	function constantNull() {
+	  return null;
+	}
+
+	function selection_insert(name, before) {
+	  var create = typeof name === "function" ? name : creator(name),
+	      select = before == null ? constantNull : typeof before === "function" ? before : selector(before);
+	  return this.select(function() {
+	    return this.insertBefore(create.apply(this, arguments), select.apply(this, arguments) || null);
+	  });
+	}
+
+	function remove() {
+	  var parent = this.parentNode;
+	  if (parent) parent.removeChild(this);
+	}
+
+	function selection_remove() {
+	  return this.each(remove);
+	}
+
+	function selection_cloneShallow() {
+	  var clone = this.cloneNode(false), parent = this.parentNode;
+	  return parent ? parent.insertBefore(clone, this.nextSibling) : clone;
+	}
+
+	function selection_cloneDeep() {
+	  var clone = this.cloneNode(true), parent = this.parentNode;
+	  return parent ? parent.insertBefore(clone, this.nextSibling) : clone;
+	}
+
+	function selection_clone(deep) {
+	  return this.select(deep ? selection_cloneDeep : selection_cloneShallow);
+	}
+
+	function selection_datum(value) {
+	  return arguments.length
+	      ? this.property("__data__", value)
+	      : this.node().__data__;
+	}
+
+	function contextListener(listener) {
+	  return function(event) {
+	    listener.call(this, event, this.__data__);
+	  };
+	}
+
+	function parseTypenames(typenames) {
+	  return typenames.trim().split(/^|\s+/).map(function(t) {
+	    var name = "", i = t.indexOf(".");
+	    if (i >= 0) name = t.slice(i + 1), t = t.slice(0, i);
+	    return {type: t, name: name};
+	  });
+	}
+
+	function onRemove(typename) {
+	  return function() {
+	    var on = this.__on;
+	    if (!on) return;
+	    for (var j = 0, i = -1, m = on.length, o; j < m; ++j) {
+	      if (o = on[j], (!typename.type || o.type === typename.type) && o.name === typename.name) {
+	        this.removeEventListener(o.type, o.listener, o.options);
+	      } else {
+	        on[++i] = o;
+	      }
+	    }
+	    if (++i) on.length = i;
+	    else delete this.__on;
+	  };
+	}
+
+	function onAdd(typename, value, options) {
+	  return function() {
+	    var on = this.__on, o, listener = contextListener(value);
+	    if (on) for (var j = 0, m = on.length; j < m; ++j) {
+	      if ((o = on[j]).type === typename.type && o.name === typename.name) {
+	        this.removeEventListener(o.type, o.listener, o.options);
+	        this.addEventListener(o.type, o.listener = listener, o.options = options);
+	        o.value = value;
+	        return;
+	      }
+	    }
+	    this.addEventListener(typename.type, listener, options);
+	    o = {type: typename.type, name: typename.name, value: value, listener: listener, options: options};
+	    if (!on) this.__on = [o];
+	    else on.push(o);
+	  };
+	}
+
+	function selection_on(typename, value, options) {
+	  var typenames = parseTypenames(typename + ""), i, n = typenames.length, t;
+
+	  if (arguments.length < 2) {
+	    var on = this.node().__on;
+	    if (on) for (var j = 0, m = on.length, o; j < m; ++j) {
+	      for (i = 0, o = on[j]; i < n; ++i) {
+	        if ((t = typenames[i]).type === o.type && t.name === o.name) {
+	          return o.value;
+	        }
+	      }
+	    }
+	    return;
+	  }
+
+	  on = value ? onAdd : onRemove;
+	  for (i = 0; i < n; ++i) this.each(on(typenames[i], value, options));
+	  return this;
+	}
+
+	function dispatchEvent(node, type, params) {
+	  var window = defaultView(node),
+	      event = window.CustomEvent;
+
+	  if (typeof event === "function") {
+	    event = new event(type, params);
+	  } else {
+	    event = window.document.createEvent("Event");
+	    if (params) event.initEvent(type, params.bubbles, params.cancelable), event.detail = params.detail;
+	    else event.initEvent(type, false, false);
+	  }
+
+	  node.dispatchEvent(event);
+	}
+
+	function dispatchConstant(type, params) {
+	  return function() {
+	    return dispatchEvent(this, type, params);
+	  };
+	}
+
+	function dispatchFunction(type, params) {
+	  return function() {
+	    return dispatchEvent(this, type, params.apply(this, arguments));
+	  };
+	}
+
+	function selection_dispatch(type, params) {
+	  return this.each((typeof params === "function"
+	      ? dispatchFunction
+	      : dispatchConstant)(type, params));
+	}
+
+	function* selection_iterator() {
+	  for (var groups = this._groups, j = 0, m = groups.length; j < m; ++j) {
+	    for (var group = groups[j], i = 0, n = group.length, node; i < n; ++i) {
+	      if (node = group[i]) yield node;
+	    }
+	  }
+	}
+
+	var root = [null];
+
+	function Selection$1(groups, parents) {
+	  this._groups = groups;
+	  this._parents = parents;
+	}
+
+	function selection() {
+	  return new Selection$1([[document.documentElement]], root);
+	}
+
+	function selection_selection() {
+	  return this;
+	}
+
+	Selection$1.prototype = selection.prototype = {
+	  constructor: Selection$1,
+	  select: selection_select,
+	  selectAll: selection_selectAll,
+	  selectChild: selection_selectChild,
+	  selectChildren: selection_selectChildren,
+	  filter: selection_filter,
+	  data: selection_data,
+	  enter: selection_enter,
+	  exit: selection_exit,
+	  join: selection_join,
+	  merge: selection_merge,
+	  selection: selection_selection,
+	  order: selection_order,
+	  sort: selection_sort,
+	  call: selection_call,
+	  nodes: selection_nodes,
+	  node: selection_node,
+	  size: selection_size,
+	  empty: selection_empty,
+	  each: selection_each,
+	  attr: selection_attr,
+	  style: selection_style,
+	  property: selection_property,
+	  classed: selection_classed,
+	  text: selection_text,
+	  html: selection_html,
+	  raise: selection_raise,
+	  lower: selection_lower,
+	  append: selection_append,
+	  insert: selection_insert,
+	  remove: selection_remove,
+	  clone: selection_clone,
+	  datum: selection_datum,
+	  on: selection_on,
+	  dispatch: selection_dispatch,
+	  [Symbol.iterator]: selection_iterator
+	};
+
+	function select(selector) {
+	  return typeof selector === "string"
+	      ? new Selection$1([[document.querySelector(selector)]], [document.documentElement])
+	      : new Selection$1([[selector]], root);
+	}
+
+	function sourceEvent(event) {
+	  let sourceEvent;
+	  while (sourceEvent = event.sourceEvent) event = sourceEvent;
+	  return event;
+	}
+
+	function pointer(event, node) {
+	  event = sourceEvent(event);
+	  if (node === undefined) node = event.currentTarget;
+	  if (node) {
+	    var svg = node.ownerSVGElement || node;
+	    if (svg.createSVGPoint) {
+	      var point = svg.createSVGPoint();
+	      point.x = event.clientX, point.y = event.clientY;
+	      point = point.matrixTransform(node.getScreenCTM().inverse());
+	      return [point.x, point.y];
+	    }
+	    if (node.getBoundingClientRect) {
+	      var rect = node.getBoundingClientRect();
+	      return [event.clientX - rect.left - node.clientLeft, event.clientY - rect.top - node.clientTop];
+	    }
+	  }
+	  return [event.pageX, event.pageY];
+	}
+
+	function selectAll(selector) {
+	  return typeof selector === "string"
+	      ? new Selection$1([document.querySelectorAll(selector)], [document.documentElement])
+	      : new Selection$1([array$1(selector)], root);
+	}
+
+	function define(constructor, factory, prototype) {
+	  constructor.prototype = factory.prototype = prototype;
+	  prototype.constructor = constructor;
+	}
+
+	function extend(parent, definition) {
+	  var prototype = Object.create(parent.prototype);
+	  for (var key in definition) prototype[key] = definition[key];
+	  return prototype;
+	}
+
+	function Color() {}
+
+	var darker = 0.7;
+	var brighter = 1 / darker;
+
+	var reI = "\\s*([+-]?\\d+)\\s*",
+	    reN = "\\s*([+-]?(?:\\d*\\.)?\\d+(?:[eE][+-]?\\d+)?)\\s*",
+	    reP = "\\s*([+-]?(?:\\d*\\.)?\\d+(?:[eE][+-]?\\d+)?)%\\s*",
+	    reHex = /^#([0-9a-f]{3,8})$/,
+	    reRgbInteger = new RegExp(`^rgb\\(${reI},${reI},${reI}\\)$`),
+	    reRgbPercent = new RegExp(`^rgb\\(${reP},${reP},${reP}\\)$`),
+	    reRgbaInteger = new RegExp(`^rgba\\(${reI},${reI},${reI},${reN}\\)$`),
+	    reRgbaPercent = new RegExp(`^rgba\\(${reP},${reP},${reP},${reN}\\)$`),
+	    reHslPercent = new RegExp(`^hsl\\(${reN},${reP},${reP}\\)$`),
+	    reHslaPercent = new RegExp(`^hsla\\(${reN},${reP},${reP},${reN}\\)$`);
+
+	var named = {
+	  aliceblue: 0xf0f8ff,
+	  antiquewhite: 0xfaebd7,
+	  aqua: 0x00ffff,
+	  aquamarine: 0x7fffd4,
+	  azure: 0xf0ffff,
+	  beige: 0xf5f5dc,
+	  bisque: 0xffe4c4,
+	  black: 0x000000,
+	  blanchedalmond: 0xffebcd,
+	  blue: 0x0000ff,
+	  blueviolet: 0x8a2be2,
+	  brown: 0xa52a2a,
+	  burlywood: 0xdeb887,
+	  cadetblue: 0x5f9ea0,
+	  chartreuse: 0x7fff00,
+	  chocolate: 0xd2691e,
+	  coral: 0xff7f50,
+	  cornflowerblue: 0x6495ed,
+	  cornsilk: 0xfff8dc,
+	  crimson: 0xdc143c,
+	  cyan: 0x00ffff,
+	  darkblue: 0x00008b,
+	  darkcyan: 0x008b8b,
+	  darkgoldenrod: 0xb8860b,
+	  darkgray: 0xa9a9a9,
+	  darkgreen: 0x006400,
+	  darkgrey: 0xa9a9a9,
+	  darkkhaki: 0xbdb76b,
+	  darkmagenta: 0x8b008b,
+	  darkolivegreen: 0x556b2f,
+	  darkorange: 0xff8c00,
+	  darkorchid: 0x9932cc,
+	  darkred: 0x8b0000,
+	  darksalmon: 0xe9967a,
+	  darkseagreen: 0x8fbc8f,
+	  darkslateblue: 0x483d8b,
+	  darkslategray: 0x2f4f4f,
+	  darkslategrey: 0x2f4f4f,
+	  darkturquoise: 0x00ced1,
+	  darkviolet: 0x9400d3,
+	  deeppink: 0xff1493,
+	  deepskyblue: 0x00bfff,
+	  dimgray: 0x696969,
+	  dimgrey: 0x696969,
+	  dodgerblue: 0x1e90ff,
+	  firebrick: 0xb22222,
+	  floralwhite: 0xfffaf0,
+	  forestgreen: 0x228b22,
+	  fuchsia: 0xff00ff,
+	  gainsboro: 0xdcdcdc,
+	  ghostwhite: 0xf8f8ff,
+	  gold: 0xffd700,
+	  goldenrod: 0xdaa520,
+	  gray: 0x808080,
+	  green: 0x008000,
+	  greenyellow: 0xadff2f,
+	  grey: 0x808080,
+	  honeydew: 0xf0fff0,
+	  hotpink: 0xff69b4,
+	  indianred: 0xcd5c5c,
+	  indigo: 0x4b0082,
+	  ivory: 0xfffff0,
+	  khaki: 0xf0e68c,
+	  lavender: 0xe6e6fa,
+	  lavenderblush: 0xfff0f5,
+	  lawngreen: 0x7cfc00,
+	  lemonchiffon: 0xfffacd,
+	  lightblue: 0xadd8e6,
+	  lightcoral: 0xf08080,
+	  lightcyan: 0xe0ffff,
+	  lightgoldenrodyellow: 0xfafad2,
+	  lightgray: 0xd3d3d3,
+	  lightgreen: 0x90ee90,
+	  lightgrey: 0xd3d3d3,
+	  lightpink: 0xffb6c1,
+	  lightsalmon: 0xffa07a,
+	  lightseagreen: 0x20b2aa,
+	  lightskyblue: 0x87cefa,
+	  lightslategray: 0x778899,
+	  lightslategrey: 0x778899,
+	  lightsteelblue: 0xb0c4de,
+	  lightyellow: 0xffffe0,
+	  lime: 0x00ff00,
+	  limegreen: 0x32cd32,
+	  linen: 0xfaf0e6,
+	  magenta: 0xff00ff,
+	  maroon: 0x800000,
+	  mediumaquamarine: 0x66cdaa,
+	  mediumblue: 0x0000cd,
+	  mediumorchid: 0xba55d3,
+	  mediumpurple: 0x9370db,
+	  mediumseagreen: 0x3cb371,
+	  mediumslateblue: 0x7b68ee,
+	  mediumspringgreen: 0x00fa9a,
+	  mediumturquoise: 0x48d1cc,
+	  mediumvioletred: 0xc71585,
+	  midnightblue: 0x191970,
+	  mintcream: 0xf5fffa,
+	  mistyrose: 0xffe4e1,
+	  moccasin: 0xffe4b5,
+	  navajowhite: 0xffdead,
+	  navy: 0x000080,
+	  oldlace: 0xfdf5e6,
+	  olive: 0x808000,
+	  olivedrab: 0x6b8e23,
+	  orange: 0xffa500,
+	  orangered: 0xff4500,
+	  orchid: 0xda70d6,
+	  palegoldenrod: 0xeee8aa,
+	  palegreen: 0x98fb98,
+	  paleturquoise: 0xafeeee,
+	  palevioletred: 0xdb7093,
+	  papayawhip: 0xffefd5,
+	  peachpuff: 0xffdab9,
+	  peru: 0xcd853f,
+	  pink: 0xffc0cb,
+	  plum: 0xdda0dd,
+	  powderblue: 0xb0e0e6,
+	  purple: 0x800080,
+	  rebeccapurple: 0x663399,
+	  red: 0xff0000,
+	  rosybrown: 0xbc8f8f,
+	  royalblue: 0x4169e1,
+	  saddlebrown: 0x8b4513,
+	  salmon: 0xfa8072,
+	  sandybrown: 0xf4a460,
+	  seagreen: 0x2e8b57,
+	  seashell: 0xfff5ee,
+	  sienna: 0xa0522d,
+	  silver: 0xc0c0c0,
+	  skyblue: 0x87ceeb,
+	  slateblue: 0x6a5acd,
+	  slategray: 0x708090,
+	  slategrey: 0x708090,
+	  snow: 0xfffafa,
+	  springgreen: 0x00ff7f,
+	  steelblue: 0x4682b4,
+	  tan: 0xd2b48c,
+	  teal: 0x008080,
+	  thistle: 0xd8bfd8,
+	  tomato: 0xff6347,
+	  turquoise: 0x40e0d0,
+	  violet: 0xee82ee,
+	  wheat: 0xf5deb3,
+	  white: 0xffffff,
+	  whitesmoke: 0xf5f5f5,
+	  yellow: 0xffff00,
+	  yellowgreen: 0x9acd32
+	};
+
+	define(Color, color, {
+	  copy(channels) {
+	    return Object.assign(new this.constructor, this, channels);
+	  },
+	  displayable() {
+	    return this.rgb().displayable();
+	  },
+	  hex: color_formatHex, // Deprecated! Use color.formatHex.
+	  formatHex: color_formatHex,
+	  formatHex8: color_formatHex8,
+	  formatHsl: color_formatHsl,
+	  formatRgb: color_formatRgb,
+	  toString: color_formatRgb
+	});
+
+	function color_formatHex() {
+	  return this.rgb().formatHex();
+	}
+
+	function color_formatHex8() {
+	  return this.rgb().formatHex8();
+	}
+
+	function color_formatHsl() {
+	  return hslConvert(this).formatHsl();
+	}
+
+	function color_formatRgb() {
+	  return this.rgb().formatRgb();
+	}
+
+	function color(format) {
+	  var m, l;
+	  format = (format + "").trim().toLowerCase();
+	  return (m = reHex.exec(format)) ? (l = m[1].length, m = parseInt(m[1], 16), l === 6 ? rgbn(m) // #ff0000
+	      : l === 3 ? new Rgb((m >> 8 & 0xf) | (m >> 4 & 0xf0), (m >> 4 & 0xf) | (m & 0xf0), ((m & 0xf) << 4) | (m & 0xf), 1) // #f00
+	      : l === 8 ? rgba(m >> 24 & 0xff, m >> 16 & 0xff, m >> 8 & 0xff, (m & 0xff) / 0xff) // #ff000000
+	      : l === 4 ? rgba((m >> 12 & 0xf) | (m >> 8 & 0xf0), (m >> 8 & 0xf) | (m >> 4 & 0xf0), (m >> 4 & 0xf) | (m & 0xf0), (((m & 0xf) << 4) | (m & 0xf)) / 0xff) // #f000
+	      : null) // invalid hex
+	      : (m = reRgbInteger.exec(format)) ? new Rgb(m[1], m[2], m[3], 1) // rgb(255, 0, 0)
+	      : (m = reRgbPercent.exec(format)) ? new Rgb(m[1] * 255 / 100, m[2] * 255 / 100, m[3] * 255 / 100, 1) // rgb(100%, 0%, 0%)
+	      : (m = reRgbaInteger.exec(format)) ? rgba(m[1], m[2], m[3], m[4]) // rgba(255, 0, 0, 1)
+	      : (m = reRgbaPercent.exec(format)) ? rgba(m[1] * 255 / 100, m[2] * 255 / 100, m[3] * 255 / 100, m[4]) // rgb(100%, 0%, 0%, 1)
+	      : (m = reHslPercent.exec(format)) ? hsla(m[1], m[2] / 100, m[3] / 100, 1) // hsl(120, 50%, 50%)
+	      : (m = reHslaPercent.exec(format)) ? hsla(m[1], m[2] / 100, m[3] / 100, m[4]) // hsla(120, 50%, 50%, 1)
+	      : named.hasOwnProperty(format) ? rgbn(named[format]) // eslint-disable-line no-prototype-builtins
+	      : format === "transparent" ? new Rgb(NaN, NaN, NaN, 0)
+	      : null;
+	}
+
+	function rgbn(n) {
+	  return new Rgb(n >> 16 & 0xff, n >> 8 & 0xff, n & 0xff, 1);
+	}
+
+	function rgba(r, g, b, a) {
+	  if (a <= 0) r = g = b = NaN;
+	  return new Rgb(r, g, b, a);
+	}
+
+	function rgbConvert(o) {
+	  if (!(o instanceof Color)) o = color(o);
+	  if (!o) return new Rgb;
+	  o = o.rgb();
+	  return new Rgb(o.r, o.g, o.b, o.opacity);
+	}
+
+	function rgb(r, g, b, opacity) {
+	  return arguments.length === 1 ? rgbConvert(r) : new Rgb(r, g, b, opacity == null ? 1 : opacity);
+	}
+
+	function Rgb(r, g, b, opacity) {
+	  this.r = +r;
+	  this.g = +g;
+	  this.b = +b;
+	  this.opacity = +opacity;
+	}
+
+	define(Rgb, rgb, extend(Color, {
+	  brighter(k) {
+	    k = k == null ? brighter : Math.pow(brighter, k);
+	    return new Rgb(this.r * k, this.g * k, this.b * k, this.opacity);
+	  },
+	  darker(k) {
+	    k = k == null ? darker : Math.pow(darker, k);
+	    return new Rgb(this.r * k, this.g * k, this.b * k, this.opacity);
+	  },
+	  rgb() {
+	    return this;
+	  },
+	  clamp() {
+	    return new Rgb(clampi(this.r), clampi(this.g), clampi(this.b), clampa(this.opacity));
+	  },
+	  displayable() {
+	    return (-0.5 <= this.r && this.r < 255.5)
+	        && (-0.5 <= this.g && this.g < 255.5)
+	        && (-0.5 <= this.b && this.b < 255.5)
+	        && (0 <= this.opacity && this.opacity <= 1);
+	  },
+	  hex: rgb_formatHex, // Deprecated! Use color.formatHex.
+	  formatHex: rgb_formatHex,
+	  formatHex8: rgb_formatHex8,
+	  formatRgb: rgb_formatRgb,
+	  toString: rgb_formatRgb
+	}));
+
+	function rgb_formatHex() {
+	  return `#${hex(this.r)}${hex(this.g)}${hex(this.b)}`;
+	}
+
+	function rgb_formatHex8() {
+	  return `#${hex(this.r)}${hex(this.g)}${hex(this.b)}${hex((isNaN(this.opacity) ? 1 : this.opacity) * 255)}`;
+	}
+
+	function rgb_formatRgb() {
+	  const a = clampa(this.opacity);
+	  return `${a === 1 ? "rgb(" : "rgba("}${clampi(this.r)}, ${clampi(this.g)}, ${clampi(this.b)}${a === 1 ? ")" : `, ${a})`}`;
+	}
+
+	function clampa(opacity) {
+	  return isNaN(opacity) ? 1 : Math.max(0, Math.min(1, opacity));
+	}
+
+	function clampi(value) {
+	  return Math.max(0, Math.min(255, Math.round(value) || 0));
+	}
+
+	function hex(value) {
+	  value = clampi(value);
+	  return (value < 16 ? "0" : "") + value.toString(16);
+	}
+
+	function hsla(h, s, l, a) {
+	  if (a <= 0) h = s = l = NaN;
+	  else if (l <= 0 || l >= 1) h = s = NaN;
+	  else if (s <= 0) h = NaN;
+	  return new Hsl(h, s, l, a);
+	}
+
+	function hslConvert(o) {
+	  if (o instanceof Hsl) return new Hsl(o.h, o.s, o.l, o.opacity);
+	  if (!(o instanceof Color)) o = color(o);
+	  if (!o) return new Hsl;
+	  if (o instanceof Hsl) return o;
+	  o = o.rgb();
+	  var r = o.r / 255,
+	      g = o.g / 255,
+	      b = o.b / 255,
+	      min = Math.min(r, g, b),
+	      max = Math.max(r, g, b),
+	      h = NaN,
+	      s = max - min,
+	      l = (max + min) / 2;
+	  if (s) {
+	    if (r === max) h = (g - b) / s + (g < b) * 6;
+	    else if (g === max) h = (b - r) / s + 2;
+	    else h = (r - g) / s + 4;
+	    s /= l < 0.5 ? max + min : 2 - max - min;
+	    h *= 60;
+	  } else {
+	    s = l > 0 && l < 1 ? 0 : h;
+	  }
+	  return new Hsl(h, s, l, o.opacity);
+	}
+
+	function hsl(h, s, l, opacity) {
+	  return arguments.length === 1 ? hslConvert(h) : new Hsl(h, s, l, opacity == null ? 1 : opacity);
+	}
+
+	function Hsl(h, s, l, opacity) {
+	  this.h = +h;
+	  this.s = +s;
+	  this.l = +l;
+	  this.opacity = +opacity;
+	}
+
+	define(Hsl, hsl, extend(Color, {
+	  brighter(k) {
+	    k = k == null ? brighter : Math.pow(brighter, k);
+	    return new Hsl(this.h, this.s, this.l * k, this.opacity);
+	  },
+	  darker(k) {
+	    k = k == null ? darker : Math.pow(darker, k);
+	    return new Hsl(this.h, this.s, this.l * k, this.opacity);
+	  },
+	  rgb() {
+	    var h = this.h % 360 + (this.h < 0) * 360,
+	        s = isNaN(h) || isNaN(this.s) ? 0 : this.s,
+	        l = this.l,
+	        m2 = l + (l < 0.5 ? l : 1 - l) * s,
+	        m1 = 2 * l - m2;
+	    return new Rgb(
+	      hsl2rgb(h >= 240 ? h - 240 : h + 120, m1, m2),
+	      hsl2rgb(h, m1, m2),
+	      hsl2rgb(h < 120 ? h + 240 : h - 120, m1, m2),
+	      this.opacity
+	    );
+	  },
+	  clamp() {
+	    return new Hsl(clamph(this.h), clampt(this.s), clampt(this.l), clampa(this.opacity));
+	  },
+	  displayable() {
+	    return (0 <= this.s && this.s <= 1 || isNaN(this.s))
+	        && (0 <= this.l && this.l <= 1)
+	        && (0 <= this.opacity && this.opacity <= 1);
+	  },
+	  formatHsl() {
+	    const a = clampa(this.opacity);
+	    return `${a === 1 ? "hsl(" : "hsla("}${clamph(this.h)}, ${clampt(this.s) * 100}%, ${clampt(this.l) * 100}%${a === 1 ? ")" : `, ${a})`}`;
+	  }
+	}));
+
+	function clamph(value) {
+	  value = (value || 0) % 360;
+	  return value < 0 ? value + 360 : value;
+	}
+
+	function clampt(value) {
+	  return Math.max(0, Math.min(1, value || 0));
+	}
+
+	/* From FvD 13.37, CSS Color Module Level 3 */
+	function hsl2rgb(h, m1, m2) {
+	  return (h < 60 ? m1 + (m2 - m1) * h / 60
+	      : h < 180 ? m2
+	      : h < 240 ? m1 + (m2 - m1) * (240 - h) / 60
+	      : m1) * 255;
+	}
+
+	function basis(t1, v0, v1, v2, v3) {
+	  var t2 = t1 * t1, t3 = t2 * t1;
+	  return ((1 - 3 * t1 + 3 * t2 - t3) * v0
+	      + (4 - 6 * t2 + 3 * t3) * v1
+	      + (1 + 3 * t1 + 3 * t2 - 3 * t3) * v2
+	      + t3 * v3) / 6;
+	}
+
+	function basis$1(values) {
+	  var n = values.length - 1;
+	  return function(t) {
+	    var i = t <= 0 ? (t = 0) : t >= 1 ? (t = 1, n - 1) : Math.floor(t * n),
+	        v1 = values[i],
+	        v2 = values[i + 1],
+	        v0 = i > 0 ? values[i - 1] : 2 * v1 - v2,
+	        v3 = i < n - 1 ? values[i + 2] : 2 * v2 - v1;
+	    return basis((t - i / n) * n, v0, v1, v2, v3);
+	  };
+	}
+
+	var constant$1 = x => () => x;
+
+	function linear$1(a, d) {
+	  return function(t) {
+	    return a + t * d;
+	  };
+	}
+
+	function exponential(a, b, y) {
+	  return a = Math.pow(a, y), b = Math.pow(b, y) - a, y = 1 / y, function(t) {
+	    return Math.pow(a + t * b, y);
+	  };
+	}
+
+	function gamma(y) {
+	  return (y = +y) === 1 ? nogamma : function(a, b) {
+	    return b - a ? exponential(a, b, y) : constant$1(isNaN(a) ? b : a);
+	  };
+	}
+
+	function nogamma(a, b) {
+	  var d = b - a;
+	  return d ? linear$1(a, d) : constant$1(isNaN(a) ? b : a);
+	}
+
+	var interpolateRgb = (function rgbGamma(y) {
+	  var color = gamma(y);
+
+	  function rgb$1(start, end) {
+	    var r = color((start = rgb(start)).r, (end = rgb(end)).r),
+	        g = color(start.g, end.g),
+	        b = color(start.b, end.b),
+	        opacity = nogamma(start.opacity, end.opacity);
+	    return function(t) {
+	      start.r = r(t);
+	      start.g = g(t);
+	      start.b = b(t);
+	      start.opacity = opacity(t);
+	      return start + "";
+	    };
+	  }
+
+	  rgb$1.gamma = rgbGamma;
+
+	  return rgb$1;
+	})(1);
+
+	function rgbSpline(spline) {
+	  return function(colors) {
+	    var n = colors.length,
+	        r = new Array(n),
+	        g = new Array(n),
+	        b = new Array(n),
+	        i, color;
+	    for (i = 0; i < n; ++i) {
+	      color = rgb(colors[i]);
+	      r[i] = color.r || 0;
+	      g[i] = color.g || 0;
+	      b[i] = color.b || 0;
+	    }
+	    r = spline(r);
+	    g = spline(g);
+	    b = spline(b);
+	    color.opacity = 1;
+	    return function(t) {
+	      color.r = r(t);
+	      color.g = g(t);
+	      color.b = b(t);
+	      return color + "";
+	    };
+	  };
+	}
+
+	var rgbBasis = rgbSpline(basis$1);
+
+	function numberArray(a, b) {
+	  if (!b) b = [];
+	  var n = a ? Math.min(b.length, a.length) : 0,
+	      c = b.slice(),
+	      i;
+	  return function(t) {
+	    for (i = 0; i < n; ++i) c[i] = a[i] * (1 - t) + b[i] * t;
+	    return c;
+	  };
+	}
+
+	function isNumberArray(x) {
+	  return ArrayBuffer.isView(x) && !(x instanceof DataView);
+	}
+
+	function genericArray(a, b) {
+	  var nb = b ? b.length : 0,
+	      na = a ? Math.min(nb, a.length) : 0,
+	      x = new Array(na),
+	      c = new Array(nb),
+	      i;
+
+	  for (i = 0; i < na; ++i) x[i] = interpolate$1(a[i], b[i]);
+	  for (; i < nb; ++i) c[i] = b[i];
+
+	  return function(t) {
+	    for (i = 0; i < na; ++i) c[i] = x[i](t);
+	    return c;
+	  };
+	}
+
+	function date(a, b) {
+	  var d = new Date;
+	  return a = +a, b = +b, function(t) {
+	    return d.setTime(a * (1 - t) + b * t), d;
+	  };
+	}
+
+	function interpolateNumber(a, b) {
+	  return a = +a, b = +b, function(t) {
+	    return a * (1 - t) + b * t;
+	  };
+	}
+
+	function object(a, b) {
+	  var i = {},
+	      c = {},
+	      k;
+
+	  if (a === null || typeof a !== "object") a = {};
+	  if (b === null || typeof b !== "object") b = {};
+
+	  for (k in b) {
+	    if (k in a) {
+	      i[k] = interpolate$1(a[k], b[k]);
+	    } else {
+	      c[k] = b[k];
+	    }
+	  }
+
+	  return function(t) {
+	    for (k in i) c[k] = i[k](t);
+	    return c;
+	  };
+	}
+
+	var reA = /[-+]?(?:\d+\.?\d*|\.?\d+)(?:[eE][-+]?\d+)?/g,
+	    reB = new RegExp(reA.source, "g");
+
+	function zero$2(b) {
+	  return function() {
+	    return b;
+	  };
+	}
+
+	function one(b) {
+	  return function(t) {
+	    return b(t) + "";
+	  };
+	}
+
+	function interpolateString(a, b) {
+	  var bi = reA.lastIndex = reB.lastIndex = 0, // scan index for next number in b
+	      am, // current match in a
+	      bm, // current match in b
+	      bs, // string preceding current number in b, if any
+	      i = -1, // index in s
+	      s = [], // string constants and placeholders
+	      q = []; // number interpolators
+
+	  // Coerce inputs to strings.
+	  a = a + "", b = b + "";
+
+	  // Interpolate pairs of numbers in a & b.
+	  while ((am = reA.exec(a))
+	      && (bm = reB.exec(b))) {
+	    if ((bs = bm.index) > bi) { // a string precedes the next number in b
+	      bs = b.slice(bi, bs);
+	      if (s[i]) s[i] += bs; // coalesce with previous string
+	      else s[++i] = bs;
+	    }
+	    if ((am = am[0]) === (bm = bm[0])) { // numbers in a & b match
+	      if (s[i]) s[i] += bm; // coalesce with previous string
+	      else s[++i] = bm;
+	    } else { // interpolate non-matching numbers
+	      s[++i] = null;
+	      q.push({i: i, x: interpolateNumber(am, bm)});
+	    }
+	    bi = reB.lastIndex;
+	  }
+
+	  // Add remains of b.
+	  if (bi < b.length) {
+	    bs = b.slice(bi);
+	    if (s[i]) s[i] += bs; // coalesce with previous string
+	    else s[++i] = bs;
+	  }
+
+	  // Special optimization for only a single match.
+	  // Otherwise, interpolate each of the numbers and rejoin the string.
+	  return s.length < 2 ? (q[0]
+	      ? one(q[0].x)
+	      : zero$2(b))
+	      : (b = q.length, function(t) {
+	          for (var i = 0, o; i < b; ++i) s[(o = q[i]).i] = o.x(t);
+	          return s.join("");
+	        });
+	}
+
+	function interpolate$1(a, b) {
+	  var t = typeof b, c;
+	  return b == null || t === "boolean" ? constant$1(b)
+	      : (t === "number" ? interpolateNumber
+	      : t === "string" ? ((c = color(b)) ? (b = c, interpolateRgb) : interpolateString)
+	      : b instanceof color ? interpolateRgb
+	      : b instanceof Date ? date
+	      : isNumberArray(b) ? numberArray
+	      : Array.isArray(b) ? genericArray
+	      : typeof b.valueOf !== "function" && typeof b.toString !== "function" || isNaN(b) ? object
+	      : interpolateNumber)(a, b);
+	}
+
+	function interpolateRound(a, b) {
+	  return a = +a, b = +b, function(t) {
+	    return Math.round(a * (1 - t) + b * t);
+	  };
+	}
+
+	var degrees = 180 / Math.PI;
+
+	var identity$2 = {
+	  translateX: 0,
+	  translateY: 0,
+	  rotate: 0,
+	  skewX: 0,
+	  scaleX: 1,
+	  scaleY: 1
+	};
+
+	function decompose(a, b, c, d, e, f) {
+	  var scaleX, scaleY, skewX;
+	  if (scaleX = Math.sqrt(a * a + b * b)) a /= scaleX, b /= scaleX;
+	  if (skewX = a * c + b * d) c -= a * skewX, d -= b * skewX;
+	  if (scaleY = Math.sqrt(c * c + d * d)) c /= scaleY, d /= scaleY, skewX /= scaleY;
+	  if (a * d < b * c) a = -a, b = -b, skewX = -skewX, scaleX = -scaleX;
+	  return {
+	    translateX: e,
+	    translateY: f,
+	    rotate: Math.atan2(b, a) * degrees,
+	    skewX: Math.atan(skewX) * degrees,
+	    scaleX: scaleX,
+	    scaleY: scaleY
+	  };
+	}
+
+	var svgNode;
+
+	/* eslint-disable no-undef */
+	function parseCss(value) {
+	  const m = new (typeof DOMMatrix === "function" ? DOMMatrix : WebKitCSSMatrix)(value + "");
+	  return m.isIdentity ? identity$2 : decompose(m.a, m.b, m.c, m.d, m.e, m.f);
+	}
+
+	function parseSvg(value) {
+	  if (value == null) return identity$2;
+	  if (!svgNode) svgNode = document.createElementNS("http://www.w3.org/2000/svg", "g");
+	  svgNode.setAttribute("transform", value);
+	  if (!(value = svgNode.transform.baseVal.consolidate())) return identity$2;
+	  value = value.matrix;
+	  return decompose(value.a, value.b, value.c, value.d, value.e, value.f);
+	}
+
+	function interpolateTransform(parse, pxComma, pxParen, degParen) {
+
+	  function pop(s) {
+	    return s.length ? s.pop() + " " : "";
+	  }
+
+	  function translate(xa, ya, xb, yb, s, q) {
+	    if (xa !== xb || ya !== yb) {
+	      var i = s.push("translate(", null, pxComma, null, pxParen);
+	      q.push({i: i - 4, x: interpolateNumber(xa, xb)}, {i: i - 2, x: interpolateNumber(ya, yb)});
+	    } else if (xb || yb) {
+	      s.push("translate(" + xb + pxComma + yb + pxParen);
+	    }
+	  }
+
+	  function rotate(a, b, s, q) {
+	    if (a !== b) {
+	      if (a - b > 180) b += 360; else if (b - a > 180) a += 360; // shortest path
+	      q.push({i: s.push(pop(s) + "rotate(", null, degParen) - 2, x: interpolateNumber(a, b)});
+	    } else if (b) {
+	      s.push(pop(s) + "rotate(" + b + degParen);
+	    }
+	  }
+
+	  function skewX(a, b, s, q) {
+	    if (a !== b) {
+	      q.push({i: s.push(pop(s) + "skewX(", null, degParen) - 2, x: interpolateNumber(a, b)});
+	    } else if (b) {
+	      s.push(pop(s) + "skewX(" + b + degParen);
+	    }
+	  }
+
+	  function scale(xa, ya, xb, yb, s, q) {
+	    if (xa !== xb || ya !== yb) {
+	      var i = s.push(pop(s) + "scale(", null, ",", null, ")");
+	      q.push({i: i - 4, x: interpolateNumber(xa, xb)}, {i: i - 2, x: interpolateNumber(ya, yb)});
+	    } else if (xb !== 1 || yb !== 1) {
+	      s.push(pop(s) + "scale(" + xb + "," + yb + ")");
+	    }
+	  }
+
+	  return function(a, b) {
+	    var s = [], // string constants and placeholders
+	        q = []; // number interpolators
+	    a = parse(a), b = parse(b);
+	    translate(a.translateX, a.translateY, b.translateX, b.translateY, s, q);
+	    rotate(a.rotate, b.rotate, s, q);
+	    skewX(a.skewX, b.skewX, s, q);
+	    scale(a.scaleX, a.scaleY, b.scaleX, b.scaleY, s, q);
+	    a = b = null; // gc
+	    return function(t) {
+	      var i = -1, n = q.length, o;
+	      while (++i < n) s[(o = q[i]).i] = o.x(t);
+	      return s.join("");
+	    };
+	  };
+	}
+
+	var interpolateTransformCss = interpolateTransform(parseCss, "px, ", "px)", "deg)");
+	var interpolateTransformSvg = interpolateTransform(parseSvg, ", ", ")", ")");
+
+	var frame = 0, // is an animation frame pending?
+	    timeout$1 = 0, // is a timeout pending?
+	    interval = 0, // are any timers active?
+	    pokeDelay = 1000, // how frequently we check for clock skew
+	    taskHead,
+	    taskTail,
+	    clockLast = 0,
+	    clockNow = 0,
+	    clockSkew = 0,
+	    clock = typeof performance === "object" && performance.now ? performance : Date,
+	    setFrame = typeof window === "object" && window.requestAnimationFrame ? window.requestAnimationFrame.bind(window) : function(f) { setTimeout(f, 17); };
+
+	function now() {
+	  return clockNow || (setFrame(clearNow), clockNow = clock.now() + clockSkew);
+	}
+
+	function clearNow() {
+	  clockNow = 0;
+	}
+
+	function Timer() {
+	  this._call =
+	  this._time =
+	  this._next = null;
+	}
+
+	Timer.prototype = timer.prototype = {
+	  constructor: Timer,
+	  restart: function(callback, delay, time) {
+	    if (typeof callback !== "function") throw new TypeError("callback is not a function");
+	    time = (time == null ? now() : +time) + (delay == null ? 0 : +delay);
+	    if (!this._next && taskTail !== this) {
+	      if (taskTail) taskTail._next = this;
+	      else taskHead = this;
+	      taskTail = this;
+	    }
+	    this._call = callback;
+	    this._time = time;
+	    sleep();
+	  },
+	  stop: function() {
+	    if (this._call) {
+	      this._call = null;
+	      this._time = Infinity;
+	      sleep();
+	    }
+	  }
+	};
+
+	function timer(callback, delay, time) {
+	  var t = new Timer;
+	  t.restart(callback, delay, time);
+	  return t;
+	}
+
+	function timerFlush() {
+	  now(); // Get the current time, if not already set.
+	  ++frame; // Pretend we’ve set an alarm, if we haven’t already.
+	  var t = taskHead, e;
+	  while (t) {
+	    if ((e = clockNow - t._time) >= 0) t._call.call(undefined, e);
+	    t = t._next;
+	  }
+	  --frame;
+	}
+
+	function wake() {
+	  clockNow = (clockLast = clock.now()) + clockSkew;
+	  frame = timeout$1 = 0;
+	  try {
+	    timerFlush();
+	  } finally {
+	    frame = 0;
+	    nap();
+	    clockNow = 0;
+	  }
+	}
+
+	function poke() {
+	  var now = clock.now(), delay = now - clockLast;
+	  if (delay > pokeDelay) clockSkew -= delay, clockLast = now;
+	}
+
+	function nap() {
+	  var t0, t1 = taskHead, t2, time = Infinity;
+	  while (t1) {
+	    if (t1._call) {
+	      if (time > t1._time) time = t1._time;
+	      t0 = t1, t1 = t1._next;
+	    } else {
+	      t2 = t1._next, t1._next = null;
+	      t1 = t0 ? t0._next = t2 : taskHead = t2;
+	    }
+	  }
+	  taskTail = t0;
+	  sleep(time);
+	}
+
+	function sleep(time) {
+	  if (frame) return; // Soonest alarm already set, or will be.
+	  if (timeout$1) timeout$1 = clearTimeout(timeout$1);
+	  var delay = time - clockNow; // Strictly less than if we recomputed clockNow.
+	  if (delay > 24) {
+	    if (time < Infinity) timeout$1 = setTimeout(wake, time - clock.now() - clockSkew);
+	    if (interval) interval = clearInterval(interval);
+	  } else {
+	    if (!interval) clockLast = clock.now(), interval = setInterval(poke, pokeDelay);
+	    frame = 1, setFrame(wake);
+	  }
+	}
+
+	function timeout(callback, delay, time) {
+	  var t = new Timer;
+	  delay = delay == null ? 0 : +delay;
+	  t.restart(elapsed => {
+	    t.stop();
+	    callback(elapsed + delay);
+	  }, delay, time);
+	  return t;
+	}
+
+	var emptyOn = dispatch("start", "end", "cancel", "interrupt");
+	var emptyTween = [];
+
+	var CREATED = 0;
+	var SCHEDULED = 1;
+	var STARTING = 2;
+	var STARTED = 3;
+	var RUNNING = 4;
+	var ENDING = 5;
+	var ENDED = 6;
+
+	function schedule(node, name, id, index, group, timing) {
+	  var schedules = node.__transition;
+	  if (!schedules) node.__transition = {};
+	  else if (id in schedules) return;
+	  create(node, id, {
+	    name: name,
+	    index: index, // For context during callback.
+	    group: group, // For context during callback.
+	    on: emptyOn,
+	    tween: emptyTween,
+	    time: timing.time,
+	    delay: timing.delay,
+	    duration: timing.duration,
+	    ease: timing.ease,
+	    timer: null,
+	    state: CREATED
+	  });
+	}
+
+	function init(node, id) {
+	  var schedule = get(node, id);
+	  if (schedule.state > CREATED) throw new Error("too late; already scheduled");
+	  return schedule;
+	}
+
+	function set(node, id) {
+	  var schedule = get(node, id);
+	  if (schedule.state > STARTED) throw new Error("too late; already running");
+	  return schedule;
+	}
+
+	function get(node, id) {
+	  var schedule = node.__transition;
+	  if (!schedule || !(schedule = schedule[id])) throw new Error("transition not found");
+	  return schedule;
+	}
+
+	function create(node, id, self) {
+	  var schedules = node.__transition,
+	      tween;
+
+	  // Initialize the self timer when the transition is created.
+	  // Note the actual delay is not known until the first callback!
+	  schedules[id] = self;
+	  self.timer = timer(schedule, 0, self.time);
+
+	  function schedule(elapsed) {
+	    self.state = SCHEDULED;
+	    self.timer.restart(start, self.delay, self.time);
+
+	    // If the elapsed delay is less than our first sleep, start immediately.
+	    if (self.delay <= elapsed) start(elapsed - self.delay);
+	  }
+
+	  function start(elapsed) {
+	    var i, j, n, o;
+
+	    // If the state is not SCHEDULED, then we previously errored on start.
+	    if (self.state !== SCHEDULED) return stop();
+
+	    for (i in schedules) {
+	      o = schedules[i];
+	      if (o.name !== self.name) continue;
+
+	      // While this element already has a starting transition during this frame,
+	      // defer starting an interrupting transition until that transition has a
+	      // chance to tick (and possibly end); see d3/d3-transition#54!
+	      if (o.state === STARTED) return timeout(start);
+
+	      // Interrupt the active transition, if any.
+	      if (o.state === RUNNING) {
+	        o.state = ENDED;
+	        o.timer.stop();
+	        o.on.call("interrupt", node, node.__data__, o.index, o.group);
+	        delete schedules[i];
+	      }
+
+	      // Cancel any pre-empted transitions.
+	      else if (+i < id) {
+	        o.state = ENDED;
+	        o.timer.stop();
+	        o.on.call("cancel", node, node.__data__, o.index, o.group);
+	        delete schedules[i];
+	      }
+	    }
+
+	    // Defer the first tick to end of the current frame; see d3/d3#1576.
+	    // Note the transition may be canceled after start and before the first tick!
+	    // Note this must be scheduled before the start event; see d3/d3-transition#16!
+	    // Assuming this is successful, subsequent callbacks go straight to tick.
+	    timeout(function() {
+	      if (self.state === STARTED) {
+	        self.state = RUNNING;
+	        self.timer.restart(tick, self.delay, self.time);
+	        tick(elapsed);
+	      }
+	    });
+
+	    // Dispatch the start event.
+	    // Note this must be done before the tween are initialized.
+	    self.state = STARTING;
+	    self.on.call("start", node, node.__data__, self.index, self.group);
+	    if (self.state !== STARTING) return; // interrupted
+	    self.state = STARTED;
+
+	    // Initialize the tween, deleting null tween.
+	    tween = new Array(n = self.tween.length);
+	    for (i = 0, j = -1; i < n; ++i) {
+	      if (o = self.tween[i].value.call(node, node.__data__, self.index, self.group)) {
+	        tween[++j] = o;
+	      }
+	    }
+	    tween.length = j + 1;
+	  }
+
+	  function tick(elapsed) {
+	    var t = elapsed < self.duration ? self.ease.call(null, elapsed / self.duration) : (self.timer.restart(stop), self.state = ENDING, 1),
+	        i = -1,
+	        n = tween.length;
+
+	    while (++i < n) {
+	      tween[i].call(node, t);
+	    }
+
+	    // Dispatch the end event.
+	    if (self.state === ENDING) {
+	      self.on.call("end", node, node.__data__, self.index, self.group);
+	      stop();
+	    }
+	  }
+
+	  function stop() {
+	    self.state = ENDED;
+	    self.timer.stop();
+	    delete schedules[id];
+	    for (var i in schedules) return; // eslint-disable-line no-unused-vars
+	    delete node.__transition;
+	  }
+	}
+
+	function interrupt(node, name) {
+	  var schedules = node.__transition,
+	      schedule,
+	      active,
+	      empty = true,
+	      i;
+
+	  if (!schedules) return;
+
+	  name = name == null ? null : name + "";
+
+	  for (i in schedules) {
+	    if ((schedule = schedules[i]).name !== name) { empty = false; continue; }
+	    active = schedule.state > STARTING && schedule.state < ENDING;
+	    schedule.state = ENDED;
+	    schedule.timer.stop();
+	    schedule.on.call(active ? "interrupt" : "cancel", node, node.__data__, schedule.index, schedule.group);
+	    delete schedules[i];
+	  }
+
+	  if (empty) delete node.__transition;
+	}
+
+	function selection_interrupt(name) {
+	  return this.each(function() {
+	    interrupt(this, name);
+	  });
+	}
+
+	function tweenRemove(id, name) {
+	  var tween0, tween1;
+	  return function() {
+	    var schedule = set(this, id),
+	        tween = schedule.tween;
+
+	    // If this node shared tween with the previous node,
+	    // just assign the updated shared tween and we’re done!
+	    // Otherwise, copy-on-write.
+	    if (tween !== tween0) {
+	      tween1 = tween0 = tween;
+	      for (var i = 0, n = tween1.length; i < n; ++i) {
+	        if (tween1[i].name === name) {
+	          tween1 = tween1.slice();
+	          tween1.splice(i, 1);
+	          break;
+	        }
+	      }
+	    }
+
+	    schedule.tween = tween1;
+	  };
+	}
+
+	function tweenFunction(id, name, value) {
+	  var tween0, tween1;
+	  if (typeof value !== "function") throw new Error;
+	  return function() {
+	    var schedule = set(this, id),
+	        tween = schedule.tween;
+
+	    // If this node shared tween with the previous node,
+	    // just assign the updated shared tween and we’re done!
+	    // Otherwise, copy-on-write.
+	    if (tween !== tween0) {
+	      tween1 = (tween0 = tween).slice();
+	      for (var t = {name: name, value: value}, i = 0, n = tween1.length; i < n; ++i) {
+	        if (tween1[i].name === name) {
+	          tween1[i] = t;
+	          break;
+	        }
+	      }
+	      if (i === n) tween1.push(t);
+	    }
+
+	    schedule.tween = tween1;
+	  };
+	}
+
+	function transition_tween(name, value) {
+	  var id = this._id;
+
+	  name += "";
+
+	  if (arguments.length < 2) {
+	    var tween = get(this.node(), id).tween;
+	    for (var i = 0, n = tween.length, t; i < n; ++i) {
+	      if ((t = tween[i]).name === name) {
+	        return t.value;
+	      }
+	    }
+	    return null;
+	  }
+
+	  return this.each((value == null ? tweenRemove : tweenFunction)(id, name, value));
+	}
+
+	function tweenValue(transition, name, value) {
+	  var id = transition._id;
+
+	  transition.each(function() {
+	    var schedule = set(this, id);
+	    (schedule.value || (schedule.value = {}))[name] = value.apply(this, arguments);
+	  });
+
+	  return function(node) {
+	    return get(node, id).value[name];
+	  };
+	}
+
+	function interpolate(a, b) {
+	  var c;
+	  return (typeof b === "number" ? interpolateNumber
+	      : b instanceof color ? interpolateRgb
+	      : (c = color(b)) ? (b = c, interpolateRgb)
+	      : interpolateString)(a, b);
+	}
+
+	function attrRemove(name) {
+	  return function() {
+	    this.removeAttribute(name);
+	  };
+	}
+
+	function attrRemoveNS(fullname) {
+	  return function() {
+	    this.removeAttributeNS(fullname.space, fullname.local);
+	  };
+	}
+
+	function attrConstant(name, interpolate, value1) {
+	  var string00,
+	      string1 = value1 + "",
+	      interpolate0;
+	  return function() {
+	    var string0 = this.getAttribute(name);
+	    return string0 === string1 ? null
+	        : string0 === string00 ? interpolate0
+	        : interpolate0 = interpolate(string00 = string0, value1);
+	  };
+	}
+
+	function attrConstantNS(fullname, interpolate, value1) {
+	  var string00,
+	      string1 = value1 + "",
+	      interpolate0;
+	  return function() {
+	    var string0 = this.getAttributeNS(fullname.space, fullname.local);
+	    return string0 === string1 ? null
+	        : string0 === string00 ? interpolate0
+	        : interpolate0 = interpolate(string00 = string0, value1);
+	  };
+	}
+
+	function attrFunction(name, interpolate, value) {
+	  var string00,
+	      string10,
+	      interpolate0;
+	  return function() {
+	    var string0, value1 = value(this), string1;
+	    if (value1 == null) return void this.removeAttribute(name);
+	    string0 = this.getAttribute(name);
+	    string1 = value1 + "";
+	    return string0 === string1 ? null
+	        : string0 === string00 && string1 === string10 ? interpolate0
+	        : (string10 = string1, interpolate0 = interpolate(string00 = string0, value1));
+	  };
+	}
+
+	function attrFunctionNS(fullname, interpolate, value) {
+	  var string00,
+	      string10,
+	      interpolate0;
+	  return function() {
+	    var string0, value1 = value(this), string1;
+	    if (value1 == null) return void this.removeAttributeNS(fullname.space, fullname.local);
+	    string0 = this.getAttributeNS(fullname.space, fullname.local);
+	    string1 = value1 + "";
+	    return string0 === string1 ? null
+	        : string0 === string00 && string1 === string10 ? interpolate0
+	        : (string10 = string1, interpolate0 = interpolate(string00 = string0, value1));
+	  };
+	}
+
+	function transition_attr(name, value) {
+	  var fullname = namespace(name), i = fullname === "transform" ? interpolateTransformSvg : interpolate;
+	  return this.attrTween(name, typeof value === "function"
+	      ? (fullname.local ? attrFunctionNS : attrFunction)(fullname, i, tweenValue(this, "attr." + name, value))
+	      : value == null ? (fullname.local ? attrRemoveNS : attrRemove)(fullname)
+	      : (fullname.local ? attrConstantNS : attrConstant)(fullname, i, value));
+	}
+
+	function attrInterpolate(name, i) {
+	  return function(t) {
+	    this.setAttribute(name, i.call(this, t));
+	  };
+	}
+
+	function attrInterpolateNS(fullname, i) {
+	  return function(t) {
+	    this.setAttributeNS(fullname.space, fullname.local, i.call(this, t));
+	  };
+	}
+
+	function attrTweenNS(fullname, value) {
+	  var t0, i0;
+	  function tween() {
+	    var i = value.apply(this, arguments);
+	    if (i !== i0) t0 = (i0 = i) && attrInterpolateNS(fullname, i);
+	    return t0;
+	  }
+	  tween._value = value;
+	  return tween;
+	}
+
+	function attrTween(name, value) {
+	  var t0, i0;
+	  function tween() {
+	    var i = value.apply(this, arguments);
+	    if (i !== i0) t0 = (i0 = i) && attrInterpolate(name, i);
+	    return t0;
+	  }
+	  tween._value = value;
+	  return tween;
+	}
+
+	function transition_attrTween(name, value) {
+	  var key = "attr." + name;
+	  if (arguments.length < 2) return (key = this.tween(key)) && key._value;
+	  if (value == null) return this.tween(key, null);
+	  if (typeof value !== "function") throw new Error;
+	  var fullname = namespace(name);
+	  return this.tween(key, (fullname.local ? attrTweenNS : attrTween)(fullname, value));
+	}
+
+	function delayFunction(id, value) {
+	  return function() {
+	    init(this, id).delay = +value.apply(this, arguments);
+	  };
+	}
+
+	function delayConstant(id, value) {
+	  return value = +value, function() {
+	    init(this, id).delay = value;
+	  };
+	}
+
+	function transition_delay(value) {
+	  var id = this._id;
+
+	  return arguments.length
+	      ? this.each((typeof value === "function"
+	          ? delayFunction
+	          : delayConstant)(id, value))
+	      : get(this.node(), id).delay;
+	}
+
+	function durationFunction(id, value) {
+	  return function() {
+	    set(this, id).duration = +value.apply(this, arguments);
+	  };
+	}
+
+	function durationConstant(id, value) {
+	  return value = +value, function() {
+	    set(this, id).duration = value;
+	  };
+	}
+
+	function transition_duration(value) {
+	  var id = this._id;
+
+	  return arguments.length
+	      ? this.each((typeof value === "function"
+	          ? durationFunction
+	          : durationConstant)(id, value))
+	      : get(this.node(), id).duration;
+	}
+
+	function easeConstant(id, value) {
+	  if (typeof value !== "function") throw new Error;
+	  return function() {
+	    set(this, id).ease = value;
+	  };
+	}
+
+	function transition_ease(value) {
+	  var id = this._id;
+
+	  return arguments.length
+	      ? this.each(easeConstant(id, value))
+	      : get(this.node(), id).ease;
+	}
+
+	function easeVarying(id, value) {
+	  return function() {
+	    var v = value.apply(this, arguments);
+	    if (typeof v !== "function") throw new Error;
+	    set(this, id).ease = v;
+	  };
+	}
+
+	function transition_easeVarying(value) {
+	  if (typeof value !== "function") throw new Error;
+	  return this.each(easeVarying(this._id, value));
+	}
+
+	function transition_filter(match) {
+	  if (typeof match !== "function") match = matcher(match);
+
+	  for (var groups = this._groups, m = groups.length, subgroups = new Array(m), j = 0; j < m; ++j) {
+	    for (var group = groups[j], n = group.length, subgroup = subgroups[j] = [], node, i = 0; i < n; ++i) {
+	      if ((node = group[i]) && match.call(node, node.__data__, i, group)) {
+	        subgroup.push(node);
+	      }
+	    }
+	  }
+
+	  return new Transition(subgroups, this._parents, this._name, this._id);
+	}
+
+	function transition_merge(transition) {
+	  if (transition._id !== this._id) throw new Error;
+
+	  for (var groups0 = this._groups, groups1 = transition._groups, m0 = groups0.length, m1 = groups1.length, m = Math.min(m0, m1), merges = new Array(m0), j = 0; j < m; ++j) {
+	    for (var group0 = groups0[j], group1 = groups1[j], n = group0.length, merge = merges[j] = new Array(n), node, i = 0; i < n; ++i) {
+	      if (node = group0[i] || group1[i]) {
+	        merge[i] = node;
+	      }
+	    }
+	  }
+
+	  for (; j < m0; ++j) {
+	    merges[j] = groups0[j];
+	  }
+
+	  return new Transition(merges, this._parents, this._name, this._id);
+	}
+
+	function start(name) {
+	  return (name + "").trim().split(/^|\s+/).every(function(t) {
+	    var i = t.indexOf(".");
+	    if (i >= 0) t = t.slice(0, i);
+	    return !t || t === "start";
+	  });
+	}
+
+	function onFunction(id, name, listener) {
+	  var on0, on1, sit = start(name) ? init : set;
+	  return function() {
+	    var schedule = sit(this, id),
+	        on = schedule.on;
+
+	    // If this node shared a dispatch with the previous node,
+	    // just assign the updated shared dispatch and we’re done!
+	    // Otherwise, copy-on-write.
+	    if (on !== on0) (on1 = (on0 = on).copy()).on(name, listener);
+
+	    schedule.on = on1;
+	  };
+	}
+
+	function transition_on(name, listener) {
+	  var id = this._id;
+
+	  return arguments.length < 2
+	      ? get(this.node(), id).on.on(name)
+	      : this.each(onFunction(id, name, listener));
+	}
+
+	function removeFunction(id) {
+	  return function() {
+	    var parent = this.parentNode;
+	    for (var i in this.__transition) if (+i !== id) return;
+	    if (parent) parent.removeChild(this);
+	  };
+	}
+
+	function transition_remove() {
+	  return this.on("end.remove", removeFunction(this._id));
+	}
+
+	function transition_select(select) {
+	  var name = this._name,
+	      id = this._id;
+
+	  if (typeof select !== "function") select = selector(select);
+
+	  for (var groups = this._groups, m = groups.length, subgroups = new Array(m), j = 0; j < m; ++j) {
+	    for (var group = groups[j], n = group.length, subgroup = subgroups[j] = new Array(n), node, subnode, i = 0; i < n; ++i) {
+	      if ((node = group[i]) && (subnode = select.call(node, node.__data__, i, group))) {
+	        if ("__data__" in node) subnode.__data__ = node.__data__;
+	        subgroup[i] = subnode;
+	        schedule(subgroup[i], name, id, i, subgroup, get(node, id));
+	      }
+	    }
+	  }
+
+	  return new Transition(subgroups, this._parents, name, id);
+	}
+
+	function transition_selectAll(select) {
+	  var name = this._name,
+	      id = this._id;
+
+	  if (typeof select !== "function") select = selectorAll(select);
+
+	  for (var groups = this._groups, m = groups.length, subgroups = [], parents = [], j = 0; j < m; ++j) {
+	    for (var group = groups[j], n = group.length, node, i = 0; i < n; ++i) {
+	      if (node = group[i]) {
+	        for (var children = select.call(node, node.__data__, i, group), child, inherit = get(node, id), k = 0, l = children.length; k < l; ++k) {
+	          if (child = children[k]) {
+	            schedule(child, name, id, k, children, inherit);
+	          }
+	        }
+	        subgroups.push(children);
+	        parents.push(node);
+	      }
+	    }
+	  }
+
+	  return new Transition(subgroups, parents, name, id);
+	}
+
+	var Selection = selection.prototype.constructor;
+
+	function transition_selection() {
+	  return new Selection(this._groups, this._parents);
+	}
+
+	function styleNull(name, interpolate) {
+	  var string00,
+	      string10,
+	      interpolate0;
+	  return function() {
+	    var string0 = styleValue(this, name),
+	        string1 = (this.style.removeProperty(name), styleValue(this, name));
+	    return string0 === string1 ? null
+	        : string0 === string00 && string1 === string10 ? interpolate0
+	        : interpolate0 = interpolate(string00 = string0, string10 = string1);
+	  };
+	}
+
+	function styleRemove(name) {
+	  return function() {
+	    this.style.removeProperty(name);
+	  };
+	}
+
+	function styleConstant(name, interpolate, value1) {
+	  var string00,
+	      string1 = value1 + "",
+	      interpolate0;
+	  return function() {
+	    var string0 = styleValue(this, name);
+	    return string0 === string1 ? null
+	        : string0 === string00 ? interpolate0
+	        : interpolate0 = interpolate(string00 = string0, value1);
+	  };
+	}
+
+	function styleFunction(name, interpolate, value) {
+	  var string00,
+	      string10,
+	      interpolate0;
+	  return function() {
+	    var string0 = styleValue(this, name),
+	        value1 = value(this),
+	        string1 = value1 + "";
+	    if (value1 == null) string1 = value1 = (this.style.removeProperty(name), styleValue(this, name));
+	    return string0 === string1 ? null
+	        : string0 === string00 && string1 === string10 ? interpolate0
+	        : (string10 = string1, interpolate0 = interpolate(string00 = string0, value1));
+	  };
+	}
+
+	function styleMaybeRemove(id, name) {
+	  var on0, on1, listener0, key = "style." + name, event = "end." + key, remove;
+	  return function() {
+	    var schedule = set(this, id),
+	        on = schedule.on,
+	        listener = schedule.value[key] == null ? remove || (remove = styleRemove(name)) : undefined;
+
+	    // If this node shared a dispatch with the previous node,
+	    // just assign the updated shared dispatch and we’re done!
+	    // Otherwise, copy-on-write.
+	    if (on !== on0 || listener0 !== listener) (on1 = (on0 = on).copy()).on(event, listener0 = listener);
+
+	    schedule.on = on1;
+	  };
+	}
+
+	function transition_style(name, value, priority) {
+	  var i = (name += "") === "transform" ? interpolateTransformCss : interpolate;
+	  return value == null ? this
+	      .styleTween(name, styleNull(name, i))
+	      .on("end.style." + name, styleRemove(name))
+	    : typeof value === "function" ? this
+	      .styleTween(name, styleFunction(name, i, tweenValue(this, "style." + name, value)))
+	      .each(styleMaybeRemove(this._id, name))
+	    : this
+	      .styleTween(name, styleConstant(name, i, value), priority)
+	      .on("end.style." + name, null);
+	}
+
+	function styleInterpolate(name, i, priority) {
+	  return function(t) {
+	    this.style.setProperty(name, i.call(this, t), priority);
+	  };
+	}
+
+	function styleTween(name, value, priority) {
+	  var t, i0;
+	  function tween() {
+	    var i = value.apply(this, arguments);
+	    if (i !== i0) t = (i0 = i) && styleInterpolate(name, i, priority);
+	    return t;
+	  }
+	  tween._value = value;
+	  return tween;
+	}
+
+	function transition_styleTween(name, value, priority) {
+	  var key = "style." + (name += "");
+	  if (arguments.length < 2) return (key = this.tween(key)) && key._value;
+	  if (value == null) return this.tween(key, null);
+	  if (typeof value !== "function") throw new Error;
+	  return this.tween(key, styleTween(name, value, priority == null ? "" : priority));
+	}
+
+	function textConstant(value) {
+	  return function() {
+	    this.textContent = value;
+	  };
+	}
+
+	function textFunction(value) {
+	  return function() {
+	    var value1 = value(this);
+	    this.textContent = value1 == null ? "" : value1;
+	  };
+	}
+
+	function transition_text(value) {
+	  return this.tween("text", typeof value === "function"
+	      ? textFunction(tweenValue(this, "text", value))
+	      : textConstant(value == null ? "" : value + ""));
+	}
+
+	function textInterpolate(i) {
+	  return function(t) {
+	    this.textContent = i.call(this, t);
+	  };
+	}
+
+	function textTween(value) {
+	  var t0, i0;
+	  function tween() {
+	    var i = value.apply(this, arguments);
+	    if (i !== i0) t0 = (i0 = i) && textInterpolate(i);
+	    return t0;
+	  }
+	  tween._value = value;
+	  return tween;
+	}
+
+	function transition_textTween(value) {
+	  var key = "text";
+	  if (arguments.length < 1) return (key = this.tween(key)) && key._value;
+	  if (value == null) return this.tween(key, null);
+	  if (typeof value !== "function") throw new Error;
+	  return this.tween(key, textTween(value));
+	}
+
+	function transition_transition() {
+	  var name = this._name,
+	      id0 = this._id,
+	      id1 = newId();
+
+	  for (var groups = this._groups, m = groups.length, j = 0; j < m; ++j) {
+	    for (var group = groups[j], n = group.length, node, i = 0; i < n; ++i) {
+	      if (node = group[i]) {
+	        var inherit = get(node, id0);
+	        schedule(node, name, id1, i, group, {
+	          time: inherit.time + inherit.delay + inherit.duration,
+	          delay: 0,
+	          duration: inherit.duration,
+	          ease: inherit.ease
+	        });
+	      }
+	    }
+	  }
+
+	  return new Transition(groups, this._parents, name, id1);
+	}
+
+	function transition_end() {
+	  var on0, on1, that = this, id = that._id, size = that.size();
+	  return new Promise(function(resolve, reject) {
+	    var cancel = {value: reject},
+	        end = {value: function() { if (--size === 0) resolve(); }};
+
+	    that.each(function() {
+	      var schedule = set(this, id),
+	          on = schedule.on;
+
+	      // If this node shared a dispatch with the previous node,
+	      // just assign the updated shared dispatch and we’re done!
+	      // Otherwise, copy-on-write.
+	      if (on !== on0) {
+	        on1 = (on0 = on).copy();
+	        on1._.cancel.push(cancel);
+	        on1._.interrupt.push(cancel);
+	        on1._.end.push(end);
+	      }
+
+	      schedule.on = on1;
+	    });
+
+	    // The selection was empty, resolve end immediately
+	    if (size === 0) resolve();
+	  });
+	}
+
+	var id = 0;
+
+	function Transition(groups, parents, name, id) {
+	  this._groups = groups;
+	  this._parents = parents;
+	  this._name = name;
+	  this._id = id;
+	}
+
+	function newId() {
+	  return ++id;
+	}
+
+	var selection_prototype = selection.prototype;
+
+	Transition.prototype = {
+	  constructor: Transition,
+	  select: transition_select,
+	  selectAll: transition_selectAll,
+	  selectChild: selection_prototype.selectChild,
+	  selectChildren: selection_prototype.selectChildren,
+	  filter: transition_filter,
+	  merge: transition_merge,
+	  selection: transition_selection,
+	  transition: transition_transition,
+	  call: selection_prototype.call,
+	  nodes: selection_prototype.nodes,
+	  node: selection_prototype.node,
+	  size: selection_prototype.size,
+	  empty: selection_prototype.empty,
+	  each: selection_prototype.each,
+	  on: transition_on,
+	  attr: transition_attr,
+	  attrTween: transition_attrTween,
+	  style: transition_style,
+	  styleTween: transition_styleTween,
+	  text: transition_text,
+	  textTween: transition_textTween,
+	  remove: transition_remove,
+	  tween: transition_tween,
+	  delay: transition_delay,
+	  duration: transition_duration,
+	  ease: transition_ease,
+	  easeVarying: transition_easeVarying,
+	  end: transition_end,
+	  [Symbol.iterator]: selection_prototype[Symbol.iterator]
+	};
+
+	function cubicInOut(t) {
+	  return ((t *= 2) <= 1 ? t * t * t : (t -= 2) * t * t + 2) / 2;
+	}
+
+	var defaultTiming = {
+	  time: null, // Set on use.
+	  delay: 0,
+	  duration: 250,
+	  ease: cubicInOut
+	};
+
+	function inherit(node, id) {
+	  var timing;
+	  while (!(timing = node.__transition) || !(timing = timing[id])) {
+	    if (!(node = node.parentNode)) {
+	      throw new Error(`transition ${id} not found`);
+	    }
+	  }
+	  return timing;
+	}
+
+	function selection_transition(name) {
+	  var id,
+	      timing;
+
+	  if (name instanceof Transition) {
+	    id = name._id, name = name._name;
+	  } else {
+	    id = newId(), (timing = defaultTiming).time = now(), name = name == null ? null : name + "";
+	  }
+
+	  for (var groups = this._groups, m = groups.length, j = 0; j < m; ++j) {
+	    for (var group = groups[j], n = group.length, node, i = 0; i < n; ++i) {
+	      if (node = group[i]) {
+	        schedule(node, name, id, i, group, timing || inherit(node, id));
+	      }
+	    }
+	  }
+
+	  return new Transition(groups, this._parents, name, id);
+	}
+
+	selection.prototype.interrupt = selection_interrupt;
+	selection.prototype.transition = selection_transition;
+
+	const pi$8 = Math.PI,
+	    tau = 2 * pi$8,
+	    epsilon$1 = 1e-6,
+	    tauEpsilon = tau - epsilon$1;
+
+	function append(strings) {
+	  this._ += strings[0];
+	  for (let i = 1, n = strings.length; i < n; ++i) {
+	    this._ += arguments[i] + strings[i];
+	  }
+	}
+
+	function appendRound(digits) {
+	  let d = Math.floor(digits);
+	  if (!(d >= 0)) throw new Error(`invalid digits: ${digits}`);
+	  if (d > 15) return append;
+	  const k = 10 ** d;
+	  return function(strings) {
+	    this._ += strings[0];
+	    for (let i = 1, n = strings.length; i < n; ++i) {
+	      this._ += Math.round(arguments[i] * k) / k + strings[i];
+	    }
+	  };
+	}
+
+	class Path {
+	  constructor(digits) {
+	    this._x0 = this._y0 = // start of current subpath
+	    this._x1 = this._y1 = null; // end of current subpath
+	    this._ = "";
+	    this._append = digits == null ? append : appendRound(digits);
+	  }
+	  moveTo(x, y) {
+	    this._append`M${this._x0 = this._x1 = +x},${this._y0 = this._y1 = +y}`;
+	  }
+	  closePath() {
+	    if (this._x1 !== null) {
+	      this._x1 = this._x0, this._y1 = this._y0;
+	      this._append`Z`;
+	    }
+	  }
+	  lineTo(x, y) {
+	    this._append`L${this._x1 = +x},${this._y1 = +y}`;
+	  }
+	  quadraticCurveTo(x1, y1, x, y) {
+	    this._append`Q${+x1},${+y1},${this._x1 = +x},${this._y1 = +y}`;
+	  }
+	  bezierCurveTo(x1, y1, x2, y2, x, y) {
+	    this._append`C${+x1},${+y1},${+x2},${+y2},${this._x1 = +x},${this._y1 = +y}`;
+	  }
+	  arcTo(x1, y1, x2, y2, r) {
+	    x1 = +x1, y1 = +y1, x2 = +x2, y2 = +y2, r = +r;
+
+	    // Is the radius negative? Error.
+	    if (r < 0) throw new Error(`negative radius: ${r}`);
+
+	    let x0 = this._x1,
+	        y0 = this._y1,
+	        x21 = x2 - x1,
+	        y21 = y2 - y1,
+	        x01 = x0 - x1,
+	        y01 = y0 - y1,
+	        l01_2 = x01 * x01 + y01 * y01;
+
+	    // Is this path empty? Move to (x1,y1).
+	    if (this._x1 === null) {
+	      this._append`M${this._x1 = x1},${this._y1 = y1}`;
+	    }
+
+	    // Or, is (x1,y1) coincident with (x0,y0)? Do nothing.
+	    else if (!(l01_2 > epsilon$1));
+
+	    // Or, are (x0,y0), (x1,y1) and (x2,y2) collinear?
+	    // Equivalently, is (x1,y1) coincident with (x2,y2)?
+	    // Or, is the radius zero? Line to (x1,y1).
+	    else if (!(Math.abs(y01 * x21 - y21 * x01) > epsilon$1) || !r) {
+	      this._append`L${this._x1 = x1},${this._y1 = y1}`;
+	    }
+
+	    // Otherwise, draw an arc!
+	    else {
+	      let x20 = x2 - x0,
+	          y20 = y2 - y0,
+	          l21_2 = x21 * x21 + y21 * y21,
+	          l20_2 = x20 * x20 + y20 * y20,
+	          l21 = Math.sqrt(l21_2),
+	          l01 = Math.sqrt(l01_2),
+	          l = r * Math.tan((pi$8 - Math.acos((l21_2 + l01_2 - l20_2) / (2 * l21 * l01))) / 2),
+	          t01 = l / l01,
+	          t21 = l / l21;
+
+	      // If the start tangent is not coincident with (x0,y0), line to.
+	      if (Math.abs(t01 - 1) > epsilon$1) {
+	        this._append`L${x1 + t01 * x01},${y1 + t01 * y01}`;
+	      }
+
+	      this._append`A${r},${r},0,0,${+(y01 * x20 > x01 * y20)},${this._x1 = x1 + t21 * x21},${this._y1 = y1 + t21 * y21}`;
+	    }
+	  }
+	  arc(x, y, r, a0, a1, ccw) {
+	    x = +x, y = +y, r = +r, ccw = !!ccw;
+
+	    // Is the radius negative? Error.
+	    if (r < 0) throw new Error(`negative radius: ${r}`);
+
+	    let dx = r * Math.cos(a0),
+	        dy = r * Math.sin(a0),
+	        x0 = x + dx,
+	        y0 = y + dy,
+	        cw = 1 ^ ccw,
+	        da = ccw ? a0 - a1 : a1 - a0;
+
+	    // Is this path empty? Move to (x0,y0).
+	    if (this._x1 === null) {
+	      this._append`M${x0},${y0}`;
+	    }
+
+	    // Or, is (x0,y0) not coincident with the previous point? Line to (x0,y0).
+	    else if (Math.abs(this._x1 - x0) > epsilon$1 || Math.abs(this._y1 - y0) > epsilon$1) {
+	      this._append`L${x0},${y0}`;
+	    }
+
+	    // Is this arc empty? We’re done.
+	    if (!r) return;
+
+	    // Does the angle go the wrong way? Flip the direction.
+	    if (da < 0) da = da % tau + tau;
+
+	    // Is this a complete circle? Draw two arcs to complete the circle.
+	    if (da > tauEpsilon) {
+	      this._append`A${r},${r},0,1,${cw},${x - dx},${y - dy}A${r},${r},0,1,${cw},${this._x1 = x0},${this._y1 = y0}`;
+	    }
+
+	    // Is this arc non-empty? Draw an arc!
+	    else if (da > epsilon$1) {
+	      this._append`A${r},${r},0,${+(da >= pi$8)},${cw},${this._x1 = x + r * Math.cos(a1)},${this._y1 = y + r * Math.sin(a1)}`;
+	    }
+	  }
+	  rect(x, y, w, h) {
+	    this._append`M${this._x0 = this._x1 = +x},${this._y0 = this._y1 = +y}h${w = +w}v${+h}h${-w}Z`;
+	  }
+	  toString() {
+	    return this._;
+	  }
+	}
+
+	function formatDecimal(x) {
+	  return Math.abs(x = Math.round(x)) >= 1e21
+	      ? x.toLocaleString("en").replace(/,/g, "")
+	      : x.toString(10);
+	}
+
+	// Computes the decimal coefficient and exponent of the specified number x with
+	// significant digits p, where x is positive and p is in [1, 21] or undefined.
+	// For example, formatDecimalParts(1.23) returns ["123", 0].
+	function formatDecimalParts(x, p) {
+	  if ((i = (x = p ? x.toExponential(p - 1) : x.toExponential()).indexOf("e")) < 0) return null; // NaN, ±Infinity
+	  var i, coefficient = x.slice(0, i);
+
+	  // The string returned by toExponential either has the form \d\.\d+e[-+]\d+
+	  // (e.g., 1.2e+3) or the form \de[-+]\d+ (e.g., 1e+3).
+	  return [
+	    coefficient.length > 1 ? coefficient[0] + coefficient.slice(2) : coefficient,
+	    +x.slice(i + 1)
+	  ];
+	}
+
+	function exponent(x) {
+	  return x = formatDecimalParts(Math.abs(x)), x ? x[1] : NaN;
+	}
+
+	function formatGroup(grouping, thousands) {
+	  return function(value, width) {
+	    var i = value.length,
+	        t = [],
+	        j = 0,
+	        g = grouping[0],
+	        length = 0;
+
+	    while (i > 0 && g > 0) {
+	      if (length + g + 1 > width) g = Math.max(1, width - length);
+	      t.push(value.substring(i -= g, i + g));
+	      if ((length += g + 1) > width) break;
+	      g = grouping[j = (j + 1) % grouping.length];
+	    }
+
+	    return t.reverse().join(thousands);
+	  };
+	}
+
+	function formatNumerals(numerals) {
+	  return function(value) {
+	    return value.replace(/[0-9]/g, function(i) {
+	      return numerals[+i];
+	    });
+	  };
+	}
+
+	// [[fill]align][sign][symbol][0][width][,][.precision][~][type]
+	var re = /^(?:(.)?([<>=^]))?([+\-( ])?([$#])?(0)?(\d+)?(,)?(\.\d+)?(~)?([a-z%])?$/i;
+
+	function formatSpecifier(specifier) {
+	  if (!(match = re.exec(specifier))) throw new Error("invalid format: " + specifier);
+	  var match;
+	  return new FormatSpecifier({
+	    fill: match[1],
+	    align: match[2],
+	    sign: match[3],
+	    symbol: match[4],
+	    zero: match[5],
+	    width: match[6],
+	    comma: match[7],
+	    precision: match[8] && match[8].slice(1),
+	    trim: match[9],
+	    type: match[10]
+	  });
+	}
+
+	formatSpecifier.prototype = FormatSpecifier.prototype; // instanceof
+
+	function FormatSpecifier(specifier) {
+	  this.fill = specifier.fill === undefined ? " " : specifier.fill + "";
+	  this.align = specifier.align === undefined ? ">" : specifier.align + "";
+	  this.sign = specifier.sign === undefined ? "-" : specifier.sign + "";
+	  this.symbol = specifier.symbol === undefined ? "" : specifier.symbol + "";
+	  this.zero = !!specifier.zero;
+	  this.width = specifier.width === undefined ? undefined : +specifier.width;
+	  this.comma = !!specifier.comma;
+	  this.precision = specifier.precision === undefined ? undefined : +specifier.precision;
+	  this.trim = !!specifier.trim;
+	  this.type = specifier.type === undefined ? "" : specifier.type + "";
+	}
+
+	FormatSpecifier.prototype.toString = function() {
+	  return this.fill
+	      + this.align
+	      + this.sign
+	      + this.symbol
+	      + (this.zero ? "0" : "")
+	      + (this.width === undefined ? "" : Math.max(1, this.width | 0))
+	      + (this.comma ? "," : "")
+	      + (this.precision === undefined ? "" : "." + Math.max(0, this.precision | 0))
+	      + (this.trim ? "~" : "")
+	      + this.type;
+	};
+
+	// Trims insignificant zeros, e.g., replaces 1.2000k with 1.2k.
+	function formatTrim(s) {
+	  out: for (var n = s.length, i = 1, i0 = -1, i1; i < n; ++i) {
+	    switch (s[i]) {
+	      case ".": i0 = i1 = i; break;
+	      case "0": if (i0 === 0) i0 = i; i1 = i; break;
+	      default: if (!+s[i]) break out; if (i0 > 0) i0 = 0; break;
+	    }
+	  }
+	  return i0 > 0 ? s.slice(0, i0) + s.slice(i1 + 1) : s;
+	}
+
+	var prefixExponent;
+
+	function formatPrefixAuto(x, p) {
+	  var d = formatDecimalParts(x, p);
+	  if (!d) return x + "";
+	  var coefficient = d[0],
+	      exponent = d[1],
+	      i = exponent - (prefixExponent = Math.max(-8, Math.min(8, Math.floor(exponent / 3))) * 3) + 1,
+	      n = coefficient.length;
+	  return i === n ? coefficient
+	      : i > n ? coefficient + new Array(i - n + 1).join("0")
+	      : i > 0 ? coefficient.slice(0, i) + "." + coefficient.slice(i)
+	      : "0." + new Array(1 - i).join("0") + formatDecimalParts(x, Math.max(0, p + i - 1))[0]; // less than 1y!
+	}
+
+	function formatRounded(x, p) {
+	  var d = formatDecimalParts(x, p);
+	  if (!d) return x + "";
+	  var coefficient = d[0],
+	      exponent = d[1];
+	  return exponent < 0 ? "0." + new Array(-exponent).join("0") + coefficient
+	      : coefficient.length > exponent + 1 ? coefficient.slice(0, exponent + 1) + "." + coefficient.slice(exponent + 1)
+	      : coefficient + new Array(exponent - coefficient.length + 2).join("0");
+	}
+
+	var formatTypes = {
+	  "%": (x, p) => (x * 100).toFixed(p),
+	  "b": (x) => Math.round(x).toString(2),
+	  "c": (x) => x + "",
+	  "d": formatDecimal,
+	  "e": (x, p) => x.toExponential(p),
+	  "f": (x, p) => x.toFixed(p),
+	  "g": (x, p) => x.toPrecision(p),
+	  "o": (x) => Math.round(x).toString(8),
+	  "p": (x, p) => formatRounded(x * 100, p),
+	  "r": formatRounded,
+	  "s": formatPrefixAuto,
+	  "X": (x) => Math.round(x).toString(16).toUpperCase(),
+	  "x": (x) => Math.round(x).toString(16)
+	};
+
+	function identity$1(x) {
+	  return x;
+	}
+
+	var map = Array.prototype.map,
+	    prefixes = ["y","z","a","f","p","n","µ","m","","k","M","G","T","P","E","Z","Y"];
+
+	function formatLocale(locale) {
+	  var group = locale.grouping === undefined || locale.thousands === undefined ? identity$1 : formatGroup(map.call(locale.grouping, Number), locale.thousands + ""),
+	      currencyPrefix = locale.currency === undefined ? "" : locale.currency[0] + "",
+	      currencySuffix = locale.currency === undefined ? "" : locale.currency[1] + "",
+	      decimal = locale.decimal === undefined ? "." : locale.decimal + "",
+	      numerals = locale.numerals === undefined ? identity$1 : formatNumerals(map.call(locale.numerals, String)),
+	      percent = locale.percent === undefined ? "%" : locale.percent + "",
+	      minus = locale.minus === undefined ? "−" : locale.minus + "",
+	      nan = locale.nan === undefined ? "NaN" : locale.nan + "";
+
+	  function newFormat(specifier) {
+	    specifier = formatSpecifier(specifier);
+
+	    var fill = specifier.fill,
+	        align = specifier.align,
+	        sign = specifier.sign,
+	        symbol = specifier.symbol,
+	        zero = specifier.zero,
+	        width = specifier.width,
+	        comma = specifier.comma,
+	        precision = specifier.precision,
+	        trim = specifier.trim,
+	        type = specifier.type;
+
+	    // The "n" type is an alias for ",g".
+	    if (type === "n") comma = true, type = "g";
+
+	    // The "" type, and any invalid type, is an alias for ".12~g".
+	    else if (!formatTypes[type]) precision === undefined && (precision = 12), trim = true, type = "g";
+
+	    // If zero fill is specified, padding goes after sign and before digits.
+	    if (zero || (fill === "0" && align === "=")) zero = true, fill = "0", align = "=";
+
+	    // Compute the prefix and suffix.
+	    // For SI-prefix, the suffix is lazily computed.
+	    var prefix = symbol === "$" ? currencyPrefix : symbol === "#" && /[boxX]/.test(type) ? "0" + type.toLowerCase() : "",
+	        suffix = symbol === "$" ? currencySuffix : /[%p]/.test(type) ? percent : "";
+
+	    // What format function should we use?
+	    // Is this an integer type?
+	    // Can this type generate exponential notation?
+	    var formatType = formatTypes[type],
+	        maybeSuffix = /[defgprs%]/.test(type);
+
+	    // Set the default precision if not specified,
+	    // or clamp the specified precision to the supported range.
+	    // For significant precision, it must be in [1, 21].
+	    // For fixed precision, it must be in [0, 20].
+	    precision = precision === undefined ? 6
+	        : /[gprs]/.test(type) ? Math.max(1, Math.min(21, precision))
+	        : Math.max(0, Math.min(20, precision));
+
+	    function format(value) {
+	      var valuePrefix = prefix,
+	          valueSuffix = suffix,
+	          i, n, c;
+
+	      if (type === "c") {
+	        valueSuffix = formatType(value) + valueSuffix;
+	        value = "";
+	      } else {
+	        value = +value;
+
+	        // Determine the sign. -0 is not less than 0, but 1 / -0 is!
+	        var valueNegative = value < 0 || 1 / value < 0;
+
+	        // Perform the initial formatting.
+	        value = isNaN(value) ? nan : formatType(Math.abs(value), precision);
+
+	        // Trim insignificant zeros.
+	        if (trim) value = formatTrim(value);
+
+	        // If a negative value rounds to zero after formatting, and no explicit positive sign is requested, hide the sign.
+	        if (valueNegative && +value === 0 && sign !== "+") valueNegative = false;
+
+	        // Compute the prefix and suffix.
+	        valuePrefix = (valueNegative ? (sign === "(" ? sign : minus) : sign === "-" || sign === "(" ? "" : sign) + valuePrefix;
+	        valueSuffix = (type === "s" ? prefixes[8 + prefixExponent / 3] : "") + valueSuffix + (valueNegative && sign === "(" ? ")" : "");
+
+	        // Break the formatted value into the integer “value” part that can be
+	        // grouped, and fractional or exponential “suffix” part that is not.
+	        if (maybeSuffix) {
+	          i = -1, n = value.length;
+	          while (++i < n) {
+	            if (c = value.charCodeAt(i), 48 > c || c > 57) {
+	              valueSuffix = (c === 46 ? decimal + value.slice(i + 1) : value.slice(i)) + valueSuffix;
+	              value = value.slice(0, i);
+	              break;
+	            }
+	          }
+	        }
+	      }
+
+	      // If the fill character is not "0", grouping is applied before padding.
+	      if (comma && !zero) value = group(value, Infinity);
+
+	      // Compute the padding.
+	      var length = valuePrefix.length + value.length + valueSuffix.length,
+	          padding = length < width ? new Array(width - length + 1).join(fill) : "";
+
+	      // If the fill character is "0", grouping is applied after padding.
+	      if (comma && zero) value = group(padding + value, padding.length ? width - valueSuffix.length : Infinity), padding = "";
+
+	      // Reconstruct the final output based on the desired alignment.
+	      switch (align) {
+	        case "<": value = valuePrefix + value + valueSuffix + padding; break;
+	        case "=": value = valuePrefix + padding + value + valueSuffix; break;
+	        case "^": value = padding.slice(0, length = padding.length >> 1) + valuePrefix + value + valueSuffix + padding.slice(length); break;
+	        default: value = padding + valuePrefix + value + valueSuffix; break;
+	      }
+
+	      return numerals(value);
+	    }
+
+	    format.toString = function() {
+	      return specifier + "";
+	    };
+
+	    return format;
+	  }
+
+	  function formatPrefix(specifier, value) {
+	    var f = newFormat((specifier = formatSpecifier(specifier), specifier.type = "f", specifier)),
+	        e = Math.max(-8, Math.min(8, Math.floor(exponent(value) / 3))) * 3,
+	        k = Math.pow(10, -e),
+	        prefix = prefixes[8 + e / 3];
+	    return function(value) {
+	      return f(k * value) + prefix;
+	    };
+	  }
+
+	  return {
+	    format: newFormat,
+	    formatPrefix: formatPrefix
+	  };
+	}
+
+	var locale;
+	var format;
+	var formatPrefix;
+
+	defaultLocale({
+	  thousands: ",",
+	  grouping: [3],
+	  currency: ["$", ""]
+	});
+
+	function defaultLocale(definition) {
+	  locale = formatLocale(definition);
+	  format = locale.format;
+	  formatPrefix = locale.formatPrefix;
+	  return locale;
+	}
+
+	function precisionFixed(step) {
+	  return Math.max(0, -exponent(Math.abs(step)));
+	}
+
+	function precisionPrefix(step, value) {
+	  return Math.max(0, Math.max(-8, Math.min(8, Math.floor(exponent(value) / 3))) * 3 - exponent(Math.abs(step)));
+	}
+
+	function precisionRound(step, max) {
+	  step = Math.abs(step), max = Math.abs(max) - step;
+	  return Math.max(0, exponent(max) - exponent(step)) + 1;
+	}
+
+	function initRange(domain, range) {
+	  switch (arguments.length) {
+	    case 0: break;
+	    case 1: this.range(domain); break;
+	    default: this.range(range).domain(domain); break;
+	  }
+	  return this;
+	}
+
+	const implicit = Symbol("implicit");
+
+	function ordinal() {
+	  var index = new InternMap(),
+	      domain = [],
+	      range = [],
+	      unknown = implicit;
+
+	  function scale(d) {
+	    let i = index.get(d);
+	    if (i === undefined) {
+	      if (unknown !== implicit) return unknown;
+	      index.set(d, i = domain.push(d) - 1);
+	    }
+	    return range[i % range.length];
+	  }
+
+	  scale.domain = function(_) {
+	    if (!arguments.length) return domain.slice();
+	    domain = [], index = new InternMap();
+	    for (const value of _) {
+	      if (index.has(value)) continue;
+	      index.set(value, domain.push(value) - 1);
+	    }
+	    return scale;
+	  };
+
+	  scale.range = function(_) {
+	    return arguments.length ? (range = Array.from(_), scale) : range.slice();
+	  };
+
+	  scale.unknown = function(_) {
+	    return arguments.length ? (unknown = _, scale) : unknown;
+	  };
+
+	  scale.copy = function() {
+	    return ordinal(domain, range).unknown(unknown);
+	  };
+
+	  initRange.apply(scale, arguments);
+
+	  return scale;
+	}
+
+	function constants(x) {
+	  return function() {
+	    return x;
+	  };
+	}
+
+	function number(x) {
+	  return +x;
+	}
+
+	var unit = [0, 1];
+
+	function identity(x) {
+	  return x;
+	}
+
+	function normalize(a, b) {
+	  return (b -= (a = +a))
+	      ? function(x) { return (x - a) / b; }
+	      : constants(isNaN(b) ? NaN : 0.5);
+	}
+
+	function clamper(a, b) {
+	  var t;
+	  if (a > b) t = a, a = b, b = t;
+	  return function(x) { return Math.max(a, Math.min(b, x)); };
+	}
+
+	// normalize(a, b)(x) takes a domain value x in [a,b] and returns the corresponding parameter t in [0,1].
+	// interpolate(a, b)(t) takes a parameter t in [0,1] and returns the corresponding range value x in [a,b].
+	function bimap(domain, range, interpolate) {
+	  var d0 = domain[0], d1 = domain[1], r0 = range[0], r1 = range[1];
+	  if (d1 < d0) d0 = normalize(d1, d0), r0 = interpolate(r1, r0);
+	  else d0 = normalize(d0, d1), r0 = interpolate(r0, r1);
+	  return function(x) { return r0(d0(x)); };
+	}
+
+	function polymap(domain, range, interpolate) {
+	  var j = Math.min(domain.length, range.length) - 1,
+	      d = new Array(j),
+	      r = new Array(j),
+	      i = -1;
+
+	  // Reverse descending domains.
+	  if (domain[j] < domain[0]) {
+	    domain = domain.slice().reverse();
+	    range = range.slice().reverse();
+	  }
+
+	  while (++i < j) {
+	    d[i] = normalize(domain[i], domain[i + 1]);
+	    r[i] = interpolate(range[i], range[i + 1]);
+	  }
+
+	  return function(x) {
+	    var i = bisectRight(domain, x, 1, j) - 1;
+	    return r[i](d[i](x));
+	  };
+	}
+
+	function copy(source, target) {
+	  return target
+	      .domain(source.domain())
+	      .range(source.range())
+	      .interpolate(source.interpolate())
+	      .clamp(source.clamp())
+	      .unknown(source.unknown());
+	}
+
+	function transformer() {
+	  var domain = unit,
+	      range = unit,
+	      interpolate = interpolate$1,
+	      transform,
+	      untransform,
+	      unknown,
+	      clamp = identity,
+	      piecewise,
+	      output,
+	      input;
+
+	  function rescale() {
+	    var n = Math.min(domain.length, range.length);
+	    if (clamp !== identity) clamp = clamper(domain[0], domain[n - 1]);
+	    piecewise = n > 2 ? polymap : bimap;
+	    output = input = null;
+	    return scale;
+	  }
+
+	  function scale(x) {
+	    return x == null || isNaN(x = +x) ? unknown : (output || (output = piecewise(domain.map(transform), range, interpolate)))(transform(clamp(x)));
+	  }
+
+	  scale.invert = function(y) {
+	    return clamp(untransform((input || (input = piecewise(range, domain.map(transform), interpolateNumber)))(y)));
+	  };
+
+	  scale.domain = function(_) {
+	    return arguments.length ? (domain = Array.from(_, number), rescale()) : domain.slice();
+	  };
+
+	  scale.range = function(_) {
+	    return arguments.length ? (range = Array.from(_), rescale()) : range.slice();
+	  };
+
+	  scale.rangeRound = function(_) {
+	    return range = Array.from(_), interpolate = interpolateRound, rescale();
+	  };
+
+	  scale.clamp = function(_) {
+	    return arguments.length ? (clamp = _ ? true : identity, rescale()) : clamp !== identity;
+	  };
+
+	  scale.interpolate = function(_) {
+	    return arguments.length ? (interpolate = _, rescale()) : interpolate;
+	  };
+
+	  scale.unknown = function(_) {
+	    return arguments.length ? (unknown = _, scale) : unknown;
+	  };
+
+	  return function(t, u) {
+	    transform = t, untransform = u;
+	    return rescale();
+	  };
+	}
+
+	function continuous() {
+	  return transformer()(identity, identity);
+	}
+
+	function tickFormat(start, stop, count, specifier) {
+	  var step = tickStep(start, stop, count),
+	      precision;
+	  specifier = formatSpecifier(specifier == null ? ",f" : specifier);
+	  switch (specifier.type) {
+	    case "s": {
+	      var value = Math.max(Math.abs(start), Math.abs(stop));
+	      if (specifier.precision == null && !isNaN(precision = precisionPrefix(step, value))) specifier.precision = precision;
+	      return formatPrefix(specifier, value);
+	    }
+	    case "":
+	    case "e":
+	    case "g":
+	    case "p":
+	    case "r": {
+	      if (specifier.precision == null && !isNaN(precision = precisionRound(step, Math.max(Math.abs(start), Math.abs(stop))))) specifier.precision = precision - (specifier.type === "e");
+	      break;
+	    }
+	    case "f":
+	    case "%": {
+	      if (specifier.precision == null && !isNaN(precision = precisionFixed(step))) specifier.precision = precision - (specifier.type === "%") * 2;
+	      break;
+	    }
+	  }
+	  return format(specifier);
+	}
+
+	function linearish(scale) {
+	  var domain = scale.domain;
+
+	  scale.ticks = function(count) {
+	    var d = domain();
+	    return ticks(d[0], d[d.length - 1], count == null ? 10 : count);
+	  };
+
+	  scale.tickFormat = function(count, specifier) {
+	    var d = domain();
+	    return tickFormat(d[0], d[d.length - 1], count == null ? 10 : count, specifier);
+	  };
+
+	  scale.nice = function(count) {
+	    if (count == null) count = 10;
+
+	    var d = domain();
+	    var i0 = 0;
+	    var i1 = d.length - 1;
+	    var start = d[i0];
+	    var stop = d[i1];
+	    var prestep;
+	    var step;
+	    var maxIter = 10;
+
+	    if (stop < start) {
+	      step = start, start = stop, stop = step;
+	      step = i0, i0 = i1, i1 = step;
+	    }
+	    
+	    while (maxIter-- > 0) {
+	      step = tickIncrement(start, stop, count);
+	      if (step === prestep) {
+	        d[i0] = start;
+	        d[i1] = stop;
+	        return domain(d);
+	      } else if (step > 0) {
+	        start = Math.floor(start / step) * step;
+	        stop = Math.ceil(stop / step) * step;
+	      } else if (step < 0) {
+	        start = Math.ceil(start * step) / step;
+	        stop = Math.floor(stop * step) / step;
+	      } else {
+	        break;
+	      }
+	      prestep = step;
+	    }
+
+	    return scale;
+	  };
+
+	  return scale;
+	}
+
+	function linear() {
+	  var scale = continuous();
+
+	  scale.copy = function() {
+	    return copy(scale, linear());
+	  };
+
+	  initRange.apply(scale, arguments);
+
+	  return linearish(scale);
+	}
+
+	function nice(domain, interval) {
+	  domain = domain.slice();
+
+	  var i0 = 0,
+	      i1 = domain.length - 1,
+	      x0 = domain[i0],
+	      x1 = domain[i1],
+	      t;
+
+	  if (x1 < x0) {
+	    t = i0, i0 = i1, i1 = t;
+	    t = x0, x0 = x1, x1 = t;
+	  }
+
+	  domain[i0] = interval.floor(x0);
+	  domain[i1] = interval.ceil(x1);
+	  return domain;
+	}
+
+	function transformLog(x) {
+	  return Math.log(x);
+	}
+
+	function transformExp(x) {
+	  return Math.exp(x);
+	}
+
+	function transformLogn(x) {
+	  return -Math.log(-x);
+	}
+
+	function transformExpn(x) {
+	  return -Math.exp(-x);
+	}
+
+	function pow10(x) {
+	  return isFinite(x) ? +("1e" + x) : x < 0 ? 0 : x;
+	}
+
+	function powp(base) {
+	  return base === 10 ? pow10
+	      : base === Math.E ? Math.exp
+	      : x => Math.pow(base, x);
+	}
+
+	function logp(base) {
+	  return base === Math.E ? Math.log
+	      : base === 10 && Math.log10
+	      || base === 2 && Math.log2
+	      || (base = Math.log(base), x => Math.log(x) / base);
+	}
+
+	function reflect(f) {
+	  return (x, k) => -f(-x, k);
+	}
+
+	function loggish(transform) {
+	  const scale = transform(transformLog, transformExp);
+	  const domain = scale.domain;
+	  let base = 10;
+	  let logs;
+	  let pows;
+
+	  function rescale() {
+	    logs = logp(base), pows = powp(base);
+	    if (domain()[0] < 0) {
+	      logs = reflect(logs), pows = reflect(pows);
+	      transform(transformLogn, transformExpn);
+	    } else {
+	      transform(transformLog, transformExp);
+	    }
+	    return scale;
+	  }
+
+	  scale.base = function(_) {
+	    return arguments.length ? (base = +_, rescale()) : base;
+	  };
+
+	  scale.domain = function(_) {
+	    return arguments.length ? (domain(_), rescale()) : domain();
+	  };
+
+	  scale.ticks = count => {
+	    const d = domain();
+	    let u = d[0];
+	    let v = d[d.length - 1];
+	    const r = v < u;
+
+	    if (r) ([u, v] = [v, u]);
+
+	    let i = logs(u);
+	    let j = logs(v);
+	    let k;
+	    let t;
+	    const n = count == null ? 10 : +count;
+	    let z = [];
+
+	    if (!(base % 1) && j - i < n) {
+	      i = Math.floor(i), j = Math.ceil(j);
+	      if (u > 0) for (; i <= j; ++i) {
+	        for (k = 1; k < base; ++k) {
+	          t = i < 0 ? k / pows(-i) : k * pows(i);
+	          if (t < u) continue;
+	          if (t > v) break;
+	          z.push(t);
+	        }
+	      } else for (; i <= j; ++i) {
+	        for (k = base - 1; k >= 1; --k) {
+	          t = i > 0 ? k / pows(-i) : k * pows(i);
+	          if (t < u) continue;
+	          if (t > v) break;
+	          z.push(t);
+	        }
+	      }
+	      if (z.length * 2 < n) z = ticks(u, v, n);
+	    } else {
+	      z = ticks(i, j, Math.min(j - i, n)).map(pows);
+	    }
+	    return r ? z.reverse() : z;
+	  };
+
+	  scale.tickFormat = (count, specifier) => {
+	    if (count == null) count = 10;
+	    if (specifier == null) specifier = base === 10 ? "s" : ",";
+	    if (typeof specifier !== "function") {
+	      if (!(base % 1) && (specifier = formatSpecifier(specifier)).precision == null) specifier.trim = true;
+	      specifier = format(specifier);
+	    }
+	    if (count === Infinity) return specifier;
+	    const k = Math.max(1, base * count / scale.ticks().length); // TODO fast estimate?
+	    return d => {
+	      let i = d / pows(Math.round(logs(d)));
+	      if (i * base < base - 0.5) i *= base;
+	      return i <= k ? specifier(d) : "";
+	    };
+	  };
+
+	  scale.nice = () => {
+	    return domain(nice(domain(), {
+	      floor: x => pows(Math.floor(logs(x))),
+	      ceil: x => pows(Math.ceil(logs(x)))
+	    }));
+	  };
+
+	  return scale;
+	}
+
+	function log$1() {
+	  const scale = loggish(transformer()).domain([1, 10]);
+	  scale.copy = () => copy(scale, log$1()).base(scale.base());
+	  initRange.apply(scale, arguments);
+	  return scale;
+	}
+
+	function colors(specifier) {
+	  var n = specifier.length / 6 | 0, colors = new Array(n), i = 0;
+	  while (i < n) colors[i] = "#" + specifier.slice(i * 6, ++i * 6);
+	  return colors;
+	}
+
+	var category10 = colors("1f77b4ff7f0e2ca02cd627289467bd8c564be377c27f7f7fbcbd2217becf");
+
+	var ramp = scheme => rgbBasis(scheme[scheme.length - 1]);
+
+	var scheme = new Array(3).concat(
+	  "f0f0f0bdbdbd636363",
+	  "f7f7f7cccccc969696525252",
+	  "f7f7f7cccccc969696636363252525",
+	  "f7f7f7d9d9d9bdbdbd969696636363252525",
+	  "f7f7f7d9d9d9bdbdbd969696737373525252252525",
+	  "fffffff0f0f0d9d9d9bdbdbd969696737373525252252525",
+	  "fffffff0f0f0d9d9d9bdbdbd969696737373525252252525000000"
+	).map(colors);
+
+	ramp(scheme);
+
+	function constant(x) {
+	  return function constant() {
+	    return x;
+	  };
+	}
+
+	const epsilon = 1e-12;
+
+	function withPath(shape) {
+	  let digits = 3;
+
+	  shape.digits = function(_) {
+	    if (!arguments.length) return digits;
+	    if (_ == null) {
+	      digits = null;
+	    } else {
+	      const d = Math.floor(_);
+	      if (!(d >= 0)) throw new RangeError(`invalid digits: ${_}`);
+	      digits = d;
+	    }
+	    return shape;
+	  };
+
+	  return () => new Path(digits);
+	}
+
+	function array(x) {
+	  return typeof x === "object" && "length" in x
+	    ? x // Array, TypedArray, NodeList, array-like
+	    : Array.from(x); // Map, Set, iterable, string, or anything else
+	}
+
+	function Linear(context) {
+	  this._context = context;
+	}
+
+	Linear.prototype = {
+	  areaStart: function() {
+	    this._line = 0;
+	  },
+	  areaEnd: function() {
+	    this._line = NaN;
+	  },
+	  lineStart: function() {
+	    this._point = 0;
+	  },
+	  lineEnd: function() {
+	    if (this._line || (this._line !== 0 && this._point === 1)) this._context.closePath();
+	    this._line = 1 - this._line;
+	  },
+	  point: function(x, y) {
+	    x = +x, y = +y;
+	    switch (this._point) {
+	      case 0: this._point = 1; this._line ? this._context.lineTo(x, y) : this._context.moveTo(x, y); break;
+	      case 1: this._point = 2; // falls through
+	      default: this._context.lineTo(x, y); break;
+	    }
+	  }
+	};
+
+	function curveLinear(context) {
+	  return new Linear(context);
+	}
+
+	function x(p) {
+	  return p[0];
+	}
+
+	function y(p) {
+	  return p[1];
+	}
+
+	function line(x$1, y$1) {
+	  var defined = constant(true),
+	      context = null,
+	      curve = curveLinear,
+	      output = null,
+	      path = withPath(line);
+
+	  x$1 = typeof x$1 === "function" ? x$1 : (x$1 === undefined) ? x : constant(x$1);
+	  y$1 = typeof y$1 === "function" ? y$1 : (y$1 === undefined) ? y : constant(y$1);
+
+	  function line(data) {
+	    var i,
+	        n = (data = array(data)).length,
+	        d,
+	        defined0 = false,
+	        buffer;
+
+	    if (context == null) output = curve(buffer = path());
+
+	    for (i = 0; i <= n; ++i) {
+	      if (!(i < n && defined(d = data[i], i, data)) === defined0) {
+	        if (defined0 = !defined0) output.lineStart();
+	        else output.lineEnd();
+	      }
+	      if (defined0) output.point(+x$1(d, i, data), +y$1(d, i, data));
+	    }
+
+	    if (buffer) return output = null, buffer + "" || null;
+	  }
+
+	  line.x = function(_) {
+	    return arguments.length ? (x$1 = typeof _ === "function" ? _ : constant(+_), line) : x$1;
+	  };
+
+	  line.y = function(_) {
+	    return arguments.length ? (y$1 = typeof _ === "function" ? _ : constant(+_), line) : y$1;
+	  };
+
+	  line.defined = function(_) {
+	    return arguments.length ? (defined = typeof _ === "function" ? _ : constant(!!_), line) : defined;
+	  };
+
+	  line.curve = function(_) {
+	    return arguments.length ? (curve = _, context != null && (output = curve(context)), line) : curve;
+	  };
+
+	  line.context = function(_) {
+	    return arguments.length ? (_ == null ? context = output = null : output = curve(context = _), line) : context;
+	  };
+
+	  return line;
+	}
+
+	function point$2(that, x, y) {
+	  that._context.bezierCurveTo(
+	    that._x1 + that._k * (that._x2 - that._x0),
+	    that._y1 + that._k * (that._y2 - that._y0),
+	    that._x2 + that._k * (that._x1 - x),
+	    that._y2 + that._k * (that._y1 - y),
+	    that._x2,
+	    that._y2
+	  );
+	}
+
+	function Cardinal(context, tension) {
+	  this._context = context;
+	  this._k = (1 - tension) / 6;
+	}
+
+	Cardinal.prototype = {
+	  areaStart: function() {
+	    this._line = 0;
+	  },
+	  areaEnd: function() {
+	    this._line = NaN;
+	  },
+	  lineStart: function() {
+	    this._x0 = this._x1 = this._x2 =
+	    this._y0 = this._y1 = this._y2 = NaN;
+	    this._point = 0;
+	  },
+	  lineEnd: function() {
+	    switch (this._point) {
+	      case 2: this._context.lineTo(this._x2, this._y2); break;
+	      case 3: point$2(this, this._x1, this._y1); break;
+	    }
+	    if (this._line || (this._line !== 0 && this._point === 1)) this._context.closePath();
+	    this._line = 1 - this._line;
+	  },
+	  point: function(x, y) {
+	    x = +x, y = +y;
+	    switch (this._point) {
+	      case 0: this._point = 1; this._line ? this._context.lineTo(x, y) : this._context.moveTo(x, y); break;
+	      case 1: this._point = 2; this._x1 = x, this._y1 = y; break;
+	      case 2: this._point = 3; // falls through
+	      default: point$2(this, x, y); break;
+	    }
+	    this._x0 = this._x1, this._x1 = this._x2, this._x2 = x;
+	    this._y0 = this._y1, this._y1 = this._y2, this._y2 = y;
+	  }
+	};
+
+	((function custom(tension) {
+
+	  function cardinal(context) {
+	    return new Cardinal(context, tension);
+	  }
+
+	  cardinal.tension = function(tension) {
+	    return custom(+tension);
+	  };
+
+	  return cardinal;
+	}))(0);
+
+	function point$1(that, x, y) {
+	  var x1 = that._x1,
+	      y1 = that._y1,
+	      x2 = that._x2,
+	      y2 = that._y2;
+
+	  if (that._l01_a > epsilon) {
+	    var a = 2 * that._l01_2a + 3 * that._l01_a * that._l12_a + that._l12_2a,
+	        n = 3 * that._l01_a * (that._l01_a + that._l12_a);
+	    x1 = (x1 * a - that._x0 * that._l12_2a + that._x2 * that._l01_2a) / n;
+	    y1 = (y1 * a - that._y0 * that._l12_2a + that._y2 * that._l01_2a) / n;
+	  }
+
+	  if (that._l23_a > epsilon) {
+	    var b = 2 * that._l23_2a + 3 * that._l23_a * that._l12_a + that._l12_2a,
+	        m = 3 * that._l23_a * (that._l23_a + that._l12_a);
+	    x2 = (x2 * b + that._x1 * that._l23_2a - x * that._l12_2a) / m;
+	    y2 = (y2 * b + that._y1 * that._l23_2a - y * that._l12_2a) / m;
+	  }
+
+	  that._context.bezierCurveTo(x1, y1, x2, y2, that._x2, that._y2);
+	}
+
+	function CatmullRom(context, alpha) {
+	  this._context = context;
+	  this._alpha = alpha;
+	}
+
+	CatmullRom.prototype = {
+	  areaStart: function() {
+	    this._line = 0;
+	  },
+	  areaEnd: function() {
+	    this._line = NaN;
+	  },
+	  lineStart: function() {
+	    this._x0 = this._x1 = this._x2 =
+	    this._y0 = this._y1 = this._y2 = NaN;
+	    this._l01_a = this._l12_a = this._l23_a =
+	    this._l01_2a = this._l12_2a = this._l23_2a =
+	    this._point = 0;
+	  },
+	  lineEnd: function() {
+	    switch (this._point) {
+	      case 2: this._context.lineTo(this._x2, this._y2); break;
+	      case 3: this.point(this._x2, this._y2); break;
+	    }
+	    if (this._line || (this._line !== 0 && this._point === 1)) this._context.closePath();
+	    this._line = 1 - this._line;
+	  },
+	  point: function(x, y) {
+	    x = +x, y = +y;
+
+	    if (this._point) {
+	      var x23 = this._x2 - x,
+	          y23 = this._y2 - y;
+	      this._l23_a = Math.sqrt(this._l23_2a = Math.pow(x23 * x23 + y23 * y23, this._alpha));
+	    }
+
+	    switch (this._point) {
+	      case 0: this._point = 1; this._line ? this._context.lineTo(x, y) : this._context.moveTo(x, y); break;
+	      case 1: this._point = 2; break;
+	      case 2: this._point = 3; // falls through
+	      default: point$1(this, x, y); break;
+	    }
+
+	    this._l01_a = this._l12_a, this._l12_a = this._l23_a;
+	    this._l01_2a = this._l12_2a, this._l12_2a = this._l23_2a;
+	    this._x0 = this._x1, this._x1 = this._x2, this._x2 = x;
+	    this._y0 = this._y1, this._y1 = this._y2, this._y2 = y;
+	  }
+	};
+
+	var catmullRom = (function custom(alpha) {
+
+	  function catmullRom(context) {
+	    return alpha ? new CatmullRom(context, alpha) : new Cardinal(context, 0);
+	  }
+
+	  catmullRom.alpha = function(alpha) {
+	    return custom(+alpha);
+	  };
+
+	  return catmullRom;
+	})(0.5);
+
+	function sign(x) {
+	  return x < 0 ? -1 : 1;
+	}
+
+	// Calculate the slopes of the tangents (Hermite-type interpolation) based on
+	// the following paper: Steffen, M. 1990. A Simple Method for Monotonic
+	// Interpolation in One Dimension. Astronomy and Astrophysics, Vol. 239, NO.
+	// NOV(II), P. 443, 1990.
+	function slope3(that, x2, y2) {
+	  var h0 = that._x1 - that._x0,
+	      h1 = x2 - that._x1,
+	      s0 = (that._y1 - that._y0) / (h0 || h1 < 0 && -0),
+	      s1 = (y2 - that._y1) / (h1 || h0 < 0 && -0),
+	      p = (s0 * h1 + s1 * h0) / (h0 + h1);
+	  return (sign(s0) + sign(s1)) * Math.min(Math.abs(s0), Math.abs(s1), 0.5 * Math.abs(p)) || 0;
+	}
+
+	// Calculate a one-sided slope.
+	function slope2(that, t) {
+	  var h = that._x1 - that._x0;
+	  return h ? (3 * (that._y1 - that._y0) / h - t) / 2 : t;
+	}
+
+	// According to https://en.wikipedia.org/wiki/Cubic_Hermite_spline#Representations
+	// "you can express cubic Hermite interpolation in terms of cubic Bézier curves
+	// with respect to the four values p0, p0 + m0 / 3, p1 - m1 / 3, p1".
+	function point(that, t0, t1) {
+	  var x0 = that._x0,
+	      y0 = that._y0,
+	      x1 = that._x1,
+	      y1 = that._y1,
+	      dx = (x1 - x0) / 3;
+	  that._context.bezierCurveTo(x0 + dx, y0 + dx * t0, x1 - dx, y1 - dx * t1, x1, y1);
+	}
+
+	function MonotoneX(context) {
+	  this._context = context;
+	}
+
+	MonotoneX.prototype = {
+	  areaStart: function() {
+	    this._line = 0;
+	  },
+	  areaEnd: function() {
+	    this._line = NaN;
+	  },
+	  lineStart: function() {
+	    this._x0 = this._x1 =
+	    this._y0 = this._y1 =
+	    this._t0 = NaN;
+	    this._point = 0;
+	  },
+	  lineEnd: function() {
+	    switch (this._point) {
+	      case 2: this._context.lineTo(this._x1, this._y1); break;
+	      case 3: point(this, this._t0, slope2(this, this._t0)); break;
+	    }
+	    if (this._line || (this._line !== 0 && this._point === 1)) this._context.closePath();
+	    this._line = 1 - this._line;
+	  },
+	  point: function(x, y) {
+	    var t1 = NaN;
+
+	    x = +x, y = +y;
+	    if (x === this._x1 && y === this._y1) return; // Ignore coincident points.
+	    switch (this._point) {
+	      case 0: this._point = 1; this._line ? this._context.lineTo(x, y) : this._context.moveTo(x, y); break;
+	      case 1: this._point = 2; break;
+	      case 2: this._point = 3; point(this, slope2(this, t1 = slope3(this, x, y)), t1); break;
+	      default: point(this, this._t0, t1 = slope3(this, x, y)); break;
+	    }
+
+	    this._x0 = this._x1, this._x1 = x;
+	    this._y0 = this._y1, this._y1 = y;
+	    this._t0 = t1;
+	  }
+	};
+
+	(Object.create(MonotoneX.prototype)).point = function(x, y) {
+	  MonotoneX.prototype.point.call(this, y, x);
+	};
+
+	function monotoneX(context) {
+	  return new MonotoneX(context);
+	}
+
+	function Transform(k, x, y) {
+	  this.k = k;
+	  this.x = x;
+	  this.y = y;
+	}
+
+	Transform.prototype = {
+	  constructor: Transform,
+	  scale: function(k) {
+	    return k === 1 ? this : new Transform(this.k * k, this.x, this.y);
+	  },
+	  translate: function(x, y) {
+	    return x === 0 & y === 0 ? this : new Transform(this.k, this.x + this.k * x, this.y + this.k * y);
+	  },
+	  apply: function(point) {
+	    return [point[0] * this.k + this.x, point[1] * this.k + this.y];
+	  },
+	  applyX: function(x) {
+	    return x * this.k + this.x;
+	  },
+	  applyY: function(y) {
+	    return y * this.k + this.y;
+	  },
+	  invert: function(location) {
+	    return [(location[0] - this.x) / this.k, (location[1] - this.y) / this.k];
+	  },
+	  invertX: function(x) {
+	    return (x - this.x) / this.k;
+	  },
+	  invertY: function(y) {
+	    return (y - this.y) / this.k;
+	  },
+	  rescaleX: function(x) {
+	    return x.copy().domain(x.range().map(this.invertX, this).map(x.invert, x));
+	  },
+	  rescaleY: function(y) {
+	    return y.copy().domain(y.range().map(this.invertY, this).map(y.invert, y));
+	  },
+	  toString: function() {
+	    return "translate(" + this.x + "," + this.y + ") scale(" + this.k + ")";
+	  }
+	};
+
+	Transform.prototype;
+
+	// Modified: 2026-10-06
+
+	// Accept either one table or an array of tables. A table is a header row
+	// followed by data rows; a collection has tables as its first-level entries.
+	function normalizeInputTables(inputTable, chartName, dataKind) {
+	    if (!Array.isArray(inputTable) || inputTable.length === 0) {
+	        throw new TypeError(`${chartName}: inputTable must be a table or a nonempty array of tables.`);
+	    }
+
+	    const tables = Array.isArray(inputTable[0]) && !Array.isArray(inputTable[0][0])
+	        ? [inputTable]
+	        : inputTable;
+
+	    tables.forEach((table, tableIndex) => {
+	        const location = `${chartName}: inputTable table ${tableIndex + 1}`;
+	        if (!Array.isArray(table) || !Array.isArray(table[0]) || table[0].length < 2) {
+	            throw new TypeError(`${location} needs a header row with at least two columns.`);
+	        }
+
+	        const headers = table[0];
+	        if (headers.some(header => typeof header !== 'string' || header.trim() === '')) {
+	            throw new TypeError(`${location} headers must be nonempty strings.`);
+	        }
+
+	        if (dataKind !== 'table' && table.length < 2) {
+	            throw new TypeError(`${location} needs at least one data row.`);
+	        }
+
+	        table.slice(1).forEach((row, rowIndex) => {
+	            if (!Array.isArray(row) || row.length !== headers.length) {
+	                throw new TypeError(`${location} row ${rowIndex + 2} must have ${headers.length} columns.`);
+	            }
+	            if (dataKind === 'table') {
+	                if (row.some(value => typeof value !== 'string' && !Number.isFinite(value))) {
+	                    throw new TypeError(`${location} row ${rowIndex + 2} needs text or finite numbers.`);
+	                }
+	            } else if (row.some(value => !Number.isFinite(value))) {
+	                throw new TypeError(`${location} row ${rowIndex + 2} needs finite numbers.`);
+	            }
+	        });
+
+	        if (dataKind === 'line') {
+	            if (new Set(headers.slice(1)).size !== headers.length - 1) {
+	                throw new TypeError(`${location} trace headers must be unique.`);
+	            }
+	        } else if (dataKind === 'smith') {
+	            if ((headers.length - 1) % 2 !== 0) {
+	                throw new TypeError(`${location} needs a Re/Im column pair for each trace.`);
+	            }
+	            for (let column = 1; column < headers.length; column += 2) {
+	                const match = headers[column].match(/^(.+)Re$/);
+	                if (!match || headers[column + 1] !== `${match[1]}Im`) {
+	                    throw new TypeError(`${location} columns ${column + 1} and ${column + 2} must be matching Re/Im headers.`);
+	                }
+	            }
+	        }
+	    });
+
+	    return tables;
+	}
+
+	// Modified: 2026-10-06
+
+	const CHART_FONT_FAMILY = 'sans-serif';
+	const CHART_FONT_SIZE = 14;
+
+	// Modified: 2026-10-06
+
+	function formatTooltipNumber(value) {
+	    return value.toPrecision(3);
+	}
+
+	function formatTooltipFrequency(value, metricPrefix) {
+	    const units = {
+	        tera: 'THz', giga: 'GHz', mega: 'MHz', kilo: 'kHz',
+	        none: 'Hz', one: 'Hz', deci: 'dHz', centi: 'cHz',
+	        milli: 'mHz', micro: 'µHz', nano: 'nHz', pico: 'pHz'
+	    };
+	    const unit = units[String(metricPrefix).toLowerCase()] || 'GHz';
+	    return `${formatTooltipNumber(value)} ${unit}`;
+	}
+
+	function appendTooltipRows(tooltip, rows) {
+	    rows.forEach(([label, value]) => {
+	        tooltip.append('div').text(`${label}: ${value}`);
+	    });
+	}
+
+	// Modified: 2026-10-23
+
+	function lineChart(options = {}) {
+	            // ======== Options & defaults ========
+	            const {
+	                // Default inputTable
+	                inputTable = [[
+	                    ['Freq', 's21dB', 's23dB'],
+	                    [0, -3.52, -3.52],
+	                    [600000000, -3.51, -4.19],
+	                    [1200000000, -3.47, -5.72],
+	                    [1800000000, -3.42, -7.46],
+	                    [2400000000, -3.35, -9.21],
+	                    [3000000000, -3.27, -11.01],
+	                    [3600000000, -3.19, -13.04],
+	                    [4200000000, -3.12, -15.53],
+	                    [4800000000, -3.06, -18.99],
+	                    [5400000000, -3.02, -24.83],
+	                    [6000000000, -3.01, -53.9],
+	                    [6600000000, -3.02, -25.46],
+	                    [7200000000, -3.05, -19.3],
+	                    [7800000000, -3.11, -15.74],
+	                    [8400000000, -3.18, -13.2],
+	                    [9000000000, -3.26, -11.15],
+	                    [9600000000, -3.34, -9.34],
+	                    [10200000000, -3.41, -7.59],
+	                    [10800000000, -3.47, -5.85],
+	                    [11400000000, -3.5, -4.28],
+	                    [12000000000, -3.52, -3.52]
+	                ]],
+
+	                // Shared display options
+	                mount = 'body',
+	                containerId,
+	                svgId,
+	                title,
+	                metricPrefix = 'giga',
+	                fontFamily = CHART_FONT_FAMILY,
+	                fontSize = CHART_FONT_SIZE,
+	                containerFontSizePx,
+	                backgroundColor,
+	                pngBackground = 'transparent',
+
+	                // Line-chart options
+	                chartTitle,
+	                xAxisTitle = 'Frequency',
+	                yAxisTitle = 'dB',
+	                xScale = 'linear',
+	                yScale = 'linear',
+	                xAxisPosition = 'bottom',
+	                yAxisPosition = 'left',
+	                plotType = 'line',
+	                barWidth = 4,
+	                barBaseline = 0,
+	                showPoints = true,
+	                showLabels = plotType !== 'bar',
+	                showGrid = true,
+	                gridColor = '#e0e0e0',
+	                traceColor = true, // true for color, false for gray
+	                traceWidth = 2,
+	                pointRadius = 3,
+	                labelFontSize,
+	                labelColor,
+	                width: requestedWidth = 700,
+	                height: requestedHeight = 450,
+	                margin = { top: 35, right: 80, bottom: 55, left: 75 },
+	                plotBorderColor = 'black',
+	                plotBorderWidth = 1,
+	                xRange: rawXRange,
+	                yRange: rawYRange
+
+	            } = options;
+
+	            const tables = normalizeInputTables(inputTable, 'lineChart', 'line');
+	            if (plotType !== 'line' && plotType !== 'bar') {
+	                throw new RangeError('lineChart: plotType must be line or bar.');
+	            }
+	            if (plotType === 'bar' && (!Number.isFinite(barWidth) || barWidth <= 0 ||
+	                !Number.isFinite(barBaseline))) {
+	                throw new RangeError('lineChart: barWidth must be positive and barBaseline must be finite.');
+	            }
+	            if (plotType === 'bar' && rawYRange &&
+	                (barBaseline < Math.min(...rawYRange) || barBaseline > Math.max(...rawYRange))) {
+	                throw new RangeError('lineChart: yRange must include barBaseline in bar mode.');
+	            }
+
+	            // Starting font sizes since d3.axisBottom and d3.axisLeft will override the container styles
+	            const effectiveTitle = title ?? chartTitle ?? '';
+	            const effectiveFontSize = containerFontSizePx ?? fontSize;
+	            const effectiveLabelFontSize = labelFontSize ?? effectiveFontSize;
+	            const effectiveBackgroundColor = backgroundColor ?? pngBackground;
+	            const mountElement = typeof mount === 'string'
+	                ? document.querySelector(mount)
+	                : mount;
+	            const availableWidth = mountElement && mountElement.getBoundingClientRect
+	                ? mountElement.getBoundingClientRect().width - 10
+	                : (typeof document !== 'undefined' ? document.documentElement.clientWidth - 24 : 0);
+	            const width = availableWidth > 0 && requestedWidth > availableWidth
+	                ? Math.max(240, availableWidth)
+	                : requestedWidth;
+	            const height = width === requestedWidth
+	                ? requestedHeight
+	                : Math.max(Math.min(requestedHeight, 320), Math.round(requestedHeight * width / requestedWidth));
+	            const isCompact = width < 420;
+	            const labelNames = showLabels
+	                ? tables.flatMap(table => table[0].slice(1))
+	                : [];
+	            const labelContext = document.createElement('canvas').getContext('2d');
+	            labelContext.font = `${effectiveLabelFontSize}px ${fontFamily}`;
+	            const labelRightMargin = labelNames.length
+	                ? Math.ceil(Math.max(...labelNames.map(name =>
+	                    labelContext.measureText(String(name)).width)) + 12)
+	                : 0;
+	            const layoutMargin = isCompact
+	                ? {
+	                    ...margin,
+	                    // Reserve a title/control row above the plot and leave
+	                    // room for the rotated y-axis title and end labels.
+	                    top: Math.max(margin.top, 45),
+	                    right: Math.max(Math.min(margin.right, 58), labelRightMargin),
+	                    bottom: Math.max(margin.bottom, 45),
+	                    left: Math.min(margin.left, 58)
+	                }
+	                : {...margin, right: Math.max(margin.right, labelRightMargin)};
+	            const xTickCount = Math.max(2, Math.min(10, Math.floor((width - layoutMargin.left - layoutMargin.right) / 60)));
+	            const yTickCount = Math.max(3, Math.min(10, Math.floor((height - layoutMargin.top - layoutMargin.bottom) / 40)));
+	            const axisFontPx = effectiveFontSize;
+	            let txtLabels = selectAll([]);
+
+	            // Metric Scale
+	            const pickScale = {
+	                tera: 1e12, giga: 1e9, mega: 1e6, kilo: 1e3,
+	                none: 1, one: 1, deci: 1e-1, centi: 1e-2,
+	                milli: 1e-3, micro: 1e-6, nano: 1e-9, pico: 1e-12
+	            }[metricPrefix] || 1e9;
+
+	            // Format Data
+	            const formattedData = tables.map(table => {
+	                const headers = table[0];
+	                return headers.slice(1).map((yName, column) => ({
+	                    yName,
+	                    yValues: table.slice(1).map(row => ({
+	                        xValue: row[0] / pickScale,
+	                        yValue: row[column + 1]
+	                    }))
+	                }));
+	            }).flat();
+
+	            // Extract values
+	            const xValues = formattedData.flatMap(d => d.yValues.map(v => v.xValue));
+	            const yValues = formattedData.flatMap(d => d.yValues.map(v => v.yValue));
+
+	            const distinctX = [...new Set(xValues)].sort((a, b) => a - b);
+	            let xRange;
+	            if (rawXRange) xRange = rawXRange.map(v => v / pickScale);
+	            else if (plotType === 'bar') {
+	                const first = distinctX[0];
+	                const last = distinctX[distinctX.length - 1];
+	                if (String(xScale).toLowerCase() === 'log') {
+	                    if (first <= 0) throw new Error('xScale: log scale requires a positive domain.');
+	                    const leftRatio = distinctX.length > 1 ? distinctX[1] / first : 1.1;
+	                    const rightRatio = distinctX.length > 1 ? last / distinctX[distinctX.length - 2] : 1.1;
+	                    xRange = [first / Math.sqrt(leftRatio), last * Math.sqrt(rightRatio)];
+	                } else {
+	                    const leftGap = distinctX.length > 1 ? distinctX[1] - first : Math.max(Math.abs(first) * 0.1, 1);
+	                    const rightGap = distinctX.length > 1 ? last - distinctX[distinctX.length - 2] : leftGap;
+	                    xRange = [first - leftGap / 2, last + rightGap / 2];
+	                }
+	            } else xRange = extent(xValues);
+
+	            const yRange = rawYRange || extent(plotType === 'bar'
+	                ? [...yValues, barBaseline] : yValues);
+	            if (!rawYRange && plotType === 'line' && String(yScale).toLowerCase() === 'linear') {
+	                const span = yRange[1] - yRange[0];
+	                const padding = 0.05 * (span || Math.max(Math.abs(yRange[0]), 1));
+	                yRange[0] -= padding;
+	                yRange[1] += padding;
+	            }
+	            if (plotType === 'bar' && String(yScale).toLowerCase() === 'log' &&
+	                (barBaseline <= 0 || yValues.some(value => value <= 0))) {
+	                throw new Error('lineChart: log yScale in bar mode needs a positive baseline and positive values.');
+	            }
+
+	            // Dimensions
+	            const innerWidth = width - layoutMargin.left - layoutMargin.right;
+	            const innerHeight = height - layoutMargin.top - layoutMargin.bottom;
+
+	            function makeScale(scaleType, domain, range, axisName) {
+	                const effectiveScaleType = String(scaleType).toLowerCase();
+	                const niceDomain = axisName !== 'x' || !rawXRange;
+
+	                if (effectiveScaleType === 'log') {
+	                    if (domain[0] <= 0 || domain[1] <= 0) {
+	                        throw new Error(`${axisName}Scale: log scale requires a positive domain.`);
+	                    }
+	                    const scale = log$1().domain(domain).range(range);
+	                    return niceDomain ? scale.nice() : scale;
+	                }
+
+	                const scale = linear().domain(domain).range(range);
+	                return niceDomain ? scale.nice() : scale;
+	            }
+
+	            // Scales
+	            const x = makeScale(xScale, xRange, [0, innerWidth], 'x');
+	            const y = makeScale(yScale, yRange, [innerHeight, 0], 'y');
+
+	            const xDomain = x.domain();
+	            const yDomain = y.domain();
+
+	            function domainIncludesZero(domain) {
+	                return domain[0] <= 0 && domain[1] >= 0;
+	            }
+
+	            const effectiveXAxisPosition = String(xAxisPosition).toLowerCase();
+	            const effectiveYAxisPosition = String(yAxisPosition).toLowerCase();
+
+	            const xAxisY = effectiveXAxisPosition === 'top'
+	                ? 0
+	                : effectiveXAxisPosition === 'origin' && domainIncludesZero(yDomain)
+	                    ? y(0)
+	                    : innerHeight;
+
+	            const yAxisX = effectiveYAxisPosition === 'right'
+	                ? innerWidth
+	                : effectiveYAxisPosition === 'origin' && domainIncludesZero(xDomain)
+	                    ? x(0)
+	                    : 0;
+
+	            const xAxisGenerator = effectiveXAxisPosition === 'top'
+	                ? axisTop(x).ticks(xTickCount)
+	                : axisBottom(x).ticks(xTickCount);
+
+	            const yAxisGenerator = effectiveYAxisPosition === 'right'
+	                ? axisRight(y).ticks(yTickCount)
+	                : axisLeft(y).ticks(yTickCount);
+
+
+	            // color or gray plots
+	            const n = Math.max(3, Math.min(9, formattedData.length));
+
+	            const color = traceColor
+	                ? ordinal(category10)
+	                : ordinal(scheme[n]);
+
+	            // Container DIV (position relative for button)
+	            const container = select(mount)
+	                .append('div')
+	                .style('position', 'relative')
+	                .style('display', 'block')
+	                .style('width', `${width + 10}px`)
+	                .style('max-width', '100%')
+	                .style('box-sizing', 'border-box')
+	                .style('overflow', 'hidden')
+	                .style('padding', '5px')
+		                .style('padding-top', '5px')
+		                .style('font-family', fontFamily)
+		                .style('font-size', `${effectiveFontSize}px`)
+		                .attr('id', containerId || null)
+		                .attr('class', 'containerClass');
+
+	            // Add SVG
+	            const svg = container.append('svg')
+		                .attr('width', width)
+		                .attr('height', height)
+		                .attr('viewBox', `0 0 ${width} ${height}`)
+		                .attr('preserveAspectRatio', 'xMinYMin meet')
+		                .style('display', 'block')
+		                .style('width', '100%')
+		                .style('max-width', `${width}px`)
+		                .style('height', 'auto')
+		                .style('font-family', fontFamily)
+		                .style('font-size', `${effectiveFontSize}px`)
+		                .attr('id', svgId || null)
+		                .attr('class', 'svgContainerClass');
+
+	            // SVG background so on-screen matches PNG
+	            const chartBackground = svg.insert('rect', ':first-child')
+	                .attr('x', 0)
+	                .attr('y', 0)
+	                .attr('width', width)
+	                .attr('height', height)
+	                .attr('fill', effectiveBackgroundColor === 'transparent' ? 'none' : effectiveBackgroundColor)
+	                .attr('class', 'svgRectClass');
+
+	            // Ensure container is positioned correctly
+	            container.style('position', 'relative');
+
+	            // Button
+	            const button = container.append('button')
+	                .attr('aria-label', 'Copy PNG')
+	                .style('position', 'absolute')
+	                .style('top', '5px')
+	                .style('right', '5px')
+	                .style('background', 'none')
+	                .style('border', 'none')
+	                .style('padding', '4px 8px')
+	                .style('cursor', 'pointer')
+	                .style('display', 'inline-flex')
+	                .style('align-items', 'center')
+	                .style('gap', '4px')
+	                .style('border-radius', '6px')
+	                .style('font-family', fontFamily)
+	                .style('font-size', `${effectiveFontSize}px`)
+	                .on('mouseover', function () { select(this).style('background', '#ccf2ff'); })  //#ccf2ff
+	                .on('mouseout', function () { select(this).style('background', 'none'); })
+	                .on('mousedown', function () { select(this).style('background', '#00ace6'); }) //#00ace6
+	                .on('mouseup', function () { select(this).style('background', '#ccf2ff'); });
+
+	            // Button icon + text
+	            button.html(`
+            <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <path
+          d="M12.668 10.667C12.668 9.95614 12.668 9.46258 12.6367 9.0791C12.6137 8.79732 12.5758 8.60761 12.5244 8.46387L12.4688 8.33399C12.3148 8.03193 12.0803 7.77885 11.793 7.60254L11.666 7.53125C11.508 7.45087 11.2963 7.39395 10.9209 7.36328C10.5374 7.33197 10.0439 7.33203 9.33301 7.33203H6.5C5.78896 7.33203 5.29563 7.33195 4.91211 7.36328C4.63016 7.38632 4.44065 7.42413 4.29688 7.47559L4.16699 7.53125C3.86488 7.68518 3.61186 7.9196 3.43555 8.20703L3.36524 8.33399C3.28478 8.49198 3.22795 8.70352 3.19727 9.0791C3.16595 9.46259 3.16504 9.95611 3.16504 10.667V13.5C3.16504 14.211 3.16593 14.7044 3.19727 15.0879C3.22797 15.4636 3.28473 15.675 3.36524 15.833L3.43555 15.959C3.61186 16.2466 3.86474 16.4807 4.16699 16.6348L4.29688 16.6914C4.44063 16.7428 4.63025 16.7797 4.91211 16.8027C5.29563 16.8341 5.78896 16.835 6.5 16.835H9.33301C10.0439 16.835 10.5374 16.8341 10.9209 16.8027C11.2965 16.772 11.508 16.7152 11.666 16.6348L11.793 16.5645C12.0804 16.3881 12.3148 16.1351 12.4688 15.833L12.5244 15.7031C12.5759 15.5594 12.6137 15.3698 12.6367 15.0879C12.6681 14.7044 12.668 14.211 12.668 13.5V10.667ZM13.998 12.665C14.4528 12.6634 14.8011 12.6602 15.0879 12.6367C15.4635 12.606 15.675 12.5492 15.833 12.4688L15.959 12.3975C16.2466 12.2211 16.4808 11.9682 16.6348 11.666L16.6914 11.5361C16.7428 11.3924 16.7797 11.2026 16.8027 10.9209C16.8341 10.5374 16.835 10.0439 16.835 9.33301V6.5C16.835 5.78896 16.8341 5.29563 16.8027 4.91211C16.7797 4.63025 16.7428 4.44063 16.6914 4.29688L16.6348 4.16699C16.4807 3.86474 16.2466 3.61186 15.959 3.43555L15.833 3.36524C15.675 3.28473 15.4636 3.22797 15.0879 3.19727C14.7044 3.16593 14.211 3.16504 13.5 3.16504H10.667C9.9561 3.16504 9.46259 3.16595 9.0791 3.19727C8.79739 3.22028 8.6076 3.2572 8.46387 3.30859L8.33399 3.36524C8.03176 3.51923 7.77886 3.75343 7.60254 4.04102L7.53125 4.16699C7.4508 4.32498 7.39397 4.53655 7.36328 4.91211C7.33985 5.19893 7.33562 5.54719 7.33399 6.00195H9.33301C10.022 6.00195 10.5791 6.00131 11.0293 6.03809C11.4873 6.07551 11.8937 6.15471 12.2705 6.34668L12.4883 6.46875C12.984 6.7728 13.3878 7.20854 13.6533 7.72949L13.7197 7.87207C13.8642 8.20859 13.9292 8.56974 13.9619 8.9707C13.9987 9.42092 13.998 9.97799 13.998 10.667V12.665ZM18.165 9.33301C18.165 10.022 18.1657 10.5791 18.1289 11.0293C18.0961 11.4302 18.0311 11.7914 17.8867 12.1279L17.8203 12.2705C17.5549 12.7914 17.1509 13.2272 16.6553 13.5313L16.4365 13.6533C16.0599 13.8452 15.6541 13.9245 15.1963 13.9619C14.8593 13.9895 14.4624 13.9935 13.9951 13.9951C13.9935 14.4624 13.9895 14.8593 13.9619 15.1963C13.9292 15.597 13.864 15.9576 13.7197 16.2939L13.6533 16.4365C13.3878 16.9576 12.9841 17.3941 12.4883 17.6982L12.2705 17.8203C11.8937 18.0123 11.4873 18.0915 11.0293 18.1289C10.5791 18.1657 10.022 18.165 9.33301 18.165H6.5C5.81091 18.165 5.25395 18.1657 4.80371 18.1289C4.40306 18.0962 4.04235 18.031 3.70606 17.8867L3.56348 17.8203C3.04244 17.5548 2.60585 17.151 2.30176 16.6553L2.17969 16.4365C1.98788 16.0599 1.90851 15.6541 1.87109 15.1963C1.83431 14.746 1.83496 14.1891 1.83496 13.5V10.667C1.83496 9.978 1.83432 9.42091 1.87109 8.9707C1.90851 8.5127 1.98772 8.10625 2.17969 7.72949L2.30176 7.51172C2.60586 7.0159 3.04236 6.6122 3.56348 6.34668L3.70606 6.28027C4.04237 6.136 4.40303 6.07083 4.80371 6.03809C5.14051 6.01057 5.53708 6.00551 6.00391 6.00391C6.00551 5.53708 6.01057 5.14051 6.03809 4.80371C6.0755 4.34588 6.15483 3.94012 6.34668 3.56348L6.46875 3.34473C6.77282 2.84912 7.20856 2.44514 7.72949 2.17969L7.87207 2.11328C8.20855 1.96886 8.56979 1.90385 8.9707 1.87109C9.42091 1.83432 9.978 1.83496 10.667 1.83496H13.5C14.1891 1.83496 14.746 1.83431 15.1963 1.87109C15.6541 1.90851 16.0599 1.98788 16.4365 2.17969L16.6553 2.30176C17.151 2.60585 17.5548 3.04244 17.8203 3.56348L17.8867 3.70606C18.031 4.04235 18.0962 4.40306 18.1289 4.80371C18.1657 5.25395 18.165 5.81091 18.165 6.5V9.33301Z">
+        </path>
+      </svg>Copy as png
+    `);
+
+	            if (isCompact) button.text('PNG');
+
+	            button
+	                .style('white-space', 'nowrap')
+	                .style('padding', isCompact ? '6px 8px' : '4px 8px');
+
+	            // New button function fire
+	            button.on('click', copyPNG);
+
+	            // --- One function to copy the current SVG as PNG to clipboard ---
+	            function copyPNG() {
+	                if (!navigator.clipboard || !window.ClipboardItem) {
+	                    console.error('Clipboard API for images is not supported in this browser/context.');
+	                    return;
+	                }
+
+	                const pngBlob = new Promise((resolve, reject) => {
+	                    const svgElement = container.node().querySelector('svg');
+	                    const svgString = new XMLSerializer().serializeToString(svgElement);
+	                    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+	                    const url = URL.createObjectURL(svgBlob);
+	                    const img = new Image();
+
+	                    img.onload = () => {
+	                        try {
+	                            const canvas = document.createElement('canvas');
+	                            canvas.width = svgElement.clientWidth || +svgElement.getAttribute('width') || 800;
+	                            canvas.height = svgElement.clientHeight || +svgElement.getAttribute('height') || 600;
+	                            const ctx = canvas.getContext('2d');
+
+	                            if (effectiveBackgroundColor && effectiveBackgroundColor !== 'transparent') {
+	                                ctx.fillStyle = effectiveBackgroundColor;
+	                                ctx.fillRect(0, 0, canvas.width, canvas.height);
+	                            }
+
+	                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+	                            canvas.toBlob((blob) => {
+	                                if (blob) resolve(blob);
+	                                else reject(new Error('Failed to create PNG blob'));
+	                            }, 'image/png');
+	                        } catch (err) {
+	                            reject(err);
+	                        } finally {
+	                            URL.revokeObjectURL(url);
+	                        }
+	                    };
+	                    img.onerror = (err) => {
+	                        URL.revokeObjectURL(url);
+	                        reject(err);
+	                    };
+	                    img.src = url;
+	                });
+
+	                navigator.clipboard.write([new ClipboardItem({ 'image/png': pngBlob })])
+	                    .catch((err) => console.error('Failed to copy chart PNG:', err));
+	            }
+
+	            // Chart Title
+	            const txtChartTitle = svg.append('text')
+	                .attr('x', 10)
+	                .attr('y', 15)
+	                .style('font-size', `${effectiveFontSize}px`)
+	                .style('visibility', effectiveTitle ? 'visible' : 'hidden')
+	                .text(effectiveTitle);
+
+	            // Chart group
+	            const g = svg.append('g')
+	                .attr('transform', `translate(${layoutMargin.left},${layoutMargin.top})`)
+	                .attr('class', 'svgPlotAreaClass');
+
+	            const xGridGroup = g.append('g')
+	                .attr('transform', `translate(0,${innerHeight})`)
+	                .attr('class', 'xGrid')
+	                .style('visibility', showGrid ? 'visible' : 'hidden')
+	                .call(axisBottom(x).ticks(xTickCount).tickSize(-innerHeight).tickFormat(''));
+
+	            xGridGroup.selectAll('path')
+	                .attr('stroke', 'none');
+
+	            xGridGroup.selectAll('line')
+	                .attr('class', 'xGridLine')
+	                .attr('stroke', gridColor)
+	                .attr('stroke-width', 1);
+
+	            const yGridGroup = g.append('g')
+	                .attr('class', 'yGrid')
+	                .style('visibility', showGrid ? 'visible' : 'hidden')
+	                .call(axisLeft(y).ticks(yTickCount).tickSize(-innerWidth).tickFormat(''));
+
+	            yGridGroup.selectAll('path')
+	                .attr('stroke', 'none');
+
+	            yGridGroup.selectAll('line')
+	                .attr('class', 'yGridLine')
+	                .attr('stroke', gridColor)
+	                .attr('stroke-width', 1);
+
+	            // Plot border
+	            const plotBorder = g.append('rect')
+	                .attr('width', innerWidth)
+	                .attr('height', innerHeight)
+	                .attr('fill', 'none')
+	                .attr('stroke', plotBorderColor)
+	                .attr('stroke-width', plotBorderWidth);
+
+	            const xAxisGroup = g.append('g')
+	                .attr('transform', `translate(0,${xAxisY})`)
+	                .attr('class', 'xAxis')
+	                .call(xAxisGenerator);
+
+	            xAxisGroup.selectAll('text')
+	                .attr('class', 'txtXAxisNumbers')
+	                .style('font-size', `${axisFontPx}px`);
+
+	            xAxisGroup.selectAll('path,line')
+	                .attr('class', 'xAxisLine');
+
+	            const yAxisGroup = g.append('g')
+	                .attr('transform', `translate(${yAxisX},0)`)
+	                .attr('class', 'yAxis')
+	                .call(yAxisGenerator);
+
+	            yAxisGroup.selectAll('text')
+	                .attr('class', 'txtYAxisNumbers')
+	                .style('font-size', `${axisFontPx}px`);
+
+	            yAxisGroup.selectAll('path,line')
+	                .attr('class', 'yAxisLine');
+
+	            const txtXAxisTitle = svg.append('text')
+	                .attr('x', layoutMargin.left + innerWidth / 2)
+	                .attr('y', height - 10)
+	                .attr('text-anchor', 'middle')
+	                .attr('class', 'txtXAxisTitle')
+	                .style('font-size', `${axisFontPx}px`)
+	                .text(xAxisTitle);
+
+	            const txtYAxisTitle = svg.append('text')
+	                .attr('x', -(layoutMargin.top + innerHeight / 2))
+	                .attr('y', 15)
+	                .attr('text-anchor', 'middle')
+	                .attr('transform', 'rotate(-90)')
+	                .attr('class', 'txtYAxisTitle')
+	                .style('font-size', `${axisFontPx}px`)
+	                .text(yAxisTitle);
+
+	            // Draw traces
+	            const groups = g.selectAll('.lineGroup')
+	                .data(formattedData)
+	                .join('g')
+	                .attr('class', 'lineGroup');
+
+	            let marks;
+	            if (plotType === 'bar') {
+	                const pixelX = distinctX.map(value => x(value));
+	                const gaps = pixelX.slice(1).map((value, index) => value - pixelX[index]);
+	                const nearestGap = gaps.length ? min(gaps) : Infinity;
+	                const actualBarWidth = Math.min(barWidth, nearestGap * 0.8 / formattedData.length);
+	                const baselineY = y(barBaseline);
+	                marks = groups.selectAll('line.bar')
+	                    .data(d => d.yValues)
+	                    .join('line')
+	                    .attr('class', 'bar')
+	                    .attr('x1', function (d) {
+	                        const traceIndex = formattedData.indexOf(select(this.parentNode).datum());
+	                        return x(d.xValue) + (traceIndex - (formattedData.length - 1) / 2) * actualBarWidth;
+	                    })
+	                    .attr('x2', function () { return this.getAttribute('x1'); })
+	                    .attr('y1', baselineY)
+	                    .attr('y2', d => y(d.yValue))
+	                    .attr('stroke', function () { return color(select(this.parentNode).datum().yName); })
+	                    .attr('stroke-width', actualBarWidth);
+	            } else {
+	                const line$1 = line()
+	                    .x(d => x(d.xValue))
+	                    .y(d => y(d.yValue))
+	                    .curve(monotoneX);
+	                groups.append('path')
+	                    .attr('d', d => line$1(d.yValues))
+	                    .attr('fill', 'none')
+	                    .attr('stroke', d => color(d.yName))
+	                    .attr('stroke-width', traceWidth);
+	                if (showPoints) {
+	                    marks = groups.selectAll('circle')
+	                        .data(d => d.yValues)
+	                        .join('circle')
+	                        .attr('cx', d => x(d.xValue))
+	                        .attr('cy', d => y(d.yValue))
+	                        .attr('r', pointRadius)
+	                        .attr('fill', function (d, i, nodes) {
+	                            const groupData = select(nodes[i].parentNode).datum();
+	                            return color(groupData.yName);
+	                        });
+	                }
+	            }
+
+	            if (marks) {
+	                let tooltip; // shared between handlers
+
+	                marks
+	                    .on('mouseenter', (event, d) => {
+	                        // ensure only one tooltip
+	                        container.select('.tooltip').remove();
+
+	                        const trace = select(event.currentTarget.parentNode).datum();
+	                        const [px, py] = pointer(event, container.node());
+	                        tooltip = container.append('div')
+	                            .attr('class', 'tooltip')
+	                            .style('position', 'absolute')
+	                            .style('background', 'white')
+	                            .style('border', '1px solid #aaa')
+	                            .style('padding', '3px 6px')
+	                            .style('white-space', 'nowrap')
+	                            .style('pointer-events', 'none')
+	                            .style('z-index', 10)
+	                            .style('left', `${px + 10}px`)
+	                            .style('top', `${py - 20}px`);
+	                        const frequencyAxis = /^freq(?:uency)?$/i.test(String(xAxisTitle).trim());
+	                        appendTooltipRows(tooltip, [
+	                            ['Trace', trace.yName],
+	                            [frequencyAxis ? 'Frequency' : xAxisTitle,
+	                                frequencyAxis
+	                                    ? formatTooltipFrequency(d.xValue, metricPrefix)
+	                                    : formatTooltipNumber(d.xValue)],
+	                            ['Value', `${formatTooltipNumber(d.yValue)}${yAxisTitle ? ` ${yAxisTitle}` : ''}`]
+	                        ]);
+	                    })
+	                    .on('mousemove', (event) => {
+	                        if (!tooltip) return;
+	                        const [px, py] = pointer(event, container.node());
+	                        tooltip.style('left', `${px + 10}px`).style('top', `${py - 20}px`);
+	                    })
+	                    .on('mouseleave', () => {
+	                        if (tooltip) { tooltip.remove(); tooltip = null; }
+	                    });
+	            }
+
+	            // Labels
+	            if (showLabels) {
+	                const labelPositions = new Map();
+	                const labelPadding = effectiveLabelFontSize / 2;
+	                const minLabelY = labelPadding;
+	                const maxLabelY = Math.max(minLabelY, innerHeight - labelPadding);
+	                const sortedLabels = formattedData.map((trace, index) => ({
+	                    trace,
+	                    index,
+	                    desiredY: y(trace.yValues[trace.yValues.length - 1].yValue)
+	                })).sort((a, b) => a.desiredY - b.desiredY || a.index - b.index);
+	                const labelSpacing = sortedLabels.length > 1
+	                    ? Math.min(effectiveLabelFontSize + 2,
+	                        (maxLabelY - minLabelY) / (sortedLabels.length - 1))
+	                    : 0;
+
+	                sortedLabels.forEach((label, index) => {
+	                    const desiredY = Math.max(minLabelY, Math.min(maxLabelY, label.desiredY));
+	                    label.positionY = index === 0
+	                        ? desiredY
+	                        : Math.max(desiredY, sortedLabels[index - 1].positionY + labelSpacing);
+	                });
+	                for (let index = sortedLabels.length - 1; index >= 0; index--) {
+	                    const nextY = index === sortedLabels.length - 1
+	                        ? maxLabelY
+	                        : sortedLabels[index + 1].positionY - labelSpacing;
+	                    sortedLabels[index].positionY = Math.min(sortedLabels[index].positionY, nextY);
+	                    labelPositions.set(sortedLabels[index].trace, sortedLabels[index].positionY);
+	                }
+
+	                txtLabels = groups.append('text')
+	                    .attr('x', d => {
+	                        const last = d.yValues[d.yValues.length - 1];
+	                        return Math.min(x(last.xValue) + 6, width - 6);
+	                    })
+	                    .attr('y', d => labelPositions.get(d))
+	                    .attr('dy', '0.35em')
+	                    .attr('class', 'txtLabel')
+	                    .attr('text-anchor', d => {
+	                        const last = d.yValues[d.yValues.length - 1];
+	                        return x(last.xValue) + 6 > width - 6 ? 'end' : 'start';
+	                    })
+	                    .style('font-size', `${effectiveLabelFontSize}px`)
+	                    .style('fill', labelColor || null)
+	                    .text(d => d.yName)
+	                    .each(function () {
+	                        const label = select(this);
+	                        const rightEdge = width - layoutMargin.left - 6;
+	                        if (label.attr('text-anchor') === 'start' &&
+	                            Number(label.attr('x')) + this.getComputedTextLength() > rightEdge) {
+	                            label.attr('x', rightEdge).attr('text-anchor', 'end');
+	                        }
+	                    });
+	            }
+
+	            // Returned API methods 
+	            function cssPropertyToJsName(propertyName) {
+	                return propertyName.replace(/-([a-z])/g, function (_, letter) {
+	                    return letter.toUpperCase();
+	                });
+	            }
+
+	            function applyStyleToElement(element, style) {
+	                if (!element) return;
+
+	                if (typeof style === "string") {
+	                    const currentStyle = element.getAttribute("style") || "";
+	                    element.setAttribute("style", currentStyle ? currentStyle + ";" + style : style);
+	                } else if (typeof style === "object" && style !== null) {
+	                    for (const [key, value] of Object.entries(style)) {
+	                        element.style[cssPropertyToJsName(key)] = value;
+	                    }
+	                }
+	            }
+
+	            function applyStyleToSelection(selection, style) {
+	                selection.each(function () {
+	                    applyStyleToElement(this, style);
+	                });
+	            }
+
+	            // Chart Title
+	            function setTxtChartTitleStyle(style) {
+	                applyStyleToElement(txtChartTitle.node(), style);
+	            }
+
+	            function setChartBackgroundStyle(style) {
+	                applyStyleToElement(chartBackground.node(), style);
+	            }
+
+	            function setPlotBorderStyle(style) {
+	                applyStyleToElement(plotBorder.node(), style);
+	            }
+
+	            // X-Axis
+	            function setTxtXAxisTitleStyle(style) {
+	                applyStyleToElement(txtXAxisTitle.node(), style);
+	            }
+
+	            function setTxtXAxisNumbersStyle(style) {
+	                applyStyleToSelection(xAxisGroup.selectAll('text'), style);
+	            }
+
+	            function setXAxisLineStyle(style) {
+	                applyStyleToSelection(xAxisGroup.selectAll('path,line'), style);
+	            }
+
+	            function setXGridLineStyle(style) {
+	                applyStyleToSelection(xGridGroup.selectAll('line'), style);
+	            }
+
+	            // Y-Axis
+	            function setTxtYAxisTitleStyle(style) {
+	                applyStyleToElement(txtYAxisTitle.node(), style);
+	            }
+
+	            function setTxtYAxisNumbersStyle(style) {
+	                applyStyleToSelection(yAxisGroup.selectAll('text'), style);
+	            }
+
+	            function setYAxisLineStyle(style) {
+	                applyStyleToSelection(yAxisGroup.selectAll('path,line'), style);
+	            }
+
+	            function setYGridLineStyle(style) {
+	                applyStyleToSelection(yGridGroup.selectAll('line'), style);
+	            }
+
+	            // Labels
+	            function setTxtChartLabelsStyle(style) {
+	                applyStyleToSelection(txtLabels, style);
+	            }
+
+	            // Returning an API to the user
+	            // There are exposed elements for super users
+	            // There are exposed setter methods to change the style
+	            // ---> You can pass an object to a setter: { fill: "red", fontStyle: "italic" }
+	            // ---> Or you can pass a string to a setter: "fill:red; font-style:italic;"
+	            // Either will work
+
+	            return {
+	                // Shared elements
+	                container: container.node(),
+	                svg: svg.node(),
+	                background: chartBackground.node(),
+	                title: txtChartTitle.node(),
+
+	                // Existing chart elements
+	                chartBackground: chartBackground.node(),
+	                txtChartTitle: txtChartTitle.node(),
+	                plotBorder: plotBorder.node(),
+	                txtXAxisTitle: txtXAxisTitle.node(),
+	                txtYAxisTitle: txtYAxisTitle.node(),
+	                txtChartLabels: txtLabels.nodes(),
+	                xAxisGroup: xAxisGroup.node(),
+	                yAxisGroup: yAxisGroup.node(),
+	                xGridGroup: xGridGroup.node(),
+	                yGridGroup: yGridGroup.node(),
+
+	                // Shared style setters
+	                setBackgroundStyle: setChartBackgroundStyle,
+	                setTitleStyle: setTxtChartTitleStyle,
+
+	                // Existing chart style setters
+	                setTxtChartTitleStyle: setTxtChartTitleStyle,
+	                setChartBackgroundStyle: setChartBackgroundStyle,
+	                setPlotBorderStyle: setPlotBorderStyle,
+
+	                setTxtXAxisTitleStyle: setTxtXAxisTitleStyle,
+	                setTxtXAxisNumbersStyle: setTxtXAxisNumbersStyle,
+	                setXAxisLineStyle: setXAxisLineStyle,
+	                setXGridLineStyle: setXGridLineStyle,
+
+	                setTxtYAxisTitleStyle: setTxtYAxisTitleStyle,
+	                setTxtYAxisNumbersStyle: setTxtYAxisNumbersStyle,
+	                setYAxisLineStyle: setYAxisLineStyle,
+	                setYGridLineStyle: setYGridLineStyle,
+
+	                setTxtChartLabelsStyle: setTxtChartLabelsStyle
+	            }
+
+	        }
+
+	// Generated by schematics/tools/generate-runtime-symbols.js from canonical SVGs.
+	// Edit schematics/symbols/ and schematics/runtime-symbol-layout.json, then run npm run symbols:bundle.
+	const schematicSymbols = {
+	    "tee": {
+	        "ports": [
+	            [
+	                120,
+	                140
+	            ],
+	            [
+	                80,
+	                100
+	            ],
+	            [
+	                160,
+	                100
+	            ]
+	        ],
+	        "flow": {
+	            "throughPorts": [
+	                2,
+	                3
+	            ],
+	            "shuntPort": 1
+	        },
+	        "bounds": [
+	            76,
+	            76,
+	            164,
+	            144
+	        ],
+	        "bodyBounds": [
+	            100,
+	            80,
+	            140,
+	            120
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    120,
+	                    120
+	                ],
+	                [
+	                    120,
+	                    140
+	                ]
+	            ],
+	            [
+	                [
+	                    80,
+	                    100
+	                ],
+	                [
+	                    100,
+	                    100
+	                ]
+	            ],
+	            [
+	                [
+	                    140,
+	                    100
+	                ],
+	                [
+	                    160,
+	                    100
+	                ]
+	            ]
+	        ],
+	        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M80 100 H100 M140 100 H160 M120 120 V140\"/><rect x=\"100\" y=\"80\" width=\"40\" height=\"40\"/><circle cx=\"120\" cy=\"110\" r=\"3\" fill=\"#202020\" stroke=\"none\"/></g>"
+	    },
+	    "transmission-line": {
+	        "ports": [
+	            [
+	                80,
+	                80
+	            ],
+	            [
+	                200,
+	                80
+	            ]
+	        ],
+	        "bounds": [
+	            76,
+	            61,
+	            204,
+	            99
+	        ],
+	        "bodyBounds": [
+	            100,
+	            65,
+	            180,
+	            95
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    80,
+	                    80
+	                ],
+	                [
+	                    100,
+	                    80
+	                ]
+	            ],
+	            [
+	                [
+	                    180,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g transform=\"translate(0 -10)\">\n<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M80 90 H100 M180 90 H200\"/><rect x=\"100\" y=\"75\" width=\"80\" height=\"30\"/></g>\n  </g>"
+	    },
+	    "capacitor": {
+	        "ports": [
+	            [
+	                80,
+	                80
+	            ],
+	            [
+	                140,
+	                80
+	            ]
+	        ],
+	        "bounds": [
+	            76,
+	            66,
+	            144,
+	            94
+	        ],
+	        "bodyBounds": [
+	            105,
+	            70,
+	            115,
+	            90
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    80,
+	                    80
+	                ],
+	                [
+	                    105,
+	                    80
+	                ]
+	            ],
+	            [
+	                [
+	                    115,
+	                    80
+	                ],
+	                [
+	                    140,
+	                    80
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\">\n    <path d=\"M80 80 H105 M115 80 H140 M105 70 V90 M115 70 V90\"/>\n  </g>"
+	    },
+	    "inductor": {
+	        "ports": [
+	            [
+	                60,
+	                80
+	            ],
+	            [
+	                160,
+	                80
+	            ]
+	        ],
+	        "bounds": [
+	            56,
+	            58,
+	            164,
+	            94
+	        ],
+	        "bodyBounds": [
+	            80,
+	            60,
+	            140,
+	            90
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    60,
+	                    80
+	                ],
+	                [
+	                    80,
+	                    80
+	                ]
+	            ],
+	            [
+	                [
+	                    140,
+	                    80
+	                ],
+	                [
+	                    160,
+	                    80
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M60 80 H80 C80 60 95 60 95 80 C95 60 110 60 110 80 C110 60 125 60 125 80 C125 60 140 60 140 80 H160\"/>\n  </g>"
+	    },
+	    "attenuator": {
+	        "ports": [
+	            [
+	                100,
+	                80
+	            ],
+	            [
+	                160,
+	                80
+	            ]
+	        ],
+	        "bounds": [
+	            96,
+	            46,
+	            164,
+	            114
+	        ],
+	        "bodyBounds": [
+	            120,
+	            50,
+	            140,
+	            110
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    100,
+	                    80
+	                ],
+	                [
+	                    160,
+	                    80
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M100 80 H160\"/>\n    <path d=\"M130 50 L140 55 L120 65 L140 75 L120 85 L140 95 L120 105 L130 110\"/>\n  </g>"
+	    },
+	    "amplifier": {
+	        "ports": [
+	            [
+	                80,
+	                80
+	            ],
+	            [
+	                180,
+	                80
+	            ]
+	        ],
+	        "bounds": [
+	            76,
+	            56,
+	            184,
+	            104
+	        ],
+	        "bodyBounds": [
+	            100,
+	            60,
+	            160,
+	            100
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    80,
+	                    80
+	                ],
+	                [
+	                    100,
+	                    80
+	                ]
+	            ],
+	            [
+	                [
+	                    160,
+	                    80
+	                ],
+	                [
+	                    180,
+	                    80
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g transform=\"translate(0 -10)\">\n<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M80 90 H100 M160 90 H180\"/><path d=\"M100 50 L160 90 L100 130 Z\"/><text x=\"120\" y=\"90\" font-family=\"Arial, Helvetica, sans-serif\" font-size=\"13\" fill=\"#202020\" stroke=\"none\" text-anchor=\"middle\" dominant-baseline=\"middle\">A</text>\n  </g>\n  </g>"
+	    },
+	    "thru": {
+	        "ports": [
+	            [
+	                80,
+	                80
+	            ],
+	            [
+	                200,
+	                80
+	            ]
+	        ],
+	        "bounds": [
+	            76,
+	            61,
+	            204,
+	            99
+	        ],
+	        "bodyBounds": [
+	            100,
+	            65,
+	            180,
+	            95
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    80,
+	                    80
+	                ],
+	                [
+	                    100,
+	                    80
+	                ]
+	            ],
+	            [
+	                [
+	                    180,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g transform=\"translate(0 -10)\">\n<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M80 90 H100 M180 90 H200\"/><rect x=\"100\" y=\"75\" width=\"80\" height=\"30\"/><text x=\"140\" y=\"90\" font-family=\"Arial, Helvetica, sans-serif\" font-size=\"13\" fill=\"#202020\" stroke=\"none\" text-anchor=\"middle\" dominant-baseline=\"middle\">THRU</text>\n  </g>\n  </g>"
+	    },
+	    "microstrip-line": {
+	        "ports": [
+	            [
+	                80,
+	                80
+	            ],
+	            [
+	                200,
+	                80
+	            ]
+	        ],
+	        "bounds": [
+	            76,
+	            61,
+	            204,
+	            99
+	        ],
+	        "bodyBounds": [
+	            100,
+	            65,
+	            180,
+	            95
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    80,
+	                    80
+	                ],
+	                [
+	                    100,
+	                    80
+	                ]
+	            ],
+	            [
+	                [
+	                    180,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<!-- Match the Tlin() body and lead layout. -->\n  <g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M80 80 H100 M180 80 H200\"/>\n    <rect x=\"100\" y=\"65\" width=\"80\" height=\"30\"/>\n  </g>"
+	    },
+	    "microstrip-step": {
+	        "ports": [
+	            [
+	                0,
+	                60
+	            ],
+	            [
+	                120,
+	                60
+	            ]
+	        ],
+	        "bounds": [
+	            -4,
+	            42,
+	            124,
+	            78
+	        ],
+	        "bodyBounds": [
+	            20,
+	            46,
+	            100,
+	            74
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    0,
+	                    60
+	                ],
+	                [
+	                    20,
+	                    60
+	                ]
+	            ],
+	            [
+	                [
+	                    100,
+	                    60
+	                ],
+	                [
+	                    120,
+	                    60
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<!-- Enlarge the compact copper silhouette without changing its proportions. -->\n  <g transform=\"translate(-60 -60) scale(2)\">\n    <path d=\"M40 53 H60 V57 H80 V63 H60 V67 H40 Z\" fill=\"#ffffff\" stroke=\"#202020\" stroke-width=\"1\"/>\n  </g>\n  <path d=\"M0 60 H20 M100 60 H120\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\"/>"
+	    },
+	    "microstrip-thin-film-resistor": {
+	        "ports": [
+	            [
+	                80,
+	                80
+	            ],
+	            [
+	                200,
+	                80
+	            ]
+	        ],
+	        "bounds": [
+	            76,
+	            61,
+	            204,
+	            99
+	        ],
+	        "bodyBounds": [
+	            100,
+	            65,
+	            180,
+	            95
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    80,
+	                    80
+	                ],
+	                [
+	                    100,
+	                    80
+	                ]
+	            ],
+	            [
+	                [
+	                    180,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g transform=\"translate(0 -10)\">\n<path d=\"M80 90 H100 M180 90 H200\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\"/><rect x=\"100\" y=\"75\" width=\"80\" height=\"30\" fill=\"#ffffff\" stroke=\"#202020\" stroke-width=\"2\"/><text x=\"140\" y=\"90\" font-family=\"Arial, Helvetica, sans-serif\" font-size=\"13\" fill=\"#202020\" stroke=\"none\" text-anchor=\"middle\" dominant-baseline=\"middle\">mTFR</text>\n  </g>"
+	    },
+	    "diode-1n4148": {
+	        "ports": [
+	            [
+	                80,
+	                80
+	            ],
+	            [
+	                140,
+	                80
+	            ]
+	        ],
+	        "bounds": [
+	            76,
+	            66,
+	            144,
+	            94
+	        ],
+	        "bodyBounds": [
+	            100,
+	            70,
+	            120,
+	            90
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    80,
+	                    80
+	                ],
+	                [
+	                    100,
+	                    80
+	                ]
+	            ],
+	            [
+	                [
+	                    120,
+	                    80
+	                ],
+	                [
+	                    140,
+	                    80
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g transform=\"translate(0 -10)\">\n<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M80 90 H100 M120 90 H140\"/><path d=\"M100 80 L120 90 L100 100 Z\"/><path d=\"M120 80 V100\"/></g>\n  </g>"
+	    },
+	    "short": {
+	        "ports": [
+	            [
+	                80,
+	                80
+	            ]
+	        ],
+	        "bounds": [
+	            76,
+	            56,
+	            144,
+	            104
+	        ],
+	        "bodyBounds": [
+	            100,
+	            60,
+	            140,
+	            100
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    80,
+	                    80
+	                ],
+	                [
+	                    100,
+	                    80
+	                ]
+	            ]
+	        ],
+	        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M80 80 H100\"/><rect x=\"100\" y=\"60\" width=\"40\" height=\"40\"/></g>"
+	    },
+	    "open": {
+	        "ports": [
+	            [
+	                120,
+	                80
+	            ]
+	        ],
+	        "bounds": [
+	            116,
+	            66,
+	            164,
+	            94
+	        ],
+	        "bodyBounds": [
+	            140,
+	            70,
+	            160,
+	            90
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    120,
+	                    80
+	                ],
+	                [
+	                    140,
+	                    80
+	                ]
+	            ]
+	        ],
+	        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M120 80 H140\"/><circle cx=\"150\" cy=\"80\" r=\"10\"/></g>"
+	    },
+	    "load": {
+	        "ports": [
+	            [
+	                80,
+	                80
+	            ]
+	        ],
+	        "bounds": [
+	            76,
+	            56,
+	            164,
+	            104
+	        ],
+	        "bodyBounds": [
+	            100,
+	            60,
+	            140,
+	            100
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    80,
+	                    80
+	                ],
+	                [
+	                    100,
+	                    80
+	                ]
+	            ]
+	        ],
+	        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M80 80 H100\"/><rect x=\"100\" y=\"60\" width=\"40\" height=\"40\"/><path d=\"M108 92 L132 68\"/></g>"
+	    },
+	    "series-tee": {
+	        "ports": [
+	            [
+	                80,
+	                100
+	            ],
+	            [
+	                160,
+	                100
+	            ],
+	            [
+	                120,
+	                140
+	            ]
+	        ],
+	        "bounds": [
+	            76,
+	            76,
+	            164,
+	            144
+	        ],
+	        "bodyBounds": [
+	            100,
+	            80,
+	            140,
+	            120
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    80,
+	                    100
+	                ],
+	                [
+	                    100,
+	                    100
+	                ]
+	            ],
+	            [
+	                [
+	                    140,
+	                    100
+	                ],
+	                [
+	                    160,
+	                    100
+	                ]
+	            ],
+	            [
+	                [
+	                    120,
+	                    120
+	                ],
+	                [
+	                    120,
+	                    140
+	                ]
+	            ]
+	        ],
+	        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <!-- External leads and square component body. -->\n    <path d=\"M80 100 H100 M140 100 H160 M120 120 V140\"/>\n    <rect x=\"100\" y=\"80\" width=\"40\" height=\"40\"/>\n\n    <!-- Hand-drawn source: separated series path with port 3 directed into its gap. -->\n    <path d=\"M105 100 H115 M125 100 H135 M120 116 V105 M116 109 L120 105 L124 109\"/>\n\n    <!-- Port-1 orientation marker. -->\n    <circle cx=\"108\" cy=\"90\" r=\"3\" fill=\"#202020\" stroke=\"none\"/>\n  </g>"
+	    },
+	    "microstrip-tee": {
+	        "ports": [
+	            [
+	                0,
+	                60
+	            ],
+	            [
+	                60,
+	                0
+	            ],
+	            [
+	                60,
+	                120
+	            ]
+	        ],
+	        "flow": {
+	            "throughPorts": [
+	                2,
+	                3
+	            ],
+	            "shuntPort": 1
+	        },
+	        "bounds": [
+	            -4,
+	            -4,
+	            78,
+	            124
+	        ],
+	        "bodyBounds": [
+	            20,
+	            20,
+	            74,
+	            100
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    0,
+	                    60
+	                ],
+	                [
+	                    20,
+	                    60
+	                ]
+	            ],
+	            [
+	                [
+	                    60,
+	                    0
+	                ],
+	                [
+	                    60,
+	                    20
+	                ]
+	            ],
+	            [
+	                [
+	                    60,
+	                    100
+	                ],
+	                [
+	                    60,
+	                    120
+	                ]
+	            ]
+	        ],
+	        "geometry": "<!-- Enlarge the compact copper silhouette without changing its proportions. -->\n  <g transform=\"translate(-60 -60) scale(2)\">\n    <path d=\"M53 40 H67 V80 H53 V67 H40 V53 H53 Z\" fill=\"#ffffff\" stroke=\"#202020\" stroke-width=\"1\"/><circle cx=\"56\" cy=\"60\" r=\"1.5\" fill=\"#202020\" stroke=\"none\"/>\n  </g>\n  <path d=\"M0 60 H20 M60 0 V20 M60 100 V120\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\"/>"
+	    },
+	    "coupler-180": {
+	        "ports": [
+	            [
+	                80,
+	                100
+	            ],
+	            [
+	                200,
+	                100
+	            ],
+	            [
+	                200,
+	                140
+	            ],
+	            [
+	                80,
+	                140
+	            ]
+	        ],
+	        "bounds": [
+	            76,
+	            81,
+	            204,
+	            159
+	        ],
+	        "bodyBounds": [
+	            100,
+	            85,
+	            180,
+	            155
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    80,
+	                    100
+	                ],
+	                [
+	                    100,
+	                    100
+	                ]
+	            ],
+	            [
+	                [
+	                    180,
+	                    100
+	                ],
+	                [
+	                    200,
+	                    100
+	                ]
+	            ],
+	            [
+	                [
+	                    180,
+	                    140
+	                ],
+	                [
+	                    200,
+	                    140
+	                ]
+	            ],
+	            [
+	                [
+	                    80,
+	                    140
+	                ],
+	                [
+	                    100,
+	                    140
+	                ]
+	            ]
+	        ],
+	        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M80 100 H100 M180 100 H200 M180 140 H200 M80 140 H100\"/>\n    <rect x=\"100\" y=\"85\" width=\"80\" height=\"30\"/>\n    <rect x=\"100\" y=\"125\" width=\"80\" height=\"30\"/>\n    <text x=\"140\" y=\"140\" font-family=\"Arial, Helvetica, sans-serif\" font-size=\"13\" fill=\"#202020\" stroke=\"none\" text-anchor=\"middle\" dominant-baseline=\"middle\">180</text>\n  </g>"
+	    },
+	    "coupled-transmission-line": {
+	        "ports": [
+	            [
+	                100,
+	                100
+	            ],
+	            [
+	                220,
+	                100
+	            ],
+	            [
+	                220,
+	                140
+	            ],
+	            [
+	                100,
+	                140
+	            ]
+	        ],
+	        "bounds": [
+	            96,
+	            81,
+	            224,
+	            159
+	        ],
+	        "bodyBounds": [
+	            120,
+	            85,
+	            200,
+	            155
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    100,
+	                    100
+	                ],
+	                [
+	                    120,
+	                    100
+	                ]
+	            ],
+	            [
+	                [
+	                    200,
+	                    100
+	                ],
+	                [
+	                    220,
+	                    100
+	                ]
+	            ],
+	            [
+	                [
+	                    200,
+	                    140
+	                ],
+	                [
+	                    220,
+	                    140
+	                ]
+	            ],
+	            [
+	                [
+	                    100,
+	                    140
+	                ],
+	                [
+	                    120,
+	                    140
+	                ]
+	            ]
+	        ],
+	        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M100 100 H120 M200 100 H220 M100 140 H120 M200 140 H220\"/><rect x=\"120\" y=\"85\" width=\"80\" height=\"30\"/><rect x=\"120\" y=\"125\" width=\"80\" height=\"30\"/></g>"
+	    },
+	    "microstrip-coupled-line": {
+	        "ports": [
+	            [
+	                100,
+	                100
+	            ],
+	            [
+	                220,
+	                100
+	            ],
+	            [
+	                220,
+	                140
+	            ],
+	            [
+	                100,
+	                140
+	            ]
+	        ],
+	        "bounds": [
+	            96,
+	            81,
+	            224,
+	            159
+	        ],
+	        "bodyBounds": [
+	            120,
+	            85,
+	            200,
+	            155
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    100,
+	                    100
+	                ],
+	                [
+	                    120,
+	                    100
+	                ]
+	            ],
+	            [
+	                [
+	                    200,
+	                    100
+	                ],
+	                [
+	                    220,
+	                    100
+	                ]
+	            ],
+	            [
+	                [
+	                    200,
+	                    140
+	                ],
+	                [
+	                    220,
+	                    140
+	                ]
+	            ],
+	            [
+	                [
+	                    100,
+	                    140
+	                ],
+	                [
+	                    120,
+	                    140
+	                ]
+	            ]
+	        ],
+	        "geometry": "<!-- Match the Tclin() paired bodies and lead layout. -->\n  <g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M100 100 H120 M200 100 H220 M100 140 H120 M200 140 H220\"/>\n    <rect x=\"120\" y=\"85\" width=\"80\" height=\"30\"/>\n    <rect x=\"120\" y=\"125\" width=\"80\" height=\"30\"/>\n  </g>"
+	    },
+	    "cascade": {
+	        "ports": [
+	            [
+	                80,
+	                80
+	            ],
+	            [
+	                200,
+	                80
+	            ]
+	        ],
+	        "bounds": [
+	            76,
+	            56,
+	            204,
+	            104
+	        ],
+	        "bodyBounds": [
+	            100,
+	            60,
+	            180,
+	            100
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    80,
+	                    80
+	                ],
+	                [
+	                    100,
+	                    80
+	                ]
+	            ],
+	            [
+	                [
+	                    180,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M80 80 H100 M180 80 H200\"/>\n    <rect x=\"100\" y=\"60\" width=\"80\" height=\"40\"/>\n    <text x=\"140\" y=\"80\" font-family=\"Arial, Helvetica, sans-serif\" font-size=\"13\" fill=\"#202020\" stroke=\"none\" text-anchor=\"middle\" dominant-baseline=\"middle\">cascade</text>\n  </g>"
+	    },
+	    "nodal": {
+	        "ports": [
+	            [
+	                80,
+	                80
+	            ],
+	            [
+	                200,
+	                80
+	            ]
+	        ],
+	        "bounds": [
+	            76,
+	            56,
+	            204,
+	            104
+	        ],
+	        "bodyBounds": [
+	            100,
+	            60,
+	            180,
+	            100
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    80,
+	                    80
+	                ],
+	                [
+	                    100,
+	                    80
+	                ]
+	            ],
+	            [
+	                [
+	                    180,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M80 80 H100 M180 80 H200\"/>\n    <rect x=\"100\" y=\"60\" width=\"80\" height=\"40\"/>\n    <text x=\"140\" y=\"80\" font-family=\"Arial, Helvetica, sans-serif\" font-size=\"13\" fill=\"#202020\" stroke=\"none\" text-anchor=\"middle\" dominant-baseline=\"middle\">nodal</text>\n  </g>"
+	    },
+	    "resistor": {
+	        "ports": [
+	            [
+	                60,
+	                80
+	            ],
+	            [
+	                160,
+	                80
+	            ]
+	        ],
+	        "bounds": [
+	            56,
+	            66,
+	            164,
+	            94
+	        ],
+	        "bodyBounds": [
+	            80,
+	            70,
+	            140,
+	            90
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    60,
+	                    80
+	                ],
+	                [
+	                    80,
+	                    80
+	                ]
+	            ],
+	            [
+	                [
+	                    140,
+	                    80
+	                ],
+	                [
+	                    160,
+	                    80
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M60 80 H80 L85 70 L95 90 L105 70 L115 90 L125 70 L135 90 L140 80 H160\"/>\n  </g>"
+	    },
+	    "microstrip-right-bend": {
+	        "ports": [
+	            [
+	                0,
+	                60
+	            ],
+	            [
+	                60,
+	                120
+	            ]
+	        ],
+	        "bounds": [
+	            -4,
+	            42,
+	            78,
+	            124
+	        ],
+	        "bodyBounds": [
+	            20,
+	            46,
+	            74,
+	            100
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    0,
+	                    60
+	                ],
+	                [
+	                    20,
+	                    60
+	                ]
+	            ],
+	            [
+	                [
+	                    60,
+	                    100
+	                ],
+	                [
+	                    60,
+	                    120
+	                ]
+	            ]
+	        ],
+	        "entry": [
+	            1,
+	            0
+	        ],
+	        "exit": [
+	            0,
+	            1
+	        ],
+	        "geometry": "<!-- Mirror the left-turn conductor vertically so port 2 exits downward. -->\n  <g transform=\"translate(-60 -60) scale(2)\">\n    <path d=\"M40 67 H53 V80 H67 V60 L60 53 H40 Z\" fill=\"#ffffff\" stroke=\"#202020\" stroke-width=\"1\"/>\n  </g>\n  <path d=\"M0 60 H20 M60 100 V120\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\"/>"
+	    },
+	    "microstrip-left-bend": {
+	        "ports": [
+	            [
+	                0,
+	                60
+	            ],
+	            [
+	                60,
+	                0
+	            ]
+	        ],
+	        "bounds": [
+	            -4,
+	            -4,
+	            78,
+	            78
+	        ],
+	        "bodyBounds": [
+	            20,
+	            20,
+	            74,
+	            74
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    0,
+	                    60
+	                ],
+	                [
+	                    20,
+	                    60
+	                ]
+	            ],
+	            [
+	                [
+	                    60,
+	                    20
+	                ],
+	                [
+	                    60,
+	                    0
+	                ]
+	            ]
+	        ],
+	        "entry": [
+	            1,
+	            0
+	        ],
+	        "exit": [
+	            0,
+	            -1
+	        ],
+	        "geometry": "<!-- Center both port faces on the conductor arms. -->\n  <g transform=\"translate(-60 -60) scale(2)\">\n    <path d=\"M40 53 H53 V40 H67 V60 L60 67 H40 Z\" fill=\"#ffffff\" stroke=\"#202020\" stroke-width=\"1\"/>\n  </g>\n  <path d=\"M0 60 H20 M60 0 V20\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\"/>"
+	    },
+	    "microstrip-via-transition": {
+	        "ports": [
+	            [
+	                120,
+	                40
+	            ],
+	            [
+	                120,
+	                140
+	            ]
+	        ],
+	        "bounds": [
+	            86,
+	            36,
+	            154,
+	            144
+	        ],
+	        "bodyBounds": [
+	            90,
+	            60,
+	            150,
+	            120
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    120,
+	                    40
+	                ],
+	                [
+	                    120,
+	                    60
+	                ]
+	            ],
+	            [
+	                [
+	                    120,
+	                    120
+	                ],
+	                [
+	                    120,
+	                    140
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            0,
+	            1
+	        ],
+	        "entry": [
+	            0,
+	            1
+	        ],
+	        "geometry": "<!-- Outlined via pad and bore, with leads to both grid terminals. -->\n  <circle cx=\"120\" cy=\"90\" r=\"30\" fill=\"#ffffff\" stroke=\"#202020\" stroke-width=\"2\"/>\n  <circle cx=\"120\" cy=\"90\" r=\"10\" fill=\"#ffffff\" stroke=\"#202020\" stroke-width=\"2\"/>\n  <path d=\"M120 40 V60 M120 120 V140\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\"/>"
+	    },
+	    "mod": {
+	        "ports": [
+	            [
+	                80,
+	                80
+	            ],
+	            [
+	                200,
+	                80
+	            ]
+	        ],
+	        "bounds": [
+	            76,
+	            41,
+	            204,
+	            119
+	        ],
+	        "bodyBounds": [
+	            100,
+	            45,
+	            180,
+	            115
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    80,
+	                    80
+	                ],
+	                [
+	                    100,
+	                    80
+	                ]
+	            ],
+	            [
+	                [
+	                    180,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g transform=\"translate(0 -10)\">\n<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M80 90 H100 M180 90 H200\"/><rect x=\"100\" y=\"55\" width=\"80\" height=\"70\"/><text x=\"140\" y=\"90\" font-family=\"Arial, Helvetica, sans-serif\" font-size=\"13\" fill=\"#202020\" stroke=\"none\" text-anchor=\"middle\" dominant-baseline=\"middle\">MOD</text>\n  </g>\n  </g>"
+	    },
+	    "demod": {
+	        "ports": [
+	            [
+	                80,
+	                80
+	            ],
+	            [
+	                200,
+	                80
+	            ]
+	        ],
+	        "bounds": [
+	            76,
+	            41,
+	            204,
+	            119
+	        ],
+	        "bodyBounds": [
+	            100,
+	            45,
+	            180,
+	            115
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    80,
+	                    80
+	                ],
+	                [
+	                    100,
+	                    80
+	                ]
+	            ],
+	            [
+	                [
+	                    180,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g transform=\"translate(0 -10)\">\n<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M80 90 H100 M180 90 H200\"/><rect x=\"100\" y=\"55\" width=\"80\" height=\"70\"/><text x=\"140\" y=\"90\" font-family=\"Arial, Helvetica, sans-serif\" font-size=\"13\" fill=\"#202020\" stroke=\"none\" text-anchor=\"middle\" dominant-baseline=\"middle\">DEMOD</text>\n  </g>\n  </g>"
+	    },
+	    "parallel-resistor": {
+	        "ports": [
+	            [
+	                180,
+	                80
+	            ],
+	            [
+	                220,
+	                80
+	            ]
+	        ],
+	        "bounds": [
+	            146,
+	            76,
+	            254,
+	            260
+	        ],
+	        "bodyBounds": [
+	            160,
+	            80,
+	            240,
+	            246
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    180,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ],
+	            [
+	                [
+	                    220,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g transform=\"translate(-10 0)\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M190 80 H230 M210 80 V110\"/>\n    <circle cx=\"210\" cy=\"80\" r=\"4\" fill=\"#202020\"/>\n    <g transform=\"translate(210 110) rotate(90)\"><path d=\"M0 0 H20 L25 -10 L35 10 L45 -10 L55 10 L65 -10 L75 10 L80 0 H100\"/></g>\n    <path d=\"M210 210 V230 M200 230 H220 M204 238 H216 M208 246 H212\"/>\n  </g>"
+	    },
+	    "parallel-inductor": {
+	        "ports": [
+	            [
+	                180,
+	                80
+	            ],
+	            [
+	                220,
+	                80
+	            ]
+	        ],
+	        "bounds": [
+	            146,
+	            76,
+	            254,
+	            260
+	        ],
+	        "bodyBounds": [
+	            160,
+	            80,
+	            240,
+	            246
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    180,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ],
+	            [
+	                [
+	                    220,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g transform=\"translate(-10 0)\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M190 80 H230 M210 80 V110\"/>\n    <circle cx=\"210\" cy=\"80\" r=\"4\" fill=\"#202020\"/>\n    <g transform=\"translate(210 110) rotate(90)\"><path d=\"M0 0 H20 C20 -20 35 -20 35 0 C35 -20 50 -20 50 0 C50 -20 65 -20 65 0 C65 -20 80 -20 80 0 H100\"/></g>\n    <path d=\"M210 210 V230 M200 230 H220 M204 238 H216 M208 246 H212\"/>\n  </g>"
+	    },
+	    "parallel-capacitor": {
+	        "ports": [
+	            [
+	                180,
+	                80
+	            ],
+	            [
+	                220,
+	                80
+	            ]
+	        ],
+	        "bounds": [
+	            146,
+	            76,
+	            254,
+	            220
+	        ],
+	        "bodyBounds": [
+	            160,
+	            80,
+	            240,
+	            206
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    180,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ],
+	            [
+	                [
+	                    220,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g transform=\"translate(-10 0)\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M190 80 H230 M210 80 V110\"/>\n    <circle cx=\"210\" cy=\"80\" r=\"4\" fill=\"#202020\"/>\n    <g transform=\"translate(210 110) rotate(90)\"><path d=\"M0 0 H25 M35 0 H60 M25 -10 V10 M35 -10 V10\"/></g>\n    <path d=\"M210 170 V190 M200 190 H220 M204 198 H216 M208 206 H212\"/>\n  </g>"
+	    },
+	    "transformer": {
+	        "ports": [
+	            [
+	                80,
+	                80
+	            ],
+	            [
+	                200,
+	                80
+	            ]
+	        ],
+	        "bounds": [
+	            76,
+	            66,
+	            204,
+	            174
+	        ],
+	        "bodyBounds": [
+	            90,
+	            70,
+	            190,
+	            170
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    80,
+	                    80
+	                ],
+	                [
+	                    100,
+	                    80
+	                ]
+	            ],
+	            [
+	                [
+	                    180,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M80 80 H100 H115 M180 80 H200 M180 80 H165 M115 80 C130 80 130 100 115 100 C130 100 130 120 115 120 C130 120 130 140 115 140 C130 140 130 160 115 160 M165 80 C150 80 150 100 165 100 C150 100 150 120 165 120 C150 120 150 140 165 140 C150 140 150 160 165 160 M137 70 V170 M143 70 V170\"/>\n  </g>"
+	    },
+	    "transformer-four-port": {
+	        "ports": [
+	            [
+	                80,
+	                80
+	            ],
+	            [
+	                200,
+	                80
+	            ],
+	            [
+	                80,
+	                160
+	            ],
+	            [
+	                200,
+	                160
+	            ]
+	        ],
+	        "bounds": [
+	            76,
+	            66,
+	            204,
+	            174
+	        ],
+	        "bodyBounds": [
+	            90,
+	            70,
+	            190,
+	            170
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    80,
+	                    80
+	                ],
+	                [
+	                    100,
+	                    80
+	                ]
+	            ],
+	            [
+	                [
+	                    180,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ],
+	            [
+	                [
+	                    80,
+	                    160
+	                ],
+	                [
+	                    100,
+	                    160
+	                ]
+	            ],
+	            [
+	                [
+	                    180,
+	                    160
+	                ],
+	                [
+	                    200,
+	                    160
+	                ]
+	            ]
+	        ],
+	        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M80 80 H100 H115 M180 80 H200 M180 80 H165 M80 160 H100 H115 M180 160 H200 M180 160 H165 M115 80 C130 80 130 100 115 100 C130 100 130 120 115 120 C130 120 130 140 115 140 C130 140 130 160 115 160 M165 80 C150 80 150 100 165 100 C150 100 150 120 165 120 C150 120 150 140 165 140 C150 140 150 160 165 160 M137 70 V170 M143 70 V170\"/>\n  </g>"
+	    },
+	    "transformer-auto": {
+	        "ports": [
+	            [
+	                220,
+	                140
+	            ],
+	            [
+	                140,
+	                80
+	            ],
+	            [
+	                140,
+	                200
+	            ]
+	        ],
+	        "bounds": [
+	            56,
+	            56,
+	            244,
+	            224
+	        ],
+	        "bodyBounds": [
+	            112,
+	            90,
+	            220,
+	            190
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    220,
+	                    140
+	                ],
+	                [
+	                    200,
+	                    140
+	                ]
+	            ],
+	            [
+	                [
+	                    140,
+	                    80
+	                ],
+	                [
+	                    140,
+	                    100
+	                ]
+	            ],
+	            [
+	                [
+	                    140,
+	                    200
+	                ],
+	                [
+	                    140,
+	                    180
+	                ]
+	            ]
+	        ],
+	        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M140 80 V100 C125 100 125 120 140 120 C125 120 125 140 140 140 C125 140 125 160 140 160 C125 160 125 180 140 180 V200 M112 90 V190 M118 90 V190 M140 140 H200 H220\"/>\n  </g>"
+	    },
+	    "se-series-rl": {
+	        "ports": [
+	            [
+	                100,
+	                100
+	            ],
+	            [
+	                340,
+	                100
+	            ]
+	        ],
+	        "bounds": [
+	            96,
+	            76,
+	            344,
+	            124
+	        ],
+	        "bodyBounds": [
+	            120,
+	            80,
+	            320,
+	            120
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    100,
+	                    100
+	                ],
+	                [
+	                    120,
+	                    100
+	                ]
+	            ],
+	            [
+	                [
+	                    320,
+	                    100
+	                ],
+	                [
+	                    340,
+	                    100
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g transform=\"translate(10 -10)\">\n<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M90 110 H110 M310 110 H330\"/>\n    <path d=\"M110 110 H130 L135 100 L145 120 L155 100 L165 120 L175 100 L185 120 L190 110 H210\"/>\n    <path d=\"M210 110 H230 C230 90 245 90 245 110 C245 90 260 90 260 110 C260 90 275 90 275 110 C275 90 290 90 290 110 H310\"/>\n  </g>\n  </g>"
+	    },
+	    "pa-series-rl": {
+	        "ports": [
+	            [
+	                180,
+	                80
+	            ],
+	            [
+	                220,
+	                80
+	            ]
+	        ],
+	        "bounds": [
+	            146,
+	            76,
+	            254,
+	            360
+	        ],
+	        "bodyBounds": [
+	            160,
+	            80,
+	            240,
+	            346
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    180,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ],
+	            [
+	                [
+	                    220,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g transform=\"translate(-10 0)\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M190 80 H230 M210 80 V110\"/>\n    <circle cx=\"210\" cy=\"80\" r=\"4\" fill=\"#202020\"/>\n    <g transform=\"translate(210 110) rotate(90)\"><path d=\"M0 0 H20 L25 -10 L35 10 L45 -10 L55 10 L65 -10 L75 10 L80 0 H100\"/></g>\n    <g transform=\"translate(210 210) rotate(90)\"><path d=\"M0 0 H20 C20 -20 35 -20 35 0 C35 -20 50 -20 50 0 C50 -20 65 -20 65 0 C65 -20 80 -20 80 0 H100\"/></g>\n    <path d=\"M210 310 V330 M200 330 H220 M204 338 H216 M208 346 H212\"/>\n  </g>"
+	    },
+	    "se-series-rc": {
+	        "ports": [
+	            [
+	                120,
+	                100
+	            ],
+	            [
+	                320,
+	                100
+	            ]
+	        ],
+	        "bounds": [
+	            116,
+	            76,
+	            324,
+	            124
+	        ],
+	        "bodyBounds": [
+	            140,
+	            80,
+	            300,
+	            120
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    120,
+	                    100
+	                ],
+	                [
+	                    140,
+	                    100
+	                ]
+	            ],
+	            [
+	                [
+	                    300,
+	                    100
+	                ],
+	                [
+	                    320,
+	                    100
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g transform=\"translate(10 -10)\">\n<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M110 110 H130 M290 110 H310\"/>\n    <path d=\"M130 110 H150 L155 100 L165 120 L175 100 L185 120 L195 100 L205 120 L210 110 H230\"/>\n    <path d=\"M230 110 H255 M265 110 H290 M255 100 V120 M265 100 V120\"/>\n  </g>\n  </g>"
+	    },
+	    "pa-series-rc": {
+	        "ports": [
+	            [
+	                180,
+	                80
+	            ],
+	            [
+	                220,
+	                80
+	            ]
+	        ],
+	        "bounds": [
+	            146,
+	            76,
+	            254,
+	            320
+	        ],
+	        "bodyBounds": [
+	            160,
+	            80,
+	            240,
+	            306
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    180,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ],
+	            [
+	                [
+	                    220,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g transform=\"translate(-10 0)\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M190 80 H230 M210 80 V110\"/>\n    <circle cx=\"210\" cy=\"80\" r=\"4\" fill=\"#202020\"/>\n    <g transform=\"translate(210 110) rotate(90)\"><path d=\"M0 0 H20 L25 -10 L35 10 L45 -10 L55 10 L65 -10 L75 10 L80 0 H100\"/></g>\n    <g transform=\"translate(210 210) rotate(90)\"><path d=\"M0 0 H25 M35 0 H60 M25 -10 V10 M35 -10 V10\"/></g>\n    <path d=\"M210 270 V290 M200 290 H220 M204 298 H216 M208 306 H212\"/>\n  </g>"
+	    },
+	    "se-series-lc": {
+	        "ports": [
+	            [
+	                120,
+	                100
+	            ],
+	            [
+	                320,
+	                100
+	            ]
+	        ],
+	        "bounds": [
+	            116,
+	            76,
+	            324,
+	            124
+	        ],
+	        "bodyBounds": [
+	            140,
+	            80,
+	            300,
+	            120
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    120,
+	                    100
+	                ],
+	                [
+	                    140,
+	                    100
+	                ]
+	            ],
+	            [
+	                [
+	                    300,
+	                    100
+	                ],
+	                [
+	                    320,
+	                    100
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g transform=\"translate(10 -10)\">\n<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M110 110 H130 M290 110 H310\"/>\n    <path d=\"M130 110 H150 C150 90 165 90 165 110 C165 90 180 90 180 110 C180 90 195 90 195 110 C195 90 210 90 210 110 H230\"/>\n    <path d=\"M230 110 H255 M265 110 H290 M255 100 V120 M265 100 V120\"/>\n  </g>\n  </g>"
+	    },
+	    "pa-series-lc": {
+	        "ports": [
+	            [
+	                180,
+	                80
+	            ],
+	            [
+	                220,
+	                80
+	            ]
+	        ],
+	        "bounds": [
+	            146,
+	            76,
+	            254,
+	            320
+	        ],
+	        "bodyBounds": [
+	            160,
+	            80,
+	            240,
+	            306
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    180,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ],
+	            [
+	                [
+	                    220,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g transform=\"translate(-10 0)\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M190 80 H230 M210 80 V110\"/>\n    <circle cx=\"210\" cy=\"80\" r=\"4\" fill=\"#202020\"/>\n    <g transform=\"translate(210 110) rotate(90)\"><path d=\"M0 0 H20 C20 -20 35 -20 35 0 C35 -20 50 -20 50 0 C50 -20 65 -20 65 0 C65 -20 80 -20 80 0 H100\"/></g>\n    <g transform=\"translate(210 210) rotate(90)\"><path d=\"M0 0 H25 M35 0 H60 M25 -10 V10 M35 -10 V10\"/></g>\n    <path d=\"M210 270 V290 M200 290 H220 M204 298 H216 M208 306 H212\"/>\n  </g>"
+	    },
+	    "se-series-rlc": {
+	        "ports": [
+	            [
+	                60,
+	                100
+	            ],
+	            [
+	                360,
+	                100
+	            ]
+	        ],
+	        "bounds": [
+	            56,
+	            76,
+	            364,
+	            124
+	        ],
+	        "bodyBounds": [
+	            80,
+	            80,
+	            340,
+	            120
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    60,
+	                    100
+	                ],
+	                [
+	                    80,
+	                    100
+	                ]
+	            ],
+	            [
+	                [
+	                    340,
+	                    100
+	                ],
+	                [
+	                    360,
+	                    100
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g transform=\"translate(0 -10)\">\n<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M60 110 H80 M340 110 H360\"/>\n    <path d=\"M80 110 H100 L105 100 L115 120 L125 100 L135 120 L145 100 L155 120 L160 110 H180\"/>\n    <path d=\"M180 110 H200 C200 90 215 90 215 110 C215 90 230 90 230 110 C230 90 245 90 245 110 C245 90 260 90 260 110 H280\"/>\n    <path d=\"M280 110 H305 M315 110 H340 M305 100 V120 M315 100 V120\"/>\n  </g>\n  </g>"
+	    },
+	    "pa-series-rlc": {
+	        "ports": [
+	            [
+	                180,
+	                80
+	            ],
+	            [
+	                220,
+	                80
+	            ]
+	        ],
+	        "bounds": [
+	            146,
+	            76,
+	            254,
+	            420
+	        ],
+	        "bodyBounds": [
+	            160,
+	            80,
+	            240,
+	            406
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    180,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ],
+	            [
+	                [
+	                    220,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g transform=\"translate(-10 0)\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M190 80 H230 M210 80 V110\"/>\n    <circle cx=\"210\" cy=\"80\" r=\"4\" fill=\"#202020\"/>\n    <g transform=\"translate(210 110) rotate(90)\"><path d=\"M0 0 H20 L25 -10 L35 10 L45 -10 L55 10 L65 -10 L75 10 L80 0 H100\"/></g>\n    <g transform=\"translate(210 210) rotate(90)\"><path d=\"M0 0 H20 C20 -20 35 -20 35 0 C35 -20 50 -20 50 0 C50 -20 65 -20 65 0 C65 -20 80 -20 80 0 H100\"/></g>\n    <g transform=\"translate(210 310) rotate(90)\"><path d=\"M0 0 H25 M35 0 H60 M25 -10 V10 M35 -10 V10\"/></g>\n    <path d=\"M210 370 V390 M200 390 H220 M204 398 H216 M208 406 H212\"/>\n  </g>"
+	    },
+	    "pa-parallel-rl": {
+	        "ports": [
+	            [
+	                180,
+	                80
+	            ],
+	            [
+	                220,
+	                80
+	            ]
+	        ],
+	        "bounds": [
+	            146,
+	            76,
+	            254,
+	            300
+	        ],
+	        "bodyBounds": [
+	            160,
+	            80,
+	            240,
+	            286
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    180,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ],
+	            [
+	                [
+	                    220,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g transform=\"translate(-10 0)\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M190 80 H230 M210 80 V120 M170 120 H250 M170 260 H250 M210 260 V290 M200 290 H220 M204 298 H216 M208 306 H212\"/>\n    <path d=\"M170 120 V140 M170 240 V260\"/>\n    <circle cx=\"210\" cy=\"80\" r=\"4\" fill=\"#202020\"/>\n    <g transform=\"translate(170 140) rotate(90)\"><path d=\"M0 0 H20 L25 -10 L35 10 L45 -10 L55 10 L65 -10 L75 10 L80 0 H100\"/></g>\n    <path d=\"M250 120 V140 M250 240 V260\"/>\n    <g transform=\"translate(250 140) rotate(90)\"><path d=\"M0 0 H20 C20 -20 35 -20 35 0 C35 -20 50 -20 50 0 C50 -20 65 -20 65 0 C65 -20 80 -20 80 0 H100\"/></g>\n  </g>"
+	    },
+	    "se-parallel-rl": {
+	        "ports": [
+	            [
+	                140,
+	                120
+	            ],
+	            [
+	                280,
+	                120
+	            ]
+	        ],
+	        "bounds": [
+	            136,
+	            65,
+	            284,
+	            175
+	        ],
+	        "bodyBounds": [
+	            160,
+	            75,
+	            260,
+	            165
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    140,
+	                    120
+	                ],
+	                [
+	                    160,
+	                    120
+	                ]
+	            ],
+	            [
+	                [
+	                    260,
+	                    120
+	                ],
+	                [
+	                    280,
+	                    120
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g transform=\"translate(0 -5)\">\n<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M140 125 H160 M260 125 H280 M160 85 V165 M260 85 V165\"/>\n    <path d=\"M160 85 H180 L185 75 L195 95 L205 75 L215 95 L225 75 L235 95 L240 85 H260\"/>\n    <path d=\"M160 165 H180 C180 145 195 145 195 165 C195 145 210 145 210 165 C210 145 225 145 225 165 C225 145 240 145 240 165 H260\"/>\n  </g>\n  </g>"
+	    },
+	    "pa-parallel-rc": {
+	        "ports": [
+	            [
+	                180,
+	                80
+	            ],
+	            [
+	                220,
+	                80
+	            ]
+	        ],
+	        "bounds": [
+	            146,
+	            76,
+	            254,
+	            300
+	        ],
+	        "bodyBounds": [
+	            160,
+	            80,
+	            240,
+	            286
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    180,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ],
+	            [
+	                [
+	                    220,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g transform=\"translate(-10 0)\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M190 80 H230 M210 80 V120 M170 120 H250 M170 260 H250 M210 260 V290 M200 290 H220 M204 298 H216 M208 306 H212\"/>\n    <path d=\"M170 120 V140 M170 240 V260\"/>\n    <circle cx=\"210\" cy=\"80\" r=\"4\" fill=\"#202020\"/>\n    <g transform=\"translate(170 140) rotate(90)\"><path d=\"M0 0 H20 L25 -10 L35 10 L45 -10 L55 10 L65 -10 L75 10 L80 0 H100\"/></g>\n    <path d=\"M250 120 V160 M250 220 V260\"/>\n    <g transform=\"translate(250 160) rotate(90)\"><path d=\"M0 0 H25 M35 0 H60 M25 -10 V10 M35 -10 V10\"/></g>\n  </g>"
+	    },
+	    "se-parallel-rc": {
+	        "ports": [
+	            [
+	                140,
+	                120
+	            ],
+	            [
+	                280,
+	                120
+	            ]
+	        ],
+	        "bounds": [
+	            136,
+	            65,
+	            284,
+	            175
+	        ],
+	        "bodyBounds": [
+	            160,
+	            75,
+	            260,
+	            165
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    140,
+	                    120
+	                ],
+	                [
+	                    160,
+	                    120
+	                ]
+	            ],
+	            [
+	                [
+	                    260,
+	                    120
+	                ],
+	                [
+	                    280,
+	                    120
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g transform=\"translate(0 -5)\">\n<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M140 125 H160 M260 125 H280 M160 85 V165 M260 85 V165\"/>\n    <path d=\"M160 85 H180 L185 75 L195 95 L205 75 L215 95 L225 75 L235 95 L240 85 H260\"/>\n    <path d=\"M160 165 H180 M240 165 H260\"/>\n    <path d=\"M180 165 H205 M215 165 H240 M205 155 V175 M215 155 V175\"/>\n  </g>\n  </g>"
+	    },
+	    "pa-parallel-lc": {
+	        "ports": [
+	            [
+	                180,
+	                80
+	            ],
+	            [
+	                220,
+	                80
+	            ]
+	        ],
+	        "bounds": [
+	            146,
+	            76,
+	            254,
+	            300
+	        ],
+	        "bodyBounds": [
+	            160,
+	            80,
+	            240,
+	            286
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    180,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ],
+	            [
+	                [
+	                    220,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g transform=\"translate(-10 0)\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M190 80 H230 M210 80 V120 M170 120 H250 M170 260 H250 M210 260 V290 M200 290 H220 M204 298 H216 M208 306 H212\"/>\n    <path d=\"M170 120 V140 M170 240 V260\"/>\n    <circle cx=\"210\" cy=\"80\" r=\"4\" fill=\"#202020\"/>\n    <g transform=\"translate(170 140) rotate(90)\"><path d=\"M0 0 H20 C20 -20 35 -20 35 0 C35 -20 50 -20 50 0 C50 -20 65 -20 65 0 C65 -20 80 -20 80 0 H100\"/></g>\n    <path d=\"M250 120 V160 M250 220 V260\"/>\n    <g transform=\"translate(250 160) rotate(90)\"><path d=\"M0 0 H25 M35 0 H60 M25 -10 V10 M35 -10 V10\"/></g>\n  </g>"
+	    },
+	    "se-parallel-lc": {
+	        "ports": [
+	            [
+	                140,
+	                120
+	            ],
+	            [
+	                280,
+	                120
+	            ]
+	        ],
+	        "bounds": [
+	            136,
+	            65,
+	            284,
+	            175
+	        ],
+	        "bodyBounds": [
+	            160,
+	            75,
+	            260,
+	            165
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    140,
+	                    120
+	                ],
+	                [
+	                    160,
+	                    120
+	                ]
+	            ],
+	            [
+	                [
+	                    260,
+	                    120
+	                ],
+	                [
+	                    280,
+	                    120
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g transform=\"translate(0 -5)\">\n<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M140 125 H160 M260 125 H280 M160 85 V165 M260 85 V165\"/>\n    <path d=\"M160 85 H180 C180 65 195 65 195 85 C195 65 210 65 210 85 C210 65 225 65 225 85 C225 65 240 65 240 85 H260\"/>\n    <path d=\"M160 165 H180 M240 165 H260\"/>\n    <path d=\"M180 165 H205 M215 165 H240 M205 155 V175 M215 155 V175\"/>\n  </g>\n  </g>"
+	    },
+	    "pa-parallel-rlc": {
+	        "ports": [
+	            [
+	                180,
+	                80
+	            ],
+	            [
+	                220,
+	                80
+	            ]
+	        ],
+	        "bounds": [
+	            146,
+	            76,
+	            254,
+	            300
+	        ],
+	        "bodyBounds": [
+	            160,
+	            80,
+	            240,
+	            286
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    180,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ],
+	            [
+	                [
+	                    220,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g transform=\"translate(-10 0)\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M190 80 H230 M210 80 V120 M140 120 H280 M140 260 H280 M210 260 V290 M200 290 H220 M204 298 H216 M208 306 H212\"/>\n    <path d=\"M140 120 V140 M140 240 V260\"/>\n    <circle cx=\"210\" cy=\"80\" r=\"4\" fill=\"#202020\"/>\n    <g transform=\"translate(140 140) rotate(90)\"><path d=\"M0 0 H20 L25 -10 L35 10 L45 -10 L55 10 L65 -10 L75 10 L80 0 H100\"/></g>\n    <path d=\"M210 120 V140 M210 240 V260\"/>\n    <g transform=\"translate(210 140) rotate(90)\"><path d=\"M0 0 H20 C20 -20 35 -20 35 0 C35 -20 50 -20 50 0 C50 -20 65 -20 65 0 C65 -20 80 -20 80 0 H100\"/></g>\n    <path d=\"M280 120 V160 M280 220 V260\"/>\n    <g transform=\"translate(280 160) rotate(90)\"><path d=\"M0 0 H25 M35 0 H60 M25 -10 V10 M35 -10 V10\"/></g>\n  </g>"
+	    },
+	    "se-parallel-rlc": {
+	        "ports": [
+	            [
+	                140,
+	                120
+	            ],
+	            [
+	                280,
+	                120
+	            ]
+	        ],
+	        "bounds": [
+	            136,
+	            65,
+	            284,
+	            175
+	        ],
+	        "bodyBounds": [
+	            160,
+	            75,
+	            260,
+	            165
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    140,
+	                    120
+	                ],
+	                [
+	                    160,
+	                    120
+	                ]
+	            ],
+	            [
+	                [
+	                    260,
+	                    120
+	                ],
+	                [
+	                    280,
+	                    120
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g transform=\"translate(0 -5)\">\n<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M140 125 H160 M260 125 H280 M160 85 V165 M260 85 V165\"/>\n    <path d=\"M160 85 H160 M260 85 H260\"/>\n    <path d=\"M160 85 H180 L185 75 L195 95 L205 75 L215 95 L225 75 L235 95 L240 85 H260\"/>\n    <path d=\"M160 125 H160 M260 125 H260\"/>\n    <path d=\"M160 125 H180 C180 105 195 105 195 125 C195 105 210 105 210 125 C210 105 225 105 225 125 C225 105 240 105 240 125 H260\"/>\n    <path d=\"M160 165 H180 M240 165 H260\"/>\n    <path d=\"M180 165 H205 M215 165 H240 M205 155 V175 M215 155 V175\"/>\n  </g>\n  </g>"
+	    },
+	    "tee4": {
+	        "ports": [
+	            [
+	                120,
+	                160
+	            ],
+	            [
+	                80,
+	                120
+	            ],
+	            [
+	                120,
+	                80
+	            ],
+	            [
+	                160,
+	                120
+	            ]
+	        ],
+	        "bounds": [
+	            76,
+	            76,
+	            164,
+	            164
+	        ],
+	        "bodyBounds": [
+	            100,
+	            100,
+	            140,
+	            140
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    120,
+	                    160
+	                ],
+	                [
+	                    120,
+	                    140
+	                ]
+	            ],
+	            [
+	                [
+	                    80,
+	                    120
+	                ],
+	                [
+	                    100,
+	                    120
+	                ]
+	            ],
+	            [
+	                [
+	                    120,
+	                    80
+	                ],
+	                [
+	                    120,
+	                    100
+	                ]
+	            ],
+	            [
+	                [
+	                    160,
+	                    120
+	                ],
+	                [
+	                    140,
+	                    120
+	                ]
+	            ]
+	        ],
+	        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M80 120 H100 M120 80 V100 M140 120 H160 M120 140 V160\"/><rect x=\"100\" y=\"100\" width=\"40\" height=\"40\"/><circle cx=\"120\" cy=\"130\" r=\"3\" fill=\"#202020\" stroke=\"none\"/></g>"
+	    },
+	    "tee5": {
+	        "ports": [
+	            [
+	                120,
+	                160
+	            ],
+	            [
+	                80,
+	                120
+	            ],
+	            [
+	                100,
+	                80
+	            ],
+	            [
+	                140,
+	                80
+	            ],
+	            [
+	                160,
+	                120
+	            ]
+	        ],
+	        "bounds": [
+	            76,
+	            76,
+	            164,
+	            164
+	        ],
+	        "bodyBounds": [
+	            100,
+	            100,
+	            140,
+	            140
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    120,
+	                    160
+	                ],
+	                [
+	                    120,
+	                    140
+	                ]
+	            ],
+	            [
+	                [
+	                    80,
+	                    120
+	                ],
+	                [
+	                    100,
+	                    120
+	                ]
+	            ],
+	            [
+	                [
+	                    100,
+	                    80
+	                ],
+	                [
+	                    100,
+	                    100
+	                ]
+	            ],
+	            [
+	                [
+	                    140,
+	                    80
+	                ],
+	                [
+	                    140,
+	                    100
+	                ]
+	            ],
+	            [
+	                [
+	                    160,
+	                    120
+	                ],
+	                [
+	                    140,
+	                    120
+	                ]
+	            ]
+	        ],
+	        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M80 120 H100 M100 80 H110 V100 M140 80 H130 V100 M140 120 H160 M120 140 V160\"/><rect x=\"100\" y=\"100\" width=\"40\" height=\"40\"/><circle cx=\"120\" cy=\"130\" r=\"3\" fill=\"#202020\" stroke=\"none\"/></g>"
+	    },
+	    "shift-90": {
+	        "ports": [
+	            [
+	                80,
+	                80
+	            ],
+	            [
+	                200,
+	                80
+	            ]
+	        ],
+	        "bounds": [
+	            76,
+	            61,
+	            204,
+	            99
+	        ],
+	        "bodyBounds": [
+	            100,
+	            65,
+	            180,
+	            95
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    80,
+	                    80
+	                ],
+	                [
+	                    100,
+	                    80
+	                ]
+	            ],
+	            [
+	                [
+	                    180,
+	                    80
+	                ],
+	                [
+	                    200,
+	                    80
+	                ]
+	            ]
+	        ],
+	        "exit": [
+	            1,
+	            0
+	        ],
+	        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M80 80 H100 M180 80 H200\"/><rect x=\"100\" y=\"65\" width=\"80\" height=\"30\"/><text x=\"140\" y=\"80\" fill=\"#202020\" stroke=\"none\" font-family=\"Arial, Helvetica, sans-serif\" font-size=\"13\" text-anchor=\"middle\" dominant-baseline=\"middle\">+90°</text></g>"
+	    },
+	    "microstrip-cross": {
+	        "ports": [
+	            [
+	                0,
+	                60
+	            ],
+	            [
+	                60,
+	                0
+	            ],
+	            [
+	                120,
+	                60
+	            ],
+	            [
+	                60,
+	                120
+	            ]
+	        ],
+	        "bounds": [
+	            -4,
+	            -4,
+	            124,
+	            124
+	        ],
+	        "bodyBounds": [
+	            20,
+	            20,
+	            100,
+	            100
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    0,
+	                    60
+	                ],
+	                [
+	                    20,
+	                    60
+	                ]
+	            ],
+	            [
+	                [
+	                    60,
+	                    0
+	                ],
+	                [
+	                    60,
+	                    20
+	                ]
+	            ],
+	            [
+	                [
+	                    120,
+	                    60
+	                ],
+	                [
+	                    100,
+	                    60
+	                ]
+	            ],
+	            [
+	                [
+	                    60,
+	                    120
+	                ],
+	                [
+	                    60,
+	                    100
+	                ]
+	            ]
+	        ],
+	        "geometry": "<!-- Enlarge the compact copper silhouette without changing its proportions. -->\n  <g transform=\"translate(-60 -60) scale(2)\">\n    <path d=\"M53 40 H67 V53 H80 V67 H67 V80 H53 V67 H40 V53 H53 Z\" fill=\"#ffffff\" stroke=\"#202020\" stroke-width=\"1\"/><circle cx=\"56\" cy=\"60\" r=\"1.5\" fill=\"#202020\" stroke=\"none\"/>\n  </g>\n  <path d=\"M0 60 H20 M60 0 V20 M100 60 H120 M60 100 V120\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\"/>"
+	    },
+	    "microstrip-via-to-ground": {
+	        "ports": [
+	            [
+	                120,
+	                40
+	            ]
+	        ],
+	        "bounds": [
+	            86,
+	            36,
+	            154,
+	            124
+	        ],
+	        "bodyBounds": [
+	            90,
+	            60,
+	            150,
+	            120
+	        ],
+	        "leads": [
+	            [
+	                [
+	                    120,
+	                    40
+	                ],
+	                [
+	                    120,
+	                    60
+	                ]
+	            ]
+	        ],
+	        "geometry": "<!-- Outlined via pad and bore, with a short lead to the grid terminal. -->\n  <circle cx=\"120\" cy=\"90\" r=\"30\" fill=\"#ffffff\" stroke=\"#202020\" stroke-width=\"2\"/>\n  <circle cx=\"120\" cy=\"90\" r=\"10\" fill=\"#ffffff\" stroke=\"#202020\" stroke-width=\"2\"/>\n  <path d=\"M120 40 V60\" fill=\"none\" stroke=\"#202020\" stroke-width=\"2\"/>"
+	    }
+	};
+
+	// Modified: 2026-11-06
+
+	const PORT_SPACING = 80;
+	const PIN_LENGTH = 20;
+	const SIDES = ['left', 'right', 'top', 'bottom'];
+
+	function centeredPositions(start, length, count) {
+	    return Array.from({length: count}, (_, index) =>
+	        start + (length - (count - 1) * PORT_SPACING) / 2 + index * PORT_SPACING);
+	}
+
+	function nodalBlockSymbol(portCount, portSides) {
+	    if (!Number.isInteger(portCount) || portCount < 1) {
+	        throw new RangeError('A nodal block needs at least one electrical port.');
+	    }
+	    const sides = Array.from({length: portCount}, (_, index) =>
+	        index === 0 ? 'left' : 'right');
+	    if (sides.length !== portCount || sides.some(side => !SIDES.includes(side))) {
+	        throw new TypeError('A nodal block needs one valid side for each electrical port.');
+	    }
+	    if (portCount === 2 && sides[0] === 'left' && sides[1] === 'right') {
+	        return schematicSymbols.nodal;
+	    }
+	    const grouped = Object.fromEntries(SIDES.map(side =>
+	        [side, sides.flatMap((value, index) => value === side ? [index] : [])]));
+	    const width = Math.max(80, PORT_SPACING * Math.max(grouped.top.length, grouped.bottom.length));
+	    const height = Math.max(40, PORT_SPACING * Math.max(grouped.left.length, grouped.right.length));
+	    const bodyBounds = [100, 60, 100 + width, 60 + height];
+	    const ports = new Array(portCount);
+	    const leads = new Array(portCount);
+	    for (const side of SIDES) {
+	        const indices = grouped[side];
+	        const positions = centeredPositions(side === 'left' || side === 'right' ?
+	            bodyBounds[1] : bodyBounds[0], side === 'left' || side === 'right' ?
+	            height : width, indices.length);
+	        indices.forEach((port, index) => {
+	            const coordinate = positions[index];
+	            const body = side === 'left' ? [bodyBounds[0], coordinate] :
+	                side === 'right' ? [bodyBounds[2], coordinate] :
+	                    side === 'top' ? [coordinate, bodyBounds[1]] :
+	                        [coordinate, bodyBounds[3]];
+	            const end = side === 'left' ? [body[0] - PIN_LENGTH, body[1]] :
+	                side === 'right' ? [body[0] + PIN_LENGTH, body[1]] :
+	                    side === 'top' ? [body[0], body[1] - PIN_LENGTH] :
+	                        [body[0], body[1] + PIN_LENGTH];
+	            ports[port] = end;
+	            leads[port] = [end, body];
+	        });
+	    }
+	    const paths = leads.map(([end, body]) =>
+	        `M${end[0]} ${end[1]} L${body[0]} ${body[1]}`).join(' ');
+	    const centerX = bodyBounds[0] + width / 2;
+	    const centerY = bodyBounds[1] + height / 2;
+	    return {ports, bounds: [76, 36, bodyBounds[2] + 24, bodyBounds[3] + 24],
+	        bodyBounds, leads, entry: [-1, 0], exit: [1, 0],
+	        geometry: `<g fill="none" stroke="#202020" stroke-width="2" ` +
+	            `stroke-linecap="round" stroke-linejoin="round"><path d="${paths}"/>` +
+	            `<rect x="100" y="60" width="${width}" height="${height}"/>` +
+	            `<text x="${centerX}" y="${centerY}" font-family="Arial, Helvetica, sans-serif" ` +
+	            `font-size="13" fill="#202020" stroke="none" text-anchor="middle" ` +
+	            `dominant-baseline="middle">nodal</text></g>`};
+	}
+
+	function symbolForSchematicEntry(entry) {
+	    if (entry.part?.kind === 'cascade') return schematicSymbols.cascade;
+	    return entry.part?.kind === 'nodal' ? nodalBlockSymbol(entry.nodes.length) :
+	        schematicSymbols[entry.part?.symbol];
+	}
+
+	// Modified: 2026-11-08
+	// Declarative board settings consumed by the schematic layout interpreter.
+	const schematicShapeBoards = {
+	    generic: {
+	        name: 'generic',
+	        version: 1,
+	        automatic: true,
+	        match: {
+	            externalPortCount: 2,
+	            terminalDegree: 2,
+	            paths: [{bind: 'parts', from: {externalPort: 1}, to: {externalPort: 2},
+	                through: {portCount: 2}, minimum: 1, coverAllComponents: true}]
+	        },
+	        board: {
+	            automatic: true,
+	            flow: 'right',
+	            branches: 'down',
+	            loopArrangement: 'rectangular',
+	            from: {externalPort: 1},
+	            to: {externalPort: 2},
+	            tiles: [
+	                {kind: 'wire'},
+	                {kind: 'component', source: 'parts', repeat: 'oneOrMore',
+	                    between: {kind: 'wire'}},
+	                {kind: 'wire'}
+	            ],
+	            grid: 10,
+	            origin: [80, 100],
+	            componentGap: 120,
+	            branchGap: 100,
+	            wireBoxLength: 40,
+	            externalPortLead: 80,
+	            cornerSize: 10,
+	            clearance: 10,
+	            routingMargin: 160,
+	            bendCost: 10
+	        }
+	    },
+	    series: {
+	        name: 'series',
+	        version: 1,
+	        detect: true,
+	        interface: {from: [1], to: [2]},
+	        match: {
+	            externalPortCount: 2,
+	            paths: [{bind: 'parts', from: {externalPort: 1}, to: {externalPort: 2},
+	                through: {portCount: 2}, minimum: 1, coverAllComponents: true}]
+	        },
+	        board: {
+	            grid: 10,
+	            from: {externalPort: 1},
+	            to: {externalPort: 2},
+	            tiles: [
+	                {kind: 'wire', slot: 'inputLead'},
+	                {kind: 'component', source: 'parts', role: 'seriesPart', repeat: 'oneOrMore',
+	                    between: {kind: 'wire', slot: 'between'}},
+	                {kind: 'wire', slot: 'outputLead'}
+	            ],
+	            origin: [40, 100],
+	            direction: 'right',
+	            wireBoxLength: 80,
+	            componentLabelOffset: [0, -90],
+	            portLabelOffset: [0, 60]
+	        }
+	    },
+	    ladder: {
+	        name: 'ladder',
+	        version: 1,
+	        detect: true,
+	        interface: {from: [1], to: [2]},
+	        match: {
+	            externalPortCount: 2,
+	            coverAllComponents: true,
+	            paths: [{bind: 'mainParts', from: {externalPort: 1}, to: {externalPort: 2},
+	                through: {portCounts: [2, 3]}, minimum: 1}],
+	            attachments: [{bind: 'branches', on: 'mainParts', from: 'unusedPorts',
+	                through: {portCount: 2}, until: {portCount: 1},
+	                minimum: 1, minimumBranches: 1}]
+	        },
+	        board: {
+	            grid: 10,
+	            from: {externalPort: 1},
+	            to: {externalPort: 2},
+	            tiles: [
+	                {kind: 'wire', slot: 'input'},
+	                {kind: 'component', source: 'mainParts', role: 'mainPart',
+	                    repeat: 'oneOrMore', between: {kind: 'wire', slot: 'between'}},
+	                {kind: 'wire', slot: 'output'}
+	            ],
+	            attachments: [{source: 'branches', direction: 'down',
+	                componentLabelOffset: [100, 0],
+	                tiles: [
+	                    {kind: 'wire', slot: 'entry'},
+	                    {kind: 'component', source: 'parts', role: 'shuntPart',
+	                        repeat: 'oneOrMore', between: {kind: 'wire', slot: 'between'}},
+	                    {kind: 'wire', slot: 'termination'},
+	                    {kind: 'component', source: 'termination', role: 'termination', repeat: 'one'}
+	                ]}],
+	            origin: [40, 100],
+	            direction: 'right',
+	            wireBoxLength: 80,
+	            componentLabelOffset: [0, -90],
+	            portLabelOffset: [0, 60]
+	        }
+	    },
+	    edgeCoupledFilter: {
+	        name: 'edgeCoupledFilter',
+	        version: 1,
+	        detect: true,
+	        interface: {from: [1], to: [2]},
+	        match: {
+	            externalPortCount: 2,
+	            coverAllComponents: true,
+	            paths: [{bind: 'sections', from: {externalPort: 1}, to: {externalPort: 2},
+	                through: {portCount: 4, symbols: ['coupled-transmission-line', 'microstrip-coupled-line'],
+	                    portPairs: [[1, 3], [3, 1]]}, minimum: 1}],
+	            attachments: [{bind: 'terminations', on: 'sections', from: 'unusedPorts',
+	                through: {portCounts: []}, until: {portCount: 1}, minimum: 0, minimumBranches: 2}]
+	        },
+	        board: {
+	            spacing: 'attachments',
+	            clearance: 10,
+	            grid: 10,
+	            from: {externalPort: 1},
+	            to: {externalPort: 2},
+	            origin: [40, 100],
+	            direction: 'right',
+	            wireBoxLength: 80,
+	            componentLabelOffset: [0, -90],
+	            portLabelOffset: [0, 60],
+	            tiles: [
+	                {kind: 'wire'},
+	                {kind: 'component', source: 'sections', role: 'section', repeat: 'oneOrMore',
+	                    orientation: {terminals: 'leads', advance: 'down'}, between: {kind: 'wire'}},
+	                {kind: 'wire'}
+	            ],
+	            attachments: [{source: 'terminations', direction: 'terminal', wireBoxLength: 40,
+	                tiles: [
+	                    {kind: 'wire'},
+	                    {kind: 'component', source: 'termination', role: 'termination', repeat: 'one'}
+	                ]}]
+	        }
+	    },
+	    bridgedT: {
+	        name: 'bridgedT',
+	        version: 1,
+	        detect: true,
+	        interface: {from: [1], to: [2]},
+	        match: {
+	            externalPortCount: 2,
+	            coverAllComponents: true,
+	            paths: [{bind: 'mainParts', from: {externalPort: 1}, to: {externalPort: 2},
+	                through: {portCounts: [2, 3, 4]}, minimum: 1}],
+	            connections: [{bind: 'bridges', on: 'mainParts', from: 'unusedPorts',
+	                through: {portCount: 2}, minimum: 1, minimumConnections: 1}],
+	            attachments: [{bind: 'branches', on: 'mainParts', from: 'unusedPorts',
+	                through: {portCount: 2}, until: {portCount: 1}, minimum: 1, minimumBranches: 1}]
+	        },
+	        board: {
+	            grid: 10,
+	            from: {externalPort: 1},
+	            to: {externalPort: 2},
+	            origin: [40, 100],
+	            direction: 'right',
+	            wireBoxLength: 40,
+	            componentLabelOffset: [0, -90],
+	            portLabelOffset: [0, 60],
+	            tiles: [
+	                {kind: 'wire'},
+	                {kind: 'component', source: 'mainParts', role: 'mainPart', repeat: 'oneOrMore',
+	                    between: {kind: 'wire'}},
+	                {kind: 'wire'}
+	            ],
+	            connections: [{source: 'bridges', direction: 'up', clearance: 60, wireBoxLength: 40,
+	                tiles: [
+	                    {kind: 'wire'},
+	                    {kind: 'component', source: 'parts', role: 'bridgePart', repeat: 'oneOrMore',
+	                        between: {kind: 'wire'}},
+	                    {kind: 'wire'}
+	                ]}],
+	            attachments: [{source: 'branches', direction: 'down', componentLabelOffset: [100, 0],
+	                tiles: [
+	                    {kind: 'wire'},
+	                    {kind: 'component', source: 'parts', role: 'shuntPart', repeat: 'oneOrMore',
+	                        between: {kind: 'wire'}},
+	                    {kind: 'wire'},
+	                    {kind: 'component', source: 'termination', role: 'termination', repeat: 'one'}
+	                ]}]
+	        }
+	    },
+	    branchline: {
+	        name: 'branchline',
+	        version: 1,
+	        detect: true,
+	        interface: {from: [1, 4], to: [2, 3]},
+	        match: {
+	            externalPortCount: 4,
+	            anchors: {symbols: ['tee', 'microstrip-tee'], portCount: 3},
+	            through: {portCount: 2},
+	            minimumLaneParts: 1
+	        },
+	        board: {
+	            grid: 10,
+	            minimumColumns: 2,
+	            paths: {
+	                twoPortLane: [
+	                    {kind: 'wire', slot: 'entry'},
+	                    {kind: 'component', source: 'parts', role: 'lanePart', repeat: 'oneOrMore',
+	                        between: {kind: 'wire', slot: 'between'}},
+	                    {kind: 'wire', slot: 'exit'}
+	                ]
+	            },
+	            rows: [
+	                {name: 'top', tile: {kind: 'component', role: 'junction'}},
+	                {name: 'bottom', tile: {kind: 'component', role: 'junction'}}
+	            ],
+	            lanes: [
+	                {name: 'topRail', from: 'top', to: 'top', columns: 'adjacent',
+	                    direction: 'right', path: 'twoPortLane'},
+	                {name: 'bottomRail', from: 'bottom', to: 'bottom', columns: 'adjacent',
+	                    direction: 'right', path: 'twoPortLane'},
+	                {name: 'rung', from: 'top', to: 'bottom', columns: 'each',
+	                    direction: 'down', path: 'twoPortLane'}
+	            ],
+	            externalPorts: [
+	                {port: 1, row: 'top', column: 'first', side: 'left'},
+	                {port: 2, row: 'top', column: 'last', side: 'right'},
+	                {port: 3, row: 'bottom', column: 'last', side: 'right'},
+	                {port: 4, row: 'bottom', column: 'first', side: 'left'}
+	            ],
+	            origin: [240, 240],
+	            spacing: 'largestArm',
+	            wireBoxLength: 20,
+	            externalPortLead: {kind: 'wire', length: 100}
+	        }
+	    },
+	    powerCombiner: {
+	        name: 'powerCombiner',
+	        version: 1,
+	        detect: true,
+	        interface: {from: [2, 3], to: [1]},
+	        use: 'powerDivider',
+	        transform: {mirrorX: true}
+	    },
+	    powerDivider: {
+	        name: 'powerDivider',
+	        layout: 'transformer-power-divider',
+	        variant: 'transformer',
+	        version: 1,
+	        detect: true,
+	        detectionPriority: 10,
+	        interface: {from: [1], to: [2, 3]},
+	        match: {
+	            externalPortCount: 3,
+	            slots: [
+	                {name: 'input', symbols: ['transformer'], portCount: 2,
+	                    ports: {in: [1, 2], out: [1, 2]}},
+	                {name: 'tap', symbols: ['transformer-auto'], portCount: 3,
+	                    ports: {center: [1], upper: [2, 3], lower: [2, 3]}},
+	                {name: 'upper', symbols: ['tee'], portCount: 3,
+	                    ports: {common: [1], feed: [2, 3], out: [2, 3]}},
+	                {name: 'lower', symbols: ['tee'], portCount: 3,
+	                    ports: {common: [1], feed: [2, 3], out: [2, 3]}},
+	                {name: 'bridge', symbols: ['resistor'], portCount: 2,
+	                    ports: {top: [1, 2], bottom: [1, 2]}}
+	            ]
+	        },
+	        board: {
+	            grid: 10,
+	            origin: [0, 0],
+	            components: [
+	                {slot: 'input', anchor: 'in', at: [12, 60],
+	                    directions: {in: 'left', out: 'right'}},
+	                {slot: 'tap', anchor: 'center', from: {slot: 'input', port: 'out'}, offset: [4, 0],
+	                    directions: {center: 'left', upper: 'up', lower: 'down'}},
+	                {slot: 'upper', anchor: 'feed', from: {slot: 'tap', port: 'upper'}, offset: [12, -4],
+	                    directions: {feed: 'left', out: 'right', common: 'down'}},
+	                {slot: 'bridge', anchor: 'top', from: {slot: 'upper', port: 'common'}, offset: [0, 2],
+	                    directions: {top: 'up', bottom: 'down'}},
+	                {slot: 'lower', anchor: 'common', from: {slot: 'bridge', port: 'bottom'}, offset: [0, 2],
+	                    directions: {feed: 'left', out: 'right', common: 'up'}}
+	            ],
+	            centerlines: [{axis: 'y',
+	                reference: {slot: 'bridge', between: ['top', 'bottom']},
+	                align: [{slot: 'input', port: 'in'}, {slot: 'tap', port: 'center'}]}],
+	            externalPorts: [
+	                {port: 1, from: {slot: 'input', port: 'in'}, side: 'left', cells: 8},
+	                {port: 2, from: {slot: 'upper', port: 'out'}, side: 'right', cells: 8},
+	                {port: 3, from: {slot: 'lower', port: 'out'}, side: 'right', cells: 8}
+	            ],
+	            wires: [
+	                {from: {externalPort: 1}, to: {slot: 'input', port: 'in'}},
+	                {from: {slot: 'input', port: 'out'}, to: {slot: 'tap', port: 'center'}},
+	                {from: {slot: 'tap', port: 'upper'}, to: {slot: 'upper', port: 'feed'}, route: 'verticalFirst'},
+	                {from: {slot: 'tap', port: 'lower'}, to: {slot: 'lower', port: 'feed'}, route: 'verticalFirst'},
+	                {from: {slot: 'upper', port: 'common'}, to: {slot: 'bridge', port: 'top'}},
+	                {from: {slot: 'bridge', port: 'bottom'}, to: {slot: 'lower', port: 'common'}},
+	                {from: {slot: 'upper', port: 'out'}, to: {externalPort: 2}},
+	                {from: {slot: 'lower', port: 'out'}, to: {externalPort: 3}}
+	            ]
+	        },
+	        alternatives: [{
+	            name: 'powerDivider',
+	            layout: 'wilkinson-power-divider',
+	            variant: 'wilkinson',
+	            version: 1,
+	            match: {
+	                externalPortCount: 3,
+	                anchors: {symbols: ['tee', 'microstrip-tee'], portCount: 3},
+	                through: {portCount: 2},
+	                minimumLaneParts: 1
+	            },
+	            board: {
+	                grid: 10,
+	                origin: [180, 200],
+	                spacing: 'byAxis',
+	                wireBoxLength: 40,
+	                externalPortLead: {kind: 'wire', length: 80},
+	                paths: {
+	                    arm: [
+	                        {kind: 'wire'},
+	                        {kind: 'component', source: 'parts', role: 'armPart', repeat: 'oneOrMore',
+	                            between: {kind: 'wire'}},
+	                        {kind: 'wire'}
+	                    ],
+	                    bridge: [
+	                        {kind: 'wire'},
+	                        {kind: 'component', source: 'parts', role: 'isolationPart', repeat: 'oneOrMore',
+	                            between: {kind: 'wire'}},
+	                        {kind: 'wire'}
+	                    ]
+	                },
+	                anchors: [
+	                    {id: 'input', cell: [0, 1], tile: {kind: 'component', role: 'junction'}},
+	                    {id: 'upper', cell: [1, 0], tile: {kind: 'component', role: 'junction'}},
+	                    {id: 'lower', cell: [1, 2], tile: {kind: 'component', role: 'junction'}}
+	                ],
+	                lanes: [
+	                    {name: 'upperArm', from: 'input', to: 'upper', path: 'arm',
+	                        direction: 'right', fromSide: 'up', route: 'verticalFirst'},
+	                    {name: 'lowerArm', from: 'input', to: 'lower', path: 'arm',
+	                        direction: 'right', fromSide: 'down', route: 'verticalFirst'},
+	                    {name: 'isolation', from: 'upper', to: 'lower', path: 'bridge',
+	                        direction: 'down', through: {symbols: ['resistor'], portCount: 2}}
+	                ],
+	                externalPorts: [
+	                    {port: 1, slot: 'input', side: 'left'},
+	                    {port: 2, slot: 'upper', side: 'right'},
+	                    {port: 3, slot: 'lower', side: 'right'}
+	                ]
+	            }
+	        }]
+	    }
+	};
+
+	// Modified: 2026-11-08
+	// General graph operations for ORI's automatic board. No RF circuit patterns.
+	const AXES = [[1, 0], [0, 1], [-1, 0], [0, -1]];
+
+	function snap(value, grid) {
+	    return Math.round(value / grid) * grid;
+	}
+
+	function same(a, b) {
+	    return a[0] === b[0] && a[1] === b[1];
+	}
+
+	function rotate(vector, angle, mirrorX, mirrorY) {
+	    const x = vector[0] * (mirrorX ? -1 : 1), y = vector[1] * (mirrorY ? -1 : 1);
+	    return angle === 0 ? [x, y] : angle === 90 ? [-y, x] : angle === 180 ? [-x, -y] : [y, -x];
+	}
+
+	function graphIncidence(root) {
+	    const adjacency = new Map(), byNode = new Map(), edges = [];
+	    root.components.forEach((entry, index) => entry.nodes.forEach((node, port) => {
+	        if (!byNode.has(node)) byNode.set(node, []);
+	        byNode.get(node).push({index, port: port + 1});
+	    }));
+	    let nextNode = root.components.length;
+	    for (const [node, terminals] of byNode) {
+	        const vertex = nextNode++;
+	        for (const terminal of terminals) {
+	            const edge = {a: terminal.index, b: vertex, node, port: terminal.port, id: edges.length};
+	            edges.push(edge);
+	            for (const endpoint of [edge.a, edge.b]) {
+	                if (!adjacency.has(endpoint)) adjacency.set(endpoint, []);
+	                adjacency.get(endpoint).push(edge);
+	            }
+	        }
+	    }
+	    return {adjacency, byNode, edges};
+	}
+
+	// Iterative Tarjan decomposition on the component/node incidence graph. A node
+	// shared by many ports is a junction, rather than a clique of artificial loops.
+	function graphBlocks(graph) {
+	    const depth = new Map(), low = new Map(), edgeStack = [], blocks = [];
+	    let serial = 0;
+	    for (const start of graph.adjacency.keys()) {
+	        if (depth.has(start)) continue;
+	        depth.set(start, ++serial);
+	        low.set(start, serial);
+	        const stack = [{vertex: start, parent: null, edge: null, position: 0}];
+	        while (stack.length) {
+	            const frame = stack.at(-1), neighbors = graph.adjacency.get(frame.vertex);
+	            if (frame.position < neighbors.length) {
+	                const edge = neighbors[frame.position++];
+	                if (edge.id === frame.edge?.id) continue;
+	                const next = edge.a === frame.vertex ? edge.b : edge.a;
+	                if (!depth.has(next)) {
+	                    edgeStack.push(edge);
+	                    depth.set(next, ++serial);
+	                    low.set(next, serial);
+	                    stack.push({vertex: next, parent: frame.vertex, edge, position: 0});
+	                } else if (depth.get(next) < depth.get(frame.vertex)) {
+	                    edgeStack.push(edge);
+	                    low.set(frame.vertex, Math.min(low.get(frame.vertex), depth.get(next)));
+	                }
+	            } else {
+	                stack.pop();
+	                if (frame.parent === null) continue;
+	                low.set(frame.parent, Math.min(low.get(frame.parent), low.get(frame.vertex)));
+	                if (low.get(frame.vertex) >= depth.get(frame.parent)) {
+	                    const block = [];
+	                    let edge;
+	                    do { edge = edgeStack.pop(); block.push(edge); } while (edge.id !== frame.edge.id);
+	                    blocks.push(block);
+	                }
+	            }
+	        }
+	    }
+	    return blocks;
+	}
+
+	function automaticRegions(root, graph) {
+	    const groups = [];
+	    for (const edges of graphBlocks(graph)) {
+	        const vertices = new Set(edges.flatMap(edge => [edge.a, edge.b]));
+	        if (edges.length < vertices.size) continue;
+	        const members = new Set([...vertices].filter(vertex => vertex < root.components.length));
+	        // Regions sharing an articulation component must place that component once.
+	        for (let index = groups.length - 1; index >= 0; index--) {
+	            if ([...groups[index]].some(part => members.has(part))) {
+	                groups[index].forEach(part => members.add(part));
+	                groups.splice(index, 1);
+	            }
+	        }
+	        groups.push(members);
+	    }
+	    const loopGroupCount = groups.length;
+	    const used = new Set(groups.flatMap(group => [...group]));
+	    for (let index = 0; index < root.components.length; index++) {
+	        if (!used.has(index)) groups.push(new Set([index]));
+	    }
+	    return groups.map((members, index) => ({members: [...members], cyclic: index < loopGroupCount,
+	        neighbors: new Set()}));
+	}
+
+	function regionOrder(region, graph) {
+	    const members = new Set(region.members), seen = new Set(), order = [];
+	    const pending = [region.members[0]];
+	    while (pending.length) {
+	        const index = pending.pop();
+	        if (seen.has(index)) continue;
+	        seen.add(index);
+	        order.push(index);
+	        for (const terminals of graph.byNode.values()) {
+	            if (!terminals.some(terminal => terminal.index === index)) continue;
+	            for (const terminal of terminals) {
+	                if (members.has(terminal.index) && !seen.has(terminal.index)) pending.push(terminal.index);
+	            }
+	        }
+	    }
+	    return order;
+	}
+
+	function rectanglePoint(distance, side) {
+	    const d = distance % (4 * side);
+	    return d < side ? [0, side - d] : d < 2 * side ? [d - side, 0] :
+	        d < 3 * side ? [side, d - 2 * side] : [4 * side - d, side];
+	}
+
+	function automaticDirections(board) {
+	    const names = ['right', 'down', 'left', 'up'];
+	    const flow = AXES[names.indexOf(board.flow)], branch = AXES[names.indexOf(board.branches)];
+	    if (!flow || !branch || flow[0] * branch[0] + flow[1] * branch[1] !== 0 ||
+	        board.loopArrangement !== 'rectangular') {
+	        throw new TypeError('ORI automatic board needs perpendicular flow/branch directions and rectangular loop arrangement.');
+	    }
+	    return {flow, branch};
+	}
+
+	function automaticPositions(root, board, graph, geometry) {
+	    const regions = automaticRegions(root, graph), membership = new Map();
+	    regions.forEach((region, index) => region.members.forEach(part => membership.set(part, index)));
+	    for (const terminals of graph.byNode.values()) {
+	        const indices = [...new Set(terminals.map(terminal => membership.get(terminal.index)))];
+	        for (const a of indices) for (const b of indices) if (a !== b) regions[a].neighbors.add(b);
+	    }
+	    const source = membership.get(graph.byNode.get(root.externalNodes[0])?.[0]?.index) ?? 0;
+	    const levels = new Map(), queue = [source];
+	    levels.set(source, 0);
+	    for (let position = 0; position < queue.length; position++) {
+	        const index = queue[position];
+	        for (const next of regions[index].neighbors) {
+	            if (levels.has(next)) continue;
+	            levels.set(next, levels.get(index) + 1);
+	            queue.push(next);
+	        }
+	    }
+	    for (let index = 0; index < regions.length; index++) {
+	        if (!levels.has(index)) { levels.set(index, 0); queue.push(index); }
+	    }
+	    const sizes = regions.map(region => {
+	        const extent = Math.max(...region.members.map(index => {
+	            const b = geometry.symbol(root.components[index]).bounds;
+	            return Math.max(b[2] - b[0], b[3] - b[1]);
+	        }));
+	        const pitch = Math.ceil((extent + board.componentGap) / board.grid) * board.grid;
+	        const side = region.cyclic ? Math.ceil(region.members.length / 4) * pitch * 2 : 0;
+	        return {pitch, side, width: side + pitch, height: side + pitch};
+	    });
+	    const positions = new Map();
+	    let x = board.origin[0];
+	    const maxLevel = Math.max(...levels.values());
+	    for (let level = 0; level <= maxLevel; level++) {
+	        const indices = queue.filter(index => levels.get(index) === level);
+	        let y = board.origin[1];
+	        for (const index of indices) {
+	            const region = regions[index], size = sizes[index], order = regionOrder(region, graph);
+	            order.forEach((part, position) => {
+	                const point = region.cyclic ? rectanglePoint(size.side / 2 +
+	                    position * 4 * size.side / order.length, size.side) : [0, 0];
+	                positions.set(part, [snap(x + size.pitch / 2 + point[0], board.grid),
+	                    snap(y + size.pitch / 2 + point[1], board.grid)]);
+	            });
+	            y += size.height + board.branchGap;
+	        }
+	        x += Math.max(...indices.map(index => sizes[index].width), 0) + board.componentGap;
+	    }
+	    const {flow, branch} = automaticDirections(board);
+	    for (const [index, at] of positions) {
+	        const x = at[0] - board.origin[0], y = at[1] - board.origin[1];
+	        positions.set(index, [board.origin[0] + x * flow[0] + y * branch[0],
+	            board.origin[1] + x * flow[1] + y * branch[1]]);
+	    }
+	    return {positions, regions};
+	}
+
+	function terminalDirection$1(symbol, port) {
+	    const point = symbol.ports[port - 1], lead = symbol.leads?.[port - 1];
+	    const inside = lead?.find(at => !same(at, point));
+	    if (inside) return [Math.sign(point[0] - inside[0]), Math.sign(point[1] - inside[1])];
+	    const center = [(symbol.bodyBounds[0] + symbol.bodyBounds[2]) / 2,
+	        (symbol.bodyBounds[1] + symbol.bodyBounds[3]) / 2];
+	    const delta = [point[0] - center[0], point[1] - center[1]];
+	    return Math.abs(delta[0]) >= Math.abs(delta[1]) ? [Math.sign(delta[0]) || 1, 0] : [0, Math.sign(delta[1])];
+	}
+
+	function automaticPlacement(root, index, positions, graph, board, geometry) {
+	    const entry = root.components[index], symbol = geometry.symbol(entry), center = positions.get(index);
+	    const bodyCenter = [(symbol.bodyBounds[0] + symbol.bodyBounds[2]) / 2,
+	        (symbol.bodyBounds[1] + symbol.bodyBounds[3]) / 2];
+	    let best = null;
+	    for (const mirrorX of [false, true]) for (const mirrorY of [false, true]) {
+	        for (const angle of [0, 90, 180, 270]) {
+	            let score = 0;
+	            entry.nodes.forEach((node, port) => {
+	                const outward = rotate(terminalDirection$1(symbol, port + 1), angle, mirrorX, mirrorY);
+	                const neighbors = graph.byNode.get(node).filter(terminal => terminal.index !== index);
+	                for (const neighbor of neighbors) {
+	                    const target = positions.get(neighbor.index);
+	                    const delta = [target[0] - center[0], target[1] - center[1]], length = Math.hypot(...delta);
+	                    if (length) score += (outward[0] * delta[0] + outward[1] * delta[1]) / length;
+	                }
+	                const external = root.externalNodes.indexOf(node);
+	                if (external !== -1) {
+	                    const flow = automaticDirections(board).flow;
+	                    score += (external === 0 ? -1 : 1) * (outward[0] * flow[0] + outward[1] * flow[1]) * 3;
+	                }
+	            });
+	            if (best && best.score >= score) continue;
+	            const delta = rotate([symbol.ports[0][0] - bodyCenter[0], symbol.ports[0][1] - bodyCenter[1]],
+	                angle, mirrorX, mirrorY);
+	            best = {score, angle, mirrorX, mirrorY,
+	                at: [snap(center[0] + delta[0], board.grid), snap(center[1] + delta[1], board.grid)]};
+	        }
+	    }
+	    const placement = geometry.placement(entry, 1, best.at, best.angle, best.mirrorY, best.mirrorX);
+	    placement.boardTile = {kind: 'component', role: 'automaticPart', id: `part:${index}`};
+	    return placement;
+	}
+
+	function placementBounds(placement, symbol) {
+	    const source = symbol.ports[placement.sourcePort - 1];
+	    const [x1, y1, x2, y2] = symbol.bounds;
+	    const corners = [[x1, y1], [x2, y1], [x2, y2], [x1, y2]].map(point => {
+	        const v = rotate([point[0] - source[0], point[1] - source[1]], placement.rotation,
+	            placement.mirrorX, placement.mirrorY);
+	        return [v[0] + placement.at[0], v[1] + placement.at[1]];
+	    });
+	    return [Math.min(...corners.map(p => p[0])), Math.min(...corners.map(p => p[1])),
+	        Math.max(...corners.map(p => p[0])), Math.max(...corners.map(p => p[1]))];
+	}
+
+	function heapPush(heap, item) {
+	    heap.push(item);
+	    let i = heap.length - 1;
+	    while (i) {
+	        const parent = Math.floor((i - 1) / 2);
+	        if (heap[parent].score <= item.score) break;
+	        heap[i] = heap[parent]; i = parent;
+	    }
+	    heap[i] = item;
+	}
+
+	function heapPop(heap) {
+	    const first = heap[0], last = heap.pop();
+	    if (heap.length) {
+	        let i = 0;
+	        while (2 * i + 1 < heap.length) {
+	            let child = 2 * i + 1;
+	            if (child + 1 < heap.length && heap[child + 1].score < heap[child].score) child++;
+	            if (heap[child].score >= last.score) break;
+	            heap[i] = heap[child]; i = child;
+	        }
+	        heap[i] = last;
+	    }
+	    return first;
+	}
+
+	function blocked(point, bounds, clearance) {
+	    return bounds.some(box => point[0] > box[0] - clearance && point[0] < box[2] + clearance &&
+	        point[1] > box[1] - clearance && point[1] < box[3] + clearance);
+	}
+
+	function simplifyRoute(points) {
+	    return points.filter((point, index) => !index || index === points.length - 1 ||
+	        (point[0] - points[index - 1][0]) * (points[index + 1][1] - point[1]) !==
+	        (point[1] - points[index - 1][1]) * (points[index + 1][0] - point[0]));
+	}
+
+	function automaticRoute(start, finish, bounds, obstacles, occupied, node, board) {
+	    if (same(start, finish)) return [start];
+	    const points = [start, finish].concat(bounds.flatMap(box => [[box[0], box[1]], [box[2], box[3]]]));
+	    const min = [0, 1].map(axis => Math.floor((Math.min(...points.map(p => p[axis])) - board.routingMargin) / board.grid) * board.grid);
+	    const max = [0, 1].map(axis => Math.ceil((Math.max(...points.map(p => p[axis])) + board.routingMargin) / board.grid) * board.grid);
+	    const key = (point, direction) => `${point[0]},${point[1]},${direction}`;
+	    const initialDirection = board.startDirection ? AXES.findIndex(axis => same(axis, board.startDirection)) : -1;
+	    const finishDirection = board.finishDirection ? AXES.findIndex(axis => same(axis, board.finishDirection)) : -1;
+	    const startKey = key(start, initialDirection); finish.join(','); const queue = [];
+	    const best = new Map([[startKey, 0]]), previous = new Map();
+	    heapPush(queue, {point: start, cost: 0, score: 0, direction: initialDirection, key: startKey});
+	    while (queue.length) {
+	        const item = heapPop(queue), currentKey = item.key;
+	        if (item.cost !== best.get(currentKey)) continue;
+	        if (item.point[0] === finish[0] && item.point[1] === finish[1]) {
+	            const path = [finish];
+	            for (let current = currentKey; previous.has(current);) {
+	                const prior = previous.get(current);
+	                current = prior.key;
+	                path.push(prior.point);
+	            }
+	            return simplifyRoute(path.reverse());
+	        }
+	        AXES.forEach((direction, index) => {
+	            const point = [item.point[0] + direction[0] * board.grid, item.point[1] + direction[1] * board.grid];
+	            const nextKey = key(point, index);
+	            const pointKey = point.join(',');
+	            if (point.some((value, axis) => value < min[axis] || value > max[axis]) ||
+	                blocked(point, bounds, board.clearance) ||
+	                !same(point, finish) && obstacles.has(pointKey)) return;
+	            const axis = direction[0] ? 1 : 2;
+	            if ([point, item.point].some(at => [...(occupied.get(at.join(',')) || [])].some(([id, mask]) =>
+	                id !== node && (board.allowCrossings === false || mask & axis || mask === 3)))) return;
+	            const cost = item.cost + board.grid + (item.direction !== -1 && item.direction !== index ? board.bendCost : 0) +
+	                (same(point, finish) && finishDirection !== -1 && index !== finishDirection ? board.bendCost : 0);
+	            if (best.has(nextKey) && best.get(nextKey) <= cost) return;
+	            best.set(nextKey, cost); previous.set(nextKey, {key: currentKey, point: item.point});
+	            heapPush(queue, {point, cost, direction: index,
+	                score: cost + Math.abs(point[0] - finish[0]) + Math.abs(point[1] - finish[1]), key: nextKey});
+	        });
+	    }
+	    throw new RangeError('ORI could not route an automatic board connection.');
+	}
+
+	function recordBoardRoute(points, node, occupied, grid) {
+	    for (let index = 1; index < points.length; index++) {
+	        const a = points[index - 1], b = points[index];
+	        const axis = a[0] === b[0] ? 2 : 1;
+	        const length = Math.abs(b[0] - a[0]) + Math.abs(b[1] - a[1]);
+	        for (let step = 0; step <= length; step += grid) {
+	            const at = [a[0] + Math.sign(b[0] - a[0]) * step, a[1] + Math.sign(b[1] - a[1]) * step];
+	            const key = at.join(',');
+	            if (!occupied.has(key)) occupied.set(key, new Map());
+	            const ids = occupied.get(key);
+	            ids.set(node, (ids.get(node) || 0) | axis);
+	        }
+	    }
+	}
+
+	function graphWireBoxes(result, node, points, board, id) {
+	    const path = simplifyRoute(points.filter((point, index) => !index || !same(point, points[index - 1])));
+	    if (path.length < 2) return;
+	    // Reserve a corner box at each bend; ordinary wires separate corners from symbols.
+	    const starts = path.map(point => point.slice()), ends = path.map(point => point.slice());
+	    for (let i = 1; i < path.length - 1; i++) {
+	        const before = path[i - 1], at = path[i], after = path[i + 1];
+	        const reach = Math.min(board.cornerSize,
+	            (Math.abs(at[0] - before[0]) + Math.abs(at[1] - before[1])) / 3,
+	            (Math.abs(after[0] - at[0]) + Math.abs(after[1] - at[1])) / 3);
+	        const distance = Math.floor(reach / board.grid) * board.grid;
+	        if (!distance) continue;
+	        const entry = at.map((value, axis) => value - Math.sign(value - before[axis]) * distance);
+	        const exit = at.map((value, axis) => value + Math.sign(after[axis] - value) * distance);
+	        ends[i] = entry; starts[i] = exit;
+	        const tile = {kind: 'cornerWire', id: `${id}:corner:${i}`, length: distance * 2};
+	        result.wires.push({node, points: [entry, at], boardTile: tile}, {node, points: [at, exit], boardTile: tile});
+	    }
+	    for (let i = 0; i < path.length - 1; i++) {
+	        const a = starts[i], b = ends[i + 1];
+	        const length = Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
+	        if (length) result.wires.push({node, points: [a, b], boardTile: {kind: 'wire', id: `${id}:${i}`, length}});
+	    }
+	}
+
+	function automaticJunctions(wires, grid) {
+	    const nodes = new Map();
+	    for (const wire of wires) {
+	        if (!nodes.has(wire.node)) nodes.set(wire.node, new Map());
+	        const points = nodes.get(wire.node), [a, b] = wire.points;
+	        const length = Math.abs(b[0] - a[0]) + Math.abs(b[1] - a[1]);
+	        for (let step = 0; step < length; step += grid) {
+	            const from = a.map((value, axis) => value + Math.sign(b[axis] - value) * step);
+	            const to = a.map((value, axis) => value + Math.sign(b[axis] - value) * (step + grid));
+	            for (const [p, q] of [[from, to], [to, from]]) {
+	                const key = p.join(',');
+	                if (!points.has(key)) points.set(key, new Set());
+	                points.get(key).add(q.join(','));
+	            }
+	        }
+	    }
+	    return [...nodes].flatMap(([node, points]) => [...points].flatMap(([key, neighbors]) =>
+	        neighbors.size > 2 ? [{node, at: key.split(',').map(Number)}] : []));
+	}
+
+	function layoutAutomaticBoard(root, definition, geometry) {
+	    const {board} = definition;
+	    const graph = graphIncidence(root);
+	    if (!root.components.length || root.externalNodes.some(node => !graph.byNode.has(node))) {
+	        throw new TypeError('ORI needs component terminals for each external node.');
+	    }
+	    const {positions, regions} = automaticPositions(root, board, graph, geometry);
+	    const ordered = [...positions.keys()].sort((a, b) => positions.get(a)[0] - positions.get(b)[0] ||
+	        positions.get(a)[1] - positions.get(b)[1] || a - b);
+	    const byIndex = new Map(ordered.map(index => [index,
+	        automaticPlacement(root, index, positions, graph, board, geometry)]));
+	    const placements = root.components.map((_, index) => byIndex.get(index));
+	    const bounds = placements.map((placement, index) => placementBounds(placement, geometry.symbol(root.components[index])));
+	    const result = {grid: board.grid, placements, wires: [], nodePoints: new Map(), externalPorts: [],
+	        regions: regions.filter(region => region.cyclic).map(region => ({kind: 'loop', components: region.members.map(index => index + 1)}))};
+	    const terminals = new Map();
+	    placements.forEach((placement, index) => placement.ports.forEach(port => {
+	        const direction = rotate(terminalDirection$1(geometry.symbol(root.components[index]), port.port),
+	            placement.rotation, placement.mirrorX, placement.mirrorY);
+	        if (!terminals.has(port.node)) terminals.set(port.node, []);
+	        terminals.get(port.node).push({...port, escape: port.at.map((value, axis) => value + direction[axis] * board.wireBoxLength)});
+	    }));
+	    root.externalNodes.forEach((node, index) => {
+	        const owner = terminals.get(node)[0];
+	        const direction = owner.escape.map((value, axis) => Math.sign(value - owner.at[axis]));
+	        const port = {port: index + 1, node,
+	            at: owner.at.map((value, axis) => value + direction[axis] * board.externalPortLead)};
+	        result.externalPorts.push(port);
+	        terminals.get(node).push({...port, escape: port.at});
+	    });
+	    const obstacles = new Map();
+	    for (const [node, ends] of terminals) for (const terminal of ends) {
+	        for (const point of [terminal.at, terminal.escape]) obstacles.set(point.join(','), node);
+	    }
+	    const occupied = new Map();
+	    for (const [node, ends] of terminals) {
+	        const excluded = new Set([...obstacles].filter(([, id]) => id !== node).map(([key]) => key));
+	        for (let index = 1; index < ends.length; index++) {
+	            const a = ends[0], b = ends[index];
+	            const routed = automaticRoute(a.escape, b.escape, bounds, excluded, occupied, node, board);
+	            const points = [a.at, ...routed, b.at];
+	            recordBoardRoute(points, node, occupied, board.grid);
+	            graphWireBoxes(result, node, points, board, `net:${node}:${index}`);
+	        }
+	    }
+	    for (const node of terminals.keys()) {
+	        const wires = result.wires.filter(wire => wire.node === node && wire.boardTile.kind === 'wire')
+	            .sort((a, b) => b.boardTile.length - a.boardTile.length);
+	        let point = null;
+	        for (const wire of wires) {
+	            const [a, b] = wire.points, length = wire.boardTile.length;
+	            for (let offset = 0; offset <= length && !point; offset += board.grid) {
+	                const step = Math.min(length, Math.max(0, snap(length / 2, board.grid) +
+	                    (offset % (2 * board.grid) ? -offset : offset)));
+	                const candidate = a.map((value, axis) => value + Math.sign(b[axis] - value) * step);
+	                if ([...(occupied.get(candidate.join(',')) || [])].every(([id]) => id === node)) point = candidate;
+	            }
+	            if (point) break;
+	        }
+	        if (!point) throw new RangeError('ORI could not place a node dot clear of other connections.');
+	        result.nodePoints.set(node, point);
+	    }
+	    result.junctions = automaticJunctions(result.wires, board.grid);
+	    result.crossings = [...occupied].filter(([, ids]) => ids.size > 1)
+	        .map(([key]) => key.split(',').map(Number));
+	    return result;
+	}
+
+	// Modified: 2026-11-08
+	// Compose measured boards and direct junction symbols through their electrical boundaries.
+
+	function compositionError(message) {
+	    throw new RangeError(`Schematic board composition: ${message}`);
+	}
+
+	function boundaryNodes(value) {
+	    return Array.isArray(value) ? value.slice() : [value];
+	}
+
+	function boardInterface(definition, boards, visited = new Set()) {
+	    if (!definition || visited.has(definition)) compositionError('unknown or circular board reference.');
+	    if (definition.interface) return definition.interface;
+	    if (!definition.use) compositionError(`"${definition.name}" has no declared from/to interface.`);
+	    return boardInterface(boards[definition.use], boards, new Set([...visited, definition]));
+	}
+
+	function sectionExternalNodes(section, definition, boards) {
+	    const ports = boardInterface(definition, boards), nodes = [];
+	    for (const side of ['from', 'to']) {
+	        const boundary = boundaryNodes(section[side]);
+	        if (!Array.isArray(ports[side]) || boundary.length !== ports[side].length) {
+	            compositionError(`"${section.name}" ${side} needs ${ports[side]?.length || 0} node(s).`);
+	        }
+	        ports[side].forEach((port, index) => {
+	            if (!Number.isInteger(port) || port < 1 || nodes[port - 1] !== undefined) {
+	                compositionError('board interface must name distinct positive port numbers.');
+	            }
+	            nodes[port - 1] = boundary[index];
+	        });
+	    }
+	    if (Array.from(nodes).includes(undefined) || new Set(nodes).size !== nodes.length) {
+	        compositionError('section interface must cover consecutive ports with distinct nodes.');
+	    }
+	    return nodes;
+	}
+
+	function compositionRegions(root, sections) {
+	    const boundaries = new Set(root.externalNodes.concat(sections.flatMap(section =>
+	        boundaryNodes(section.from).concat(boundaryNodes(section.to)))));
+	    const adjacency = new Map();
+	    root.components.forEach((entry, index) => entry.nodes.forEach(node => {
+	        if (!adjacency.has(node)) adjacency.set(node, []);
+	        adjacency.get(node).push(index);
+	    }));
+	    const external = new Set(root.externalNodes);
+	    if (external.size !== root.externalNodes.length) compositionError('external nodes must be distinct.');
+	    for (const node of boundaries) {
+	        if ((adjacency.get(node)?.length || 0) + (external.has(node) ? 1 : 0) !== 2) {
+	            compositionError(`node ${node} must join two terminals; use an explicit junction component.`);
+	        }
+	    }
+	    const seen = new Set(), regions = [];
+	    for (let start = 0; start < root.components.length; start++) {
+	        if (seen.has(start)) continue;
+	        const pending = [start], indices = [], ends = [];
+	        while (pending.length) {
+	            const index = pending.pop();
+	            if (seen.has(index)) continue;
+	            seen.add(index); indices.push(index);
+	            for (const node of root.components[index].nodes) {
+	                if (boundaries.has(node)) ends.push(node);
+	                else pending.push(...adjacency.get(node));
+	            }
+	        }
+	        regions.push({indices: indices.sort((a, b) => a - b), ends});
+	    }
+	    return regions;
+	}
+
+	function sameNodes(a, b) {
+	    return a.length === b.length && new Set(a).size === a.length && a.every(node => b.includes(node));
+	}
+
+	function translateSection(result, offset) {
+	    for (const placement of result.placements) {
+	        placement.at = placement.at.map((value, axis) => value + offset[axis]);
+	        placement.ports = placement.ports.map(port => ({...port,
+	            at: port.at.map((value, axis) => value + offset[axis])}));
+	    }
+	    result.wires = result.wires.map(wire => ({...wire,
+	        points: wire.points.map(point => point.map((value, axis) => value + offset[axis]))}));
+	    result.nodePoints = new Map([...result.nodePoints].map(([node, point]) =>
+	        [node, point.map((value, axis) => value + offset[axis])]));
+	    result.externalPorts = result.externalPorts.map(port => ({...port,
+	        at: port.at.map((value, axis) => value + offset[axis])}));
+	}
+
+	function measureSection(result, geometry) {
+	    const points = result.externalPorts.map(port => port.at).concat(result.wires.flatMap(wire => wire.points),
+	        result.placements.flatMap(part => {
+	            const box = geometry.bounds(part);
+	            return [[box[0], box[1]], [box[2], box[3]]];
+	        }));
+	    return [Math.min(...points.map(p => p[0])), Math.min(...points.map(p => p[1])),
+	        Math.max(...points.map(p => p[0])), Math.max(...points.map(p => p[1]))];
+	}
+
+	function compactSectionLeads(item, geometry, grid) {
+	    if (item.entry) return;
+	    const result = item.result, leads = new Map();
+	    for (const external of result.externalPorts) {
+	        const wires = result.wires.filter(wire => wire.node === external.node);
+	        const terminal = result.placements.flatMap(part => part.ports).find(port => port.node === external.node);
+	        if (wires.length !== 1 || wires[0].boardTile.kind !== 'wire' || !terminal) continue;
+	        const wire = wires[0];
+	        if (!wire.points.some(point => point[0] === terminal.at[0] && point[1] === terminal.at[1])) continue;
+	        const direction = terminalDirection(item, external, geometry);
+	        leads.set(external.node, {wire, terminal, direction, external});
+	    }
+	    if (!leads.size) return;
+	    result.wires = result.wires.filter(wire => !leads.has(wire.node));
+	    result.externalPorts = result.externalPorts.map(port => leads.has(port.node) ?
+	        {...port, at: leads.get(port.node).terminal.at.slice()} : port);
+	    const bounds = measureSection(result, geometry);
+	    result.externalPorts = result.externalPorts.map(port => {
+	        const lead = leads.get(port.node);
+	        if (!lead) return port;
+	        const {terminal, direction, external, wire} = lead;
+	        const axis = direction[0] ? 0 : 1;
+	        const reach = Math.max(0, (bounds[axis + (direction[axis] > 0 ? 2 : 0)] - terminal.at[axis]) * direction[axis]);
+	        const original = Math.abs(external.at[axis] - terminal.at[axis]);
+	        // Retain only the part of a lead needed to reach the complete section's
+	        // outer envelope. The composer supplies the wire between sections.
+	        const length = Math.min(original, Math.ceil(reach / grid) * grid);
+	        const at = terminal.at.map((value, index) => value + direction[index] * length);
+	        if (length) result.wires.push({...wire, points: [terminal.at.slice(), at.slice()],
+	            boardTile: {...wire.boardTile, length}});
+	        result.nodePoints.delete(port.node);
+	        return {...port, at, direction};
+	    });
+	}
+
+	function bindSections(root, definition, geometry, interpret) {
+	    const regions = compositionRegions(root, definition.sections), claimed = new Set(), items = [];
+	    for (const [sectionIndex, section] of definition.sections.entries()) {
+	        const source = geometry.boards[section.name];
+	        const externalNodes = sectionExternalNodes(section, source, geometry.boards);
+	        const candidates = regions.filter(region => sameNodes(region.ends, externalNodes));
+	        if (candidates.length !== 1 || claimed.has(candidates[0])) {
+	            compositionError(`"${section.name}" boundaries do not isolate one complete, unclaimed section.`);
+	        }
+	        const region = candidates[0]; claimed.add(region);
+	        const network = {...root, components: region.indices.map(index => root.components[index]), externalNodes};
+	        const result = interpret(network, source, geometry);
+	        if (!result) compositionError(`section boundaries for section ${sectionIndex + 1} do not match "${section.name}".`);
+	        if (result.grid !== definition.board.grid) compositionError('sections must share a placement grid.');
+	        items.push({section, sectionIndex, source, indices: region.indices, result,
+	            from: boundaryNodes(section.from), to: boundaryNodes(section.to)});
+	    }
+	    for (const region of regions.filter(region => !claimed.has(region))) {
+	        if (region.indices.some(index => root.components[index].nodes.length === 2)) {
+	            compositionError('sections must cover every component; only direct junctions and terminations may remain.');
+	        }
+	        for (const index of region.indices) items.push({indices: [index],
+	            entry: root.components[index], from: [], to: []});
+	    }
+	    return items;
+	}
+
+	function sectionGraph(root, items) {
+	    const byNode = new Map(), add = (node, end) => {
+	        if (!byNode.has(node)) byNode.set(node, []);
+	        byNode.get(node).push(end);
+	    };
+	    for (const item of items) {
+	        const nodes = item.entry ? item.entry.nodes : item.from.concat(item.to);
+	        for (const node of nodes) add(node, {item, side: item.entry ? null : item.from.includes(node) ? 'from' : 'to'});
+	    }
+	    const externalItems = root.externalNodes.map((node, index) => {
+	        const item = {external: index + 1, node, from: index ? [node] : [], to: index ? [] : [node]};
+	        add(node, {item, side: index ? 'from' : 'to'});
+	        return item;
+	    });
+	    const vertices = items.concat(externalItems), edges = [];
+	    for (const [node, ends] of byNode) {
+	        if (ends.length !== 2) compositionError(`boundary node ${node} must connect exactly two sections or terminals.`);
+	        let [a, b] = ends;
+	        if (a.side === 'from' || b.side === 'to') [a, b] = [b, a];
+	        if (a.side && b.side && a.side === b.side) compositionError(`node ${node} joins two ${a.side} boundaries.`);
+	        edges.push({node, source: a.item, target: b.item, unknown: !a.side && !b.side});
+	    }
+	    // Only direct-to-direct junction links lack a direction. Orient those away
+	    // from port 1; explicit shape interfaces determine every other direction.
+	    const depth = new Map([[externalItems[0], 0]]), pending = [externalItems[0]];
+	    for (let i = 0; i < pending.length; i++) {
+	        const item = pending[i];
+	        for (const edge of edges.filter(edge => edge.source === item || edge.target === item)) {
+	            const next = edge.source === item ? edge.target : edge.source;
+	            if (!depth.has(next)) { depth.set(next, depth.get(item) + 1); pending.push(next); }
+	        }
+	    }
+	    if (depth.size !== vertices.length) compositionError('sections must form one connected network.');
+	    for (const edge of edges.filter(edge => edge.unknown)) {
+	        if (depth.get(edge.source) === depth.get(edge.target)) compositionError('direct junction flow is ambiguous; supply section boundaries.');
+	        if (depth.get(edge.source) > depth.get(edge.target)) [edge.source, edge.target] = [edge.target, edge.source];
+	    }
+	    for (const item of vertices) {
+	        item.inputs = edges.filter(edge => edge.target === item);
+	        item.outputs = edges.filter(edge => edge.source === item);
+	        if (item.entry) {
+	            item.from = item.entry.nodes.filter(node => item.inputs.some(edge => edge.node === node));
+	            item.to = item.entry.nodes.filter(node => item.outputs.some(edge => edge.node === node));
+	        }
+	        item.inputs.sort((a, b) => item.from.indexOf(a.node) - item.from.indexOf(b.node));
+	        item.outputs.sort((a, b) => item.to.indexOf(a.node) - item.to.indexOf(b.node));
+	    }
+	    const ordered = [], remaining = new Map(vertices.map(item => [item, item.inputs.length]));
+	    const queue = vertices.filter(item => !item.inputs.length);
+	    if (queue.length !== 1 || queue[0] !== externalItems[0]) compositionError('flow must start at external port 1.');
+	    for (let i = 0; i < queue.length; i++) {
+	        const item = queue[i]; ordered.push(item);
+	        for (const edge of item.outputs) {
+	            const next = edge.target; remaining.set(next, remaining.get(next) - 1);
+	            if (!remaining.get(next)) queue.push(next);
+	        }
+	    }
+	    if (ordered.length !== vertices.length) compositionError('section flow contains a cycle; keep loops inside a shaped section.');
+	    return {ordered, edges};
+	}
+
+	function leadDirection(entry, placement, port, geometry) {
+	    const symbol = geometry.symbol(entry), at = symbol.ports[port - 1];
+	    const inner = symbol.leads?.[port - 1]?.find(point => point[0] !== at[0] || point[1] !== at[1]);
+	    if (!inner) compositionError('direct components need canonical terminal lead directions.');
+	    let [x, y] = at.map((value, axis) => Math.sign(value - inner[axis]));
+	    if (placement.mirrorX) x = -x;
+	    if (placement.mirrorY) y = -y;
+	    return placement.rotation === 0 ? [x, y] : placement.rotation === 90 ? [-y, x] :
+	        placement.rotation === 180 ? [-x, -y] : [y, -x];
+	}
+
+	function placeDirectItem(item, geometry, grid) {
+	    const {entry} = item;
+	    let best = null, bestCost = Infinity;
+	    for (const mirrorX of [false, true]) for (const angle of [0, 90, 180, 270]) {
+	        const part = geometry.preview(entry, 1, [0, 0], angle, false, mirrorX);
+	        let cost = part.ports.reduce((sum, port) => {
+	            const direction = leadDirection(entry, part, port.port, geometry);
+	            const input = item.from.includes(port.node);
+	            const single = (input ? item.from : item.to).length === 1;
+	            return sum + (direction[0] === (input ? -1 : 1) ? 0 : direction[0] === 0 ? (single ? 20 : 1) : 40);
+	        }, 0);
+	        for (const side of ['from', 'to']) {
+	            const ports = item[side].map(node => part.ports.find(port => port.node === node));
+	            for (let i = 1; i < ports.length; i++) if (ports[i].at[1] < ports[i - 1].at[1]) cost += 10;
+	        }
+	        if (cost < bestCost) { best = part; bestCost = cost; }
+	    }
+	    const placement = geometry.placement(entry, 1, [0, 0], best.rotation, best.mirrorY, best.mirrorX);
+	    placement.boardTile = {kind: 'component', role: 'junction', id: 'component'};
+	    // Canonical top-to-bottom geometry gives direct junctions their track order.
+	    for (const side of ['from', 'to']) item[side].sort((a, b) => {
+	        const p = placement.ports.find(port => port.node === a), q = placement.ports.find(port => port.node === b);
+	        return p.at[1] - q.at[1] || p.at[0] - q.at[0];
+	    });
+	    item.inputs.sort((a, b) => item.from.indexOf(a.node) - item.from.indexOf(b.node));
+	    item.outputs.sort((a, b) => item.to.indexOf(a.node) - item.to.indexOf(b.node));
+	    item.result = {grid, placements: [placement], byIndex: new Map([[0, placement]]), wires: [],
+	        nodePoints: new Map(), externalPorts: placement.ports.map(port => ({...port}))};
+	}
+
+	function commonTrack(keys) {
+	    const result = keys[0].slice();
+	    for (const key of keys.slice(1)) {
+	        let length = 0;
+	        while (length < result.length && length < key.length && result[length] === key[length]) length++;
+	        result.length = length;
+	    }
+	    return result;
+	}
+
+	function compareTracks(a, b) {
+	    for (let i = 0; i < Math.min(a.length, b.length); i++) if (a[i] !== b[i]) return a[i] - b[i];
+	    return a.length - b.length;
+	}
+
+	function trackContains(parent, child) {
+	    return parent.length <= child.length && parent.every((value, index) => child[index] === value);
+	}
+
+	function sectionAxis(item) {
+	    if (item.external) return 0;
+	    const centers = ['from', 'to'].map(side => {
+	        const ports = item.result.externalPorts.filter(port => item[side].includes(port.node));
+	        return ports.length ? ports.reduce((sum, port) => sum + port.at[1], 0) / ports.length : null;
+	    }).filter(value => value !== null);
+	    return centers.reduce((sum, value) => sum + value, 0) / centers.length;
+	}
+
+	function layoutSections(ordered, geometry, grid) {
+	    for (const item of ordered) {
+	        item.rank = item.inputs.length ? Math.max(...item.inputs.map(edge => edge.source.rank)) + 1 : 0;
+	        item.track = item.inputs.length ? commonTrack(item.inputs.map(edge => edge.track)) : [];
+	        if (item.inputs.some((edge, index) => index && compareTracks(item.inputs[index - 1].track, edge.track) > 0)) {
+	            compositionError('input boundary order requires a crossover; crossover routing is not enabled.');
+	        }
+	        item.outputs.forEach((edge, index) => {
+	            edge.track = item.outputs.length > 1 ? item.track.concat(index) : item.track.slice();
+	        });
+	        item.bounds = item.external ? [0, 0, 0, 0] : measureSection(item.result, geometry);
+	        item.axis = sectionAxis(item);
+	    }
+	    const keys = ordered.map(item => item.track);
+	    const leaves = keys.filter(key => !keys.some(other => other.length > key.length && trackContains(key, other)))
+	        .filter((key, index, all) => all.findIndex(other => compareTracks(key, other) === 0) === index)
+	        .sort(compareTracks);
+	    // Reserve asymmetric clearance around the electrical axis. A downward
+	    // attachment needs room below its track; it must not lift the main path.
+	    const bands = leaves.map(key => {
+	        const items = ordered.filter(item => compareTracks(item.track, key) === 0);
+	        return {above: Math.ceil(Math.max(100, ...items.map(item => item.axis - item.bounds[1] + 100)) / grid) * grid,
+	            below: Math.ceil(Math.max(100, ...items.map(item => item.bounds[3] - item.axis + 100)) / grid) * grid};
+	    });
+	    // A complete enclosing section must fit its descendant band too. Grow the
+	    // measured bands, rather than moving individual symbols inside any board.
+	    for (const item of ordered) {
+	        const indices = leaves.map((key, index) => trackContains(item.track, key) ? index : -1).filter(index => index >= 0);
+	        const required = item.bounds[3] - item.bounds[1] + 200;
+	        const available = indices.reduce((sum, index) => sum + bands[index].above + bands[index].below, 0);
+	        if (required > available) for (const index of indices) {
+	            const growth = Math.ceil((required - available) / (2 * indices.length * grid)) * grid;
+	            bands[index].above += growth;
+	            bands[index].below += growth;
+	        }
+	    }
+	    let cursor = 0;
+	    const centers = bands.map(band => {
+	        // Keep track axes on every second placement-grid line. Their midpoint
+	        // then lies on the placement grid too, so centering a splitter or
+	        // combiner cannot add half a grid step to one vertical leg.
+	        const center = Math.ceil((cursor + band.above) / (2 * grid)) * 2 * grid;
+	        cursor = center + band.below;
+	        return center;
+	    });
+	    const ranks = Array.from({length: Math.max(...ordered.map(item => item.rank)) + 1}, () => []);
+	    for (const item of ordered) ranks[item.rank].push(item);
+	    const links = ordered.flatMap(item => item.outputs);
+	    let x = 0;
+	    for (const rank of ranks) {
+	        const width = Math.max(...rank.map(item => item.bounds[2] - item.bounds[0]));
+	        for (const item of rank) {
+	            const tracks = leaves.map((key, index) => trackContains(item.track, key) ? index : -1).filter(index => index >= 0);
+	            const y = Math.round((centers[tracks[0]] + centers[tracks.at(-1)]) / (2 * grid)) * grid;
+	            if (item.external) item.at = [x, y];
+	            else {
+	                translateSection(item.result, [x - item.bounds[0], Math.round((y - item.axis) / grid) * grid]);
+	            }
+	        }
+	        // Standard wire spacing joins already measured section envelopes.
+	        // Reserve additional channels only when several interfaces cross a cut.
+	        const channels = links.filter(edge =>
+	            edge.source.rank <= rank[0].rank && edge.target.rank > rank[0].rank).length;
+	        x += width + Math.max(8 * grid, (channels + 1) * 2 * grid);
+	    }
+	}
+
+	function existingTerminal(item, node) {
+	    if (item.external) return {node, at: item.at, direction: [item.external === 1 ? 1 : -1, 0]};
+	    const port = item.result.externalPorts.find(port => port.node === node);
+	    return {...port};
+	}
+
+	function terminalDirection(item, terminal, geometry) {
+	    if (terminal.direction) return terminal.direction;
+	    if (item.entry) {
+	        const placement = item.result.placements[0];
+	        const port = placement.ports.find(port => port.node === terminal.node);
+	        return leadDirection(item.entry, placement, port.port, geometry);
+	    }
+	    for (const wire of item.result.wires) {
+	        const index = wire.points.findIndex(point => point[0] === terminal.at[0] && point[1] === terminal.at[1]);
+	        if (index < 0) continue;
+	        const inner = wire.points[index ? index - 1 : 1];
+	        return terminal.at.map((value, axis) => Math.sign(value - inner[axis]));
+	    }
+	    compositionError('a section boundary has no wire terminal.');
+	}
+
+	function interfaceShifts(items, adjacency) {
+	    const anchor = items.slice().sort((a, b) => interfaceAnchorPriority(a) - interfaceAnchorPriority(b) || a.rank - b.rank)[0];
+	    const shifts = new Map([[anchor, 0]]), pending = [anchor];
+	    for (let index = 0; index < pending.length; index++) {
+	        const item = pending[index];
+	        for (const link of adjacency.get(item) || []) {
+	            const shift = shifts.get(item) + link.shift;
+	            if (shifts.has(link.other)) {
+	                if (shifts.get(link.other) !== shift) return null;
+	            } else {
+	                shifts.set(link.other, shift);
+	                pending.push(link.other);
+	            }
+	        }
+	    }
+	    return shifts;
+	}
+
+	function interfaceAnchorPriority(item) {
+	    return item.external ? 0 : item.from.length + item.to.length > 2 ? 1 : 2;
+	}
+
+	function interfaceClearance(ordered, shifts, geometry, grid) {
+	    const bounds = ordered.filter(item => !item.external).map(item => {
+	        const box = measureSection(item.result, geometry), shift = shifts.get(item) || 0;
+	        return {item, box: [box[0], box[1] + shift, box[2], box[3] + shift]};
+	    });
+	    for (let i = 0; i < bounds.length; i++) for (const other of bounds.slice(i + 1)) {
+	        const a = bounds[i], b = other;
+	        if (!shifts.has(a.item) && !shifts.has(b.item)) continue;
+	        if (a.box[0] < b.box[2] + grid && b.box[0] < a.box[2] + grid &&
+	            a.box[1] < b.box[3] + grid && b.box[1] < a.box[3] + grid) return false;
+	    }
+	    return true;
+	}
+
+	function alignSectionInterfaces(ordered, edges, geometry, grid) {
+	    const adjacency = new Map();
+	    for (const edge of edges) {
+	        const a = existingTerminal(edge.source, edge.node), b = existingTerminal(edge.target, edge.node);
+	        const from = terminalDirection(edge.source, a, geometry), to = terminalDirection(edge.target, b, geometry);
+	        // Vertical leads deliberately turn toward their tracks. Horizontal
+	        // interfaces that face each other should share the same wire height.
+	        if (from[0] !== 1 || from[1] !== 0 || to[0] !== -1 || to[1] !== 0 || a.at[0] >= b.at[0]) continue;
+	        const shift = a.at[1] - b.at[1];
+	        for (const [item, other, delta] of [[edge.source, edge.target, shift], [edge.target, edge.source, -shift]]) {
+	            if (!adjacency.has(item)) adjacency.set(item, []);
+	            adjacency.get(item).push({other, shift: delta});
+	        }
+	    }
+	    const visited = new Set();
+	    for (const start of ordered) {
+	        if (visited.has(start) || !adjacency.has(start)) continue;
+	        const members = [], pending = [start];
+	        while (pending.length) {
+	            const item = pending.pop();
+	            if (visited.has(item)) continue;
+	            visited.add(item); members.push(item);
+	            pending.push(...adjacency.get(item).map(link => link.other));
+	        }
+	        // An external port or multiport section anchors this system. Unequal
+	        // fixed port pitches can make its equations inconsistent; those keep
+	        // their original placement and use the ordinary routed connections.
+	        const shifts = interfaceShifts(members, adjacency);
+	        if (!shifts || [...shifts.values()].some(shift => shift % grid !== 0) ||
+	            !interfaceClearance(ordered, shifts, geometry, grid)) continue;
+	        for (const [item, shift] of shifts) {
+	            if (!shift) continue;
+	            if (item.external) item.at = [item.at[0], item.at[1] + shift];
+	            else translateSection(item.result, [0, shift]);
+	        }
+	    }
+	}
+
+	function registerSection(result, item, root, combined) {
+	    const prefix = item.section ? `section:${item.sectionIndex}` : `direct:${item.indices[0]}`;
+	    for (const [localIndex, index] of item.indices.entries()) {
+	        const placement = result.byIndex.get(localIndex);
+	        if (!placement || combined.byIndex.has(index)) compositionError('each component must have exactly one placement.');
+	        placement.boardTile = {...placement.boardTile, id: `${prefix}:${placement.boardTile.id}`};
+	        combined.byIndex.set(index, placement);
+	    }
+	    combined.wires.push(...result.wires.map(wire => ({...wire, boardTile: {...wire.boardTile,
+	        id: `${prefix}:${wire.boardTile.id}`}})));
+	    for (const [node, point] of result.nodePoints) combined.nodePoints.set(node, point);
+	    if (item.section) combined.sections.push({name: item.section.name, from: item.section.from, to: item.section.to,
+	        ...(result.definition?.variant || item.source.variant ? {pattern: result.definition?.variant || item.source.variant} : {}),
+	        components: result.placements.map(placement => placement.id)});
+	}
+
+	function routeSections(root, ordered, edges, geometry, combined) {
+	    const grid = combined.grid, board = {grid, clearance: 10, routingMargin: 100,
+	        wireBoxLength: 20, cornerSize: 10, bendCost: 20, allowCrossings: false};
+	    const bounds = ordered.filter(item => !item.external).map(item => measureSection(item.result, geometry));
+	    const occupied = new Map(), obstacles = new Set();
+	    for (const wire of combined.wires) recordBoardRoute(wire.points, wire.node, occupied, grid);
+	    const routes = edges.map(edge => {
+	        const ends = [edge.source, edge.target].map(item => {
+	            const terminal = existingTerminal(item, edge.node), direction = terminalDirection(item, terminal, geometry);
+	            const escape = terminal.at.map((value, axis) => value + direction[axis] * 20);
+	            obstacles.add(terminal.at.join(',')); obstacles.add(escape.join(','));
+	            return {...terminal, direction, escape};
+	        });
+	        return {...edge, ends};
+	    });
+	    // Reserve terminal leads first, so another route cannot steal their exits.
+	    for (const {node, ends} of routes) for (const end of ends) recordBoardRoute([end.at, end.escape], node, occupied, grid);
+	    for (const [index, {node, ends}] of routes.entries()) {
+	        const [a, b] = ends, excluded = new Set(obstacles);
+	        for (const end of ends) { excluded.delete(end.at.join(',')); excluded.delete(end.escape.join(',')); }
+	        let points;
+	        try { points = automaticRoute(a.escape, b.escape, bounds, excluded, occupied, node,
+	            {...board, startDirection: a.direction, finishDirection: b.direction.map(value => -value)}); }
+	        catch (error) {
+	            if (!(error instanceof RangeError)) throw error;
+	            compositionError(`node ${node} could not be routed without a crossover; crossover routing is not enabled.`);
+	        }
+	        points = [a.at, ...points, b.at];
+	        recordBoardRoute(points, node, occupied, grid);
+	        graphWireBoxes(combined, node, points, board, `seam:${index}`);
+	    }
+	    // Reject contacts and overlaps as well as perpendicular crossings. A single
+	    // electrical node may of course have several contiguous wire boxes.
+	    const checked = new Map();
+	    for (const wire of combined.wires) {
+	        const own = new Map(); recordBoardRoute(wire.points, wire.node, own, grid);
+	        for (const key of own.keys()) {
+	            if (checked.has(key) && checked.get(key) !== wire.node) compositionError('drawing requires a wire crossover; crossover routing is not enabled.');
+	            checked.set(key, wire.node);
+	        }
+	    }
+	    for (const node of new Set(root.components.flatMap(entry => entry.nodes))) {
+	        const wires = combined.wires.filter(wire => wire.node === node && wire.boardTile.kind === 'wire')
+	            .sort((a, b) => b.boardTile.length - a.boardTile.length);
+	        if (!wires.length) compositionError(`node ${node} has no straight wire box.`);
+	        const [a, b] = wires[0].points;
+	        combined.nodePoints.set(node, a.map((value, axis) => Math.round((value + b[axis]) / (2 * grid)) * grid));
+	    }
+	}
+
+	// Reuse the composer's electrical-flow validation while inferring group interfaces.
+	// This step never creates placements, labels or wires.
+	function validateSchematicSections(root, sections, memberships) {
+	    const used = new Set();
+	    const items = sections.map((section, index) => {
+	        for (const part of memberships[index]) used.add(part);
+	        return {section, indices: memberships[index], from: boundaryNodes(section.from), to: boundaryNodes(section.to)};
+	    });
+	    root.components.forEach((entry, index) => {
+	        if (used.has(index)) return;
+	        if (entry.nodes.length === 2) compositionError('ungrouped two-port components must belong to a shape group.');
+	        items.push({indices: [index], entry, from: [], to: []});
+	    });
+	    sectionGraph(root, items);
+	    return true;
+	}
+
+	function composeSchematicBoards(root, definition, geometry, interpret) {
+	    const items = bindSections(root, definition, geometry, interpret);
+	    const {ordered, edges} = sectionGraph(root, items);
+	    for (const item of items.filter(item => item.entry)) placeDirectItem(item, geometry, definition.board.grid);
+	    for (const item of items) compactSectionLeads(item, geometry, definition.board.grid);
+	    layoutSections(ordered, geometry, definition.board.grid);
+	    alignSectionInterfaces(ordered, edges, geometry, definition.board.grid);
+	    const combined = {grid: definition.board.grid, placements: [], wires: [], nodePoints: new Map(),
+	        byIndex: new Map(), externalPorts: [], sections: []};
+	    for (const item of items) registerSection(item.result, item, root, combined);
+	    routeSections(root, ordered, edges, geometry, combined);
+	    combined.placements = root.components.map((_, index) => combined.byIndex.get(index));
+	    for (const item of ordered.filter(item => item.external)) combined.externalPorts.push({
+	        port: item.external, node: item.node, at: item.at});
+	    combined.externalPorts.sort((a, b) => a.port - b.port);
+	    return combined;
+	}
+
+	// Modified: 2026-11-08
+
+	// Shared board operations. This module never selects a layout by shape name.
+	const DIRECTIONS = {right: [1, 0], down: [0, 1], left: [-1, 0], up: [0, -1]};
+
+	function boardError(message) {
+	    throw new TypeError(`Schematic board: ${message}`);
+	}
+
+	function acceptsEntry(entry, predicate) {
+	    return (!predicate.portCount || entry.nodes.length === predicate.portCount) &&
+	        (!predicate.portCounts || predicate.portCounts.includes(entry.nodes.length)) &&
+	        (!predicate.symbols || predicate.symbols.includes(entry.part.symbol));
+	}
+
+	function boardPortPairs(entry, geometry, predicate = {}) {
+	    if (predicate.portPairs) {
+	        if (!Array.isArray(predicate.portPairs) || predicate.portPairs.some(pair =>
+	            !Array.isArray(pair) || pair.length !== 2 || pair[0] === pair[1] ||
+	            pair.some(port => !Number.isInteger(port) || port < 1 || port > entry.nodes.length))) {
+	            boardError('path port pairs must name two distinct component terminals.');
+	        }
+	        return predicate.portPairs;
+	    }
+	    if (entry.nodes.length === 2) return [[1, 2], [2, 1]];
+	    const symbol = geometry.symbol(entry), through = symbol.flow?.throughPorts;
+	    if (through) return [through, through.slice().reverse()];
+	    const bounds = symbol.bodyBounds;
+	    const center = [(bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2];
+	    // A junction without declared through ports may offer several straight
+	    // pairs. Derive opposite pairs from canonical geometry, never an RF name.
+	    return symbol.ports.flatMap((a, input) => symbol.ports.flatMap((b, output) => {
+	        if (input === output) return [];
+	        const va = a.map((value, axis) => value - center[axis]);
+	        const vb = b.map((value, axis) => value - center[axis]);
+	        return va[0] * vb[1] === va[1] * vb[0] && va[0] * vb[0] + va[1] * vb[1] < 0 ?
+	            [[input + 1, output + 1]] : [];
+	    }));
+	}
+
+	function traceBoardPath(root, rule, adjacency, geometry, excluded = new Set()) {
+	    const start = rule.from.node ?? root.externalNodes[rule.from.externalPort - 1];
+	    const finish = rule.to?.externalPort ? root.externalNodes[rule.to.externalPort - 1] : undefined;
+	    if (start === undefined || start === finish) return null;
+	    // Iterative search avoids overflowing the JS stack on long repeated sections.
+	    const pending = [{node: start, path: [], used: new Set(excluded), visited: new Set()}];
+	    while (pending.length) {
+	        const state = pending.pop();
+	        if (state.node === finish) {
+	            if (state.path.length >= (rule.minimum ?? 1)) return state.path;
+	            continue;
+	        }
+	        if (state.visited.has(state.node)) continue;
+	        const visited = new Set([...state.visited, state.node]);
+	        for (const terminal of adjacency.get(state.node) || []) {
+	            const {index, inputPort} = terminal;
+	            const entry = root.components[index];
+	            if (state.used.has(index)) continue;
+	            if (rule.until && acceptsEntry(entry, rule.until) &&
+	                state.path.length >= (rule.minimum ?? 1)) {
+	                return state.path.concat({index, inputPort, outputPort: null});
+	            }
+	            if (!acceptsEntry(entry, rule.through)) continue;
+	            for (const [input, outputPort] of boardPortPairs(entry, geometry, rule.through)) {
+	                if (input !== inputPort) continue;
+	                pending.push({node: entry.nodes[outputPort - 1],
+	                    path: state.path.concat({index, inputPort, outputPort}), visited,
+	                    used: new Set([...state.used, index])});
+	            }
+	        }
+	    }
+	    return null;
+	}
+
+	function unusedBoardPorts(root, path) {
+	    return path.flatMap((part, order) => root.components[part.index].nodes.flatMap((node, index) =>
+	        index + 1 === part.inputPort || index + 1 === part.outputPort ? [] :
+	            [{index: part.index, port: index + 1, node, order}]));
+	}
+
+	function traceBoardLink(root, anchor, ports, rule, adjacency, used) {
+	    let current = {index: anchor.index, inputPort: anchor.port};
+	    const parts = [], visited = new Set([anchor.index]);
+	    while (true) {
+	        const node = root.components[current.index].nodes[current.inputPort - 1];
+	        const other = adjacency.get(node)?.find(end =>
+	            end.index !== current.index || end.inputPort !== current.inputPort);
+	        if (!other) return null;
+	        const end = ports.find(port => port.index === other.index && port.port === other.inputPort);
+	        if (end) return end.order > anchor.order && parts.length >= (rule.minimum ?? 1) ?
+	            {anchor, end, parts} : null;
+	        const entry = root.components[other.index];
+	        if (used.has(other.index) || visited.has(other.index) || entry.nodes.length !== 2 ||
+	            !acceptsEntry(entry, rule.through)) return null;
+	        visited.add(other.index);
+	        parts.push({...other, outputPort: 3 - other.inputPort});
+	        current = {index: other.index, inputPort: 3 - other.inputPort};
+	    }
+	}
+
+	function bindBoardLinks(root, match, bindings, adjacency, used) {
+	    const occupied = new Set();
+	    for (const rule of match.connections || []) {
+	        if (rule.from !== 'unusedPorts' || !bindings[rule.on] || !rule.through) {
+	            boardError('connections need a bound path, unused ports and a through predicate.');
+	        }
+	        const ports = unusedBoardPorts(root, bindings[rule.on]), links = [];
+	        for (const anchor of ports) {
+	            if (occupied.has(`${anchor.index}:${anchor.port}`)) continue;
+	            const link = traceBoardLink(root, anchor, ports, rule, adjacency, used);
+	            if (!link || occupied.has(`${link.end.index}:${link.end.port}`)) continue;
+	            link.parts.forEach(part => used.add(part.index));
+	            occupied.add(`${anchor.index}:${anchor.port}`);
+	            occupied.add(`${link.end.index}:${link.end.port}`);
+	            links.push(link);
+	        }
+	        if (links.length < (rule.minimumConnections ?? 0)) return null;
+	        bindings[rule.bind] = links;
+	    }
+	    return occupied;
+	}
+
+	function bindBoardPaths(root, match, adjacency, geometry) {
+	    const bindings = {}, used = new Set();
+	    for (const rule of match.paths) {
+	        if (!rule.bind || !rule.from?.externalPort || !rule.to?.externalPort || !rule.through) {
+	            boardError('a path needs a binding, endpoints and a through predicate.');
+	        }
+	        const path = traceBoardPath(root, rule, adjacency, geometry, used);
+	        if (!path) return null;
+	        bindings[rule.bind] = path;
+	        path.forEach(part => used.add(part.index));
+	        if (rule.coverAllComponents && used.size !== root.components.length) return null;
+	    }
+	    const occupied = bindBoardLinks(root, match, bindings, adjacency, used);
+	    if (!occupied) return null;
+	    for (const rule of match.attachments || []) {
+	        if (rule.from !== 'unusedPorts' || !bindings[rule.on] || !rule.until) {
+	            boardError('attachments need a bound path, unused ports and an end predicate.');
+	        }
+	        const branches = [];
+	        for (const part of bindings[rule.on]) {
+	            const entry = root.components[part.index];
+	            for (let port = 1; port <= entry.nodes.length; port++) {
+	                if (port === part.inputPort || port === part.outputPort) continue;
+	                if (occupied.has(`${part.index}:${port}`)) continue;
+	                const path = traceBoardPath(root, {...rule,
+	                    from: {node: entry.nodes[port - 1]}}, adjacency, geometry, used);
+	                if (!path) return null;
+	                path.forEach(step => used.add(step.index));
+	                branches.push({anchor: {index: part.index, port},
+	                    parts: path.slice(0, -1), termination: [path.at(-1)]});
+	            }
+	        }
+	        if (branches.length < (rule.minimumBranches ?? 0)) return null;
+	        bindings[rule.bind] = branches;
+	    }
+	    if (match.coverAllComponents && used.size !== root.components.length) return null;
+	    return bindings;
+	}
+
+	function expandBoardTiles(template, bindings) {
+	    const tiles = [];
+	    for (const tile of template) {
+	        if (tile.kind === 'wire') {
+	            tiles.push({...tile});
+	        } else if (tile.kind === 'component') {
+	            if (tile.between && tile.between.kind !== 'wire') {
+	                boardError('repeated components need a wire between them.');
+	            }
+	            const parts = bindings[tile.source];
+	            if (!Array.isArray(parts) || !parts.length) return null;
+	            if (!['one', 'oneOrMore'].includes(tile.repeat) ||
+	                tile.repeat === 'one' && parts.length !== 1) {
+	                boardError('component repeat must be one or oneOrMore and fit its binding.');
+	            }
+	            parts.forEach((part, index) => {
+	                if (index && tile.between) tiles.push({...tile.between});
+	                tiles.push({...tile, part});
+	            });
+	        } else boardError(`unknown tile kind "${tile.kind}".`);
+	    }
+	    return tiles.map((tile, index) => ({...tile, id: `tile:${index}`}));
+	}
+
+	function onGrid(point, grid) {
+	    return Array.isArray(point) && point.length === 2 &&
+	        point.every(value => Number.isFinite(value) && value % grid === 0);
+	}
+
+	function rotateBoardVector(vector, angle, mirrorX, mirrorY) {
+	    const x = vector[0] * (mirrorX ? -1 : 1), y = vector[1] * (mirrorY ? -1 : 1);
+	    return angle === 0 ? [x, y] : angle === 90 ? [-y, x] :
+	        angle === 180 ? [-x, -y] : [y, -x];
+	}
+
+	function pointsAlong(vector, direction) {
+	    return vector[0] * direction[0] + vector[1] * direction[1] > 0 &&
+	        vector[0] * direction[1] === vector[1] * direction[0];
+	}
+
+	function orientBoardPart(entry, part, at, direction, targets, geometry, orientation = {}) {
+	    const symbol = geometry.symbol(entry);
+	    const input = symbol.ports[part.inputPort - 1];
+	    const output = part.outputPort ? symbol.ports[part.outputPort - 1] : null;
+	    const center = output ? [(input[0] + output[0]) / 2, (input[1] + output[1]) / 2] :
+	        [(symbol.bodyBounds[0] + symbol.bodyBounds[2]) / 2,
+	            (symbol.bodyBounds[1] + symbol.bodyBounds[3]) / 2];
+	    let inputVector = entry.nodes.length === 2 ?
+	        (part.inputPort === 1 ? symbol.entry || [1, 0] :
+	            (symbol.exit || [1, 0]).map(value => -value)) :
+	        [center[0] - input[0], center[1] - input[1]];
+	    let outputVector = entry.nodes.length === 2 ?
+	        (part.inputPort === 1 ? symbol.exit || [1, 0] :
+	            (symbol.entry || [1, 0]).map(value => -value)) : inputVector;
+	    if (orientation.terminals !== undefined) {
+	        if (orientation.terminals !== 'leads') boardError('unknown terminal orientation rule.');
+	        const lead = symbolTerminalDirection(symbol, part.inputPort);
+	        outputVector = output && symbolTerminalDirection(symbol, part.outputPort);
+	        if (!lead || !outputVector) return null;
+	        inputVector = lead.map(value => -value);
+	    }
+	    const advance = orientation.advance && DIRECTIONS[orientation.advance];
+	    if (orientation.advance && (!advance || advance[0] * direction[0] + advance[1] * direction[1] !== 0)) {
+	        boardError('an advance direction must be perpendicular to path flow.');
+	    }
+	    for (const mirrorX of [false, true]) {
+	        for (const mirrorY of [false, true]) {
+	            for (const angle of [0, 90, 180, 270]) {
+	                const step = output && rotateBoardVector(output.map((value, axis) => value - input[axis]),
+	                    angle, mirrorX, mirrorY);
+	                if (advance && (!step || step[0] * advance[0] + step[1] * advance[1] <= 0)) continue;
+	                if (!pointsAlong(rotateBoardVector(inputVector, angle, mirrorX, mirrorY), direction) ||
+	                    targets.some(target => {
+	                        const port = symbol.ports[target.port - 1];
+	                        return !pointsAlong(rotateBoardVector([port[0] - center[0],
+	                            port[1] - center[1]], angle, mirrorX, mirrorY), target.direction);
+	                    })) continue;
+	                return {placement: geometry.placement(entry, part.inputPort, at,
+	                    angle, mirrorY, mirrorX),
+	                direction: rotateBoardVector(outputVector, angle, mirrorX, mirrorY).map(Math.sign)};
+	            }
+	        }
+	    }
+	    return null;
+	}
+
+	function boardWireDot(start, end, grid) {
+	    return start.map((value, axis) => Math.round((value + end[axis]) / (2 * grid)) * grid);
+	}
+
+	function appendBoardWire(result, previous, input, tile) {
+	    if (previous.node !== input.node) return false;
+	    const points = [previous.at.slice(), input.at.slice()];
+	    if (points[0][0] === points[1][0] && points[0][1] === points[1][1] ||
+	        points[0][0] !== points[1][0] && points[0][1] !== points[1][1]) return false;
+	    result.wires.push({node: input.node, points, boardTile: tile});
+	    result.nodePoints.set(input.node, boardWireDot(previous.at, input.at, result.grid));
+	    return true;
+	}
+
+	function placeBoardTiles(root, board, bindings, geometry, result, start, end, targets, pathId) {
+	    const {grid} = board;
+	    if (!(grid > 0) || !onGrid(start.at, grid) || !DIRECTIONS[board.direction]) {
+	        boardError('grid, origin and direction must describe an orthogonal board.');
+	    }
+	    let tiles = expandBoardTiles(board.tiles, bindings);
+	    if (!tiles) return null;
+	    if (end?.at) {
+	        tiles = fitBoardTiles(root, tiles, board, start, end, geometry);
+	        if (!tiles) return null;
+	    }
+	    let previous = start;
+	    let cursor = start.at.slice();
+	    let direction = DIRECTIONS[board.direction].slice();
+	    let pendingWire = null;
+	    let terminated = false;
+	    for (const tile of tiles) {
+	        if (terminated) boardError('a termination must end its board path.');
+	        if (tile.kind === 'wire') {
+	            const length = tile.length ?? board.wireBoxLength;
+	            if (pendingWire || !(length > 0) || length % grid !== 0) {
+	                boardError('each wire needs a positive grid length between components or ports.');
+	            }
+	            pendingWire = {...tile, id: `${pathId}:${tile.id}`, length};
+	            cursor = [cursor[0] + direction[0] * length, cursor[1] + direction[1] * length];
+	            continue;
+	        }
+	        if (!pendingWire) boardError('a component needs a wire before it.');
+	        const {part} = tile;
+	        const entry = root.components[part.index];
+	        const oriented = orientBoardPart(entry, part, cursor, direction,
+	            targets.get(part.index) || [], geometry, tile.orientation);
+	        if (!oriented) return null;
+	        const placement = oriented.placement;
+	        if (!placement.ports.every(port => onGrid(port.at, grid))) return null;
+	        placement.boardTile = {kind: tile.kind, role: tile.role, id: `${pathId}:${tile.id}`,
+	            ...(board.componentLabelOffset ? {labelOffset: board.componentLabelOffset} : {})};
+	        if (!appendBoardWire(result, previous, placement.ports[part.inputPort - 1], pendingWire)) return null;
+	        if (result.byIndex.has(part.index)) return null;
+	        result.placements.push(placement);
+	        result.byIndex.set(part.index, placement);
+	        if (part.outputPort) {
+	            previous = placement.ports[part.outputPort - 1];
+	            cursor = previous.at.slice();
+	            direction = oriented.direction;
+	        } else terminated = true;
+	        pendingWire = null;
+	    }
+	    if (end) {
+	        if (!pendingWire) boardError('the output port needs a wire.');
+	        if (!appendBoardWire(result, previous, {...end, at: cursor}, pendingWire)) return null;
+	        if (end.at && (cursor[0] !== end.at[0] || cursor[1] !== end.at[1])) return null;
+	        if (end.port && !end.at) result.externalPorts.push({...end, at: cursor.slice()});
+	    } else if (!terminated || pendingWire) return null;
+	    return result;
+	}
+
+	function placeBoardPaths(root, definition, bindings, geometry) {
+	    const board = boardPathSpacing(root, definition, bindings, geometry);
+	    if (!board) return null;
+	    if (board.spacing !== 'attachments') return placeBoundBoardPaths(root, board, bindings, geometry);
+	    if (!geometry.preview || !(board.clearance >= board.grid) || board.clearance % board.grid !== 0) {
+	        boardError('attachment spacing needs preview geometry and grid clearance.');
+	    }
+	    const preview = placeBoundBoardPaths(root, board, bindings, {...geometry, placement: geometry.preview});
+	    if (!preview) return null;
+	    const ranks = new Map();
+	    let rank = 0;
+	    for (const tile of expandBoardTiles(board.tiles, bindings)) {
+	        if (tile.kind === 'wire' && tile.length === undefined) rank++;
+	        if (tile.kind === 'component') ranks.set(tile.part.index, rank);
+	    }
+	    for (const attachment of board.attachments || []) for (const branch of bindings[attachment.source]) {
+	        for (const part of branch.parts.concat(branch.termination)) ranks.set(part.index, ranks.get(branch.anchor.index));
+	    }
+	    const direction = DIRECTIONS[board.direction], axis = direction[0] ? 0 : 1, across = 1 - axis;
+	    const entries = [...preview.byIndex].map(([index, placement]) =>
+	        ({rank: ranks.get(index), bounds: geometry.bounds(placement)}));
+	    let growth = 0;
+	    for (const a of entries) for (const b of entries) {
+	        if (!(b.rank > a.rank) || a.bounds[across + 2] + board.clearance <= b.bounds[across] ||
+	            b.bounds[across + 2] + board.clearance <= a.bounds[across]) continue;
+	        const end = direction[axis] > 0 ? a.bounds[axis + 2] : -a.bounds[axis];
+	        const start = direction[axis] > 0 ? b.bounds[axis] : -b.bounds[axis + 2];
+	        growth = Math.max(growth, Math.ceil((end + board.clearance - start) /
+	            (b.rank - a.rank) / board.grid) * board.grid);
+	    }
+	    return placeBoundBoardPaths(root, {...board, wireBoxLength: board.wireBoxLength + growth,
+	        attachments: (board.attachments || []).map(attachment =>
+	            ({wireBoxLength: board.wireBoxLength, ...attachment}))}, bindings, geometry);
+	}
+
+	function placeBoundBoardPaths(root, board, bindings, geometry) {
+	    const result = {grid: board.grid, placements: [], wires: [], nodePoints: new Map(),
+	        byIndex: new Map(), externalPorts: [], bindings};
+	    const start = {port: board.from.externalPort,
+	        node: root.externalNodes[board.from.externalPort - 1], at: board.origin.slice()};
+	    const end = {port: board.to.externalPort, node: root.externalNodes[board.to.externalPort - 1]};
+	    result.externalPorts.push(start);
+	    const targets = new Map();
+	    for (const connection of board.connections || []) {
+	        if (!DIRECTIONS[connection.direction]) boardError('unknown connection direction.');
+	        for (const link of bindings[connection.source] || []) {
+	            for (const {index, port} of [link.anchor, link.end]) {
+	                if (!targets.has(index)) targets.set(index, []);
+	                targets.get(index).push({port, direction: DIRECTIONS[connection.direction]});
+	            }
+	        }
+	    }
+	    for (const attachment of board.attachments || []) {
+	        if (attachment.direction === 'terminal') continue;
+	        if (!DIRECTIONS[attachment.direction]) boardError('unknown attachment direction.');
+	        for (const branch of bindings[attachment.source] || []) {
+	            const {index, port} = branch.anchor;
+	            if (!targets.has(index)) targets.set(index, []);
+	            targets.get(index).push({port, direction: DIRECTIONS[attachment.direction]});
+	        }
+	    }
+	    if (!placeBoardTiles(root, board, bindings, geometry, result, start, end, targets, 'main')) return null;
+	    for (const attachment of board.attachments || []) {
+	        const branches = bindings[attachment.source];
+	        if (!branches) boardError(`unknown attachment binding "${attachment.source}".`);
+	        for (let index = 0; index < branches.length; index++) {
+	            const branch = branches[index];
+	            const placement = result.byIndex.get(branch.anchor.index);
+	            const anchor = placement?.ports[branch.anchor.port - 1];
+	            const direction = attachment.direction === 'terminal' ?
+	                placedBoardTerminalDirection(root.components[branch.anchor.index], placement,
+	                    branch.anchor.port, geometry) : attachment.direction;
+	            if (!anchor || !placeBoardTiles(root, {...board, ...attachment, direction},
+	                branch, geometry, result, anchor, null, new Map(), `${attachment.source}:${index}`)) return null;
+	        }
+	    }
+	    return placeBoardLinks(root, board, bindings, geometry, result) ? result : null;
+	}
+
+	function boardPathSpacing(root, definition, bindings, geometry) {
+	    const board = definition.board;
+	    if (!board.connections?.length) return board;
+	    const tiles = expandBoardTiles(board.tiles, bindings), positions = new Map();
+	    if (!tiles) return null;
+	    let cursor = 0, flexible = 0, growth = 0;
+	    for (const tile of tiles) {
+	        if (tile.kind === 'wire') {
+	            cursor += tile.length ?? board.wireBoxLength;
+	            if (tile.length === undefined) flexible++;
+	        } else {
+	            const symbol = geometry.symbol(root.components[tile.part.index]);
+	            const a = symbol.ports[tile.part.inputPort - 1], b = symbol.ports[tile.part.outputPort - 1];
+	            if (!b || a[0] !== b[0] && a[1] !== b[1]) return null;
+	            const span = Math.abs(b[0] - a[0]) + Math.abs(b[1] - a[1]);
+	            positions.set(tile.part.index, {at: cursor, flexible, a, b, symbol, span});
+	            cursor += span;
+	        }
+	    }
+	    for (const connection of board.connections) {
+	        for (const link of bindings[connection.source] || []) {
+	            const [start, end] = [link.anchor, link.end].map(anchor => {
+	                const position = positions.get(anchor.index), point = position.symbol.ports[anchor.port - 1];
+	                const projection = point.reduce((sum, value, axis) =>
+	                    sum + (value - position.a[axis]) * (position.b[axis] - position.a[axis]), 0) / position.span;
+	                return {...position, at: position.at + projection};
+	            });
+	            const path = expandBoardTiles(connection.tiles, link);
+	            const span = path && boardTileSpan(root, path, {...board, ...connection}, geometry);
+	            if (span === null || span === undefined) return null;
+	            const required = span - (end.at - start.at), count = end.flexible - start.flexible;
+	            if (required > 0 && count <= 0) return null;
+	            if (required > 0) growth = Math.max(growth, Math.ceil(required / count / board.grid) * board.grid);
+	        }
+	    }
+	    return {...board, wireBoxLength: board.wireBoxLength + growth,
+	        attachments: (board.attachments || []).map(attachment =>
+	            ({wireBoxLength: board.wireBoxLength, ...attachment}))};
+	}
+
+	function placeBoardLinks(root, board, bindings, geometry, result) {
+	    for (const connection of board.connections || []) {
+	        const outward = DIRECTIONS[connection.direction], flow = DIRECTIONS[board.direction];
+	        if (!outward || !flow || outward[0] * flow[0] + outward[1] * flow[1] !== 0 ||
+	            !(connection.clearance >= 2 * board.grid) || connection.clearance % board.grid !== 0) {
+	            boardError('connections need a perpendicular direction and positive grid clearance.');
+	        }
+	        const axis = flow[0] ? 0 : 1, perpendicular = 1 - axis;
+	        const bounds = result.placements.map(geometry.bounds);
+	        const edge = outward[perpendicular] < 0 ? Math.min(...bounds.map(box => box[perpendicular])) :
+	            Math.max(...bounds.map(box => box[perpendicular + 2]));
+	        const links = bindings[connection.source], tracks = [];
+	        if (!links) boardError('unknown connection binding.');
+	        let bodySize = 0;
+	        for (const link of links) for (const part of link.parts) {
+	            const body = geometry.symbol(root.components[part.index]).bodyBounds;
+	            bodySize = Math.max(bodySize, body[2] - body[0], body[3] - body[1]);
+	        }
+	        const pitch = Math.ceil((bodySize + connection.clearance) / board.grid) * board.grid;
+	        const ordered = links.map((link, index) => ({link, index, span: Math.abs(
+	            result.byIndex.get(link.end.index).ports[link.end.port - 1].at[axis] -
+	            result.byIndex.get(link.anchor.index).ports[link.anchor.port - 1].at[axis])}))
+	            .sort((a, b) => a.span - b.span);
+	        // Short intervals take the inner tracks first. An enclosing connection
+	        // then clears them instead of forcing its vertical legs through them.
+	        for (const {link, index} of ordered) {
+	            const start = result.byIndex.get(link.anchor.index).ports[link.anchor.port - 1];
+	            const end = result.byIndex.get(link.end.index).ports[link.end.port - 1];
+	            const interval = [Math.min(start.at[axis], end.at[axis]), Math.max(start.at[axis], end.at[axis])];
+	            let track = tracks.findIndex(row => row.every(other =>
+	                interval[1] + connection.clearance <= other[0] || other[1] + connection.clearance <= interval[0]));
+	            if (track < 0) { track = tracks.length; tracks.push([]); }
+	            tracks[track].push(interval);
+	            const height = Math.round(edge / board.grid) * board.grid + outward[perpendicular] * pitch * (track + 1);
+	            const from = {...start, at: start.at.slice()}, to = {...end, at: end.at.slice()};
+	            from.at[perpendicular] = to.at[perpendicular] = height;
+	            const wireStart = result.wires.length;
+	            const laneBoard = {...board, ...connection, direction: board.direction};
+	            if (!placeBoardTiles(root, laneBoard, link, geometry, result, from, to, new Map(),
+	                `${connection.source}:${index}`)) return false;
+	            const last = result.wires.pop(), [first] = result.wires.splice(wireStart, 1);
+	            if (!appendCornerBoardWire(result, start, {node: start.node, at: first.points[1]},
+	                axis === 0 ? 'verticalFirst' : 'horizontalFirst', board.grid, first.boardTile.id) ||
+	                !appendCornerBoardWire(result, {node: end.node, at: last.points[0]}, end,
+	                    axis === 0 ? 'horizontalFirst' : 'verticalFirst', board.grid, last.boardTile.id)) return false;
+	        }
+	    }
+	    return true;
+	}
+
+	// Expand repeated rows or named junction cells into slots and connections.
+	// Lanes, port locations and allowed component types come from the description.
+	function expandBoardSlots(board, anchorCount) {
+	    if (board.anchors) {
+	        if (board.anchors.length !== anchorCount) return null;
+	        const slots = board.anchors;
+	        if (new Set(slots.map(slot => slot.id)).size !== slots.length ||
+	            slots.some(slot => !onGrid(slot.cell, 1))) boardError('invalid named anchor cells.');
+	        const links = board.lanes.map(lane => {
+	            const from = slots.find(slot => slot.id === lane.from);
+	            const to = slots.find(slot => slot.id === lane.to);
+	            if (!from || !to || from === to || !DIRECTIONS[lane.direction]) {
+	                boardError('invalid named lane endpoints or direction.');
+	            }
+	            const delta = to.cell.map((value, axis) => value - from.cell[axis]);
+	            if (lane.route) {
+	                const firstAxis = lane.route === 'verticalFirst' ? 1 :
+	                    lane.route === 'horizontalFirst' ? 0 : -1;
+	                const lastAxis = 1 - firstAxis;
+	                if (firstAxis < 0 || !delta[0] || !delta[1] ||
+	                    DIRECTIONS[lane.direction][lastAxis] !== Math.sign(delta[lastAxis]) ||
+	                    DIRECTIONS[lane.fromSide]?.[firstAxis] !== Math.sign(delta[firstAxis])) {
+	                    boardError('turning lane directions conflict with its cells.');
+	                }
+	            } else if (!pointsAlong(delta, DIRECTIONS[lane.direction])) {
+	                boardError('lane direction conflicts with its cells.');
+	            }
+	            return {...lane, id: lane.name};
+	        });
+	        const ports = board.externalPorts;
+	        if (ports.some(port => !slots.some(slot => slot.id === port.slot) || !DIRECTIONS[port.side])) {
+	            boardError('invalid external port slot or side.');
+	        }
+	        return {slots, links, ports};
+	    }
+	    const columns = anchorCount / board.rows.length;
+	    if (!Number.isInteger(columns) || columns < board.minimumColumns) return null;
+	    const slots = board.rows.flatMap((row, y) => Array.from({length: columns}, (_, x) =>
+	        ({id: `${row.name}:${x}`, cell: [x, y], row: row.name, column: x, tile: row.tile})));
+	    const links = [];
+	    for (const lane of board.lanes) {
+	        if (!['adjacent', 'each'].includes(lane.columns) || !DIRECTIONS[lane.direction]) {
+	            boardError('a lane needs a column repetition and an orthogonal direction.');
+	        }
+	        for (let column = 0; column < columns - (lane.columns === 'adjacent' ? 1 : 0); column++) {
+	            const from = slots.find(slot => slot.row === lane.from && slot.column === column);
+	            const to = slots.find(slot => slot.row === lane.to &&
+	                slot.column === column + (lane.columns === 'adjacent' ? 1 : 0));
+	            if (!from || !to || from === to) boardError('invalid board lane endpoints.');
+	            const delta = [to.cell[0] - from.cell[0], to.cell[1] - from.cell[1]];
+	            if (!pointsAlong(delta, DIRECTIONS[lane.direction])) boardError('lane direction conflicts with its cells.');
+	            links.push({...lane, from: from.id, to: to.id, id: `${lane.name}:${column}`});
+	        }
+	    }
+	    const ports = board.externalPorts.map(port => {
+	        const column = port.column === 'first' ? 0 : port.column === 'last' ? columns - 1 : port.column;
+	        const slot = slots.find(item => item.row === port.row && item.column === column);
+	        if (!slot || !DIRECTIONS[port.side]) boardError('invalid external port cell or side.');
+	        return {...port, slot: slot.id};
+	    });
+	    return {slots, links, ports, columns};
+	}
+
+	function collectBoardConnections(root, match, adjacency) {
+	    const anchors = new Set(root.components.flatMap((entry, index) =>
+	        acceptsEntry(entry, match.anchors) ? [index] : []));
+	    const edges = [], seen = new Set(), used = new Set(anchors);
+	    for (const index of anchors) {
+	        const entry = root.components[index];
+	        for (let port = 1; port <= entry.nodes.length; port++) {
+	            if (root.externalNodes.includes(entry.nodes[port - 1])) continue;
+	            let current = {index, inputPort: port};
+	            const parts = [], visited = new Set([index]);
+	            while (true) {
+	                const node = root.components[current.index].nodes[current.inputPort - 1];
+	                const other = adjacency.get(node)?.find(end =>
+	                    end.index !== current.index || end.inputPort !== current.inputPort);
+	                if (!other) return null;
+	                if (anchors.has(other.index)) {
+	                    if (other.index === index || parts.length < match.minimumLaneParts) return null;
+	                    const key = [index, other.index].sort((a, b) => a - b).join(':');
+	                    if (!seen.has(key)) {
+	                        if (parts.some(part => used.has(part.index))) return null;
+	                        edges.push({a: index, aPort: port, b: other.index, bPort: other.inputPort, parts});
+	                        parts.forEach(part => used.add(part.index));
+	                        seen.add(key);
+	                    } else {
+	                        const prior = edges.find(edge => [edge.a, edge.b].sort((a, b) => a - b).join(':') === key);
+	                        if (prior.parts.length !== parts.length ||
+	                            !parts.every(part => prior.parts.some(item => item.index === part.index))) return null;
+	                    }
+	                    break;
+	                }
+	                const next = root.components[other.index];
+	                if (visited.has(other.index) || next.nodes.length !== 2 ||
+	                    !acceptsEntry(next, match.through)) return null;
+	                visited.add(other.index);
+	                parts.push({...other, outputPort: 3 - other.inputPort});
+	                current = {index: other.index, inputPort: 3 - other.inputPort};
+	            }
+	        }
+	    }
+	    if (!anchors.size || used.size !== root.components.length) return null;
+	    return {anchors: [...anchors], edges};
+	}
+
+	function assignBoardSlots(template, network, root, assigned = new Map(), used = new Set()) {
+	    if (assigned.size === template.slots.length) return assigned;
+	    let choice = null;
+	    for (const slot of template.slots) {
+	        if (assigned.has(slot.id)) continue;
+	        const links = template.links.filter(link => link.from === slot.id || link.to === slot.id);
+	        const ports = template.ports.filter(port => port.slot === slot.id);
+	        const candidates = network.anchors.filter(index => !used.has(index) &&
+	            root.components[index].nodes.length === links.length + ports.length &&
+	            ports.every(port => root.components[index].nodes.includes(root.externalNodes[port.port - 1])) &&
+	            links.every(link => {
+	                const neighbor = assigned.get(link.from === slot.id ? link.to : link.from);
+	                return neighbor === undefined || network.edges.some(edge =>
+	                    (edge.a === index && edge.b === neighbor || edge.b === index && edge.a === neighbor) &&
+	                    (!link.through || edge.parts.every(part => acceptsEntry(root.components[part.index], link.through))));
+	            }));
+	        if (!candidates.length) return null;
+	        if (!choice || candidates.length < choice.candidates.length) choice = {slot, candidates};
+	    }
+	    for (const index of choice.candidates) {
+	        const result = assignBoardSlots(template, network, root,
+	            new Map([...assigned, [choice.slot.id, index]]), new Set([...used, index]));
+	        if (result) return result;
+	    }
+	    return null;
+	}
+
+	function symbolBoardCenter(symbol) {
+	    if (symbol.flow?.throughPorts) {
+	        const [a, b] = symbol.flow.throughPorts.map(port => symbol.ports[port - 1]);
+	        return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+	    }
+	    return [(symbol.bodyBounds[0] + symbol.bodyBounds[2]) / 2,
+	        (symbol.bodyBounds[1] + symbol.bodyBounds[3]) / 2];
+	}
+
+	function boardPortReach(entry, port, geometry) {
+	    const symbol = geometry.symbol(entry), center = symbolBoardCenter(symbol);
+	    const point = symbol.ports[port - 1];
+	    return point[0] !== center[0] && point[1] !== center[1] ? null :
+	        Math.abs(point[0] - center[0]) + Math.abs(point[1] - center[1]);
+	}
+
+	function boardTileSpan(root, tiles, board, geometry) {
+	    let span = 0;
+	    for (const tile of tiles) {
+	        if (tile.kind === 'wire') span += tile.length ?? board.wireBoxLength;
+	        else {
+	            const symbol = geometry.symbol(root.components[tile.part.index]);
+	            const a = symbol.ports[tile.part.inputPort - 1], b = symbol.ports[tile.part.outputPort - 1];
+	            if (a[0] !== b[0] && a[1] !== b[1]) return null;
+	            span += Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
+	        }
+	    }
+	    return span;
+	}
+
+	function fitBoardTiles(root, tiles, board, start, end, geometry) {
+	    const direction = DIRECTIONS[board.direction];
+	    const delta = [end.at[0] - start.at[0], end.at[1] - start.at[1]];
+	    if (!pointsAlong(delta, direction)) return null;
+	    const span = boardTileSpan(root, tiles, board, geometry);
+	    if (span === null) return null;
+	    const slack = Math.abs(delta[0]) + Math.abs(delta[1]) - span;
+	    if (slack < 0 || slack % board.grid !== 0 || tiles[0]?.kind !== 'wire' ||
+	        tiles.at(-1)?.kind !== 'wire') return null;
+	    const first = Math.floor(slack / (2 * board.grid)) * board.grid;
+	    return tiles.map((tile, index) => tile.kind === 'wire' ? {...tile,
+	        length: (tile.length ?? board.wireBoxLength) +
+	            (index === 0 ? first : index === tiles.length - 1 ? slack - first : 0)} : tile);
+	}
+
+	function orientBoardAnchor(entry, at, targets, geometry) {
+	    const symbol = geometry.symbol(entry), center = symbolBoardCenter(symbol);
+	    for (const mirrorX of [false, true]) {
+	        for (const mirrorY of [false, true]) {
+	            for (const angle of [0, 90, 180, 270]) {
+	                if (!targets.every(target => {
+	                    const point = symbol.ports[target.port - 1];
+	                    return pointsAlong(rotateBoardVector([point[0] - center[0], point[1] - center[1]],
+	                        angle, mirrorX, mirrorY), target.direction);
+	                })) continue;
+	                const offset = rotateBoardVector([symbol.ports[0][0] - center[0],
+	                    symbol.ports[0][1] - center[1]], angle, mirrorX, mirrorY);
+	                return geometry.placement(entry, 1, [at[0] + offset[0], at[1] + offset[1]],
+	                    angle, mirrorY, mirrorX);
+	            }
+	        }
+	    }
+	    return null;
+	}
+
+	// Each axis grows from measured lane spans. Turning lanes reserve a straight
+	// escape on their first axis and place their repeated tiles on the final axis.
+	function boardLanePitch(root, template, lanes, board, geometry) {
+	    if (board.spacing === 'largestArm') {
+	        const spans = lanes.map(lane => {
+	            const a = boardPortReach(root.components[lane.from], lane.startPort, geometry);
+	            const b = boardPortReach(root.components[lane.to], lane.endPort, geometry);
+	            const chain = lane.tiles && boardTileSpan(root, lane.tiles, board, geometry);
+	            return a === null || b === null || chain === null ? null : a + b + chain;
+	        });
+	        if (spans.includes(null)) return null;
+	        const pitch = Math.ceil(Math.max(...spans) / board.grid) * board.grid;
+	        return [pitch, pitch];
+	    }
+	    if (board.spacing !== 'byAxis') boardError('unknown connected-board spacing rule.');
+	    const pitch = [board.grid, board.grid];
+	    for (const lane of lanes) {
+	        const from = template.slots.find(slot => slot.id === lane.fromSlot);
+	        const to = template.slots.find(slot => slot.id === lane.toSlot);
+	        const delta = to.cell.map((value, axis) => Math.abs(value - from.cell[axis]));
+	        const a = boardPortReach(root.components[lane.from], lane.startPort, geometry);
+	        const b = boardPortReach(root.components[lane.to], lane.endPort, geometry);
+	        const chain = lane.tiles && boardTileSpan(root, lane.tiles, board, geometry);
+	        if (a === null || b === null || chain === null) return null;
+	        const axis = DIRECTIONS[lane.direction][0] ? 0 : 1;
+	        pitch[axis] = Math.max(pitch[axis], (b + chain + (lane.route ? 0 : a)) / delta[axis]);
+	        if (lane.route) pitch[1 - axis] = Math.max(pitch[1 - axis],
+	            (a + 2 * board.grid) / delta[1 - axis]);
+	    }
+	    return pitch.map(value => Math.ceil(value / board.grid) * board.grid);
+	}
+
+	function placeBoardLane(root, board, lane, geometry, result, start, end) {
+	    const laneBoard = {...board, direction: lane.direction, tiles: board.paths[lane.path]};
+	    if (!lane.route) return placeBoardTiles(root, laneBoard,
+	        {parts: lane.parts}, geometry, result, start, end, new Map(), lane.id);
+	    const corner = lane.route === 'verticalFirst' ? [start.at[0], end.at[1]] : [end.at[0], start.at[1]];
+	    const firstWireIndex = result.wires.length;
+	    if (!placeBoardTiles(root, laneBoard, {parts: lane.parts}, geometry, result,
+	        {...start, at: corner}, end, new Map(), lane.id)) return null;
+	    // Replace the first straight lead with the same shared corner-wire operation
+	    // used by named-slot boards; never add a fictitious component at the turn.
+	    const [firstWire] = result.wires.splice(firstWireIndex, 1);
+	    return appendCornerBoardWire(result, start, {node: start.node, at: firstWire.points[1]},
+	        lane.route, board.grid, firstWire.boardTile.id) ? result : null;
+	}
+
+	function placeBoardConnections(root, definition, adjacency, geometry) {
+	    const {board, match} = definition;
+	    const network = collectBoardConnections(root, match, adjacency);
+	    if (!network) return null;
+	    const template = expandBoardSlots(board, network.anchors.length);
+	    if (!template || template.links.length !== network.edges.length ||
+	        template.ports.length !== root.externalNodes.length ||
+	        new Set(template.ports.map(port => port.port)).size !== root.externalNodes.length) return null;
+	    const assigned = assignBoardSlots(template, network, root);
+	    if (!assigned) return null;
+	    const lanes = template.links.map(link => {
+	        const from = assigned.get(link.from), to = assigned.get(link.to);
+	        const edge = network.edges.find(item => item.a === from && item.b === to || item.b === from && item.a === to);
+	        const forward = edge.a === from;
+	        const parts = forward ? edge.parts : edge.parts.slice().reverse().map(part =>
+	            ({index: part.index, inputPort: part.outputPort, outputPort: part.inputPort}));
+	        return {...link, fromSlot: link.from, toSlot: link.to, from, to, startPort: forward ? edge.aPort : edge.bPort,
+	            endPort: forward ? edge.bPort : edge.aPort, parts,
+	            tiles: expandBoardTiles(board.paths[link.path], {parts})};
+	    });
+	    const pitch = boardLanePitch(root, template, lanes, board, geometry);
+	    if (!pitch || !onGrid(board.origin, board.grid)) return null;
+	    const result = {grid: board.grid, placements: [], wires: [], nodePoints: new Map(), byIndex: new Map(), externalPorts: [],
+	        ...(board.rows ? {cells: (board.rows.length - 1) * (template.columns - 1)} : {})};
+	    for (const slot of template.slots) {
+	        const index = assigned.get(slot.id), entry = root.components[index];
+	        const targets = lanes.flatMap(lane => lane.from === index ?
+	            [{port: lane.startPort, direction: DIRECTIONS[lane.fromSide || lane.direction]}] : lane.to === index ?
+	                [{port: lane.endPort, direction: DIRECTIONS[lane.direction].map(value => -value)}] : []);
+	        const ports = template.ports.filter(port => port.slot === slot.id);
+	        targets.push(...ports.map(port => ({port: entry.nodes.indexOf(root.externalNodes[port.port - 1]) + 1,
+	            direction: DIRECTIONS[port.side]})));
+	        const at = [board.origin[0] + slot.cell[0] * pitch[0], board.origin[1] + slot.cell[1] * pitch[1]];
+	        const placement = orientBoardAnchor(entry, at, targets, geometry);
+	        if (!placement || !placement.ports.every(port => onGrid(port.at, board.grid))) return null;
+	        placement.boardTile = {...slot.tile, id: slot.id, cell: slot.cell};
+	        result.placements.push(placement);
+	        result.byIndex.set(index, placement);
+	    }
+	    for (const lane of lanes) {
+	        const start = result.byIndex.get(lane.from).ports[lane.startPort - 1];
+	        const end = result.byIndex.get(lane.to).ports[lane.endPort - 1];
+	        if (!placeBoardLane(root, board, lane, geometry, result, start, end)) return null;
+	    }
+	    for (const port of template.ports) {
+	        const node = root.externalNodes[port.port - 1];
+	        const terminal = result.byIndex.get(assigned.get(port.slot)).ports.find(item => item.node === node);
+	        const direction = DIRECTIONS[port.side], length = board.externalPortLead.length;
+	        if (!(length > 0) || length % board.grid !== 0) boardError('invalid external lead length.');
+	        const end = {port: port.port, node, at: [terminal.at[0] + direction[0] * length,
+	            terminal.at[1] + direction[1] * length]};
+	        if (!appendBoardWire(result, terminal, end, {...board.externalPortLead, length,
+	            id: `port:${port.port}:lead`})) return null;
+	        result.externalPorts.push(end);
+	    }
+	    result.placements = root.components.map((_, index) => result.byIndex.get(index));
+	    return result.placements.includes(undefined) ? null : result;
+	}
+
+	// Named slots describe connection roles, not particular component instances.
+	function slotPortBindings(roles, count, selected = {}, used = new Set()) {
+	    const role = Object.keys(roles).find(key => selected[key] === undefined);
+	    if (!role) return Object.keys(selected).length === count ? [selected] : [];
+	    return roles[role].flatMap(port => Number.isInteger(port) && port >= 1 && port <= count && !used.has(port) ?
+	        slotPortBindings(roles, count, {...selected, [role]: port}, new Set([...used, port])) : []);
+	}
+
+	function slotEndpoint(root, endpoint, bindings) {
+	    if (endpoint.externalPort) return {node: root.externalNodes[endpoint.externalPort - 1]};
+	    const binding = bindings.get(endpoint.slot);
+	    return binding ? {node: root.components[binding.index].nodes[binding.ports[endpoint.port] - 1]} : null;
+	}
+
+	function bindBoardSlots(root, slots, wires, bindings = new Map(), used = new Set()) {
+	    if (bindings.size === slots.length) return used.size === root.components.length ? bindings : null;
+	    let choice = null;
+	    for (const slot of slots) {
+	        if (bindings.has(slot.name)) continue;
+	        const candidates = root.components.flatMap((entry, index) => {
+	            if (used.has(index) || !acceptsEntry(entry, slot)) return [];
+	            return slotPortBindings(slot.ports, entry.nodes.length).flatMap(ports => {
+	                const candidate = {index, ports};
+	                const tentative = new Map([...bindings, [slot.name, candidate]]);
+	                return wires.every(wire => {
+	                    const a = slotEndpoint(root, wire.from, tentative), b = slotEndpoint(root, wire.to, tentative);
+	                    return !a || !b || a.node === b.node;
+	                }) ? [candidate] : [];
+	            });
+	        });
+	        if (!candidates.length) return null;
+	        if (!choice || candidates.length < choice.candidates.length) choice = {slot, candidates};
+	    }
+	    for (const candidate of choice.candidates) {
+	        const result = bindBoardSlots(root, slots, wires,
+	            new Map([...bindings, [choice.slot.name, candidate]]), new Set([...used, candidate.index]));
+	        if (result) return result;
+	    }
+	    return null;
+	}
+
+	function symbolTerminalDirection(symbol, port) {
+	    const at = symbol.ports[port - 1];
+	    const lead = symbol.leads?.[port - 1];
+	    if (!lead) return null;
+	    const inside = lead.find(point => point[0] !== at[0] || point[1] !== at[1]);
+	    return inside ? [at[0] - inside[0], at[1] - inside[1]] : null;
+	}
+
+	function placedBoardTerminalDirection(entry, placement, port, geometry) {
+	    const lead = symbolTerminalDirection(geometry.symbol(entry), port);
+	    if (!lead || !placement) boardError('a terminal-directed attachment needs canonical lead geometry.');
+	    const direction = rotateBoardVector(lead, placement.rotation, placement.mirrorX, placement.mirrorY);
+	    const name = Object.keys(DIRECTIONS).find(key => pointsAlong(direction, DIRECTIONS[key]));
+	    if (!name) boardError('terminal lead must have an orthogonal direction.');
+	    return name;
+	}
+
+	function orientBoardSlot(entry, ports, tile, at, geometry) {
+	    const symbol = geometry.symbol(entry);
+	    for (const mirrorX of [false, true]) {
+	        for (const mirrorY of [false, true]) {
+	            for (const angle of [0, 90, 180, 270]) {
+	                const fits = Object.entries(tile.directions).every(([role, direction]) => {
+	                    const vector = symbolTerminalDirection(symbol, ports[role]);
+	                    if (!DIRECTIONS[direction]) boardError('unknown terminal direction.');
+	                    return vector && pointsAlong(rotateBoardVector(vector, angle, mirrorX, mirrorY), DIRECTIONS[direction]);
+	                });
+	                if (fits) return geometry.placement(entry, ports[tile.anchor], at, angle, mirrorY, mirrorX);
+	            }
+	        }
+	    }
+	    return null;
+	}
+
+	function placedSlotTerminal(reference, bindings, result) {
+	    const binding = bindings.get(reference.slot);
+	    return binding && result.byIndex.get(binding.index)?.ports[binding.ports[reference.port] - 1];
+	}
+
+	function appendCornerBoardWire(result, start, end, route, grid, id) {
+	    if (start.node !== end.node) return false;
+	    if (start.at[0] === end.at[0] || start.at[1] === end.at[1]) {
+	        const length = Math.abs(end.at[0] - start.at[0]) + Math.abs(end.at[1] - start.at[1]);
+	        return appendBoardWire(result, start, end, {kind: 'wire', id, length});
+	    }
+	    if (!['verticalFirst', 'horizontalFirst'].includes(route)) boardError('a bent wire needs its turn order.');
+	    const corner = route === 'verticalFirst' ? [start.at[0], end.at[1]] : [end.at[0], start.at[1]];
+	    const incoming = [Math.sign(corner[0] - start.at[0]), Math.sign(corner[1] - start.at[1])];
+	    const outgoing = [Math.sign(end.at[0] - corner[0]), Math.sign(end.at[1] - corner[1])];
+	    const lengths = [Math.abs(corner[0] - start.at[0]) + Math.abs(corner[1] - start.at[1]),
+	        Math.abs(end.at[0] - corner[0]) + Math.abs(end.at[1] - corner[1])];
+	    if (lengths.some(length => length < 2 * grid)) return false;
+	    const before = [corner[0] - incoming[0] * grid, corner[1] - incoming[1] * grid];
+	    const after = [corner[0] + outgoing[0] * grid, corner[1] + outgoing[1] * grid];
+	    if (!appendBoardWire(result, start, {node: start.node, at: before},
+	        {kind: 'wire', id: `${id}:entry`, length: lengths[0] - grid}) ||
+	        !appendBoardWire(result, {node: start.node, at: after}, end,
+	            {kind: 'wire', id: `${id}:exit`, length: lengths[1] - grid})) return false;
+	    // Render each corner segment as a plain stroke. The board records them as
+	    // one corner box, which carries no node dot and never touches a symbol.
+	    const tile = {kind: 'cornerWire', id: `${id}:corner`, length: 2 * grid};
+	    result.wires.push({node: start.node, points: [before, corner], boardTile: tile},
+	        {node: start.node, points: [corner, after], boardTile: tile});
+	    const longest = lengths[0] >= lengths[1] ? [start.at, before] : [after, end.at];
+	    result.nodePoints.set(start.node, boardWireDot(longest[0], longest[1], grid));
+	    return true;
+	}
+
+	function boardAlignmentPoint(reference, bindings, result) {
+	    if (reference.between) {
+	        if (!Array.isArray(reference.between) || reference.between.length !== 2) {
+	            boardError('a centerline midpoint needs two terminal roles.');
+	        }
+	        const points = reference.between.map(port => placedSlotTerminal({slot: reference.slot, port}, bindings, result)?.at);
+	        if (points.some(point => !point)) boardError('unknown centerline terminal.');
+	        return points[0].map((value, axis) => (value + points[1][axis]) / 2);
+	    }
+	    const terminal = placedSlotTerminal(reference, bindings, result);
+	    if (!terminal) boardError('unknown centerline terminal.');
+	    return terminal.at;
+	}
+
+	function alignBoardCenterlines(board, bindings, result) {
+	    const rules = board.centerlines || [];
+	    for (const rule of rules) {
+	        if (!['x', 'y'].includes(rule.axis) || !Array.isArray(rule.align) || !rule.align.length) {
+	            boardError('a centerline needs an x or y axis and alignment members.');
+	        }
+	    }
+	    // Centerline relations take precedence over initial board-cell offsets.
+	    // Iterate so a relation can refer to a component moved by another relation.
+	    for (let pass = 0; pass <= rules.length; pass++) {
+	        let moved = false;
+	        for (const rule of rules) {
+	            const axis = rule.axis === 'x' ? 0 : 1;
+	            const target = boardAlignmentPoint(rule.reference, bindings, result)[axis];
+	            for (const member of rule.align) {
+	                const delta = target - boardAlignmentPoint(member, bindings, result)[axis];
+	                if (!Number.isFinite(delta) || delta % board.grid !== 0) {
+	                    boardError('centerline alignment conflicts with the placement grid.');
+	                }
+	                if (!delta) continue;
+	                const placement = result.byIndex.get(bindings.get(member.slot).index);
+	                placement.at[axis] += delta;
+	                placement.ports.forEach(port => { port.at[axis] += delta; });
+	                moved = true;
+	            }
+	        }
+	        if (!moved) return;
+	    }
+	    // Reject incompatible relations rather than accepting the last one applied.
+	    if (rules.some(rule => {
+	        const axis = rule.axis === 'x' ? 0 : 1;
+	        const target = boardAlignmentPoint(rule.reference, bindings, result)[axis];
+	        return rule.align.some(member => boardAlignmentPoint(member, bindings, result)[axis] !== target);
+	    })) boardError('centerline relations conflict.');
+	}
+
+	function placeNamedBoardSlots(root, definition, geometry) {
+	    const {board, match} = definition;
+	    if (!onGrid(board.origin, board.grid)) boardError('invalid board origin or grid.');
+	    const bindings = bindBoardSlots(root, match.slots, board.wires);
+	    if (!bindings) return null;
+	    const result = {grid: board.grid, placements: [], wires: [], nodePoints: new Map(), byIndex: new Map(), externalPorts: []};
+	    const pending = board.components.slice();
+	    while (pending.length) {
+	        const index = pending.findIndex(tile => !tile.from || placedSlotTerminal(tile.from, bindings, result));
+	        if (index < 0) boardError('component positions contain an unresolved dependency.');
+	        const [tile] = pending.splice(index, 1);
+	        const binding = bindings.get(tile.slot);
+	        if (!binding || result.byIndex.has(binding.index)) boardError('invalid or repeated component slot.');
+	        const origin = tile.from ? placedSlotTerminal(tile.from, bindings, result).at : board.origin;
+	        const offset = tile.offset || tile.at;
+	        if (!Array.isArray(offset) || offset.length !== 2 || !offset.every(Number.isInteger)) {
+	            boardError('a component position needs two whole board-cell offsets.');
+	        }
+	        const at = origin.map((value, axis) => value + offset[axis] * board.grid);
+	        const placement = orientBoardSlot(root.components[binding.index], binding.ports, tile, at, geometry);
+	        if (!placement || !placement.ports.every(port => onGrid(port.at, board.grid))) return null;
+	        placement.boardTile = {kind: 'component', id: tile.slot, role: tile.role};
+	        result.placements.push(placement);
+	        result.byIndex.set(binding.index, placement);
+	    }
+	    alignBoardCenterlines(board, bindings, result);
+	    for (const port of board.externalPorts) {
+	        const terminal = placedSlotTerminal(port.from, bindings, result);
+	        if (!terminal || terminal.node !== root.externalNodes[port.port - 1] ||
+	            !DIRECTIONS[port.side] || !Number.isInteger(port.cells) || port.cells < 1) return null;
+	        const direction = DIRECTIONS[port.side];
+	        result.externalPorts.push({port: port.port, node: terminal.node,
+	            at: terminal.at.map((value, axis) => value + direction[axis] * port.cells * board.grid)});
+	    }
+	    if (result.externalPorts.length !== root.externalNodes.length ||
+	        new Set(result.externalPorts.map(port => port.port)).size !== root.externalNodes.length) return null;
+	    const endpoints = new Set();
+	    for (let index = 0; index < board.wires.length; index++) {
+	        const wire = board.wires[index];
+	        const ends = [wire.from, wire.to].map(endpoint => {
+	            const key = endpoint.externalPort ? `external:${endpoint.externalPort}` : `${endpoint.slot}:${endpoint.port}`;
+	            if (endpoints.has(key)) boardError('a terminal occurs in multiple wire boxes.');
+	            endpoints.add(key);
+	            return endpoint.externalPort ? result.externalPorts.find(port => port.port === endpoint.externalPort) :
+	                placedSlotTerminal(endpoint, bindings, result);
+	        });
+	        if (ends.includes(undefined) || !appendCornerBoardWire(result, ends[0], ends[1],
+	            wire.route, board.grid, `wire:${index}`)) return null;
+	    }
+	    if (endpoints.size !== root.components.reduce((sum, entry) => sum + entry.nodes.length, 0) +
+	        root.externalNodes.length || result.byIndex.size !== root.components.length) return null;
+	    result.placements = root.components.map((_, index) => result.byIndex.get(index));
+	    return result;
+	}
+
+	function reflectBoardPoint(point, mirrorX, mirrorY) {
+	    return [mirrorX ? -point[0] || 0 : point[0], mirrorY ? -point[1] || 0 : point[1]];
+	}
+
+	// Reflection acts on the complete bound geometry, before annotation placement.
+	// Reversing the rotation and toggling a local mirror composes a world reflection
+	// with the canonical symbol transform; numbered terminals never change roles.
+	function reflectBoardResult(result, definition, source) {
+	    const transform = definition.transform ?? {};
+	    if (typeof transform !== 'object' || Array.isArray(transform) || Object.entries(transform).some(([key, value]) =>
+	        !['mirrorX', 'mirrorY'].includes(key) || typeof value !== 'boolean')) {
+	        boardError('a board transform accepts boolean mirrorX and mirrorY only.');
+	    }
+	    const {mirrorX = false, mirrorY = false} = transform;
+	    const selected = result.definition || source;
+	    const board = {...selected.board};
+	    for (const key of ['componentLabelOffset', 'portLabelOffset']) {
+	        if (board[key]) board[key] = reflectBoardPoint(board[key], mirrorX, mirrorY);
+	    }
+	    for (const placement of result.placements) {
+	        placement.at = reflectBoardPoint(placement.at, mirrorX, mirrorY);
+	        placement.ports = placement.ports.map(port => ({...port,
+	            at: reflectBoardPoint(port.at, mirrorX, mirrorY)}));
+	        placement.rotation = mirrorX !== mirrorY ? (360 - placement.rotation) % 360 : placement.rotation;
+	        placement.mirrorX = !!placement.mirrorX !== mirrorX;
+	        placement.mirrorY = !!placement.mirrorY !== mirrorY;
+	        if (placement.boardTile.labelOffset) placement.boardTile = {...placement.boardTile,
+	            labelOffset: reflectBoardPoint(placement.boardTile.labelOffset, mirrorX, mirrorY)};
+	    }
+	    result.wires = result.wires.map(wire => ({...wire,
+	        points: wire.points.map(point => reflectBoardPoint(point, mirrorX, mirrorY))}));
+	    result.nodePoints = new Map([...result.nodePoints].map(([node, point]) =>
+	        [node, reflectBoardPoint(point, mirrorX, mirrorY)]));
+	    result.externalPorts = result.externalPorts.map(port => ({...port,
+	        at: reflectBoardPoint(port.at, mirrorX, mirrorY)}));
+	    if (result.junctions) result.junctions = result.junctions.map(junction => ({...junction,
+	        at: reflectBoardPoint(junction.at, mirrorX, mirrorY)}));
+	    if (result.crossings) result.crossings = result.crossings.map(point => reflectBoardPoint(point, mirrorX, mirrorY));
+	    return {...result, definition: {...selected, name: definition.name,
+	        layout: definition.layout || definition.name, board}};
+	}
+
+	function boardAdjacency(root, definition, geometry) {
+	    if (!root || !Array.isArray(root.components) || !root.components.length ||
+	        !Array.isArray(root.externalNodes) || root.externalNodes.length !== definition.match.externalPortCount ||
+	        new Set(root.externalNodes).size !== root.externalNodes.length) return null;
+	    const adjacency = new Map();
+	    for (let index = 0; index < root.components.length; index++) {
+	        const entry = root.components[index];
+	        if (!Array.isArray(entry.nodes) || geometry.symbol(entry)?.ports.length !== entry.nodes.length) return null;
+	        entry.nodes.forEach((node, port) => {
+	            if (!adjacency.has(node)) adjacency.set(node, []);
+	            adjacency.get(node).push({index, inputPort: port + 1});
+	        });
+	    }
+	    for (const [node, terminals] of adjacency) {
+	        if (terminals.length + root.externalNodes.filter(value => value === node).length !== 2) return null;
+	    }
+	    return root.externalNodes.some(node => !adjacency.has(node)) ? null : adjacency;
+	}
+
+	// Structural matching only: no placement, coordinates, annotations or SVG.
+	// Detection and layout use the same binding operations and board predicates.
+	function matchSchematicBoard(root, definition, geometry, references = []) {
+	    if (!definition || definition.version !== 1 || references.includes(definition)) return false;
+	    const visited = references.concat(definition);
+	    if (definition.use) return matchSchematicBoard(root, geometry.boards?.[definition.use], geometry, visited);
+	    if (definition.alternatives) {
+	        const {alternatives, ...primary} = definition;
+	        return [primary, ...alternatives].some(choice => matchSchematicBoard(root, choice, geometry, visited));
+	    }
+	    if (definition.board?.automatic || definition.sections || !definition.match) return false;
+	    const adjacency = boardAdjacency(root, definition, geometry);
+	    if (!adjacency) return false;
+	    if (definition.match.slots) return !!bindBoardSlots(root, definition.match.slots, definition.board.wires);
+	    if (definition.board.rows || definition.board.anchors) {
+	        const network = collectBoardConnections(root, definition.match, adjacency);
+	        if (!network) return false;
+	        const template = expandBoardSlots(definition.board, network.anchors.length);
+	        return !!(template && template.links.length === network.edges.length &&
+	            template.ports.length === root.externalNodes.length &&
+	            new Set(template.ports.map(port => port.port)).size === root.externalNodes.length &&
+	            assignBoardSlots(template, network, root));
+	    }
+	    return !!(definition.match.paths && bindBoardPaths(root, definition.match, adjacency, geometry));
+	}
+
+	function interpretSchematicBoard(root, definition, geometry, references = []) {
+	    if (definition.version !== 1) boardError('unsupported language version.');
+	    if (references.includes(definition)) boardError('circular board reference.');
+	    if (definition.transform !== undefined && definition.use === undefined) {
+	        const {transform, ...source} = definition;
+	        const result = interpretSchematicBoard(root, source, geometry, references);
+	        return result ? reflectBoardResult(result, {name: definition.name, transform,
+	            layout: result.definition?.layout || source.layout || source.name}, source) : null;
+	    }
+	    if (definition.sections) return composeSchematicBoards(root, definition, geometry, interpretSchematicBoard);
+	    if (definition.use !== undefined) {
+	        if (typeof definition.use !== 'string' ||
+	            !Object.prototype.hasOwnProperty.call(geometry.boards || {}, definition.use)) {
+	            boardError('unknown referenced board.');
+	        }
+	        const source = geometry.boards[definition.use];
+	        const result = interpretSchematicBoard(root, source, geometry, [...references, definition]);
+	        return result ? reflectBoardResult(result, definition, source) : null;
+	    }
+	    if (definition.alternatives) {
+	        const {alternatives, ...primary} = definition;
+	        for (const choice of [primary, ...alternatives]) {
+	            const selected = {...choice, name: definition.name};
+	            const result = interpretSchematicBoard(root, selected, geometry, references);
+	            if (result) return {...result, definition: selected};
+	        }
+	        return null;
+	    }
+	    const {match} = definition;
+	    if (definition.board.automatic) {
+	        root.components.forEach(entry => {
+	            const symbol = geometry.symbol(entry);
+	            if (!symbol || symbol.ports.length !== entry.nodes.length) boardError('component symbol/port mismatch.');
+	        });
+	        // A complete unbranched chain can use the existing repeated tile
+	        // operation, including direction changes supplied by bend symbols.
+	        const adjacency = new Map();
+	        root.components.forEach((entry, index) => entry.nodes.forEach((node, port) => {
+	            if (!adjacency.has(node)) adjacency.set(node, []);
+	            adjacency.get(node).push({index, inputPort: port + 1});
+	        }));
+	        if (root.externalNodes.length === match.externalPortCount &&
+	            [...adjacency].every(([node, ends]) => ends.length +
+	                root.externalNodes.filter(value => value === node).length === match.terminalDegree)) {
+	            const bindings = bindBoardPaths(root, match, adjacency, geometry);
+	            if (bindings) {
+	                const path = placeBoardPaths(root, {...definition,
+	                    board: {...definition.board, direction: definition.board.flow}}, bindings, geometry);
+	                if (path) {
+	                    path.placements = root.components.map((_, index) => path.byIndex.get(index));
+	                    path.regions = [];
+	                    return path;
+	                }
+	            }
+	        }
+	        return layoutAutomaticBoard(root, definition, geometry);
+	    }
+	    // A wire box joins two terminals. Junctions belong to component symbols.
+	    const adjacency = boardAdjacency(root, definition, geometry);
+	    if (!adjacency) return null;
+	    if (match.slots) return placeNamedBoardSlots(root, definition, geometry);
+	    if (definition.board.rows || definition.board.anchors) return placeBoardConnections(root, definition, adjacency, geometry);
+	    const bindings = bindBoardPaths(root, match, adjacency, geometry);
+	    return bindings ? placeBoardPaths(root, definition, bindings, geometry) : null;
+	}
+
+	// Modified: 2026-11-08
+
+	function groupError(message) {
+	    throw new RangeError(`Schematic shape groups: ${message}`);
+	}
+
+	function detectionBoards(boards) {
+	    return Object.entries(boards).filter(([, definition]) =>
+	        definition.detect === true && !definition.board?.automatic)
+	        .sort(([a, left], [b, right]) => (right.detectionPriority ?? 0) - (left.detectionPriority ?? 0) ||
+	            a.localeCompare(b));
+	}
+
+	function groupRegions(root) {
+	    const owners = new Map(), used = new Set();
+	    root.components.forEach((entry, index) => entry.nodes.forEach(node => {
+	        if (!owners.has(node)) owners.set(node, []);
+	        owners.get(node).push(index);
+	    }));
+	    return root.groups.map((group, groupIndex) => {
+	        const indices = group.components;
+	        if (!Array.isArray(indices) || !indices.length || indices.some(index =>
+	            !Number.isInteger(index) || index < 0 || index >= root.components.length || used.has(index))) {
+	            groupError(`group ${groupIndex + 1} has invalid or overlapping component occurrences.`);
+	        }
+	        for (const index of indices) {
+	            if (used.has(index)) groupError(`group ${groupIndex + 1} repeats an occurrence.`);
+	            used.add(index);
+	        }
+	        const members = new Set(indices), nodes = [...new Set(indices.flatMap(index => root.components[index].nodes))];
+	        const boundaries = nodes.filter(node => root.externalNodes.includes(node) ||
+	            owners.get(node).some(index => !members.has(index)));
+	        return {indices: indices.slice(), boundaries};
+	    });
+	}
+
+	function boundaryDepths(root, regions) {
+	    const used = new Set(regions.flatMap(region => region.indices));
+	    const units = regions.map(region => region.boundaries).concat(root.components
+	        .filter((_, index) => !used.has(index)).map(entry => entry.nodes));
+	    const neighbors = new Map();
+	    units.forEach((nodes, index) => nodes.forEach(node => {
+	        if (!neighbors.has(node)) neighbors.set(node, []);
+	        neighbors.get(node).push(index);
+	    }));
+	    const depths = new Map([[root.externalNodes[0], 0]]), visited = new Set(), pending = [root.externalNodes[0]];
+	    for (let i = 0; i < pending.length; i++) {
+	        const node = pending[i];
+	        for (const unit of neighbors.get(node) || []) {
+	            if (visited.has(unit)) continue;
+	            visited.add(unit);
+	            for (const next of units[unit]) if (!depths.has(next)) {
+	                depths.set(next, depths.get(node) + 1); pending.push(next);
+	            }
+	        }
+	    }
+	    return depths;
+	}
+
+	function permutations(values) {
+	    if (!values.length) return [[]];
+	    return values.flatMap((value, index) => permutations(values.filter((_, i) => i !== index))
+	        .map(rest => [value, ...rest]));
+	}
+
+	function nodesValue(nodes) {
+	    return nodes.length === 1 ? nodes[0] : nodes;
+	}
+
+	function interfaceCandidates(root, region, definitions, boards, geometry, depths) {
+	    const candidates = [];
+	    for (const [name, definition] of definitions) {
+	        const ports = boardInterface(definition, boards);
+	        if (ports.from.length + ports.to.length !== region.boundaries.length) continue;
+	        const components = region.indices.map(index => root.components[index]);
+	        for (const externalNodes of permutations(region.boundaries)) {
+	            const from = ports.from.map(port => externalNodes[port - 1]);
+	            const to = ports.to.map(port => externalNodes[port - 1]);
+	            if (region.boundaries.includes(root.externalNodes[0]) && !from.includes(root.externalNodes[0]) ||
+	                root.externalNodes.slice(1).some(node => region.boundaries.includes(node) && !to.includes(node))) continue;
+	            if (!matchSchematicBoard({components, externalNodes}, definition, {...geometry, boards})) continue;
+	            const meanFrom = from.reduce((sum, node) => sum + (depths.get(node) ?? 0), 0) / from.length;
+	            const meanTo = to.reduce((sum, node) => sum + (depths.get(node) ?? 0), 0) / to.length;
+	            candidates.push({section: {name, from: nodesValue(from), to: nodesValue(to)},
+	                cost: meanFrom - meanTo, priority: definition.detectionPriority ?? 0});
+	        }
+	    }
+	    return candidates.sort((a, b) => a.cost - b.cost || b.priority - a.priority);
+	}
+
+	function sectionEnds(section, side) {
+	    return Array.isArray(section[side]) ? section[side] : [section[side]];
+	}
+
+	function compatibleSections(selected, candidate) {
+	    for (const prior of selected) for (const side of ['from', 'to']) {
+	        if (sectionEnds(prior, side).some(node => sectionEnds(candidate, side).includes(node))) return false;
+	    }
+	    return true;
+	}
+
+	function chooseGroupInterfaces(root, regions, candidates, selected, budget) {
+	    if (--budget.remaining < 0) return null;
+	    if (selected.length === candidates.length) {
+	        try {
+	            validateSchematicSections(root, selected, regions.map(region => region.indices));
+	            return selected;
+	        } catch (error) {
+	            if (!(error instanceof RangeError)) throw error;
+	            return null;
+	        }
+	    }
+	    for (const candidate of candidates[selected.length]) {
+	        if (!compatibleSections(selected, candidate.section)) continue;
+	        const result = chooseGroupInterfaces(root, regions, candidates, selected.concat(candidate.section), budget);
+	        if (result) return result;
+	    }
+	    return null;
+	}
+
+	// Declared group names guide layout. Blind detection uses only membership and
+	// never reads those names; both derive the interfaces from electrical connections.
+	function groupedSchematicShapes(root, boards, geometry, declared = false) {
+	    if (!root?.groups?.length) return null;
+	    const regions = groupRegions(root), enabled = detectionBoards(boards);
+	    const definitions = regions.map((_, index) => {
+	        if (!declared) return enabled;
+	        const name = root.groups[index].name;
+	        if (!Object.prototype.hasOwnProperty.call(boards, name)) groupError(`group ${index + 1} names unknown shape "${name}".`);
+	        return [[name, boards[name]]];
+	    });
+	    // A single group covering the whole network keeps its existing numbered
+	    // external ports and uses the ordinary single-board request.
+	    if (regions.length === 1 && regions[0].indices.length === root.components.length) {
+	        for (const [name, definition] of definitions[0]) {
+	            if (matchSchematicBoard(root, definition, {...geometry, boards})) return {shapes: [name]};
+	        }
+	        if (declared) groupError('the complete network does not fit its declared shape.');
+	        return null;
+	    }
+	    const depths = boundaryDepths(root, regions);
+	    const candidates = regions.map((region, index) => interfaceCandidates(root, region,
+	        definitions[index], boards, geometry, depths));
+	    const missing = candidates.findIndex(choices => !choices.length);
+	    if (missing >= 0) {
+	        if (declared) groupError(`group ${missing + 1} does not fit its declared shape or a forward interface.`);
+	        return null;
+	    }
+	    const shapes = chooseGroupInterfaces(root, regions, candidates, [], {remaining: 10000});
+	    if (!shapes && declared) groupError('could not connect the grouped sections; group all two-port rows and check their connections.');
+	    return shapes ? {shapes} : null;
+	}
+
+	// Modified: 2026-11-08
+
+	function cascadeEntries(root, geometry) {
+	    const entries = [], pending = [root];
+	    while (pending.length) {
+	        const part = pending.pop();
+	        if (part?.kind === 'cascade') {
+	            pending.push(part.right, part.left);
+	        } else if (part && (part.kind === 'component' || part.kind === 'nodal')) {
+	            // An upstream nodal network is one block, never its internal parts.
+	            const count = part.kind === 'nodal' ? part.externalNodes.length :
+	                geometry.symbol({part, nodes: [0, 1]})?.ports.length;
+	            if (count !== 2) return null;
+	            entries.push({part, nodes: [entries.length, entries.length + 1]});
+	        } else return null;
+	    }
+	    return entries.length ? {kind: 'nodal', components: entries, externalNodes: [0, entries.length]} : null;
+	}
+
+	// Deliberately has no options argument: supplied shapes cannot influence detection.
+	// Boards opt in individually as their blind detection coverage is established.
+	function detectSchematicShapes(circuit, boards, geometry) {
+	    const root = circuit?._schematic;
+	    if (!root) return null;
+	    if (root.kind === 'nodal' && root.groups?.length) return groupedSchematicShapes(root, boards, geometry);
+	    const network = root.kind === 'nodal' ? root : cascadeEntries(root, geometry);
+	    if (!network) return null;
+	    const candidates = detectionBoards(boards);
+	    for (const [name, definition] of candidates) {
+	        if (matchSchematicBoard(network, definition, {...geometry, boards})) return {shapes: [name]};
+	    }
+	    return null;
+	}
+
+	// Modified: 2026-11-08
+
+	const GRID = 10;
+	// Keep annotation search coverage tied to text size, independently of placement resolution.
+	const ANNOTATION_STEP = 20;
+	const DEFAULT_SIGNIFICANT_DIGITS = 3;
+
+	function schematicDots(value) {
+	    const defaults = {ports: true, nodes: true, terminals: false};
+	    if (value === undefined) return defaults;
+	    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+	        throw new TypeError('schematic() dots must be an object with boolean ports, nodes and terminals options.');
+	    }
+	    for (const [key, enabled] of Object.entries(value)) {
+	        if (!Object.prototype.hasOwnProperty.call(defaults, key) || typeof enabled !== 'boolean') {
+	            throw new TypeError('schematic() dots accepts only boolean ports, nodes and terminals options.');
+	        }
+	    }
+	    return {...defaults, ...value};
+	}
+
+	function schematicDot(point, kind) {
+	    return `<circle data-schematic-dot="${kind}" cx="${point[0]}" cy="${point[1]}" r="4" fill="#202020"/>`;
+	}
+
+	function schematicSignificantDigits(options) {
+	    const digits = options.significantDigits ?? DEFAULT_SIGNIFICANT_DIGITS;
+	    if (!Number.isInteger(digits) || digits < 1 || digits > 15) {
+	        throw new TypeError('schematic() significantDigits must be an integer from 1 to 15.');
+	    }
+	    return digits;
+	}
+
+	function formatSchematicNumber(value, digits) {
+	    return typeof value === 'number' && Number.isFinite(value) ?
+	        String(Number(value.toPrecision(digits))) : String(value);
+	}
+
+	function componentLabel(part, id, digits) {
+	    if (part.symbol === 'coupler-180' || part.value === undefined) return id;
+	    const unit = ['resistor', 'parallel-resistor'].includes(part.symbol) ? ' Ω' :
+	        ['capacitor', 'parallel-capacitor'].includes(part.symbol) ? ' F' :
+	        ['inductor', 'parallel-inductor'].includes(part.symbol) ? ' H' : part.symbol === 'attenuator' ||
+	        part.symbol === 'amplifier' ? ' dB' : '';
+	    return `${id} = ${formatSchematicNumber(part.value, digits)}${unit}`;
+	}
+
+	function escapeXml(value) {
+	    return String(value).replace(/[&<>"']/g, character => ({
+	        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;'
+	    }[character]));
+	}
+
+	function flattenCascade(node, parts) {
+	    if (!node) throw new TypeError('schematic() needs components with schematic metadata.');
+	    if (node.kind === 'component') {
+	        parts.push(node);
+	        return parts;
+	    }
+	    if (node.kind === 'nodal' && node.externalNodes.length === 2) {
+	        parts.push({kind: 'component', symbol: 'nodal'});
+	        return parts;
+	    }
+	    if (node.kind !== 'cascade') throw new TypeError(`schematic() cannot draw ${node.kind} yet.`);
+	    flattenCascade(node.left, parts);
+	    flattenCascade(node.right, parts);
+	    return parts;
+	}
+
+	function blockOperand(node) {
+	    return node.kind === 'cascade' ? {kind: 'component', symbol: 'cascade'} : node;
+	}
+
+	function repeatedCascades(root) {
+	    const counts = new Map();
+	    function visit(node) {
+	        if (node.kind !== 'cascade') return;
+	        counts.set(node, (counts.get(node) || 0) + 1);
+	        visit(node.left);
+	        visit(node.right);
+	    }
+	    visit(root);
+	    return new Set([...counts].filter(([, count]) => count > 1).map(([node]) => node));
+	}
+
+	function blockViewTree(node, repeated, depth) {
+	    if (node.kind !== 'cascade') return node;
+	    if (depth > 0 && (repeated.has(node) || (depth === 1 && repeated.size === 0))) {
+	        return blockOperand(node);
+	    }
+	    return {kind: 'cascade', left: blockViewTree(node.left, repeated, depth + 1),
+	        right: blockViewTree(node.right, repeated, depth + 1)};
+	}
+
+	function drawingRoot(root, view) {
+	    if (view === 'detail') return root;
+	    if (view !== 'blocks') throw new TypeError('schematic() view must be "detail" or "blocks".');
+	    if (root.kind !== 'cascade') return root;
+	    return blockViewTree(root, repeatedCascades(root), 0);
+	}
+
+	function rotateVector(vector, angle) {
+	    if (angle === 90) return [-vector[1], vector[0]];
+	    if (angle === 180) return [-vector[0], -vector[1]];
+	    if (angle === 270) return [vector[1], -vector[0]];
+	    return vector.slice();
+	}
+
+	function chooseSymbolOrientation(direction) {
+	    if (direction[0] === 1) return 0;
+	    if (direction[1] === 1) return 90;
+	    if (direction[0] === -1) return 180;
+	    return 270;
+	}
+
+	function transformedBounds(bounds, source, input, angle, mirrorY = false, mirrorX = false) {
+	    const corners = [[bounds[0], bounds[1]], [bounds[2], bounds[1]],
+	        [bounds[2], bounds[3]], [bounds[0], bounds[3]]];
+	    const points = corners.map(point => {
+	        const rotated = rotateVector([(mirrorX ? -1 : 1) * (point[0] - source[0]),
+	            (mirrorY ? -1 : 1) * (point[1] - source[1])], angle);
+	        return [input[0] + rotated[0], input[1] + rotated[1]];
+	    });
+	    return [Math.min(...points.map(point => point[0])), Math.min(...points.map(point => point[1])),
+	        Math.max(...points.map(point => point[0])), Math.max(...points.map(point => point[1]))];
+	}
+
+	function transformedPoint(point, source, input, angle, mirrorX = false, mirrorY = false) {
+	    const rotated = rotateVector([(mirrorX ? -1 : 1) * (point[0] - source[0]),
+	        (mirrorY ? -1 : 1) * (point[1] - source[1])], angle);
+	    return [input[0] + rotated[0], input[1] + rotated[1]];
+	}
+
+	function intersects(a, b, clearance = 0) {
+	    return a[0] < b[2] + clearance && a[2] > b[0] - clearance &&
+	        a[1] < b[3] + clearance && a[3] > b[1] - clearance;
+	}
+
+	function segmentBounds([start, end], thickness = 2) {
+	    return [Math.min(start[0], end[0]) - thickness, Math.min(start[1], end[1]) - thickness,
+	        Math.max(start[0], end[0]) + thickness, Math.max(start[1], end[1]) + thickness];
+	}
+
+	function labelBounds(text, x, y) {
+	    const halfWidth = Math.ceil((text.length * 9) / 2);
+	    return [x - halfWidth, y - 16, x + halfWidth, y + 4];
+	}
+
+	function circleBounds(x, y, radius = 12) {
+	    return [x - radius, y - radius, x + radius, y + radius];
+	}
+
+	function nodeGroups(layout) {
+	    const groups = [];
+	    layout.nodes.forEach((point, index) => {
+	        const angle = index < layout.placements.length ? layout.placements[index].angle :
+	            chooseSymbolOrientation([
+	                Math.sign(layout.end[0] - layout.placements[layout.placements.length - 1].output[0]),
+	                Math.sign(layout.end[1] - layout.placements[layout.placements.length - 1].output[1])
+	            ]);
+	        const axis = angle % 180 === 0 ? 'horizontal' : 'vertical';
+	        const baseline = axis === 'horizontal' ? point[1] : point[0];
+	        const previous = groups.at(-1);
+	        if (previous && previous.axis === axis && previous.baseline === baseline) {
+	            previous.nodes.push({id: index + 1, point});
+	        } else {
+	            groups.push({axis, baseline, nodes: [{id: index + 1, point}]});
+	        }
+	    });
+	    return groups;
+	}
+
+	function nodeGroupCandidates(group) {
+	    const candidates = [];
+	    for (let distance = 40; distance <= 400; distance += ANNOTATION_STEP) {
+	        const members = group.nodes.map(node => {
+	            const x = group.axis === 'horizontal' ? node.point[0] : group.baseline + distance;
+	            const y = group.axis === 'horizontal' ? group.baseline - distance : node.point[1];
+	            return {id: node.id, x, y, bounds: circleBounds(x, y)};
+	        });
+	        candidates.push({members, cost: distance * members.length});
+	    }
+	    return candidates;
+	}
+
+	function labelCandidates(text, bounds, preferredAt = null) {
+	    const centerX = Math.round((bounds[0] + bounds[2]) / (2 * GRID)) * GRID;
+	    const centerY = Math.round((bounds[1] + bounds[3]) / (2 * GRID)) * GRID;
+	    const halfWidth = Math.ceil(text.length * 9 / 2);
+	    const tall = bounds[3] - bounds[1] > bounds[2] - bounds[0];
+	    const candidates = [];
+	    if (preferredAt) {
+	        candidates.push({x: preferredAt[0], y: preferredAt[1],
+	            bounds: labelBounds(text, preferredAt[0], preferredAt[1]), cost: 0});
+	    }
+	    for (let distance = ANNOTATION_STEP; distance <= 400; distance += ANNOTATION_STEP) {
+	        for (const offset of [0, -ANNOTATION_STEP, ANNOTATION_STEP, -2 * ANNOTATION_STEP, 2 * ANNOTATION_STEP]) {
+	            const horizontal = [
+	                [centerX + offset, bounds[1] - distance - 4],
+	                [centerX + offset, bounds[3] + distance + 16]
+	            ];
+	            const vertical = [
+	                [bounds[2] + distance + halfWidth, centerY + offset + 6],
+	                [bounds[0] - distance - halfWidth, centerY + offset + 6]
+	            ];
+	            const positions = tall ? vertical.concat(horizontal) : horizontal.concat(vertical);
+	            positions.forEach(([x, y], preference) => {
+	                candidates.push({x, y, bounds: labelBounds(text, x, y),
+	                    cost: distance + Math.abs(offset) / 2 + preference * 4});
+	            });
+	        }
+	    }
+	    return candidates;
+	}
+
+	function candidateBounds(candidate) {
+	    return candidate.members ? candidate.members.map(member => member.bounds) : [candidate.bounds];
+	}
+
+	function boxesClear(boxes, occupied) {
+	    return boxes.every((box, index) =>
+	        !occupied.some(other => intersects(box, other, 8)) &&
+	        !boxes.slice(index + 1).some(other => intersects(box, other, 8)));
+	}
+
+	function annotationOptions(candidates, fixedBounds) {
+	    return candidates.filter(candidate => boxesClear(candidateBounds(candidate), fixedBounds))
+	        .sort((a, b) => a.cost - b.cost)
+	        .slice(0, 32);
+	}
+
+	function chooseAnnotations(tasks, fixedBounds) {
+	    let states = [{cost: 0, choices: [], occupied: fixedBounds}];
+	    for (const task of tasks) {
+	        const options = annotationOptions(task.candidates, fixedBounds);
+	        const next = [];
+	        for (const state of states) {
+	            for (const option of options) {
+	                const bounds = candidateBounds(option);
+	                if (!boxesClear(bounds, state.occupied)) continue;
+	                next.push({cost: state.cost + option.cost, choices: state.choices.concat(option),
+	                    occupied: state.occupied.concat(bounds)});
+	            }
+	        }
+	        if (!next.length) throw new RangeError('schematic() could not place annotations without a collision.');
+	        next.sort((a, b) => a.cost - b.cost);
+	        states = next.slice(0, 96);
+	    }
+	    return states[0].choices;
+	}
+
+	function chooseSpacedAnnotations(tasks, fixedBounds) {
+	    const occupied = fixedBounds.slice(), choices = [];
+	    for (const task of tasks) {
+	        let choice = task.candidates.find(candidate => boxesClear(candidateBounds(candidate), occupied));
+	        if (!choice) {
+	            const base = task.candidates[0];
+	            const extent = Math.max(...occupied.flatMap(box => [Math.abs(box[0] - base.x),
+	                Math.abs(box[2] - base.x), Math.abs(box[1] - base.y), Math.abs(box[3] - base.y)]), 400) + 400;
+	            for (let distance = 40; distance <= extent && !choice; distance += 40) {
+	                for (const [dx, dy] of [[0, -distance], [distance, 0], [0, distance], [-distance, 0]]) {
+	                    const candidate = {...base, x: base.x + dx, y: base.y + dy,
+	                        bounds: [base.bounds[0] + dx, base.bounds[1] + dy,
+	                            base.bounds[2] + dx, base.bounds[3] + dy]};
+	                    if (boxesClear([candidate.bounds], occupied)) { choice = candidate; break; }
+	                }
+	            }
+	        }
+	        if (!choice) throw new RangeError('ORI could not place a readable annotation.');
+	        choices.push(choice);
+	        occupied.push(...candidateBounds(choice));
+	    }
+	    return choices;
+	}
+
+	function annotateLayout(layout) {
+	    const fixedBounds = layout.placements.flatMap(placement => placement.inkBounds)
+	        .concat(layout.wires.map(wire => segmentBounds(wire)));
+	    const labels = layout.placements.map(placement => ({
+	        text: placement.label, component: placement.id,
+	        candidates: labelCandidates(placement.label, placement.bounds)
+	    }));
+	    const externalLabels = [[0, 0], layout.end].map((point, index) => {
+	        const text = `Port ${index + 1}`;
+	        return {text, candidates: labelCandidates(text, circleBounds(...point, 4))};
+	    });
+	    const groups = nodeGroups(layout);
+	    const tasks = groups.map(group => ({candidates: nodeGroupCandidates(group)}))
+	        .concat(labels, externalLabels);
+	    const choices = chooseAnnotations(tasks, fixedBounds);
+	    const placedNodeNumbers = choices.slice(0, groups.length).flatMap(choice => choice.members)
+	        .sort((a, b) => a.id - b.id);
+	    let cursor = groups.length;
+	    const placedLabels = labels.map(label => ({...choices[cursor++], text: label.text, component: label.component}));
+	    const placedExternalLabels = externalLabels.map(label => ({...choices[cursor++], text: label.text}));
+	    return {...layout, nodeNumbers: placedNodeNumbers, labels: placedLabels,
+	        externalLabels: placedExternalLabels};
+	}
+
+	function layoutViewBox(layout) {
+	    const bounds = layout.placements.map(placement => placement.bounds)
+	        .concat(layout.wires.map(wire => segmentBounds(wire)))
+	        .concat(layout.nodeNumbers.map(number => number.bounds))
+	        .concat(layout.labels.map(label => label.bounds))
+	        .concat(layout.externalLabels.map(label => label.bounds));
+	    const minX = Math.floor((Math.min(...bounds.map(box => box[0])) - 40) / GRID) * GRID;
+	    const minY = Math.floor((Math.min(...bounds.map(box => box[1])) - 40) / GRID) * GRID;
+	    const maxX = Math.ceil((Math.max(...bounds.map(box => box[2])) + 40) / GRID) * GRID;
+	    const maxY = Math.ceil((Math.max(...bounds.map(box => box[3])) + 40) / GRID) * GRID;
+	    return [minX, minY, maxX - minX, maxY - minY];
+	}
+
+	function placeComponents(parts, digits, initialDirection = [1, 0], minimumGap = 0) {
+	    const placements = [];
+	    const wires = [];
+	    const wireNodes = [];
+	    const nodes = [[0, 0]];
+	    const counters = {};
+	    let direction = initialDirection.slice();
+	    let previous = [0, 0];
+
+	    for (const item of parts) {
+	        const part = item.part || item;
+	        const inputPort = item.part ? item.inputPort : 1;
+	        const outputPort = 3 - inputPort;
+	        const symbol = schematicSymbols[part.symbol];
+	        if (!symbol) throw new TypeError(`schematic() has no bundled symbol for ${part.symbol}.`);
+	        if (symbol.ports.length !== 2) {
+	            throw new RangeError('schematic() series layout accepts only two-port symbols.');
+	        }
+	        const source = symbol.ports[inputPort - 1];
+	        const entry = inputPort === 1 ? symbol.entry || [1, 0] :
+	            symbol.exit.map(value => -value);
+	        const angle = (chooseSymbolOrientation(direction) -
+	            chooseSymbolOrientation(entry) + 360) % 360;
+	        let input;
+	        let bounds;
+	        let bodyBounds;
+	        let placedGap;
+	        for (let gap = placements.length ? minimumGap : 60;
+	            gap <= 1000; gap += minimumGap ? 2 * GRID : GRID) {
+	            const candidate = [previous[0] + direction[0] * gap,
+	                previous[1] + direction[1] * gap];
+	            const candidateBody = transformedBounds(symbol.bodyBounds, source, candidate, angle);
+	            const collidesWithBody = placements.some(placed => intersects(candidateBody, placed.bodyBounds, 8));
+	            const collidesWithWire = wires.some(wire => intersects(candidateBody, segmentBounds(wire), 4));
+	            const connector = [previous, candidate];
+	            const blocksConnector = gap > 0 && placements.slice(0, -1).some(placed =>
+	                intersects(segmentBounds(connector), placed.bodyBounds, 4));
+	            if (!collidesWithBody && !collidesWithWire && !blocksConnector) {
+	                input = candidate;
+	                bodyBounds = candidateBody;
+	                bounds = transformedBounds(symbol.bounds, source, candidate, angle);
+	                placedGap = gap;
+	                break;
+	            }
+	        }
+	        if (!input) throw new RangeError('schematic() could not place a component without a collision.');
+	        if (placedGap > 0) {
+	            wires.push([previous, input]);
+	            wireNodes.push(placements.length + 1);
+	        }
+	        if (placements.length) nodes.push(minimumGap ?
+	            [(previous[0] + input[0]) / 2, (previous[1] + input[1]) / 2] : input);
+	        const delta = rotateVector([
+	            symbol.ports[outputPort - 1][0] - source[0],
+	            symbol.ports[outputPort - 1][1] - source[1]
+	        ], angle);
+	        const output = [input[0] + delta[0], input[1] + delta[1]];
+	        const prefix = part.labelPrefix || ({resistor: 'R', capacitor: 'C', inductor: 'L', cascade: 'CAS',
+	            'microstrip-right-bend': 'MB', 'microstrip-left-bend': 'MB',
+	            'transmission-line': 'TLIN', 'microstrip-line': 'MLIN', attenuator: 'ATT',
+	            amplifier: 'AMP', thru: 'THRU', 'microstrip-step': 'MSTEP',
+	            'microstrip-via-transition': 'MVIA', 'microstrip-thin-film-resistor': 'MTFR',
+	            'diode-1n4148': 'D', nodal: 'NODAL', mod: 'MOD', demod: 'DEMOD'}[part.symbol] ||
+	            part.symbol.toUpperCase().replace(/[^A-Z]/g, ''));
+	        const id = `${prefix}${counters[prefix] = (counters[prefix] || 0) + 1}`;
+	        const label = componentLabel(part, id, digits);
+	        const inkBounds = [bodyBounds].concat(symbol.leads.map(lead => segmentBounds(
+	            lead.map(point => transformedPoint(point, source, input, angle)), 4)));
+	        placements.push({part, symbol, inputPort, outputPort, input, output, angle,
+	            id, label, bounds, bodyBounds, inkBounds});
+	        previous = output;
+	        const exit = inputPort === 1 ? symbol.exit :
+	            (symbol.entry || [1, 0]).map(value => -value);
+	        direction = rotateVector(exit, angle);
+	    }
+
+	    const end = [previous[0] + direction[0] * 60, previous[1] + direction[1] * 60];
+	    wires.push([previous, end]);
+	    wireNodes.push(placements.length + 1);
+	    nodes.push(end);
+	    return {placements, wires, wireNodes, nodes, end};
+	}
+
+	function renderSymbol(placement, dots) {
+	    const {symbol, input, angle} = placement;
+	    const source = symbol.ports[placement.inputPort - 1];
+	    const transform = `translate(${input[0]} ${input[1]}) rotate(${angle}) translate(${-source[0]} ${-source[1]})`;
+	    const terminals = dots.terminals ? symbol.ports.map(point => schematicDot(point, 'terminal')).join('') : '';
+	    return `<g transform="${transform}" fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${symbol.geometry}${terminals}</g>`;
+	}
+
+	function renderNodes(layout, dots) {
+	    return layout.nodes.map((node, index) => {
+	        const number = layout.nodeNumbers[index];
+	        const external = index === 0 || index === layout.nodes.length - 1;
+	        const dot = (external ? dots.ports : dots.nodes) ? schematicDot(node, external ? 'port' : 'node') : '';
+	        return `${dot}<circle cx="${number.x}" cy="${number.y}" r="12" fill="#ffffff" stroke="#202020" stroke-width="2"/><text x="${number.x}" y="${number.y + 5}" text-anchor="middle">${number.id}</text>`;
+	    }).join('');
+	}
+
+	function constructionTree(node, placements, cursor) {
+	    if (node.kind !== 'cascade') return {kind: 'component', id: placements[cursor.index++].id};
+	    return {
+	        kind: 'cascade',
+	        left: constructionTree(node.left, placements, cursor),
+	        right: constructionTree(node.right, placements, cursor)
+	    };
+	}
+
+	function buildSchematicGraph(root, layout, viewBox) {
+	    const components = layout.placements.map((placement, index) => ({
+	        id: placement.id,
+	        symbol: placement.part.symbol,
+	        value: placement.part.value ?? null,
+	        rotation: placement.angle,
+	        bounds: placement.bounds.slice(),
+	        bodyBounds: placement.bodyBounds.slice(),
+	        inkBounds: placement.inkBounds.map(bounds => bounds.slice()),
+	        ports: [1, 2].map(port => ({port,
+	            node: port === placement.inputPort ? index + 1 : index + 2,
+	            at: port === placement.inputPort ? placement.input.slice() :
+	                placement.output.slice()}))
+	    }));
+	    const connections = components.slice(1).map((component, index) => ({
+	        node: index + 2,
+	        from: {component: components[index].id,
+	            port: layout.placements[index].outputPort},
+	        to: {component: component.id,
+	            port: layout.placements[index + 1].inputPort}
+	    }));
+	    return {
+	        kind: 'rf-cascade',
+	        viewBox,
+	        components,
+	        nodes: layout.nodes.map((point, index) => ({id: index + 1, at: point.slice()})),
+	        nodeNumbers: layout.nodeNumbers.map(number => ({id: number.id, at: [number.x, number.y], bounds: number.bounds.slice()})),
+	        labels: layout.labels.concat(layout.externalLabels).map(label => ({text: label.text, at: [label.x, label.y], bounds: label.bounds.slice()})),
+	        connections,
+	        externalPorts: [
+	            {port: 1, node: 1, at: [0, 0]},
+	            {port: 2, node: layout.nodes.length, at: layout.end.slice()}
+	        ],
+	        wires: layout.wires.map((wire, index) => ({
+	            node: layout.wireNodes[index],
+	            from: wire[0].slice(),
+	            to: wire[1].slice()
+	        })),
+	        construction: constructionTree(root, layout.placements, {index: 0})
+	    };
+	}
+
+	function buildSchematicTopology(graph) {
+	    const parts = graph.components.map(component => ({id: component.id,
+	        type: component.symbol, value: component.value}));
+	    const firstPort = graph.components[0].ports.find(port =>
+	        port.node === graph.externalPorts[0].node).port;
+	    const lastPort = graph.components.at(-1).ports.find(port =>
+	        port.node === graph.externalPorts[1].node).port;
+	    const connections = [[`Port ${graph.externalPorts[0].port}`, `${parts[0].id}.${firstPort}`]];
+	    for (const connection of graph.connections) {
+	        connections.push([
+	            `${connection.from.component}.${connection.from.port}`,
+	            `${connection.to.component}.${connection.to.port}`
+	        ]);
+	    }
+	    connections.push([`${parts[parts.length - 1].id}.${lastPort}`, `Port ${graph.externalPorts[1].port}`]);
+	    return {parts, connections};
+	}
+
+	function nodalPlacement(id, entry, sourcePort, at, angle = 0, mirrorY = false, mirrorX = false) {
+	    const symbol = symbolForSchematicEntry(entry);
+	    const source = symbol.ports[sourcePort - 1];
+	    const transformed = point => transformedPoint(point, source, at, angle, mirrorX, mirrorY);
+	    return {
+	        id, symbol: entry.part.symbol || entry.part.kind, part: entry.part,
+	        ...(entry.part.kind === 'nodal' ? {portCount: entry.nodes.length} : {}),
+	        rotation: angle, ...(mirrorX ? {mirrorX: true} : {}), mirrorY,
+	        ports: symbol.ports.map((point, index) => ({port: index + 1, node: entry.nodes[index], at: transformed(point)})),
+	        at: at.slice(), sourcePort
+	    };
+	}
+
+	function hasShapeBoard(name) {
+	    return Object.prototype.hasOwnProperty.call(schematicShapeBoards, name);
+	}
+
+	function requestedShape(options) {
+	    if (options.shapes === undefined) return null;
+	    const shapes = options.shapes;
+	    if (Array.isArray(shapes) && shapes.length === 1 &&
+	        (['series', 'ladder', 'powerDivider'].includes(shapes[0]) ||
+	            hasShapeBoard(shapes[0]))) return shapes[0];
+	    if (Array.isArray(shapes) && shapes.length && shapes.every(shape => shape &&
+	        hasShapeBoard(shape.name) && [shape.from, shape.to].every(boundary =>
+	            Number.isInteger(boundary) || Array.isArray(boundary) && boundary.length &&
+	            boundary.every(Number.isInteger) && new Set(boundary).size === boundary.length))) {
+	        return shapes.map(shape => ({name: shape.name, from: shape.from, to: shape.to}));
+	    }
+	    const boardShapes = Object.keys(schematicShapeBoards).map(name => `"${name}"`);
+	    const acceptedShapes = [...new Set(['"series"', '"ladder"', '"powerDivider"',
+	        ...boardShapes])];
+	    throw new TypeError(`schematic() shapes accepts ${acceptedShapes.join(', ')}, or ` +
+	        'node-bounded shape sections with scalar or array from/to nodes.');
+	}
+
+	function flowPartId(part, counters) {
+	    const symbol = part.symbol || part.kind;
+	    const prefix = part.labelPrefix || ({resistor: 'R', capacitor: 'C', inductor: 'L', tee: 'TEE',
+	        'series-tee': 'STEE', short: 'SHORT', open: 'OPEN',
+	        'transmission-line': 'TLIN', amplifier: 'AMP', attenuator: 'ATT',
+	        'microstrip-tee': 'MTEE'}[symbol] || symbol.toUpperCase().replace(/[^A-Z]/g, ''));
+	    counters[prefix] = (counters[prefix] || 0) + 1;
+	    return `${prefix}${counters[prefix]}`;
+	}
+
+	function treeEdgePath(start, finish, tree) {
+	    const queue = [start];
+	    const previous = new Map([[start, null]]);
+	    for (let position = 0; position < queue.length; position++) {
+	        const vertex = queue[position];
+	        if (vertex === finish) break;
+	        for (const {neighbor, edge} of tree[vertex]) {
+	            if (previous.has(neighbor)) continue;
+	            previous.set(neighbor, {vertex, edge});
+	            queue.push(neighbor);
+	        }
+	    }
+	    const path = [];
+	    for (let vertex = finish; vertex !== start; vertex = previous.get(vertex).vertex) {
+	        path.unshift(previous.get(vertex).edge);
+	    }
+	    return path;
+	}
+
+	function nodalLoopAnalysis(root) {
+	    const nodeIds = [...new Set(root.components.flatMap(entry => entry.nodes))];
+	    const nodeVertices = new Map(nodeIds.map((node, index) =>
+	        [node, root.components.length + index]));
+	    const vertexCount = root.components.length + nodeIds.length;
+	    const parent = Array.from({length: vertexCount}, (_, index) => index);
+	    const tree = Array.from({length: vertexCount}, () => []);
+	    const spanningTree = [];
+	    const closingEdges = [];
+
+	    function representative(vertex) {
+	        while (parent[vertex] !== vertex) {
+	            parent[vertex] = parent[parent[vertex]];
+	            vertex = parent[vertex];
+	        }
+	        return vertex;
+	    }
+
+	    root.components.forEach((entry, index) => entry.nodes.forEach((node, port) => {
+	        const componentVertex = index;
+	        const nodeVertex = nodeVertices.get(node);
+	        const edge = {component: index + 1, port: port + 1, node};
+	        const componentRoot = representative(componentVertex);
+	        const nodeRoot = representative(nodeVertex);
+	        if (componentRoot === nodeRoot) {
+	            closingEdges.push({edge, componentVertex, nodeVertex});
+	            return;
+	        }
+	        parent[componentRoot] = nodeRoot;
+	        spanningTree.push(edge);
+	        tree[componentVertex].push({neighbor: nodeVertex, edge});
+	        tree[nodeVertex].push({neighbor: componentVertex, edge});
+	    }));
+
+	    return {
+	        hasLoops: closingEdges.length > 0,
+	        spanningTree,
+	        closingEdges: closingEdges.map(item => item.edge),
+	        cycles: closingEdges.map(item =>
+	            treeEdgePath(item.componentVertex, item.nodeVertex, tree).concat(item.edge))
+	    };
+	}
+
+	function flowTopology(root, placements, externalPorts) {
+	    const nodeIds = [...new Set(root.components.flatMap(entry => entry.nodes).concat(root.externalNodes))];
+	    const portsByNode = new Map(nodeIds.map(node => [node, []]));
+	    const externalByNode = new Map(nodeIds.map(node => [node, []]));
+	    for (const placement of placements) for (const port of placement.ports) {
+	        portsByNode.get(port.node)?.push(`${placement.id}.${port.port}`);
+	    }
+	    for (const port of externalPorts) externalByNode.get(port.node)?.push(port.port);
+	    return {
+	        parts: placements.map(placement => ({id: placement.id, type: placement.symbol,
+	            nodes: placement.ports.map(port => port.node), value: placement.part.value ?? null,
+	            impedance: placement.part.impedance ?? null, length: placement.part.length ?? null})),
+	        connections: nodeIds.map(node => ({node, ports: portsByNode.get(node),
+	            externalPorts: externalByNode.get(node)})),
+	        loopAnalysis: nodalLoopAnalysis(root)
+	    };
+	}
+
+	function treeLayoutBounds(placement) {
+	    const symbol = placement.symbol === 'nodal' ? nodalBlockSymbol(placement.portCount) :
+	        schematicSymbols[placement.symbol];
+	    return transformedBounds(symbol.bodyBounds, symbol.ports[placement.sourcePort - 1],
+	        placement.at, placement.rotation, placement.mirrorY, placement.mirrorX);
+	}
+
+	function treeNodeCandidates(point, reach = 60) {
+	    const offsets = [[0, -40], [0, 40], [40, 0], [-40, 0],
+	        [0, -60], [0, 60], [60, 0], [-60, 0]];
+	    for (let distance = 80; distance <= reach; distance += 20) {
+	        offsets.push([0, -distance], [0, distance], [distance, 0], [-distance, 0]);
+	    }
+	    return offsets.map(([dx, dy], index) => ({x: point[0] + dx, y: point[1] + dy,
+	        bounds: circleBounds(point[0] + dx, point[1] + dy), cost: 40 + index * 4}));
+	}
+
+	function wireCrossings(wires) {
+	    const horizontal = [];
+	    const vertical = [];
+	    for (const wire of wires) {
+	        wire.points.slice(1).forEach((point, index) => {
+	            const previous = wire.points[index];
+	            if (previous[1] === point[1] && previous[0] !== point[0]) {
+	                horizontal.push({node: wire.node, y: point[1],
+	                    start: Math.min(previous[0], point[0]), end: Math.max(previous[0], point[0])});
+	            } else if (previous[0] === point[0] && previous[1] !== point[1]) {
+	                vertical.push({node: wire.node, x: point[0],
+	                    start: Math.min(previous[1], point[1]), end: Math.max(previous[1], point[1])});
+	            }
+	        });
+	    }
+	    const seen = new Set();
+	    const crossings = [];
+	    for (const across of horizontal) {
+	        for (const down of vertical) {
+	            if (across.node === down.node || down.x <= across.start || down.x >= across.end ||
+	                across.y <= down.start || across.y >= down.end) continue;
+	            const key = `${down.x},${across.y}`;
+	            if (!seen.has(key)) {
+	                seen.add(key);
+	                crossings.push([down.x, across.y]);
+	            }
+	        }
+	    }
+	    return crossings;
+	}
+
+	function buildInterpretedBoardModel(root, shapeDefinition, digits, flipVertical = false) {
+	    if (flipVertical) shapeDefinition = {...shapeDefinition,
+	        transform: {...shapeDefinition.transform, mirrorY: !shapeDefinition.transform?.mirrorY}};
+	    const counters = {};
+	    const result = interpretSchematicBoard(root, shapeDefinition, {
+	        boards: schematicShapeBoards,
+	        bounds: treeLayoutBounds,
+	        preview: nodalPlacement.bind(null, ''),
+	        symbol: symbolForSchematicEntry,
+	        placement(entry, inputPort, at, angle, mirrorY, mirrorX) {
+	            return nodalPlacement(flowPartId(entry.part, counters), entry,
+	                inputPort, at, angle, mirrorY, mirrorX);
+	        }
+	    });
+	    if (!result) return null;
+	    shapeDefinition = result.definition || shapeDefinition;
+	    const {placements, wires, nodePoints, externalPorts} = result;
+	    const {board} = shapeDefinition;
+	    const labelTasks = placements.map(placement => {
+	        const label = componentLabel(placement.part, placement.id, digits);
+	        const bounds = treeLayoutBounds(placement);
+	        const center = [(bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2];
+	        const offset = placement.boardTile.labelOffset || board.componentLabelOffset;
+	        return {text: label, candidates: labelCandidates(label, bounds,
+	            offset ? [center[0] + offset[0], center[1] + offset[1]] : undefined)};
+	    });
+	    const nodeIds = [...new Set(root.components.flatMap(entry => entry.nodes)
+	        .concat(root.externalNodes))];
+	    if (nodeIds.some(node => !nodePoints.has(node))) return null;
+	    const nodeTasks = nodeIds.map(node => ({candidates: treeNodeCandidates(nodePoints.get(node), shapeDefinition.automatic ? 240 : 60)}));
+	    const portTasks = externalPorts.map(port => ({text: `Port ${port.port}`, candidates:
+	        labelCandidates(`Port ${port.port}`, circleBounds(...port.at, 4),
+	            board.portLabelOffset ? [port.at[0] + board.portLabelOffset[0],
+	                port.at[1] + board.portLabelOffset[1]] : undefined)}));
+	    const placementsBounds = placements.map(treeLayoutBounds);
+	    if (placementsBounds.some((bounds, index) => placementsBounds.slice(index + 1)
+	        .some(other => intersects(bounds, other, GRID)))) return null;
+	    const fixedBounds = placementsBounds.concat(wires.flatMap(wire => wire.points.slice(1)
+	        .map((point, index) => segmentBounds([wire.points[index], point], 4))));
+	    let choices;
+	    try {
+	        choices = chooseAnnotations(nodeTasks.concat(labelTasks, portTasks), fixedBounds);
+	    } catch (error) {
+	        if (!(error instanceof RangeError)) throw error;
+	        // Dense terminal groups can exhaust the bounded beam for a valid
+	        // guided board too. Reuse the shared spacing fallback rather than
+	        // reporting an electrical/shape mismatch for an annotation failure.
+	        choices = chooseSpacedAnnotations(nodeTasks.concat(labelTasks, portTasks), fixedBounds);
+	    }
+	    const nodes = nodeIds.map((node, index) => ({id: node, at: nodePoints.get(node),
+	        numberAt: [choices[index].x, choices[index].y]}));
+	    const annotationOffset = nodeIds.length;
+	    const annotations = labelTasks.concat(portTasks).map((task, index) => ({text: task.text,
+	        at: [choices[annotationOffset + index].x, choices[annotationOffset + index].y]}));
+	    const boxes = boardBoxes(placements, wires, externalPorts);
+	    if (!boxes) return null;
+	    const allPoints = placements.flatMap(placement => placement.ports.map(port => port.at))
+	        .concat(wires.flatMap(wire => wire.points), nodes.flatMap(node => [node.at, node.numberAt]),
+	            annotations.map(label => label.at), placementsBounds.flatMap(bounds =>
+	                [[bounds[0], bounds[1]], [bounds[2], bounds[3]]]));
+	    const minX = Math.floor((Math.min(...allPoints.map(point => point[0])) - 100) / GRID) * GRID;
+	    const minY = Math.floor((Math.min(...allPoints.map(point => point[1])) - 100) / GRID) * GRID;
+	    const maxX = Math.ceil((Math.max(...allPoints.map(point => point[0])) + 100) / GRID) * GRID;
+	    const maxY = Math.ceil((Math.max(...allPoints.map(point => point[1])) + 100) / GRID) * GRID;
+	    const graph = {kind: 'rf-nodal', layout: shapeDefinition.layout || shapeDefinition.name,
+	        ...(!shapeDefinition.automatic ? {shape: shapeDefinition.name} : {}),
+	        ...(shapeDefinition.variant ? {pattern: shapeDefinition.variant} : {}),
+	        ...(result.sections ? {shapes: result.sections.map(({name, from, to}) => ({name, from, to}))} : {}),
+	        cells: result.cells ?? placements.length, viewBox: [minX, minY, maxX - minX, maxY - minY],
+	        components: placements, nodes, wires, ...(result.junctions ? {junctions: result.junctions} : {}), crossings: result.crossings || wireCrossings(wires), labels: annotations, externalPorts,
+	        board: {grid: GRID, interpreter: 'ORI', version: shapeDefinition.version,
+	            ...(result.sections ? {sections: result.sections} : {}),
+	            ...(result.regions ? {regions: result.regions} : {}), boxes}};
+	    return {graph, topology: flowTopology(root, placements, externalPorts)};
+	}
+
+	function boardWireCenter(points) {
+	    const segments = points.slice(1).map((point, index) => [points[index], point]);
+	    segments.sort((left, right) =>
+	        (Math.abs(right[1][0] - right[0][0]) + Math.abs(right[1][1] - right[0][1])) -
+	        (Math.abs(left[1][0] - left[0][0]) + Math.abs(left[1][1] - left[0][1])));
+	    const [start, finish] = segments[0];
+	    return [0, 1].map(axis => Math.round((start[axis] + finish[axis]) / (2 * GRID)) * GRID);
+	}
+
+	function boardWireBounds(points) {
+	    const halfWidth = GRID / 2;
+	    const x = points.map(point => point[0]);
+	    const y = points.map(point => point[1]);
+	    const minX = Math.min(...x);
+	    const maxX = Math.max(...x);
+	    const minY = Math.min(...y);
+	    const maxY = Math.max(...y);
+	    if (minY === maxY) return [minX, minY - halfWidth, maxX, maxY + halfWidth];
+	    if (minX === maxX) return [minX - halfWidth, minY, maxX + halfWidth, maxY];
+	    return [minX - halfWidth, minY - halfWidth, maxX + halfWidth, maxY + halfWidth];
+	}
+
+	function boardBoxes(placements, wires, externalPorts, board) {
+	    const terminals = placements.flatMap(placement => placement.ports.map(port => ({
+	        component: placement.id,
+	        port: port.port,
+	        node: port.node
+	    }))).concat(externalPorts.map(port => ({
+	        externalPort: port.port,
+	        node: port.node
+	    })));
+	    const terminalsByComponent = new Map();
+	    const terminalsByNode = new Map();
+	    for (const terminal of terminals) {
+	        if (terminal.component !== undefined) {
+	            if (!terminalsByComponent.has(terminal.component)) terminalsByComponent.set(terminal.component, []);
+	            terminalsByComponent.get(terminal.component).push(terminal);
+	        }
+	        if (!terminalsByNode.has(terminal.node)) terminalsByNode.set(terminal.node, []);
+	        terminalsByNode.get(terminal.node).push(terminal);
+	    }
+	    const wiresByTile = new Map();
+	    for (const wire of wires) {
+	        const id = wire.boardTile?.id;
+	        if (id === undefined) continue;
+	        if (!wiresByTile.has(id)) wiresByTile.set(id, []);
+	        wiresByTile.get(id).push(wire);
+	    }
+	    const componentBoxes = placements.map(placement => ({
+	        kind: 'component',
+	        tile: placement.boardTile,
+	        id: placement.id,
+	        symbol: placement.symbol,
+	        bounds: treeLayoutBounds(placement),
+	        terminals: terminalsByComponent.get(placement.id) || []
+	    }));
+	    const cornerIds = new Set();
+	    const wireBoxes = wires.flatMap(wire => {
+	        const corner = wire.boardTile?.kind === 'cornerWire';
+	        if (corner && cornerIds.has(wire.boardTile.id)) return [];
+	        if (corner) cornerIds.add(wire.boardTile.id);
+	        const segments = corner ? wiresByTile.get(wire.boardTile.id) || [] : [wire];
+	        if (corner && (segments.length !== 2 || segments.some(segment => segment.node !== wire.node))) return [];
+	        const points = corner ? [segments[0].points[0], segments[0].points[1], segments[1].points[1]] : wire.points;
+	        return [{kind: corner ? 'cornerWire' : 'wire', tile: wire.boardTile, node: wire.node,
+	            points, bounds: boardWireBounds(points),
+	            ...(corner ? {} : {nodeDot: boardWireCenter(points)}),
+	            terminals: terminalsByNode.get(wire.node) || []}];
+	    });
+	    if (componentBoxes.some(box => box.tile?.kind !== 'component') ||
+	        wireBoxes.some(box => !['wire', 'cornerWire'].includes(box.tile?.kind) ||
+	        box.terminals.length < 2 ||
+	        box.points.slice(1).reduce((length, point, index) => length +
+	            Math.abs(point[0] - box.points[index][0]) +
+	            Math.abs(point[1] - box.points[index][1]), 0) !== box.tile.length)) return null;
+	    const wiredNodes = new Set(wireBoxes.map(box => box.node));
+	    if (terminals.some(terminal => !wiredNodes.has(terminal.node))) return null;
+	    return componentBoxes.concat(wireBoxes);
+	}
+
+	function buildNodalModel(root, options, digits) {
+	    if (options.view && options.view !== 'detail') {
+	        throw new TypeError('schematic() nodal circuits currently support only the detail view.');
+	    }
+	    const shape = requestedShape(options);
+	    if (shape) {
+	        if (Array.isArray(shape)) {
+	            const definition = {name: 'composite', layout: 'board-composition', version: 1,
+	                sections: shape, board: {grid: GRID}};
+	            const model = buildInterpretedBoardModel(root, definition, digits, options.flipVertical);
+	            if (!model) throw new RangeError('schematic() network does not fit the requested board sections.');
+	            return model;
+	        }
+	        if (hasShapeBoard(shape)) {
+	            const definition = schematicShapeBoards[shape];
+	            const model = buildInterpretedBoardModel(root, definition, digits, options.flipVertical);
+	            if (!model) throw new RangeError(`schematic() network does not match the "${shape}" pattern.`);
+	            return model;
+	        }
+	        throw new RangeError(`schematic() has no board definition for "${shape}".`);
+	    }
+	    const generic = buildInterpretedBoardModel(root, schematicShapeBoards.generic, digits, options.flipVertical);
+	    if (!generic) throw new RangeError('ORI could not finish the generic board drawing.');
+	    return generic;
+	}
+
+	function buildSignalFlowModel(path, options, digits) {
+	    const {transmitter, circuit, receiver} = path;
+	    if (!transmitter || typeof transmitter.mode !== 'string' ||
+	        !circuit?._schematic || receiver !== undefined && typeof receiver.out !== 'function') {
+	        throw new TypeError('schematic() signal path needs a transmitter, circuit, and optional receiver.');
+	    }
+	    if (circuit.signal?.mode && circuit.signal.mode !== transmitter.mode) {
+	        throw new TypeError('schematic() transmitter mode does not match the circuit signal.');
+	    }
+	    const rfRoot = drawingRoot(circuit._schematic, options.view || 'detail');
+	    if (rfRoot.kind === 'nodal') {
+	        throw new TypeError('schematic() signal path needs a two-port cascade circuit.');
+	    }
+	    const parts = [{kind: 'component', symbol: 'mod', value: transmitter.mode}]
+	        .concat(flattenCascade(rfRoot, []));
+	    if (receiver) parts.push({kind: 'component', symbol: 'demod', value: transmitter.mode});
+	    const construction = parts.slice(1).reduce((left, right) =>
+	        ({kind: 'cascade', left, right}), parts[0]);
+	    const layout = annotateLayout(placeComponents(parts, digits));
+	    const graph = buildSchematicGraph(construction, layout, layoutViewBox(layout));
+	    graph.kind = 'signal-flow';
+	    return {layout, graph, topology: buildSchematicTopology(graph)};
+	}
+
+	function detectedShapes(circuit) {
+	    return detectSchematicShapes(circuit, schematicShapeBoards, {symbol: symbolForSchematicEntry});
+	}
+
+	function buildSchematicModel(circuit, options = {}, detected = detectedShapes(circuit)) {
+	    if (options.shapes === undefined) {
+	        const grouped = groupedSchematicShapes(circuit?._schematic, schematicShapeBoards,
+	            {symbol: symbolForSchematicEntry}, true);
+	        if (grouped || detected) options = {...options, ...(grouped || detected)};
+	    }
+	    if (options.flipVertical !== undefined && typeof options.flipVertical !== 'boolean') {
+	        throw new TypeError('schematic() flipVertical must be boolean.');
+	    }
+	    const digits = schematicSignificantDigits(options);
+	    const dots = schematicDots(options.dots);
+	    const shape = requestedShape(options);
+	    if (circuit?.transmitter && circuit.circuit) {
+	        if (options.flipVertical) throw new TypeError('schematic() flipVertical requires an ORI board layout.');
+	        if (shape && shape !== 'series') {
+	            throw new RangeError(`schematic() signal path does not match the "${shape}" shape.`);
+	        }
+	        const model = buildSignalFlowModel(circuit, options, digits);
+	        if (shape) model.graph.shape = shape;
+	        return {...model, detected, dots};
+	    }
+	    const root = circuit && circuit._schematic;
+	    if (!root) throw new TypeError('schematic() needs components with schematic metadata.');
+	    if (root.kind === 'nodal') return {...buildNodalModel(root, options, digits), detected, dots};
+	    if (root.kind === 'component' && schematicSymbols[root.symbol]?.ports.length !== 2) {
+	        const portCount = schematicSymbols[root.symbol].ports.length;
+	        const nodes = Array.from({length: portCount}, (_, index) => index + 1);
+	        return {...buildNodalModel({kind: 'nodal', components: [{part: root, nodes}],
+	            externalNodes: nodes}, options, digits), detected, dots};
+	    }
+	    const shownRoot = drawingRoot(root, options.view || 'detail');
+	    if (options.flipVertical) throw new TypeError('schematic() flipVertical requires an ORI board layout.');
+	    if (shape && shape !== 'series') {
+	        throw new RangeError(`schematic() network does not match the "${shape}" shape.`);
+	    }
+	    const parts = flattenCascade(shownRoot, []);
+	    const layout = annotateLayout(placeComponents(parts, digits));
+	    const graph = buildSchematicGraph(shownRoot, layout, layoutViewBox(layout));
+	    if (shape) graph.shape = shape;
+	    return {layout, graph, topology: buildSchematicTopology(graph), detected, dots};
+	}
+
+	function renderNodalSvg(model) {
+	    const {graph, dots} = model;
+	    const [minX, minY, width, height] = graph.viewBox;
+	    const wires = graph.wires.map(wire => `<path d="${wire.points.map((point, index) =>
+        `${index ? 'L' : 'M'}${point[0]} ${point[1]}`).join(' ')}"/>`).join('');
+	    const crossovers = (graph.crossings || []).map(([x, y]) =>
+	        `<rect x="${x - 8}" y="${y - 7}" width="16" height="14" fill="#ffffff" stroke="none"/>` +
+	        `<path d="M${x - 10} ${y} L${x + 10} ${y}"/>`).join('');
+	    const junctions = graph.wires.filter(wire => wire.points.length > 2).map(wire => {
+	        const point = wire.points[wire.points.length - 1];
+	        return schematicDot(point, 'junction');
+	    }).join('');
+	    const branchDots = (graph.junctions || []).map(junction =>
+	        schematicDot(junction.at, 'junction')).join('');
+	    const ports = dots.ports ? graph.externalPorts.map(port => schematicDot(port.at, 'port')).join('') : '';
+	    const symbols = graph.components.map(placement => {
+	        const symbol = placement.symbol === 'nodal' ? nodalBlockSymbol(placement.portCount) :
+	            schematicSymbols[placement.symbol];
+	        const source = symbol.ports[placement.sourcePort - 1];
+	        const scaleX = placement.mirrorX ? -1 : 1;
+	        const scaleY = placement.mirrorY ? -1 : 1;
+	        const transform = `translate(${placement.at[0]} ${placement.at[1]}) rotate(${placement.rotation}) ` +
+	            `scale(${scaleX} ${scaleY}) translate(${-source[0]} ${-source[1]})`;
+	        const terminals = dots.terminals ? symbol.ports.map(point => schematicDot(point, 'terminal')).join('') : '';
+	        return `<g transform="${transform}" fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${symbol.geometry}${terminals}</g>`;
+	    }).join('');
+	    const nodes = graph.nodes.map(node => (!dots.nodes || graph.showNodeDots === false ? '' :
+	        schematicDot(node.at, 'node')) +
+	        `<circle cx="${node.numberAt[0]}" cy="${node.numberAt[1]}" r="12" fill="#ffffff" stroke="#202020" stroke-width="2"/>` +
+	        `<text x="${node.numberAt[0]}" y="${node.numberAt[1] + 5}" text-anchor="middle"` +
+	        `${String(node.id).length > 2 ? ' font-size="10"' : ''}>${escapeXml(node.id)}</text>`).join('');
+	    const labels = graph.labels.map(label => `<text x="${label.at[0]}" y="${label.at[1]}" text-anchor="middle">${escapeXml(label.text)}</text>`).join('');
+	    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${minX} ${minY} ${width} ${height}" role="img" aria-label="Nodal nPort schematic"><rect x="${minX}" y="${minY}" width="${width}" height="${height}" fill="#ffffff"/><g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${wires}${crossovers}</g><g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="16">${symbols}${junctions}${branchDots}${ports}${nodes}${labels}</g></svg>`;
+	}
+
+	function renderSchematicSvg(model) {
+	    if (model.graph.kind === 'rf-nodal') return renderNodalSvg(model);
+	    const {layout} = model;
+	    const [minX, minY, width, height] = model.graph.viewBox;
+	    const wires = layout.wires.map(([start, end]) =>
+	        `<path d="M${start[0]} ${start[1]} L${end[0]} ${end[1]}"/>`).join('');
+	    const symbols = layout.placements.map(placement => renderSymbol(placement, model.dots)).join('');
+	    const labels = layout.labels.concat(layout.externalLabels).map(label =>
+	        `<text x="${label.x}" y="${label.y}" text-anchor="middle">${escapeXml(label.text)}</text>`).join('');
+	    const description = model.graph.kind === 'signal-flow' ? 'Signal path schematic' :
+	        model.graph.kind === 'rf-series' ? 'Series of two-port networks' :
+	            'Cascaded nPort schematic';
+	    const metadata = model.graph.kind === 'rf-series' ?
+	        `<title>Series of two-port networks</title><desc>${description}</desc>` : '';
+	    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${minX} ${minY} ${width} ${height}" role="img" aria-label="${description}">${metadata}<rect x="${minX}" y="${minY}" width="${width}" height="${height}" fill="#ffffff"/><g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${wires}</g><g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="16">${symbols}${renderNodes(layout, model.dots)}${labels}</g></svg>`;
+	}
+
+	function schematicPngBlob(svg) {
+	    const source = new XMLSerializer().serializeToString(svg);
+	    const url = URL.createObjectURL(new Blob([source], {type: 'image/svg+xml;charset=utf-8'}));
+	    return new Promise((resolve, reject) => {
+	        const image = new Image();
+	        image.onload = () => {
+	            try {
+	                const viewBox = svg.viewBox.baseVal;
+	                const canvas = document.createElement('canvas');
+	                canvas.width = Math.ceil(viewBox.width);
+	                canvas.height = Math.ceil(viewBox.height);
+	                const context = canvas.getContext('2d');
+	                context.fillStyle = '#ffffff';
+	                context.fillRect(0, 0, canvas.width, canvas.height);
+	                context.drawImage(image, 0, 0, canvas.width, canvas.height);
+	                canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Failed to create schematic PNG.')), 'image/png');
+	            } catch (error) {
+	                reject(error);
+	            } finally {
+	                URL.revokeObjectURL(url);
+	            }
+	        };
+	        image.onerror = error => {
+	            URL.revokeObjectURL(url);
+	            reject(error);
+	        };
+	        image.src = url;
+	    });
+	}
+
+	function copySchematicPng(svg) {
+	    if (!navigator.clipboard || !window.ClipboardItem) {
+	        console.error('Clipboard API for images is not supported in this browser/context.');
+	        return;
+	    }
+	    const pngBlob = schematicPngBlob(svg);
+	    navigator.clipboard.write([new ClipboardItem({'image/png': pngBlob})])
+	        .catch(error => console.error('Failed to copy schematic PNG:', error));
+	}
+
+	function copyButtonHover(event) {
+	    event.currentTarget.style.background = '#ccf2ff';
+	}
+
+	function copyButtonPress(event) {
+	    event.currentTarget.style.background = '#00ace6';
+	}
+
+	function copyButtonLeave(event) {
+	    event.currentTarget.style.background = 'none';
+	}
+
+	function styleSchematicButton(button) {
+	    button.type = 'button';
+	    button.style.background = 'none';
+	    button.style.border = 'none';
+	    button.style.padding = '4px 8px';
+	    button.style.cursor = 'pointer';
+	    button.style.display = 'inline-flex';
+	    button.style.alignItems = 'center';
+	    button.style.gap = '4px';
+	    button.style.borderRadius = '6px';
+	    button.style.fontFamily = 'Arial, Helvetica, sans-serif';
+	    button.style.fontSize = '13px';
+	    button.addEventListener('mouseover', copyButtonHover);
+	    button.addEventListener('mouseout', copyButtonLeave);
+	    button.addEventListener('mousedown', copyButtonPress);
+	    button.addEventListener('mouseup', copyButtonHover);
+	}
+
+	function sizeSchematicSvg(svg, scale) {
+	    const viewBox = svg.viewBox.baseVal;
+	    svg.style.width = `${Math.max(1, Math.floor(viewBox.width * scale))}px`;
+	    svg.style.height = `${Math.max(1, Math.floor(viewBox.height * scale))}px`;
+	}
+
+	function updateFittedSchematic(svg, viewport, button) {
+	    if (button.dataset.fit !== 'true') return;
+	    const viewBox = svg.viewBox.baseVal;
+	    const scale = Math.min(1, viewport.clientWidth / viewBox.width);
+	    if (Number.isFinite(scale) && scale > 0) {
+	        sizeSchematicSvg(svg, scale);
+	    }
+	}
+
+	function toggleSchematicFit(svg, viewport, button) {
+	    if (button.dataset.fit === 'true') {
+	        button.dataset.fit = 'false';
+	        button.textContent = 'Fit drawing';
+	        button.setAttribute('aria-label', 'Fit drawing');
+	        sizeSchematicSvg(svg, 1);
+	    } else {
+	        button.dataset.fit = 'true';
+	        button.textContent = 'Actual size';
+	        button.setAttribute('aria-label', 'Actual size');
+	        updateFittedSchematic(svg, viewport, button);
+	        viewport.scrollLeft = 0;
+	        viewport.scrollTop = 0;
+	    }
+	}
+
+	function mountSchematic(circuit, options = {}, detected) {
+	    const model = buildSchematicModel(circuit, options, detected);
+	    const markup = renderSchematicSvg(model);
+	    const mount = typeof options.mount === 'string' ? document.querySelector(options.mount) : options.mount || document.body;
+	    if (!mount) throw new TypeError('schematic() mount was not found.');
+	    const container = document.createElement('div');
+	    if (options.containerId) container.id = options.containerId;
+	    container.style.position = 'relative';
+	    const toolbar = document.createElement('div');
+	    toolbar.style.display = 'flex';
+	    toolbar.style.justifyContent = 'flex-end';
+	    toolbar.style.gap = '8px';
+	    const viewport = document.createElement('div');
+	    viewport.style.width = '100%';
+	    viewport.style.overflow = 'auto';
+	    viewport.innerHTML = markup;
+	    const svg = viewport.querySelector('svg');
+	    svg.style.display = 'block';
+	    svg.style.maxWidth = 'none';
+	    sizeSchematicSvg(svg, 1);
+	    const button = document.createElement('button');
+	    button.setAttribute('aria-label', 'Copy PNG');
+	    styleSchematicButton(button);
+	    button.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="5" y="5" width="11" height="12" rx="2" fill="none" stroke="currentColor"/><path d="M3 13 V4 Q3 2 5 2 H13" fill="none" stroke="currentColor"/></svg>Copy as png';
+	    button.addEventListener('click', copySchematicPng.bind(null, svg));
+	    const fitButton = document.createElement('button');
+	    fitButton.setAttribute('aria-label', 'Fit drawing');
+	    fitButton.textContent = 'Fit drawing';
+	    fitButton.dataset.fit = 'false';
+	    styleSchematicButton(fitButton);
+	    fitButton.addEventListener('click', toggleSchematicFit.bind(null, svg, viewport, fitButton));
+	    toolbar.appendChild(button);
+	    toolbar.appendChild(fitButton);
+	    container.appendChild(toolbar);
+	    container.appendChild(viewport);
+	    mount.appendChild(container);
+	    if (typeof ResizeObserver !== 'undefined') {
+	        new ResizeObserver(updateFittedSchematic.bind(null, svg, viewport, fitButton))
+	            .observe(viewport);
+	    }
+	    return {svg, graph: model.graph, topology: model.topology, detected: model.detected, error: null};
+	}
+
+	function schematicErrorMount(options) {
+	    if (typeof options.mount !== 'string') return options.mount || document.body;
+	    try { return document.querySelector(options.mount) || document.body; }
+	    catch (error) { return document.body; }
+	}
+
+	function reportSchematicFailure(error, options, detected) {
+	    const failure = error instanceof Error ? error : new Error(String(error));
+	    console.error('Schematic could not be drawn:', failure);
+	    try {
+	        if (typeof document !== 'undefined') {
+	            const mount = schematicErrorMount(options);
+	            const message = document.createElement('div');
+	            message.setAttribute('role', 'alert');
+	            message.style.fontFamily = 'Arial, Helvetica, sans-serif';
+	            message.style.padding = '12px';
+	            message.style.border = '1px solid currentColor';
+	            message.textContent = `Schematic could not be drawn: ${failure.message}`;
+	            (mount || document.body)?.appendChild(message);
+	        }
+	    } catch (displayError) {
+	        console.error('Schematic error message could not be mounted:', displayError);
+	    }
+	    return {svg: null, graph: null, topology: null, detected, error: failure};
+	}
+
+	function schematic(circuit, options = {}) {
+	    let detected = null;
+	    try {
+	        detected = detectedShapes(circuit);
+	        return mountSchematic(circuit, options, detected);
+	    } catch (error) {
+	        return reportSchematicFailure(error, options || {}, detected);
+	    }
+	}
+
+	// Modified: 2026-10-22
+
+	function smithChart(options = {}) {
+		// ======== Options & defaults ========
+		const {
+			inputTable = [[
+				['Freq', 's11Re', 's11Im'],
+				[100000000, -0.5, 0.2],
+				[200000000, -0.35, 0.35],
+				[300000000, -0.1, 0.45],
+				[400000000, 0.15, 0.35],
+				[500000000, 0.35, 0.1],
+				[600000000, 0.45, -0.15]
+			]],
+			// Shared display options
+			mount = 'body',
+			containerId,
+			svgId,
+			title,
+			metricPrefix = 'giga',
+			fontFamily = CHART_FONT_FAMILY,
+			fontSize = CHART_FONT_SIZE,
+			containerFontSizePx,
+			backgroundColor,
+			pngBackground = 'transparent',
+
+			// Smith-chart options
+			chartTitle,
+			showPoints = true,
+			showLabels = true,
+			showGrid = true,
+			gridColor = '#e0e0e0',
+			traceColor = true,
+			traceWidth = 2,
+			pointRadius = 3,
+			labelFontSize,
+			labelColor,
+			width: requestedWidth = 600,
+			height: requestedHeight = 600,
+			margin = { top: 40, right: 40, bottom: 40, left: 40 },
+			unitCircleColor = 'black',
+			unitCircleWidth = 1.5
+		} = options;
+
+		const tables = normalizeInputTables(inputTable, 'smithChart', 'smith');
+
+		const effectiveTitle = title ?? chartTitle ?? '';
+		const effectiveFontSize = containerFontSizePx ?? fontSize;
+		const effectiveLabelFontSize = labelFontSize ?? effectiveFontSize;
+		const effectiveBackgroundColor = backgroundColor ?? pngBackground;
+		const mountElement = typeof mount === 'string' ? document.querySelector(mount) : mount;
+		const availableWidth = mountElement && mountElement.getBoundingClientRect
+			? mountElement.getBoundingClientRect().width - 10
+			: (typeof document !== 'undefined' ? document.documentElement.clientWidth - 24 : 0);
+		const width = availableWidth > 0 && requestedWidth > availableWidth
+			? Math.max(240, availableWidth)
+			: requestedWidth;
+		const height = width === requestedWidth
+			? requestedHeight
+			: Math.round(requestedHeight * width / requestedWidth);
+		const isNarrowViewport = width < 420;
+		let txtLabels = selectAll([]);
+
+		const pickScale = {
+			tera: 1e12, giga: 1e9, mega: 1e6, kilo: 1e3,
+			none: 1, one: 1, deci: 1e-1, centi: 1e-2,
+			milli: 1e-3, micro: 1e-6, nano: 1e-9, pico: 1e-12
+		}[metricPrefix] || 1e9;
+
+		function stripComplexSuffix(header) {
+			return String(header).replace(/(?:Re|Im)$/i, '');
+		}
+
+		function formatData(tables) {
+			return tables.flatMap(table => {
+				const headers = table[0];
+				const traces = [];
+
+				for (let i = 1; i < headers.length; i += 2) {
+					const reHeader = headers[i];
+					const imHeader = headers[i + 1];
+					if (!imHeader) continue;
+
+					const traceName = stripComplexSuffix(reHeader);
+					traces.push({
+						traceName,
+						values: table.slice(1).map(row => ({
+							frequency: row[0] / pickScale,
+							re: row[i],
+							im: row[i + 1]
+						})).filter(point =>
+							Number.isFinite(point.re) && Number.isFinite(point.im)
+						)
+					});
+				}
+
+				return traces;
+			});
+		}
+
+		const formattedData = formatData(tables);
+		const n = Math.max(3, Math.min(9, formattedData.length));
+		const color = traceColor
+			? ordinal(category10)
+			: ordinal(scheme[n]);
+
+		const innerWidth = width - margin.left - margin.right;
+		const innerHeight = height - margin.top - margin.bottom;
+		const plotSize = Math.min(innerWidth, innerHeight);
+		const plotLeft = margin.left + (innerWidth - plotSize) / 2;
+		const plotTop = margin.top + (innerHeight - plotSize) / 2;
+		const center = plotSize / 2;
+		const radius = plotSize / 2;
+
+		function gammaToPoint(gamma) {
+			return [
+				center + gamma.re * radius,
+				center - gamma.im * radius
+			];
+		}
+
+		const line$1 = line()
+			.x(d => gammaToPoint(d)[0])
+			.y(d => gammaToPoint(d)[1])
+			.curve(catmullRom.alpha(0.5));
+
+		const container = select(mount)
+			.append('div')
+			.style('position', 'relative')
+			.style('display', 'inline-block')
+			.style('max-width', '100%')
+			.style('box-sizing', 'border-box')
+			.style('padding', '5px')
+			.style('padding-top', '5px')
+			.style('font-family', fontFamily)
+			.style('font-size', `${effectiveFontSize}px`)
+			.attr('id', containerId || null)
+			.attr('class', 'smith-chart-container');
+
+		const svg = container.append('svg')
+			.attr('width', width)
+			.attr('height', height)
+			.attr('viewBox', `0 0 ${width} ${height}`)
+			.attr('preserveAspectRatio', 'xMinYMin meet')
+			.style('display', 'block')
+			.style('width', '100%')
+			.style('max-width', `${width}px`)
+			.style('height', 'auto')
+			.style('font-family', fontFamily)
+			.style('font-size', `${effectiveFontSize}px`)
+			.attr('id', svgId || null)
+			.attr('class', 'smith-chart-svg');
+
+		const chartBackground = svg.insert('rect', ':first-child')
+			.attr('x', 0)
+			.attr('y', 0)
+			.attr('width', width)
+			.attr('height', height)
+			.attr('fill', effectiveBackgroundColor === 'transparent' ? 'none' : effectiveBackgroundColor)
+			.attr('class', 'smith-chart-background');
+
+		container.style('position', 'relative');
+
+		const button = container.append('button')
+			.attr('aria-label', 'Copy PNG')
+			.style('position', 'absolute')
+			.style('top', '5px')
+			.style('right', '5px')
+			.style('background', 'none')
+			.style('border', 'none')
+			.style('padding', '4px 8px')
+			.style('cursor', 'pointer')
+			.style('display', 'inline-flex')
+			.style('align-items', 'center')
+			.style('gap', '4px')
+			.style('border-radius', '6px')
+			.style('font-family', fontFamily)
+			.style('font-size', `${effectiveFontSize}px`)
+			.on('mouseover', function () { select(this).style('background', '#ccf2ff'); })
+			.on('mouseout', function () { select(this).style('background', 'none'); })
+			.on('mousedown', function () { select(this).style('background', '#00ace6'); })
+			.on('mouseup', function () { select(this).style('background', '#ccf2ff'); });
+
+		button.html(`
+            <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <path
+          d="M12.668 10.667C12.668 9.95614 12.668 9.46258 12.6367 9.0791C12.6137 8.79732 12.5758 8.60761 12.5244 8.46387L12.4688 8.33399C12.3148 8.03193 12.0803 7.77885 11.793 7.60254L11.666 7.53125C11.508 7.45087 11.2963 7.39395 10.9209 7.36328C10.5374 7.33197 10.0439 7.33203 9.33301 7.33203H6.5C5.78896 7.33203 5.29563 7.33195 4.91211 7.36328C4.63016 7.38632 4.44065 7.42413 4.29688 7.47559L4.16699 7.53125C3.86488 7.68518 3.61186 7.9196 3.43555 8.20703L3.36524 8.33399C3.28478 8.49198 3.22795 8.70352 3.19727 9.0791C3.16595 9.46259 3.16504 9.95611 3.16504 10.667V13.5C3.16504 14.211 3.16593 14.7044 3.19727 15.0879C3.22797 15.4636 3.28473 15.675 3.36524 15.833L3.43555 15.959C3.61186 16.2466 3.86474 16.4807 4.16699 16.6348L4.29688 16.6914C4.44063 16.7428 4.63025 16.7797 4.91211 16.8027C5.29563 16.8341 5.78896 16.835 6.5 16.835H9.33301C10.0439 16.835 10.5374 16.8341 10.9209 16.8027C11.2965 16.772 11.508 16.7152 11.666 16.6348L11.793 16.5645C12.0804 16.3881 12.3148 16.1351 12.4688 15.833L12.5244 15.7031C12.5759 15.5594 12.6137 15.3698 12.6367 15.0879C12.6681 14.7044 12.668 14.211 12.668 13.5V10.667ZM13.998 12.665C14.4528 12.6634 14.8011 12.6602 15.0879 12.6367C15.4635 12.606 15.675 12.5492 15.833 12.4688L15.959 12.3975C16.2466 12.2211 16.4808 11.9682 16.6348 11.666L16.6914 11.5361C16.7428 11.3924 16.7797 11.2026 16.8027 10.9209C16.8341 10.5374 16.835 10.0439 16.835 9.33301V6.5C16.835 5.78896 16.8341 5.29563 16.8027 4.91211C16.7797 4.63025 16.7428 4.44063 16.6914 4.29688L16.6348 4.16699C16.4807 3.86474 16.2466 3.61186 15.959 3.43555L15.833 3.36524C15.675 3.28473 15.4636 3.22797 15.0879 3.19727C14.7044 3.16593 14.211 3.16504 13.5 3.16504H10.667C9.9561 3.16504 9.46259 3.16595 9.0791 3.19727C8.79739 3.22028 8.6076 3.2572 8.46387 3.30859L8.33399 3.36524C8.03176 3.51923 7.77886 3.75343 7.60254 4.04102L7.53125 4.16699C7.4508 4.32498 7.39397 4.53655 7.36328 4.91211C7.33985 5.19893 7.33562 5.54719 7.33399 6.00195H9.33301C10.022 6.00195 10.5791 6.00131 11.0293 6.03809C11.4873 6.07551 11.8937 6.15471 12.2705 6.34668L12.4883 6.46875C12.984 6.7728 13.3878 7.20854 13.6533 7.72949L13.7197 7.87207C13.8642 8.20859 13.9292 8.56974 13.9619 8.9707C13.9987 9.42092 13.998 9.97799 13.998 10.667V12.665ZM18.165 9.33301C18.165 10.022 18.1657 10.5791 18.1289 11.0293C18.0961 11.4302 18.0311 11.7914 17.8867 12.1279L17.8203 12.2705C17.5549 12.7914 17.1509 13.2272 16.6553 13.5313L16.4365 13.6533C16.0599 13.8452 15.6541 13.9245 15.1963 13.9619C14.8593 13.9895 14.4624 13.9935 13.9951 13.9951C13.9935 14.4624 13.9895 14.8593 13.9619 15.1963C13.9292 15.597 13.864 15.9576 13.7197 16.2939L13.6533 16.4365C13.3878 16.9576 12.9841 17.3941 12.4883 17.6982L12.2705 17.8203C11.8937 18.0123 11.4873 18.0915 11.0293 18.1289C10.5791 18.1657 10.022 18.165 9.33301 18.165H6.5C5.81091 18.165 5.25395 18.1657 4.80371 18.1289C4.40306 18.0962 4.04235 18.031 3.70606 17.8867L3.56348 17.8203C3.04244 17.5548 2.60585 17.151 2.30176 16.6553L2.17969 16.4365C1.98788 16.0599 1.90851 15.6541 1.87109 15.1963C1.83431 14.746 1.83496 14.1891 1.83496 13.5V10.667C1.83496 9.978 1.83432 9.42091 1.87109 8.9707C1.90851 8.5127 1.98772 8.10625 2.17969 7.72949L2.30176 7.51172C2.60586 7.0159 3.04236 6.6122 3.56348 6.34668L3.70606 6.28027C4.04237 6.136 4.40303 6.07083 4.80371 6.03809C5.14051 6.01057 5.53708 6.00551 6.00391 6.00391C6.00551 5.53708 6.01057 5.14051 6.03809 4.80371C6.0755 4.34588 6.15483 3.94012 6.34668 3.56348L6.46875 3.34473C6.77282 2.84912 7.20856 2.44514 7.72949 2.17969L7.87207 2.11328C8.20855 1.96886 8.56979 1.90385 8.9707 1.87109C9.42091 1.83432 9.978 1.83496 10.667 1.83496H13.5C14.1891 1.83496 14.746 1.83431 15.1963 1.87109C15.6541 1.90851 16.0599 1.98788 16.4365 2.17969L16.6553 2.30176C17.151 2.60585 17.5548 3.04244 17.8203 3.56348L17.8867 3.70606C18.031 4.04235 18.0962 4.40306 18.1289 4.80371C18.1657 5.25395 18.165 5.81091 18.165 6.5V9.33301Z">
+        </path>
+      </svg>Copy as png
+	    `);
+
+		if (isNarrowViewport) button.text('PNG');
+
+		button
+			.style('white-space', 'nowrap')
+			.style('padding', isNarrowViewport ? '6px 8px' : '4px 8px');
+
+		// New button function fire
+		button.on('click', copyPNG);
+
+		function copyPNG() {
+			if (!navigator.clipboard || !window.ClipboardItem) {
+				console.error('Clipboard API for images is not supported in this browser/context.');
+				return;
+			}
+
+			const pngBlob = new Promise((resolve, reject) => {
+				const svgElement = container.node().querySelector('svg');
+				const svgString = new XMLSerializer().serializeToString(svgElement);
+				const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+				const url = URL.createObjectURL(svgBlob);
+				const img = new Image();
+
+				img.onload = () => {
+					try {
+						const canvas = document.createElement('canvas');
+						canvas.width = svgElement.clientWidth || +svgElement.getAttribute('width') || 800;
+						canvas.height = svgElement.clientHeight || +svgElement.getAttribute('height') || 600;
+						const ctx = canvas.getContext('2d');
+
+						if (effectiveBackgroundColor && effectiveBackgroundColor !== 'transparent') {
+							ctx.fillStyle = effectiveBackgroundColor;
+							ctx.fillRect(0, 0, canvas.width, canvas.height);
+						}
+
+						ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+						canvas.toBlob((blob) => {
+							if (blob) resolve(blob);
+							else reject(new Error('Failed to create PNG blob'));
+						}, 'image/png');
+					} catch (err) {
+						reject(err);
+					} finally {
+						URL.revokeObjectURL(url);
+					}
+				};
+				img.onerror = (err) => {
+					URL.revokeObjectURL(url);
+					reject(err);
+				};
+				img.src = url;
+			});
+
+			navigator.clipboard.write([new ClipboardItem({ 'image/png': pngBlob })])
+				.catch((err) => console.error('Failed to copy Smith chart PNG:', err));
+		}
+
+		const txtChartTitle = svg.append('text')
+			.attr('x', 10)
+			.attr('y', 18)
+			.style('font-size', `${effectiveFontSize}px`)
+			.style('visibility', effectiveTitle ? 'visible' : 'hidden')
+			.text(effectiveTitle);
+
+		const g = svg.append('g')
+			.attr('transform', `translate(${plotLeft},${plotTop})`)
+			.attr('class', 'smith-chart-plot-area');
+
+		const clipId = `smith-clip-${Math.random().toString(36).slice(2)}`;
+		svg.append('defs')
+			.append('clipPath')
+			.attr('id', clipId)
+			.append('circle')
+			.attr('cx', center)
+			.attr('cy', center)
+			.attr('r', radius);
+
+		const smithGridGroup = g.append('g')
+			.attr('class', 'smith-grid')
+			.style('visibility', showGrid ? 'visible' : 'hidden')
+			.attr('clip-path', `url(#${clipId})`);
+
+		smithGridGroup.append('line')
+			.attr('x1', 0)
+			.attr('y1', center)
+			.attr('x2', plotSize)
+			.attr('y2', center)
+			.attr('stroke', gridColor)
+			.attr('stroke-width', 1);
+
+		[0.2, 0.5, 1, 2, 5].forEach(r => {
+			smithGridGroup.append('circle')
+				.attr('cx', center + (r / (r + 1)) * radius)
+				.attr('cy', center)
+				.attr('r', (1 / (r + 1)) * radius)
+				.attr('fill', 'none')
+				.attr('stroke', gridColor)
+				.attr('stroke-width', 1);
+		});
+
+		[0.2, 0.5, 1, 2, 5].forEach(x => {
+			[x, -x].forEach(value => {
+				smithGridGroup.append('circle')
+					.attr('cx', center + radius)
+					.attr('cy', center - (1 / value) * radius)
+					.attr('r', Math.abs((1 / value) * radius))
+					.attr('fill', 'none')
+					.attr('stroke', gridColor)
+					.attr('stroke-width', 1);
+			});
+		});
+
+		const unitCircle = g.append('circle')
+			.attr('cx', center)
+			.attr('cy', center)
+			.attr('r', radius)
+			.attr('fill', 'none')
+			.attr('stroke', unitCircleColor)
+			.attr('stroke-width', unitCircleWidth)
+			.attr('class', 'smith-unit-circle');
+
+		const traceGroup = g.append('g')
+			.attr('class', 'smith-traces')
+			.attr('clip-path', `url(#${clipId})`);
+
+		const labelGroup = g.append('g')
+			.attr('class', 'smith-labels');
+
+		const groups = traceGroup.selectAll('.smith-trace-group')
+			.data(formattedData)
+			.join('g')
+			.attr('class', 'smith-trace-group');
+
+		groups.append('path')
+			.attr('d', d => line$1(d.values))
+			.attr('fill', 'none')
+			.attr('stroke', d => color(d.traceName))
+			.attr('stroke-width', traceWidth);
+
+		if (showPoints) {
+			let tooltip;
+
+			groups.selectAll('circle')
+				.data(d => d.values.map(point => ({ ...point, traceName: d.traceName })))
+				.join('circle')
+				.attr('cx', d => gammaToPoint(d)[0])
+				.attr('cy', d => gammaToPoint(d)[1])
+				.attr('r', pointRadius)
+				.attr('fill', d => color(d.traceName))
+				.on('mouseenter', (event, d) => {
+					container.select('.tooltip').remove();
+
+					const [px, py] = pointer(event, container.node());
+					tooltip = container.append('div')
+						.attr('class', 'tooltip')
+						.style('position', 'absolute')
+						.style('background', 'white')
+						.style('border', '1px solid #aaa')
+						.style('padding', '3px 6px')
+						.style('white-space', 'nowrap')
+						.style('pointer-events', 'none')
+						.style('z-index', 10)
+						.style('left', `${px + 10}px`)
+						.style('top', `${py - 20}px`);
+					appendTooltipRows(tooltip, [
+						['Trace', d.traceName],
+						['Frequency', formatTooltipFrequency(d.frequency, metricPrefix)],
+						['Re', formatTooltipNumber(d.re)],
+						['Im', formatTooltipNumber(d.im)],
+						['Magnitude', formatTooltipNumber(Math.hypot(d.re, d.im))],
+						['Angle', `${formatTooltipNumber(Math.atan2(d.im, d.re) * 180 / Math.PI)}°`]
+					]);
+				})
+				.on('mousemove', (event) => {
+					if (!tooltip) return;
+					const [px, py] = pointer(event, container.node());
+					tooltip.style('left', `${px + 10}px`).style('top', `${py - 20}px`);
+				})
+				.on('mouseleave', () => {
+					if (tooltip) { tooltip.remove(); tooltip = null; }
+				});
+		}
+
+		if (showLabels) {
+			txtLabels = labelGroup.selectAll('.txtLabel')
+				.data(formattedData)
+				.join('text')
+				.attr('x', d => {
+					const last = d.values[d.values.length - 1];
+					return gammaToPoint(last)[0] + 6;
+				})
+				.attr('y', d => {
+					const last = d.values[d.values.length - 1];
+					return gammaToPoint(last)[1];
+				})
+				.attr('dy', '0.35em')
+				.attr('class', 'txtLabel')
+				.style('font-size', `${effectiveLabelFontSize}px`)
+				.style('fill', labelColor || null)
+				.text(d => d.traceName);
+		}
+
+		function cssPropertyToJsName(propertyName) {
+			return propertyName.replace(/-([a-z])/g, function (_, letter) {
+				return letter.toUpperCase();
+			});
+		}
+
+		function applyStyleToElement(element, style) {
+			if (!element) return;
+
+			if (typeof style === 'string') {
+				const currentStyle = element.getAttribute('style') || '';
+				element.setAttribute('style', currentStyle ? currentStyle + ';' + style : style);
+			} else if (typeof style === 'object' && style !== null) {
+				for (const [key, value] of Object.entries(style)) {
+					element.style[cssPropertyToJsName(key)] = value;
+				}
+			}
+		}
+
+		function applyStyleToSelection(selection, style) {
+			selection.each(function () {
+				applyStyleToElement(this, style);
+			});
+		}
+
+		function setTxtChartTitleStyle(style) {
+			applyStyleToElement(txtChartTitle.node(), style);
+		}
+
+		function setChartBackgroundStyle(style) {
+			applyStyleToElement(chartBackground.node(), style);
+		}
+
+		function setUnitCircleStyle(style) {
+			applyStyleToElement(unitCircle.node(), style);
+		}
+
+		function setSmithGridStyle(style) {
+			applyStyleToSelection(smithGridGroup.selectAll('circle,line'), style);
+		}
+
+		function setTxtChartLabelsStyle(style) {
+			applyStyleToSelection(txtLabels, style);
+		}
+
+		return {
+			// Shared elements
+			container: container.node(),
+			svg: svg.node(),
+			background: chartBackground.node(),
+			title: txtChartTitle.node(),
+
+			// Existing Smith-chart elements
+			chartBackground: chartBackground.node(),
+			txtChartTitle: txtChartTitle.node(),
+			unitCircle: unitCircle.node(),
+			smithGridGroup: smithGridGroup.node(),
+			traceGroup: traceGroup.node(),
+			labelGroup: labelGroup.node(),
+			txtChartLabels: txtLabels.nodes(),
+
+			// Shared style setters
+			setBackgroundStyle: setChartBackgroundStyle,
+			setTitleStyle: setTxtChartTitleStyle,
+
+			// Existing Smith-chart style setters
+			setTxtChartTitleStyle: setTxtChartTitleStyle,
+			setChartBackgroundStyle: setChartBackgroundStyle,
+			setUnitCircleStyle: setUnitCircleStyle,
+			setSmithGridStyle: setSmithGridStyle,
+			setTxtChartLabelsStyle: setTxtChartLabelsStyle
+		};
+	}
+
+	// Modified: 2026-11-09
+	const version = '0.49.0';
+
+	// Modified: 2026-10-26
+
+	function isComplex(value) {
+		return value !== null && typeof value === 'object' &&
+			value.constructor && value.constructor.name === 'Complex' &&
+			typeof value.x === 'number' && typeof value.y === 'number';
+	}
+
+	function isPlainRecord(value) {
+		return value !== null && typeof value === 'object' && !Array.isArray(value) &&
+			(Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null) &&
+			Object.keys(value).length > 0;
+	}
+
+	function formatComplexCell(value) {
+		return value.x.toPrecision(4) +
+			(value.y >= 0 ? ' +j' : ' -j') +
+			Math.abs(value.y).toPrecision(4);
+	}
+
+	function formatCell(value) {
+		if (typeof value === 'string') return value;
+		if (typeof value === 'number') return value.toPrecision(4);
+		if (isComplex(value)) return formatComplexCell(value);
+		return null;
+	}
+
+	function validRows(rows, matrixOnly) {
+		if (!Array.isArray(rows) || rows.length === 0 ||
+			!Array.isArray(rows[0]) || rows[0].length === 0) return false;
+
+		var width = rows[0].length;
+		return rows.every(row => Array.isArray(row) && row.length === width &&
+			row.every(value => (!matrixOnly || typeof value === 'number' || isComplex(value)) &&
+				formatCell(value) !== null));
+	}
+
+	function createTable(rows) {
+		var table = document.createElement('table');
+		var body = document.createElement('tbody');
+		table.appendChild(body);
+
+		rows.forEach(row => {
+			var tr = document.createElement('tr');
+			body.appendChild(tr);
+			row.forEach(value => {
+				var td = document.createElement('td');
+				td.setAttribute('style', 'text-align: center; border-style: solid; border-width: 1px');
+				td.setAttribute('width', '140px');
+				td.textContent = formatCell(value);
+				tr.appendChild(td);
+			});
+		});
+
+		return table;
+	}
+
+	function log(input, options = {}) {
+		var pre = document.createElement('pre');
+		pre.className = 'outputSection remove';
+
+		if (typeof input === 'string' || typeof input === 'number' || typeof input === 'boolean') {
+			pre.textContent = typeof input === 'number' ? input.toPrecision(4) : String(input);
+		} else if (isComplex(input)) {
+			pre.textContent = input.x.toPrecision(4) + ', ' +
+				(input.y >= 0 ? 'j' : '-j') + Math.abs(input.y).toPrecision(4);
+		} else if (Array.isArray(input)) {
+			if (input.length === 0) {
+				pre.appendChild(createTable([]));
+			} else if (Array.isArray(input[0])) {
+				if (validRows(input, false)) {
+					pre.appendChild(createTable(input));
+				} else {
+					pre.textContent = "nP.log can't read this input";
+				}
+			} else if (input.every(value => formatCell(value) !== null)) {
+				pre.appendChild(createTable(input.map(value => [value])));
+			} else {
+				pre.textContent = "nP.log can't read this input";
+			}
+		} else if (input !== null && typeof input === 'object' &&
+			Array.isArray(input.m) && validRows(input.m, true)) {
+			pre.appendChild(createTable(input.m));
+		} else if (isPlainRecord(input)) {
+			try {
+				pre.textContent = JSON.stringify(input, null, 2);
+			} catch (error) {
+				pre.textContent = "nP.log can't read this input";
+			}
+		} else {
+			pre.textContent = "nP.log can't read this input";
+		}
+
+		var destination;
+		if (options && options.mount !== undefined) {
+			destination = typeof options.mount === 'string'
+				? document.querySelector(options.mount)
+				: options.mount;
+			if (!destination || typeof destination.appendChild !== 'function') {
+				throw new TypeError('nP.log(): mount must be a CSS selector or DOM element.');
+			}
+		} else {
+			destination = document.getElementsByClassName('outputBox')[0] || document.body;
+		}
+
+		destination.appendChild(pre);
+		return pre;
+	}
+
+	// Modified: 2026-10-22
+
+	function lineTable(options = {}) {
+			// ======== Options & defaults ========
+			const {
+				// data: array of tables; each table is a 2D array; row 0 is header strings
+				inputTable = [[
+					['Freq', 's21dB', 's23dB'],
+					[0, -3.52182, -3.52182],
+					[600000000, -3.51008, -4.19455],
+					[1200000000, -3.47582, -5.72534],
+					[1800000000, -3.42189, -7.46851],
+					[2400000000, -3.35291, -9.21548],
+					[3000000000, -3.27504, -11.01964],
+					[3600000000, -3.19561, -13.04088],
+					[4200000000, -3.12248, -15.53461],
+					[4800000000, -3.06328, -18.99038],
+					[5400000000, -3.02443, -24.83689],
+					[6000000000, -3.01031, -53.90094],
+					[6600000000, -3.02253, -25.46905],
+					[7200000000, -3.05969, -19.30541],
+					[7800000000, -3.11761, -15.74536],
+					[8400000000, -3.18997, -13.20271],
+					[9000000000, -3.26921, -11.15721],
+					[9600000000, -3.34745, -9.34356],
+					[10200000000, -3.41731, -7.596],
+					[10800000000, -3.47251, -5.85015],
+					[11400000000, -3.50832, -4.28704],
+					[12000000000, -3.52176, -3.52571]
+				]],
+				// Shared display options
+				mount = 'body',
+				containerId,
+				svgId,
+				title,
+				metricPrefix = 'giga',
+				fontFamily = CHART_FONT_FAMILY,
+				fontSize = CHART_FONT_SIZE,
+				containerFontSizePx,
+				backgroundColor,
+				pngBackground = 'transparent',
+
+				// Line-table options
+				tableTitle,
+				headColor = 'color', // 'color' (blue) | 'gray'
+				headerColor,
+				headerFill,
+				cellFill = 'transparent',
+				cellBorderColor = 'black',
+				cellBorderWidth = 1,
+				tableBorderColor = 'none',
+				tableBorderWidth = 1,
+				showWHAlert = false, // true => alert width/height
+				columnWidth = 100,
+				rowHeight = 20,
+				margin = { top: 72, right: 20, bottom: 20, left: 20 }
+			} = options;
+
+			const tables = normalizeInputTables(inputTable, 'lineTable', 'table');
+
+			const effectiveTitle = title ?? tableTitle ?? '';
+			const effectiveFontSize = containerFontSizePx ?? fontSize;
+			const effectiveBackgroundColor = backgroundColor ?? pngBackground;
+			const effectiveHeaderColor = headerColor ?? headColor;
+			const mountElement = typeof mount === 'string' ? document.querySelector(mount) : mount;
+			const measuredMountWidth = mountElement && mountElement.getBoundingClientRect
+				? mountElement.getBoundingClientRect().width
+				: (typeof document !== 'undefined' ? document.documentElement.clientWidth : 0);
+			const isNarrowViewport = measuredMountWidth > 0 ? measuredMountWidth < 420 : (typeof document !== 'undefined' && document.documentElement.clientWidth < 420);
+
+			// ======== Helpers ========
+			const pickScale = (p) => ({
+				tera: 1e12, giga: 1e9, mega: 1e6, kilo: 1e3,
+				none: 1, one: 1, deci: 1e-1, centi: 1e-2,
+				milli: 1e-3, micro: 1e-6,
+				nano: 1e-9, pico: 1e-12
+			}[String(p).toLowerCase()] ?? 1e9);
+
+			const metricPrefixLabel = (p) => ({
+				tera: 'tera', giga: 'giga', mega: 'mega', kilo: 'kilo',
+				deci: 'deci', centi: 'centi', milli: 'milli',
+				micro: 'micro', nano: 'nano', pico: 'pico'
+			}[String(p).toLowerCase()] ?? (['none', 'one'].includes(String(p).toLowerCase()) ? '' : 'giga'));
+
+			// Copy tables and rows before scaling the frequency column.
+			const data = tables.map(table =>
+				table.map(row => row.slice())
+			);
+			const freqScale = pickScale(metricPrefix);
+			const freqPrefixLabel = metricPrefixLabel(metricPrefix);
+			data.forEach(tbl => {
+				if (tbl[0] && typeof tbl[0][0] === 'string' && freqPrefixLabel) {
+					tbl[0][0] = `${tbl[0][0]} ${freqPrefixLabel}`;
+				}
+				for (let r = 1; r < tbl.length; r++) {
+					if (Number.isFinite(tbl[r][0])) tbl[r][0] = tbl[r][0] / freqScale;
+				}
+			});
+
+			// Table shape calc
+			const tablesCount = data.length;
+			const rowsPerTable = data.map(t => t.length);
+			const totalRows = rowsPerTable.reduce((a, b) => a + b, 0);
+			const totalCols = data.reduce((max, t) => {
+				const localMax = Math.max(...t.map(row => row.length));
+				return Math.max(max, localMax);
+			}, 0);
+
+			const tableWidth = totalCols * (columnWidth + 3) + 1;
+			const tableHeight = totalRows * (rowHeight + 1) + (tablesCount - 1) + 1;
+			const titleWidth = effectiveTitle ? effectiveTitle.length * effectiveFontSize * 0.65 : 0;
+			const controlsWidth = isNarrowViewport ? 40 : 130;
+			const minOuterWidth = Math.ceil(titleWidth + controlsWidth + 10);
+			const outerWidth = Math.max(margin.left + tableWidth + margin.right, minOuterWidth);
+			const scrollTable = measuredMountWidth > 0 && outerWidth > measuredMountWidth;
+			const layoutTop = Math.max(margin.top, 72);
+			const outerHeight = layoutTop + tableHeight + margin.bottom;
+
+			if (showWHAlert) {
+				// eslint-disable-next-line no-alert
+				alert(`The table dimensions: Width is ${outerWidth}, Height is ${outerHeight}`);
+			}
+
+			const effectiveHeaderFill = headerFill ?? (effectiveHeaderColor === 'gray' ? '#d4d4d4' : '#add8e6');
+			const titleVisible = effectiveTitle ? 'visible' : 'hidden';
+
+			// Y offsets for each stacked table (inside the drawing area)
+			const x0 = margin.left;
+			const yOffsets = [];
+			for (let i = 0; i < tablesCount; i++) {
+				const prev = i === 0 ? 0 : yOffsets[i - 1] + rowsPerTable[i - 1] * (rowHeight + 1) + 1;
+				yOffsets.push(prev);
+			}
+			const y0 = layoutTop;
+
+			// ======== Mount points & elements ========
+
+				const container = select(mount)
+					.append('div')
+					.attr('id', containerId || null)
+					.attr('class', 'line-table-container')
+					.style('display', scrollTable ? 'block' : 'inline-block')
+					.style('position', 'relative')        // anchor for absolute button
+					.style('width', scrollTable ? '100%' : null)
+					.style('max-width', '100%')
+					.style('overflow-x', scrollTable ? 'auto' : null)
+					.style('box-sizing', 'border-box')
+					.style('font-family', fontFamily)
+					.style('font-size', `${effectiveFontSize}px`)
+					.style('padding-top', '0');
+
+			// ======== PNG copy (keeps SVG in place) ========
+			async function svgToPngBlob(svgNode, width, height) {
+				const doctype = `<?xml version="1.0" standalone="no"?>` +
+					`<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">`;
+				const source = (new XMLSerializer()).serializeToString(svgNode);
+				const svgBlob = new Blob([doctype + source], { type: 'image/svg+xml;charset=utf-8' });
+				const url = URL.createObjectURL(svgBlob);
+
+				try {
+					const img = new Image();
+					// Important for some browsers to render local SVG properly
+					img.decoding = 'async';
+					img.loading = 'eager';
+
+					const loadPromise = new Promise((resolve, reject) => {
+						img.onload = () => resolve();
+						img.onerror = (e) => reject(e);
+					});
+					img.src = url;
+					await loadPromise;
+
+						const canvas = document.createElement('canvas');
+						canvas.width = width;
+						canvas.height = height;
+						const ctx = canvas.getContext('2d', { willReadFrequently: false });
+						if (effectiveBackgroundColor && effectiveBackgroundColor !== 'transparent') {
+							ctx.fillStyle = effectiveBackgroundColor;
+							ctx.fillRect(0, 0, width, height);
+						}
+						ctx.drawImage(img, 0, 0);
+
+					const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+					return blob;
+				} finally {
+					URL.revokeObjectURL(url);
+				}
+			}
+
+			async function copyPNG() {
+				const node = svg.node();
+				try {
+					if (!navigator.clipboard || !window.ClipboardItem) {
+						throw new Error('Clipboard API for images is not supported in this browser/context.');
+					}
+
+					const pngBlob = svgToPngBlob(node, outerWidth, outerHeight).then((blob) => {
+						if (!blob) throw new Error('Failed to create PNG blob');
+						return blob;
+					});
+					await navigator.clipboard.write([new ClipboardItem({ 'image/png': pngBlob })]);
+
+					//console.log("Image copied to clipboard!");
+
+				} catch (err) {
+					console.error('Failed to copy table PNG:', err);
+				}
+			}
+
+			function csvEscape(val) {
+				const s = (val ?? '').toString();
+				return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+			}
+
+			async function copyCSV() {
+				try {
+					const csvChunks = data.map(tbl => {
+						const cols = Math.max(...tbl.map(r => r.length));
+						const lines = [];
+						for (let r = 0; r < tbl.length; r++) {
+							const row = [];
+							for (let c = 0; c < cols; c++) {
+								const val = (tbl[r] || [])[c];
+								const formatted = (typeof val === 'string')
+									? val
+									: Number.isFinite(val) ? val.toFixed(5) : '';
+							row.push(csvEscape(formatted));
+							}
+							lines.push(row.join(','));
+						}
+						return lines.join('\n');
+					});
+
+					const csvText = csvChunks.join('\n\n'); // blank line between tables
+
+					if (!navigator.clipboard || !navigator.clipboard.writeText) {
+						throw new Error('Clipboard text API not available.');
+					}
+
+					await navigator.clipboard.writeText(csvText);
+
+					//console.log("copied to clipboard");
+
+
+				} catch (err) {
+					//console.error("Failed to copy image:", err);
+				}
+			}
+
+			// ======== Button (direct child of container) ========
+			const button = container.append('button')
+				//.attr('id', 'copyImage')
+				.attr('aria-label', 'Copy PNG')
+				.style('position', 'absolute')
+				.style('top', '5px')
+				.style('right', '5px')
+				.style('background', 'none')
+				.style('border', 'none')
+				.style('padding', '4px 8px')
+				.style('cursor', 'pointer')
+				.style('display', 'inline-flex')
+				.style('align-items', 'center')
+				.style('gap', '4px')
+				.style('border-radius', '6px')
+				.style('font-family', fontFamily)
+				.style('font-size', `${effectiveFontSize}px`)
+				.on('mouseover', function () { select(this).style('background', '#ccf2ff'); })  //#ccf2ff
+				.on('mouseout', function () { select(this).style('background', 'none'); })
+				.on('mousedown', function () { select(this).style('background', '#00ace6'); })  //#00ace6
+				.on('mouseup', function () { select(this).style('background', '#ccf2ff'); })
+				.on('click', copyPNG);
+
+			button.html(`
+    <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M12.668 10.667C12.668 9.95614 12.668 9.46258 12.6367 9.0791C12.6137 8.79732 12.5758 8.60761 12.5244 8.46387L12.4688 8.33399C12.3148 8.03193 12.0803 7.77885 11.793 7.60254L11.666 7.53125C11.508 7.45087 11.2963 7.39395 10.9209 7.36328C10.5374 7.33197 10.0439 7.33203 9.33301 7.33203H6.5C5.78896 7.33203 5.29563 7.33195 4.91211 7.36328C4.63016 7.38632 4.44065 7.42413 4.29688 7.47559L4.16699 7.53125C3.86488 7.68518 3.61186 7.9196 3.43555 8.20703L3.36524 8.33399C3.28478 8.49198 3.22795 8.70352 3.19727 9.0791C3.16595 9.46259 3.16504 9.95611 3.16504 10.667V13.5C3.16504 14.211 3.16593 14.7044 3.19727 15.0879C3.22797 15.4636 3.28473 15.675 3.36524 15.833L3.43555 15.959C3.61186 16.2466 3.86474 16.4807 4.16699 16.6348L4.29688 16.6914C4.44063 16.7428 4.63025 16.7797 4.91211 16.8027C5.29563 16.8341 5.78896 16.835 6.5 16.835H9.33301C10.0439 16.835 10.5374 16.8341 10.9209 16.8027C11.2965 16.772 11.508 16.7152 11.666 16.6348L11.793 16.5645C12.0804 16.3881 12.3148 16.1351 12.4688 15.833L12.5244 15.7031C12.5759 15.5594 12.6137 15.3698 12.6367 15.0879C12.6681 14.7044 12.668 14.211 12.668 13.5V10.667ZM13.998 12.665C14.4528 12.6634 14.8011 12.6602 15.0879 12.6367C15.4635 12.606 15.675 12.5492 15.833 12.4688L15.959 12.3975C16.2466 12.2211 16.4808 11.9682 16.6348 11.666L16.6914 11.5361C16.7428 11.3924 16.7797 11.2026 16.8027 10.9209C16.8341 10.5374 16.835 10.0439 16.835 9.33301V6.5C16.835 5.78896 16.8341 5.29563 16.8027 4.91211C16.7797 4.63025 16.7428 4.44063 16.6914 4.29688L16.6348 4.16699C16.4807 3.86474 16.2466 3.61186 15.959 3.43555L15.833 3.36524C15.675 3.28473 15.4636 3.22797 15.0879 3.19727C14.7044 3.16593 14.211 3.16504 13.5 3.16504H10.667C9.9561 3.16504 9.46259 3.16595 9.0791 3.19727C8.79739 3.22028 8.6076 3.2572 8.46387 3.30859L8.33399 3.36524C8.03176 3.51923 7.77886 3.75343 7.60254 4.04102L7.53125 4.16699C7.4508 4.32498 7.39397 4.53655 7.36328 4.91211C7.33985 5.19893 7.33562 5.54719 7.33399 6.00195H9.33301C10.022 6.00195 10.5791 6.00131 11.0293 6.03809C11.4873 6.07551 11.8937 6.15471 12.2705 6.34668L12.4883 6.46875C12.984 6.7728 13.3878 7.20854 13.6533 7.72949L13.7197 7.87207C13.8642 8.20859 13.9292 8.56974 13.9619 8.9707C13.9987 9.42092 13.998 9.97799 13.998 10.667V12.665ZM18.165 9.33301C18.165 10.022 18.1657 10.5791 18.1289 11.0293C18.0961 11.4302 18.0311 11.7914 17.8867 12.1279L17.8203 12.2705C17.5549 12.7914 17.1509 13.2272 16.6553 13.5313L16.4365 13.6533C16.0599 13.8452 15.6541 13.9245 15.1963 13.9619C14.8593 13.9895 14.4624 13.9935 13.9951 13.9951C13.9935 14.4624 13.9895 14.8593 13.9619 15.1963C13.9292 15.597 13.864 15.9576 13.7197 16.2939L13.6533 16.4365C13.3878 16.9576 12.9841 17.3941 12.4883 17.6982L12.2705 17.8203C11.8937 18.0123 11.4873 18.0915 11.0293 18.1289C10.5791 18.1657 10.022 18.165 9.33301 18.165H6.5C5.81091 18.165 5.25395 18.1657 4.80371 18.1289C4.40306 18.0962 4.04235 18.031 3.70606 17.8867L3.56348 17.8203C3.04244 17.5548 2.60585 17.151 2.30176 16.6553L2.17969 16.4365C1.98788 16.0599 1.90851 15.6541 1.87109 15.1963C1.83431 14.746 1.83496 14.1891 1.83496 13.5V10.667C1.83496 9.978 1.83432 9.42091 1.87109 8.9707C1.90851 8.5127 1.98772 8.10625 2.17969 7.72949L2.30176 7.51172C2.60586 7.0159 3.04236 6.6122 3.56348 6.34668L3.70606 6.28027C4.04237 6.136 4.40303 6.07083 4.80371 6.03809C5.14051 6.01057 5.53708 6.00551 6.00391 6.00391C6.00551 5.53708 6.01057 5.14051 6.03809 4.80371C6.0755 4.34588 6.15483 3.94012 6.34668 3.56348L6.46875 3.34473C6.77282 2.84912 7.20856 2.44514 7.72949 2.17969L7.87207 2.11328C8.20855 1.96886 8.56979 1.90385 8.9707 1.87109C9.42091 1.83432 9.978 1.83496 10.667 1.83496H13.5C14.1891 1.83496 14.746 1.83431 15.1963 1.87109C15.6541 1.90851 16.0599 1.98788 16.4365 2.17969L16.6553 2.30176C17.151 2.60585 17.5548 3.04244 17.8203 3.56348L17.8867 3.70606C18.031 4.04235 18.0962 4.40306 18.1289 4.80371C18.1657 5.25395 18.165 5.81091 18.165 6.5V9.33301Z">
+      </path>
+    </svg>Copy as png
+	    `);
+
+			if (isNarrowViewport) button.text('PNG');
+
+			button
+				.style('white-space', 'nowrap')
+				.style('padding', '4px 8px');
+
+			const csvBtn = container.append('button')
+				.attr('aria-label', 'Copy CSV')
+				.style('position', 'absolute')
+				.style('top', '37px')
+				.style('right', '5px')
+				.style('background', 'none')
+				.style('border', 'none')
+				.style('padding', '4px 8px')
+				.style('cursor', 'pointer')
+				.style('display', 'inline-flex')
+				.style('align-items', 'center')
+				.style('font-family', fontFamily)
+				.style('font-size', `${effectiveFontSize}px`)
+				.style('gap', '4px')
+				.style('border-radius', '6px')
+				.on('mouseover', function () { select(this).style('background', '#ccf2ff'); })
+				.on('mouseout', function () { select(this).style('background', 'none'); })
+				.on('mousedown', function () { select(this).style('background', '#00ace6'); })
+				.on('mouseup', function () { select(this).style('background', '#ccf2ff'); })
+				.on('click', copyCSV);
+
+			csvBtn.html([
+				'<svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">',
+				'  <path d="M12.668 10.667C12.668 9.95614 12.668 9.46258 12.6367 9.0791C12.6137 8.79732 12.5758 8.60761 12.5244 8.46387L12.4688 8.33399C12.3148 8.03193 12.0803 7.77885 11.793 7.60254L11.666 7.53125C11.508 7.45087 11.2963 7.39395 10.9209 7.36328C10.5374 7.33197 10.0439 7.33203 9.33301 7.33203H6.5C5.78896 7.33203 5.29563 7.33195 4.91211 7.36328C4.63016 7.38632 4.44065 7.42413 4.29688 7.47559L4.16699 7.53125C3.86488 7.68518 3.61186 7.9196 3.43555 8.20703L3.36524 8.33399C3.28478 8.49198 3.22795 8.70352 3.19727 9.0791C3.16595 9.46259 3.16504 9.95611 3.16504 10.667V13.5C3.16504 14.211 3.16593 14.7044 3.19727 15.0879C3.22797 15.4636 3.28473 15.675 3.36524 15.833L3.43555 15.959C3.61186 16.2466 3.86474 16.4807 4.16699 16.6348L4.29688 16.6914C4.44063 16.7428 4.63025 16.7797 4.91211 16.8027C5.29563 16.8341 5.78896 16.835 6.5 16.835H9.33301C10.0439 16.835 10.5374 16.8341 10.9209 16.8027C11.2965 16.772 11.508 16.7152 11.666 16.6348L11.793 16.5645C12.0804 16.3881 12.3148 16.1351 12.4688 15.833L12.5244 15.7031C12.5759 15.5594 12.6137 15.3698 12.6367 15.0879C12.6681 14.7044 12.668 14.211 12.668 13.5V10.667ZM13.998 12.665C14.4528 12.6634 14.8011 12.6602 15.0879 12.6367C15.4635 12.606 15.675 12.5492 15.833 12.4688L15.959 12.3975C16.2466 12.2211 16.4808 11.9682 16.6348 11.666L16.6914 11.5361C16.7428 11.3924 16.7797 11.2026 16.8027 10.9209C16.8341 10.5374 16.835 10.0439 16.835 9.33301V6.5C16.835 5.78896 16.8341 5.29563 16.8027 4.91211C16.7797 4.63025 16.7428 4.44063 16.6914 4.29688L16.6348 4.16699C16.4807 3.86474 16.2466 3.61186 15.959 3.43555L15.833 3.36524C15.675 3.28473 15.4636 3.22797 15.0879 3.19727C14.7044 3.16593 14.211 3.16504 13.5 3.16504H10.667C9.9561 3.16504 9.46259 3.16595 9.0791 3.19727C8.79739 3.22028 8.6076 3.2572 8.46387 3.30859L8.33399 3.36524C8.03176 3.51923 7.77886 3.75343 7.60254 4.04102L7.53125 4.16699C7.4508 4.32498 7.39397 4.53655 7.36328 4.91211C7.33985 5.19893 7.33562 5.54719 7.33399 6.00195H9.33301C10.022 6.00195 10.5791 6.00131 11.0293 6.03809C11.4873 6.07551 11.8937 6.15471 12.2705 6.34668L12.4883 6.46875C12.984 6.7728 13.3878 7.20854 13.6533 7.72949L13.7197 7.87207C13.8642 8.20859 13.9292 8.56974 13.9619 8.9707C13.9987 9.42092 13.998 9.97799 13.998 10.667V12.665ZM18.165 9.33301C18.165 10.022 18.1657 10.5791 18.1289 11.0293C18.0961 11.4302 18.0311 11.7914 17.8867 12.1279L17.8203 12.2705C17.5549 12.7914 17.1509 13.2272 16.6553 13.5313L16.4365 13.6533C16.0599 13.8452 15.6541 13.9245 15.1963 13.9619C14.8593 13.9895 14.4624 13.9935 13.9951 13.9951C13.9935 14.4624 13.9895 14.8593 13.9619 15.1963C13.9292 15.597 13.864 15.9576 13.7197 16.2939L13.6533 16.4365C13.3878 16.9576 12.9841 17.3941 12.4883 17.6982L12.2705 17.8203C11.8937 18.0123 11.4873 18.0915 11.0293 18.1289C10.5791 18.1657 10.022 18.165 9.33301 18.165H6.5C5.81091 18.165 5.25395 18.1657 4.80371 18.1289C4.40306 18.0962 4.04235 18.031 3.70606 17.8867L3.56348 17.8203C3.04244 17.5548 2.60585 17.151 2.30176 16.6553L2.17969 16.4365C1.98788 16.0599 1.90851 15.6541 1.87109 15.1963C1.83431 14.746 1.83496 14.1891 1.83496 13.5V10.667C1.83496 9.978 1.83432 9.42091 1.87109 8.9707C1.90851 8.5127 1.98772 8.10625 2.17969 7.72949L2.30176 7.51172C2.60586 7.0159 3.04236 6.6122 3.56348 6.34668L3.70606 6.28027C4.04237 6.136 4.40303 6.07083 4.80371 6.03809C5.14051 6.01057 5.53708 6.00551 6.00391 6.00391C6.00551 5.53708 6.01057 5.14051 6.03809 4.80371C6.0755 4.34588 6.15483 3.94012 6.34668 3.56348L6.46875 3.34473C6.77282 2.84912 7.20856 2.44514 7.72949 2.17969L7.87207 2.11328C8.20855 1.96886 8.56979 1.90385 8.9707 1.87109C9.42091 1.83432 9.978 1.83496 10.667 1.83496H13.5C14.1891 1.83496 14.746 1.83431 15.1963 1.87109C15.6541 1.90851 16.0599 1.98788 16.4365 2.17969L16.6553 2.30176C17.151 2.60585 17.5548 3.04244 17.8203 3.56348L17.8867 3.70606C18.031 4.04235 18.0962 4.40306 18.1289 4.80371C18.1657 5.25395 18.165 5.81091 18.165 6.5V9.33301Z"></path>',
+				'</svg>Copy as csv'
+			].join(''));
+
+			if (isNarrowViewport) csvBtn.text('CSV');
+
+			csvBtn
+				.style('white-space', 'nowrap')
+				.style('padding', '4px 8px');
+
+
+			// ======== The SVG itself ========
+				const svg = container.append('svg')
+					.attr('id', svgId || null)
+					.style('user-select', 'text')
+				.style('-webkit-user-select', 'text')
+				.style('-ms-user-select', 'text')
+					.attr('class', 'line-table-svg')
+					.attr('width', outerWidth)
+					.attr('height', outerHeight)
+					.attr('viewBox', `0 0 ${outerWidth} ${outerHeight}`)
+					.attr('preserveAspectRatio', 'xMinYMin meet')
+					.style('display', 'block')
+					.style('width', scrollTable ? `${outerWidth}px` : '100%')
+					.style('max-width', scrollTable ? 'none' : `${outerWidth}px`)
+					.style('height', 'auto')
+					.style('font-family', fontFamily)
+					.style('font-size', `${effectiveFontSize}px`)
+					.style('background-color', effectiveBackgroundColor === 'transparent' ? 'transparent' : effectiveBackgroundColor);
+
+				const tableBackground = svg.insert('rect', ':first-child')
+					.attr('x', 0)
+					.attr('y', 0)
+					.attr('width', outerWidth)
+					.attr('height', outerHeight)
+					.attr('fill', effectiveBackgroundColor === 'transparent' ? 'none' : effectiveBackgroundColor)
+					.attr('class', 'line-table-background');
+
+			// Border
+			const tableBorder = svg.append('rect')
+				.attr('width', outerWidth)
+				.attr('height', outerHeight)
+				.attr('class', 'line-table-border')
+				.attr('fill', 'none')
+				.attr('stroke', tableBorderColor)
+				.attr('stroke-width', tableBorderWidth);
+
+			// Title
+			const txtTableTitle = svg.append('text')
+					.attr('x', 2)
+					.attr('y', 18)
+					.style('visibility', titleVisible)
+					.style('font', `${effectiveFontSize}px ${fontFamily}`)
+					.style('user-select', 'none')
+					.style('-webkit-user-select', 'none')
+					.style('-ms-user-select', 'none')
+					.style('pointer-events', 'none')
+					.text(effectiveTitle);
+
+			const txtHeaders = [];
+			const txtData = [];
+
+			function cssPropertyToJsName(propertyName) {
+				return propertyName.replace(/-([a-z])/g, function (_, letter) {
+					return letter.toUpperCase();
+				});
+			}
+
+			function applyStyleToElement(element, style) {
+				if (!element) return;
+
+				if (typeof style === 'string') {
+					const currentStyle = element.getAttribute('style') || '';
+					element.setAttribute('style', currentStyle ? currentStyle + ';' + style : style);
+				} else if (typeof style === 'object' && style !== null) {
+					for (const [key, value] of Object.entries(style)) {
+						element.style[cssPropertyToJsName(key)] = value;
+					}
+				}
+			}
+
+			function applyTextStyle(elements, style) {
+				elements.forEach((el) => {
+					applyStyleToElement(el, style);
+				});
+			}
+
+			// ======== Pure-SVG table renderer ========
+			function drawTable(myArray, originX, originY) {
+				const cols = Math.max(...myArray.map(r => r.length));
+				for (let row = 0; row < myArray.length; row++) {
+					for (let col = 0; col < cols; col++) {
+						const val = (myArray[row] || [])[col];
+						const isHeader = row === 0; // your format uses row 0 as headers
+						const fill = isHeader ? effectiveHeaderFill : cellFill;
+						const x = originX + (columnWidth + 3) * col;
+						const y = originY + (rowHeight + 1) * row;
+
+						// Cell rect
+						svg.append('rect')
+							.attr('x', x)
+							.attr('y', y)
+							.attr('width', (col === cols - 1 ? columnWidth + 3 - 1 : columnWidth + 3)) // last cell a tad narrower for outer stroke symmetry
+							.attr('height', rowHeight + 1)
+							.attr('fill', fill)
+							.attr('stroke', cellBorderColor)
+							.attr('stroke-width', cellBorderWidth)
+							.attr('pointer-events', 'none');   // allow text selection
+
+						// Cell text
+						const txt = (typeof val === 'string')
+							? val
+							: Number.isFinite(val) ? val.toFixed(5) : '';
+
+						const textX = isHeader
+							? x + Math.max(3, Math.round(columnWidth / 2 - (String(txt).length * columnWidth) / 28)) // crude center
+							: x + 3;
+
+						const text = svg.append('text')
+								.attr('x', textX)
+								.attr('y', y + 16) // baseline adjustment
+								.attr('class', 'line-table-text')
+								.style('font', `${effectiveFontSize}px ${fontFamily}`)
+							.text(txt)
+							.style('user-select', 'text')
+							.style('-webkit-user-select', 'text')
+							.style('-ms-user-select', 'text')
+							.style('cursor', 'text');
+
+						if (isHeader) {
+							txtHeaders.push(text.node());
+						} else {
+							txtData.push(text.node());
+						}
+					}
+				}
+			}
+
+			// Draw all tables stacked
+			data.forEach((tbl, i) => {
+				drawTable(tbl, x0, y0 + yOffsets[i]);
+			});
+
+			function setTxtTableTitleStyle(style) {
+				applyStyleToElement(txtTableTitle.node(), style);
+			}
+
+			function setTableBackgroundStyle(style) {
+				applyStyleToElement(tableBackground.node(), style);
+			}
+
+			function setTableBorderStyle(style) {
+				applyStyleToElement(tableBorder.node(), style);
+			}
+
+			function setTxtTableHeadersStyle(style) {
+				applyTextStyle(txtHeaders, style);
+			}
+
+			function setTxtTableDataStyle(style) {
+				applyTextStyle(txtData, style);
+			}
+
+			// Returning an API to the user
+			// There are exposed elements for super users
+			// There are exposed setter methods to change the style
+			// ---> You can pass an object to a setter: { fill: "red", fontStyle: "italic" }
+			// ---> Or you can pass a string to a setter: "fill:red; font-style:italic;"
+			// Either will work
+
+			return {
+				// Shared elements
+				container: container.node(),
+				svg: svg.node(),
+				background: tableBackground.node(),
+				title: txtTableTitle.node(),
+
+				// Existing table elements
+				tableBackground: tableBackground.node(),
+				txtTableTitle: txtTableTitle.node(),
+				tableBorder: tableBorder.node(),
+				txtHeaders: txtHeaders,
+				txtData: txtData,
+
+				// Shared style setters
+				setBackgroundStyle: setTableBackgroundStyle,
+				setTitleStyle: setTxtTableTitleStyle,
+
+				// Existing table style setters
+				setTxtTableTitleStyle: setTxtTableTitleStyle,
+				setTableBackgroundStyle: setTableBackgroundStyle,
+				setTableBorderStyle: setTableBorderStyle,
+				setTxtTableHeadersStyle: setTxtTableHeadersStyle,
+				setTxtTableDataStyle: setTxtTableDataStyle
+			};
+
+		}
+
+	// Modified: 2026-10-07
+	// Generates an array of Chebyshev values based on the number of sections and ripple
+	function chebyLPgk (n = 3, ripple = 0.1) { // Returns gk's shown in formula 4.05-2 on page 99 of MYJ
+		var	chebyLPgkin = new Array(1 + 1 + n + 1),  // Table title row, go row, gk's (n rows), and g(k+1)
+			chebyLPgkout = [],
+			i = 0, row = 0;
+
+		// The function, gk() Fills in the variable table above called "chebyLPgkin" to hold ak, bk, and gk's based on the n
+		for(i = 0; i < chebyLPgkin.length; i++) {chebyLPgkin[i] = new Array(4); }
+		// Table for complete display of values
+		chebyLPgkin[0][0] = 'ak'; chebyLPgkin[0][1] = 'bk'; chebyLPgkin[0][2] = 'gk'; chebyLPgkin[0][3] = 'R,C,L';
+
+		function coth(x) {return (Math.exp(x) + Math.exp(-x))/(Math.exp(x) - Math.exp(-x));}	function B() {return Math.log(coth(ripple/17.37));}	function sinh(x) {return (Math.exp(x) - Math.exp(-x))/2;}	function G() {return sinh(B()/(2 * n));} // Compute G() on page 99 of MYJ
+
+		chebyLPgkin[1][2] = 1; // Initialize the lowPassFilter array for g0=1;
+
+		for(row = 2; row < chebyLPgkin.length -1; row++) { chebyLPgkin[row][0] = Math.sin(((2*(row -1) -1) * Math.PI)/(2 * n)); }
+		for(row = 2; row < chebyLPgkin.length -1; row++) { // Populate the bk column on page 99 of MYJ
+			chebyLPgkin[row][1] = Math.pow(G(),2) + Math.pow(Math.sin(  (row-1) * Math.PI/n),2);
+		}
+		chebyLPgkin[2][2] = 2*chebyLPgkin[2][0]/G(); // Populate the first q1 in the cell
+
+		for(row = 3; row < chebyLPgkin.length -1; row++) { // Populate the gk column from g2 onward to gk
+			chebyLPgkin[row][2] = (4 * chebyLPgkin[row-1][0] * chebyLPgkin[row][0])/(chebyLPgkin[row-1][1] * chebyLPgkin[row-1][2]);
+		}
+		chebyLPgkin[ n+2][2] = (n % 2 === 0 ) ? Math.pow(coth(B()/4),2) : 1 ; // Populate the last g(k+1) in the cell
+
+		// Populate chebyLPgkout
+		for(row = 1; row < chebyLPgkin.length; row++) { chebyLPgkout[row - 1] = chebyLPgkin[row][2]; }
+		return chebyLPgkout;
+	}
+
+	// Modified: 2026-10-07
+	// Generates an array of parallel capacitors and series inductors based on Chebyshev values
+	function chebyLPLCs ( cheby = [1, 1.0315851425078764, 1.1474003299537219, 1.0315851425078761, 1], maxPassFrequency = 0.2e9, zo = 50) {
+		var	chebyLPLCsout = new Array(cheby.length),
+			i = 0;
+
+		chebyLPLCsout[0] = cheby[0] * zo; // Populate the first resistor in the array
+
+		for(i = 1; i < cheby.length -1; i++) { // Populate the C's and L's
+			chebyLPLCsout[i] = ( (i) % 2 === 0 ) ? cheby[i] * zo * (1/(2*Math.PI)) * (1/(maxPassFrequency )) : cheby[i] * 1/zo * (1/(2*Math.PI)) * (1/(maxPassFrequency));
+		}
+		chebyLPLCsout[cheby.length-1] = cheby[cheby.length-1] * zo; // Populate the last resistor in the array
+
+		return chebyLPLCsout;
+	}
+
+	// Modified: 2026-10-07
+	// Computes the number of sections in a Chebyshev low-pass filter
+	function chebyLPNsec (passFreq = .2, rejFreq = 1.5, ripple = 0.1, rejection = 30) { // Formula 4.03-4 for n on page 86 of MYJ
+		var chebyLPNsecout = 0;
+		function normalizedBandwidth() { return rejFreq/passFreq; }// Computes the w/w1 in MYJ on page 86 of MYJ
+		function epsilon() { return Math.pow(10,(ripple/10))-1;} // Formula 4.03-5 on page 87 on MYJ
+		function arcCosh(x) {return Math.log(x + Math.sqrt((x * x)-1));}
+		chebyLPNsecout = Math.ceil(arcCosh(Math.sqrt((Math.pow(10,(rejection/10))-1)/epsilon()))/arcCosh(normalizedBandwidth()));
+		return chebyLPNsecout;
+	}
+
+	// Generated by schematics/tools/generate-runtime-symbols.js from symbol-catalog.json.
+	// Edit schematics/symbol-catalog.json, then run npm run symbols:bundle.
+	const schematicSymbolMap = {
+	    "diode1N4148": "diode-1n4148",
+	    "seR": "resistor",
+	    "R": "resistor",
+	    "paR": "parallel-resistor",
+	    "seL": "inductor",
+	    "L": "inductor",
+	    "paL": "parallel-inductor",
+	    "seC": "capacitor",
+	    "C": "capacitor",
+	    "paC": "parallel-capacitor",
+	    "trf": "transformer",
+	    "trf4Port": "transformer-four-port",
+	    "trfAuto": "transformer-auto",
+	    "seSeRL": "se-series-rl",
+	    "paSeRL": "pa-series-rl",
+	    "seSeRC": "se-series-rc",
+	    "paSeRC": "pa-series-rc",
+	    "seSeLC": "se-series-lc",
+	    "paSeLC": "pa-series-lc",
+	    "seSeRLC": "se-series-rlc",
+	    "paSeRLC": "pa-series-rlc",
+	    "paPaRL": "pa-parallel-rl",
+	    "sePaRL": "se-parallel-rl",
+	    "paPaRC": "pa-parallel-rc",
+	    "sePaRC": "se-parallel-rc",
+	    "paPaLC": "pa-parallel-lc",
+	    "sePaLC": "se-parallel-lc",
+	    "paPaRLC": "pa-parallel-rlc",
+	    "sePaRLC": "se-parallel-rlc",
+	    "Attn": "attenuator",
+	    "Amp": "amplifier",
+	    "Thru": "thru",
+	    "Tee": "tee",
+	    "Tee4": "tee4",
+	    "Tee5": "tee5",
+	    "seriesTee": "series-tee",
+	    "Open": "open",
+	    "Short": "short",
+	    "Load": "load",
+	    "Shift90": "shift-90",
+	    "Tclin": "coupled-transmission-line",
+	    "Coupler180": "coupler-180",
+	    "mlin": "microstrip-line",
+	    "mclin": "microstrip-coupled-line",
+	    "mtee": "microstrip-tee",
+	    "mcross": "microstrip-cross",
+	    "mstep": "microstrip-step",
+	    "mbend": "microstrip-right-bend",
+	    "mtfr": "microstrip-thin-film-resistor",
+	    "mvgnd": "microstrip-via-to-ground",
+	    "mvia": "microstrip-via-transition"
+	};
+	const schematicSymbolVariants = {
+	    "mbend": {
+	        "left": "microstrip-left-bend",
+	        "right": "microstrip-right-bend"
+	    }
+	};
+
+	// Modified: 2026-10-28
+
+	function schematicPart(constructorName, parameters = {}, variant) {
+	    const symbol = variant === undefined ? schematicSymbolMap[constructorName] :
+	        schematicSymbolVariants[constructorName]?.[variant];
+	    if (!symbol) {
+	        throw new RangeError(`No bundled schematic symbol for ${constructorName}` +
+	            (variant === undefined ? '.' : ` variant ${variant}.`));
+	    }
+	    return {...parameters, kind: 'component', symbol};
+	}
+
+	// Modified: 2026-10-07
+
+	function analysisFrequencies(settings) {
+		if (!settings.twoTone) return settings.fList;
+		var spacing = settings.twoTone.spacingHz;
+		if (!Number.isFinite(spacing) || spacing <= 0) {
+			throw new RangeError('global.twoTone.spacingHz must be a positive frequency.');
+		}
+		var frequencies = new Set();
+		settings.fList.forEach(function (f1) {
+			if (!Number.isFinite(f1) || f1 <= 0) {
+				throw new RangeError('Two-tone sweep frequencies must be positive.');
+			}
+			var f2 = f1 + spacing;
+			[f1, f2, f2 - f1, f1 + f2, 2 * f1 - f2, 2 * f2 - f1, 2 * f1, 2 * f2]
+				.forEach(function (frequency) {
+					if (frequency > 0) frequencies.add(frequency);
+				});
+		});
+		return Array.from(frequencies).sort(function (a, b) { return a - b; });
+	}
+
+	// Modified: 2026-10-13
+
+	// Capture the analysis settings when a component is constructed. An explicit
+	// fList lets independent circuits use different grids without changing global.
+	function componentSettings(global, options = {}) {
+		var fList = options.fList === undefined ? global.fList : options.fList;
+		if (!Array.isArray(fList)) throw new TypeError('fList must be an array of frequencies.');
+		return {
+			...global,
+			fList: fList.slice(),
+			tList: Array.isArray(global.tList) ? global.tList.slice() : global.tList,
+			twoTone: global.twoTone ? {...global.twoTone} : global.twoTone
+		};
+	}
+
+	// Modified: 2026-10-07
+
+	var conjugate$5 = function (value) { return complex(value.getR(), -value.getI()); };
+
+	// Passive Bosma noise covariance: C = kBT(I - S S†).
+	function passiveNoiseCovariance(sparsRow, portCount, temperature) {
+		var scale = complex(1.380649e-23 * temperature, 0);
+		var covariance = [];
+		for (var row = 0; row < portCount; row++) {
+			covariance[row] = [];
+			for (var col = 0; col < portCount; col++) {
+				var value = row === col ? complex(1, 0) : complex(0, 0);
+				for (var port = 0; port < portCount; port++) {
+					value = value.sub(sparsRow[1 + row * portCount + port].mul(conjugate$5(sparsRow[1 + col * portCount + port])));
+				}
+				var scaled = value.mul(scale);
+				// Remove round-off residuals from mathematically lossless models.
+				covariance[row][col] = scaled.mag() < 1e-35 ? complex(0, 0) : scaled;
+			}
+		}
+		return covariance;
+	}
+
+	// Modified: 2026-10-03
+
+	var kB$5 = 1.380649e-23;
+	var zero$1 = function () { return complex(0, 0); };
+	var conjugate$4 = function (value) { return complex(value.getR(), -value.getI()); };
+
+	function reflection(value, label) {
+		var result = value === undefined ? zero$1() :
+			typeof value === 'number' ? complex(value, 0) : value;
+		if (!result || typeof result.getR !== 'function' || typeof result.getI !== 'function' ||
+			typeof result.mag !== 'function' ||
+			!Number.isFinite(result.getR()) || !Number.isFinite(result.getI()) ||
+			!Number.isFinite(result.mag()) || result.mag() > 1) {
+			throw new RangeError(label + ' must be a passive reflection coefficient with magnitude at most 1.');
+		}
+		return result;
+	}
+
+	function conditions(portCount, inputPort, outputPort, options) {
+		var referenceTemperature = options.referenceTemperature === undefined ?
+			290 : options.referenceTemperature;
+		if (!Number.isFinite(referenceTemperature) || referenceTemperature <= 0) {
+			throw new RangeError('referenceTemperature must be a positive number of kelvin.');
+		}
+		if (inputPort === outputPort || inputPort < 1 || outputPort < 1 ||
+			inputPort > portCount || outputPort > portCount) {
+			throw new RangeError('Noise figure requires distinct input and output ports in the nPort.');
+		}
+		var source = options.source || {};
+		var terminations = options.terminations || {};
+		Object.keys(terminations).forEach(function (key) {
+			var port = Number(key);
+			if (!Number.isInteger(port) || port < 1 || port > portCount || port === inputPort) {
+				throw new RangeError('Termination ports must be valid nPort ports other than the source.');
+			}
+		});
+		var gammas = [];
+		var temperatures = [];
+		for (var port = 1; port <= portCount; port++) {
+			if (port === inputPort) {
+				gammas.push(reflection(source.reflection, 'source.reflection'));
+				temperatures.push(referenceTemperature);
+			} else {
+				var termination = terminations[port] || {};
+				gammas.push(reflection(termination.reflection, 'termination ' + port + ' reflection'));
+				var temperature = termination.temperature === undefined ?
+					(port === outputPort ? 0 : referenceTemperature) : termination.temperature;
+				if (!Number.isFinite(temperature) || temperature < 0) {
+					throw new RangeError('termination ' + port + ' temperature must be nonnegative kelvin.');
+				}
+				temperatures.push(temperature);
+			}
+		}
+		if (gammas[inputPort - 1].mag() >= 1) {
+			throw new RangeError('A lossless reflecting source has no available thermal-noise reference.');
+		}
+		return {gammas: gammas, temperatures: temperatures, referenceTemperature: referenceTemperature};
+	}
+
+	// b = S a + c, a = Gamma b + u, so b = (I - S Gamma)^-1 (S u + c).
+	// The selected output's unit-signal and source-noise responses share one transfer.
+	function noiseAnalysis(sparsRow, covariance, inputPort, outputPort, options = {}) {
+		var portCount = Math.sqrt(sparsRow.length - 1);
+		var setup = conditions(portCount, inputPort, outputPort, options);
+		var S = [];
+		var system = [];
+		for (var row = 0; row < portCount; row++) {
+			S[row] = [];
+			system[row] = [];
+			for (var col = 0; col < portCount; col++) {
+				var value = sparsRow[1 + row * portCount + col];
+				S[row][col] = value;
+				system[row][col] = (row === col ? complex(1, 0) : zero$1())
+					.sub(value.mul(setup.gammas[col]));
+			}
+		}
+		var H = matrix(system).invertCplx().m;
+		var output = outputPort - 1;
+		var source = inputPort - 1;
+		var transfers = [];
+		for (var port = 0; port < portCount; port++) {
+			var transfer = zero$1();
+			for (var index = 0; index < portCount; index++) {
+				transfer = transfer.add(H[output][index].mul(S[index][port]));
+			}
+			transfers[port] = transfer;
+		}
+		// Source noise in a 1 Hz band experiences the same transfer as a signal.
+		var inputNoise = kB$5 * setup.referenceTemperature;
+		var sourceCoupling = 1 - setup.gammas[source].mag() ** 2;
+		var sourceNoise = transfers[source].mag() ** 2 * sourceCoupling * inputNoise;
+		var addedNoise = zero$1();
+		for (var noiseRow = 0; noiseRow < portCount; noiseRow++) {
+			for (var noiseCol = 0; noiseCol < portCount; noiseCol++) {
+				addedNoise = addedNoise.add(H[output][noiseRow]
+					.mul(covariance[noiseRow][noiseCol])
+					.mul(conjugate$4(H[output][noiseCol])));
+			}
+		}
+		var totalNoise = sourceNoise + addedNoise.getR();
+		for (var terminationPort = 0; terminationPort < portCount; terminationPort++) {
+			if (terminationPort !== source) {
+				totalNoise += transfers[terminationPort].mag() ** 2 * kB$5 *
+					setup.temperatures[terminationPort] *
+					(1 - setup.gammas[terminationPort].mag() ** 2);
+			}
+		}
+		if (totalNoise < 0 || !Number.isFinite(totalNoise)) {
+			throw new RangeError('Noise analysis requires nonnegative finite output noise.');
+		}
+		return {
+			factor: sourceNoise > 0 && totalNoise > 0 ? totalNoise / sourceNoise : NaN,
+			outputNoiseDensity: totalNoise
+		};
+	}
+
+	// Modified: 2026-10-07
+
+	var zero = function () { return complex(0, 0); };
+	var conjugate$3 = function (value) { return complex(value.getR(), -value.getI()); };
+	var power = function (value) { return value.getR() ** 2 + value.getI() ** 2; };
+	var zeroVector = function (count) {
+		return Array.from({length: count}, zero);
+	};
+
+	var rowAt = function (nport, frequency) {
+		var row = nport.spars.find(function (item) { return item[0] === frequency; });
+		if (!row) throw new RangeError('nPort has no S-parameters at ' + frequency + ' Hz. Set two-tone frequencies before constructing components.');
+		return row;
+	};
+
+	var portCount = function (nport) {
+		return Math.sqrt(nport.spars[0].length - 1);
+	};
+
+	var linearOutput = function (nport, frequency, incident) {
+		var row = rowAt(nport, frequency);
+		var count = portCount(nport);
+		var output = zeroVector(count);
+		for (var i = 0; i < count; i++) {
+			for (var j = 0; j < count; j++) {
+				output[i] = output[i].add(row[1 + i * count + j].mul(incident[j]));
+			}
+		}
+		return output;
+	};
+
+	// A connection model has component ports first and external bookkeeping
+	// ports last, just like nodal's Gupta matrix.
+	function connectionModel(components, connectionMap) {
+		return {type: 'connection', components: components, connectionMap: connectionMap};
+	}
+
+	var solveConnection = function (model, frequency, externalIncident, componentSources) {
+		var componentPorts = model.components.reduce(function (total, component) {
+			return total + portCount(component);
+		}, 0);
+		var externalPorts = externalIncident.length;
+		var count = componentPorts + externalPorts;
+		if (model.connectionMap.length !== count) {
+			throw new RangeError('Intermod connection port count does not match the nPort components.');
+		}
+		var W = dim(count, count, zero());
+		for (var row = 0; row < count; row++) {
+			W[row][model.connectionMap[row]] = complex(1, 0);
+		}
+		var offset = 0;
+		for (var componentIndex = 0; componentIndex < model.components.length; componentIndex++) {
+			var component = model.components[componentIndex];
+			var spars = rowAt(component, frequency);
+			var size = portCount(component);
+			for (var i = 0; i < size; i++) {
+				for (var j = 0; j < size; j++) {
+					W[offset + i][offset + j] = spars[1 + i * size + j].neg();
+				}
+			}
+			offset += size;
+		}
+		var sources = zeroVector(count);
+		if (componentSources) {
+			offset = 0;
+			for (var child = 0; child < model.components.length; child++) {
+				for (var port = 0; port < componentSources[child].length; port++) {
+					sources[offset + port] = componentSources[child][port];
+				}
+				offset += portCount(model.components[child]);
+			}
+		}
+		for (var external = 0; external < externalPorts; external++) {
+			sources[componentPorts + external] = externalIncident[external];
+		}
+		var inverse = matrix(W).invertCplx().m;
+		var incident = zeroVector(count);
+		for (var outputRow = 0; outputRow < count; outputRow++) {
+			for (var source = 0; source < count; source++) {
+				incident[outputRow] = incident[outputRow].add(inverse[outputRow][source].mul(sources[source]));
+			}
+		}
+		var childIncidents = [];
+		offset = 0;
+		for (var childIndex = 0; childIndex < model.components.length; childIndex++) {
+			var childPorts = portCount(model.components[childIndex]);
+			childIncidents.push(incident.slice(offset, offset + childPorts));
+			offset += childPorts;
+		}
+		return {outgoing: incident.slice(componentPorts), childIncidents: childIncidents};
+	};
+
+	var prepare = function (nport, f1, f2, input1, input2) {
+		var model = nport._intermod;
+		if (!model || model.type !== 'connection') {
+			return {input1: input1, input2: input2};
+		}
+		var atFirst = solveConnection(model, f1, input1);
+		var atSecond = solveConnection(model, f2, input2);
+		var children = model.components.map(function (component, index) {
+			return prepare(component, f1, f2,
+				atFirst.childIncidents[index], atSecond.childIncidents[index]);
+		});
+		return {children: children};
+	};
+
+	var diodeJunctionVoltage = function (nport, frequency, incident, model) {
+		var reflected = linearOutput(nport, frequency, incident);
+		var current = incident[0].sub(reflected[0]).div(complex(Math.sqrt(model.referenceImpedance), 0));
+		var junctionImpedance = complex(model.conductance, 2 * Math.PI * frequency * model.capacitance).inv();
+		return current.mul(junctionImpedance);
+	};
+
+	var diodeProducts = function (nport, frequency, context, tones, model) {
+		var output = zeroVector(2);
+		var v1 = diodeJunctionVoltage(nport, tones.f1, context.input1, model);
+		var v2 = diodeJunctionVoltage(nport, tones.f2, context.input2, model);
+		// dI/dV supplies conduction products; dQ/dt adds the junction-capacitance products.
+		var second = complex(model.secondDerivative, 2 * Math.PI * frequency * model.capacitanceDerivative);
+		var third = complex(model.thirdDerivative, 2 * Math.PI * frequency * model.capacitanceSecondDerivative);
+		var productCurrent = zero();
+		if (frequency === tones.f1 + tones.f2) {
+			productCurrent = productCurrent.add(v1.mul(v2).mul(second).mul(complex(1 / Math.sqrt(2), 0)));
+		}
+		if (frequency === tones.f2 - tones.f1) {
+			productCurrent = productCurrent.add(v2.mul(conjugate$3(v1)).mul(second).mul(complex(1 / Math.sqrt(2), 0)));
+		}
+		if (frequency === 2 * tones.f1) {
+			productCurrent = productCurrent.add(v1.mul(v1).mul(second).mul(complex(1 / (2 * Math.sqrt(2)), 0)));
+		}
+		if (frequency === 2 * tones.f2) {
+			productCurrent = productCurrent.add(v2.mul(v2).mul(second).mul(complex(1 / (2 * Math.sqrt(2)), 0)));
+		}
+		if (frequency === 2 * tones.f1 - tones.f2) {
+			productCurrent = productCurrent.add(v1.mul(v1).mul(conjugate$3(v2)).mul(third).mul(complex(1 / 4, 0)));
+		}
+		if (frequency === 2 * tones.f2 - tones.f1) {
+			productCurrent = productCurrent.add(v2.mul(v2).mul(conjugate$3(v1)).mul(third).mul(complex(1 / 4, 0)));
+		}
+		if (power(productCurrent) === 0) return output;
+		var junctionImpedance = complex(model.conductance, 2 * Math.PI * frequency * model.capacitance).inv();
+		var seriesImpedance = junctionImpedance.add(complex(model.seriesResistance + 2 * model.referenceImpedance, 0));
+		var outgoing = productCurrent.mul(junctionImpedance)
+			.mul(complex(Math.sqrt(model.referenceImpedance), 0)).div(seriesImpedance);
+		output[0] = outgoing.neg();
+		output[1] = outgoing;
+		return output;
+	};
+
+	var generated = function (nport, frequency, context, tones) {
+		var model = nport._intermod;
+		var count = portCount(nport);
+		if (!model) return zeroVector(count);
+		if (model.type === 'connection') {
+			var childSources = model.components.map(function (component, index) {
+				return generated(component, frequency, context.children[index], tones);
+			});
+			if (childSources.every(function (waves) {
+				return waves.every(function (wave) { return power(wave) === 0; });
+			})) return zeroVector(count);
+			return solveConnection(model, frequency, zeroVector(count), childSources).outgoing;
+		}
+		if (model.type === 'diode') return diodeProducts(nport, frequency, context, tones, model);
+		if (model.type !== 'amp') return zeroVector(count);
+		var output = zeroVector(count);
+		var b1 = rowAt(nport, tones.f1)[3].mul(context.input1[0]);
+		var b2 = rowAt(nport, tones.f2)[3].mul(context.input2[0]);
+		if (model.p2 && frequency === tones.f1 + tones.f2) {
+			output[1] = output[1].add(b1.mul(b2).mul(model.phase2).mul(complex(1 / Math.sqrt(model.p2), 0)));
+		}
+		if (model.p2 && frequency === tones.f2 - tones.f1) {
+			output[1] = output[1].add(b2.mul(conjugate$3(b1)).mul(model.phase2).mul(complex(1 / Math.sqrt(model.p2), 0)));
+		}
+		if (model.p2Harmonic && frequency === 2 * tones.f1) {
+			output[1] = output[1].add(b1.mul(b1).mul(model.phase2Harmonic).mul(complex(1 / Math.sqrt(model.p2Harmonic), 0)));
+		}
+		if (model.p2Harmonic && frequency === 2 * tones.f2) {
+			output[1] = output[1].add(b2.mul(b2).mul(model.phase2Harmonic).mul(complex(1 / Math.sqrt(model.p2Harmonic), 0)));
+		}
+		if (model.p3 && frequency === 2 * tones.f1 - tones.f2) {
+			output[1] = output[1].sub(b1.mul(b1).mul(conjugate$3(b2)).mul(model.phase3).mul(complex(1 / model.p3, 0)));
+		}
+		if (model.p3 && frequency === 2 * tones.f2 - tones.f1) {
+			output[1] = output[1].sub(b2.mul(b2).mul(conjugate$3(b1)).mul(model.phase3).mul(complex(1 / model.p3, 0)));
+		}
+		return output;
+	};
+
+	var sourceWave = function (dBm, phaseDegrees) {
+		if (!Number.isFinite(dBm)) throw new RangeError('Two-tone input powers must be finite dBm values.');
+		if (!Number.isFinite(phaseDegrees)) throw new RangeError('Two-tone phases must be finite degrees.');
+		var magnitude = Math.sqrt(10 ** ((dBm - 30) / 10));
+		var radians = phaseDegrees * Math.PI / 180;
+		return complex(magnitude * Math.cos(radians), magnitude * Math.sin(radians));
+	};
+
+	function intermodAt(nport, f1, inputPort, settings) {
+		var tone = settings.twoTone;
+		if (!tone || !Number.isFinite(tone.spacingHz) || tone.spacingHz <= 0) {
+			throw new RangeError('Set global.twoTone.spacingHz before intermod analysis.');
+		}
+		var f2 = f1 + tone.spacingHz;
+		var count = portCount(nport);
+		var input1 = zeroVector(count);
+		var input2 = zeroVector(count);
+		input1[inputPort] = sourceWave(tone.p1dBm, tone.phase1Deg === undefined ? 0 : tone.phase1Deg);
+		input2[inputPort] = sourceWave(tone.p2dBm, tone.phase2Deg === undefined ? 0 : tone.phase2Deg);
+		var context = prepare(nport, f1, f2, input1, input2);
+		var frequencies = {
+			im2diff: f2 - f1,
+			im3lower: 2 * f1 - f2,
+			fund1: f1,
+			fund2: f2,
+			im3upper: 2 * f2 - f1,
+			im2sum: f1 + f2,
+			harm1: 2 * f1,
+			harm2: 2 * f2
+		};
+		var waves = {};
+		var waveByFrequency = new Map();
+		Object.keys(frequencies).forEach(function (key) {
+			var frequency = frequencies[key];
+			if (frequency <= 0) {
+				waves[key] = null;
+				return;
+			}
+			if (waveByFrequency.has(frequency)) {
+				waves[key] = waveByFrequency.get(frequency);
+				return;
+			}
+			var incident = zeroVector(count);
+			if (frequency === f1) incident = incident.map(function (value, index) { return value.add(input1[index]); });
+			if (frequency === f2) incident = incident.map(function (value, index) { return value.add(input2[index]); });
+			var linear = linearOutput(nport, frequency, incident);
+			var nonlinear = generated(nport, frequency, context, {f1: f1, f2: f2});
+			waves[key] = linear.map(function (value, index) { return value.add(nonlinear[index]); });
+			waveByFrequency.set(frequency, waves[key]);
+		});
+		return {frequencies: frequencies, waves: waves};
+	}
+
+	function waveDbm(value) {
+		return value ? 10 * Math.log10(power(value) / 1e-3) : NaN;
+	}
+
+	function oipDbm(result, product, outputPort) {
+		var frequency = result.frequencies[product];
+		if (frequency <= 0) return NaN;
+		var coincidences = Object.keys(result.frequencies).filter(function (name) {
+			return result.frequencies[name] === frequency;
+		});
+		if (coincidences.length > 1) {
+			throw new RangeError('An OIP cannot be separated when products or fundamentals coincide.');
+		}
+		var productPower = power(result.waves[product][outputPort]);
+		if (productPower === 0) return Infinity;
+		var firstPower = power(result.waves.fund1[outputPort]);
+		var secondPower = power(result.waves.fund2[outputPort]);
+		var intercept;
+		if (product === 'harm1') {
+			intercept = firstPower ** 2 / productPower;
+		} else if (product === 'harm2') {
+			intercept = secondPower ** 2 / productPower;
+		} else if (product === 'im2sum' || product === 'im2diff') {
+			intercept = firstPower * secondPower / productPower;
+		} else if (product === 'im3lower') {
+			intercept = Math.sqrt(firstPower ** 2 * secondPower / productPower);
+		} else {
+			intercept = Math.sqrt(secondPower ** 2 * firstPower / productPower);
+		}
+		return 10 * Math.log10(intercept / 1e-3);
+	}
+
+	// Modified: 2026-10-22
+
+	function analogMode(mode) {
+		return ['AM', 'FM', 'PM', 'SSB', 'DSB-SC'].includes(mode);
+	}
+
+	function analogRowCount(signal) {
+		if (signal.mode === 'AM') return 3;
+		if (signal.mode === 'SSB') return 1;
+		if (signal.mode === 'DSB-SC') return 2;
+		return 2 * signal.sidebandOrder + 1;
+	}
+
+	function analogFrequency(signal, index) {
+		if (signal.mode === 'SSB') return signal.carrierHz +
+			(signal.sideband === 'USB' ? signal.toneHz : -signal.toneHz);
+		if (signal.mode === 'DSB-SC') return signal.carrierHz +
+			(index === 0 ? -signal.toneHz : signal.toneHz);
+		return signal.carrierHz + (index - (analogRowCount(signal) - 1) / 2) * signal.toneHz;
+	}
+
+	// A deterministic signal uses one complex outgoing-wave vector per S row.
+	function validateSignal(signal, spars) {
+		var analog = signal && analogMode(signal.mode);
+		var frequencyVna = signal && signal.mode === 'VNA-frequency';
+		if (!signal || (!analog && !frequencyVna && (!Number.isInteger(signal.sampleCount) || signal.sampleCount < 1 ||
+			!Number.isFinite(signal.sampleRateHz) || signal.sampleRateHz <= 0)) ||
+			(analog && (!Number.isFinite(signal.carrierHz) || !Number.isFinite(signal.toneHz) ||
+				signal.carrierHz <= 0 || signal.toneHz <= 0 ||
+				(['AM', 'SSB', 'DSB-SC'].includes(signal.mode) && signal.carrierHz <= signal.toneHz) ||
+				!Array.isArray(signal.rows) || signal.rows.length !==
+					analogRowCount(signal) ||
+				(['FM', 'PM'].includes(signal.mode) && (!Number.isInteger(signal.sidebandOrder) ||
+					signal.sidebandOrder < 0)))) ||
+			!Number.isFinite(signal.referenceImpedanceOhms) || signal.referenceImpedanceOhms <= 0 ||
+			(signal.samplesPerBit !== undefined &&
+				(!Number.isInteger(signal.samplesPerBit) || signal.samplesPerBit < 1 ||
+					signal.sampleCount % signal.samplesPerBit !== 0)) ||
+			!Array.isArray(signal.rows) || (spars && signal.rows.length !== spars.length)) {
+			throw new RangeError('Signal metadata and frequency rows must match the nPort.');
+		}
+		for (var i = 0; i < signal.rows.length; i++) {
+			var row = signal.rows[i];
+			var portCount = spars ? Math.sqrt(spars[i].length - 1) : row && row.waves && row.waves.length;
+			if (!row || (spars && row.frequency !== spars[i][0]) ||
+				!Array.isArray(row.waves) || row.waves.length !== portCount ||
+				row.waves.some(function (wave) {
+					return !wave || typeof wave.getR !== 'function' || typeof wave.getI !== 'function' ||
+						!Number.isFinite(wave.getR()) || !Number.isFinite(wave.getI());
+				})) {
+				throw new RangeError('Signal waves must match the S-parameter frequency and port count.');
+			}
+		}
+		return signal;
+	}
+
+	function compatibleSignals(first, second) {
+		if (!first) return second;
+		if (!second) return first;
+		var firstAnalog = analogMode(first.mode);
+		var secondAnalog = analogMode(second.mode);
+		if ((first.mode === 'VNA-frequency' || second.mode === 'VNA-frequency') &&
+			(first.mode !== second.mode ||
+			first.referenceImpedanceOhms !== second.referenceImpedanceOhms ||
+			first.rows.length !== second.rows.length ||
+			first.rows.some(function (row, index) { return row.frequency !== second.rows[index].frequency; }))) {
+			throw new RangeError('VNA-frequency sources must have matching frequencies and reference impedances.');
+		}
+		if (first.mode !== second.mode && (firstAnalog || secondAnalog)) {
+			throw new RangeError('Analog and sampled digital signals, or different analog modes, cannot share one connection.');
+		}
+		if (firstAnalog && (first.toneHz !== second.toneHz ||
+			first.carrierHz !== second.carrierHz ||
+			first.sidebandOrder !== second.sidebandOrder ||
+			first.sideband !== second.sideband ||
+			first.referenceImpedanceOhms !== second.referenceImpedanceOhms)) {
+			throw new RangeError('Analog sources must have matching carrier, tone, sideband order, and reference impedance.');
+		}
+		if (!firstAnalog && (first.mode !== second.mode ||
+			first.sampleCount !== second.sampleCount ||
+			first.sampleRateHz !== second.sampleRateHz ||
+			first.encoding !== second.encoding ||
+			first.order !== second.order ||
+			first.fftSize !== second.fftSize ||
+			first.subcarrierCount !== second.subcarrierCount ||
+			first.symbolRate !== second.symbolRate ||
+			first.frequencyDeviationHz !== second.frequencyDeviationHz ||
+			first.bt !== second.bt ||
+			first.referenceImpedanceOhms !== second.referenceImpedanceOhms ||
+			(first.carrierHz || 0) !== (second.carrierHz || 0))) {
+			throw new RangeError('Digital sources must have matching sample counts, rates, carriers, and reference impedances.');
+		}
+		if (first.samplesPerBit !== second.samplesPerBit) {
+			return {...first, samplesPerBit: undefined};
+		}
+		return first;
+	}
+
+	function signalWithRows(template, rows) {
+		return {
+			mode: template.mode,
+			fList: template.fList,
+			dataMode: template.dataMode,
+			encoding: template.encoding,
+			toneHz: template.toneHz,
+			beta: template.beta,
+			sidebandOrder: template.sidebandOrder,
+			sidebandPowerTolerance: template.sidebandPowerTolerance,
+			modulationIndex: template.modulationIndex,
+			toneAmplitudeVolts: template.toneAmplitudeVolts,
+			sideband: template.sideband,
+			carrierAmplitudeVolts: template.carrierAmplitudeVolts,
+			frequencyDeviationHz: template.frequencyDeviationHz,
+			order: template.order,
+			bitsPerSymbol: template.bitsPerSymbol,
+			referenceSymbols: template.referenceSymbols,
+			bitCount: template.bitCount,
+			bt: template.bt,
+			subcarrierCount: template.subcarrierCount,
+			fftSize: template.fftSize,
+			symbolRate: template.symbolRate,
+			subcarrierMode: template.subcarrierMode,
+			sampleCount: template.sampleCount,
+			sampleRateHz: template.sampleRateHz,
+			referenceImpedanceOhms: template.referenceImpedanceOhms,
+			samplesPerBit: template.samplesPerBit,
+			carrierHz: template.carrierHz,
+			rows: rows
+		};
+	}
+
+	// Drive an external nPort input with a periodic, matched-source voltage spectrum.
+	function applyInputSignal(network, options) {
+		if (!options || !options.signal) return network;
+		var source = options.signal;
+		var spars = network.getspars();
+		var portCount = Math.sqrt(spars[0].length - 1);
+		var inputPort = options.inputPort === undefined ? 1 : options.inputPort;
+		if (!Number.isInteger(inputPort) || inputPort < 1 || inputPort > portCount) {
+			throw new RangeError('Signal inputPort is outside the nPort dimensions.');
+		}
+		var analog = analogMode(source.mode);
+		var vna = source.mode === 'VNA-time';
+		var frequencyVna = source.mode === 'VNA-frequency';
+		var sidebandOrder = source.mode === 'AM' ? 1 : source.sidebandOrder;
+		if (!Array.isArray(source.fList) || !Array.isArray(source.spectrum) ||
+			source.fList.length !== spars.length || source.spectrum.length !== spars.length ||
+			(analog ? (!Number.isFinite(source.carrierHz) || !Number.isFinite(source.toneHz) ||
+				source.carrierHz <= 0 || source.toneHz <= 0 ||
+				(['AM', 'SSB', 'DSB-SC'].includes(source.mode) && source.carrierHz <= source.toneHz) ||
+				(['FM', 'PM', 'AM'].includes(source.mode) &&
+					(!Number.isInteger(sidebandOrder) || sidebandOrder < 0)) ||
+				spars.length !== analogRowCount(source) ||
+				source.fList.some(function (frequency, index) {
+					return frequency !== analogFrequency(source, index);
+				})) : frequencyVna ?
+				(source.fList.length === 0 || source.fList.some(function (frequency, index) {
+					return !Number.isFinite(frequency) || frequency < 0 ||
+						(index > 0 && frequency <= source.fList[index - 1]);
+				})) :
+				(!Number.isInteger(source.sampleCount) || source.sampleCount < 1 ||
+				(vna ? source.samplesPerBit !== undefined : source.mode === 'OFDM' ?
+					(!Number.isInteger(source.bitCount) || source.bitCount < 1 ||
+					!Number.isInteger(source.fftSize) || source.fftSize < 1 ||
+					 source.sampleCount % source.fftSize !== 0) :
+					(!Number.isInteger(source.samplesPerBit) || source.samplesPerBit < 1 ||
+					 source.sampleCount % source.samplesPerBit !== 0)) ||
+				spars.length !== Math.floor(source.sampleCount / 2) + 1 ||
+				!Number.isFinite(source.sampleRateHz) || source.sampleRateHz <= 0)) ||
+			!Number.isFinite(source.referenceImpedanceOhms) || source.referenceImpedanceOhms <= 0 ||
+			source.fList.some(function (frequency, index) { return frequency !== spars[index][0]; }) ||
+			source.spectrum.some(function (value) {
+				return !value || typeof value.getR !== 'function' || typeof value.getI !== 'function' ||
+					!Number.isFinite(value.getR()) || !Number.isFinite(value.getI());
+			})) {
+			throw new RangeError('Input signal frequencies and spectrum must match the nPort.');
+		}
+		if (network.global && network.global.Ro !== source.referenceImpedanceOhms) {
+			throw new RangeError('Signal input reference impedance must match the nPort.');
+		}
+		var template = compatibleSignals(network.signal, source);
+		var scale = Math.sqrt(source.referenceImpedanceOhms);
+		var rows = spars.map(function (sRow, index) {
+			var waves = [];
+			for (var port = 0; port < portCount; port++) {
+				var existing = network.signal ? network.signal.rows[index].waves[port] : complex(0, 0);
+				var response = sRow[1 + port * portCount + inputPort - 1].mul(source.spectrum[index]).div(complex(scale, 0));
+				waves[port] = existing.add(response);
+			}
+			return {frequency: sRow[0], waves: waves};
+		});
+		network.signal = signalWithRows(template, rows);
+		return network;
+	}
+
+	// Modified: 2026-10-26
+	var conjugate$2 = function (value) { return complex(value.getR(), -value.getI()); };
+
+	function nPort() { this._noise = undefined; this._signal = undefined; }
+	var derivePassiveNoise = function (nPortObject) {
+		if (!nPortObject.spars) return undefined;
+		var temperature = nPortObject._noiseTemperature === undefined ? 293 : nPortObject._noiseTemperature;
+		var portCount = Math.sqrt(nPortObject.spars[0].length - 1);
+		return nPortObject.spars.map(function (row) {
+			return {frequency: row[0], C: passiveNoiseCovariance(row, portCount, temperature)};
+		});
+	};
+
+	// The canonical noise shape is an array of {frequency, C} rows.  Retain
+	// .covariance as a read-only alias for older callers of combined nPorts.
+	var normalizeNoise = function (noiseData, spars) {
+		var rows = Array.isArray(noiseData) ? noiseData : noiseData && noiseData.covariance;
+		if (!Array.isArray(rows)) throw new TypeError('nPort noise must contain frequency-aligned covariance rows.');
+		if (spars && rows.length !== spars.length) throw new RangeError('Noise and S-parameter frequency counts differ.');
+		for (var i = 0; i < rows.length; i++) {
+			var portCount = spars ? Math.sqrt(spars[i].length - 1) : rows[i] && rows[i].C && rows[i].C.length;
+			if (!rows[i] || (spars && rows[i].frequency !== spars[i][0]) ||
+				!Array.isArray(rows[i].C) || rows[i].C.length !== portCount ||
+				rows[i].C.some(function (row) {
+					return !Array.isArray(row) || row.length !== portCount ||
+						row.some(function (value) {
+							return !value || typeof value.getR !== 'function' || typeof value.getI !== 'function';
+						});
+				})) {
+				throw new RangeError('Noise covariance must match the S-parameter frequency and port count.');
+			}
+		}
+		if (!Object.prototype.hasOwnProperty.call(rows, 'covariance')) {
+			Object.defineProperty(rows, 'covariance', {value: rows});
+		}
+		return rows;
+	};
+
+	nPort.prototype = {
+		constructor: nPort,
+		setglobal: function (global) {
+			this.global = {...global, fList: Array.isArray(global.fList) ? global.fList.slice() : global.fList,
+				tList: Array.isArray(global.tList) ? global.tList.slice() : global.tList,
+				twoTone: global.twoTone ? {...global.twoTone} : global.twoTone};
+			this._noiseTemperature = global.Temp;
+			if (global.twoTone) this._displayFrequencies = global.fList.slice();
+		},
+		getglobal: function () {return this.global;},
+		setspars: function (sparsArray) {
+			if (this._noise !== undefined) normalizeNoise(this._noise, sparsArray);
+			if (this._signal !== undefined) validateSignal(this._signal, sparsArray);
+			this.spars = sparsArray;
+		},
+		getspars: function () { return this.spars; },
+		get noise() {
+			if (this._noise === undefined && this.spars) {
+				this._noise = normalizeNoise(derivePassiveNoise(this), this.spars);
+			}
+			return this._noise;
+		},
+		set noise (noiseData) { this._noise = normalizeNoise(noiseData, this.spars); },
+		get signal() { return this._signal; },
+		set signal(signalData) { this._signal = validateSignal(signalData, this.spars); },
+		cas: function cas (n2) { // cascade two 2-ports along with method chaining since it returns an nPort
+			var freqCount = 0, one = complex(1,0),
+				sparsA = this.getspars(),
+				sparsB = n2.getspars(),
+				s11, s12, s21, s22, s11a, s12a, s21a, s22a, s11b, s12b, s21b, s22b, sparsArray = [];
+			if (sparsA.length !== sparsB.length ||
+				sparsA.some(function (row, index) { return row[0] !== sparsB[index][0]; })) {
+				throw new RangeError('Cascaded nPorts must have matching frequency rows.');
+			}
+			for (freqCount = 0; freqCount < this.spars.length; freqCount++) {
+				s11a = sparsA[freqCount][1]; s12a = sparsA[freqCount][2]; s21a = sparsA[freqCount][3]; s22a = sparsA[freqCount][4];			
+				s11b = sparsB[freqCount][1]; s12b = sparsB[freqCount][2]; s21b = sparsB[freqCount][3]; s22b = sparsB[freqCount][4];
+
+				s11 = s11a.add (( s12a.mul(s11b).mul(s21a) ).div( (one.sub( s22a.mul(s11b) ) ) ) );
+				s12 =           ( s12a.mul(s12b)           ).div( (one.sub( s22a.mul(s11b) ) ) )  ;
+				s22 = s22b.add (( s21b.mul(s22a).mul(s12b) ).div( (one.sub( s22a.mul(s11b) ) ) ) );
+				s21 =           ( s21a.mul(s21b)           ).div( (one.sub( s22a.mul(s11b) ) ) )  ;
+				sparsArray[freqCount] =	[sparsA[freqCount][0],s11, s12, s21, s22];
+			}		var noiseCovariance = [];
+			var noiseA = this.noise;
+			var noiseB = n2.noise;
+			var signalA = this.signal;
+			var signalB = n2.signal;
+			var signalTemplate = compatibleSignals(signalA, signalB);
+			var signalRows = signalTemplate ? [] : undefined;
+			for (freqCount = 0; freqCount < this.spars.length; freqCount++) {
+				sparsA[freqCount][1]; var a12 = sparsA[freqCount][2]; sparsA[freqCount][3]; var a22 = sparsA[freqCount][4];
+				var b11 = sparsB[freqCount][1], b21 = sparsB[freqCount][3];
+				var denominator = one.sub(a22.mul(b11));
+				var transferA = [
+					[one, a12.mul(b11).div(denominator)],
+					[complex(0, 0), b21.div(denominator)]
+				];
+				var transferB = [
+					[a12.div(denominator), complex(0, 0)],
+					[b21.mul(a22).div(denominator), one]
+				];
+				var covarianceA = noiseA && noiseA[freqCount] ? noiseA[freqCount].C : [[complex(0, 0), complex(0, 0)], [complex(0, 0), complex(0, 0)]];
+				var covarianceB = noiseB && noiseB[freqCount] ? noiseB[freqCount].C : [[complex(0, 0), complex(0, 0)], [complex(0, 0), complex(0, 0)]];
+				var outputCovariance = [];
+				for (var outputRow = 0; outputRow < 2; outputRow++) {
+					outputCovariance[outputRow] = [];
+					for (var outputCol = 0; outputCol < 2; outputCol++) {
+						var covariance = complex(0, 0);
+						for (var sourceRow = 0; sourceRow < 2; sourceRow++) {
+							for (var sourceCol = 0; sourceCol < 2; sourceCol++) {
+								covariance = covariance
+									.add(transferA[outputRow][sourceRow].mul(covarianceA[sourceRow][sourceCol]).mul(conjugate$2(transferA[outputCol][sourceCol])))
+									.add(transferB[outputRow][sourceRow].mul(covarianceB[sourceRow][sourceCol]).mul(conjugate$2(transferB[outputCol][sourceCol])));
+							}
+						}
+						outputCovariance[outputRow][outputCol] = covariance;
+					}
+				}
+				noiseCovariance[freqCount] = {frequency: sparsA[freqCount][0], C: outputCovariance};
+				if (signalRows) {
+					var wavesA = signalA ? signalA.rows[freqCount].waves : [complex(0, 0), complex(0, 0)];
+					var wavesB = signalB ? signalB.rows[freqCount].waves : [complex(0, 0), complex(0, 0)];
+					var outputWaves = [];
+					for (var wavePort = 0; wavePort < 2; wavePort++) {
+						outputWaves[wavePort] = complex(0, 0);
+						for (var sourcePort = 0; sourcePort < 2; sourcePort++) {
+							outputWaves[wavePort] = outputWaves[wavePort]
+								.add(transferA[wavePort][sourcePort].mul(wavesA[sourcePort]))
+								.add(transferB[wavePort][sourcePort].mul(wavesB[sourcePort]));
+						}
+					}
+					signalRows[freqCount] = {frequency: sparsA[freqCount][0], waves: outputWaves};
+				}
+			}
+			var casOut = new nPort();
+			casOut.setspars(sparsArray);
+			casOut.setglobal(this.global);
+			casOut.noise = noiseCovariance;
+			if (signalRows) casOut.signal = signalWithRows(signalTemplate, signalRows);
+			casOut._displayFrequencies = this._displayFrequencies || n2._displayFrequencies;
+			casOut._intermod = connectionModel([this, n2], [4, 2, 1, 5, 0, 3]);
+			casOut._schematic = {kind: 'cascade', left: this._schematic, right: n2._schematic};
+			return casOut;
+		},
+		out : function out (...selectors) {
+			var spars = this.getspars();
+			var portCount = Math.sqrt(spars[0].length - 1);
+			var options = selectors.length && typeof selectors[selectors.length - 1] === 'object' ?
+				selectors.pop() : {};
+			var parsed = selectors.map(function (selector) {
+				var match = /^s([1-9])([1-9])(dB|mag|ang|Re|Im)$/.exec(selector);
+				if (match) return {kind: 's', row: Number(match[1]) - 1, col: Number(match[2]) - 1, format: match[3]};
+				match = /^signal([1-9]\d*)(V|Deg|dBm)$/.exec(selector);
+				if (match) return {kind: 'signal', row: Number(match[1]) - 1, format: match[2]};
+				match = /^c([1-9])([1-9])(Re|Im|mag|dB)?$/.exec(selector);
+				if (match) return {kind: 'c', row: Number(match[1]) - 1, col: Number(match[2]) - 1, format: match[3] || 'Re'};
+				match = /^NF([1-9])([1-9])(dB)?$/.exec(selector);
+				if (!match) match = /^NF\(([1-9]\d*),([1-9]\d*)\)(dB)?$/.exec(selector);
+				if (match) return {kind: 'NF', row: Number(match[1]) - 1, col: Number(match[2]) - 1, format: match[3] || 'factor'};
+				if (selector === 'noiseFloor') return {kind: 'noiseFloor', row: 1, col: 0};
+				match = /^noiseFloor([1-9])([1-9])dBmHz$/.exec(selector);
+				if (!match) match = /^noiseFloor\(([1-9]\d*),([1-9]\d*)\)dBmHz$/.exec(selector);
+				if (match) return {kind: 'noiseFloor', row: Number(match[1]) - 1, col: Number(match[2]) - 1};
+				match = /^IM(2sum|2diff|3lower|3upper)([1-9])([1-9])dBm$/.exec(selector);
+				if (!match) match = /^IM(2sum|2diff|3lower|3upper)\(([1-9]\d*),([1-9]\d*)\)dBm$/.exec(selector);
+				if (match) return {kind: 'IM', product: 'im' + match[1], row: Number(match[2]) - 1, col: Number(match[3]) - 1};
+				match = /^H2f([12])([1-9])([1-9])dBm$/.exec(selector);
+				if (!match) match = /^H2f([12])\(([1-9]\d*),([1-9]\d*)\)dBm$/.exec(selector);
+				if (match) return {kind: 'IM', product: 'harm' + match[1], row: Number(match[2]) - 1, col: Number(match[3]) - 1};
+				match = /^OIP(2sum|2diff|3lower|3upper)([1-9])([1-9])dBm$/.exec(selector);
+				if (!match) match = /^OIP(2sum|2diff|3lower|3upper)\(([1-9]\d*),([1-9]\d*)\)dBm$/.exec(selector);
+				if (match) return {kind: 'OIP', product: 'im' + match[1], row: Number(match[2]) - 1, col: Number(match[3]) - 1};
+				match = /^OIP2f([12])([1-9])([1-9])dBm$/.exec(selector);
+				if (!match) match = /^OIP2f([12])\(([1-9]\d*),([1-9]\d*)\)dBm$/.exec(selector);
+				if (match) return {kind: 'OIP', product: 'harm' + match[1], row: Number(match[2]) - 1, col: Number(match[3]) - 1};
+				throw new TypeError('nPort.out(): invalid selector "' + selector + '".');
+			});
+			parsed.forEach(function (selection) {
+				if (selection.row >= portCount || selection.col >= portCount) {
+					throw new RangeError('nPort.out(): selected port is outside the n-port dimensions.');
+				}
+				if (selection.kind === 'signal' && (!this.signal ||
+					!['AM', 'FM', 'PM', 'SSB', 'DSB-SC'].includes(this.signal.mode))) {
+					throw new RangeError('Signal tone selectors require an analog signal on the nPort.');
+				}
+			}, this);
+			var output = [['Freq'].concat(selectors)];
+			for (var frequencyIndex = 0; frequencyIndex < spars.length; frequencyIndex++) {
+				var sparsRow = spars[frequencyIndex];
+				if (this._displayFrequencies && !this._displayFrequencies.includes(sparsRow[0])) continue;
+				var noiseRow = null;
+				var noiseResults = {};
+				var intermodRows = {};
+				var row = [sparsRow[0]];
+				for (var selectionIndex = 0; selectionIndex < parsed.length; selectionIndex++) {
+					var selection = parsed[selectionIndex];
+					if ((selection.kind === 'c' || selection.kind === 'NF' ||
+						selection.kind === 'noiseFloor') && noiseRow === null) noiseRow = this.noise[frequencyIndex];
+					if (selection.kind === 'signal') {
+						var voltage = this.signal.rows[frequencyIndex].waves[selection.row]
+							.mul(complex(Math.sqrt(this.signal.referenceImpedanceOhms), 0));
+						if (selection.format === 'V') row.push(voltage.mag());
+						else if (selection.format === 'Deg') row.push(voltage.ang());
+						else row.push(10 * Math.log10(voltage.mag() ** 2 /
+							(2 * this.signal.referenceImpedanceOhms * 1e-3)));
+					} else if (selection.kind === 'NF' || selection.kind === 'noiseFloor') {
+						var noiseKey = selection.row + ',' + selection.col;
+						if (!noiseResults[noiseKey]) {
+							noiseResults[noiseKey] = noiseAnalysis(sparsRow, noiseRow.C,
+								selection.col + 1, selection.row + 1, options);
+						}
+						var noiseResult = noiseResults[noiseKey];
+						if (selection.kind === 'noiseFloor') {
+							row.push(10 * Math.log10(noiseResult.outputNoiseDensity / 1e-3));
+						} else {
+							if (!Number.isFinite(noiseResult.factor) || noiseResult.factor <= 0) {
+								throw new RangeError('Noise figure requires positive source and output noise.');
+							}
+							row.push(selection.format === 'dB' ? 10 * Math.log10(noiseResult.factor) : noiseResult.factor);
+						}
+					} else if (selection.kind === 'IM' || selection.kind === 'OIP') {
+						if (!intermodRows[selection.col]) {
+							intermodRows[selection.col] = intermodAt(this, sparsRow[0], selection.col,
+								{twoTone: options.twoTone || this.global.twoTone});
+						}
+						row.push(selection.kind === 'IM' ?
+							waveDbm(intermodRows[selection.col].waves[selection.product] &&
+								intermodRows[selection.col].waves[selection.product][selection.row]) :
+							oipDbm(intermodRows[selection.col], selection.product, selection.row));
+					} else {
+						var value = selection.kind === 's' ?
+							sparsRow[1 + selection.row * portCount + selection.col] :
+							noiseRow.C[selection.row][selection.col];
+						if (selection.format === 'mag') row.push(value.mag());
+						else if (selection.format === 'dB') row.push(selection.kind === 's' ?
+							value.mag20dB() : 10 * Math.log10(value.mag()));
+						else if (selection.format === 'ang') row.push(value.ang());
+						else if (selection.format === 'Im') row.push(value.getI());
+						else row.push(value.getR());
+					}
+				}
+				output.push(row);
+			}
+			return output;
+		},
+		noiseOut : function noiseOut (...noiseArguments) {
+			if (noiseArguments.length === 0) throw new TypeError('nPort.noiseOut() requires at least one covariance selector.');
+			var noiseRows = this.noise && this.noise.covariance ? this.noise.covariance : this.noise;
+			var spars = this.getspars();
+			var portCount = Math.sqrt(spars[0].length - 1);
+			var output = [noiseArguments.slice()];
+			output[0].unshift('Freq');
+			var selectors = noiseArguments.map(function (selector) {
+				var match = /^c(\d+)(\d+)(Re|Im|mag|dB)?$/i.exec(selector);
+				if (!match) throw new TypeError('nPort.noiseOut(): invalid covariance selector "' + selector + '".');
+				var row = parseInt(match[1], 10) - 1;
+				var col = parseInt(match[2], 10) - 1;
+				if (row < 0 || col < 0 || row >= portCount || col >= portCount) throw new RangeError('nPort.noiseOut(): covariance selector "' + selector + '" is outside the n-port dimensions.');
+				return {row, col, format: (match[3] || 'Re').toLowerCase()};
+			});
+			for (var frequencyIndex = 0; frequencyIndex < spars.length; frequencyIndex++) {
+				var covariance = noiseRows && noiseRows[frequencyIndex] ? noiseRows[frequencyIndex].C : null;
+				var inner = [spars[frequencyIndex][0]];
+				selectors.forEach(function (selector) {
+					var value = covariance && covariance[selector.row] && covariance[selector.row][selector.col]
+						? covariance[selector.row][selector.col]
+						: complex(0, 0);
+					if (selector.format === 'im') inner.push(value.getI());
+					else if (selector.format === 'mag') inner.push(value.mag());
+					else if (selector.format === 'db') inner.push(10 * Math.log10(value.mag()));
+					else inner.push(value.getR());
+				});
+				output.push(inner);
+			}
+			return output;
+		},
+		outTable : function out (...sparsArguments) {
+			var spars = this.getspars();
+			var n = Math.sqrt(spars[0].length - 1); 
+			var copy = spars.map(function (element,index,spars) {
+				var inner = [element[0]];
+				sparsArguments.forEach(function (sparsArgument,index1,array) {
+					var row = parseInt(sparsArgument.match(/\d/g)[0]);
+					var col = parseInt(sparsArgument.match(/\d/g)[1]);
+					var sparIndex = (row - 1) * n + col;
+					var sparsTo = sparsArgument.match(/dB|mag|ang|Re|Im/).toString();
+					if(sparsTo === 'mag') {inner.push(element[sparIndex].mag());}				if(sparsTo === 'dB')  {inner.push(element[sparIndex].mag20dB());}				if(sparsTo === 'ang') {inner.push(element[sparIndex].ang());}				if(sparsTo === 'Re')  {inner.push(element[sparIndex].getR());}
+					if(sparsTo === 'Im')  {inner.push(element[sparIndex].getI());}
+				});  // end of forEach
+				return inner;
+			}); // end of map
+			sparsArguments.unshift('Freq');
+			copy.unshift(sparsArguments);
+			return copy.map(function(element) {return element;});
+		},
+	};
+
+	// Modified: 2026-10-28
+
+	const Q = 1.602176634e-19;
+	const K = 1.380649e-23;
+
+	function thermalVoltage(temperatureK) {
+		return K * temperatureK / Q;
+	}
+
+	function normalizeOptions(options) {
+		return {
+			is: options.is ?? 2.75e-11,
+			n: options.n ?? 2,
+			rs: options.rs ?? 0.568,
+			cj0: options.cj0 ?? 4e-12,
+			vj: options.vj ?? 0.75,
+			m: options.m ?? 0.5,
+			tt: options.tt ?? 4e-9,
+			leakageResistance: options.leakageResistance ?? 4e9,
+			breakdownVoltage: options.breakdownVoltage ?? 100,
+			breakdownCurrent: options.breakdownCurrent ?? 100e-6,
+			breakdownSoftness: options.breakdownSoftness ?? 2,
+			biasVoltage: options.biasVoltage ?? 0,
+			temperatureK: options.temperatureK ?? global.Temp,
+			ivStart: options.ivStart ?? -110,
+			ivStop: options.ivStop ?? 1,
+			ivPoints: options.ivPoints ?? 401
+		};
+	}
+
+	function junctionCapacitance(voltage, cj0, vj, m) {
+		if (voltage < vj) {
+			return cj0 / Math.pow(1 - voltage / vj, m);
+		}
+
+		return cj0 / Math.pow(1e-12, m);
+	}
+
+	function breakdownCurrent(junctionVoltage, p) {
+		var excessVoltage = Math.max(-junctionVoltage - p.breakdownVoltage, 0);
+
+		return -p.breakdownCurrent * (Math.exp(excessVoltage / p.breakdownSoftness) - 1);
+	}
+
+	function breakdownConductance(junctionVoltage, p) {
+		if (-junctionVoltage <= p.breakdownVoltage) {
+			return 0;
+		}
+
+		return p.breakdownCurrent * Math.exp((-junctionVoltage - p.breakdownVoltage) / p.breakdownSoftness) / p.breakdownSoftness;
+	}
+
+	function diodeCurrentAtVoltage(voltage, p) {
+		var vt = thermalVoltage(p.temperatureK);
+		var current = voltage >= 0 ? voltage / Math.max(p.rs + p.n * vt / p.is, 1) : -p.is;
+		var iteration;
+		var limitedExp;
+		var junctionVoltage;
+		var expTerm;
+		var f;
+		var df;
+		var next;
+		var avalancheCurrent;
+		var avalancheConductance;
+
+		for (iteration = 0; iteration < 60; iteration++) {
+			junctionVoltage = voltage - current * p.rs;
+			limitedExp = Math.min(junctionVoltage / (p.n * vt), 80);
+			expTerm = Math.exp(limitedExp);
+			avalancheCurrent = breakdownCurrent(junctionVoltage, p);
+			avalancheConductance = breakdownConductance(junctionVoltage, p);
+			f = current - p.is * (expTerm - 1) - junctionVoltage / p.leakageResistance - avalancheCurrent;
+			df = 1 + p.rs * p.is * expTerm / (p.n * vt) + p.rs / p.leakageResistance + p.rs * avalancheConductance;
+			next = current - f / df;
+
+			if (Math.abs(next - current) <= Math.max(1e-15, Math.abs(next) * 1e-12)) {
+				return next;
+			}
+
+			current = next;
+		}
+
+		return current;
+	}
+
+	function diodeAdmittanceAtBias(p) {
+		var vt = thermalVoltage(p.temperatureK);
+		var current = diodeCurrentAtVoltage(p.biasVoltage, p);
+		var junctionVoltage = p.biasVoltage - current * p.rs;
+		var limitedExp = Math.min(junctionVoltage / (p.n * vt), 80);
+		var conductance = p.is * Math.exp(limitedExp) / (p.n * vt) + 1 / p.leakageResistance + breakdownConductance(junctionVoltage, p);
+
+		return {
+			current,
+			junctionVoltage,
+			conductance,
+			resistance: conductance > 0 ? 1 / conductance : Number.POSITIVE_INFINITY
+		};
+	}
+
+	function seriesTwoPortFromImpedance(frequency, impedance, ro) {
+		complex(ro, 0);
+		var twoZo = complex(2 * ro, 0);
+		var denominator = impedance.add(twoZo);
+		var s11 = impedance.div(denominator);
+		var s21 = twoZo.div(denominator);
+
+		return [frequency, s11, s21, s21, s11];
+	}
+
+	function diode1N4148(options = {}) {
+		var p = normalizeOptions(options);
+		var diodePort = new nPort();
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings);
+		var ro = global.Ro;
+		var twoZo = complex(2 * ro, 0);
+		var dc = diodeAdmittanceAtBias(p);
+		var cj = junctionCapacitance(dc.junctionVoltage, p.cj0, p.vj, p.m);
+		var diffusionCapacitance = p.tt * dc.conductance;
+		var capacitance = cj + diffusionCapacitance;
+		var sparsArray = [];
+		var noiseArray = [];
+		var freqCount;
+		var frequency;
+		var omega;
+		var admittance;
+		var junctionImpedance;
+		var totalImpedance;
+		var thermalEnergy = K * p.temperatureK;
+		var diodeCurrent = p.is * Math.expm1(Math.min(dc.junctionVoltage / (p.n * thermalVoltage(p.temperatureK)), 80));
+		var avalanche = breakdownCurrent(dc.junctionVoltage, p);
+		// A linearized junction has equilibrium conductance noise at zero bias.
+		// At finite bias, use the larger of that level and a weak shot-noise estimate.
+		var junctionNoiseCurrent = Math.max(
+			4 * thermalEnergy * Math.max(0, dc.conductance - 1 / p.leakageResistance),
+			2 * Q * (Math.abs(diodeCurrent) + Math.abs(avalanche))
+		) + 4 * thermalEnergy / p.leakageResistance;
+		var junctionVoltageScale = p.n * thermalVoltage(p.temperatureK);
+		var exponentialCurrent = p.is * Math.exp(Math.min(dc.junctionVoltage / junctionVoltageScale, 80));
+		var secondDerivative = exponentialCurrent / junctionVoltageScale ** 2;
+		var thirdDerivative = exponentialCurrent / junctionVoltageScale ** 3;
+		if (-dc.junctionVoltage > p.breakdownVoltage) {
+			var avalancheSlope = p.breakdownCurrent *
+				Math.exp((-dc.junctionVoltage - p.breakdownVoltage) / p.breakdownSoftness);
+			secondDerivative -= avalancheSlope / p.breakdownSoftness ** 2;
+			thirdDerivative += avalancheSlope / p.breakdownSoftness ** 3;
+		}
+		var capacitanceDerivative = p.tt * secondDerivative;
+		var capacitanceSecondDerivative = p.tt * thirdDerivative;
+		if (dc.junctionVoltage < p.vj) {
+			capacitanceDerivative += p.m * cj / (p.vj - dc.junctionVoltage);
+			capacitanceSecondDerivative += p.m * (p.m + 1) * cj /
+				(p.vj - dc.junctionVoltage) ** 2;
+		}
+
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			frequency = frequencyList[freqCount];
+			omega = 2 * Math.PI * frequency;
+			admittance = complex(dc.conductance, omega * capacitance);
+			junctionImpedance = admittance.inv();
+			totalImpedance = complex(p.rs, 0).add(junctionImpedance);
+			sparsArray[freqCount] = seriesTwoPortFromImpedance(frequency, totalImpedance, ro);
+			var impedanceMagnitudeSquared = junctionImpedance.mag() ** 2;
+			var denominatorMagnitudeSquared = totalImpedance.add(twoZo).mag() ** 2;
+			var noise = (4 * thermalEnergy * p.rs + junctionNoiseCurrent * impedanceMagnitudeSquared) *
+				ro / denominatorMagnitudeSquared;
+			noiseArray[freqCount] = {frequency: frequency, C: [
+				[complex(noise, 0), complex(-noise, 0)],
+				[complex(-noise, 0), complex(noise, 0)]
+			]};
+		}
+
+		diodePort.setspars(sparsArray);
+		diodePort.noise = noiseArray;
+		diodePort.setglobal(settings);
+		diodePort._intermod = {
+			type: 'diode',
+			conductance: dc.conductance,
+			capacitance: capacitance,
+			seriesResistance: p.rs,
+			referenceImpedance: ro,
+			secondDerivative: secondDerivative,
+			thirdDerivative: thirdDerivative,
+			capacitanceDerivative: capacitanceDerivative,
+			capacitanceSecondDerivative: capacitanceSecondDerivative
+		};
+		diodePort.diode = {
+			partNumber: '1N4148',
+			model: 'small-signal RF series diode with Shockley DC I-V',
+			source: 'Vishay 1N4148 Rev. 1.6, 07-Nov-2024; onsemi 1N91x, 1N4x48 Rev. 6, September 2024',
+			parameters: p,
+			bias: {
+				voltage: p.biasVoltage,
+				current: dc.current,
+				junctionVoltage: dc.junctionVoltage,
+				dynamicResistance: dc.resistance,
+				junctionCapacitance: cj,
+				diffusionCapacitance,
+				totalCapacitance: capacitance
+			},
+			datasheetAnchors: {
+				forwardVoltage: 'VF <= 1 V at IF = 10 mA',
+				capacitance: 'CD/CT = 4 pF at VR = 0 V, f = 1 MHz',
+				reverseRecovery: 'trr = 4 ns under listed switching test',
+				reverseLeakage: 'IR = 25 nA at VR = 20 V; IR = 5 uA at VR = 75 V',
+				breakdownVoltage: 'VBR >= 100 V at IR = 100 uA'
+			}
+		};
+		diodePort.ivTable = function ivTable(start = p.ivStart, stop = p.ivStop, points = p.ivPoints) {
+			var table = [['vD', 'iD']];
+			var step = points > 1 ? (stop - start) / (points - 1) : 0;
+			var index;
+			var voltage;
+
+			for (index = 0; index < points; index++) {
+				voltage = start + step * index;
+				table.push([voltage, diodeCurrentAtVoltage(voltage, p)]);
+			}
+
+			return table;
+		};
+
+		diodePort._schematic = schematicPart('diode1N4148');
+		return diodePort;
+	}
+
+	// Modified: 2026-10-28
+
+	const kB$4 = 1.380649e-23;
+
+	function seR(R = 75, temperature = global.Temp, options = {}) { // series resistor nPort object
+		if (typeof R === 'object') {
+			options = R;
+			temperature = R.temperature === undefined ? global.Temp : R.temperature;
+			R = R.resistance === undefined ? 75 : R.resistance;
+		}
+		var seR = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [], noiseArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = complex(R, 0);
+			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
+			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+			var noise = kB$4 * temperature * 4 * R * Ro / ((R + 2 * Ro) ** 2);
+			noiseArray[freqCount] = {
+				frequency: frequencyList[freqCount],
+				C: [
+					[complex(noise, 0), complex(-noise, 0)],
+					[complex(-noise, 0), complex(noise, 0)]
+				]
+			};
+		}	
+		seR.setspars(sparsArray);
+		seR.noise = noiseArray;
+		seR.setglobal(settings);
+		seR._schematic = schematicPart('seR', {value: R});
+		return seR;
+	}
+
+	// Modified: 2026-10-28
+
+	const kB$3 = 1.380649e-23;
+
+	function R(R = 75, temperature = global.Temp, options = {}) { // series resistor nPort object
+		if (typeof R === 'object') {
+			options = R;
+			temperature = R.temperature === undefined ? global.Temp : R.temperature;
+			R = R.resistance === undefined ? 75 : R.resistance;
+		}
+		var rPort = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [], noiseArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = complex(R, 0);
+			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
+			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+			var noise = kB$3 * temperature * 4 * R * Ro / ((R + 2 * Ro) ** 2);
+			noiseArray[freqCount] = {
+				frequency: frequencyList[freqCount],
+				C: [
+					[complex(noise, 0), complex(-noise, 0)],
+					[complex(-noise, 0), complex(noise, 0)]
+				]
+			};
+		}	
+		rPort.setspars(sparsArray);
+		rPort.noise = noiseArray;
+		rPort.setglobal(settings);
+		rPort._schematic = schematicPart('R', {value: R});
+		return rPort;
+	}
+
+	// Modified: 2026-10-28
+
+	const kB$2 = 1.380649e-23;
+
+	function paR(R = 75, temperature = global.Temp, options = {}) { // parallel resistor nPort object
+		if (typeof R === 'object') {
+			options = R;
+			temperature = R.temperature === undefined ? global.Temp : R.temperature;
+			R = R.resistance === undefined ? 75 : R.resistance;
+		}
+		var paR = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [], noiseArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = complex(R, 0);
+			Y[freqCount] = Z[freqCount].inv();
+			s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
+			s21 = (two.mul(Yo)).div(Y[freqCount].add(Yo.add(Yo)));  
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+			var noise = kB$2 * temperature * 4 * R * Ro / ((Ro + 2 * R) ** 2);
+			noiseArray[freqCount] = {
+				frequency: frequencyList[freqCount],
+				C: [
+					[complex(noise, 0), complex(noise, 0)],
+					[complex(noise, 0), complex(noise, 0)]
+				]
+			};
+		}
+		paR.setspars(sparsArray);
+		paR.noise = noiseArray;
+		paR.setglobal(settings);
+		paR._schematic = schematicPart('paR', {labelPrefix: 'paR', value: R});
+		return paR;
+	}
+
+	// Modified: 2026-10-28
+
+	function seL(L = 5e-9, options = {}) { // series inductor nPort object
+		var seL = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount]);	
+			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
+			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}	seL.setspars(sparsArray);
+		seL.setglobal(settings);
+		seL._schematic = schematicPart('seL', {labelPrefix: 'seL', value: L});
+		return seL;
+	}
+
+	// Modified: 2026-10-28
+
+	function L(L = 5e-9, options = {}) { // series inductor nPort object
+		var lPort = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount]);	
+			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
+			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}	lPort.setspars(sparsArray);
+		lPort.setglobal(settings);
+		lPort._schematic = schematicPart('L', {value: L});
+		return lPort;
+	}
+
+	// Modified: 2026-10-14
+
+	// Exact 0 Hz limits for ideal series and shunt RLC branches.
+	function dcTwoPort(mode, resistance, referenceImpedance) {
+		var reflection;
+		var transmission;
+		if (mode === 'open') {
+			reflection = 1;
+			transmission = 0;
+		} else if (mode === 'short') {
+			reflection = 0;
+			transmission = 1;
+		} else if (mode === 'shuntShort') {
+			reflection = -1;
+			transmission = 0;
+		} else if (mode === 'seriesR') {
+			reflection = resistance / (resistance + 2 * referenceImpedance);
+			transmission = 2 * referenceImpedance / (resistance + 2 * referenceImpedance);
+		} else if (mode === 'shuntR') {
+			reflection = -referenceImpedance / (2 * resistance + referenceImpedance);
+			transmission = 2 * resistance / (2 * resistance + referenceImpedance);
+		} else {
+			throw new RangeError('Unknown DC branch mode.');
+		}
+		return [complex(reflection, 0), complex(transmission, 0),
+			complex(transmission, 0), complex(reflection, 0)];
+	}
+
+	// Modified: 2026-10-28
+
+	function paL(L = 5e-9, options = {}) { // parallel capacitor nPort object
+		var paL = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			if (frequencyList[freqCount] === 0) {
+				sparsArray[freqCount] = [0].concat(dcTwoPort('shuntShort', 0, Ro));
+				continue;
+			}
+			Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount]);
+			Y[freqCount] = Z[freqCount].inv();
+			s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
+			s21 = (two.mul(Yo)).div(Y[freqCount].add(Yo.add(Yo)));  
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		paL.setspars(sparsArray);
+		paL.setglobal(settings);
+		paL._schematic = schematicPart('paL', {labelPrefix: 'paL', value: L});
+		return paL;
+	}
+
+	// Modified: 2026-10-28
+
+	function seC(C = 1e-12, options = {}) { // series capacitor nPort object
+		var seC = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			if (frequencyList[freqCount] === 0) {
+				sparsArray[freqCount] = [0].concat(dcTwoPort('open', 0, Ro));
+				continue;
+			}
+			Z[freqCount] = complex(0, -1/(2*Math.PI*C*frequencyList[freqCount]));	
+			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
+			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}	seC.setspars(sparsArray);
+		seC.setglobal(settings);
+		seC._schematic = schematicPart('seC', {labelPrefix: 'seC', value: C});
+		return seC;
+	}
+
+	// Modified: 2026-10-28
+
+	function C(C = 1e-12, options = {}) { // series capacitor nPort object
+		var cPort = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			if (frequencyList[freqCount] === 0) {
+				sparsArray[freqCount] = [0].concat(dcTwoPort('open', 0, Ro));
+				continue;
+			}
+			Z[freqCount] = complex(0, -1/(2*Math.PI*C*frequencyList[freqCount]));	
+			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
+			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}	cPort.setspars(sparsArray);
+		cPort.setglobal(settings);
+		cPort._schematic = schematicPart('C', {value: C});
+		return cPort;
+	}
+
+	// Modified: 2026-10-28
+
+	function paC(C = 1e-12, options = {}) { // parallel capacitor nPort object
+		var paC = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			if (frequencyList[freqCount] === 0) {
+				sparsArray[freqCount] = [0].concat(dcTwoPort('short', 0, Ro));
+				continue;
+			}
+			Z[freqCount] = complex(0, -1/(2*Math.PI*C*frequencyList[freqCount]));
+			Y[freqCount] = Z[freqCount].inv();
+			s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
+			s21 = (two.mul(Yo)).div(Y[freqCount].add(Yo.add(Yo)));  
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		paC.setspars(sparsArray);
+		paC.setglobal(settings);
+		paC._schematic = schematicPart('paC', {labelPrefix: 'paC', value: C});
+		return paC;
+	}
+
+	// Modified: 2026-10-28
+
+	function trf(N = 0.5, options = {}) { // ideal transformer nPort object
+		var trf = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings); global.Ro;
+		var freqCount = 0, s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			s11 = complex((N ** 2 - 1) / (N ** 2 + 1), 0);
+			s12 = complex(2 * N / (N ** 2 + 1), 0);
+			s21 = complex(2 * N / (N ** 2 + 1), 0);
+			s22 = complex((1 - N ** 2) / (N ** 2 + 1), 0);
+			sparsArray[freqCount] = [frequencyList[freqCount], s11, s12, s21, s22];
+		}
+		trf.setspars(sparsArray);
+		trf.setglobal(settings);
+		trf._schematic = schematicPart('trf', {labelPrefix: 'trf', turnsRatio: N});
+		return trf;
+	}
+
+	// Modified: 2026-10-28
+
+	function trf4Port(N = 0.5, options = {}) { // parallel resistor nPort object
+		var trf4Port = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings); global.Ro;
+		var freqCount = 0, sparsArray = [];
+		var s11, s12, s13, s14,
+			s21, s22, s23, s24,
+			s31, s32, s33, s34,
+			s41, s42, s43, s44;
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			s11 = s24 = s33 = s42 = complex((N**2)/(N**2+1),0);
+			s14 = s23 = s32 = s41 = complex(-N/(N**2+1),0);  
+			s12 = s21 = s34 = s43 = complex(N/(N**2+1),0);  
+			s13 = s22 = s31 = s44 = complex((1)/(N**2+1),0);
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44];
+		}
+		trf4Port.setspars(sparsArray);
+		trf4Port.setglobal(settings);
+		trf4Port._schematic = schematicPart('trf4Port', {labelPrefix: 'trf4Port', turnsRatio: N});
+		return trf4Port;
+	}
+	/*                Note: N2 = N**2 N = 0.5, N2 = 0.25
+
+	S11 = S24 = S33 = S42 = N2 / (1 + N2)  //  0.25/1.25 = 0.2
+	S14 = S23 = S32 = S41 = -N / (1 + N2)  //  -0.5/1.25 = -0.4
+	S12 = S21 = S34 = S43 =  N / (1 + N2)  //   0.5/1.25 = 0.4
+	S13 = S22 = S31 = S44 =  1 / (1 + N2)  //     1/1.25 = 0.8
+	*/
+
+	// Modified: 2026-11-04
+
+	// Ideal three-port center-tapped autotransformer.
+	// Port 1 is the center tap; ports 2 and 3 are the winding ends.
+	// The full-winding to half-winding turns ratio is 2:1.
+	function trfAuto(options = {}) {
+		var transformer = new nPort();
+		var settings = componentSettings(global, options);
+		var frequencies = analysisFrequencies(settings);
+		var sparsArray = [];
+		for (var index = 0; index < frequencies.length; index++) {
+			sparsArray[index] = [
+				frequencies[index],
+				complex(-1 / 3, 0), complex(2 / 3, 0), complex(2 / 3, 0),
+				complex(2 / 3, 0), complex(2 / 3, 0), complex(-1 / 3, 0),
+				complex(2 / 3, 0), complex(-1 / 3, 0), complex(2 / 3, 0)
+			];
+		}
+		transformer.setspars(sparsArray);
+		transformer.setglobal(settings);
+		transformer._schematic = schematicPart('trfAuto', {labelPrefix: 'trfAuto'});
+		return transformer;
+	}
+
+	// Modified: 2026-10-28
+
+	function seSeRL(R = 75, L = 5e-9, options = {}) { // series inductor nPort object
+		var seSeRL = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = complex(R, 2*Math.PI*L*frequencyList[freqCount]);	
+			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
+			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}	seSeRL.setspars(sparsArray);
+		seSeRL.setglobal(settings);
+		seSeRL._schematic = schematicPart('seSeRL', {labelPrefix: 'seSeRL', resistance: R, inductance: L});
+		return seSeRL;
+	}
+
+	// Modified: 2026-10-28
+
+	function paSeRL(R = 75, L = 5e-9, options = {}) { // parallel capacitor nPort object
+		var paSeRL = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Z[freqCount] = complex(R, 2*Math.PI*L*frequencyList[freqCount]);
+			Y[freqCount] = Z[freqCount].inv();
+			s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
+			s21 = (two.mul(Yo)).div(Y[freqCount].add(Yo.add(Yo)));  
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		paSeRL.setspars(sparsArray);
+		paSeRL.setglobal(settings);
+		paSeRL._schematic = schematicPart('paSeRL', {labelPrefix: 'paSeRL', resistance: R, inductance: L});
+		return paSeRL;
+	}
+
+	// Modified: 2026-10-28
+
+	function seSeRC(R = 75, C = 1e-12, options = {}) { // series inductor nPort object
+		var seSeRC = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			if (frequencyList[freqCount] === 0) {
+				sparsArray[freqCount] = [0].concat(dcTwoPort('open', 0, Ro));
+				continue;
+			}
+			Z[freqCount] = complex(R, -1/(2*Math.PI*C*frequencyList[freqCount]));	
+			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
+			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}	seSeRC.setspars(sparsArray);
+		seSeRC.setglobal(settings);
+		seSeRC._schematic = schematicPart('seSeRC', {labelPrefix: 'seSeRC', resistance: R, capacitance: C});
+		return seSeRC;
+	}
+
+	// Modified: 2026-10-28
+
+	function paSeRC(R = 75, C = 1e-12, options = {}) { // parallel series-RC nPort object
+		var paSeRC = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			if (frequencyList[freqCount] === 0) {
+				sparsArray[freqCount] = [0].concat(dcTwoPort('short', 0, Ro));
+				continue;
+			}
+			Z[freqCount] = complex(R, -1/(2*Math.PI*C*frequencyList[freqCount]));
+			Y[freqCount] = Z[freqCount].inv();
+			s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
+			s21 = (two.mul(Yo)).div(Y[freqCount].add(Yo.add(Yo)));  
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		paSeRC.setspars(sparsArray);
+		paSeRC.setglobal(settings);
+		paSeRC._schematic = schematicPart('paSeRC', {labelPrefix: 'paSeRC', resistance: R, capacitance: C});
+		return paSeRC;
+	}
+
+	// Modified: 2026-10-28
+
+	function seSeLC(L = 5e-9, C = 1e-12, options = {}) { // series inductor nPort object
+		var seSeLC = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			if (frequencyList[freqCount] === 0) {
+				sparsArray[freqCount] = [0].concat(dcTwoPort('open', 0, Ro));
+				continue;
+			}
+			Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount] -1/(2*Math.PI*C*frequencyList[freqCount]));	
+			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
+			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}	seSeLC.setspars(sparsArray);
+		seSeLC.setglobal(settings);
+		seSeLC._schematic = schematicPart('seSeLC', {labelPrefix: 'seSeLC', inductance: L, capacitance: C});
+		return seSeLC;
+	}
+
+	// Modified: 2026-10-28
+
+	function paSeLC(L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort object
+		var paSeLC = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			if (frequencyList[freqCount] === 0) {
+				sparsArray[freqCount] = [0].concat(dcTwoPort('short', 0, Ro));
+				continue;
+			}
+			Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount] -1/(2*Math.PI*C*frequencyList[freqCount]));
+			Y[freqCount] = Z[freqCount].inv();
+			s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
+			s21 = (two.mul(Yo)).div(Y[freqCount].add(Yo.add(Yo)));  
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		paSeLC.setspars(sparsArray);
+		paSeLC.setglobal(settings);
+		paSeLC._schematic = schematicPart('paSeLC', {labelPrefix: 'paSeLC', inductance: L, capacitance: C});
+		return paSeLC;
+	}
+
+	// Modified: 2026-10-28
+
+	function seSeRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // series inductor nPort object
+		var seSeRLC = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			if (frequencyList[freqCount] === 0) {
+				sparsArray[freqCount] = [0].concat(dcTwoPort('open', 0, Ro));
+				continue;
+			}
+			Z[freqCount] = complex(R, 2*Math.PI*L*frequencyList[freqCount] -1/(2*Math.PI*C*frequencyList[freqCount]));	
+			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
+			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}	seSeRLC.setspars(sparsArray);
+		seSeRLC.setglobal(settings);
+		seSeRLC._schematic = schematicPart('seSeRLC', {labelPrefix: 'seSeRLC', resistance: R, inductance: L, capacitance: C});
+		return seSeRLC;
+	}
+
+	// Modified: 2026-10-28
+
+	function paSeRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort object
+		var paSeRLC = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			if (frequencyList[freqCount] === 0) {
+				sparsArray[freqCount] = [0].concat(dcTwoPort('short', 0, Ro));
+				continue;
+			}
+			Z[freqCount] = complex(R, 2*Math.PI*L*frequencyList[freqCount] -1/(2*Math.PI*C*frequencyList[freqCount]));
+			Y[freqCount] = Z[freqCount].inv();
+			s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
+			s21 = (two.mul(Yo)).div(Y[freqCount].add(Yo.add(Yo)));  
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		paSeRLC.setspars(sparsArray);
+		paSeRLC.setglobal(settings);
+		paSeRLC._schematic = schematicPart('paSeRLC', {labelPrefix: 'paSeRLC', resistance: R, inductance: L, capacitance: C});
+		return paSeRLC;
+	}
+
+	// Modified: 2026-10-28
+
+	function paPaRL(R = 75, L = 5e-9, options = {}) { // parallel capacitor nPort object
+		var paPaRL = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			if (frequencyList[freqCount] === 0) {
+				sparsArray[freqCount] = [0].concat(dcTwoPort('shuntShort', 0, Ro));
+				continue;
+			}
+			Z[freqCount] = (  (complex(R,0).inv()).add(complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv())  ).inv();
+			Y[freqCount] = Z[freqCount].inv();
+			s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
+			s21 = (two.mul(Yo)).div(Y[freqCount].add(Yo.add(Yo)));  
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		paPaRL.setspars(sparsArray);
+		paPaRL.setglobal(settings);
+		paPaRL._schematic = schematicPart('paPaRL', {labelPrefix: 'paPaRL', resistance: R, inductance: L});
+		return paPaRL;
+	}
+
+	// Modified: 2026-10-28
+
+	function sePaRL(R = 75, L = 5e-9, options = {}) { // parallel capacitor nPort object
+		var sePaRL = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			if (frequencyList[freqCount] === 0) {
+				sparsArray[freqCount] = [0].concat(dcTwoPort('short', 0, Ro));
+				continue;
+			}
+			Z[freqCount] = (  (complex(R,0).inv()).add(complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv())  ).inv();
+			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
+			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		sePaRL.setspars(sparsArray);
+		sePaRL.setglobal(settings);
+		sePaRL._schematic = schematicPart('sePaRL', {labelPrefix: 'sePaRL', resistance: R, inductance: L});
+		return sePaRL;
+	}
+
+	// Modified: 2026-10-28
+
+	function paPaRC(R = 75, C = 1e-12, options = {}) { // parallel capacitor nPort object
+		var paPaRC = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			if (frequencyList[freqCount] === 0) {
+				sparsArray[freqCount] = [0].concat(dcTwoPort('shuntR', R, Ro));
+				continue;
+			}
+			Z[freqCount] = (  (complex(R,0).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
+			Y[freqCount] = Z[freqCount].inv();
+			s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
+			s21 = (two.mul(Yo)).div(Y[freqCount].add(Yo.add(Yo)));  
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		paPaRC.setspars(sparsArray);
+		paPaRC.setglobal(settings);
+		paPaRC._schematic = schematicPart('paPaRC', {labelPrefix: 'paPaRC', resistance: R, capacitance: C});
+		return paPaRC;
+	}
+
+	// Modified: 2026-10-28
+
+	function sePaRC(R = 75, C = 1e-12, options = {}) { // parallel capacitor nPort object
+		var sePaRC = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			if (frequencyList[freqCount] === 0) {
+				sparsArray[freqCount] = [0].concat(dcTwoPort('seriesR', R, Ro));
+				continue;
+			}
+			Z[freqCount] = (  (complex(R,0).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
+			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
+			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		sePaRC.setspars(sparsArray);
+		sePaRC.setglobal(settings);
+		sePaRC._schematic = schematicPart('sePaRC', {labelPrefix: 'sePaRC', resistance: R, capacitance: C});
+		return sePaRC;
+	}
+
+	// Modified: 2026-10-28
+
+	function paPaLC(L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort object
+		var paPaLC = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			if (frequencyList[freqCount] === 0) {
+				sparsArray[freqCount] = [0].concat(dcTwoPort('shuntShort', 0, Ro));
+				continue;
+			}
+			Z[freqCount] = (  (complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
+			Y[freqCount] = Z[freqCount].inv();
+			s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
+			s21 = (two.mul(Yo)).div(Y[freqCount].add(Yo.add(Yo)));  
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		paPaLC.setspars(sparsArray);
+		paPaLC.setglobal(settings);
+		paPaLC._schematic = schematicPart('paPaLC', {labelPrefix: 'paPaLC', inductance: L, capacitance: C});
+		return paPaLC;
+	}
+
+	// Modified: 2026-10-28
+
+	function sePaLC(L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort object
+		var sePaLC = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			if (frequencyList[freqCount] === 0) {
+				sparsArray[freqCount] = [0].concat(dcTwoPort('short', 0, Ro));
+				continue;
+			}
+			Z[freqCount] = (  (complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
+			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
+			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		sePaLC.setspars(sparsArray);
+		sePaLC.setglobal(settings);
+		sePaLC._schematic = schematicPart('sePaLC', {labelPrefix: 'sePaLC', inductance: L, capacitance: C});
+		return sePaLC;
+	}
+
+	// Modified: 2026-10-28
+
+	function paPaRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort object
+		var paPaRLC = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			if (frequencyList[freqCount] === 0) {
+				sparsArray[freqCount] = [0].concat(dcTwoPort('shuntShort', 0, Ro));
+				continue;
+			}
+			Z[freqCount] = ( (complex(R,0).inv()).add (complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
+			Y[freqCount] = Z[freqCount].inv();
+			s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
+			s21 = (two.mul(Yo)).div(Y[freqCount].add(Yo.add(Yo)));  
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		paPaRLC.setspars(sparsArray);
+		paPaRLC.setglobal(settings);
+		paPaRLC._schematic = schematicPart('paPaRLC', {labelPrefix: 'paPaRLC', resistance: R, inductance: L, capacitance: C});
+		return paPaRLC;
+	}
+
+	// Modified: 2026-10-28
+
+	function sePaRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort object
+		var sePaRLC = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			if (frequencyList[freqCount] === 0) {
+				sparsArray[freqCount] = [0].concat(dcTwoPort('short', 0, Ro));
+				continue;
+			}
+			Z[freqCount] = ( (complex(R,0).inv()).add (complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv()).add(complex(0, -1/(2*Math.PI*C*frequencyList[freqCount])).inv())  ).inv();
+			s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
+			s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
+			s12 = s21;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		sePaRLC.setspars(sparsArray);
+		sePaRLC.setglobal(settings);
+		sePaRLC._schematic = schematicPart('sePaRLC', {labelPrefix: 'sePaRLC', resistance: R, inductance: L, capacitance: C});
+		return sePaRLC;
+	}
+
+	// Modified: 2026-10-13
+
+	function lpfGen( filt =[50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50], options = {}) { // returns a table of spars for a low Pass Filter
+		var i = 0;
+		var filtTable = [];
+		filt.pop();
+		filt.shift();
+		for (i = 0; i < filt.length; i++) {
+			if (i % 2 === 0) {filtTable[i] = paC(filt[i], options);}		if (i % 2 === 1) {filtTable[i] = seL(filt[i], options);}	}	for (i = 0; i < filt.length - 1; i++) {
+			filtTable[i+1] = filtTable[i].cas(filtTable[i+1]);
+		}	return filtTable[ filtTable.length-1 ];
+	}
+
+	// Modified: 2026-10-28
+
+	const kB$1 = 1.380649e-23;
+
+	// Matched, reciprocal attenuator. Noise is the covariance of its own outgoing waves.
+	function Attn(attenuationDb = 3, temperature = global.Temp, options = {}) {
+		if (attenuationDb !== null && typeof attenuationDb === 'object') {
+			options = attenuationDb;
+			attenuationDb = options.attenuationDb === undefined ? 3 : options.attenuationDb;
+			temperature = options.temperature === undefined ? global.Temp : options.temperature;
+		}
+		if (!Number.isFinite(attenuationDb) || attenuationDb < 0) {
+			throw new RangeError('Attn attenuationDb must be a finite, nonnegative number of dB.');
+		}
+		if (!Number.isFinite(temperature) || temperature < 0) {
+			throw new RangeError('Attn temperature must be a finite, nonnegative number of kelvin.');
+		}
+
+		var transmission = 10 ** (-attenuationDb / 20);
+		var addedNoise = kB$1 * temperature * (1 - transmission * transmission);
+		var attenuator = new nPort();
+		var sparsArray = [];
+		var noiseArray = [];
+		var settings = componentSettings(global, options);
+		var frequencies = analysisFrequencies(settings);
+		for (var i = 0; i < frequencies.length; i++) {
+			var frequency = frequencies[i];
+			sparsArray[i] = [frequency, complex(0, 0), complex(transmission, 0), complex(transmission, 0), complex(0, 0)];
+			noiseArray[i] = {
+				frequency: frequency,
+				C: [
+					[complex(addedNoise, 0), complex(0, 0)],
+					[complex(0, 0), complex(addedNoise, 0)]
+				]
+			};
+		}
+		attenuator.setspars(sparsArray);
+		attenuator.noise = noiseArray;
+		attenuator.setglobal(settings);
+		attenuator.temperature = temperature;
+		attenuator._displayFrequencies = settings.fList.slice();
+		attenuator._schematic = schematicPart('Attn', {value: attenuationDb});
+		return attenuator;
+	}
+
+	// Modified: 2026-10-28
+
+	const kB = 1.380649e-23;
+
+	var conjugate$1 = function (value) { return complex(value.getR(), -value.getI()); };
+	var magnitudeSquared = function (value) { return value.getR() ** 2 + value.getI() ** 2; };
+	var finiteComplex = function (value) {
+		return value && typeof value.getR === 'function' && typeof value.getI === 'function' &&
+			Number.isFinite(value.getR()) && Number.isFinite(value.getI());
+	};
+
+	// Convert frequency-flat two-port noise parameters to intrinsic wave covariance.
+	// The conversion uses F(Gamma) at a matched output and C = E[c c^H].
+	function covarianceFromNoiseParameters(spars, fMinDb, gammaOpt, noiseResistanceOhms,
+		referenceTemperature) {
+		if (!Array.isArray(spars) || spars.length !== 4 || !spars.every(finiteComplex)) {
+			throw new TypeError('Amp spars must be four finite complex values [s11, s12, s21, s22].');
+		}
+		if (!Number.isFinite(fMinDb) || fMinDb < 0 || !finiteComplex(gammaOpt) ||
+			magnitudeSquared(gammaOpt) >= 1 ||
+			!Number.isFinite(noiseResistanceOhms) || noiseResistanceOhms < 0) {
+			throw new RangeError('Amp requires nonnegative fMinDb and noiseResistanceOhms, and |gammaOpt| < 1.');
+		}
+		if (!Number.isFinite(global.Ro) || global.Ro <= 0) {
+			throw new RangeError('Amp requires a positive reference impedance.');
+		}
+		var s11 = spars[0];
+		var s21 = spars[2];
+		var gain = magnitudeSquared(s21);
+		if (!(gain > 0)) throw new RangeError('Amp s21 must be nonzero to define noise figure.');
+		var minFactor = 10 ** (fMinDb / 10);
+		var normalizedResistance = noiseResistanceOhms / global.Ro;
+		var slope = 4 * normalizedResistance /
+			magnitudeSquared(complex(1, 0).add(gammaOpt));
+		var constant = minFactor - 1 + slope * magnitudeSquared(gammaOpt);
+		var quadratic = slope - (minFactor - 1);
+		var scale = kB * referenceTemperature * gain;
+		var c22 = scale * constant;
+		var c12 = s11.mul(complex(c22, 0))
+			.sub(conjugate$1(gammaOpt).mul(complex(scale * slope, 0))).div(s21);
+		var c11 = (scale * quadratic - magnitudeSquared(s11) * c22 +
+				2 * s21.mul(conjugate$1(s11)).mul(c12).getR()) / gain;
+		var determinant = c11 * c22 - magnitudeSquared(c12);
+		var covarianceScale = kB * referenceTemperature;
+		if (![c11, c22, c12.getR(), c12.getI()].every(Number.isFinite) ||
+			c11 < -1e-12 * covarianceScale || c22 < -1e-12 * covarianceScale ||
+			determinant < -1e-12 * covarianceScale ** 2) {
+			throw new RangeError('Amp spars, fMinDb, gammaOpt, and noiseResistanceOhms imply an invalid noise covariance.');
+		}
+		return [
+			[complex(Math.max(0, c11), 0), c12],
+			[conjugate$1(c12), complex(Math.max(0, c22), 0)]
+		];
+	}
+
+	// Every form starts with the same frequency-flat S and noise parameters.
+	// Object options replace only the named defaults; the positional form sets S21 and Fmin.
+	function Amp(gainDb = 20, noiseFigureDb = 4, referenceTemperature = 290, options = {}) {
+		var defaults = {
+			spars: [complex(0, 0), complex(0, 0), complex(10, 0), complex(0, 0)],
+			fMinDb: 4,
+			gammaOpt: complex(0, 0),
+			noiseResistanceOhms: 25,
+			referenceTemperature: 290
+		};
+		var specifiedSpars = defaults.spars;
+		var noiseParameters = defaults;
+		var oip2dBm;
+		var harmonicOip2dBm;
+		var oip3dBm;
+		var im2PhaseDeg = 0;
+		var harmonic2PhaseDeg = 0;
+		var im3PhaseDeg = 0;
+		if (gainDb !== null && typeof gainDb === 'object') {
+			options = gainDb;
+			oip2dBm = options.oip2dBm;
+			harmonicOip2dBm = options.harmonicOip2dBm;
+			oip3dBm = options.oip3dBm;
+			if (options.im2PhaseDeg !== undefined) im2PhaseDeg = options.im2PhaseDeg;
+			if (options.harmonic2PhaseDeg !== undefined) harmonic2PhaseDeg = options.harmonic2PhaseDeg;
+			if (options.im3PhaseDeg !== undefined) im3PhaseDeg = options.im3PhaseDeg;
+			if (options.spars !== undefined && options.gainDb !== undefined) {
+				throw new TypeError('Amp gainDb is determined by spars when both are supplied.');
+			}
+			if (options.spars !== undefined) specifiedSpars = options.spars;
+			if (options.gainDb !== undefined) {
+				if (!Number.isFinite(options.gainDb)) {
+					throw new RangeError('Amp gainDb must be a finite number of dB.');
+				}
+				specifiedSpars[2] = complex(10 ** (options.gainDb / 20), 0);
+			}
+			if (options.fMinDb !== undefined) noiseParameters.fMinDb = options.fMinDb;
+			if (options.gammaOpt !== undefined) noiseParameters.gammaOpt = options.gammaOpt;
+			if (options.noiseResistanceOhms !== undefined) {
+				noiseParameters.noiseResistanceOhms = options.noiseResistanceOhms;
+			}
+			if (options.noiseFigureDb !== undefined && options.fMinDb === undefined) {
+				noiseParameters.fMinDb = options.noiseFigureDb;
+			}
+			referenceTemperature = options.referenceTemperature === undefined ? defaults.referenceTemperature :
+				options.referenceTemperature;
+		} else {
+			if (!Number.isFinite(gainDb)) {
+				throw new RangeError('Amp gainDb must be a finite number of dB.');
+			}
+			if (!Number.isFinite(noiseFigureDb) || noiseFigureDb < 0) {
+				throw new RangeError('Amp noiseFigureDb must be a finite, nonnegative number of dB.');
+			}
+			specifiedSpars[2] = complex(10 ** (gainDb / 20), 0);
+			noiseParameters.fMinDb = noiseFigureDb;
+		}
+		if (!Number.isFinite(referenceTemperature) || referenceTemperature <= 0) {
+			throw new RangeError('Amp referenceTemperature must be a finite, positive number of kelvin.');
+		}
+		if ((oip2dBm !== undefined && !Number.isFinite(oip2dBm)) ||
+			(harmonicOip2dBm !== undefined && !Number.isFinite(harmonicOip2dBm)) ||
+			(oip3dBm !== undefined && !Number.isFinite(oip3dBm))) {
+			throw new RangeError('Amp output intercepts must be finite dBm values when supplied.');
+		}
+		if (!Number.isFinite(im2PhaseDeg) || !Number.isFinite(harmonic2PhaseDeg) || !Number.isFinite(im3PhaseDeg)) {
+			throw new RangeError('Amp IM phases must be finite degrees.');
+		}
+		var ip2Watts = oip2dBm === undefined ? null : 10 ** ((oip2dBm - 30) / 10);
+		var harmonicIp2Watts = harmonicOip2dBm === undefined ? null : 10 ** ((harmonicOip2dBm - 30) / 10);
+		var ip3Watts = oip3dBm === undefined ? null : 10 ** ((oip3dBm - 30) / 10);
+		if ((ip2Watts !== null && (!Number.isFinite(ip2Watts) || ip2Watts <= 0)) ||
+			(harmonicIp2Watts !== null && (!Number.isFinite(harmonicIp2Watts) || harmonicIp2Watts <= 0)) ||
+			(ip3Watts !== null && (!Number.isFinite(ip3Watts) || ip3Watts <= 0))) {
+			throw new RangeError('Amp output intercept powers must be representable as positive watts.');
+		}
+		if ((oip2dBm !== undefined || harmonicOip2dBm !== undefined || oip3dBm !== undefined) &&
+			(magnitudeSquared(specifiedSpars[0]) !== 0 || magnitudeSquared(specifiedSpars[1]) !== 0 ||
+			magnitudeSquared(specifiedSpars[3]) !== 0 || specifiedSpars[2].getI() !== 0 ||
+			specifiedSpars[2].getR() <= 0)) {
+			throw new RangeError('Amp OIP calibration currently requires matched, unilateral, positive real gain S-parameters.');
+		}
+		var specifiedCovariance = covarianceFromNoiseParameters(specifiedSpars,
+			noiseParameters.fMinDb, noiseParameters.gammaOpt,
+			noiseParameters.noiseResistanceOhms, referenceTemperature);
+		if (options && options.noiseFigureDb !== undefined) {
+			var matchedFactor = 10 ** (noiseParameters.fMinDb / 10) +
+				4 * (noiseParameters.noiseResistanceOhms / global.Ro) *
+				magnitudeSquared(noiseParameters.gammaOpt) /
+				magnitudeSquared(complex(1, 0).add(noiseParameters.gammaOpt));
+			if (!Number.isFinite(options.noiseFigureDb) ||
+				Math.abs(10 ** (options.noiseFigureDb / 10) - matchedFactor) >
+				1e-10 * matchedFactor) {
+				throw new RangeError('Amp noiseFigureDb disagrees with the matched-source noise parameters.');
+			}
+		}
+		var amplifier = new nPort();
+		var sparsArray = [];
+		var noiseArray = [];
+		var settings = componentSettings(global, options);
+		var frequencies = analysisFrequencies(settings);
+		for (var i = 0; i < frequencies.length; i++) {
+			var frequency = frequencies[i];
+			sparsArray[i] = [frequency].concat(specifiedSpars.map(function (s) { return s.copy(); }));
+			noiseArray[i] = {
+				frequency: frequency,
+				C: specifiedCovariance.map(function (row) {
+					return row.map(function (value) { return value.copy(); });
+				})
+			};
+		}
+		amplifier.setspars(sparsArray);
+		amplifier.noise = noiseArray;
+		amplifier.setglobal(settings);
+		amplifier.referenceTemperature = referenceTemperature;
+		amplifier._displayFrequencies = settings.fList.slice();
+		amplifier._intermod = {
+			type: 'amp',
+			p2: ip2Watts,
+			p2Harmonic: harmonicIp2Watts,
+			p3: ip3Watts,
+			phase2: complex(Math.cos(im2PhaseDeg * Math.PI / 180), Math.sin(im2PhaseDeg * Math.PI / 180)),
+			phase2Harmonic: complex(Math.cos(harmonic2PhaseDeg * Math.PI / 180), Math.sin(harmonic2PhaseDeg * Math.PI / 180)),
+			phase3: complex(Math.cos(im3PhaseDeg * Math.PI / 180), Math.sin(im3PhaseDeg * Math.PI / 180))
+		};
+		amplifier._schematic = schematicPart('Amp', {value: typeof gainDb === 'number' ? gainDb : options.gainDb});
+		return amplifier;
+	}
+
+	// Modified: 2026-10-28
+
+	// Matched, lossless, zero-length two-port connection, including at DC.
+	function Thru(options = {}) {
+		var thru = new nPort();
+		var sparsArray = [];
+		var noiseArray = [];
+		var settings = componentSettings(global, options);
+		var frequencies = analysisFrequencies(settings);
+		for (var i = 0; i < frequencies.length; i++) {
+			var frequency = frequencies[i];
+			sparsArray[i] = [frequency, complex(0, 0), complex(1, 0), complex(1, 0), complex(0, 0)];
+			noiseArray[i] = {
+				frequency: frequency,
+				C: [
+					[complex(0, 0), complex(0, 0)],
+					[complex(0, 0), complex(0, 0)]
+				]
+			};
+		}
+		thru.setspars(sparsArray);
+		thru.noise = noiseArray;
+		thru.setglobal(settings);
+		thru._schematic = schematicPart('Thru');
+		return thru;
+	}
+
+	// Modified: 2026-10-28
+
+	function Tee(options = {}) { // a 3port dummy connection
+		var Tee = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro,0); Zo.inv(); complex(2,0); var freqCount = 0, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			s11 = complex(-1/3,0);
+			s12 = complex(2/3,0);
+			s13 = s12;
+			s21 = s12;
+			s22 = s11;
+			s23 = s12;
+			s31 = s12;
+			s32 = s12;
+			s33 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s21, s22, s23, s31, s32, s33];
+		}	
+		Tee.setspars(sparsArray);
+		Tee.setglobal(settings);
+		Tee._schematic = schematicPart('Tee');
+		return Tee;
+	}
+
+	// Modified: 2026-10-28
+
+	function Tee4(options = {}) { // a 4-port dummy connection
+		var Tee4 = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro,0); Zo.inv(); complex(2,0); var freqCount = 0, s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			s11 = s22 = s33 = s44 = complex(-1/2,0);
+			s12 = s13 = s14 = s21 = s23 = s24 = s31 = s32 = s34 = s41 = s42 = s43 = complex(1/2,0);
+			
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44];
+		}	
+		Tee4.setspars(sparsArray);
+		Tee4.setglobal(settings);
+		Tee4._schematic = schematicPart('Tee4', {labelPrefix: 'Tee4'});
+		return Tee4;
+	}
+
+	// Modified: 2026-10-28
+
+	function Tee5(options = {}) { // an ideal five-port junction
+		var Tee5 = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro,0); Zo.inv(); complex(2,0); var freqCount = 0, s11, s12, s13, s14, s15, s21, s22, s23, s24, s25, s31, s32, s33, s34, s35, s41, s42, s43, s44, s45, s51, s52, s53, s54, s55, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			s11 = s22 = s33 = s44 = s55 = complex(-0.6,0);
+			s12 = s13 = s14 = s15 = s21 = s23 = s24 = s25 = s31 = s32 = s34 = s35 = s41 = s42 = s43 = s45 = s51 = s52 = s53 = s54 = complex(0.4,0);
+			
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s14, s15, s21, s22, s23, s24, s25, s31, s32, s33, s34, s35, s41, s42, s43, s44, s45, s51, s52, s53, s54, s55];
+		}	
+		Tee5.setspars(sparsArray);
+		Tee5.setglobal(settings);
+		Tee5._schematic = schematicPart('Tee5', {labelPrefix: 'Tee5'});
+		return Tee5;
+	}
+
+	// Modified: 2026-10-28
+
+	// Ideal three-port junction for attaching a one-port network in series.
+	// Ports 1 and 2 form the through path; port 3 is the series branch.
+	function seriesTee(options = {}) {
+		var junction = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings);
+		var sparsArray = [];
+
+		for (var freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			var oneThird = complex(1 / 3, 0);
+			var twoThirds = complex(2 / 3, 0);
+			var negativeTwoThirds = complex(-2 / 3, 0);
+
+			sparsArray[freqCount] = [
+				frequencyList[freqCount],
+				oneThird, twoThirds, negativeTwoThirds,
+				twoThirds, oneThird, twoThirds,
+				negativeTwoThirds, twoThirds, oneThird
+			];
+		}
+
+		junction.setspars(sparsArray);
+		junction.setglobal(settings);
+		junction._schematic = schematicPart('seriesTee');
+		return junction;
+	}
+
+	// Modified: 2026-11-08
+	// Normalize once, before nodal builds Gamma and the frequency-dependent W matrices.
+	function connectionRow(row) {
+	    if (!Array.isArray(row) || row.length < 2 || row[0] === 'out' ||
+	        !row[0] || !Array.isArray(row[0].spars)) {
+	        throw new TypeError('nodal() needs component rows [nPort, node, ...]; shape groups contain only component rows.');
+	    }
+	    return row.slice();
+	}
+
+	function nodalConnections(input) {
+	    const args = input.slice(), connections = [], groups = [];
+	    let signalOptions;
+	    if (args.length > 1 && !Array.isArray(args.at(-1)) &&
+	        Array.isArray(args.at(-2)) && args.at(-2)[0] === 'out') signalOptions = args.pop();
+	    const output = args.pop();
+	    if (!Array.isArray(output) || output[0] !== 'out' || output.length < 2) {
+	        throw new TypeError('nodal() needs a final ["out", node, ...] row, optionally followed by signal options.');
+	    }
+	    for (const argument of args) {
+	        if (Array.isArray(argument)) {
+	            connections.push(connectionRow(argument));
+	            continue;
+	        }
+	        if (!argument || typeof argument !== 'object' || !Object.keys(argument).length) {
+	            throw new TypeError('nodal() shape groups must be nonempty objects containing arrays of component rows.');
+	        }
+	        for (const [name, rows] of Object.entries(argument)) {
+	            if (!name.trim() || !Array.isArray(rows) || !rows.length) {
+	                throw new TypeError('nodal() shape groups need a name and a nonempty array of component rows.');
+	            }
+	            const components = [];
+	            for (const row of rows) {
+	                components.push(connections.length);
+	                connections.push(connectionRow(row));
+	            }
+	            groups.push({name, components});
+	        }
+	    }
+	    if (!connections.length) throw new TypeError('nodal() requires at least one component row.');
+	    connections.push(output.slice());
+	    return {connections, groups, signalOptions};
+	}
+
+	// Modified: 2026-11-08
+	var conjugate = function (value) { return complex(value.getR(), -value.getI()); };
+
+
+	function nodal( ... componentConnections) { // componentConnections = [[nPort1, n1, n2 ...], ... ['out', n1, n2, ...] ]
+		var normalized = nodalConnections(componentConnections);
+		componentConnections = normalized.connections;
+		var signalOptions = normalized.signalOptions;
+		var i = 0, j = 0, k = 0, row = 0, col = 0, offset = 0, base = 0;
+		var networkSpars = componentConnections[0][0].spars.map(function (row) {
+			return [row[0]];
+		});
+		var numOfFreqs = componentConnections[0][0].spars.length; // determine the number of frequency points
+		var networkEntryCount = componentConnections.length;
+		var m = networkEntryCount - 1; // Gupta's m: number of multiport components
+		for (var componentIndex = 1; componentIndex < m; componentIndex++) {
+			var componentSpars = componentConnections[componentIndex][0].spars;
+			if (componentSpars.length !== numOfFreqs ||
+				componentSpars.some(function (row, index) { return row[0] !== networkSpars[index][0]; })) {
+				throw new RangeError('nodal components must have matching frequency rows.');
+			}
+		}
+		var totalPortCount = function (connections) { // total component and external ports
+			var size = 0;
+			for (i = 0; i < networkEntryCount; i++) {
+				size += connections[i].length - 1;
+			}
+			return size;
+		}(componentConnections);
+		var externalPortCount = componentConnections[networkEntryCount - 1].length - 1;
+		var interconnectedPortCount = totalPortCount - externalPortCount;
+		const GammaArray = function () {
+			var connectionArray = dim(totalPortCount, totalPortCount, complex(0,0));
+			var expanded = dim(totalPortCount, 3, 0);
+			for (row = 0; row < totalPortCount; row++) {// put the b indices in the first column
+				expanded[row][0] = row + 1;
+			}		for(i = 0, offset = 0; i < networkEntryCount; i++) {// put node labels in the second column
+				for( col = 0; col < componentConnections[i].length -1; col++) {
+					expanded[offset][1] = componentConnections[i][col + 1];
+					offset++;
+				}		}		for (i = 0; i < totalPortCount; i++) {
+				for (row = 0; row < totalPortCount; row++) { // put the connected a index in the third column
+					if ( !(i === row) && (expanded[i][1] === expanded[row][1])   ) { //pivot row is not counted
+						expanded[row][2] = expanded[i][0];
+					}			}		}		for (row = 0; row < totalPortCount; row++) { // put 1s for the interconnections
+				connectionArray[row][expanded[row][2]-1] = complex(1,0);
+			}		return connectionArray;
+		}();
+		var network = new nPort();
+		var networkNoiseCovariance = [];
+		var signalTemplate;
+		for (var signalComponent = 0; signalComponent < m; signalComponent++) {
+			signalTemplate = compatibleSignals(signalTemplate, componentConnections[signalComponent][0].signal);
+		}
+		var networkSignalRows = signalTemplate ? [] : undefined;
+		for ( i = 0; i < numOfFreqs; i++) { // i is number of frequencies
+			offset = 0;
+			var WMatrix = matrix(dup(GammaArray));
+			for ( j = 0; j < m; j++) { // insert each component's negative S-matrix into W
+				for ( k = 0; k < (componentConnections[j].length - 1)**2; k++){
+					base = componentConnections[j].length - 1;
+					WMatrix.m[offset + Math.floor(k/base)][offset + k % base] = componentConnections[j][0].spars[i][1 + k].neg();
+				}
+				offset += base;
+			}		var Winverse = WMatrix.invertCplx();
+			for ( j = 0; j < externalPortCount; j++) {
+				for ( k = 0; k < externalPortCount; k++) {
+					networkSpars[i].push(Winverse.m[interconnectedPortCount +j][interconnectedPortCount + k]);
+				}		}
+			// Each component noise-wave entry is a source column in the same
+			// linear system.  Keep this propagation internal to nodal().
+			var Cnoise = dim(interconnectedPortCount, interconnectedPortCount, complex(0, 0));
+			var covarianceOffset = 0;
+			for (var component = 0; component < m; component++) {
+				var componentPortCount = componentConnections[component].length - 1;
+				var componentNoise = componentConnections[component][0].noise;
+				if (componentNoise && componentNoise[i] && componentNoise[i].C) {
+					for (var covarianceRow = 0; covarianceRow < componentPortCount; covarianceRow++) {
+						for (var covarianceCol = 0; covarianceCol < componentPortCount; covarianceCol++) {
+							Cnoise[covarianceOffset + covarianceRow][covarianceOffset + covarianceCol] = componentNoise[i].C[covarianceRow][covarianceCol];
+						}
+					}
+				}
+				covarianceOffset += componentPortCount;
+			}
+			var Cout = [];
+			for (j = 0; j < externalPortCount; j++) {
+				Cout[j] = [];
+				for (k = 0; k < externalPortCount; k++) {
+					var sum = complex(0, 0);
+					for (var sourceRow = 0; sourceRow < interconnectedPortCount; sourceRow++) {
+						for (var sourceCol = 0; sourceCol < interconnectedPortCount; sourceCol++) {
+							var transfer = Winverse.m[interconnectedPortCount +j][sourceRow];
+							var transferConjugate = conjugate(Winverse.m[interconnectedPortCount +k][sourceCol]);
+							sum = sum.add(transfer.mul(Cnoise[sourceRow][sourceCol]).mul(transferConjugate));
+						}
+					}
+					Cout[j][k] = sum;
+				}		}		networkNoiseCovariance[i] = {frequency: networkSpars[i][0], C: Cout};
+			if (networkSignalRows) {
+				var componentWaves = Array.from({length: interconnectedPortCount}, function () {
+					return complex(0, 0);
+				});
+				var signalOffset = 0;
+				for (var signalChild = 0; signalChild < m; signalChild++) {
+					var childPortCount = componentConnections[signalChild].length - 1;
+					var childSignal = componentConnections[signalChild][0].signal;
+					if (childSignal) {
+						for (var childPort = 0; childPort < childPortCount; childPort++) {
+							componentWaves[signalOffset + childPort] = childSignal.rows[i].waves[childPort];
+						}
+					}
+					signalOffset += childPortCount;
+				}
+				var externalWaves = [];
+				for (var externalPort = 0; externalPort < externalPortCount; externalPort++) {
+					var totalWave = complex(0, 0);
+					for (var sourcePort = 0; sourcePort < interconnectedPortCount; sourcePort++) {
+						totalWave = totalWave.add(Winverse.m[interconnectedPortCount + externalPort][sourcePort]
+							.mul(componentWaves[sourcePort]));
+					}
+					externalWaves[externalPort] = totalWave;
+				}
+				networkSignalRows[i] = {frequency: networkSpars[i][0], waves: externalWaves};
+			}
+
+		}	network.setspars(networkSpars);
+		network.setglobal(componentConnections[0][0].global); // use the first component for global data
+		network.noise = networkNoiseCovariance;
+		if (networkSignalRows) network.signal = signalWithRows(signalTemplate, networkSignalRows);
+		var displayComponent = componentConnections.slice(0, m).find(function (entry) {
+			return entry[0]._displayFrequencies;
+		});
+		network._displayFrequencies = displayComponent && displayComponent[0]._displayFrequencies;
+		network._intermod = connectionModel(
+			componentConnections.slice(0, m).map(function (entry) { return entry[0]; }),
+			GammaArray.map(function (connectionRow) {
+				return connectionRow.findIndex(function (value) { return value.getR() === 1; });
+			})
+		);
+		network._schematic = {
+			kind: 'nodal',
+			components: componentConnections.slice(0, m).map(function (entry) {
+				return {part: entry[0]._schematic, nodes: entry.slice(1)};
+			}),
+			externalNodes: componentConnections[m].slice(1),
+			...(normalized.groups.length ? {groups: normalized.groups} : {})
+		};
+		return applyInputSignal(network, signalOptions);
+	}
+
+	// Modified: 2026-10-26
+
+	function cascade(...nPorts) {
+		var signalOptions = nPorts.length && !nPorts[nPorts.length - 1].getspars ? nPorts.pop() : undefined;
+		if (nPorts.length === 0) throw new TypeError('cascade() requires at least one nPort.');
+		var combined = nPorts[0];
+		for (var i = 1; i < nPorts.length; i++) {
+			// cas() combines S-parameters and noise, and keeps both nonlinear stages.
+			combined = combined.cas(nPorts[i]);
+		}
+		if (signalOptions && signalOptions.signal && nPorts.length === 1) {
+			var copy = new nPort();
+			copy.setspars(combined.getspars());
+			copy.setglobal(combined.getglobal());
+			copy.noise = combined.noise;
+			if (combined.signal) copy.signal = combined.signal;
+			copy._displayFrequencies = combined._displayFrequencies;
+			copy._intermod = combined._intermod;
+			copy._schematic = combined._schematic;
+			combined = copy;
+		}
+		return applyInputSignal(combined, signalOptions);
+	}
+
+	// Modified: 2026-10-28
+
+	function Open(options = {}) { // one port, open
+		var Open = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings); global.Ro;
+		var freqCount = 0, s11, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			s11 = complex(1,0);
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11];
+		}	
+		Open.setspars(sparsArray);
+		Open.setglobal(settings);
+		Open._schematic = schematicPart('Open');
+		return Open;
+	}
+
+	// Modified: 2026-10-28
+
+	function Short(options = {}) { //  one port, Short
+		var Short = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings); global.Ro;
+		var freqCount = 0, s11, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			s11 = complex(-1,0);
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11];
+		}	
+		Short.setspars(sparsArray);
+		Short.setglobal(settings);
+		Short._schematic = schematicPart('Short');
+		return Short;
+	}
+
+	// Modified: 2026-10-28
+
+	function Load(options = {}) { // one port, load
+		var Load = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings); global.Ro;
+		var freqCount = 0, s11, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			s11 = complex(0,0);
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11];
+		}	
+		Load.setspars(sparsArray);
+		Load.setglobal(settings);
+		Load._schematic = schematicPart('Load');
+		return Load;
+	}
+
+	// Modified: 2026-10-28
+
+	function Shift90(options = {}) { // lossless matched two-port with +90 degree through phase
+		var Shift90 = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings); global.Ro;
+		var freqCount = 0, s11, s12, s21, s22, sparsArray = [];
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			s11 = complex(0,0);
+			s12 = complex(0,1);
+			s21 = complex(0,1);
+			s22 = complex(0,0);
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}
+		Shift90.setspars(sparsArray);
+		Shift90.setglobal(settings);
+		Shift90._schematic = schematicPart('Shift90', {labelPrefix: 'Shift90'});
+		return Shift90;
+	}
+
+	// Modified: 2026-10-07
+
+	const INCH_TO_METER = 0.0254;
+	const MIL_TO_METER = 0.001 * INCH_TO_METER;
+
+	const C0 = 2.99792458e8;
+	const EPSILON0 = 8.854187817e-12;
+	const MU0 = 4 * Math.PI * 1e-7;
+	const VACUUM_IMPEDANCE = 120 * Math.PI;
+
+	const COPPER_RESISTIVITY = 1.72e-8;
+
+	// Modified: 2026-10-26
+
+	function Tlin(Z = 60, Length = 0.5 * 0.0254, options = {}) { // Z is in ohms and Length is in meters, sparameters of a physical transmission line
+		var Tlin = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro,0); Zo.inv(); complex(1,0); var two = complex(2,0), freqCount = 0, Ztlin = [], s11, s12, s21, s22, sparsArray = [];
+		var Atlin = {}, Btlin = {}, Ctlin = {}, Ds = {}, alpha = 0, beta = 0, gamma = {};
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			Ztlin = complex(Z, 0);
+		
+			Atlin = Ztlin.mul(Ztlin).sub(Zo.mul(Zo));
+			Btlin = Ztlin.mul(Ztlin).add(Zo.mul(Zo));
+			Ctlin = two.mul(Ztlin).mul(Zo);
+			
+			alpha = 0;
+			beta = 2*Math.PI*frequencyList[freqCount]/C0;
+			gamma = complex(alpha * Length, beta * Length);
+
+			Ds = Ctlin.mul(gamma.coshCplx()).add(Btlin.mul(gamma.sinhCplx()));
+
+			s11 = Atlin.mul(gamma.sinhCplx()).div(Ds);
+			s12 = Ctlin.div(Ds);	
+			s21 = s12;
+			s22 = s11;
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
+		}	Tlin.setspars(sparsArray);
+		Tlin.setglobal(settings);
+		Tlin._schematic = {kind: 'component', symbol: 'transmission-line', impedance: Z, length: Length};
+		return Tlin;
+	}
+
+	// Modified: 2026-10-28
+
+	function Tclin(Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254, options = {}) { // 1.4732 is the quarter wavelength at 2GHz, (1.3412 at 2.2 GHz)
+		var ctlin = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro,0); Zo.inv(); complex(1,0); var two = complex(2,0), freqCount = 0, Zoetclin = [], Zootclin = [];
+		var s11oe, s12oe, s21oe, s22oe;
+		var s11oo, s12oo, s21oo, s22oo;
+		var s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44;
+		var sparsArray = [];
+		var Aoe = {}, Boe = {}, Coe = {}, Dsoe = {};
+		var Aoo = {}, Boo = {}, Coo = {}, Dsoo = {};
+		var alpha = 0, beta = 0, gamma = {};
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			// alpha beta gamma section
+			alpha = 0;
+			beta = 2*Math.PI*frequencyList[freqCount]/C0;
+			gamma = complex(alpha * Length, beta * Length);
+
+			// Zoe section
+			Zoetclin = complex(Zoe, 0);
+
+			Aoe = Zoetclin.mul(Zoetclin).sub(Zo.mul(Zo));
+			Boe = Zoetclin.mul(Zoetclin).add(Zo.mul(Zo));
+			Coe = two.mul(Zoetclin).mul(Zo);
+
+			Dsoe = Coe.mul(gamma.coshCplx()).add(Boe.mul(gamma.sinhCplx()));
+
+			s11oe = Aoe.mul(gamma.sinhCplx()).div(Dsoe);
+			s12oe = Coe.div(Dsoe);	
+			s21oe = s12oe;
+			s22oe = s11oe; 
+			// Zoo section
+			Zootclin = complex(Zoo, 0);
+
+			Aoo = Zootclin.mul(Zootclin).sub(Zo.mul(Zo));
+			Boo = Zootclin.mul(Zootclin).add(Zo.mul(Zo));
+			Coo = two.mul(Zootclin).mul(Zo);
+
+			Dsoo = Coo.mul(gamma.coshCplx()).add(Boo.mul(gamma.sinhCplx()));
+
+			s11oo = Aoo.mul(gamma.sinhCplx()).div(Dsoo);
+			s12oo = Coo.div(Dsoo);	
+			s21oo = s12oo;
+			s22oo = s11oo;
+	 
+
+			// put the 4 port together per Gupta page 331
+			s44 = s11 = (s11oe.add(s11oo)).mul(complex(0.5,0));
+			s33 = s22 = (s22oe.add(s22oo)).mul(complex(0.5,0));
+			s34 = s21 = (s21oe.add(s21oo)).mul(complex(0.5,0));
+			s43 = s12 = (s12oe.add(s12oo)).mul(complex(0.5,0));
+			s13 = s42 = (s12oe.sub(s12oo)).mul(complex(0.5,0));
+			s31 = s24 = (s21oe.sub(s21oo)).mul(complex(0.5,0));
+			s14 = s41 = (s11oe.sub(s11oo)).mul(complex(0.5,0));
+			s23 = s32 = (s22oe.sub(s22oo)).mul(complex(0.5,0));
+
+			sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44];
+		}	ctlin.setspars(sparsArray);
+		ctlin.setglobal(settings);
+		ctlin._schematic = schematicPart('Tclin', {length: Length});
+		return ctlin;
+	}
+
+	// Modified: 2026-10-28
+
+	// Matched, reciprocal 180-degree coupler with the same response at every frequency.
+	// Port 1 drives port 2 (through) and port 4 (coupled); port 3 is isolated.
+	function Coupler180(options = {}) {
+		if (!options || Array.isArray(options) || typeof options !== 'object') {
+			throw new TypeError('Coupler180 expects an options object.');
+		}
+		var couplingDb = options.couplingDb === undefined ? 10 * Math.log10(2) : options.couplingDb;
+		if (!Number.isFinite(couplingDb) || couplingDb < 0) {
+			throw new RangeError('Coupler180 couplingDb must be a finite, nonnegative number of dB.');
+		}
+		var coupling = 10 ** (-couplingDb / 20);
+		var through = Math.sqrt(1 - coupling * coupling);
+		var settings = componentSettings(global, options);
+		var frequencies = analysisFrequencies(settings);
+		var sparsArray = [];
+		var noiseArray = [];
+		for (var i = 0; i < frequencies.length; i++) {
+			sparsArray[i] = [frequencies[i],
+				complex(0, 0), complex(through, 0), complex(0, 0), complex(coupling, 0),
+				complex(through, 0), complex(0, 0), complex(coupling, 0), complex(0, 0),
+				complex(0, 0), complex(coupling, 0), complex(0, 0), complex(-through, 0),
+				complex(coupling, 0), complex(0, 0), complex(-through, 0), complex(0, 0)];
+			var covariance = [];
+			for (var row = 0; row < 4; row++) {
+				covariance[row] = Array.from({length: 4}, function () { return complex(0, 0); });
+			}
+			noiseArray[i] = {frequency: frequencies[i], C: covariance};
+		}
+		var coupler = new nPort();
+		coupler.setspars(sparsArray);
+		coupler.noise = noiseArray;
+		coupler.setglobal(settings);
+		coupler._schematic = schematicPart('Coupler180', {value: couplingDb});
+		return coupler;
+	}
+
+	// Modified: 2026-09-06
+	var hasOwn = function (object, key) {
+		return Object.prototype.hasOwnProperty.call(object, key);
+	};
+
+	var isOptionsObject = function (value) {
+		return value !== null && typeof value === 'object' && !Array.isArray(value);
+	};
+
+	var normalizePhysicalModelOptions = function (constructorName, input, definitions) {
+		if (!isOptionsObject(input)) {
+			throw new TypeError('nP.' + constructorName + '() requires an options object.');
+		}
+
+		var known = new Set;
+		var normalized = {};
+		definitions.forEach(function (definition) {
+			known.add(definition.name);
+			(definition.aliases || []).forEach(function (alias) { known.add(alias); });
+
+			var supplied = [definition.name].concat(definition.aliases || []).filter(function (name) {
+				return hasOwn(input, name);
+			});
+			if (supplied.length > 1) {
+				throw new Error('nP.' + constructorName + '(): use only one of ' + supplied.join(', ') + '.');
+			}
+			var source = supplied[0];
+			normalized[definition.name] = source === undefined ? definition.defaultValue : input[source];
+		});
+
+		Object.keys(input).forEach(function (key) {
+			if (!known.has(key)) {
+				throw new Error('nP.' + constructorName + '(): unknown option "' + key + '".');
+			}
+		});
+		return normalized;
+	};
+
+	var requireFinite = function (constructorName, name, value) {
+		if (typeof value !== 'number' || !Number.isFinite(value)) {
+			throw new TypeError('nP.' + constructorName + '(): ' + name + ' must be a finite number.');
+		}
+		return value;
+	};
+
+	var requirePositive = function (constructorName, name, value) {
+		requireFinite(constructorName, name, value);
+		if (value <= 0) throw new RangeError('nP.' + constructorName + '(): ' + name + ' must be greater than zero.');
+		return value;
+	};
+
+	var requireNonnegative = function (constructorName, name, value) {
+		requireFinite(constructorName, name, value);
+		if (value < 0) throw new RangeError('nP.' + constructorName + '(): ' + name + ' must not be negative.');
+		return value;
+	};
+
+	var resistivityScale = function (constructorName, options, legacyScale, referenceResistivity) {
+		if (hasOwn(options, 'resistivity') && hasOwn(options, 'rho')) {
+			throw new Error('nP.' + constructorName + '(): use resistivity or legacy rho, not both.');
+		}
+		if (hasOwn(options, 'resistivity')) {
+			return requireNonnegative(constructorName, 'resistivity', options.resistivity) / referenceResistivity;
+		}
+		return legacyScale;
+	};
+
+	var absoluteResistivity = function (constructorName, options, legacyValue) {
+		if (hasOwn(options, 'resistivity') && hasOwn(options, 'rho')) {
+			throw new Error('nP.' + constructorName + '(): use resistivity or legacy rho, not both.');
+		}
+		return hasOwn(options, 'resistivity')
+			? requireNonnegative(constructorName, 'resistivity', options.resistivity)
+			: legacyValue;
+	};
+
+	var physicalModelMetadata = function (family, model, geometry, material, analysis, extra = {}) {
+		return {
+			family,
+			model,
+			geometry: {...geometry},
+			material: {...material},
+			analysis,
+			...extra
+		};
+	};
+
+	// Modified: 2026-10-28
+
+	var pi$7 = Math.PI;
+
+	var square$4 = function (x) { return x * x; };
+	var cube$4 = function (x) { return x * x * x; };
+	var fourth$4 = function (x) { return x * x * x * x; };
+
+	var hammerstadAB$4 = function (u, er) {
+		var u2 = square$4(u);
+		var u3 = cube$4(u);
+		var u4 = fourth$4(u);
+		var a = 1 + Math.log((u4 + u2 / 2704) / (u4 + 0.432)) / 49 + Math.log(1 + u3 / 5929.741) / 18.7;
+		var b = 0.564 * ((er - 0.9) / (er + 3)) ** 0.053;
+		return {a, b};
+	};
+
+	var hammerstadEr$4 = function (u, er) {
+		var ab = hammerstadAB$4(u, er);
+		return (er + 1) / 2 + (er - 1) / 2 * (1 + 10 / u) ** (-ab.a * ab.b);
+	};
+
+	var homogeneousZ0$4 = function (u) {
+		var f = 6 + (2 * pi$7 - 6) * Math.exp(-((30.666 / u) ** 0.7528));
+		return (VACUUM_IMPEDANCE / (2 * pi$7)) * Math.log(f / u + Math.sqrt(1 + 4 / square$4(u)));
+	};
+
+	var deltaUThicknessSingle$4 = function (u, thicknessOverHeight) {
+		if (thicknessOverHeight <= 0.0) {
+			return 0.0;
+		}
+
+		return (1.25 * thicknessOverHeight / pi$7) *
+			(1 + Math.log((2 + (4 * pi$7 * u - 2) / (1 + Math.exp(-100 * (u - 1 / (2 * pi$7))))) / thicknessOverHeight));
+	};
+
+	var singleLine$1 = function (u, er) {
+		var erEff = hammerstadEr$4(u, er);
+		var z0 = homogeneousZ0$4(u) / Math.sqrt(erEff);
+		return {erEff, z0};
+	};
+
+	var singleLineDispersion$1 = function (u, er, erEff0, z0, frequency, Height) {
+		var fn = frequency * Height / 1e6; // GHz-mm when frequency is Hz and Height is meters.
+		var p1 = 0.27488 + u * (0.6315 + 0.525 / (1 + 0.0157 * fn) ** 20) - 0.065683 * Math.exp(-8.7513 * u);
+		var p2 = 0.33622 * (1 - Math.exp(-0.03442 * er));
+		var p3 = 0.0363 * Math.exp(-4.6 * u) * (1 - Math.exp(-((fn / 38.7) ** 4.97)));
+		var p4 = 1 + 2.751 * (1 - Math.exp(-((er / 15.916) ** 8)));
+		var p = p1 * p2 * ((p3 * p4 + 0.1844) * fn) ** 1.5763;
+		var erEff = er - (er - erEff0) / (1 + p);
+
+		var r1 = 0.03891 * er ** 1.4;
+		var r2 = 0.267 * u ** 7;
+		var r3 = 4.766 * Math.exp(-3.228 * u ** 0.641);
+		var r4 = 0.016 + (0.0514 * er) ** 4.524;
+		var r5 = (fn / 28.843) ** 12;
+		var r6 = 22.2 * u ** 1.92;
+		var r7 = 1.206 - 0.3144 * Math.exp(-r1) * (1 - Math.exp(-r2));
+		var r8 = 1 + 1.275 * (1 - Math.exp(-4625e-6 * r3 * er ** 1.674 * (fn / 18.365) ** 2.745));
+		var r9Base = (er - 1) ** 6;
+		var r9 = 5.086 * r4 * (r5 / (0.3838 + 0.386 * r4)) * (Math.exp(-r6) / (1 + 1.2992 * r5)) * (r9Base / (1 + 10 * r9Base));
+		var r10 = 0.00044 * er ** 2.136 + 0.0184;
+		var r11Base = (fn / 19.47) ** 6;
+		var r11 = r11Base / (1 + 0.0962 * r11Base);
+		var r12 = 1 / (1 + 0.00245 * square$4(u));
+		var r13 = 0.9408 * erEff ** r8 - 0.9603;
+		var r14 = (0.9408 - r9) * erEff0 ** r8 - 0.9603;
+		var r15 = 0.707 * r10 * (fn / 12.3) ** 1.097;
+		var r16 = 1 + 0.0503 * square$4(er) * r11 * (1 - Math.exp(-((u / 15) ** 6)));
+		var r17 = r7 * (1 - 1.1241 * (r12 / r16) * Math.exp(-0.026 * fn ** 1.15656 - r15));
+		var z0Frequency = z0 * (r13 / r14) ** r17;
+
+		return {erEff, z0Frequency};
+	};
+
+	function mlin(input = {}) {
+		if (arguments.length > 1) throw new TypeError('nP.mlin() accepts one options object.');
+		var options = normalizePhysicalModelOptions('mlin', input, [
+				{name: 'fList', defaultValue: global.fList},
+				{name: 'width', aliases: ['Width'], defaultValue: 0.023 * INCH_TO_METER},
+				{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
+				{name: 'length', aliases: ['Length'], defaultValue: 0.5 * INCH_TO_METER},
+				{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
+				{name: 'relativePermittivity', aliases: ['er'], defaultValue: 10},
+				{name: 'rho', defaultValue: 1},
+				{name: 'resistivity', defaultValue: undefined},
+				{name: 'lossTangent', aliases: ['tand'], defaultValue: 0.001},
+				{name: 'roughnessRms', defaultValue: 0},
+				{name: 'temperature', defaultValue: global.Temp}
+		]);
+		var Width = options.width, Height = options.height, Length = options.length, Thickness = options.thickness;
+		var er = options.relativePermittivity, rho = resistivityScale('mlin', input, options.rho, COPPER_RESISTIVITY);
+		var tand = options.lossTangent, roughnessRms = options.roughnessRms, temperature = options.temperature;
+		requirePositive('mlin', 'width', Width); requirePositive('mlin', 'height', Height);
+		requireNonnegative('mlin', 'length', Length); requireNonnegative('mlin', 'thickness', Thickness);
+		requirePositive('mlin', 'relativePermittivity', er); requireNonnegative('mlin', 'resistivity', rho * COPPER_RESISTIVITY);
+		requireNonnegative('mlin', 'lossTangent', tand); requireNonnegative('mlin', 'roughnessRms', roughnessRms); requireNonnegative('mlin', 'temperature', temperature);
+		var mlin = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro, 0), two = complex(2, 0), freqCount = 0, s11, s12, s21, s22, sparsArray = [], noiseArray = [];
+		var Atlin = {}, Btlin = {}, Ctlin = {}, Zmlin = {}, Ds = {}, alpha = 0, beta = 0, gamma = {};
+
+		var wOverH = Width / Height;
+		var thicknessOverHeight = Thickness / Height;
+		var deltaU = deltaUThicknessSingle$4(wOverH, thicknessOverHeight);
+		var effectiveWOverH = wOverH + deltaU;
+		var quasiStatic = singleLine$1(effectiveWOverH, er);
+		var Z = quasiStatic.z0;
+		var ere = quasiStatic.erEff;
+		var Zf = 0;
+		var eref = 0;
+		var analysis = [];
+
+		// compute conductor loss terms
+		var B = Width / Height >= 1 / (2 * pi$7) ? Height : 2 * pi$7 * Width;
+		var A = Thickness > 0.0 ? 1 + 1 / effectiveWOverH * (1 + 1 / pi$7 * Math.log(2 * B / Thickness)) : 0.0;
+
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			var skinDepth = rho > 0.0 ? Math.sqrt(COPPER_RESISTIVITY * rho / (pi$7 * frequencyList[freqCount] * MU0)) : 0.0;
+			var Rs = Math.sqrt(pi$7 * frequencyList[freqCount] * MU0 * rho * COPPER_RESISTIVITY);
+			if (roughnessRms > 0.0 && skinDepth > 0.0) {
+				Rs *= 1 + (2 / pi$7) * Math.atan(1.4 * (roughnessRms / skinDepth) ** 2);
+			}
+			var Ac = Thickness > 0.0 && rho > 0.0 ? (Width / Height <= 1.0 ? 1.38 * A * (Rs / (Height * Z)) * (32 - effectiveWOverH) ** 2 / (32 + effectiveWOverH) ** 2 : 6.1e-5 * A * (Rs * Z * ere / Height) * (effectiveWOverH + (0.667 * effectiveWOverH) / (effectiveWOverH + 1.44))) : 0.0;
+
+			var dispersion = singleLineDispersion$1(effectiveWOverH, er, ere, Z, frequencyList[freqCount], Height);
+			Zf = dispersion.z0Frequency;
+			eref = dispersion.erEff;
+			var lambda0 = C0 / frequencyList[freqCount];
+			var Ad = tand > 0.0 && er > 1.0 ? 27.3 * er / (er - 1) * (eref - 1) / Math.sqrt(eref) * tand / lambda0 : 0.0;
+			analysis[freqCount] = {
+				frequency: frequencyList[freqCount],
+				Z: Zf,
+				ere: eref,
+				conductorLossDbPerMeter: Ac,
+				dielectricLossDbPerMeter: Ad,
+				skinDepth
+			};
+
+			Zmlin = complex(Zf, 0);
+
+			Atlin = Zmlin.mul(Zmlin).sub(Zo.mul(Zo));
+			Btlin = Zmlin.mul(Zmlin).add(Zo.mul(Zo));
+			Ctlin = two.mul(Zmlin).mul(Zo);
+
+			alpha = (Ac + Ad) / 8.68588;
+			beta = Math.sqrt(eref) * 2 * Math.PI * frequencyList[freqCount] / C0;
+			gamma = complex(alpha * Length, beta * Length);
+
+			Ds = Ctlin.mul(gamma.coshCplx()).add(Btlin.mul(gamma.sinhCplx()));
+
+			s11 = Atlin.mul(gamma.sinhCplx()).div(Ds);
+			s12 = Ctlin.div(Ds);
+			s21 = s12;
+			s22 = s11;
+			sparsArray[freqCount] = [frequencyList[freqCount], s11, s12, s21, s22];
+			noiseArray[freqCount] = {frequency: frequencyList[freqCount], C: passiveNoiseCovariance(sparsArray[freqCount], 2, temperature)};
+		}	mlin.setspars(sparsArray);
+		mlin.noise = noiseArray;
+		mlin.setglobal(settings);
+		var firstDisplayAnalysis = analysis.find(function (point) {
+			return point.frequency === settings.fList[0];
+		});
+		mlin.microstrip = {
+			Width,
+			Height,
+			Length,
+			Thickness,
+			er,
+			rho,
+			tand,
+			roughnessRms,
+			Z: firstDisplayAnalysis ? firstDisplayAnalysis.Z : Z,
+			ere: firstDisplayAnalysis ? firstDisplayAnalysis.ere : ere,
+			ZQuasiStatic: Z,
+			ereQuasiStatic: ere,
+			analysis
+		};
+		mlin.physicalModel = physicalModelMetadata('microstrip', 'uniform-line', {
+			width: Width, height: Height, length: Length, thickness: Thickness
+		}, {
+			relativePermittivity: er,
+			resistivity: rho * COPPER_RESISTIVITY,
+			lossTangent: tand,
+			roughnessRms
+		}, analysis);
+		mlin._schematic = schematicPart('mlin', {length: Length});
+		return mlin;
+	}
+
+	// Modified: 2026-10-28
+
+	var pi$6 = Math.PI;
+
+	var square$3 = function (x) { return x * x; };
+	var cube$3 = function (x) { return x * x * x; };
+	var fourth$3 = function (x) { return x * x * x * x; };
+
+	var hammerstadAB$3 = function (u, er) {
+		var u2 = square$3(u);
+		var u3 = cube$3(u);
+		var u4 = fourth$3(u);
+		var a = 1 + Math.log((u4 + u2 / 2704) / (u4 + 0.432)) / 49 + Math.log(1 + u3 / 5929.741) / 18.7;
+		var b = 0.564 * ((er - 0.9) / (er + 3)) ** 0.053;
+		return {a, b};
+	};
+
+	var hammerstadEr$3 = function (u, er) {
+		var ab = hammerstadAB$3(u, er);
+		return (er + 1) / 2 + (er - 1) / 2 * (1 + 10 / u) ** (-ab.a * ab.b);
+	};
+
+	var homogeneousZ0$3 = function (u) {
+		var f = 6 + (2 * pi$6 - 6) * Math.exp(-((30.666 / u) ** 0.7528));
+		return (VACUUM_IMPEDANCE / (2 * pi$6)) * Math.log(f / u + Math.sqrt(1 + 4 / square$3(u)));
+	};
+
+	var deltaUThicknessSingle$3 = function (u, thicknessOverHeight) {
+		if (thicknessOverHeight <= 0.0) {
+			return 0.0;
+		}
+
+		return (1.25 * thicknessOverHeight / pi$6) *
+			(1 + Math.log((2 + (4 * pi$6 * u - 2) / (1 + Math.exp(-100 * (u - 1 / (2 * pi$6))))) / thicknessOverHeight));
+	};
+
+	var singleLine = function (u, er) {
+		var erEff = hammerstadEr$3(u, er);
+		var z0 = homogeneousZ0$3(u) / Math.sqrt(erEff);
+		return {erEff, z0};
+	};
+
+	var singleLineDispersion = function (u, er, erEff0, z0, frequency, Height) {
+		var fn = frequency * Height / 1e6; // GHz-mm when frequency is Hz and Height is meters.
+		var p1 = 0.27488 + u * (0.6315 + 0.525 / (1 + 0.0157 * fn) ** 20) - 0.065683 * Math.exp(-8.7513 * u);
+		var p2 = 0.33622 * (1 - Math.exp(-0.03442 * er));
+		var p3 = 0.0363 * Math.exp(-4.6 * u) * (1 - Math.exp(-((fn / 38.7) ** 4.97)));
+		var p4 = 1 + 2.751 * (1 - Math.exp(-((er / 15.916) ** 8)));
+		var p = p1 * p2 * ((p3 * p4 + 0.1844) * fn) ** 1.5763;
+		var erEff = er - (er - erEff0) / (1 + p);
+
+		var r1 = 0.03891 * er ** 1.4;
+		var r2 = 0.267 * u ** 7;
+		var r3 = 4.766 * Math.exp(-3.228 * u ** 0.641);
+		var r4 = 0.016 + (0.0514 * er) ** 4.524;
+		var r5 = (fn / 28.843) ** 12;
+		var r6 = 22.2 * u ** 1.92;
+		var r7 = 1.206 - 0.3144 * Math.exp(-r1) * (1 - Math.exp(-r2));
+		var r8 = 1 + 1.275 * (1 - Math.exp(-4625e-6 * r3 * er ** 1.674 * (fn / 18.365) ** 2.745));
+		var r9Base = (er - 1) ** 6;
+		var r9 = 5.086 * r4 * (r5 / (0.3838 + 0.386 * r4)) * (Math.exp(-r6) / (1 + 1.2992 * r5)) * (r9Base / (1 + 10 * r9Base));
+		var r10 = 0.00044 * er ** 2.136 + 0.0184;
+		var r11Base = (fn / 19.47) ** 6;
+		var r11 = r11Base / (1 + 0.0962 * r11Base);
+		var r12 = 1 / (1 + 0.00245 * square$3(u));
+		var r13 = 0.9408 * erEff ** r8 - 0.9603;
+		var r14 = (0.9408 - r9) * erEff0 ** r8 - 0.9603;
+		var r15 = 0.707 * r10 * (fn / 12.3) ** 1.097;
+		var r16 = 1 + 0.0503 * square$3(er) * r11 * (1 - Math.exp(-((u / 15) ** 6)));
+		var r17 = r7 * (1 - 1.1241 * (r12 / r16) * Math.exp(-0.026 * fn ** 1.15656 - r15));
+		var z0Frequency = z0 * (r13 / r14) ** r17;
+
+		return {erEff, z0Frequency};
+	};
+
+	var quasiStaticCoupledLine = function (Width, Space, Height, Thickness, er) {
+		var u = Width / Height;
+		var g = Space / Height;
+		var thicknessOverHeight = Thickness / Height;
+		var deltaU = deltaUThicknessSingle$3(u, thicknessOverHeight);
+		var deltaT = thicknessOverHeight > 0.0 ? thicknessOverHeight / (g * er) : 0.0;
+		var deltaUEven = thicknessOverHeight > 0.0 ? deltaU * (1 - 0.5 * Math.exp(-0.69 * deltaU / deltaT)) : 0.0;
+		var deltaUOdd = thicknessOverHeight > 0.0 ? deltaUEven + deltaT : 0.0;
+		var uEven = u + deltaUEven;
+		var uOdd = u + deltaUOdd;
+
+		var single = singleLine(u, er);
+		var singleOdd = singleLine(uOdd, er);
+
+		var v = uEven * (20 + square$3(g)) / (10 + square$3(g)) + g * Math.exp(-g);
+		var erEven = hammerstadEr$3(v, er);
+
+		var bo = 0.747 * er / (0.15 + er);
+		var co = bo - (bo - 0.207) * Math.exp(-0.414 * uOdd);
+		var d = 0.593 + 0.694 * Math.exp(-0.562 * uOdd);
+		var ao = 0.7287 * (singleOdd.erEff - (er + 1) / 2) * (1 - Math.exp(-0.179 * uOdd));
+		var erOdd = ((er + 1) / 2 + ao - singleOdd.erEff) * Math.exp(-co * g ** d) + singleOdd.erEff;
+
+		var q1 = 0.8695 * uEven ** 0.194;
+		var q2 = 1 + 0.7519 * g + 0.189 * g ** 2.31;
+		var q3 = 0.1975 + (16.6 + (8.4 / g) ** 6) ** -0.387 + Math.log(g ** 10 / (1 + (g / 3.4) ** 10)) / 241;
+		var q4 = 2 * q1 / (q2 * (Math.exp(-g) * uEven ** q3 + (2 - Math.exp(-g)) * uEven ** -q3));
+		var Zoe = single.z0 * Math.sqrt(single.erEff / erEven) / (1 - Math.sqrt(single.erEff) * q4 * single.z0 / VACUUM_IMPEDANCE);
+
+		var q5 = 1.794 + 1.14 * Math.log(1 + 0.638 / (g + 0.517 * g ** 2.43));
+		var q6 = 0.2305 + Math.log(g ** 10 / (1 + (g / 5.8) ** 10)) / 281.3 + Math.log(1 + 0.598 * g ** 1.154) / 5.1;
+		var q7 = (10 + 190 * square$3(g)) / (1 + 82.3 * cube$3(g));
+		var q8 = Math.exp(-6.5 - 0.95 * Math.log(g) - (g / 0.15) ** 5);
+		var q9 = Math.log(q7) * (q8 + 1 / 16.5);
+		var q10 = (q2 * q4 - q5 * Math.exp(Math.log(uOdd) * q6 * uOdd ** -q9)) / q2;
+		var Zoo = single.z0 * Math.sqrt(single.erEff / erOdd) / (1 - Math.sqrt(single.erEff) * q10 * single.z0 / VACUUM_IMPEDANCE);
+
+		return {u, g, uEven, uOdd, single, Zoe, Zoo, ereoe: erEven, ereoo: erOdd};
+	};
+
+	var dispersiveCoupledLine = function (quasiStatic, Width, Space, Height, er, frequency) {
+		var u = Width / Height;
+		var g = Space / Height;
+		var fn = frequency * Height / 1e6; // GHz-mm when frequency is Hz and Height is meters.
+		var singleDispersion = singleLineDispersion(u, er, quasiStatic.single.erEff, quasiStatic.single.z0, frequency, Height);
+
+		var p1 = 0.27488 + u * (0.6315 + 0.525 / (1 + 0.0157 * fn) ** 20) - 0.065683 * Math.exp(-8.7513 * u);
+		var p2 = 0.33622 * (1 - Math.exp(-0.03442 * er));
+		var p3 = 0.0363 * Math.exp(-4.6 * u) * (1 - Math.exp(-((fn / 38.7) ** 4.97)));
+		var p4 = 1 + 2.751 * (1 - Math.exp(-((er / 15.916) ** 8)));
+		var p5 = 0.334 * Math.exp(-3.3 * (er / 15) ** 3) + 0.746;
+		var p6 = p5 * Math.exp(-((fn / 18) ** 0.368));
+		var p7 = 1 + 4.069 * p6 * g ** 0.479 * Math.exp(-1.347 * g ** 0.595 - 0.17 * g ** 2.5);
+		var fe = p1 * p2 * ((p3 * p4 + 0.1844 * p7) * fn) ** 1.5763;
+		var ereoe = er - (er - quasiStatic.ereoe) / (1 + fe);
+
+		var p8 = 0.7168 * (1 + 1.076 / (1 + 0.0576 * (er - 1)));
+		var p9 = p8 - 0.7913 * (1 - Math.exp(-((fn / 20) ** 1.424))) * Math.atan(2.481 * (er / 8) ** 0.946);
+		var p10 = 0.242 * (er - 1) ** 0.55;
+		var p11 = 0.6366 * (Math.exp(-0.3401 * fn) - 1) * Math.atan(1.263 * (u / 3) ** 1.629);
+		var p12 = p9 + (1 - p9) / (1 + 1.183 * u ** 1.376);
+		var p13 = 1.695 * p10 / (0.414 + 1.605 * p10);
+		var p14 = 0.8928 + 0.1072 * (1 - Math.exp(-0.42 * (fn / 20) ** 3.215));
+		var p15 = Math.abs(1 - 0.8928 * (1 + p11) * p12 * Math.exp(-p13 * g ** 1.092) / p14);
+		var fo = p1 * p2 * ((p3 * p4 + 0.1844) * fn * p15) ** 1.5763;
+		var ereoo = er - (er - quasiStatic.ereoo) / (1 + fo);
+
+		var q11 = 0.893 * (1 - 0.3 / (1 + 0.7 * (er - 1)));
+		var q12 = 2.121 * ((fn / 20) ** 4.91 / (1 + q11 * (fn / 20) ** 4.91)) * Math.exp(-2.87 * g) * g ** 0.902;
+		var q13 = 1 + 0.038 * (er / 8) ** 5.1;
+		var q14 = 1 + 1.203 * (er / 15) ** 4 / (1 + (er / 15) ** 4);
+		var q15 = 1.887 * Math.exp(-1.5 * g ** 0.84) * g ** q14 / (1 + 0.41 * (fn / 15) ** 3 * u ** (2 / q13) / (0.125 + u ** (1.626 / q13)));
+		var q16 = (1 + 9 / (1 + 0.403 * square$3(er - 1))) * q15;
+		var q17 = 0.394 * (1 - Math.exp(-1.47 * (u / 7) ** 0.672)) * (1 - Math.exp(-4.25 * (fn / 20) ** 1.87));
+		var q18 = 0.61 * (1 - Math.exp(-2.13 * (u / 8) ** 1.593)) / (1 + 6.544 * g ** 4.17);
+		var q19 = 0.21 * fourth$3(g) / ((1 + 0.18 * g ** 4.9) * (1 + 0.1 * square$3(u)) * (1 + (fn / 24) ** 3));
+		var q20 = (0.09 + 1 / (1 + 0.1 * (er - 1) ** 2.7)) * q19;
+		var q21 = Math.abs(1 - 42.54 * g ** 0.133 * Math.exp(-0.812 * g) * u ** 2.5 / (1 + 0.033 * u ** 2.5));
+		var re = (fn / 28.843) ** 12;
+		var qe = 0.016 + (0.0514 * er * q21) ** 4.524;
+		var pe = 4.766 * Math.exp(-3.228 * u ** 0.641);
+		var de = 5.086 * qe * (re / (0.3838 + 0.386 * qe)) * (Math.exp(-22.2 * u ** 1.92) / (1 + 1.2992 * re)) * ((er - 1) ** 6 / (1 + 10 * (er - 1) ** 6));
+		var ce = 1 + 1.275 * (1 - Math.exp(-4625e-6 * pe * er ** 1.674 * (fn / 18.365) ** 2.745)) - q12 + q16 - q17 + q18 + q20;
+
+		var r1 = 0.03891 * er ** 1.4;
+		var r2 = 0.267 * u ** 7;
+		var r7 = 1.206 - 0.3144 * Math.exp(-r1) * (1 - Math.exp(-r2));
+		var r10 = 0.00044 * er ** 2.136 + 0.0184;
+		var r11Base = (fn / 19.47) ** 6;
+		var r11 = r11Base / (1 + 0.0962 * r11Base);
+		var r12 = 1 / (1 + 0.00245 * square$3(u));
+		var r15 = 0.707 * r10 * (fn / 12.3) ** 1.097;
+		var r16 = 1 + 0.0503 * square$3(er) * r11 * (1 - Math.exp(-((u / 15) ** 6)));
+		var q0 = r7 * (1 - 1.1241 * (r12 / r16) * Math.exp(-0.026 * fn ** 1.15656 - r15));
+		var Zoe = quasiStatic.Zoe * ((0.9408 * singleDispersion.erEff ** ce - 0.9603) / ((0.9408 - de) * quasiStatic.single.erEff ** ce - 0.9603)) ** q0;
+
+		var q29 = 15.16 / (1 + 0.196 * square$3(er - 1));
+		var q28 = 0.149 * cube$3(er - 1) / (94.5 + 0.038 * cube$3(er - 1));
+		var q27 = 0.4 * g ** 0.84 * (1 + 2.5 * (er - 1) ** 1.5 / (5 + (er - 1) ** 1.5));
+		var q26 = 30 - 22.2 * (((er - 1) / 13) ** 12 / (1 + 3 * ((er - 1) / 13) ** 12)) - q29;
+		var q25 = 0.3 * square$3(fn) / (10 + square$3(fn)) * (1 + 2.333 * square$3(er - 1) / (5 + square$3(er - 1)));
+		var q24 = 2.506 * q28 * u ** 0.894 * ((1 + 1.3 * u) * fn / 99.25) ** 4.29 / (3.575 + u ** 0.894);
+		var q23 = 1 + 0.005 * fn * q27 / ((1 + 0.812 * (fn / 15) ** 1.9) * (1 + 0.025 * square$3(u)));
+		var q22 = 0.925 * (fn / q26) ** 1.536 / (1 + 0.3 * (fn / 30) ** 1.536);
+		var Zoo = singleDispersion.z0Frequency + (quasiStatic.Zoo * (ereoo / quasiStatic.ereoo) ** q22 - singleDispersion.z0Frequency * q23) / (1 + q24 + (0.46 * g) ** 2.2 * q25);
+
+		return {Zoe, Zoo, ereoe, ereoo};
+	};
+
+	var modeLosses = function (Width, Height, Thickness, Length, er, rho, tand, frequency, modeZ0, modeErEff, otherModeZ0, otherModeErEff, roughnessRms) {
+		var conductorDb = 0.0;
+		var dielectricDb = 0.0;
+
+		if (frequency > 0.0 && Width > 0.0 && Height > 0.0 && modeZ0 > 0.0 && modeErEff > 0.0) {
+			var z0Homogeneous = modeZ0 * Math.sqrt(modeErEff);
+			var otherZ0Homogeneous = otherModeZ0 * Math.sqrt(otherModeErEff);
+			var skinDepth = rho > 0.0 ? Math.sqrt(COPPER_RESISTIVITY * rho / (pi$6 * frequency * MU0)) : 0.0;
+
+			if (Thickness > 0.0 && rho > 0.0 && skinDepth > 0.0) {
+				var currentFactor = Math.exp(-1.2 * ((z0Homogeneous + otherZ0Homogeneous) / (2 * VACUUM_IMPEDANCE)) ** 0.7);
+				var surfaceResistance = Math.sqrt(pi$6 * frequency * MU0 * rho * COPPER_RESISTIVITY);
+				if (roughnessRms > 0.0) {
+					surfaceResistance *= 1 + (2 / pi$6) * Math.atan(1.4 * square$3(roughnessRms / skinDepth));
+				}
+				var conductorQ = pi$6 * z0Homogeneous * Width * frequency / (surfaceResistance * C0 * currentFactor);
+				conductorDb = (20 * pi$6 / Math.log(10)) * frequency * Math.sqrt(modeErEff) / (C0 * conductorQ) * Length;
+			}
+
+			if (tand > 0.0 && er > 1.0) {
+				dielectricDb = (20 * pi$6 / Math.log(10)) * (frequency / C0) * (er / Math.sqrt(modeErEff)) * ((modeErEff - 1) / (er - 1)) * tand * Length;
+			}
+		}
+
+		return {conductorDb, dielectricDb, alphaNepers: (conductorDb + dielectricDb) / 8.68588};
+	};
+
+	function mclin(input = {}) {
+		if (arguments.length > 1) throw new TypeError('nP.mclin() accepts one options object.');
+		var options = normalizePhysicalModelOptions('mclin', input, [
+				{name: 'fList', defaultValue: global.fList},
+				{name: 'width', aliases: ['Width'], defaultValue: 19.1155 * MIL_TO_METER},
+				{name: 'spacing', aliases: ['Space'], defaultValue: 5.82185 * MIL_TO_METER},
+				{name: 'height', aliases: ['Height'], defaultValue: 25 * MIL_TO_METER},
+				{name: 'length', aliases: ['Length'], defaultValue: 719.794 * MIL_TO_METER},
+				{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
+				{name: 'relativePermittivity', aliases: ['er'], defaultValue: 10},
+				{name: 'rho', defaultValue: 1}, {name: 'resistivity', defaultValue: undefined},
+				{name: 'lossTangent', aliases: ['tand'], defaultValue: 0.001},
+				{name: 'roughnessRms', defaultValue: 0}, {name: 'temperature', defaultValue: global.Temp}
+		]);
+		var Width = options.width, Space = options.spacing, Height = options.height, Length = options.length;
+		var Thickness = options.thickness, er = options.relativePermittivity;
+		var rho = resistivityScale('mclin', input, options.rho, COPPER_RESISTIVITY);
+		var tand = options.lossTangent, roughnessRms = options.roughnessRms, temperature = options.temperature;
+		requirePositive('mclin', 'width', Width); requirePositive('mclin', 'spacing', Space); requirePositive('mclin', 'height', Height);
+		requireNonnegative('mclin', 'length', Length); requireNonnegative('mclin', 'thickness', Thickness);
+		requirePositive('mclin', 'relativePermittivity', er); requireNonnegative('mclin', 'resistivity', rho * COPPER_RESISTIVITY);
+		requireNonnegative('mclin', 'lossTangent', tand); requireNonnegative('mclin', 'roughnessRms', roughnessRms); requireNonnegative('mclin', 'temperature', temperature);
+		var ctlin = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var Zo = complex(Ro, 0), two = complex(2, 0), freqCount = 0, Zoemclin = [], Zoomclin = [];
+		var s11oe, s12oe, s21oe, s22oe;
+		var s11oo, s12oo, s21oo, s22oo;
+		var s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44;
+		var sparsArray = [], noiseArray = [];
+		var Aoe = {}, Boe = {}, Coe = {}, Dsoe = {};
+		var Aoo = {}, Boo = {}, Coo = {}, Dsoo = {};
+		var alphaOe = 0, alphaOo = 0, betaOe = 0, betaOo = 0, gammaOe = {}, gammaOo = {};
+
+		// Kirschning/Jansen equal-width coupled microstrip model, using Qucs as
+		// a cross-check and the published equation family as the implementation basis.
+		var quasiStatic = quasiStaticCoupledLine(Width, Space, Height, Thickness, er);
+		var dispersion = [];
+
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			var frequency = frequencyList[freqCount];
+			var mode = dispersiveCoupledLine(quasiStatic, Width, Space, Height, er, frequency);
+			var evenLoss = modeLosses(Width, Height, Thickness, Length, er, rho, tand, frequency, mode.Zoe, mode.ereoe, mode.Zoo, mode.ereoo, roughnessRms);
+			var oddLoss = modeLosses(Width, Height, Thickness, Length, er, rho, tand, frequency, mode.Zoo, mode.ereoo, mode.Zoe, mode.ereoe, roughnessRms);
+
+			alphaOe = evenLoss.alphaNepers;
+			alphaOo = oddLoss.alphaNepers;
+			betaOe = Math.sqrt(mode.ereoe) * 2 * pi$6 * frequency / C0;
+			betaOo = Math.sqrt(mode.ereoo) * 2 * pi$6 * frequency / C0;
+			gammaOe = complex(alphaOe, betaOe * Length);
+			gammaOo = complex(alphaOo, betaOo * Length);
+			dispersion[freqCount] = {
+				frequency,
+				Zoe: mode.Zoe,
+				Zoo: mode.Zoo,
+				ereoe: mode.ereoe,
+				ereoo: mode.ereoo,
+				evenConductorLossDb: evenLoss.conductorDb,
+				oddConductorLossDb: oddLoss.conductorDb,
+				evenDielectricLossDb: evenLoss.dielectricDb,
+				oddDielectricLossDb: oddLoss.dielectricDb
+			};
+
+			// Even-mode two-port section.
+			Zoemclin = complex(mode.Zoe, 0);
+
+			Aoe = Zoemclin.mul(Zoemclin).sub(Zo.mul(Zo));
+			Boe = Zoemclin.mul(Zoemclin).add(Zo.mul(Zo));
+			Coe = two.mul(Zoemclin).mul(Zo);
+
+			Dsoe = Coe.mul(gammaOe.coshCplx()).add(Boe.mul(gammaOe.sinhCplx()));
+
+			s11oe = Aoe.mul(gammaOe.sinhCplx()).div(Dsoe);
+			s12oe = Coe.div(Dsoe);
+			s21oe = s12oe;
+			s22oe = s11oe;
+
+			// Odd-mode two-port section.
+			Zoomclin = complex(mode.Zoo, 0);
+
+			Aoo = Zoomclin.mul(Zoomclin).sub(Zo.mul(Zo));
+			Boo = Zoomclin.mul(Zoomclin).add(Zo.mul(Zo));
+			Coo = two.mul(Zoomclin).mul(Zo);
+
+			Dsoo = Coo.mul(gammaOo.coshCplx()).add(Boo.mul(gammaOo.sinhCplx()));
+
+			s11oo = Aoo.mul(gammaOo.sinhCplx()).div(Dsoo);
+			s12oo = Coo.div(Dsoo);
+			s21oo = s12oo;
+			s22oo = s11oo;
+
+			s44 = s11 = (s11oe.add(s11oo)).mul(complex(0.5, 0));
+			s33 = s22 = (s22oe.add(s22oo)).mul(complex(0.5, 0));
+			s34 = s21 = (s21oe.add(s21oo)).mul(complex(0.5, 0));
+			s43 = s12 = (s12oe.add(s12oo)).mul(complex(0.5, 0));
+			s13 = s42 = (s12oe.sub(s12oo)).mul(complex(0.5, 0));
+			s31 = s24 = (s21oe.sub(s21oo)).mul(complex(0.5, 0));
+			s14 = s41 = (s11oe.sub(s11oo)).mul(complex(0.5, 0));
+			s23 = s32 = (s22oe.sub(s22oo)).mul(complex(0.5, 0));
+
+			sparsArray[freqCount] = [frequencyList[freqCount], s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44];
+			noiseArray[freqCount] = {frequency: frequencyList[freqCount], C: passiveNoiseCovariance(sparsArray[freqCount], 4, temperature)};
+		}
+
+		ctlin.setspars(sparsArray);
+		ctlin.noise = noiseArray;
+		ctlin.setglobal(settings);
+		var firstDispersion = dispersion.find(function (point) {
+			return point.frequency === settings.fList[0];
+		}) || {Zoe: quasiStatic.Zoe, Zoo: quasiStatic.Zoo, ereoe: quasiStatic.ereoe, ereoo: quasiStatic.ereoo};
+		ctlin.microstrip = {
+			Width,
+			Space,
+			Height,
+			Thickness,
+			Length,
+			er,
+			rho,
+			tand,
+			roughnessRms,
+			Zoe: firstDispersion.Zoe,
+			Zoo: firstDispersion.Zoo,
+			ereoe: firstDispersion.ereoe,
+			ereoo: firstDispersion.ereoo,
+			ZoeQuasiStatic: quasiStatic.Zoe,
+			ZooQuasiStatic: quasiStatic.Zoo,
+			ereoeQuasiStatic: quasiStatic.ereoe,
+			ereooQuasiStatic: quasiStatic.ereoo,
+			dispersion
+		};
+		ctlin.physicalModel = physicalModelMetadata('microstrip', 'coupled-line', {
+			width: Width, spacing: Space, height: Height, thickness: Thickness, length: Length
+		}, {
+			relativePermittivity: er, resistivity: rho * COPPER_RESISTIVITY,
+			lossTangent: tand, roughnessRms
+		}, dispersion);
+		ctlin._schematic = schematicPart('mclin');
+		return ctlin;
+	}
+
+	// Modified: 2026-10-28
+
+	var pi$5 = Math.PI;
+	var DEFAULT_WIDTH = 0.023 * INCH_TO_METER;
+	var DEFAULT_HEIGHT = 0.025 * INCH_TO_METER;
+	var DEFAULT_THICKNESS = 0.0000125 * INCH_TO_METER;
+
+	var square$2 = function (x) { return x * x; };
+	var cube$2 = function (x) { return x * x * x; };
+	var fourth$2 = function (x) { return x * x * x * x; };
+
+	var hammerstadAB$2 = function (u, er) {
+		var u2 = square$2(u);
+		var u3 = cube$2(u);
+		var u4 = fourth$2(u);
+		var a = 1 + Math.log((u4 + u2 / 2704) / (u4 + 0.432)) / 49 + Math.log(1 + u3 / 5929.741) / 18.7;
+		var b = 0.564 * ((er - 0.9) / (er + 3)) ** 0.053;
+		return {a, b};
+	};
+
+	var hammerstadEr$2 = function (u, er) {
+		var ab = hammerstadAB$2(u, er);
+		return (er + 1) / 2 + (er - 1) / 2 * (1 + 10 / u) ** (-ab.a * ab.b);
+	};
+
+	var homogeneousZ0$2 = function (u) {
+		var f = 6 + (2 * pi$5 - 6) * Math.exp(-((30.666 / u) ** 0.7528));
+		return (VACUUM_IMPEDANCE / (2 * pi$5)) * Math.log(f / u + Math.sqrt(1 + 4 / square$2(u)));
+	};
+
+	var deltaUThicknessSingle$2 = function (u, thicknessOverHeight) {
+		if (thicknessOverHeight <= 0.0) {
+			return 0.0;
+		}
+
+		return (1.25 * thicknessOverHeight / pi$5) *
+			(1 + Math.log((2 + (4 * pi$5 * u - 2) / (1 + Math.exp(-100 * (u - 1 / (2 * pi$5))))) / thicknessOverHeight));
+	};
+
+	var microstripLine$2 = function (width, Height, Thickness, er) {
+		// Arm baseline follows Hammerstad/Jensen-style single microstrip equations.
+		var u = width / Height;
+		var effectiveU = u + deltaUThicknessSingle$2(u, Thickness / Height);
+		var ere = hammerstadEr$2(effectiveU, er);
+		var Z = homogeneousZ0$2(effectiveU) / Math.sqrt(ere);
+
+		return {
+			width: width,
+			u: u,
+			effectiveU: effectiveU,
+			ere: ere,
+			Z: Z,
+			D: VACUUM_IMPEDANCE / Math.sqrt(ere) * Height / Z,
+			fp: 4e5 * Z / Height
+		};
+	};
+
+	function mtee(input = {}) { // microstrip tee nPort object
+		if (arguments.length > 1) throw new TypeError('nP.mtee() accepts one options object.');
+		var options = normalizePhysicalModelOptions('mtee', input, [
+				{name: 'fList', defaultValue: global.fList},
+				{name: 'commonWidth', defaultValue: DEFAULT_WIDTH},
+				{name: 'branch1Width', defaultValue: DEFAULT_WIDTH},
+				{name: 'branch2Width', defaultValue: DEFAULT_WIDTH},
+				{name: 'height', aliases: ['Height'], defaultValue: DEFAULT_HEIGHT},
+				{name: 'thickness', aliases: ['Thickness'], defaultValue: DEFAULT_THICKNESS},
+				{name: 'relativePermittivity', aliases: ['er'], defaultValue: 10},
+				{name: 'rho', defaultValue: 1}, {name: 'resistivity', defaultValue: undefined},
+				{name: 'lossTangent', aliases: ['tand'], defaultValue: 0.001},
+				{name: 'roughnessRms', defaultValue: 0}, {name: 'temperature', defaultValue: global.Temp}
+		]);
+		var commonWidth = options.commonWidth, branch1Width = options.branch1Width, branch2Width = options.branch2Width;
+		var Height = options.height, Thickness = options.thickness, er = options.relativePermittivity;
+		var rho = resistivityScale('mtee', input, options.rho, COPPER_RESISTIVITY);
+		var tand = options.lossTangent, roughnessRms = options.roughnessRms, temperature = options.temperature;
+		requirePositive('mtee', 'commonWidth', commonWidth); requirePositive('mtee', 'branch1Width', branch1Width);
+		requirePositive('mtee', 'branch2Width', branch2Width); requirePositive('mtee', 'height', Height);
+		requireNonnegative('mtee', 'thickness', Thickness); requirePositive('mtee', 'relativePermittivity', er);
+		requireNonnegative('mtee', 'resistivity', rho * COPPER_RESISTIVITY); requireNonnegative('mtee', 'lossTangent', tand);
+		requireNonnegative('mtee', 'roughnessRms', roughnessRms); requireNonnegative('mtee', 'temperature', temperature);
+		var mtee = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var freqCount = 0, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [], noiseArray = [];
+		var WidthA = branch1Width, WidthB = branch2Width, WidthSide = commonWidth;
+		var analysis = [];
+
+		var armA = microstripLine$2(WidthA, Height, Thickness, er);
+		var armB = microstripLine$2(WidthB, Height, Thickness, er);
+		var armSide = microstripLine$2(WidthSide, Height, Thickness, er);
+		
+		
+		for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			// QUCS technical manual, Microstrip tee junction, eqs. 11.207 through 11.224.
+			var freq = frequencyList[freqCount];
+			var lambdaA = C0 / (Math.sqrt(armA.ere) * freq);
+			var lambdaB = C0 / (Math.sqrt(armB.ere) * freq);
+			var R = Math.sqrt(armA.Z * armB.Z) / armSide.Z;
+			var Q = freq ** 2 / (armA.fp * armB.fp);
+			var da = 0.055 * armSide.D * armA.Z / armSide.Z * (1 - 2 * armA.Z / armSide.Z * (freq / armA.fp) ** 2);
+			var db = 0.055 * armSide.D * armB.Z / armSide.Z * (1 - 2 * armB.Z / armSide.Z * (freq / armB.fp) ** 2);
+			var d2 = Math.sqrt(armA.D * armB.D) * (0.5 - R * (0.05 + 0.7 * Math.exp(-1.6 * R) + 0.25 * R * Q - 0.17 * Math.log(R)));
+			var Ta2 = 1 - pi$5 * (freq / armA.fp) ** 2 * ((1 / 12) * (armA.Z / armSide.Z) ** 2 + (0.5 - d2 / armA.D) ** 2);
+			var Tb2 = 1 - pi$5 * (freq / armB.fp) ** 2 * ((1 / 12) * (armB.Z / armSide.Z) ** 2 + (0.5 - d2 / armB.D) ** 2);
+			var na = Math.sqrt(Math.max(Ta2, 1e-6));
+			var nb = Math.sqrt(Math.max(Tb2, 1e-6));
+			var BT = 5.5 * Math.sqrt((armA.D * armB.D) / (lambdaA * lambdaB)) * ((er + 2) / er) * (1 / (armSide.Z * na * nb)) * (Math.sqrt(Math.max(da * db, 0)) / armSide.D) * (1 + 0.9 * Math.log(R) + 4.5 * R * Q - 4.4 * Math.exp(-1.3 * R) - 20 * (armSide.Z / VACUUM_IMPEDANCE) ** 2);
+			var jBTZ0 = complex(0, BT * Ro);
+			var one = complex(1, 0);
+
+			var Saa = one.sub(complex(na ** 2, 0).mul(jBTZ0.add(complex(1 / nb ** 2 + 1, 0)))).div(one.add(complex(na ** 2, 0).mul(jBTZ0.add(complex(1 / nb ** 2 + 1, 0)))));
+			var Sbb = one.sub(complex(nb ** 2, 0).mul(jBTZ0.add(complex(1 / na ** 2 + 1, 0)))).div(one.add(complex(nb ** 2, 0).mul(jBTZ0.add(complex(1 / na ** 2 + 1, 0)))));
+			var Scc = one.sub(jBTZ0.add(complex(1 / na ** 2 + 1 / nb ** 2, 0))).div(one.add(jBTZ0.add(complex(1 / na ** 2 + 1 / nb ** 2, 0))));
+			var Sac = complex(2 * na, 0).div(complex(na ** 2, 0).mul(jBTZ0.add(complex(1 / nb ** 2 + 1, 0))).add(one));
+			var Sca = Sac;
+			var Sbc = complex(2 * nb, 0).div(complex(nb ** 2, 0).mul(jBTZ0.add(complex(1 / na ** 2 + 1, 0))).add(one));
+			var Scb = Sbc;
+			var Sab = complex(2, 0).div(complex(na * nb, 0).mul(jBTZ0.add(one)).add(complex(na / nb + nb / na, 0)));
+			var Sba = Sab;
+
+			// Hammerstad order is [branch1, branch2, common]. nP Tee order is [common, branch1, branch2].
+			s11 = Scc;
+			s12 = Sca;
+			s13 = Scb;
+			s21 = Sac;
+			s22 = Saa;
+			s23 = Sab;
+			s31 = Sbc;
+			s32 = Sba;
+			s33 = Sbb;
+			sparsArray[freqCount] = [frequencyList[freqCount], s11, s12, s13, s21, s22, s23, s31, s32, s33];
+			noiseArray[freqCount] = {frequency: frequencyList[freqCount], C: passiveNoiseCovariance(sparsArray[freqCount], 3, temperature)};
+			analysis[freqCount] = {
+				frequency: freq,
+				R: R,
+				Q: Q,
+				da: da,
+				db: db,
+				d2: d2,
+				Ta2: Ta2,
+				Tb2: Tb2,
+				na: na,
+				nb: nb,
+				BT: BT
+			};
+		}	
+		mtee.setspars(sparsArray);
+		mtee.noise = noiseArray;
+		mtee.setglobal(settings);
+		mtee.Ct = (100 / Math.tanh(0.0072 * armSide.Z) + 0.64 * armSide.Z - 261) * WidthSide * 1e-12;
+		mtee.microstrip = {
+			commonWidth,
+			branch1Width,
+			branch2Width,
+			Height,
+			Thickness,
+			er,
+			rho,
+			tand,
+			roughnessRms,
+			commonArm: armSide,
+			branch1Arm: armA,
+			branch2Arm: armB,
+			Ct: mtee.Ct,
+			source: 'QUCS microstrip tee equations 11.207 through 11.224; Edwards/Steer section 9.6.1 captures the same T-junction equivalent-circuit family, reference-plane shifts, transformer ratio, and shunt capacitance limits.',
+			validity: {
+				modelFamily: 'Hammerstad/Bekkadal-style tee reference-plane and transformer model as presented by QUCS and discussed by Edwards/Steer section 9.6.1',
+				limitations: 'Edwards/Steer note no quoted accuracy for tee shunt-capacitance expressions and increasing discrepancy when 2 * effectiveWidth / guidedWavelength > 0.3 or impedance ratio exceeds about 2.'
+			},
+			analysis
+		};
+		mtee.physicalModel = physicalModelMetadata('microstrip', 'tee-junction', {
+			commonWidth, branch1Width, branch2Width, height: Height, thickness: Thickness
+		}, {
+			relativePermittivity: er, resistivity: rho * COPPER_RESISTIVITY,
+			lossTangent: tand, roughnessRms
+		}, analysis, {sources: [mtee.microstrip.source], validity: mtee.microstrip.validity});
+		mtee._schematic = schematicPart('mtee');
+		return mtee;
+	}
+
+	// Modified: 2026-10-28
+
+	var pi$4 = Math.PI;
+
+	var square$1 = function (x) { return x * x; };
+	var cube$1 = function (x) { return x * x * x; };
+	var fourth$1 = function (x) { return x * x * x * x; };
+
+	var hammerstadAB$1 = function (u, er) {
+		var u2 = square$1(u);
+		var u3 = cube$1(u);
+		var u4 = fourth$1(u);
+		var a = 1 + Math.log((u4 + u2 / 2704) / (u4 + 0.432)) / 49 + Math.log(1 + u3 / 5929.741) / 18.7;
+		var b = 0.564 * ((er - 0.9) / (er + 3)) ** 0.053;
+		return {a, b};
+	};
+
+	var hammerstadEr$1 = function (u, er) {
+		var ab = hammerstadAB$1(u, er);
+		return (er + 1) / 2 + (er - 1) / 2 * (1 + 10 / u) ** (-ab.a * ab.b);
+	};
+
+	var homogeneousZ0$1 = function (u) {
+		var f = 6 + (2 * pi$4 - 6) * Math.exp(-((30.666 / u) ** 0.7528));
+		return (VACUUM_IMPEDANCE / (2 * pi$4)) * Math.log(f / u + Math.sqrt(1 + 4 / square$1(u)));
+	};
+
+	var deltaUThicknessSingle$1 = function (u, thicknessOverHeight) {
+		if (thicknessOverHeight <= 0.0) {
+			return 0.0;
+		}
+
+		return (1.25 * thicknessOverHeight / pi$4) *
+			(1 + Math.log((2 + (4 * pi$4 * u - 2) / (1 + Math.exp(-100 * (u - 1 / (2 * pi$4))))) / thicknessOverHeight));
+	};
+
+	var microstripLine$1 = function (width, Height, Thickness, er) {
+		var u = width / Height;
+		var effectiveU = u + deltaUThicknessSingle$1(u, Thickness / Height);
+		var ere = hammerstadEr$1(effectiveU, er);
+		var Z = homogeneousZ0$1(effectiveU) / Math.sqrt(ere);
+
+		return {
+			width: width,
+			u: u,
+			effectiveU: effectiveU,
+			ere: ere,
+			Z: Z,
+			D: VACUUM_IMPEDANCE / Math.sqrt(ere) * Height / Z,
+			fp: 4e5 * Z / Height
+		};
+	};
+
+	var emptyCplxMatrix = function (size) {
+		var out = dim(size, size, complex(0, 0));
+		for (var row = 0; row < size; row++) {
+			for (var col = 0; col < size; col++) {
+				out[row][col] = complex(0, 0);
+			}
+		}
+		return out;
+	};
+
+	var stampAdmittance = function (Y, nodeA, nodeB, admittance) {
+		if (nodeB === null) {
+			Y[nodeA][nodeA] = Y[nodeA][nodeA].add(admittance);
+			return;
+		}
+
+		Y[nodeA][nodeA] = Y[nodeA][nodeA].add(admittance);
+		Y[nodeB][nodeB] = Y[nodeB][nodeB].add(admittance);
+		Y[nodeA][nodeB] = Y[nodeA][nodeB].sub(admittance);
+		Y[nodeB][nodeA] = Y[nodeB][nodeA].sub(admittance);
+	};
+
+	var subMatrix = function (source, rows, cols) {
+		var out = dim(rows.length, cols.length, complex(0, 0));
+		for (var row = 0; row < rows.length; row++) {
+			for (var col = 0; col < cols.length; col++) {
+				out[row][col] = source[rows[row]][cols[col]];
+			}
+		}
+		return matrix(out);
+	};
+
+	var reducedExternalY = function (Y) {
+		var ports = [0, 1, 2, 3];
+		var internal = [4, 5];
+		var Ypp = subMatrix(Y, ports, ports);
+		var Ypi = subMatrix(Y, ports, internal);
+		var Yip = subMatrix(Y, internal, ports);
+		var Yii = subMatrix(Y, internal, internal);
+		return Ypp.subCplx(Ypi.mulCplx(Yii.invertCplx()).mulCplx(Yip));
+	};
+
+	var identityCplx$2 = function (size) {
+		var out = dim(size, size, complex(0, 0));
+		for (var row = 0; row < size; row++) {
+			for (var col = 0; col < size; col++) {
+				out[row][col] = row === col ? complex(1, 0) : complex(0, 0);
+			}
+		}
+		return matrix(out);
+	};
+
+	var yToS = function (Y, Ro) {
+		var size = Y.m.length;
+		var I = identityCplx$2(size);
+		var normalizedY = dim(size, size, complex(0, 0));
+		for (var row = 0; row < size; row++) {
+			for (var col = 0; col < size; col++) {
+				normalizedY[row][col] = Y.m[row][col].mul(complex(Ro, 0));
+			}
+		}
+		var y = matrix(normalizedY);
+		return I.subCplx(y).mulCplx(I.addCplx(y).invertCplx());
+	};
+
+	var crossCapacitanceBase = function (width, crossingWidth, Height) {
+		// QUCS technical manual, Microstrip cross, eqs. 11.226 and 11.227.
+		var widthOverHeight = width / Height;
+		var crossingOverHeight = crossingWidth / Height;
+		var X = Math.log10(widthOverHeight) *
+			(86.6 * crossingOverHeight - 30.9 * Math.sqrt(crossingOverHeight) + 367) +
+			cube$1(crossingOverHeight) + 74 * crossingOverHeight + 130;
+		return 1e-12 * width *
+			(0.25 * X * widthOverHeight ** (-1 / 3) - 60 +
+			1 / (2 * crossingOverHeight) -
+			0.375 * widthOverHeight * (1 - crossingOverHeight));
+	};
+
+	var capCorrection = function (width, Height, Thickness, er) {
+		// QUCS technical manual, Microstrip cross, eq. 11.231.
+		var reference = microstripLine$1(width, Height, Thickness, 9.9);
+		var actual = microstripLine$1(width, Height, Thickness, er);
+		return reference.Z / actual.Z * Math.sqrt(actual.ere / reference.ere);
+	};
+
+	var armCapacitance = function (width, crossingWidth, Height, Thickness, er) {
+		return crossCapacitanceBase(width, crossingWidth, Height) *
+			capCorrection(width, Height, Thickness, er);
+	};
+
+	var armInductance = function (width, crossingWidth, Height) {
+		// QUCS technical manual, Microstrip cross, eqs. 11.228 and 11.229.
+		var widthOverHeight = width / Height;
+		var crossingOverHeight = crossingWidth / Height;
+		var Y = 165.6 * crossingOverHeight + 31.2 * Math.sqrt(crossingOverHeight) - 11.8 * square$1(crossingOverHeight);
+		return 1e-9 * Height *
+			(Y * widthOverHeight - 32 * crossingOverHeight + 3) *
+			widthOverHeight ** -1.5;
+	};
+
+	var centerInductance = function (horizontalWidth, verticalWidth, Height) {
+		// QUCS technical manual, Microstrip cross, eq. 11.230 with the 0.8 correction noted there.
+		var horizontalOverHeight = horizontalWidth / Height;
+		var verticalOverHeight = verticalWidth / Height;
+		var L = 1e-9 * Height *
+			(5 * verticalOverHeight * Math.cos(pi$4 / 2 * (1.5 - horizontalOverHeight)) -
+			(1 + 7 / horizontalOverHeight) / verticalOverHeight -
+			337.5);
+		return 0.8 * L;
+	};
+
+	function mcross(input = {}) {
+		var options = normalizePhysicalModelOptions('mcross', input, [
+			{name: 'fList', defaultValue: global.fList},
+			{name: 'leftWidth', defaultValue: 0.023 * INCH_TO_METER}, {name: 'topWidth', defaultValue: 0.023 * INCH_TO_METER},
+			{name: 'rightWidth', defaultValue: 0.023 * INCH_TO_METER}, {name: 'bottomWidth', defaultValue: 0.023 * INCH_TO_METER},
+			{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
+			{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
+			{name: 'relativePermittivity', aliases: ['er'], defaultValue: 10},
+			{name: 'rho', defaultValue: 1}, {name: 'resistivity', defaultValue: undefined},
+			{name: 'lossTangent', aliases: ['tand'], defaultValue: 0.001}, {name: 'roughnessRms', defaultValue: 0}
+		]);
+		var leftWidth = options.leftWidth, topWidth = options.topWidth, rightWidth = options.rightWidth, bottomWidth = options.bottomWidth;
+		var Height = options.height, Thickness = options.thickness, er = options.relativePermittivity;
+		var rho = resistivityScale('mcross', input, options.rho, COPPER_RESISTIVITY), tand = options.lossTangent, roughnessRms = options.roughnessRms;
+		[leftWidth, topWidth, rightWidth, bottomWidth].forEach(function (value, index) {
+			requirePositive('mcross', ['leftWidth', 'topWidth', 'rightWidth', 'bottomWidth'][index], value);
+		});
+		requirePositive('mcross', 'height', Height); requireNonnegative('mcross', 'thickness', Thickness); requirePositive('mcross', 'relativePermittivity', er);
+		requireNonnegative('mcross', 'resistivity', rho * COPPER_RESISTIVITY); requireNonnegative('mcross', 'lossTangent', tand); requireNonnegative('mcross', 'roughnessRms', roughnessRms);
+		var cross = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var widths = [leftWidth, topWidth, rightWidth, bottomWidth];
+		var arms = widths.map(function (width) { return microstripLine$1(width, Height, Thickness, er); });
+		var sparsArray = [];
+		var analysis = [];
+		var horizontalWidth = 0.5 * (leftWidth + rightWidth);
+		var verticalWidth = 0.5 * (topWidth + bottomWidth);
+		var armCaps = [
+			armCapacitance(leftWidth, verticalWidth, Height, Thickness, er),
+			armCapacitance(topWidth, horizontalWidth, Height, Thickness, er),
+			armCapacitance(rightWidth, verticalWidth, Height, Thickness, er),
+			armCapacitance(bottomWidth, horizontalWidth, Height, Thickness, er)
+		];
+		var armInds = [
+			armInductance(leftWidth, verticalWidth, Height),
+			armInductance(topWidth, horizontalWidth, Height),
+			armInductance(rightWidth, verticalWidth, Height),
+			armInductance(bottomWidth, horizontalWidth, Height)
+		];
+		var Lcenter = centerInductance(horizontalWidth, verticalWidth, Height);
+		var Ct = armCaps.reduce(function (sum, cap) { return sum + cap; }, 0);
+
+		for (var freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			var freq = frequencyList[freqCount];
+			var omega = 2 * pi$4 * freq;
+			var maxNormalizedParasitic = Math.max(
+				...armInds.map(function (L) { return Math.abs(omega * L / Ro); }),
+				Math.abs(omega * Lcenter / Ro),
+				...armCaps.map(function (C) { return Math.abs(omega * C * Ro); })
+			);
+			// The nodal admittance reduction loses precision as 1/(omega L) grows.
+			// Use the junction limit while every parasitic effect is below 1 ppm.
+			if (maxNormalizedParasitic < 1e-6) {
+				var dcRow = [freq];
+				for (var dcPort = 0; dcPort < 4; dcPort++) {
+					for (var otherPort = 0; otherPort < 4; otherPort++) {
+						dcRow.push(complex(dcPort === otherPort ? -0.5 : 0.5, 0));
+					}
+				}
+				sparsArray[freqCount] = dcRow;
+				analysis[freqCount] = {frequency: freq, armCaps: armCaps.slice(),
+					armInds: armInds.slice(), Lcenter: Lcenter, Ct: Ct, Y: null};
+				continue;
+			}
+			var Y = emptyCplxMatrix(6);
+
+			stampAdmittance(Y, 0, 4, complex(0, -1 / (omega * armInds[0])));
+			stampAdmittance(Y, 1, 5, complex(0, -1 / (omega * armInds[1])));
+			stampAdmittance(Y, 2, 4, complex(0, -1 / (omega * armInds[2])));
+			stampAdmittance(Y, 3, 5, complex(0, -1 / (omega * armInds[3])));
+			stampAdmittance(Y, 4, 5, complex(0, -1 / (omega * Lcenter)));
+
+			for (var i = 0; i < arms.length; i++) {
+				stampAdmittance(Y, i, null, complex(0, omega * armCaps[i]));
+			}
+
+			var externalY = reducedExternalY(Y);
+			var S = yToS(externalY, Ro);
+			var row = [freq];
+			for (var sRow = 0; sRow < 4; sRow++) {
+				for (var sCol = 0; sCol < 4; sCol++) {
+					row.push(S.m[sRow][sCol]);
+				}
+			}
+
+			sparsArray[freqCount] = row;
+			analysis[freqCount] = {
+				frequency: freq,
+				armCaps: armCaps.slice(),
+				armInds: armInds.slice(),
+				Lcenter: Lcenter,
+				Ct: Ct,
+				Y: externalY.m
+			};
+		}
+
+		cross.setspars(sparsArray);
+		cross.setglobal(settings);
+		cross.Ct = Ct;
+		cross.microstrip = {
+			leftWidth,
+			topWidth,
+			rightWidth,
+			bottomWidth,
+			Height,
+			Thickness,
+			er,
+			rho,
+			tand,
+			roughnessRms,
+			leftArm: arms[0],
+			topArm: arms[1],
+			rightArm: arms[2],
+			bottomArm: arms[3],
+			armCaps,
+			armInds,
+			Lcenter,
+			Ct,
+			source: 'QUCS microstrip cross equations 11.226 through 11.231; Edwards/Steer section 9.6.3 captures cross-junction equivalent-circuit shape and warns that theory/experiment agreement is weak, especially for inductance parameters.',
+			validity: {
+				modelFamily: 'First-order cross-junction equivalent circuit with arm capacitances, arm inductances, and center inductance.',
+				limitations: 'Edwards/Steer describe practical asymmetric crosses as important and note weak theory/experiment agreement. Treat asymmetric width behavior as engineering approximation until benchmarked.'
+			},
+			analysis
+		};
+		cross.physicalModel = physicalModelMetadata('microstrip', 'cross-junction', {
+			leftWidth, topWidth, rightWidth, bottomWidth, height: Height, thickness: Thickness
+		}, {relativePermittivity: er, resistivity: rho * COPPER_RESISTIVITY, lossTangent: tand, roughnessRms}, analysis,
+		{sources: [cross.microstrip.source], validity: cross.microstrip.validity});
+		cross._schematic = schematicPart('mcross', {labelPrefix: 'mcross'});
+		return cross;
+	}
+
+	// Modified: 2026-10-28
+
+	var pi$3 = Math.PI;
+
+	var square = function (x) { return x * x; };
+	var cube = function (x) { return x * x * x; };
+	var fourth = function (x) { return x * x * x * x; };
+
+	var hammerstadAB = function (u, er) {
+		var u2 = square(u);
+		var u3 = cube(u);
+		var u4 = fourth(u);
+		var a = 1 + Math.log((u4 + u2 / 2704) / (u4 + 0.432)) / 49 + Math.log(1 + u3 / 5929.741) / 18.7;
+		var b = 0.564 * ((er - 0.9) / (er + 3)) ** 0.053;
+		return {a, b};
+	};
+
+	var hammerstadEr = function (u, er) {
+		var ab = hammerstadAB(u, er);
+		return (er + 1) / 2 + (er - 1) / 2 * (1 + 10 / u) ** (-ab.a * ab.b);
+	};
+
+	var homogeneousZ0 = function (u) {
+		var f = 6 + (2 * pi$3 - 6) * Math.exp(-((30.666 / u) ** 0.7528));
+		return (VACUUM_IMPEDANCE / (2 * pi$3)) * Math.log(f / u + Math.sqrt(1 + 4 / square(u)));
+	};
+
+	var deltaUThicknessSingle = function (u, thicknessOverHeight) {
+		if (thicknessOverHeight <= 0.0) {
+			return 0.0;
+		}
+
+		return (1.25 * thicknessOverHeight / pi$3) *
+			(1 + Math.log((2 + (4 * pi$3 * u - 2) / (1 + Math.exp(-100 * (u - 1 / (2 * pi$3))))) / thicknessOverHeight));
+	};
+
+	var microstripLine = function (width, Height, Thickness, er) {
+		var u = width / Height;
+		var effectiveU = u + deltaUThicknessSingle(u, Thickness / Height);
+		var ere = hammerstadEr(effectiveU, er);
+		var Z = homogeneousZ0(effectiveU) / Math.sqrt(ere);
+
+		return {
+			width: width,
+			u: u,
+			effectiveU: effectiveU,
+			ere: ere,
+			Z: Z,
+			lineInductancePerMeter: Z * Math.sqrt(ere) / C0
+		};
+	};
+
+	var identityCplx$1 = function (size) {
+		var out = dim(size, size, complex(0, 0));
+		for (var row = 0; row < size; row++) {
+			for (var col = 0; col < size; col++) {
+				out[row][col] = row === col ? complex(1, 0) : complex(0, 0);
+			}
+		}
+		return matrix(out);
+	};
+
+	var zToS$1 = function (Z, Ro) {
+		var size = Z.m.length;
+		var I = identityCplx$1(size);
+		var normalizedZ = dim(size, size, complex(0, 0));
+		for (var row = 0; row < size; row++) {
+			for (var col = 0; col < size; col++) {
+				normalizedZ[row][col] = Z.m[row][col].div(complex(Ro, 0));
+			}
+		}
+		var z = matrix(normalizedZ);
+		return z.subCplx(I).mulCplx(z.addCplx(I).invertCplx());
+	};
+
+	var stepCapacitance = function (wideWidth, narrowWidth, er) {
+		var ratio = wideWidth / narrowWidth;
+		var capacitancePerRootWidth;
+		var equation;
+		var validity;
+
+		if (Math.abs(er - 9.6) < 1e-12 && ratio >= 3.5 && ratio <= 10) {
+			// Edwards/Steer, Foundations for Microstrip Circuit Design, eq. 9.33.
+			capacitancePerRootWidth = 130 * Math.log10(ratio) - 44;
+			equation = 'Edwards/Steer 9.33, Garg/Bahl large step capacitance';
+			validity = 'er = 9.6, 3.5 <= max(width1,width2) / min(width1,width2) <= 10';
+		} else {
+			// Edwards/Steer, Foundations for Microstrip Circuit Design, eq. 9.32.
+			// Also matches QUCS technical manual, Microstrip impedance step, eq. 11.202.
+			var logEr = Math.log10(er);
+			capacitancePerRootWidth = (10.1 * logEr + 2.33) * ratio - 12.6 * logEr - 3.17;
+			equation = 'Edwards/Steer 9.32, Garg/Bahl slight step capacitance';
+			validity = 'er <= 10, 1.5 <= max(width1,width2) / min(width1,width2) <= 3.5';
+		}
+
+		return {
+			valuePf: Math.sqrt(wideWidth * narrowWidth) * capacitancePerRootWidth,
+			capacitancePerRootWidth,
+			equation,
+			validity
+		};
+	};
+
+	var stepInductanceNh = function (wideWidth, narrowWidth, Height) {
+		// Edwards/Steer, Foundations for Microstrip Circuit Design, eq. 9.34.
+		// Also matches QUCS technical manual, Microstrip impedance step, eq. 11.206.
+		var ratio = wideWidth / narrowWidth;
+		var ratioMinusOne = ratio - 1;
+		return Height * (ratioMinusOne * (40.5 + 0.2 * ratioMinusOne) - 75 * Math.log10(ratio));
+	};
+
+	function mstep(input = {}) {
+		var options = normalizePhysicalModelOptions('mstep', input, [
+			{name: 'fList', defaultValue: global.fList},
+			{name: 'inputWidth', aliases: ['width1'], defaultValue: 0.046 * INCH_TO_METER},
+			{name: 'outputWidth', aliases: ['width2'], defaultValue: 0.023 * INCH_TO_METER},
+			{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
+			{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
+			{name: 'relativePermittivity', aliases: ['er'], defaultValue: 10},
+			{name: 'rho', defaultValue: 1}, {name: 'resistivity', defaultValue: undefined},
+			{name: 'lossTangent', aliases: ['tand'], defaultValue: 0.001}, {name: 'roughnessRms', defaultValue: 0}
+		]);
+		var width1 = options.inputWidth, width2 = options.outputWidth, Height = options.height, Thickness = options.thickness;
+		var er = options.relativePermittivity, rho = resistivityScale('mstep', input, options.rho, COPPER_RESISTIVITY);
+		var tand = options.lossTangent, roughnessRms = options.roughnessRms;
+		requirePositive('mstep', 'inputWidth', width1); requirePositive('mstep', 'outputWidth', width2); requirePositive('mstep', 'height', Height);
+		requireNonnegative('mstep', 'thickness', Thickness); requirePositive('mstep', 'relativePermittivity', er);
+		requireNonnegative('mstep', 'resistivity', rho * COPPER_RESISTIVITY); requireNonnegative('mstep', 'lossTangent', tand); requireNonnegative('mstep', 'roughnessRms', roughnessRms);
+		var step = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var port1Line = microstripLine(width1, Height, Thickness, er);
+		var port2Line = microstripLine(width2, Height, Thickness, er);
+		var wideWidth = Math.max(width1, width2);
+		var narrowWidth = Math.min(width1, width2);
+		var capacitance = stepCapacitance(wideWidth, narrowWidth, er);
+		var CsPf = capacitance.valuePf;
+		var LsNh = stepInductanceNh(wideWidth, narrowWidth, Height);
+		var lineInductanceSum = port1Line.lineInductancePerMeter + port2Line.lineInductancePerMeter;
+		var L1Nh = LsNh * port1Line.lineInductancePerMeter / lineInductanceSum;
+		var L2Nh = LsNh * port2Line.lineInductancePerMeter / lineInductanceSum;
+		var sparsArray = [];
+		var analysis = [];
+
+		for (var freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			var frequency = frequencyList[freqCount];
+			if (frequency === 0) {
+				sparsArray[freqCount] = [0, complex(0, 0), complex(1, 0), complex(1, 0), complex(0, 0)];
+				analysis[freqCount] = {frequency, CsPf, LsNh, L1Nh, L2Nh, Z: null};
+				continue;
+			}
+			var z21 = complex(0, -1 / (2 * pi$3 * frequency * CsPf * 1e-12));
+			var z11 = complex(0, 2 * pi$3 * frequency * L1Nh * 1e-9).add(z21);
+			var z22 = complex(0, 2 * pi$3 * frequency * L2Nh * 1e-9).add(z21);
+			var Z = matrix([
+				[z11, z21],
+				[z21, z22]
+			]);
+			var S = zToS$1(Z, Ro);
+
+			sparsArray[freqCount] = [frequency, S.m[0][0], S.m[0][1], S.m[1][0], S.m[1][1]];
+			analysis[freqCount] = {
+				frequency,
+				CsPf,
+				LsNh,
+				L1Nh,
+				L2Nh,
+				Z: Z.m
+			};
+		}
+
+		step.setspars(sparsArray);
+		step.setglobal(settings);
+		step.microstrip = {
+			width1,
+			width2,
+			Height,
+			Thickness,
+			er,
+			rho,
+			tand,
+			roughnessRms,
+			port1Line,
+			port2Line,
+			CsPf,
+			capacitancePerRootWidth: capacitance.capacitancePerRootWidth,
+			capacitanceEquation: capacitance.equation,
+			LsNh,
+			L1Nh,
+			L2Nh,
+			validity: {
+				capacitanceRatio: capacitance.validity,
+				inductanceRatio: 'max(width1,width2) / min(width1,width2) <= 5, best stated for narrowWidth / Height = 1',
+				source: 'Edwards/Steer section 9.4, equations 9.28 through 9.35; QUCS node80 equivalent equations 11.202 through 11.206'
+			},
+			analysis
+		};
+		step.physicalModel = physicalModelMetadata('microstrip', 'step-discontinuity', {
+			inputWidth: width1, outputWidth: width2, height: Height, thickness: Thickness
+		}, {relativePermittivity: er, resistivity: rho * COPPER_RESISTIVITY, lossTangent: tand, roughnessRms}, analysis);
+		step._schematic = schematicPart('mstep');
+		return step;
+	}
+
+	// Modified: 2026-10-28
+
+	var pi$2 = Math.PI;
+
+	var identityCplx = function (size) {
+		var out = dim(size, size, complex(0, 0));
+		for (var row = 0; row < size; row++) {
+			for (var col = 0; col < size; col++) {
+				out[row][col] = row === col ? complex(1, 0) : complex(0, 0);
+			}
+		}
+		return matrix(out);
+	};
+
+	var zToS = function (Z, Ro) {
+		var size = Z.m.length;
+		var I = identityCplx(size);
+		var normalizedZ = dim(size, size, complex(0, 0));
+		for (var row = 0; row < size; row++) {
+			for (var col = 0; col < size; col++) {
+				normalizedZ[row][col] = Z.m[row][col].div(complex(Ro, 0));
+			}
+		}
+		var z = matrix(normalizedZ);
+		return z.subCplx(I).mulCplx(z.addCplx(I).invertCplx());
+	};
+
+	var edwardsSteerBend = function (Width, Height, er) {
+		// Edwards/Steer, Foundations for Microstrip Circuit Design, 2016, eqs. 9.24 through 9.26.
+		var widthOverHeight = Width / Height;
+		var capacitancePerWidth = widthOverHeight < 1
+			? ((14 * er + 12.5) * widthOverHeight - (1.83 * er - 2.25)) / Math.sqrt(widthOverHeight)
+			: (9.5 * er + 1.25) * widthOverHeight + 5.2 * er + 7.0;
+
+		return {
+			CpF: Width * capacitancePerWidth,
+			LnH: Height * 100 * (4 * Math.sqrt(widthOverHeight) - 4.21)
+		};
+	};
+
+	function mbend(input = {}) {
+		var options = normalizePhysicalModelOptions('mbend', input, [
+			{name: 'fList', defaultValue: global.fList},
+			{name: 'turn', defaultValue: 'right'},
+			{name: 'width', aliases: ['Width'], defaultValue: 0.023 * INCH_TO_METER}, {name: 'miterLength', defaultValue: undefined},
+			{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
+			{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
+			{name: 'relativePermittivity', aliases: ['er'], defaultValue: 10},
+			{name: 'rho', defaultValue: 1}, {name: 'resistivity', defaultValue: undefined},
+			{name: 'lossTangent', aliases: ['tand'], defaultValue: 0.001}, {name: 'roughnessRms', defaultValue: 0}
+		]);
+		var Width = options.width, miterLength = options.miterLength, Height = options.height, Thickness = options.thickness;
+		if (options.turn !== 'left' && options.turn !== 'right') {
+			throw new RangeError('nP.mbend(): turn must be "left" or "right".');
+		}
+		var er = options.relativePermittivity, rho = resistivityScale('mbend', input, options.rho, COPPER_RESISTIVITY);
+		var tand = options.lossTangent, roughnessRms = options.roughnessRms;
+		requirePositive('mbend', 'width', Width); requirePositive('mbend', 'height', Height); requireNonnegative('mbend', 'thickness', Thickness);
+		if (miterLength !== undefined) requireNonnegative('mbend', 'miterLength', miterLength);
+		requirePositive('mbend', 'relativePermittivity', er); requireNonnegative('mbend', 'resistivity', rho * COPPER_RESISTIVITY);
+		requireNonnegative('mbend', 'lossTangent', tand); requireNonnegative('mbend', 'roughnessRms', roughnessRms);
+		var bend = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var recommendedMiterFraction = 0.6;
+		var defaultMiterLength = 0;
+		var actualMiterLength = miterLength === undefined ? defaultMiterLength : miterLength;
+		var miterFraction = actualMiterLength / (Math.SQRT2 * Width);
+		var equivalent = edwardsSteerBend(Width, Height, er);
+		var CpF = equivalent.CpF;
+		var LnH = equivalent.LnH;
+		var sparsArray = [];
+		var analysis = [];
+
+		for (var freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			var frequency = frequencyList[freqCount];
+			if (frequency === 0) {
+				sparsArray[freqCount] = [0, complex(0, 0), complex(1, 0), complex(1, 0), complex(0, 0)];
+				analysis[freqCount] = {frequency, CpF, LnH, Z: null};
+				continue;
+			}
+			var z21 = complex(0, -1 / (2 * pi$2 * frequency * CpF * 1e-12));
+			var z11 = complex(0, 2 * pi$2 * frequency * LnH * 1e-9).add(z21);
+			var Z = matrix([
+				[z11, z21],
+				[z21, z11]
+			]);
+			var S = zToS(Z, Ro);
+
+			sparsArray[freqCount] = [frequency, S.m[0][0], S.m[0][1], S.m[1][0], S.m[1][1]];
+			analysis[freqCount] = {
+				frequency,
+				CpF,
+				LnH,
+				Z: Z.m
+			};
+		}
+
+		bend.setspars(sparsArray);
+		bend.setglobal(settings);
+		bend.microstrip = {
+			turn: options.turn,
+			Width,
+			miterLength: actualMiterLength,
+			defaultMiterLength,
+			recommendedMiterFraction,
+			recommendedMiterLength: recommendedMiterFraction * Math.SQRT2 * Width,
+			miterFraction,
+			Height,
+			Thickness,
+			er,
+			rho,
+			tand,
+			roughnessRms,
+			CpF,
+			LnH,
+			equivalent,
+			validity: {
+				capacitance: '2.5 <= er <= 15 and 0.1 <= Width / Height <= 5.0',
+				inductance: 'best stated for 0.5 <= Width / Height <= 2.0',
+				miter: 'Edwards/Steer recommend chamfer fraction near 0.6 for many alumina-like cases; current C/L equations are for the unmitered bend.'
+			},
+			analysis
+		};
+		bend.physicalModel = physicalModelMetadata('microstrip', 'bend-discontinuity', {
+			width: Width, miterLength: actualMiterLength, height: Height, thickness: Thickness
+		}, {relativePermittivity: er, resistivity: rho * COPPER_RESISTIVITY, lossTangent: tand, roughnessRms}, analysis,
+		{validity: bend.microstrip.validity});
+		bend._schematic = schematicPart('mbend', {}, options.turn);
+		return bend;
+	}
+
+	// Modified: 2026-10-28
+
+	function mtfr(input = {}) {
+		var options = normalizePhysicalModelOptions('mtfr', input, [
+			{name: 'fList', defaultValue: global.fList},
+			{name: 'ohmsPerSquare', defaultValue: 50}, {name: 'width', aliases: ['Width'], defaultValue: 10 * MIL_TO_METER},
+			{name: 'length', aliases: ['Length'], defaultValue: 10 * MIL_TO_METER},
+			{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
+			{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
+			{name: 'relativePermittivity', aliases: ['er'], defaultValue: 10},
+			{name: 'lossTangent', aliases: ['tand'], defaultValue: 0.001},
+			{name: 'temperatureCoefficient', defaultValue: 0}, {name: 'referenceTemperature', aliases: ['temperatureReference'], defaultValue: 298.15},
+			{name: 'sections', defaultValue: undefined}
+		]);
+		var ohmsPerSquare = options.ohmsPerSquare, Width = options.width, Length = options.length, Height = options.height;
+		var Thickness = options.thickness, er = options.relativePermittivity, tand = options.lossTangent;
+		var temperatureCoefficient = options.temperatureCoefficient, temperatureReference = options.referenceTemperature, sections = options.sections;
+		var usesLegacyTemperatureReference = Object.prototype.hasOwnProperty.call(input, 'temperatureReference');
+		var temperatureUnit = usesLegacyTemperatureReference ? 'legacy global.Temp scale' : 'kelvin';
+		requireNonnegative('mtfr', 'ohmsPerSquare', ohmsPerSquare); requirePositive('mtfr', 'width', Width); requireNonnegative('mtfr', 'length', Length);
+		requirePositive('mtfr', 'height', Height); requireNonnegative('mtfr', 'thickness', Thickness); requirePositive('mtfr', 'relativePermittivity', er);
+		requireNonnegative('mtfr', 'lossTangent', tand); requireFinite('mtfr', 'temperatureCoefficient', temperatureCoefficient);
+		if (usesLegacyTemperatureReference) requireFinite('mtfr', 'temperatureReference', temperatureReference);
+		else requirePositive('mtfr', 'referenceTemperature', temperatureReference);
+		if (sections !== undefined && (!Number.isInteger(sections) || sections < 1)) throw new RangeError('nP.mtfr(): sections must be a positive integer.');
+		var Temp = global.Temp;
+		var squares = Length / Width;
+		var resistanceAtReference = ohmsPerSquare * squares;
+		var resistance = resistanceAtReference * (1 + temperatureCoefficient * (Temp - temperatureReference));
+		var automaticSections = Math.min(200, Math.max(10, Math.ceil(squares * 10)));
+		var sectionCount = sections === undefined ? automaticSections : Math.max(1, Math.floor(sections));
+		var resistancePerSection = resistance / sectionCount;
+		var halfLineLength = Length / (2 * sectionCount);
+		var halfLine = mlin({
+			width: Width, height: Height, length: halfLineLength, thickness: Thickness,
+			relativePermittivity: er, resistivity: 0, lossTangent: tand, roughnessRms: 0,
+			fList: options.fList
+		});
+		var resistorSection = R({resistance: resistancePerSection, fList: options.fList});
+		var nPorts = [];
+
+		for (var section = 0; section < sectionCount; section++) {
+			nPorts.push(halfLine);
+			nPorts.push(resistorSection);
+			nPorts.push(halfLine);
+		}
+
+		var filmResistor = cascade(...nPorts);
+		filmResistor.filmResistor = {
+			ohmsPerSquare,
+			Width,
+			Length,
+			Height,
+			Thickness,
+			er,
+			tand,
+			squares,
+			resistanceAtReference,
+			resistance,
+			sections: sectionCount,
+			automaticSections,
+			resistancePerSection,
+			halfLineLength,
+			temperatureCoefficient,
+			temperatureReference,
+			temperatureUnit,
+			temperature: Temp,
+			model: 'distributed film resistor: cascaded mlin half-sections with sheet-resistance sections'
+		};
+		filmResistor.physicalModel = physicalModelMetadata('microstrip', 'thin-film-resistor', {
+			width: Width, length: Length, height: Height, thickness: Thickness
+		}, {relativePermittivity: er, lossTangent: tand}, [], {
+			ohmsPerSquare, temperatureCoefficient, referenceTemperature: temperatureReference,
+			temperatureUnit, sections: sectionCount
+		});
+		filmResistor._schematic = schematicPart('mtfr', {value: resistance});
+		return filmResistor;
+	}
+
+	// Modified: 2026-10-28
+
+	var pi$1 = Math.PI;
+
+	var viaInductance$1 = function (Height, radius) {
+		// QUCS technical manual, Microstrip via hole, Goldfarb/Pucel model, eq. 11.232.
+		var a = Math.sqrt(radius * radius + Height * Height);
+		return (MU0 / (2 * pi$1)) *
+			(Height * Math.log((Height + a) / radius) + 1.5 * (radius - a));
+	};
+
+	var viaResistanceDc$1 = function (Height, radius, Thickness, rho) {
+		var innerRadius = Math.max(radius - Thickness, 0);
+		var metalArea = pi$1 * (radius * radius - innerRadius * innerRadius);
+		return rho * Height / metalArea;
+	};
+
+	function mvgnd(input = {}) {
+		var options = normalizePhysicalModelOptions('mvgnd', input, [
+			{name: 'fList', defaultValue: global.fList},
+			{name: 'diameter', aliases: ['Diameter'], defaultValue: 100e-6},
+			{name: 'height', aliases: ['Height'], defaultValue: 0.025 * INCH_TO_METER},
+			{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
+			{name: 'rho', defaultValue: COPPER_RESISTIVITY}, {name: 'resistivity', defaultValue: undefined}
+		]);
+		var Diameter = options.diameter, Height = options.height, Thickness = options.thickness;
+		var rho = absoluteResistivity('mvgnd', input, options.rho);
+		requirePositive('mvgnd', 'diameter', Diameter); requirePositive('mvgnd', 'height', Height);
+		requirePositive('mvgnd', 'thickness', Thickness); requireNonnegative('mvgnd', 'resistivity', rho);
+		if (Thickness > Diameter / 2) throw new RangeError('nP.mvgnd(): thickness must not exceed the via radius.');
+		var via = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var radius = Diameter / 2;
+		var L = viaInductance$1(Height, radius);
+		var Rdc = viaResistanceDc$1(Height, radius, Thickness, rho);
+		// QUCS technical manual, Microstrip via hole, eqs. 11.233 and 11.234.
+		var fdelta = rho / (pi$1 * MU0 * Thickness * Thickness);
+		var sparsArray = [];
+		var analysis = [];
+
+		for (var freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			var frequency = frequencyList[freqCount];
+			var R = Rdc * Math.sqrt(1 + frequency / fdelta);
+			var Z = complex(R, 2 * pi$1 * frequency * L);
+			var s11 = Z.sub(complex(Ro, 0)).div(Z.add(complex(Ro, 0)));
+			sparsArray[freqCount] = [frequency, s11];
+			analysis[freqCount] = {
+				frequency,
+				R,
+				X: 2 * pi$1 * frequency * L,
+				Z
+			};
+		}
+
+		via.setspars(sparsArray);
+		via.setglobal(settings);
+		via.microstrip = {
+			Diameter,
+			radius,
+			Height,
+			Thickness,
+			rho,
+			Rdc,
+			L,
+			fdelta,
+			validity: 'Goldfarb/Pucel via model stated for Height < 0.03 * lambda0',
+			analysis
+		};
+		via.physicalModel = physicalModelMetadata('microstrip', 'via-to-ground', {
+			diameter: Diameter, height: Height, thickness: Thickness
+		}, {resistivity: rho}, analysis, {validity: via.microstrip.validity});
+		via._schematic = schematicPart('mvgnd', {labelPrefix: 'mvgnd',
+			diameter: Diameter, height: Height, thickness: Thickness, resistivity: rho});
+		return via;
+	}
+
+	// Modified: 2026-10-28
+
+	var pi = Math.PI;
+
+	var viaInductance = function (Height, radius) {
+		// QUCS technical manual, Microstrip via hole, Goldfarb/Pucel model, eq. 11.232.
+		var a = Math.sqrt(radius * radius + Height * Height);
+		return (MU0 / (2 * pi)) *
+			(Height * Math.log((Height + a) / radius) + 1.5 * (radius - a));
+	};
+
+	var viaResistanceDc = function (Height, radius, Thickness, rho) {
+		var innerRadius = Math.max(radius - Thickness, 0);
+		var metalArea = pi * (radius * radius - innerRadius * innerRadius);
+		return rho * Height / metalArea;
+	};
+
+	var annularCapacitance = function (padDiameter, antipadDiameter, Height, er) {
+		if (padDiameter <= 0 || antipadDiameter <= padDiameter || Height <= 0) {
+			return 0;
+		}
+		var padRadius = padDiameter / 2;
+		var antipadRadius = antipadDiameter / 2;
+		return 2 * pi * EPSILON0 * er * Height / Math.log(antipadRadius / padRadius);
+	};
+
+	var shunt = function (Y) {
+		return {
+			A: complex(1, 0),
+			B: complex(0, 0),
+			C: Y,
+			D: complex(1, 0)
+		};
+	};
+
+	var series = function (Z) {
+		return {
+			A: complex(1, 0),
+			B: Z,
+			C: complex(0, 0),
+			D: complex(1, 0)
+		};
+	};
+
+	var multiplyAbcd = function (left, right) {
+		return {
+			A: left.A.mul(right.A).add(left.B.mul(right.C)),
+			B: left.A.mul(right.B).add(left.B.mul(right.D)),
+			C: left.C.mul(right.A).add(left.D.mul(right.C)),
+			D: left.C.mul(right.B).add(left.D.mul(right.D))
+		};
+	};
+
+	var abcdToS = function (abcd, Ro) {
+		var A = abcd.A, B = abcd.B, C = abcd.C, D = abcd.D;
+		var Bnorm = B.div(complex(Ro, 0));
+		var Cnorm = C.mul(complex(Ro, 0));
+		var denominator = A.add(Bnorm).add(Cnorm).add(D);
+		var s11 = A.add(Bnorm).sub(Cnorm).sub(D).div(denominator);
+		var s21 = complex(2, 0).div(denominator);
+		var s12 = complex(2, 0).mul(A.mul(D).sub(B.mul(C))).div(denominator);
+		var s22 = D.add(Bnorm).sub(Cnorm).sub(A).div(denominator);
+		return {s11, s12, s21, s22};
+	};
+
+	function mvia(input = {}) {
+		var options = normalizePhysicalModelOptions('mvia', input, [
+			{name: 'fList', defaultValue: global.fList},
+			{name: 'diameter', aliases: ['Diameter'], defaultValue: 100e-6},
+			{name: 'connectionHeight', defaultValue: 0.025 * INCH_TO_METER},
+			{name: 'thickness', aliases: ['Thickness'], defaultValue: 0.0000125 * INCH_TO_METER},
+			{name: 'rho', defaultValue: COPPER_RESISTIVITY}, {name: 'resistivity', defaultValue: undefined},
+			{name: 'relativePermittivity', aliases: ['er'], defaultValue: 10},
+			{name: 'padDiameter', defaultValue: 0}, {name: 'antipadDiameter', defaultValue: 0},
+			{name: 'topPadHeight', defaultValue: 0}, {name: 'bottomPadHeight', defaultValue: 0},
+			{name: 'topStubLength', defaultValue: 0}, {name: 'bottomStubLength', defaultValue: 0}
+		]);
+		var Diameter = options.diameter, connectionHeight = options.connectionHeight, Thickness = options.thickness;
+		var rho = absoluteResistivity('mvia', input, options.rho), er = options.relativePermittivity;
+		var padDiameter = options.padDiameter, antipadDiameter = options.antipadDiameter;
+		var topPadHeight = options.topPadHeight, bottomPadHeight = options.bottomPadHeight;
+		var topStubLength = options.topStubLength, bottomStubLength = options.bottomStubLength;
+		requirePositive('mvia', 'diameter', Diameter); requirePositive('mvia', 'connectionHeight', connectionHeight);
+		requirePositive('mvia', 'thickness', Thickness); requireNonnegative('mvia', 'resistivity', rho); requirePositive('mvia', 'relativePermittivity', er);
+		['padDiameter', 'antipadDiameter', 'topPadHeight', 'bottomPadHeight', 'topStubLength', 'bottomStubLength'].forEach(function (name) {
+			requireNonnegative('mvia', name, options[name]);
+		});
+		if (Thickness > Diameter / 2) throw new RangeError('nP.mvia(): thickness must not exceed the via radius.');
+		if (antipadDiameter > 0 && padDiameter > 0 && antipadDiameter <= padDiameter) throw new RangeError('nP.mvia(): antipadDiameter must be greater than padDiameter.');
+		var via = new nPort;
+		var settings = componentSettings(global, options);
+		var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
+		var radius = Diameter / 2;
+		var Lbarrel = viaInductance(connectionHeight, radius);
+		var Rdc = viaResistanceDc(connectionHeight, radius, Thickness, rho);
+		// QUCS technical manual, Microstrip via hole, eqs. 11.233 and 11.234.
+		var fdelta = rho / (pi * MU0 * Thickness * Thickness);
+		var topPadCapacitance = annularCapacitance(padDiameter, antipadDiameter, topPadHeight, er);
+		var bottomPadCapacitance = annularCapacitance(padDiameter, antipadDiameter, bottomPadHeight, er);
+		var topStubCapacitance = topStubLength > 0 ? annularCapacitance(Diameter, antipadDiameter || 2 * Diameter, topStubLength, er) : 0;
+		var bottomStubCapacitance = bottomStubLength > 0 ? annularCapacitance(Diameter, antipadDiameter || 2 * Diameter, bottomStubLength, er) : 0;
+		var sparsArray = [];
+		var analysis = [];
+
+		for (var freqCount = 0; freqCount < frequencyList.length; freqCount++) {
+			var frequency = frequencyList[freqCount];
+			var omega = 2 * pi * frequency;
+			var R = Rdc * Math.sqrt(1 + frequency / fdelta);
+			var X = omega * Lbarrel;
+			var Zbarrel = complex(R, X);
+			var Yin = complex(0, omega * (topPadCapacitance + topStubCapacitance));
+			var Yout = complex(0, omega * (bottomPadCapacitance + bottomStubCapacitance));
+			var network = multiplyAbcd(multiplyAbcd(shunt(Yin), series(Zbarrel)), shunt(Yout));
+			var S = abcdToS(network, Ro);
+
+			sparsArray[freqCount] = [frequency, S.s11, S.s12, S.s21, S.s22];
+			analysis[freqCount] = {
+				frequency,
+				R,
+				X,
+				Zbarrel,
+				Yin,
+				Yout
+			};
+		}
+
+		via.setspars(sparsArray);
+		via.setglobal(settings);
+		via.microstrip = {
+			Diameter,
+			radius,
+			connectionHeight,
+			Thickness,
+			rho,
+			er,
+			padDiameter,
+			antipadDiameter,
+			topPadHeight,
+			bottomPadHeight,
+			topStubLength,
+			bottomStubLength,
+			Rdc,
+			Lbarrel,
+			fdelta,
+			topPadCapacitance,
+			bottomPadCapacitance,
+			topStubCapacitance,
+			bottomStubCapacitance,
+			model: 'two-port via barrel with optional pad/antipad and unused-stub shunt capacitance',
+			validity: 'Barrel R/L follows the Goldfarb/Pucel via model; pad and stub capacitances are first-order coaxial approximations.',
+			analysis
+		};
+		via.physicalModel = physicalModelMetadata('microstrip', 'via-transition', {
+			diameter: Diameter, connectionHeight, thickness: Thickness, padDiameter, antipadDiameter,
+			topPadHeight, bottomPadHeight, topStubLength, bottomStubLength
+		}, {relativePermittivity: er, resistivity: rho}, analysis, {validity: via.microstrip.validity});
+		via._schematic = schematicPart('mvia');
+		return via;
+	}
+
+	// Modified: 2026-10-08
+
+	// Two independent standard-normal samples per pair of uniform draws.
+	function normalSampler() {
+		var spare;
+		return function () {
+			if (spare !== undefined) {
+				var result = spare;
+				spare = undefined;
+				return result;
+			}
+			var radius = Math.sqrt(-2 * Math.log(1 - Math.random()));
+			var angle = 2 * Math.PI * Math.random();
+			spare = radius * Math.sin(angle);
+			return radius * Math.cos(angle);
+		};
+	}
+
+	// Return one real-waveform-compatible FFT noise draw in volts. The noise
+	// analysis includes source, termination, and component covariance in W/Hz.
+	function noiseWaveformSpectrum(stage, signal, inputPort, outputPort, options) {
+		var count = signal.sampleCount;
+		var binWidth = signal.sampleRateHz / count;
+		var sampleNormal = normalSampler();
+		var noiseRows = stage.noise;
+		var spectrum = new Array(signal.rows.length);
+		for (var bin = 0; bin < spectrum.length; bin++) {
+			var density = noiseAnalysis(stage.spars[bin], noiseRows[bin].C,
+				inputPort, outputPort, options).outputNoiseDensity;
+			var voltageDensity = density * signal.referenceImpedanceOhms;
+			var selfConjugate = bin === 0 || (count % 2 === 0 && bin === count / 2);
+			if (selfConjugate) {
+				// DC and Nyquist each represent half a positive-frequency bin.
+				var endpointStd = count * Math.sqrt(voltageDensity * binWidth / 2);
+				spectrum[bin] = complex(endpointStd * sampleNormal(), 0);
+			} else {
+				// A positive bin and its negative-frequency conjugate share one bin's power.
+				var quadratureStd = count * Math.sqrt(voltageDensity * binWidth) / 2;
+				spectrum[bin] = complex(quadratureStd * sampleNormal(), quadratureStd * sampleNormal());
+			}
+		}
+		return spectrum;
+	}
+
+	// Modified: 2026-10-22
+
+	// Reconstruct the output signal and one independent noise realization.
+	function receiveWaveform(stage, options = {}) {
+		if (!stage || !stage.signal || !Array.isArray(stage.spars)) {
+			throw new TypeError('demod requires an nPort containing a digital signal.');
+		}
+		if (!options || Array.isArray(options) || typeof options !== 'object') {
+			throw new TypeError('demod options must be an object.');
+		}
+		if (options.mode !== undefined) {
+			throw new RangeError('Select demod output with .out() instead of mode.');
+		}
+		if (options.noise !== undefined && typeof options.noise !== 'boolean') {
+			throw new TypeError('demod noise must be true or false.');
+		}
+		var signal = stage.signal;
+		var portCount = Math.sqrt(stage.spars[0].length - 1);
+		var outputPort = options.outputPort === undefined ? 2 : options.outputPort;
+		var inputPort = options.inputPort === undefined ? 1 : options.inputPort;
+		var vnaTime = signal.mode === 'VNA-time';
+		var referencePort = options.referencePort;
+		var referenceReceiver = options.referenceReceiver;
+		var referenceGain = options.referenceGain === undefined ? 1 : options.referenceGain;
+		if (vnaTime && (!Number.isFinite(referenceGain) || referenceGain <= 0)) {
+			throw new RangeError('VNA-time referenceGain must be positive and finite.');
+		}
+		if (vnaTime && referencePort !== undefined && (!Number.isInteger(referencePort) ||
+			referencePort < 1 || referencePort > portCount || referencePort === outputPort)) {
+			throw new RangeError('VNA-time referencePort must name another output port.');
+		}
+		if (vnaTime && referencePort !== undefined && referenceReceiver !== undefined) {
+			throw new RangeError('Select referencePort or referenceReceiver, not both.');
+		}
+		if (vnaTime && referenceReceiver !== undefined &&
+			(!referenceReceiver || typeof referenceReceiver.out !== 'function')) {
+			throw new TypeError('VNA-time referenceReceiver must be a demod result.');
+		}
+		if (!vnaTime && (referencePort !== undefined || referenceReceiver !== undefined ||
+			options.referenceGain !== undefined)) {
+			throw new RangeError('referencePort, referenceReceiver, and referenceGain are only for VNA reception.');
+		}
+		if (!Number.isInteger(outputPort) || outputPort < 1 || outputPort > portCount) {
+			throw new RangeError('demod outputPort is outside the nPort dimensions.');
+		}
+		if (!Number.isInteger(inputPort) || inputPort < 1 || inputPort > portCount) {
+			throw new RangeError('demod inputPort is outside the nPort dimensions.');
+		}
+		var count = signal.sampleCount;
+		if (signal.rows.length !== Math.floor(count / 2) + 1) {
+			throw new RangeError('Digital signal rows do not cover DC through Nyquist.');
+		}
+		var spectrum = new Array(count);
+		var voltageScale = Math.sqrt(signal.referenceImpedanceOhms);
+		var noiseSpectrum = options.noise === false ? null :
+			noiseWaveformSpectrum(stage, signal, inputPort, outputPort, options);
+		if (vnaTime && (referencePort !== undefined || referenceReceiver !== undefined) && noiseSpectrum) {
+			throw new RangeError('VNA reference normalization requires noise: false.');
+		}
+		var referenceSpectrum = referenceReceiver === undefined ? null : referenceReceiver.out('spectrum');
+		var referenceFrequencies = referenceReceiver === undefined ? null : referenceReceiver.out('frequencies');
+		if (referenceSpectrum && (!Array.isArray(referenceSpectrum) ||
+			referenceSpectrum.length !== signal.rows.length ||
+			!Array.isArray(referenceFrequencies) ||
+			referenceFrequencies.some(function (frequency, index) {
+				return frequency !== signal.rows[index].frequency;
+			}))) {
+			throw new RangeError('VNA referenceReceiver must use the same frequency grid.');
+		}
+		for (var bin = 0; bin < signal.rows.length; bin++) {
+			var wave = signal.rows[bin].waves[outputPort - 1];
+			var voltage = complex(wave.getR() * voltageScale, wave.getI() * voltageScale);
+			if (noiseSpectrum) voltage = voltage.add(noiseSpectrum[bin]);
+			if (vnaTime) {
+				if (referencePort !== undefined || referenceSpectrum) {
+					var reference = referenceSpectrum ? referenceSpectrum[bin] :
+						signal.rows[bin].waves[referencePort - 1].mul(complex(voltageScale, 0));
+					if (reference.mag() === 0) {
+						if (voltage.mag() !== 0) throw new RangeError('VNA reference receiver has zero signal.');
+						voltage = complex(0, 0);
+					} else voltage = voltage.div(reference);
+				}
+				voltage = voltage.mul(complex(referenceGain, 0));
+			}
+			var selfConjugate = bin === 0 || (count % 2 === 0 && bin === count / 2);
+			if (selfConjugate) {
+				if (Math.abs(voltage.getI()) > 1e-9 * Math.max(1, Math.abs(voltage.getR()))) {
+					throw new RangeError('DC and Nyquist output bins must be real to reconstruct a real waveform.');
+				}
+				spectrum[bin] = complex(voltage.getR(), 0);
+			} else {
+				spectrum[bin] = voltage;
+				spectrum[count - bin] = complex(voltage.getR(), -voltage.getI());
+			}
+		}
+		var samples = invFFT(spectrum);
+		return {
+			out: function (selector = 'waveform') {
+				if (selector === 'sample count') return count;
+				if (selector === 'frequency count') return signal.rows.length;
+				if (selector === 'frequencies') {
+					return signal.rows.map(function (row) { return row.frequency; });
+				}
+				if (selector === 'spectrum') {
+					return spectrum.slice(0, signal.rows.length).map(function (value) { return value.copy(); });
+				}
+				if (selector === 'bit count') {
+					if (signal.mode === 'OFDM') return signal.bitCount;
+					if (!Number.isInteger(signal.samplesPerBit) || signal.samplesPerBit < 1) {
+						throw new RangeError('Receiver bit count requires samplesPerBit metadata.');
+					}
+					return count / signal.samplesPerBit;
+				}
+				if (selector === 'bits' || selector === 'bit string' || selector === 'ASCII text') {
+					var samplesPerBit = signal.samplesPerBit;
+					if (!Number.isInteger(samplesPerBit) || samplesPerBit < 1 ||
+						count % samplesPerBit !== 0) {
+						throw new RangeError('Bit reception requires samplesPerBit metadata.');
+					}
+					var bitVoltages = [];
+					for (var bitStart = 0; bitStart < count; bitStart += samplesPerBit) {
+						bitVoltages.push(samples[bitStart + Math.floor(samplesPerBit / 2)].getR());
+					}
+					var threshold = options.thresholdVolts;
+					if (threshold === undefined) {
+						var sortedVoltages = bitVoltages.slice().sort(function (a, b) { return a - b; });
+						var lowCenter = sortedVoltages[Math.floor(sortedVoltages.length * 0.1)];
+						var highCenter = sortedVoltages[Math.floor(sortedVoltages.length * 0.9)];
+						if (lowCenter === highCenter) {
+							lowCenter = sortedVoltages[0];
+							highCenter = sortedVoltages[sortedVoltages.length - 1];
+						}
+						if (lowCenter === highCenter) {
+							throw new RangeError('ASCII reception needs two voltage levels or an explicit thresholdVolts.');
+						}
+						for (var iteration = 0; iteration < 12; iteration++) {
+							var split = (lowCenter + highCenter) / 2;
+							var lowSum = 0, lowCount = 0, highSum = 0, highCount = 0;
+							for (var voltageIndex = 0; voltageIndex < bitVoltages.length; voltageIndex++) {
+								if (bitVoltages[voltageIndex] <= split) {
+									lowSum += bitVoltages[voltageIndex];
+									lowCount++;
+								} else {
+									highSum += bitVoltages[voltageIndex];
+									highCount++;
+								}
+							}
+							if (lowCount === 0 || highCount === 0) break;
+							lowCenter = lowSum / lowCount;
+							highCenter = highSum / highCount;
+						}
+						threshold = (lowCenter + highCenter) / 2;
+					}
+					if (!Number.isFinite(threshold)) throw new RangeError('ASCII thresholdVolts must be finite.');
+					var bits = bitVoltages.map(function (voltage) { return voltage > threshold ? 1 : 0; });
+					if (selector === 'bits') return bits;
+					if (selector === 'bit string') return bits.join('');
+					if (bits.length % 8 !== 0) {
+						throw new RangeError('ASCII reception requires complete eight-bit bytes.');
+					}
+					var message = '';
+					for (var byte = 0; byte < bits.length; byte += 8) {
+						var code = 0;
+						for (var bit = 0; bit < 8; bit++) {
+							code = (code << 1) | bits[byte + bit];
+						}
+						message += code > 127 ? '\uFFFD' : String.fromCharCode(code);
+					}
+					return message;
+				}
+				if (selector !== 'waveform') {
+					throw new RangeError('Unknown demod output: ' + selector);
+				}
+				var output = [['Time (ns)', vnaTime &&
+					(referencePort !== undefined || referenceSpectrum) ?
+					'Normalized response' : 'Output (V)']];
+				for (var index = 0; index < count; index++) {
+					output.push([index * 1e9 / signal.sampleRateHz, samples[index].getR()]);
+				}
+				return output;
+			}
+		};
+	}
+
+	// Modified: 2026-10-22
+
+	// Read one complex receiver phasor per swept frequency.
+	function receiveVnaFrequency(stage, options = {}) {
+		if (!options || Array.isArray(options) || typeof options !== 'object') {
+			throw new TypeError('demod options must be an object.');
+		}
+		if (Object.keys(options).some(function (key) {
+			return key !== 'outputPort' && key !== 'referencePort' && key !== 'referenceReceiver' &&
+				key !== 'referenceGain' && key !== 'noise';
+		})) {
+			throw new TypeError('VNA-frequency demod accepts outputPort, referencePort, referenceReceiver, referenceGain, and noise.');
+		}
+		if (options.noise !== undefined && options.noise !== false) {
+			throw new RangeError('VNA-frequency reception currently requires noise: false.');
+		}
+		var signal = stage.signal;
+		var portCount = Math.sqrt(stage.spars[0].length - 1);
+		var outputPort = options.outputPort === undefined ? 2 : options.outputPort;
+		var referencePort = options.referencePort;
+		var referenceReceiver = options.referenceReceiver;
+		var referenceGain = options.referenceGain === undefined ? 1 : options.referenceGain;
+		if (!Number.isInteger(outputPort) || outputPort < 1 || outputPort > portCount) {
+			throw new RangeError('demod outputPort is outside the nPort dimensions.');
+		}
+		if (!Number.isFinite(referenceGain) || referenceGain <= 0) {
+			throw new RangeError('VNA-frequency referenceGain must be positive and finite.');
+		}
+		if (referencePort !== undefined && (!Number.isInteger(referencePort) ||
+			referencePort < 1 || referencePort > portCount || referencePort === outputPort)) {
+			throw new RangeError('VNA-frequency referencePort must name another output port.');
+		}
+		if (referencePort !== undefined && referenceReceiver !== undefined) {
+			throw new RangeError('Select referencePort or referenceReceiver, not both.');
+		}
+		if (referenceReceiver !== undefined &&
+			(!referenceReceiver || typeof referenceReceiver.out !== 'function')) {
+			throw new TypeError('VNA-frequency referenceReceiver must be a demod result.');
+		}
+		var voltageScale = complex(Math.sqrt(signal.referenceImpedanceOhms), 0);
+		var raw = signal.rows.map(function (row) {
+			return row.waves[outputPort - 1].mul(voltageScale);
+		});
+		var frequencies = signal.rows.map(function (row) { return row.frequency; });
+		var referenceValues = referenceReceiver === undefined ? null : referenceReceiver.out('response');
+		var referenceFrequencies = referenceReceiver === undefined ? null : referenceReceiver.out('frequencies');
+		if (referenceValues && (!Array.isArray(referenceValues) ||
+			referenceValues.length !== frequencies.length ||
+			!Array.isArray(referenceFrequencies) ||
+			referenceFrequencies.some(function (frequency, index) { return frequency !== frequencies[index]; }))) {
+			throw new RangeError('VNA referenceReceiver must use the same frequency grid.');
+		}
+		var response = raw.map(function (value, index) {
+			if (referencePort === undefined && !referenceValues) return value.mul(complex(referenceGain, 0));
+			var reference = referenceValues ? referenceValues[index] :
+				signal.rows[index].waves[referencePort - 1].mul(voltageScale);
+			if (reference.mag() === 0) throw new RangeError('VNA reference receiver has zero signal.');
+			return value.div(reference).mul(complex(referenceGain, 0));
+		});
+		return {
+			out: function (selector = 'response dB') {
+				if (selector === 'mode') return signal.mode;
+				if (selector === 'frequency count') return frequencies.length;
+				if (selector === 'frequencies') return frequencies.slice();
+				if (selector === 'spectrum') return raw.map(function (value) { return value.copy(); });
+				if (selector === 'response') return response.map(function (value) { return value.copy(); });
+				if (selector === 'response dB' || selector === 'response magnitude' ||
+					selector === 'response phase' || selector === 'response real' ||
+					selector === 'response imaginary') {
+					var label = selector === 'response dB' ? 'Response (dB)' :
+						selector === 'response magnitude' ? 'Response magnitude' :
+						selector === 'response phase' ? 'Response phase (deg)' :
+						selector === 'response real' ? 'Response real' : 'Response imaginary';
+					var table = [['Freq', label]];
+					for (var index = 0; index < frequencies.length; index++) {
+						var value = response[index];
+						table.push([frequencies[index], selector === 'response dB' ? value.mag20dB() :
+							selector === 'response magnitude' ? value.mag() :
+							selector === 'response phase' ? value.ang() :
+							selector === 'response real' ? value.getR() : value.getI()]);
+					}
+					return table;
+				}
+				throw new RangeError('Unknown VNA-frequency demod output: ' + selector);
+			}
+		};
+	}
+
+	// Modified: 2026-10-21
+
+	function powerOfTwo(value) {
+		return Number.isInteger(value) && value > 0 && (value & (value - 1)) === 0;
+	}
+
+	function grayToIndex(gray) {
+		var index = gray;
+		for (var shifted = gray >> 1; shifted; shifted >>= 1) index ^= shifted;
+		return index;
+	}
+
+	function bitsValue(bits, start, count) {
+		var value = 0;
+		for (var bit = 0; bit < count; bit++) value = (value << 1) | bits[start + bit];
+		return value;
+	}
+
+	function symbolFromBits(bits, start, order) {
+		var axisBits = Math.log2(order) / 2;
+		var side = Math.sqrt(order);
+		var real = 2 * grayToIndex(bitsValue(bits, start, axisBits)) - side + 1;
+		var imaginary = 2 * grayToIndex(bitsValue(bits, start + axisBits, axisBits)) - side + 1;
+		var scale = Math.sqrt(2 * (order - 1) / 3);
+		return complex(real / scale, imaginary / scale);
+	}
+
+	function bitsFromSymbol(symbol, order) {
+		var axisBits = Math.log2(order) / 2;
+		var side = Math.sqrt(order);
+		var scale = Math.sqrt(2 * (order - 1) / 3);
+		var result = [];
+		for (var coordinate of [symbol.getR(), symbol.getI()]) {
+			var index = Math.max(0, Math.min(side - 1,
+				Math.round((coordinate * scale + side - 1) / 2)));
+			var gray = index ^ (index >> 1);
+			for (var shift = axisBits - 1; shift >= 0; shift--) result.push((gray >> shift) & 1);
+		}
+		return result;
+	}
+
+	function setSamples(tx, samples, fftList, sampleRateHz) {
+		tx.samples = samples;
+		tx.sampleCount = samples.length;
+		if (sampleRateHz !== undefined) tx.sampleRateHz = sampleRateHz;
+		tx.fList = Array.from({length: Math.floor(samples.length / 2) + 1}, function (_, bin) {
+			return bin * tx.sampleRateHz / samples.length;
+		});
+		tx.spectrum = fftBins(samples).slice(0, tx.fList.length);
+		if (fftList === undefined) global.fList = tx.fList.slice();
+		else {
+			fftList.length = 0;
+			tx.fList.forEach(function (frequency) { fftList.push(frequency); });
+		}
+	}
+
+	function carrierSample(symbol, frequency, index, sampleRateHz) {
+		var theta = 2 * Math.PI * frequency * index / sampleRateHz;
+		return symbol.getR() * Math.cos(theta) - symbol.getI() * Math.sin(theta);
+	}
+
+	function gaussianLevels(bits, samplesPerBit, bt) {
+		var levels = bits.flatMap(function (bit) {
+			return Array(samplesPerBit).fill(bit ? 1 : -1);
+		});
+		var sigma = samplesPerBit * Math.sqrt(Math.log(2)) / (2 * Math.PI * bt);
+		var radius = Math.ceil(4 * sigma);
+		var weights = Array.from({length: 2 * radius + 1}, function (_, index) {
+			var offset = index - radius;
+			return Math.exp(-offset * offset / (2 * sigma * sigma));
+		});
+		var sum = weights.reduce(function (total, weight) { return total + weight; }, 0);
+		return levels.map(function (_, index) {
+			var filtered = 0;
+			for (var offset = -radius; offset <= radius; offset++) {
+				filtered += weights[offset + radius] *
+					levels[((index + offset) % levels.length + levels.length) % levels.length];
+			}
+			return filtered / sum;
+		});
+	}
+
+	// Add symbol mapping or continuous-phase modulation to a bit source.
+	function modulateAdvanced(tx, options, carrierHz) {
+		var mode = options.mode;
+		var amplitude = options.carrierAmplitudeVolts === undefined ? 1 : options.carrierAmplitudeVolts;
+		if (!Number.isFinite(amplitude) || amplitude <= 0) {
+			throw new RangeError(mode + ' needs positive carrierAmplitudeVolts.');
+		}
+		var samplesPerBit = tx.samplesPerBit;
+		var sampleRateHz = tx.sampleRateHz;
+		var samples = [];
+		var extras = {carrierAmplitudeVolts: amplitude};
+		if (mode === 'DPSK') {
+			var phaseSign = 1;
+			var signs = [phaseSign]; // Known reference symbol precedes the first data bit.
+			tx.bits.forEach(function (bit) {
+				if (bit) phaseSign = -phaseSign;
+				signs.push(phaseSign);
+			});
+			samples = signs.flatMap(function (sign, symbolIndex) {
+				return Array.from({length: samplesPerBit}, function (_, offset) {
+					var index = symbolIndex * samplesPerBit + offset;
+					return sign * amplitude * Math.cos(2 * Math.PI * carrierHz * index / sampleRateHz);
+				});
+			});
+			tx.referenceSymbols = 1;
+			extras.referenceSymbols = 1;
+		} else if (mode === 'QPSK' || mode === 'QAM') {
+			var order = mode === 'QPSK' ? 4 : (options.order === undefined ? 16 : options.order);
+			if (!powerOfTwo(order) || !Number.isInteger(Math.sqrt(order)) || order < 4 || order > 256) {
+				throw new RangeError('QAM order must be 4, 16, 64, or 256.');
+			}
+			var bitsPerSymbol = Math.log2(order);
+			var symbolCount = Math.ceil(tx.bits.length / bitsPerSymbol);
+			var pilot = complex((Math.sqrt(order) - 1) / Math.sqrt(2 * (order - 1) / 3),
+				(Math.sqrt(order) - 1) / Math.sqrt(2 * (order - 1) / 3));
+			var symbols = (mode === 'QAM' ? [pilot] : []).concat(
+				Array.from({length: symbolCount}, function (_, index) {
+					var paddedBits = tx.bits.slice(index * bitsPerSymbol, (index + 1) * bitsPerSymbol);
+					while (paddedBits.length < bitsPerSymbol) paddedBits.push(0);
+					return symbolFromBits(paddedBits, 0, order);
+				}));
+			var samplesPerSymbol = bitsPerSymbol * samplesPerBit;
+			samples = symbols.flatMap(function (symbol, symbolIndex) {
+				return Array.from({length: samplesPerSymbol}, function (_, offset) {
+					var index = symbolIndex * samplesPerSymbol + offset;
+					return amplitude * carrierSample(symbol, carrierHz, index, sampleRateHz);
+				});
+			});
+			tx.order = order;
+			tx.bitsPerSymbol = bitsPerSymbol;
+			tx.bitCount = tx.bits.length;
+			tx.symbolRate = sampleRateHz / samplesPerBit / bitsPerSymbol;
+			tx.referenceSymbols = mode === 'QAM' ? 1 : 0;
+			Object.assign(extras, {order: order, bitsPerSymbol: bitsPerSymbol,
+				referenceSymbols: tx.referenceSymbols,
+				symbolRate: sampleRateHz / samplesPerBit / bitsPerSymbol});
+		} else if (mode === 'MSK' || mode === 'GMSK') {
+			if (samplesPerBit < 4) {
+				throw new RangeError(mode + ' needs at least four samplesPerBit for phase-slope reception.');
+			}
+			var bitRate = sampleRateHz / samplesPerBit;
+			var deviationHz = bitRate / 4;
+			var bt = options.bt === undefined ? 0.3 : options.bt;
+			if (mode === 'GMSK' && (!Number.isFinite(bt) || bt < 0.1 || bt > 1)) {
+				throw new RangeError('GMSK bt must be from 0.1 through 1.');
+			}
+			var levels = mode === 'GMSK' ? gaussianLevels(tx.bits, samplesPerBit, bt) :
+				tx.bits.flatMap(function (bit) { return Array(samplesPerBit).fill(bit ? 1 : -1); });
+			var phase = 0;
+			samples = levels.map(function (level) {
+				var voltage = amplitude * Math.cos(phase);
+				phase += 2 * Math.PI * (carrierHz + deviationHz * level) / sampleRateHz;
+				return voltage;
+			});
+			tx.frequencyDeviationHz = deviationHz;
+			if (mode === 'GMSK') tx.bt = bt;
+			Object.assign(extras, {frequencyDeviationHz: deviationHz,
+				...(mode === 'GMSK' ? {bt: bt} : {})});
+		} else if (mode === 'OFDM') {
+			var subcarrierCount = options.subcarrierCount === undefined ? 64 : options.subcarrierCount;
+			var fftSize = options.fftSize === undefined ? 4 * subcarrierCount : options.fftSize;
+			var symbolRate = options.symbolRate === undefined ? 5e6 : options.symbolRate;
+			var subcarrierMode = options.subcarrierMode === undefined ? 'QPSK' : options.subcarrierMode;
+			var order = subcarrierMode === 'QPSK' ? 4 : subcarrierMode === 'QAM' ?
+				(options.order === undefined ? 16 : options.order) : 0;
+			if (!powerOfTwo(subcarrierCount) || subcarrierCount < 2 ||
+				!powerOfTwo(fftSize) || fftSize < 2 * subcarrierCount + 2 ||
+				!Number.isFinite(symbolRate) || symbolRate <= 0 ||
+				!powerOfTwo(order) || !Number.isInteger(Math.sqrt(order)) || order > 256) {
+				throw new RangeError('OFDM needs power-of-two subcarrierCount and fftSize, positive symbolRate, and QPSK or square QAM symbols.');
+			}
+			var bitsPerSymbol = Math.log2(order);
+			if (carrierHz <= subcarrierCount * symbolRate / 2 ||
+				carrierHz + subcarrierCount * symbolRate / 2 >= symbolRate * fftSize / 2 ||
+				Math.abs(carrierHz / symbolRate - Math.round(carrierHz / symbolRate)) > 1e-9) {
+				throw new RangeError('OFDM carrier must be bin-aligned and all subcarriers must lie between DC and Nyquist.');
+			}
+			var blockCount = Math.ceil(tx.bits.length / (subcarrierCount * bitsPerSymbol));
+			var slotCount = Math.ceil(tx.bits.length / bitsPerSymbol);
+			var blockRateHz = symbolRate * fftSize;
+			for (var block = 0; block < blockCount; block++) {
+				var blockSpectrum = Array.from({length: fftSize}, function () { return complex(0, 0); });
+				var scale = fftSize / Math.sqrt(subcarrierCount + 1);
+				blockSpectrum[0] = complex(scale, 0); // Pilot at the carrier.
+				for (var slot = 0; slot < subcarrierCount; slot++) {
+					var symbolIndex = block * subcarrierCount + slot;
+					if (symbolIndex >= slotCount) break;
+					var paddedBits = tx.bits.slice(symbolIndex * bitsPerSymbol,
+						(symbolIndex + 1) * bitsPerSymbol);
+					while (paddedBits.length < bitsPerSymbol) paddedBits.push(0);
+					var subcarrier = slot < subcarrierCount / 2 ? slot + 1 :
+						slot - subcarrierCount;
+					var location = (subcarrier + fftSize) % fftSize;
+					var symbol = symbolFromBits(paddedBits, 0, order);
+					blockSpectrum[location] = complex(scale * symbol.getR(), scale * symbol.getI());
+				}
+				var baseband = invFFT(blockSpectrum);
+				for (var sample = 0; sample < fftSize; sample++) {
+					var index = block * fftSize + sample;
+					samples.push(amplitude * carrierSample(baseband[sample], carrierHz,
+						index, blockRateHz));
+				}
+			}
+			tx.samplesPerBit = undefined;
+			tx.bitCount = tx.bits.length;
+			tx.subcarrierCount = subcarrierCount;
+			tx.fftSize = fftSize;
+			tx.symbolRate = symbolRate;
+			tx.subcarrierMode = subcarrierMode;
+			tx.order = order;
+			tx.bitsPerSymbol = bitsPerSymbol;
+			Object.assign(extras, {subcarrierCount: subcarrierCount, fftSize: fftSize,
+				symbolRate: symbolRate, subcarrierMode: subcarrierMode, order: order,
+				bitsPerSymbol: bitsPerSymbol, blockCount: blockCount});
+			setSamples(tx, samples, options.fftList, blockRateHz);
+		}
+		if (mode !== 'OFDM') {
+			if (carrierHz + (tx.frequencyDeviationHz || 0) >= sampleRateHz / 2) {
+				throw new RangeError(mode + ' carrier and deviation must remain below Nyquist.');
+			}
+			setSamples(tx, samples, options.fftList);
+		}
+		tx.dataMode = tx.mode;
+		tx.mode = mode;
+		tx.carrierHz = carrierHz;
+		tx.carrierAmplitudeVolts = amplitude;
+		return extras;
+	}
+
+	function correlator(samples, start, count, frequency, sampleRateHz) {
+		var real = 0, imaginary = 0;
+		for (var offset = 0; offset < count; offset++) {
+			var index = start + offset;
+			var theta = 2 * Math.PI * frequency * index / sampleRateHz;
+			real += samples[index + 1][1] * Math.cos(theta);
+			imaginary -= samples[index + 1][1] * Math.sin(theta);
+		}
+		return complex(2 * real / count, 2 * imaginary / count);
+	}
+
+	function analyticSamples(receiver, signal) {
+		var positive = receiver.out('spectrum');
+		var full = Array.from({length: signal.sampleCount}, function () { return complex(0, 0); });
+		for (var bin = 0; bin < positive.length; bin++) {
+			var factor = bin === 0 || (signal.sampleCount % 2 === 0 && bin === signal.sampleCount / 2) ? 1 : 2;
+			full[bin] = complex(factor * positive[bin].getR(), factor * positive[bin].getI());
+		}
+		return invFFT(full);
+	}
+
+	function ascii(bits) {
+		if (bits.length % 8 !== 0) throw new RangeError('ASCII reception requires complete eight-bit bytes.');
+		var text = '';
+		for (var byte = 0; byte < bits.length; byte += 8) {
+			var code = bitsValue(bits, byte, 8);
+			text += code > 127 ? '\uFFFD' : String.fromCharCode(code);
+		}
+		return text;
+	}
+
+	// All these receivers use the received waveform, never the transmitted bits.
+	function demodulateAdvanced(receiver, signal) {
+		var mode = signal.mode;
+		var passband = receiver.out('waveform');
+		var sampleRateHz = signal.sampleRateHz;
+		var bits = [];
+		var symbols = [['Symbol', 'In-phase', 'Quadrature']];
+		if (mode === 'DPSK' || mode === 'QPSK' || mode === 'QAM') {
+			var symbolBits = mode === 'DPSK' ? 1 : signal.bitsPerSymbol;
+			var samplesPerSymbol = signal.samplesPerBit * symbolBits;
+			var observed = [];
+			for (var start = 0; start < signal.sampleCount; start += samplesPerSymbol) {
+				var value = correlator(passband, start, samplesPerSymbol,
+					signal.carrierHz, sampleRateHz);
+				observed.push(value);
+				symbols.push([observed.length - 1, value.getR(), value.getI()]);
+			}
+			if (mode === 'DPSK') {
+				for (var index = 1; index < observed.length; index++) {
+					var previous = observed[index - 1], current = observed[index];
+					bits.push(previous.getR() * current.getR() +
+						previous.getI() * current.getI() < 0 ? 1 : 0);
+				}
+			} else {
+				var gain = mode === 'QAM' ? observed[0].div(complex(
+					(Math.sqrt(signal.order) - 1) / Math.sqrt(2 * (signal.order - 1) / 3),
+					(Math.sqrt(signal.order) - 1) / Math.sqrt(2 * (signal.order - 1) / 3))) : null;
+				if (gain && gain.mag() < 1e-12) throw new RangeError('QAM reference symbol has no received energy.');
+				for (var index = signal.referenceSymbols || 0; index < observed.length; index++) {
+					bits.push(...bitsFromSymbol(gain ? observed[index].div(gain) : observed[index], signal.order));
+				}
+			}
+		} else if (mode === 'MSK' || mode === 'GMSK') {
+			var analytic = analyticSamples(receiver, signal);
+			var samplesPerBit = signal.samplesPerBit;
+			for (var start = 0; start < signal.sampleCount; start += samplesPerBit) {
+				var left = start + Math.floor(samplesPerBit / 4);
+				var right = start + Math.floor(3 * samplesPerBit / 4);
+				var first = analytic[left], last = analytic[right];
+				var delta = last.mul(complex(first.getR(), -first.getI()));
+				var angle = Math.atan2(delta.getI(), delta.getR()) -
+					2 * Math.PI * signal.carrierHz * (right - left) / sampleRateHz;
+				bits.push(Math.atan2(Math.sin(angle), Math.cos(angle)) > 0 ? 1 : 0);
+				symbols.push([bits.length - 1, Math.cos(angle), Math.sin(angle)]);
+			}
+		} else if (mode === 'OFDM') {
+			var fftSize = signal.fftSize;
+			var totalSlots = Math.ceil(signal.bitCount / signal.bitsPerSymbol);
+			for (var block = 0; block < signal.sampleCount / fftSize; block++) {
+				var pilot = correlator(passband, block * fftSize, fftSize,
+					signal.carrierHz, sampleRateHz);
+				if (pilot.mag() < 1e-12) throw new RangeError('OFDM pilot has no received energy.');
+				for (var slot = 0; slot < signal.subcarrierCount; slot++) {
+					var symbolIndex = block * signal.subcarrierCount + slot;
+					if (symbolIndex >= totalSlots) break;
+					var subcarrier = slot < signal.subcarrierCount / 2 ? slot + 1 :
+						slot - signal.subcarrierCount;
+					var measured = correlator(passband, block * fftSize, fftSize,
+						signal.carrierHz + subcarrier * signal.symbolRate, sampleRateHz);
+					var equalized = measured.div(pilot);
+					bits.push(...bitsFromSymbol(equalized, signal.order));
+					symbols.push([symbolIndex, equalized.getR(), equalized.getI()]);
+				}
+			}
+			bits.length = signal.bitCount;
+		}
+		if (signal.bitCount !== undefined) bits.length = signal.bitCount;
+		var baseband = bits.flatMap(function (bit) {
+			return Array(signal.samplesPerBit || 1).fill(bit);
+		});
+		return {
+			out: function (selector = 'waveform') {
+				if (selector === 'mode') return mode;
+				if (selector === 'data mode') return signal.dataMode;
+				if (selector === 'bits') return bits.slice();
+				if (selector === 'bit string') return bits.join('');
+				if (selector === 'bit count') return bits.length;
+				if (selector === 'ASCII text') return ascii(bits);
+				if (selector === 'symbols') return symbols.map(function (row) { return row.slice(); });
+				if (selector === 'carrier waveform' || selector === 'passband waveform') return passband;
+				if (selector === 'waveform') return [['Time (ns)', 'Output (V)']].concat(
+					baseband.map(function (value, index) { return [index * 1e9 / sampleRateHz, value]; }));
+				return receiver.out(selector);
+			}
+		};
+	}
+
+	// Modified: 2026-10-22
+
+	// Connect a transmitter directly to the receiver using the transmitter's
+	// original frequency grid and impedance, independent of the active context.
+	function directStage(source) {
+		if (!source || !Array.isArray(source.fList) || source.fList.length === 0) {
+			throw new TypeError('demod requires an nPort with a signal or a mod() result.');
+		}
+		var stage = new nPort();
+		stage.setspars(source.fList.map(function (frequency) {
+			return [frequency, complex(0, 0), complex(1, 0), complex(1, 0), complex(0, 0)];
+		}));
+		stage.setglobal({fList: source.fList, Ro: source.referenceImpedanceOhms,
+			Temp: 290, tList: [], twoTone: undefined});
+		return applyInputSignal(stage, {signal: source, inputPort: 1});
+	}
+
+	function decideBits(levels, threshold) {
+		if (threshold === undefined) {
+			var sorted = levels.slice().sort(function (a, b) { return a - b; });
+			var lowCenter = sorted[Math.floor(sorted.length * 0.1)];
+			var highCenter = sorted[Math.floor(sorted.length * 0.9)];
+			if (lowCenter === highCenter) {
+				lowCenter = sorted[0];
+				highCenter = sorted[sorted.length - 1];
+			}
+			if (lowCenter === highCenter) {
+				throw new RangeError('Bit reception needs two voltage levels or an explicit thresholdVolts.');
+			}
+			for (var iteration = 0; iteration < 12; iteration++) {
+				var split = (lowCenter + highCenter) / 2;
+				var lowSum = 0, lowCount = 0, highSum = 0, highCount = 0;
+				levels.forEach(function (level) {
+					if (level <= split) { lowSum += level; lowCount++; }
+					else { highSum += level; highCount++; }
+				});
+				if (!lowCount || !highCount) break;
+				lowCenter = lowSum / lowCount;
+				highCenter = highSum / highCount;
+			}
+			threshold = (lowCenter + highCenter) / 2;
+		}
+		if (!Number.isFinite(threshold)) throw new RangeError('demod thresholdVolts must be finite.');
+		return levels.map(function (level) { return level > threshold ? 1 : 0; });
+	}
+
+	// Recover the envelope from the three propagated complex peak-voltage tones.
+	function demodAM(stage, options) {
+		if (!options || Array.isArray(options) || typeof options !== 'object') {
+			throw new TypeError('demod options must be an object.');
+		}
+		if (options.noise !== undefined && options.noise !== false) {
+			throw new RangeError('AM envelope analysis does not yet generate random noise samples.');
+		}
+		if (options.mode !== undefined) {
+			throw new RangeError('Select AM demod output with .out() instead of mode.');
+		}
+		var portCount = Math.sqrt(stage.spars[0].length - 1);
+		var outputPort = options.outputPort === undefined ? 2 : options.outputPort;
+		var points = options.points === undefined ? 1001 : options.points;
+		if (!Number.isInteger(outputPort) || outputPort < 1 || outputPort > portCount ||
+			!Number.isInteger(points) || points < 3) {
+			throw new RangeError('AM demod needs a valid outputPort and at least three envelope points.');
+		}
+		var signal = stage.signal;
+		var voltageScale = complex(Math.sqrt(signal.referenceImpedanceOhms), 0);
+		var lower = signal.rows[0].waves[outputPort - 1].mul(voltageScale);
+		var carrier = signal.rows[1].waves[outputPort - 1].mul(voltageScale);
+		var upper = signal.rows[2].waves[outputPort - 1].mul(voltageScale);
+		if (carrier.mag() === 0) throw new RangeError('AM phase requires a nonzero output carrier.');
+		var envelope = [['Time (s)', 'Envelope (V)']];
+		var phase = [['Time (s)', 'Phase deviation (deg)']];
+		var peakPhase = 0;
+		var carrierPhase = Math.atan2(carrier.getI(), carrier.getR());
+		for (var index = 0; index < points; index++) {
+			var theta = 2 * Math.PI * index / (points - 1);
+			var cosine = Math.cos(theta), sine = Math.sin(theta);
+			var real = carrier.getR() + (lower.getR() + upper.getR()) * cosine +
+				(lower.getI() - upper.getI()) * sine;
+			var imaginary = carrier.getI() + (lower.getI() + upper.getI()) * cosine +
+				(upper.getR() - lower.getR()) * sine;
+			var difference = Math.atan2(imaginary, real) - carrierPhase;
+			difference = Math.atan2(Math.sin(difference), Math.cos(difference)) * 180 / Math.PI;
+			var time = index / ((points - 1) * signal.toneHz);
+			envelope.push([time, Math.hypot(real, imaginary)]);
+			phase.push([time, difference]);
+			peakPhase = Math.max(peakPhase, Math.abs(difference));
+		}
+		return {
+			out: function (selector) {
+				if (selector === 'envelope') return envelope.map(function (row) { return row.slice(); });
+				if (selector === 'phase') return phase.map(function (row) { return row.slice(); });
+				if (selector === 'amToPmDeg') return peakPhase;
+				if (selector === 'tones') return stage.out('signal' + outputPort + 'V',
+					'signal' + outputPort + 'Deg', 'signal' + outputPort + 'dBm');
+				if (selector === 'frequencies') return signal.rows.map(function (row) { return row.frequency; });
+				throw new RangeError('Unknown AM demod output: ' + selector);
+			}
+		};
+	}
+
+	// Coherently translate occupied sidebands back to the modulation frequency.
+	function demodSuppressed(stage, options) {
+		if (!options || Array.isArray(options) || typeof options !== 'object') {
+			throw new TypeError('demod options must be an object.');
+		}
+		if (options.noise !== undefined && options.noise !== false) {
+			throw new RangeError('Suppressed-carrier analysis does not yet generate random noise samples.');
+		}
+		if (options.mode !== undefined) throw new RangeError('Select demod output with .out() instead of mode.');
+		var signal = stage.signal;
+		var outputPort = options.outputPort === undefined ? 2 : options.outputPort;
+		var portCount = Math.sqrt(stage.spars[0].length - 1);
+		var points = options.points === undefined ? 1001 : options.points;
+		if (!Number.isInteger(outputPort) || outputPort < 1 || outputPort > portCount ||
+			!Number.isInteger(points) || points < 3) {
+			throw new RangeError(signal.mode + ' demod needs a valid outputPort and at least three points.');
+		}
+		var scale = complex(Math.sqrt(signal.referenceImpedanceOhms), 0);
+		var tones = signal.rows.map(function (row) { return row.waves[outputPort - 1].mul(scale); });
+		var waveform = [['Time (s)', 'Recovered voltage (V)']];
+		var envelope = [['Time (s)', 'Envelope (V)']];
+		for (var index = 0; index < points; index++) {
+			var time = index / ((points - 1) * signal.toneHz);
+			var real = 0, imaginary = 0;
+			for (var toneIndex = 0; toneIndex < tones.length; toneIndex++) {
+				var offset = signal.rows[toneIndex].frequency - signal.carrierHz;
+				var theta = 2 * Math.PI * offset * time;
+				real += tones[toneIndex].getR() * Math.cos(theta) - tones[toneIndex].getI() * Math.sin(theta);
+				imaginary += tones[toneIndex].getR() * Math.sin(theta) +
+					tones[toneIndex].getI() * Math.cos(theta);
+			}
+			waveform.push([time, real]);
+			envelope.push([time, Math.hypot(real, imaginary)]);
+		}
+		return {out: function (selector) {
+			if (selector === 'mode') return signal.mode;
+			if (selector === 'waveform') return waveform.map(function (row) { return row.slice(); });
+			if (selector === 'envelope') return envelope.map(function (row) { return row.slice(); });
+			if (selector === 'tones') return stage.out('signal' + outputPort + 'V',
+				'signal' + outputPort + 'Deg', 'signal' + outputPort + 'dBm');
+			if (selector === 'frequencies') return signal.rows.map(function (row) { return row.frequency; });
+			throw new RangeError('Unknown ' + signal.mode + ' demod output: ' + selector);
+		}};
+	}
+
+	// Sum the propagated angle-modulation sidebands into a complex envelope.
+	function demodAngle(stage, options) {
+		var mode = stage.signal.mode;
+		if (!options || Array.isArray(options) || typeof options !== 'object') {
+			throw new TypeError('demod options must be an object.');
+		}
+		if (options.noise !== undefined && options.noise !== false) {
+			throw new RangeError(mode + ' analysis does not yet generate random receiver noise samples.');
+		}
+		if (options.mode !== undefined) {
+			throw new RangeError('Select ' + mode + ' demod output with .out() instead of mode.');
+		}
+		var portCount = Math.sqrt(stage.spars[0].length - 1);
+		var outputPort = options.outputPort === undefined ? 2 : options.outputPort;
+		var points = options.points === undefined ? 1001 : options.points;
+		if (!Number.isInteger(outputPort) || outputPort < 1 || outputPort > portCount ||
+			!Number.isInteger(points) || points < 3) {
+			throw new RangeError(mode + ' demod needs a valid outputPort and at least three display points.');
+		}
+		var signal = stage.signal;
+		if (mode === 'PM' && points <= 2 * signal.beta + 1) {
+			throw new RangeError('PM needs more display points to unwrap its phase.');
+		}
+		var order = signal.sidebandOrder;
+		var scale = complex(Math.sqrt(signal.referenceImpedanceOhms), 0);
+		var tones = signal.rows.map(function (row) { return row.waves[outputPort - 1].mul(scale); });
+		var envelope = [['Time (s)', 'Envelope (V)']];
+		var phase = [['Time (s)', 'Phase deviation (deg, wrapped)']];
+		var deviation = [['Time (s)', 'Frequency deviation (Hz)']];
+		var referencePhase;
+		var peakDeviation = 0;
+		var rawPhases = [];
+		for (var index = 0; index < points; index++) {
+			var theta = 2 * Math.PI * index / (points - 1);
+			var real = 0, imaginary = 0, derivativeReal = 0, derivativeImaginary = 0;
+			for (var toneIndex = 0; toneIndex < tones.length; toneIndex++) {
+				var n = toneIndex - order;
+				var cosine = Math.cos(n * theta), sine = Math.sin(n * theta);
+				var componentReal = tones[toneIndex].getR() * cosine - tones[toneIndex].getI() * sine;
+				var componentImaginary = tones[toneIndex].getR() * sine + tones[toneIndex].getI() * cosine;
+				real += componentReal;
+				imaginary += componentImaginary;
+				derivativeReal += n * componentReal;
+				derivativeImaginary += n * componentImaginary;
+			}
+			var power = real * real + imaginary * imaginary;
+			if (power === 0) throw new RangeError(mode + ' demodulation requires a nonzero envelope.');
+			var time = index / ((points - 1) * signal.toneHz);
+			var currentPhase = Math.atan2(imaginary, real);
+			rawPhases.push(currentPhase);
+			if (referencePhase === undefined) referencePhase = currentPhase;
+			var difference = currentPhase - referencePhase;
+			difference = Math.atan2(Math.sin(difference), Math.cos(difference)) * 180 / Math.PI;
+			var frequencyDeviation = signal.toneHz *
+				(derivativeReal * real + derivativeImaginary * imaginary) / power;
+			envelope.push([time, Math.sqrt(power)]);
+			phase.push([time, difference]);
+			deviation.push([time, frequencyDeviation]);
+			peakDeviation = Math.max(peakDeviation, Math.abs(frequencyDeviation));
+		}
+		var peakPhaseRadians;
+		if (mode === 'PM') {
+			var unwrapped = [rawPhases[0]];
+			for (var phaseIndex = 1; phaseIndex < points; phaseIndex++) {
+				var step = rawPhases[phaseIndex] - rawPhases[phaseIndex - 1];
+				unwrapped.push(unwrapped[phaseIndex - 1] + Math.atan2(Math.sin(step), Math.cos(step)));
+			}
+			var center = unwrapped.slice(0, -1).reduce(function (sum, value) {
+				return sum + value;
+			}, 0) / (points - 1);
+			peakPhaseRadians = 0;
+			phase = [['Time (s)', 'Phase deviation (deg)']];
+			for (var phasePoint = 0; phasePoint < points; phasePoint++) {
+				var phaseRadians = unwrapped[phasePoint] - center;
+				phase.push([phasePoint / ((points - 1) * signal.toneHz),
+					phaseRadians * 180 / Math.PI]);
+				peakPhaseRadians = Math.max(peakPhaseRadians, Math.abs(phaseRadians));
+			}
+		}
+		return {
+			out: function (selector) {
+				if (selector === 'envelope') return envelope.map(function (row) { return row.slice(); });
+				if (selector === 'phase') return phase.map(function (row) { return row.slice(); });
+				if (selector === 'frequency deviation') return deviation.map(function (row) { return row.slice(); });
+				if (selector === 'peak frequency deviation Hz') return peakDeviation;
+				if (selector === 'peak phase deviation radians' && mode === 'PM') return peakPhaseRadians;
+				if (selector === 'tones') return stage.out('signal' + outputPort + 'V',
+					'signal' + outputPort + 'Deg', 'signal' + outputPort + 'dBm');
+				if (selector === 'frequencies') return signal.rows.map(function (row) { return row.frequency; });
+				throw new RangeError('Unknown ' + mode + ' demod output: ' + selector);
+			}
+		};
+	}
+
+	// Compare quadrature energy at the two FSK tones in each known bit interval.
+	function demodFSK(receiver, signal) {
+		var samplesPerBit = signal.samplesPerBit;
+		if (!Number.isInteger(samplesPerBit) || samplesPerBit < 2 ||
+			signal.sampleCount % samplesPerBit !== 0 ||
+			!Number.isFinite(signal.frequencyDeviationHz) || signal.frequencyDeviationHz <= 0) {
+			throw new RangeError('FSK reception needs two valid tones and whole bit intervals.');
+		}
+		var samples = receiver.out('waveform');
+		var frequencies = [signal.carrierHz - signal.frequencyDeviationHz,
+			signal.carrierHz + signal.frequencyDeviationHz];
+		var bits = [];
+		var energies = [['Bit', 'Low-tone energy', 'High-tone energy']];
+		for (var start = 0; start < signal.sampleCount; start += samplesPerBit) {
+			var scores = frequencies.map(function (frequency) {
+				var inPhase = 0, quadrature = 0;
+				for (var offset = 0; offset < samplesPerBit; offset++) {
+					var index = start + offset;
+					var phase = 2 * Math.PI * frequency * index / signal.sampleRateHz;
+					inPhase += samples[index + 1][1] * Math.cos(phase);
+					quadrature += samples[index + 1][1] * Math.sin(phase);
+				}
+				return inPhase * inPhase + quadrature * quadrature;
+			});
+			bits.push(scores[1] > scores[0] ? 1 : 0);
+			energies.push([start / samplesPerBit, scores[0], scores[1]]);
+		}
+		return {
+			out: function (selector = 'waveform') {
+				if (selector === 'mode') return 'FSK';
+				if (selector === 'data mode') return signal.dataMode;
+				if (selector === 'bits') return bits.slice();
+				if (selector === 'bit string') return bits.join('');
+				if (selector === 'bit count') return bits.length;
+				if (selector === 'tone energies') return energies.map(function (row) { return row.slice(); });
+				if (selector === 'tone frequencies Hz') return frequencies.slice();
+				if (selector === 'ASCII text') {
+					if (bits.length % 8 !== 0) throw new RangeError('ASCII reception requires complete eight-bit bytes.');
+					var message = '';
+					for (var byte = 0; byte < bits.length; byte += 8) {
+						var code = 0;
+						for (var bit = 0; bit < 8; bit++) code = (code << 1) | bits[byte + bit];
+						message += code > 127 ? '\uFFFD' : String.fromCharCode(code);
+					}
+					return message;
+				}
+				return receiver.out(selector === 'carrier waveform' || selector === 'passband waveform' ?
+					'waveform' : selector);
+			}
+		};
+	}
+
+	// Recover baseband levels from a real carrier using the known carrier phase.
+	function demod(stage, options = {}) {
+		if (!stage || !Array.isArray(stage.spars)) stage = directStage(stage);
+		if (stage.signal && stage.signal.mode === 'VNA-frequency') {
+			return receiveVnaFrequency(stage, options);
+		}
+		if (stage.signal && stage.signal.mode === 'AM') return demodAM(stage, options);
+		if (stage.signal && (stage.signal.mode === 'SSB' || stage.signal.mode === 'DSB-SC')) {
+			return demodSuppressed(stage, options);
+		}
+		if (stage.signal && (stage.signal.mode === 'FM' || stage.signal.mode === 'PM')) {
+			return demodAngle(stage, options);
+		}
+		var receiver = receiveWaveform(stage, options);
+		var signal = stage.signal;
+		if (['DPSK', 'QPSK', 'QAM', 'MSK', 'GMSK', 'OFDM'].includes(signal.mode)) {
+			return demodulateAdvanced(receiver, signal);
+		}
+		if (signal.mode === 'FSK') return demodFSK(receiver, signal);
+		var carrierHz = signal.carrierHz || 0;
+		if (carrierHz === 0) return receiver;
+		var samplesPerBit = signal.samplesPerBit;
+		if (!Number.isInteger(samplesPerBit) || samplesPerBit < 1 ||
+			signal.sampleCount % samplesPerBit !== 0) {
+			throw new RangeError('Carrier demodulation requires a whole number of samples per bit.');
+		}
+		var passband = receiver.out('waveform');
+		var sampleRateHz = signal.sampleRateHz;
+		var levels = [];
+		for (var bitStart = 0; bitStart < signal.sampleCount; bitStart += samplesPerBit) {
+			var numerator = 0, denominator = 0;
+			for (var offset = 0; offset < samplesPerBit; offset++) {
+				var index = bitStart + offset;
+				var reference = Math.cos(2 * Math.PI * carrierHz * index / sampleRateHz);
+				if (signal.mode === 'PSK' && signal.encoding === 'Manchester' &&
+					offset >= samplesPerBit / 2) reference = -reference;
+				numerator += passband[index + 1][1] * reference;
+				denominator += reference * reference;
+			}
+			if (denominator < 1e-12) throw new RangeError('Carrier has insufficient energy in a bit interval.');
+			levels.push(numerator / denominator);
+		}
+		var baseband = levels.flatMap(function (level) {
+			return Array(samplesPerBit).fill(level);
+		});
+		var bits;
+		var receivedBits = function () {
+			if (bits === undefined) {
+				if (signal.mode === 'PSK') {
+					var threshold = options.thresholdVolts === undefined ? 0 : options.thresholdVolts;
+					if (!Number.isFinite(threshold)) throw new RangeError('PSK thresholdVolts must be finite.');
+					bits = levels.map(function (level) { return level > threshold ? 1 : 0; });
+				} else {
+					bits = decideBits(levels, options.thresholdVolts);
+				}
+			}
+			return bits;
+		};
+		return {
+			out: function (selector = 'waveform') {
+				if (selector === 'mode') return signal.mode;
+				if (selector === 'data mode') return signal.dataMode || signal.mode;
+				if (selector === 'encoding' && signal.mode === 'PSK') return signal.encoding || 'NRZ';
+				if (selector === 'carrier waveform' || selector === 'passband waveform') {
+					return receiver.out('waveform');
+				}
+				if (selector === 'waveform') {
+					return [['Time (ns)', 'Output (V)']].concat(baseband.map(function (level, index) {
+						return [index * 1e9 / sampleRateHz, level];
+					}));
+				}
+				if (selector === 'bits') return receivedBits().slice();
+				if (selector === 'bit string') return receivedBits().join('');
+				if (selector === 'bit count') return levels.length;
+				if (selector === 'spectrum') return fftBins(baseband).slice(0, signal.rows.length);
+				if (selector === 'carrier spectrum') return receiver.out('spectrum');
+				if (selector === 'ASCII text') {
+					var bits = receivedBits();
+					if (bits.length % 8 !== 0) throw new RangeError('ASCII reception requires complete eight-bit bytes.');
+					var text = '';
+					for (var byte = 0; byte < bits.length; byte += 8) {
+						var code = 0;
+						for (var bit = 0; bit < 8; bit++) code = (code << 1) | bits[byte + bit];
+						text += code > 127 ? '\uFFFD' : String.fromCharCode(code);
+					}
+					return text;
+				}
+				return receiver.out(selector);
+			}
+		};
+	}
+
+	// Modified: 2026-10-14
+
+	// Compare independent receiver decisions with a known transmitted bit pattern.
+	function bitErrorRate(tx, stage, options = {}) {
+		if (!tx || !Array.isArray(tx.bits) || tx.bits.length === 0 ||
+			tx.bits.some(function (bit) { return bit !== 0 && bit !== 1; })) {
+			throw new TypeError('bitErrorRate requires transmitted bits from mod.');
+		}
+		if (!options || Array.isArray(options) || typeof options !== 'object') {
+			throw new TypeError('bitErrorRate options must be an object.');
+		}
+		var receptions = options.receptions === undefined ? 100 : options.receptions;
+		if (!Number.isInteger(receptions) || receptions < 1) {
+			throw new RangeError('bitErrorRate receptions must be a positive integer.');
+		}
+		var receiverOptions = {...options};
+		delete receiverOptions.receptions;
+		var receiver = receiverOptions.receiver === undefined ? demod : receiverOptions.receiver;
+		delete receiverOptions.receiver;
+		if (typeof receiver !== 'function') {
+			throw new TypeError('bitErrorRate receiver must be a function.');
+		}
+		var errors = 0;
+		for (var reception = 0; reception < receptions; reception++) {
+			var receivedBits = receiver(stage, receiverOptions).out('bits');
+			if (receivedBits.length !== tx.bits.length) {
+				throw new RangeError('Transmitted and received bit counts must match.');
+			}
+			for (var bit = 0; bit < receivedBits.length; bit++) {
+				if (receivedBits[bit] !== tx.bits[bit]) errors++;
+			}
+		}
+		return errors / (receptions * tx.bits.length);
+	}
+
+	// Modified: 2026-10-21
+
+
+	// Feedback masks for maximal-length, left-shifting registers of 2–16 stages.
+	var FEEDBACK_MASKS = {
+		2: 0x3, 3: 0x5, 4: 0x9, 5: 0x17, 6: 0x21,
+		7: 0x41, 8: 0x95, 9: 0x10d, 10: 0x20d, 11: 0x40b,
+		12: 0x829, 13: 0x100d, 14: 0x2015, 15: 0x4001, 16: 0x801f
+	};
+
+	function pnBits(stages = 7, seed = 2 ** stages - 1) {
+		if (!Number.isInteger(stages) || !FEEDBACK_MASKS[stages]) {
+			throw new RangeError('PN stages must be an integer from 2 through 16.');
+		}
+		var mask = 2 ** stages - 1;
+		if (!Number.isInteger(seed) || seed < 1 || seed > mask) {
+			throw new RangeError('PN' + stages + ' seed must be a nonzero ' + stages + '-bit integer.');
+		}
+		var bits = [];
+		var register = seed;
+		for (var i = 0; i < mask; i++) {
+			bits.push((register >> (stages - 1)) & 1);
+			var taps = register & FEEDBACK_MASKS[stages];
+			var feedback = 0;
+			while (taps) {
+				feedback ^= taps & 1;
+				taps >>= 1;
+			}
+			register = ((register << 1) | feedback) & mask;
+		}
+		if (register !== seed) throw new RangeError('PN' + stages + ' did not return to its seed.');
+		return bits;
+	}
+
+	// Advance the selected PN register once at each clock time.
+	function PN(options = {}) {
+		if (!options || Array.isArray(options) || typeof options !== 'object') {
+			throw new TypeError('PN expects an options object.');
+		}
+		var stages = options.stages === undefined ? 7 : options.stages;
+		if (!Number.isInteger(stages) || !FEEDBACK_MASKS[stages]) {
+			throw new RangeError('PN stages must be an integer from 2 through 16.');
+		}
+		var periodLength = 2 ** stages - 1;
+		var time = options.time === undefined ? global.tList : options.time;
+		if (!Array.isArray(time) || time.length < periodLength || time.length % periodLength !== 0) {
+			throw new RangeError('PN time must contain a multiple of ' + periodLength + ' clock ticks.');
+		}
+		var step = time[1] - time[0];
+		if (!Number.isFinite(step) || step <= 0 || time.some(function (value, index) {
+			return !Number.isFinite(value) ||
+				Math.abs(value - (time[0] + index * step)) > Math.abs(step) * 1e-6;
+		})) {
+			throw new RangeError('PN time must be a uniformly spaced, increasing list in seconds.');
+		}
+		var lowVolts = options.lowVolts === undefined ? 0 : options.lowVolts;
+		var highVolts = options.highVolts === undefined ? 1 : options.highVolts;
+		if (!Number.isFinite(lowVolts) || !Number.isFinite(highVolts)) {
+			throw new RangeError('PN voltage levels must be finite.');
+		}
+		var period = pnBits(stages, options.seed === undefined ? periodLength : options.seed);
+		var bits = Array.from({length: time.length}, function (_, index) {
+			return period[index % period.length];
+		});
+		var samples = bits.map(function (bit) { return bit ? highVolts : lowVolts; });
+		var bitRate = 1 / step;
+		if (!Number.isFinite(bitRate)) {
+			throw new RangeError('PN clock spacing produces an invalid bit rate.');
+		}
+		var waveform = {
+			kind: 'PN', mode: 'PN' + stages, stages: stages, bits: bits, samples: samples,
+			time: time.slice(), samplesPerBit: 1, sampleRateHz: bitRate,
+			bitRate: bitRate, lowVolts: lowVolts, highVolts: highVolts
+		};
+		waveform.out = function (selector) {
+			if (selector === 'bits') return bits.slice();
+			if (selector === 'bit string') return bits.join('');
+			if (selector === 'samples') return samples.slice();
+			if (selector === 'time') return waveform.time.slice();
+			if (selector === 'bit count') return bits.length;
+			if (selector === 'sample count') return samples.length;
+			if (selector === 'bit rate') return bitRate;
+			if (selector === 'sample rate' || selector === 'clock rate') return bitRate;
+			if (selector === 'waveform') {
+				return [['Time (ns)', 'Output (V)']].concat(waveform.time.map(function (value, index) {
+					return [value * 1e9, samples[index]];
+				}));
+			}
+			throw new RangeError('Unknown PN output: ' + selector);
+		};
+		return waveform;
+	}
+
+	// Modified: 2026-10-20
+
+	function patternBits(options) {
+		var mode = options.mode === undefined ? 'PN7' : options.mode;
+		var bits = [];
+		if (typeof mode === 'string' && /^PN\d+$/.test(mode)) {
+			var stages = Number(mode.slice(2));
+			bits = pnBits(stages, options.seed === undefined ? 2 ** stages - 1 : options.seed);
+		} else if (mode === 'ASCII') {
+			if (typeof options.message !== 'string' || options.message.length === 0) {
+				throw new TypeError('ASCII mode requires a nonempty message.');
+			}
+			for (var character = 0; character < options.message.length; character++) {
+				var code = options.message.charCodeAt(character);
+				if (code > 127) throw new RangeError('ASCII mode accepts only characters U+0000 through U+007F.');
+				for (var shift = 7; shift >= 0; shift--) bits.push((code >> shift) & 1);
+			}
+		} else if (mode === 'bits') {
+			if (typeof options.bits === 'string') {
+				if (!/^[01]+$/.test(options.bits)) throw new TypeError('bits mode requires a nonempty 0/1 string.');
+				bits = options.bits.split('').map(Number);
+			} else if (Array.isArray(options.bits) && options.bits.length > 0 &&
+				options.bits.every(function (bit) { return bit === 0 || bit === 1; })) {
+				bits = options.bits.slice();
+			} else {
+				throw new TypeError('bits mode requires a nonempty array of 0s and 1s or a 0/1 string.');
+			}
+		} else {
+			throw new RangeError('mod mode must be PN2 through PN16, ASCII, or bits.');
+		}
+		return {mode: mode, bits: bits};
+	}
+
+	// Describe an input waveform; the circuit itself remains an ordinary nPort.
+	// mod() may fill a caller-owned list instead of replacing the global default.
+	function createSourceWaveform(options = {}, fftList) {
+		if (!options || Array.isArray(options) || typeof options !== 'object') {
+			throw new TypeError('mod expects an options object.');
+		}
+		if (fftList !== undefined && !Array.isArray(fftList)) {
+			throw new TypeError('mod fftList must be an array.');
+		}
+		if (global.twoTone) throw new RangeError('Clear global.twoTone before digital waveform analysis.');
+		var input = options.input;
+		if (input !== undefined && (Object.keys(options).some(function (key) {
+			return key !== 'input' && key !== 'samplesPerBit';
+		}) || !input ||
+			input.kind !== 'PN' || !Number.isInteger(input.stages) ||
+			input.stages < 2 || input.stages > 16 || input.mode !== 'PN' + input.stages ||
+			!Array.isArray(input.bits) ||
+			!Array.isArray(input.samples) || !Array.isArray(input.time) ||
+			input.bits.length < 2 ** input.stages - 1 ||
+			input.bits.length % (2 ** input.stages - 1) !== 0 ||
+			input.samples.length !== input.time.length ||
+			input.samples.length !== input.bits.length ||
+			input.samples.some(function (sample) { return !Number.isFinite(sample); }))) {
+			throw new TypeError('mod input must be a PN clock waveform with only an optional samplesPerBit setting.');
+		}
+		var bitRate = input ? input.bitRate : options.bitRate === undefined ? 1e9 : options.bitRate;
+		var samplesPerBit = options.samplesPerBit === undefined ? 8 : options.samplesPerBit;
+		var lowVolts = input ? input.lowVolts : options.lowVolts === undefined ? 0 : options.lowVolts;
+		var highVolts = input ? input.highVolts : options.highVolts === undefined ? 1 : options.highVolts;
+		if (!Number.isFinite(bitRate) || bitRate <= 0 ||
+			!Number.isInteger(samplesPerBit) || samplesPerBit < 1 ||
+			!Number.isFinite(lowVolts) || !Number.isFinite(highVolts) ||
+			!Number.isFinite(global.Ro) || global.Ro <= 0) {
+			throw new RangeError('mod needs a positive bit rate, positive integer samples per bit, finite voltage levels, and positive global.Ro.');
+		}
+		var pattern = input ? {mode: input.mode, bits: input.bits.slice()} : patternBits(options);
+		var samples = input ? input.samples.flatMap(function (sample) {
+			return Array(samplesPerBit).fill(sample);
+		}) : pattern.bits.flatMap(function (bit) {
+			return Array(samplesPerBit).fill(bit ? highVolts : lowVolts);
+		});
+		var sampleCount = samples.length;
+		var sampleRateHz = bitRate * samplesPerBit;
+		if (!Number.isFinite(sampleRateHz)) throw new RangeError('mod sample rate must be finite.');
+		var spectrum = fftBins(samples);
+		var frequencyList = Array.from({length: Math.floor(sampleCount / 2) + 1}, function (_, bin) {
+			return bin * sampleRateHz / sampleCount;
+		});
+		if (fftList === undefined) {
+			global.fList = frequencyList;
+		} else {
+			fftList.length = 0;
+			for (var frequencyIndex = 0; frequencyIndex < frequencyList.length; frequencyIndex++) {
+				fftList.push(frequencyList[frequencyIndex]);
+			}
+		}
+		var tx = {
+			mode: pattern.mode,
+			bits: pattern.bits,
+			samples: samples,
+			fList: frequencyList,
+			spectrum: spectrum.slice(0, frequencyList.length),
+			sampleRateHz: sampleRateHz,
+			sampleCount: sampleCount,
+			samplesPerBit: samplesPerBit,
+			lowVolts: lowVolts,
+			highVolts: highVolts,
+			time: input ? input.time.flatMap(function (clockTime) {
+				return Array.from({length: samplesPerBit}, function (_, index) {
+					return clockTime + index / sampleRateHz;
+				});
+			}) : undefined,
+			referenceImpedanceOhms: global.Ro
+		};
+		tx.out = function (selector) {
+			if (selector === 'mode') return tx.mode;
+			if (selector === 'bit count') return tx.bits.length;
+			if (selector === 'sample count') return tx.sampleCount;
+			if (selector === 'frequency count') return tx.fList.length;
+			if (selector === 'frequencies') return tx.fList.slice();
+			if (selector === 'spectrum') return tx.spectrum.map(function (value) { return value.copy(); });
+			throw new RangeError('Unknown mod output: ' + selector);
+		};
+		return tx;
+	}
+
+	// Modified: 2026-10-22
+
+	// Equal reference phasors on an FFT grid reconstruct a synthetic impulse.
+	function vnaTimeSweep(options, sampleRateHz) {
+		var count = global.tList.length;
+		if (count < 4 || (count & (count - 1)) !== 0 || global.tList[0] !== 0) {
+			throw new RangeError('VNA-time needs a power-of-two tList of at least four points starting at zero.');
+		}
+		if (global.twoTone) throw new RangeError('Clear global.twoTone before VNA-time analysis.');
+		if (!Number.isFinite(global.Ro) || global.Ro <= 0) {
+			throw new RangeError('VNA-time needs a positive global.Ro.');
+		}
+		if (options.fftList !== undefined && !Array.isArray(options.fftList)) {
+			throw new TypeError('VNA-time fftList must be an array.');
+		}
+		if (Object.keys(options).some(function (key) {
+			return key !== 'mode' && key !== 'fftList';
+		})) {
+			throw new TypeError('VNA-time accepts only mode and optional fftList.');
+		}
+		var frequencyList = Array.from({length: count / 2 + 1}, function (_, bin) {
+			return bin * sampleRateHz / count;
+		});
+		var spectrum = frequencyList.map(function (_, bin) {
+			return complex(bin === count / 2 ? 0 : 1, 0);
+		});
+		if (options.fftList === undefined) global.fList = frequencyList.slice();
+		else {
+			options.fftList.length = 0;
+			frequencyList.forEach(function (frequency) { options.fftList.push(frequency); });
+		}
+		var time = global.tList.slice();
+		var tx = {
+			mode: 'VNA-time', fList: frequencyList, spectrum: spectrum,
+			sampleCount: count, sampleRateHz: sampleRateHz,
+			referenceImpedanceOhms: global.Ro
+		};
+		tx.out = function (selector) {
+			if (selector === 'mode') return tx.mode;
+			if (selector === 'sample count') return count;
+			if (selector === 'frequency count') return frequencyList.length;
+			if (selector === 'frequencies') return frequencyList.slice();
+			if (selector === 'spectrum') return spectrum.map(function (value) { return value.copy(); });
+			if (selector === 'settings') return {mode: 'VNA-time', sampleRateHz: sampleRateHz,
+				sampleCount: count, frequencyCount: frequencyList.length,
+				frequencyStepHz: sampleRateHz / count,
+				maximumFrequencyHz: sampleRateHz / 2};
+			if (selector === 'frequency table') return [['Bin', 'Frequency (Hz)']].concat(
+				frequencyList.map(function (frequency, bin) { return [bin, frequency]; }));
+			if (selector === 'waveform') {
+				var fullSpectrum = Array.from({length: count}, function (_, bin) {
+					return complex(bin === count / 2 ? 0 : 1, 0);
+				});
+				var samples = invFFT(fullSpectrum);
+				return [['Time (ns)', 'Input (V)']].concat(time.map(function (value, index) {
+					return [value * 1e9, samples[index].getR()];
+				}));
+			}
+			throw new RangeError('Unknown VNA-time output: ' + selector);
+		};
+		return tx;
+	}
+
+	// A stepped-frequency VNA has independent complex tones, with no time grid.
+	function vnaFrequencySweep(options) {
+		if (Object.keys(options).some(function (key) { return key !== 'mode' && key !== 'fList'; })) {
+			throw new TypeError('VNA-frequency accepts only mode and fList.');
+		}
+		var frequencies = options.fList === undefined ? global.fList : options.fList;
+		if (!Array.isArray(frequencies) || frequencies.length === 0 ||
+			frequencies.some(function (frequency, index) {
+				return !Number.isFinite(frequency) || frequency < 0 ||
+					(index > 0 && frequency <= frequencies[index - 1]);
+			})) {
+			throw new RangeError('VNA-frequency needs a nonempty, increasing fList of nonnegative frequencies.');
+		}
+		if (global.twoTone) throw new RangeError('Clear global.twoTone before VNA-frequency analysis.');
+		if (!Number.isFinite(global.Ro) || global.Ro <= 0) {
+			throw new RangeError('VNA-frequency needs a positive global.Ro.');
+		}
+		var fList = frequencies.slice();
+		global.fList = fList.slice();
+		var spectrum = fList.map(function () { return complex(1, 0); });
+		var tx = {mode: 'VNA-frequency', fList: fList, spectrum: spectrum,
+			referenceImpedanceOhms: global.Ro};
+		tx.out = function (selector) {
+			if (selector === 'mode') return tx.mode;
+			if (selector === 'frequency count') return fList.length;
+			if (selector === 'frequencies') return fList.slice();
+			if (selector === 'spectrum') return spectrum.map(function (value) { return value.copy(); });
+			if (selector === 'settings') return {mode: tx.mode, frequencyCount: fList.length};
+			if (selector === 'frequency table') return [['Bin', 'Frequency (Hz)']].concat(
+				fList.map(function (frequency, index) { return [index, frequency]; }));
+			throw new RangeError('Unknown VNA-frequency output: ' + selector);
+		};
+		return tx;
+	}
+
+	// A single sinusoidal AM input has only a carrier and two sidebands.
+	function analogAM(options) {
+		var carrierHz = options.carrierHz;
+		var toneHz = options.toneHz;
+		var modulationIndex = options.modulationIndex === undefined ? 0.5 : options.modulationIndex;
+		var carrierAmplitudeVolts = options.carrierAmplitudeVolts === undefined ? 1 : options.carrierAmplitudeVolts;
+		var fftList = options.fftList;
+		if (!Number.isFinite(carrierHz) || !Number.isFinite(toneHz) ||
+			carrierHz <= toneHz || toneHz <= 0 || !Number.isFinite(modulationIndex) ||
+			modulationIndex < 0 || modulationIndex > 1 ||
+			!Number.isFinite(carrierAmplitudeVolts) || carrierAmplitudeVolts <= 0 ||
+			!Number.isFinite(global.Ro) || global.Ro <= 0 ||
+			(fftList !== undefined && !Array.isArray(fftList))) {
+			throw new RangeError('AM needs carrierHz > toneHz > 0, modulationIndex from 0 to 1, positive carrierAmplitudeVolts and global.Ro, and an optional fftList array.');
+		}
+		if (global.twoTone) throw new RangeError('Clear global.twoTone before AM analysis.');
+		var fList = [carrierHz - toneHz, carrierHz, carrierHz + toneHz];
+		if (fftList) {
+			fftList.length = 0;
+			fList.forEach(function (frequency) { fftList.push(frequency); });
+		} else {
+			global.fList = fList.slice();
+		}
+		var sidebandVolts = carrierAmplitudeVolts * modulationIndex / 2;
+		var spectrum = [complex(sidebandVolts, 0), complex(carrierAmplitudeVolts, 0),
+			complex(sidebandVolts, 0)];
+		var tx = {
+			mode: 'AM', carrierHz: carrierHz, toneHz: toneHz,
+			modulationIndex: modulationIndex, carrierAmplitudeVolts: carrierAmplitudeVolts,
+			fList: fList, spectrum: spectrum, referenceImpedanceOhms: global.Ro
+		};
+		tx.out = function (selector) {
+			if (selector === 'settings') return {mode: 'AM', carrierHz: carrierHz, toneHz: toneHz,
+				modulationIndex: modulationIndex, carrierAmplitudeVolts: carrierAmplitudeVolts,
+				frequencyCount: 3};
+			if (selector === 'frequency count') return 3;
+			if (selector === 'frequencies') return fList.slice();
+			if (selector === 'spectrum') return spectrum.map(function (value) { return value.copy(); });
+			if (selector === 'frequency table') return [['Bin', 'Frequency (Hz)']].concat(
+				fList.map(function (frequency, index) { return [index, frequency]; }));
+			if (selector === 'tones') return [['Freq', 'Peak voltage (V)', 'Phase (deg)']].concat(
+				fList.map(function (frequency, index) {
+					return [frequency, spectrum[index].mag(), spectrum[index].ang()];
+				}));
+			throw new RangeError('Unknown AM output: ' + selector);
+		};
+		return tx;
+	}
+
+	// A pure tone needs only its occupied sideband frequencies.
+	function analogSuppressed(options) {
+		var mode = options.mode;
+		var carrierHz = options.carrierHz;
+		var toneHz = options.toneHz;
+		var amplitude = options.toneAmplitudeVolts === undefined ? 1 : options.toneAmplitudeVolts;
+		var sideband = options.sideband === undefined ? 'USB' : options.sideband;
+		if (!Number.isFinite(carrierHz) || !Number.isFinite(toneHz) ||
+			carrierHz <= toneHz || toneHz <= 0 || !Number.isFinite(amplitude) || amplitude <= 0 ||
+			!Number.isFinite(global.Ro) || global.Ro <= 0 ||
+			(options.fftList !== undefined && !Array.isArray(options.fftList)) ||
+			(mode === 'SSB' ? sideband !== 'USB' && sideband !== 'LSB' : options.sideband !== undefined)) {
+			throw new RangeError(mode + ' needs carrierHz > toneHz > 0, positive toneAmplitudeVolts and global.Ro, and a valid sideband for SSB.');
+		}
+		if (global.twoTone) throw new RangeError('Clear global.twoTone before ' + mode + ' analysis.');
+		var fList = mode === 'SSB' ?
+			[carrierHz + (sideband === 'USB' ? toneHz : -toneHz)] :
+			[carrierHz - toneHz, carrierHz + toneHz];
+		var spectrum = mode === 'SSB' ? [complex(amplitude, 0)] :
+			[complex(amplitude / 2, 0), complex(amplitude / 2, 0)];
+		if (options.fftList) {
+			options.fftList.length = 0;
+			fList.forEach(function (frequency) { options.fftList.push(frequency); });
+		} else global.fList = fList.slice();
+		var tx = {mode: mode, carrierHz: carrierHz, toneHz: toneHz,
+			toneAmplitudeVolts: amplitude, sideband: mode === 'SSB' ? sideband : undefined,
+			fList: fList, spectrum: spectrum, referenceImpedanceOhms: global.Ro};
+		tx.out = function (selector) {
+			if (selector === 'settings') return {mode: mode, carrierHz: carrierHz,
+				toneHz: toneHz, toneAmplitudeVolts: amplitude,
+				...(mode === 'SSB' ? {sideband: sideband} : {}), frequencyCount: fList.length};
+			if (selector === 'frequency count') return fList.length;
+			if (selector === 'frequencies') return fList.slice();
+			if (selector === 'spectrum') return spectrum.map(function (value) { return value.copy(); });
+			if (selector === 'frequency table') return [['Bin', 'Frequency (Hz)']].concat(
+				fList.map(function (frequency, index) { return [index, frequency]; }));
+			if (selector === 'tones') return [['Freq', 'Peak voltage (V)', 'Phase (deg)']].concat(
+				fList.map(function (frequency, index) {
+					return [frequency, spectrum[index].mag(), spectrum[index].ang()];
+				}));
+			throw new RangeError('Unknown ' + mode + ' output: ' + selector);
+		};
+		return tx;
+	}
+
+	// Sample the slow phase waveform, not the RF carrier. FM uses beta sin(theta);
+	// PM uses beta cos(theta), with beta measured in peak radians.
+	function analogAngle(options) {
+		var mode = options.mode;
+		var carrierHz = options.carrierHz;
+		var toneHz = options.toneHz;
+		var beta = options.beta;
+		var carrierAmplitudeVolts = options.carrierAmplitudeVolts === undefined ? 1 : options.carrierAmplitudeVolts;
+		var tolerance = options.sidebandPowerTolerance === undefined ? 1e-6 : options.sidebandPowerTolerance;
+		var fftList = options.fftList;
+		if (!Number.isFinite(carrierHz) || carrierHz <= 0 ||
+			!Number.isFinite(toneHz) || toneHz <= 0 ||
+			!Number.isFinite(beta) || beta < 0 ||
+			!Number.isFinite(carrierAmplitudeVolts) || carrierAmplitudeVolts <= 0 ||
+			!Number.isFinite(tolerance) || tolerance <= 0 || tolerance >= 1 ||
+			!Number.isFinite(global.Ro) || global.Ro <= 0 ||
+			(fftList !== undefined && !Array.isArray(fftList))) {
+			throw new RangeError(mode + ' needs positive carrierHz, toneHz, carrierAmplitudeVolts and global.Ro, nonnegative beta, and sidebandPowerTolerance between 0 and 1.');
+		}
+		if (global.twoTone) throw new RangeError('Clear global.twoTone before ' + mode + ' analysis.');
+		var coefficientSamples = 256;
+		while (coefficientSamples < 16 * (Math.ceil(beta) + 12)) coefficientSamples *= 2;
+		if (coefficientSamples > 131072) {
+			throw new RangeError(mode + ' beta requires too many sideband coefficient samples.');
+		}
+		var phaseSamples = Array.from({length: coefficientSamples}, function (_, index) {
+			var theta = 2 * Math.PI * index / coefficientSamples;
+			var phase = beta * (mode === 'PM' ? Math.cos(theta) : Math.sin(theta));
+			return complex(Math.cos(phase), Math.sin(phase));
+		});
+		var coefficients = fftBins(phaseSamples);
+		var retainedPower = coefficients[0].mag() ** 2 / coefficientSamples ** 2;
+		var sidebandOrder = 0;
+		while (1 - retainedPower > tolerance && sidebandOrder < coefficientSamples / 2 - 1) {
+			sidebandOrder++;
+			retainedPower += (coefficients[sidebandOrder].mag() ** 2 +
+				coefficients[coefficientSamples - sidebandOrder].mag() ** 2) /
+				coefficientSamples ** 2;
+		}
+		if (1 - retainedPower > tolerance) {
+			throw new RangeError(mode + ' sideband tolerance could not be met.');
+		}
+		if (carrierHz <= sidebandOrder * toneHz) {
+			throw new RangeError(mode + ' lower sideband frequencies must remain positive.');
+		}
+		var fList = [];
+		var spectrum = [];
+		for (var order = -sidebandOrder; order <= sidebandOrder; order++) {
+			fList.push(carrierHz + order * toneHz);
+			var coefficient = coefficients[(order + coefficientSamples) % coefficientSamples];
+			spectrum.push(complex(carrierAmplitudeVolts * coefficient.getR() / coefficientSamples,
+				carrierAmplitudeVolts * coefficient.getI() / coefficientSamples));
+		}
+		if (fList.some(function (frequency, index) {
+			return !Number.isFinite(frequency) || (index > 0 && frequency <= fList[index - 1]);
+		})) {
+			throw new RangeError(mode + ' sideband frequencies must be finite and distinct.');
+		}
+		if (fftList) {
+			fftList.length = 0;
+			fList.forEach(function (frequency) { fftList.push(frequency); });
+		} else {
+			global.fList = fList.slice();
+		}
+		var tx = {
+			mode: mode, carrierHz: carrierHz, toneHz: toneHz, beta: beta,
+			carrierAmplitudeVolts: carrierAmplitudeVolts,
+			sidebandOrder: sidebandOrder, sidebandPowerTolerance: tolerance,
+			fList: fList, spectrum: spectrum, referenceImpedanceOhms: global.Ro
+		};
+		tx.out = function (selector) {
+			if (selector === 'settings') return {mode: mode, carrierHz: carrierHz, toneHz: toneHz,
+				beta: beta, frequencyDeviationHz: beta * toneHz,
+				...(mode === 'PM' ? {peakPhaseRadians: beta} : {}),
+				carrierAmplitudeVolts: carrierAmplitudeVolts,
+				sidebandOrder: sidebandOrder, sidebandPowerTolerance: tolerance,
+				frequencyCount: fList.length};
+			if (selector === 'frequency count') return fList.length;
+			if (selector === 'frequencies') return fList.slice();
+			if (selector === 'spectrum') return spectrum.map(function (value) { return value.copy(); });
+			if (selector === 'frequency table') return [['Bin', 'Frequency (Hz)']].concat(
+				fList.map(function (frequency, index) { return [index, frequency]; }));
+			if (selector === 'tones') return [['Freq', 'Peak voltage (V)', 'Phase (deg)']].concat(
+				fList.map(function (frequency, index) {
+					return [frequency, spectrum[index].mag(), spectrum[index].ang()];
+				}));
+			throw new RangeError('Unknown ' + mode + ' output: ' + selector);
+		};
+		return tx;
+	}
+
+	// Prepare a sampled digital waveform or sparse, single-tone analog source.
+	function mod(options = {}) {
+		if (!options || Array.isArray(options) || typeof options !== 'object') {
+			throw new TypeError('mod expects an options object.');
+		}
+		if (options.mode === 'VNA') {
+			throw new RangeError('Use VNA-time or VNA-frequency as the mode.');
+		}
+		if (options.mode === 'VNA-frequency') return vnaFrequencySweep(options);
+		var sampleRateHz = sampleRateFromTime(global.tList, undefined, 'mod');
+		if (options.mode === 'VNA-time') return vnaTimeSweep(options, sampleRateHz);
+		if (options.mode === 'AM') return analogAM(options);
+		if (options.mode === 'SSB' || options.mode === 'DSB-SC') return analogSuppressed(options);
+		if (options.mode === 'FM' || options.mode === 'PM') return analogAngle(options);
+		var keyedMode = options.mode === 'OOK' || options.mode === 'ASK';
+		var fskMode = options.mode === 'FSK';
+		var pskMode = options.mode === 'PSK';
+		var advancedMode = ['DPSK', 'QPSK', 'QAM', 'MSK', 'GMSK', 'OFDM'].includes(options.mode);
+		var encoding = pskMode ? (options.encoding === undefined ? 'NRZ' : options.encoding) : undefined;
+		if (pskMode ? encoding !== 'NRZ' && encoding !== 'Manchester' :
+			options.encoding !== undefined) {
+			throw new RangeError('encoding must be NRZ or Manchester and is available only for PSK.');
+		}
+		var carrierHz = options.carrierHz === undefined ? 0 : options.carrierHz;
+		if (!Number.isFinite(carrierHz) || carrierHz < 0) {
+			throw new RangeError('mod carrierHz must be a nonnegative finite frequency.');
+		}
+		if ((keyedMode || fskMode || pskMode || advancedMode) && carrierHz === 0) {
+			throw new RangeError('Digital RF modes require a positive carrierHz.');
+		}
+		var txOptions = {...options};
+		delete txOptions.carrierHz;
+		delete txOptions.fftList;
+		if (keyedMode) {
+			var lowVolts = options.lowVolts === undefined ?
+				(options.mode === 'OOK' ? 0 : 0.5) : options.lowVolts;
+			var highVolts = options.highVolts === undefined ? 1 : options.highVolts;
+			if (!Number.isFinite(lowVolts) || !Number.isFinite(highVolts) ||
+				(options.mode === 'OOK' ? lowVolts !== 0 || highVolts <= 0 :
+					lowVolts <= 0 || highVolts <= lowVolts)) {
+				throw new RangeError('OOK requires 0 V off and positive on voltage; ASK requires two increasing positive voltage levels.');
+			}
+			var dataMode = options.dataMode === undefined ?
+				(options.message !== undefined ? 'ASCII' : options.bits !== undefined ? 'bits' : 'PN7') :
+				options.dataMode;
+			if (options.input) {
+				if (options.dataMode !== undefined || options.message !== undefined ||
+					options.bits !== undefined) {
+					throw new TypeError('OOK or ASK with a PN input cannot also select another data mode.');
+				}
+				var input = options.input;
+				txOptions = {input: {...input, lowVolts: lowVolts, highVolts: highVolts,
+					samples: Array.isArray(input.bits) ? input.bits.map(function (bit) {
+						return bit ? highVolts : lowVolts;
+					}) : input.samples}, samplesPerBit: options.samplesPerBit};
+			} else {
+				txOptions.mode = dataMode;
+				txOptions.lowVolts = lowVolts;
+				txOptions.highVolts = highVolts;
+				delete txOptions.dataMode;
+			}
+		}
+		if (fskMode || pskMode || advancedMode) {
+			if (options.input) {
+				if (options.dataMode !== undefined || options.message !== undefined ||
+					options.bits !== undefined) {
+					throw new TypeError(options.mode + ' with a PN input cannot also select another data mode.');
+				}
+				txOptions = {input: options.input, samplesPerBit: options.samplesPerBit};
+			} else {
+				txOptions.mode = options.dataMode === undefined ?
+					(options.message !== undefined ? 'ASCII' : options.bits !== undefined ? 'bits' : 'PN7') :
+					options.dataMode;
+				delete txOptions.dataMode;
+				delete txOptions.frequencyDeviationHz;
+				delete txOptions.carrierAmplitudeVolts;
+				delete txOptions.encoding;
+			}
+		}
+		if (options.mode === 'QPSK' || options.mode === 'QAM') {
+			var bitsPerSymbol = Math.log2(options.mode === 'QPSK' ? 4 :
+				(options.order === undefined ? 16 : options.order));
+			if (options.symbolRate !== undefined) {
+				if (!Number.isFinite(options.symbolRate) || options.symbolRate <= 0 ||
+					(options.bitRate !== undefined && options.bitRate !== options.symbolRate * bitsPerSymbol)) {
+					throw new RangeError('QPSK/QAM symbolRate must be positive and agree with bitRate.');
+				}
+				if (options.input && options.input.bitRate !== options.symbolRate * bitsPerSymbol) {
+					throw new RangeError('QPSK/QAM symbolRate must agree with the PN input clock rate.');
+				}
+				if (!options.input) txOptions.bitRate = options.symbolRate * bitsPerSymbol;
+			}
+		}
+		if (options.mode === 'OFDM' &&
+			(options.bitRate !== undefined || options.samplesPerBit !== undefined)) {
+			throw new RangeError('OFDM uses symbolRate and fftSize; bitRate and samplesPerBit do not apply.');
+		}
+		var tx = createSourceWaveform(txOptions, options.fftList);
+		var advancedSettings = advancedMode ? modulateAdvanced(tx, options, carrierHz) : null;
+		if (pskMode && encoding === 'Manchester' &&
+			(tx.samplesPerBit < 2 || tx.samplesPerBit % 2 !== 0)) {
+			throw new RangeError('Manchester PSK requires an even samplesPerBit of at least 2.');
+		}
+		var deviationHz = fskMode ? (options.frequencyDeviationHz === undefined ?
+			tx.sampleRateHz / tx.samplesPerBit / 2 : options.frequencyDeviationHz) : undefined;
+		var carrierAmplitudeVolts = (fskMode || pskMode) ? (options.carrierAmplitudeVolts === undefined ?
+			1 : options.carrierAmplitudeVolts) : undefined;
+		if (pskMode && (!Number.isFinite(carrierAmplitudeVolts) || carrierAmplitudeVolts <= 0)) {
+			throw new RangeError('PSK needs positive carrierAmplitudeVolts.');
+		}
+		if (fskMode && (!Number.isFinite(deviationHz) || deviationHz <= 0 ||
+			!Number.isFinite(carrierAmplitudeVolts) || carrierAmplitudeVolts <= 0 ||
+			carrierHz <= deviationHz)) {
+			throw new RangeError('FSK needs positive frequencyDeviationHz and carrierAmplitudeVolts, with carrierHz greater than deviation.');
+		}
+		if (!advancedMode && carrierHz + (fskMode ? deviationHz : 0) >= tx.sampleRateHz / 2) {
+			throw new RangeError('mod carrierHz must be below the sample Nyquist frequency.');
+		}
+		if (advancedMode) ; else if (fskMode) {
+			var phase = 0;
+			tx.samples = tx.bits.flatMap(function (bit) {
+				var frequency = carrierHz + (bit ? deviationHz : -deviationHz);
+				var phaseStep = 2 * Math.PI * frequency / tx.sampleRateHz;
+				return Array.from({length: tx.samplesPerBit}, function () {
+					var voltage = carrierAmplitudeVolts * Math.cos(phase);
+					phase += phaseStep;
+					return voltage;
+				});
+			});
+			tx.spectrum = fftBins(tx.samples).slice(0, tx.fList.length);
+		} else if (pskMode) {
+			tx.samples = tx.samples.map(function (_, index) {
+				var bit = tx.bits[Math.floor(index / tx.samplesPerBit)];
+				var secondHalf = index % tx.samplesPerBit >= tx.samplesPerBit / 2;
+				var polarity = (bit ? 1 : -1) *
+					(encoding === 'Manchester' && secondHalf ? -1 : 1);
+				return polarity * carrierAmplitudeVolts *
+					Math.cos(2 * Math.PI * carrierHz * index / tx.sampleRateHz);
+			});
+			tx.spectrum = fftBins(tx.samples).slice(0, tx.fList.length);
+		} else if (carrierHz !== 0) {
+			tx.samples = tx.samples.map(function (voltage, index) {
+				return voltage * Math.cos(2 * Math.PI * carrierHz * index / tx.sampleRateHz);
+			});
+			tx.spectrum = fftBins(tx.samples).slice(0, tx.fList.length);
+		}
+		var timeRateHz = sampleRateFromTime(global.tList, tx.sampleCount, 'mod');
+		if (Math.abs(timeRateHz - tx.sampleRateHz) > tx.sampleRateHz * 1e-6) {
+			throw new RangeError('mod tList spacing must match its waveform sample rate.');
+		}
+		tx.time = global.tList.slice();
+		var originalOut = tx.out;
+		if (keyedMode) {
+			tx.dataMode = tx.mode;
+			tx.mode = options.mode;
+		}
+		if (fskMode) {
+			tx.dataMode = tx.mode;
+			tx.mode = 'FSK';
+			tx.frequencyDeviationHz = deviationHz;
+			tx.carrierAmplitudeVolts = carrierAmplitudeVolts;
+		}
+		if (pskMode) {
+			tx.dataMode = tx.mode;
+			tx.mode = 'PSK';
+			tx.encoding = encoding;
+			tx.carrierAmplitudeVolts = carrierAmplitudeVolts;
+		}
+		tx.carrierHz = carrierHz;
+		tx.out = function (selector) {
+			if (selector === 'bit string') return tx.bits.join('');
+			if (selector === 'waveform') {
+				return [['Time (ns)', 'Output (V)']].concat(tx.samples.map(function (voltage, index) {
+					return [tx.time[index] * 1e9, voltage];
+				}));
+			}
+			if (selector === 'settings') {
+				return {
+					mode: tx.mode,
+					dataMode: tx.dataMode,
+					carrierHz: carrierHz,
+					...(advancedSettings || {}),
+					...(fskMode ? {frequencyDeviationHz: deviationHz,
+						lowFrequencyHz: carrierHz - deviationHz,
+						highFrequencyHz: carrierHz + deviationHz,
+						carrierAmplitudeVolts: carrierAmplitudeVolts} : {}),
+					...(pskMode ? {encoding: encoding,
+						carrierAmplitudeVolts: carrierAmplitudeVolts,
+						phaseZeroDeg: 180, phaseOneDeg: 0} : {}),
+					...(tx.samplesPerBit ? {bitRate: tx.sampleRateHz / tx.samplesPerBit,
+						samplesPerBit: tx.samplesPerBit} : {bitCount: tx.bitCount}),
+					sampleRateHz: tx.sampleRateHz,
+					sampleCount: tx.sampleCount,
+					frequencyCount: tx.fList.length,
+					...(tx.bitCount !== undefined ? {bitCount: tx.bitCount} : {}),
+					...(!advancedMode ? {lowVolts: tx.lowVolts, highVolts: tx.highVolts} : {})
+				};
+			}
+			if (selector === 'frequency table') {
+				return [['Bin', 'Frequency (Hz)']].concat(tx.fList.map(function (frequency, bin) {
+					return [bin, frequency];
+				}));
+			}
+			return originalOut(selector);
+		};
+		return tx;
+	}
+
+	// Modified: 2026-10-20
+
+	// Sample one periodic voltage waveform on the selected time grid.
+	function waveform(options = {}) {
+		if (!options || Array.isArray(options) || typeof options !== 'object') {
+			throw new TypeError('waveform expects an options object.');
+		}
+		var time = options.time === undefined ? global.tList : options.time;
+		if (!Array.isArray(time) || time.length < 2) {
+			throw new RangeError('waveform needs at least two time samples.');
+		}
+		var step = time[1] - time[0];
+		if (!Number.isFinite(step) || step <= 0 || !Number.isFinite(1 / step) || time.some(function (value, index) {
+			return !Number.isFinite(value) ||
+				Math.abs(value - (time[0] + index * step)) > Math.abs(step) * 1e-6;
+		})) {
+			throw new RangeError('waveform time must be a uniformly spaced, increasing list in seconds.');
+		}
+		var period = options.period;
+		if (!Number.isFinite(period) || period <= 0) {
+			throw new RangeError('waveform period must be a positive number of seconds.');
+		}
+		var shape = options.shape === undefined ? 'triangle' : options.shape;
+		var custom = shape === 'custom';
+		if (options.points !== undefined && !custom) {
+			throw new TypeError("waveform points require shape: 'custom'.");
+		}
+		if (custom && options.points === undefined) {
+			throw new TypeError("waveform shape: 'custom' requires points.");
+		}
+		var points;
+		var dutyCycle;
+		var lowVolts;
+		var highVolts;
+		if (custom) {
+			if (options.riseFraction !== undefined || options.dutyCycle !== undefined ||
+				options.lowVolts !== undefined ||
+				options.highVolts !== undefined || !Array.isArray(options.points) ||
+				options.points.length < 2 || options.points.some(function (point) {
+					return !Array.isArray(point) || point.length !== 2 ||
+						!Number.isFinite(point[0]) || !Number.isFinite(point[1]);
+				}) || options.points[0][0] !== 0 ||
+				Math.abs(options.points[options.points.length - 1][0] - period) > period * 1e-9 ||
+				options.points.some(function (point, index) {
+					return index > 0 && point[0] <= options.points[index - 1][0];
+				})) {
+				throw new RangeError('waveform points must run from 0 to period with increasing, finite time-voltage pairs.');
+			}
+			points = options.points.map(function (point) { return point.slice(); });
+		} else {
+			if (shape !== 'triangle' && shape !== 'square' && shape !== 'rectifiedSine') {
+				throw new RangeError('waveform shape must be triangle, square, rectifiedSine, or custom.');
+			}
+			lowVolts = options.lowVolts === undefined ? (shape === 'rectifiedSine' ? 0 : -1) : options.lowVolts;
+			highVolts = options.highVolts === undefined ? 1 : options.highVolts;
+			if (!Number.isFinite(lowVolts) || !Number.isFinite(highVolts)) {
+				throw new RangeError('waveform voltage levels must be finite.');
+			}
+			if (shape === 'triangle') {
+				var riseFraction = options.riseFraction === undefined ? 0.5 : options.riseFraction;
+				if (options.dutyCycle !== undefined || !Number.isFinite(riseFraction) ||
+					riseFraction <= 0 || riseFraction >= 1) {
+					throw new RangeError('triangle waveform needs 0 < riseFraction < 1 and no dutyCycle.');
+				}
+				points = [[0, lowVolts], [period * riseFraction, highVolts], [period, lowVolts]];
+			} else if (shape === 'square') {
+				dutyCycle = options.dutyCycle === undefined ? 0.5 : options.dutyCycle;
+				if (options.riseFraction !== undefined || !Number.isFinite(dutyCycle) ||
+					dutyCycle <= 0 || dutyCycle >= 1) {
+					throw new RangeError('square waveform needs 0 < dutyCycle < 1 and no riseFraction.');
+				}
+			} else if (options.riseFraction !== undefined || options.dutyCycle !== undefined) {
+				throw new RangeError('rectifiedSine waveform does not use riseFraction or dutyCycle.');
+			}
+		}
+		var samples = time.map(function (value) {
+			var phase = ((value % period) + period) % period;
+			if (shape === 'square') return phase < period * dutyCycle ? highVolts : lowVolts;
+			if (shape === 'rectifiedSine') {
+				return lowVolts + (highVolts - lowVolts) * Math.abs(Math.sin(2 * Math.PI * phase / period));
+			}
+			var segment = 1;
+			while (segment < points.length - 1 && phase > points[segment][0]) segment++;
+			var left = points[segment - 1];
+			var right = points[segment];
+			return left[1] + (right[1] - left[1]) * (phase - left[0]) / (right[0] - left[0]);
+		});
+		if (samples.some(function (value) { return !Number.isFinite(value); })) {
+			throw new RangeError('waveform sample voltages must be finite.');
+		}
+		var result = {
+			kind: 'waveform', shape: shape, period: period,
+			time: time.slice(), samples: samples, sampleRateHz: 1 / step
+		};
+		result.out = function (selector = 'waveform') {
+			if (selector === 'waveform') {
+				return [['Time (s)', 'Voltage (V)']].concat(result.time.map(function (value, index) {
+					return [value, samples[index]];
+				}));
+			}
+			if (selector === 'time') return result.time.slice();
+			if (selector === 'samples') return samples.slice();
+			if (selector === 'sample count') return samples.length;
+			if (selector === 'sample rate') return result.sampleRateHz;
+			if (selector === 'period') return period;
+			throw new RangeError('Unknown waveform output: ' + selector);
+		};
+		return result;
+	}
+
+	function getCircuitTitle() {
+		var circuitTitle = document.getElementById('circuitTitle').innerHTML;
+	document.getElementsByClassName('circuitTitle')[0].innerHTML = circuitTitle;
+
+	}// check comment
+
+	exports.editor = void 0;
+
+	function callCodemirror (textAreaId) {
+		var myTextarea = document.getElementById(textAreaId);
+		exports.editor = CodeMirror.fromTextArea(myTextarea, {
+			lineNumbers: true
+		});
+
+	}
+	function removeNodes (nodeClass) {
+		var removed = document.getElementsByClassName(nodeClass);
+		var i = 0;
+		var nodes = JSON.parse(JSON.stringify(removed.length));
+		for (i; i < nodes; i++) {
+			removed[0].remove();
+		}}
+	function doIt () {
+		var headID = document.getElementsByTagName("head")[0];
+		var newScript = document.createElement("script");
+		newScript.setAttribute('id', 'circuit');
+		newScript.type = "text/javascript";
+		newScript.innerHTML = exports.editor.getValue();
+		headID.appendChild(newScript);
+	}
+	function run() {
+			removeNodes('remove');	
+			setTimeout(doIt, 100);
+	}
+	function runButton (button) {
+		document.getElementById(button).addEventListener('click', run);
+	}
+	function bodyWidth () {
+		var width = document.getElementsByTagName('body')[0].clientWidth;
+		return width;
+	}
+
+	exports.Amp = Amp;
+	exports.Attn = Attn;
+	exports.C = C;
+	exports.Coupler180 = Coupler180;
+	exports.FFT = FFT;
+	exports.L = L;
+	exports.Load = Load;
+	exports.Open = Open;
+	exports.PN = PN;
+	exports.R = R;
+	exports.Shift90 = Shift90;
+	exports.Short = Short;
+	exports.Tclin = Tclin;
+	exports.Tee = Tee;
+	exports.Tee4 = Tee4;
+	exports.Tee5 = Tee5;
+	exports.Thru = Thru;
+	exports.Tlin = Tlin;
+	exports.bitErrorRate = bitErrorRate;
+	exports.bodyWidth = bodyWidth;
+	exports.callCodemirror = callCodemirror;
+	exports.cascade = cascade;
+	exports.chebyLPLCs = chebyLPLCs;
+	exports.chebyLPNsec = chebyLPNsec;
+	exports.chebyLPgk = chebyLPgk;
+	exports.complex = complex;
+	exports.demod = demod;
+	exports.dim = dim;
+	exports.diode1N4148 = diode1N4148;
+	exports.dup = dup;
+	exports.getCircuitTitle = getCircuitTitle;
+	exports.global = global;
+	exports.invFFT = invFFT;
+	exports.lineChart = lineChart;
+	exports.lineTable = lineTable;
+	exports.log = log;
+	exports.lpfGen = lpfGen;
+	exports.matrix = matrix;
+	exports.mbend = mbend;
+	exports.mclin = mclin;
+	exports.mcross = mcross;
+	exports.mlin = mlin;
+	exports.mod = mod;
+	exports.mstep = mstep;
+	exports.mtee = mtee;
+	exports.mtfr = mtfr;
+	exports.mvgnd = mvgnd;
+	exports.mvia = mvia;
+	exports.nodal = nodal;
+	exports.paC = paC;
+	exports.paL = paL;
+	exports.paPaLC = paPaLC;
+	exports.paPaRC = paPaRC;
+	exports.paPaRL = paPaRL;
+	exports.paPaRLC = paPaRLC;
+	exports.paR = paR;
+	exports.paSeLC = paSeLC;
+	exports.paSeRC = paSeRC;
+	exports.paSeRL = paSeRL;
+	exports.paSeRLC = paSeRLC;
+	exports.run = run;
+	exports.runButton = runButton;
+	exports.schematic = schematic;
+	exports.seC = seC;
+	exports.seL = seL;
+	exports.sePaLC = sePaLC;
+	exports.sePaRC = sePaRC;
+	exports.sePaRL = sePaRL;
+	exports.sePaRLC = sePaRLC;
+	exports.seR = seR;
+	exports.seSeLC = seSeLC;
+	exports.seSeRC = seSeRC;
+	exports.seSeRL = seSeRL;
+	exports.seSeRLC = seSeRLC;
+	exports.seriesTee = seriesTee;
+	exports.smithChart = smithChart;
+	exports.trf = trf;
+	exports.trf4Port = trf4Port;
+	exports.trfAuto = trfAuto;
+	exports.version = version;
+	exports.waveform = waveform;
+
+}));

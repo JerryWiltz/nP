@@ -1,0 +1,1 @@
+import{_ as i,o as a,c as n,a0 as h}from"./chunks/framework.CWg_RwV0.js";const o=JSON.parse('{"title":"Math","description":"","frontmatter":{},"headers":[],"relativePath":"math.md","filePath":"math.md"}'),e={name:"math.md"};function t(l,s,k,p,r,d){return a(),n("div",null,[...s[0]||(s[0]=[h("",27)])])}const g=i(e,[["render",t]]);export{o as __pageData,g as default};
