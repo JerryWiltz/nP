@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Modified: 2026-11-08 -->
+<!-- Modified: 2026-11-13 -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -44,6 +44,19 @@
     <div id="divider-combiner"></div>
     <p>Independent detection:</p>
     <div id="divider-combiner-detected"></div>
+  </section>
+  <section>
+    <h2>Tee junction with two transmission-line arms</h2>
+    <p>No isolation resistor: these are layout examples, not matched or isolated dividers.</p>
+    <div id="junction-two"></div>
+  </section>
+  <section>
+    <h2>Microstrip junction and arms</h2>
+    <div id="junction-microstrip"></div>
+  </section>
+  <section>
+    <h2>Tee4 junction with three arms</h2>
+    <div id="junction-three"></div>
   </section>
   <script>
     // Ideal Wilkinson power divider
@@ -171,6 +184,50 @@
     var dividerCombinerDetectionReport = dividerCombinerDrawingDetected ||
       'No whole-network shape detected. This example uses explicit sections.';
     nP.log(dividerCombinerDetectionReport, {mount: '#divider-combiner-detected'});
+
+    // Tee-only two-way network: automatic detection uses junction metadata.
+    var junctionTee = nP.Tee();
+    var junctionUpper = nP.Tlin(50, 0.0254);
+    var junctionLower = nP.Tlin(50, 0.0254);
+    var junctionTwo = nP.nodal(
+      [junctionTee, 1, 2, 3],
+      [junctionUpper, 2, 4],
+      [junctionLower, 3, 5],
+      ['out', 1, 4, 5]
+    );
+    nP.schematic(junctionTwo, {
+      mount: '#junction-two'
+    });
+
+    // Physical microstrip uses the same board operation and its own geometry.
+    var junctionMtee = nP.mtee();
+    var junctionMupper = nP.mlin();
+    var junctionMlower = nP.mlin();
+    var junctionMicrostrip = nP.nodal(
+      [junctionMtee, 1, 2, 3],
+      [junctionMupper, 2, 4],
+      [junctionMlower, 3, 5],
+      ['out', 1, 4, 5]
+    );
+    nP.schematic(junctionMicrostrip, {
+      mount: '#junction-microstrip'
+    });
+
+    // Tee4 has one common port and three branches; all three are retained.
+    var junctionTee4 = nP.Tee4();
+    var junctionTop = nP.Tlin(50, 0.0254);
+    var junctionMiddle = nP.Tlin(50, 0.0254);
+    var junctionBottom = nP.Tlin(50, 0.0254);
+    var junctionThree = nP.nodal(
+      [junctionTee4, 1, 2, 3, 4],
+      [junctionTop, 2, 5],
+      [junctionMiddle, 3, 6],
+      [junctionBottom, 4, 7],
+      ['out', 1, 5, 6, 7]
+    );
+    nP.schematic(junctionThree, {
+      mount: '#junction-three'
+    });
   </script>
 </body>
 </html>

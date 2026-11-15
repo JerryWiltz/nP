@@ -1,4 +1,4 @@
-// Modified: 2026-11-08
+// Modified: 2026-11-13
 // Declarative board settings consumed by the schematic layout interpreter.
 export const schematicShapeBoards = {
     generic: {
@@ -238,7 +238,7 @@ export const schematicShapeBoards = {
         name: 'powerCombiner',
         version: 1,
         detect: true,
-        interface: {from: [2, 3], to: [1]},
+        interface: {from: 'remaining', to: [1]},
         use: 'powerDivider',
         transform: {mirrorX: true}
     },
@@ -249,7 +249,7 @@ export const schematicShapeBoards = {
         version: 1,
         detect: true,
         detectionPriority: 10,
-        interface: {from: [1], to: [2, 3]},
+        interface: {from: [1], to: 'remaining'},
         match: {
             externalPortCount: 3,
             slots: [
@@ -347,6 +347,22 @@ export const schematicShapeBoards = {
                     {port: 1, slot: 'input', side: 'left'},
                     {port: 2, slot: 'upper', side: 'right'},
                     {port: 3, slot: 'lower', side: 'right'}
+                ]
+            }
+        }, {
+            name: 'powerDivider', layout: 'junction-power-divider', variant: 'junction', version: 1,
+            match: {
+                minimumExternalPortCount: 3,
+                fan: {commonExternalPort: 1, through: {portCount: 2, straight: true}}
+            },
+            board: {
+                grid: 10, origin: [180, 200], wireBoxLength: 40,
+                fan: {direction: 'right', clearance: 60},
+                tiles: [
+                    {kind: 'wire'},
+                    {kind: 'component', source: 'parts', role: 'armPart', repeat: 'oneOrMore',
+                        between: {kind: 'wire'}},
+                    {kind: 'wire'}
                 ]
             }
         }]

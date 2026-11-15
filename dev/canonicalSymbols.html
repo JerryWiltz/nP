@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Modified: 2026-11-04 -->
+<!-- Modified: 2026-11-14 -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -14,7 +14,7 @@
     p { line-height: 1.5; }
     nav a { margin-right: 1.5rem; }
     main { overflow-x: auto; }
-    .symbol-sheet { display: block; width: 520px; height: 17920px; }
+    .symbol-sheet { display: block; width: 520px; height: 20120px; }
     a { color: #13558d; }
     a:focus-visible { outline: 3px solid #13558d; outline-offset: 2px; }
   </style>
@@ -22,16 +22,16 @@
 <body>
   <header>
     <h1>Canonical symbols</h1>
-    <p>All 59 canonical SVGs, ordered like the Guide API. Select a symbol to open its editable source drawing.</p>
-    <nav aria-label="Symbol groups"><a href="#rf">RF constructors</a><a href="#digital">Digital signals</a><a href="#math">Math</a><a href="#combining">Circuit combining</a></nav>
+    <p>All 66 canonical SVGs, ordered like the Guide API. Select a symbol to open its editable source drawing.</p>
+    <nav aria-label="Symbol groups"><a href="#rf">RF constructors</a><a href="#digital">Digital signals</a><a href="#math">Math</a><a href="#combining">Circuit combining</a><a href="#sources">Source primitives</a></nav>
   </header>
   <main>
-    <svg class="symbol-sheet" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 18220" role="img" aria-labelledby="sheet-title sheet-description">
+    <svg class="symbol-sheet" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 20120" role="img" aria-labelledby="sheet-title sheet-description">
       <title id="sheet-title">Canonical nPort symbols</title>
-      <desc id="sheet-description">All 59 canonical symbols in Guide API order on one shared SVG canvas.</desc>
+      <desc id="sheet-description">All 66 canonical symbols in Guide API order on one shared SVG canvas.</desc>
       <rect width="100%" height="100%" fill="#ffffff"/>
       <g fill="#202020" font-family="Arial, Helvetica, sans-serif">
-    <text id="rf" x="40" y="50" font-size="22" font-weight="bold">RF constructors (50)</text>
+    <text id="rf" x="40" y="50" font-size="22" font-weight="bold">RF constructors (51)</text>
     <text id="lumped" x="40" y="100" font-size="17" font-weight="bold">Resistors, inductors, and capacitors</text>
     <text x="40" y="140" font-size="16">R(), seR()</text>
     <text x="480" y="140" font-size="13" text-anchor="end">resistor.svg</text>
@@ -995,6 +995,133 @@
           <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
             <text x="80" y="135">Port 1</text><text x="200" y="135">Port 2</text>
             <circle cx="80" cy="80" r="4"/><circle cx="200" cy="80" r="4"/>
+          </g>
+      </g>
+    </a>
+    <text id="sources" x="40" y="18260" font-size="22" font-weight="bold">Source primitives (6)</text>
+    <text x="40" y="18310" font-size="16">V — symbol only</text>
+    <text x="480" y="18330" font-size="13" text-anchor="end">voltage-source.svg</text>
+    <a href="../schematics/symbols/voltage-source.svg" aria-label="Open voltage-source.svg">
+      <g data-symbol-source="voltage-source.svg" transform="translate(120 18340)">
+        <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <!-- Twenty-unit pins join the grid-aligned terminals to the source body. -->
+            <path d="M140 70 V90 M140 150 V170"/>
+            <circle cx="140" cy="120" r="30"/>
+            <path d="M135 105 H145 M140 100 V110 M135 135 H145"/>
+          </g>
+          <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
+            <text x="140" y="25">V</text>
+            <text x="140" y="205">Independent voltage source</text>
+            <text x="140" y="225">V</text>
+            <text x="160" y="75" text-anchor="start">Terminal 1</text>
+            <text x="160" y="175" text-anchor="start">Terminal 2</text>
+            <circle cx="140" cy="70" r="4"/>
+            <circle cx="140" cy="170" r="4"/>
+          </g>
+      </g>
+    </a>
+    <text x="40" y="18600" font-size="16">I — symbol only</text>
+    <text x="480" y="18620" font-size="13" text-anchor="end">current-source.svg</text>
+    <a href="../schematics/symbols/current-source.svg" aria-label="Open current-source.svg">
+      <g data-symbol-source="current-source.svg" transform="translate(120 18630)">
+        <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <!-- Twenty-unit pins join the grid-aligned terminals to the source body. -->
+            <path d="M140 70 V90 M140 150 V170"/>
+            <circle cx="140" cy="120" r="30"/>
+            <path d="M140 135 V105 M135 110 L140 105 L145 110"/>
+          </g>
+          <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
+            <text x="140" y="25">I</text>
+            <text x="140" y="205">Independent current source</text>
+            <text x="140" y="225">I</text>
+            <text x="160" y="75" text-anchor="start">Terminal 1</text>
+            <text x="160" y="175" text-anchor="start">Terminal 2</text>
+            <circle cx="140" cy="70" r="4"/>
+            <circle cx="140" cy="170" r="4"/>
+          </g>
+      </g>
+    </a>
+    <text x="40" y="18890" font-size="16">VCVS — symbol only</text>
+    <text x="480" y="18910" font-size="13" text-anchor="end">voltage-controlled-voltage-source.svg</text>
+    <a href="../schematics/symbols/voltage-controlled-voltage-source.svg" aria-label="Open voltage-controlled-voltage-source.svg">
+      <g data-symbol-source="voltage-controlled-voltage-source.svg" transform="translate(120 18920)">
+        <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <!-- Twenty-unit pins join the grid-aligned terminals to the source body. -->
+            <path d="M140 70 V90 M140 150 V170"/>
+            <path d="M140 90 L170 120 L140 150 L110 120 Z"/>
+            <path d="M135 105 H145 M140 100 V110 M135 135 H145"/>
+          </g>
+          <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
+            <text x="140" y="25">VCVS</text>
+            <text x="140" y="205">Voltage-controlled voltage source</text>
+            <text x="140" y="225">V = Av × Vc</text>
+            <text x="160" y="75" text-anchor="start">Terminal 1</text>
+            <text x="160" y="175" text-anchor="start">Terminal 2</text>
+            <circle cx="140" cy="70" r="4"/>
+            <circle cx="140" cy="170" r="4"/>
+          </g>
+      </g>
+    </a>
+    <text x="40" y="19180" font-size="16">VCCS — symbol only</text>
+    <text x="480" y="19200" font-size="13" text-anchor="end">voltage-controlled-current-source.svg</text>
+    <a href="../schematics/symbols/voltage-controlled-current-source.svg" aria-label="Open voltage-controlled-current-source.svg">
+      <g data-symbol-source="voltage-controlled-current-source.svg" transform="translate(120 19210)">
+        <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <!-- Twenty-unit pins join the grid-aligned terminals to the source body. -->
+            <path d="M140 70 V90 M140 150 V170"/>
+            <path d="M140 90 L170 120 L140 150 L110 120 Z"/>
+            <path d="M140 135 V105 M135 110 L140 105 L145 110"/>
+          </g>
+          <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
+            <text x="140" y="25">VCCS</text>
+            <text x="140" y="205">Voltage-controlled current source</text>
+            <text x="140" y="225">I = gm × Vc</text>
+            <text x="160" y="75" text-anchor="start">Terminal 1</text>
+            <text x="160" y="175" text-anchor="start">Terminal 2</text>
+            <circle cx="140" cy="70" r="4"/>
+            <circle cx="140" cy="170" r="4"/>
+          </g>
+      </g>
+    </a>
+    <text x="40" y="19470" font-size="16">CCVS — symbol only</text>
+    <text x="480" y="19490" font-size="13" text-anchor="end">current-controlled-voltage-source.svg</text>
+    <a href="../schematics/symbols/current-controlled-voltage-source.svg" aria-label="Open current-controlled-voltage-source.svg">
+      <g data-symbol-source="current-controlled-voltage-source.svg" transform="translate(120 19500)">
+        <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <!-- Twenty-unit pins join the grid-aligned terminals to the source body. -->
+            <path d="M140 70 V90 M140 150 V170"/>
+            <path d="M140 90 L170 120 L140 150 L110 120 Z"/>
+            <path d="M135 105 H145 M140 100 V110 M135 135 H145"/>
+          </g>
+          <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
+            <text x="140" y="25">CCVS</text>
+            <text x="140" y="205">Current-controlled voltage source</text>
+            <text x="140" y="225">V = rm × Ic</text>
+            <text x="160" y="75" text-anchor="start">Terminal 1</text>
+            <text x="160" y="175" text-anchor="start">Terminal 2</text>
+            <circle cx="140" cy="70" r="4"/>
+            <circle cx="140" cy="170" r="4"/>
+          </g>
+      </g>
+    </a>
+    <text x="40" y="19760" font-size="16">CCCS — symbol only</text>
+    <text x="480" y="19780" font-size="13" text-anchor="end">current-controlled-current-source.svg</text>
+    <a href="../schematics/symbols/current-controlled-current-source.svg" aria-label="Open current-controlled-current-source.svg">
+      <g data-symbol-source="current-controlled-current-source.svg" transform="translate(120 19790)">
+        <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <!-- Twenty-unit pins join the grid-aligned terminals to the source body. -->
+            <path d="M140 70 V90 M140 150 V170"/>
+            <path d="M140 90 L170 120 L140 150 L110 120 Z"/>
+            <path d="M140 135 V105 M135 110 L140 105 L145 110"/>
+          </g>
+          <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
+            <text x="140" y="25">CCCS</text>
+            <text x="140" y="205">Current-controlled current source</text>
+            <text x="140" y="225">I = Ai × Ic</text>
+            <text x="160" y="75" text-anchor="start">Terminal 1</text>
+            <text x="160" y="175" text-anchor="start">Terminal 2</text>
+            <circle cx="140" cy="70" r="4"/>
+            <circle cx="140" cy="170" r="4"/>
           </g>
       </g>
     </a>

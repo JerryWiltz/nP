@@ -1,4 +1,4 @@
-// Modified: 2026-11-06
+// Modified: 2026-11-14
 'use strict';
 
 const crypto = require('crypto');
@@ -85,7 +85,7 @@ function parseSymbol(source, filename = 'symbol.svg') {
     }
   }
 
-  const portNumbers = [...labelGroup[0].matchAll(/>\s*Port\s+([1-9][0-9]*)\s*<\/text>/g)]
+  const portNumbers = [...labelGroup[0].matchAll(/>\s*(?:Port|Terminal)\s+([1-9][0-9]*)\s*<\/text>/g)]
     .map(match => Number(match[1]));
   if (!portNumbers.length) throw new Error(`${filename} has no public port labels`);
   const expectedNumbers = Array.from({length: portNumbers.length}, (_, index) => index + 1);

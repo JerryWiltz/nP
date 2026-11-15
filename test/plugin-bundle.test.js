@@ -1,4 +1,4 @@
-// Modified: 2026-11-09
+// Modified: 2026-11-13
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -53,6 +53,25 @@ async function exerciseWorkerApi() {
     );
     const ladderGraph = nP.schematicGraph(ladder);
     const ladderSvg = nP.schematicSvg(ladder);
+    const junction = nP.nodal(
+        [nP.Tee4(), 1, 2, 3, 4],
+        [resistor, 2, 5],
+        [resistor, 3, 6],
+        [resistor, 4, 7],
+        ['out', 1, 5, 6, 7]
+    );
+    const junctionGraph = nP.schematicGraph(junction);
+    const junctionSvg = nP.schematicSvg(junction, {shapes: ['powerCombiner']});
+    const authored = {
+        paths: ['4 left up Vin=V(1 Vrms)[1,2] 1 4', '1 right R1=R(50 ohm) 2',
+            '2 right R5=R(75 ohm) 3', '3 down R6=R(50 ohm) 4', 'alignY Vin.1 R6.1'],
+        annotations: [
+            {type: 'rectangle', around: 'R5', extendTo: {node: 4, segment: 'bottom'}, style: 'dotted', padding: 20},
+            {type: 'arrow', node: 2, toward: 'R5', label: 'I1', position: 'below'},
+            {type: 'port', number: 1, node: 2, reference: 4, side: 'left'}
+        ]
+    };
+    const authoredSvg = nP.schematicSvg(authored), authoredGraph = nP.schematicGraph(authored);
 
     nP.global.tList = nP.global.tGen(0, 6e-9, 7);
     const pnCount = nP.PN({stages: 3}).out('samples').length;
@@ -72,7 +91,7 @@ async function exerciseWorkerApi() {
     const ber = nP.bitErrorRate(tx, circuit, {noise: false, receptions: 1});
     const signalSvg = nP.schematicSvg({transmitter: tx, circuit, receiver: rx});
     parentPort.postMessage({version: nP.version, graph, topology, svg, cascadeSvg,
-        escapedSvg, invalidInputError, ladderGraph, ladderSvg, pnCount, fftError,
+        escapedSvg, invalidInputError, ladderGraph, ladderSvg, junctionGraph, junctionSvg, authoredSvg, authoredGraph, pnCount, fftError,
         dbv, bits: rx.out('bit string'), ber, signalSvg});
 }
 
@@ -121,8 +140,15 @@ test('restricted bundle generates transferable SVG and data with browser APIs bl
         assert.equal(result.version, packageVersion);
         assert.deepEqual(result.graph.externalPorts.map(port => port.node), [45, 1]);
         assert.equal(result.graph.components.length, 2);
+        assert.equal(new Set(result.graph.nodes.map(node => node.id)).size, result.graph.nodes.length);
+        assert.ok(result.graph.board.boxes.every(box => !Object.hasOwn(box, 'nodeDot')));
         assert.equal(result.topology.parts.length, 2);
         assert.equal(result.ladderGraph.shape, 'ladder');
+        assert.equal(result.junctionGraph.pattern, 'junction');
+        assert.equal(result.junctionGraph.externalPorts.length, 4);
+        assert.equal(result.junctionGraph.nodes.length, 7);
+        assert.equal(result.authoredGraph.kind, 'schematic-input');
+        assert.equal(result.authoredGraph.components.length, 4);
         assert.match(result.svg, /data-schematic-dot="terminal"/);
         assert.match(result.escapedSvg, /&lt;script&gt;/);
         assert.doesNotMatch(result.escapedSvg, /<script\b/i);
@@ -132,7 +158,7 @@ test('restricted bundle generates transferable SVG and data with browser APIs bl
         assert.equal(result.dbv.length, 6);
         assert.equal(result.bits, '10');
         assert.equal(result.ber, 0);
-        for (const svg of [result.svg, result.cascadeSvg, result.ladderSvg, result.signalSvg]) {
+        for (const svg of [result.svg, result.cascadeSvg, result.ladderSvg, result.junctionSvg, result.authoredSvg, result.signalSvg]) {
             assert.equal(typeof svg, 'string');
             assert.equal(new DOMParser().parseFromString(svg, 'image/svg+xml')
                 .getElementsByTagName('parsererror').length, 0);

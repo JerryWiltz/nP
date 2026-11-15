@@ -1,10 +1,14 @@
-// Modified: 2026-11-08
+// Modified: 2026-11-14
 import {schematicSymbols} from './schematicSymbols';
 import {nodalBlockSymbol, symbolForSchematicEntry} from './nodalBlockSymbol';
 import {schematicShapeBoards} from './schematicShapeBoards';
 import {interpretSchematicBoard} from './schematicBoardInterpreter';
 import {detectSchematicShapes} from './schematicShapeDetector';
 import {groupedSchematicShapes} from './schematicGroups';
+import {placeBoardNodeMarkers} from './schematicNodeMarkers';
+import {parseSchematicInput} from './schematicInputParser';
+import {layoutSchematicInput} from './schematicInputLayout';
+import {annotateSchematicInput, renderSchematicInputAnnotations} from './schematicInputAnnotations';
 
 const GRID = 10;
 // Keep annotation search coverage tied to text size, independently of placement resolution.
@@ -43,6 +47,8 @@ function formatSchematicNumber(value, digits) {
 }
 
 function componentLabel(part, id, digits) {
+    if (part.displayValue !== undefined) return `${part.displayName || id} = ${part.displayValue
+        .replace(/\bohms?\b/gi, 'Ω').replace(/\bVrms\b/g, 'V RMS').replace(/\s\*\s/g, ' × ')}`;
     if (part.symbol === 'coupler-180' || part.value === undefined) return id;
     const unit = ['resistor', 'parallel-resistor'].includes(part.symbol) ? ' Ω' :
         ['capacitor', 'parallel-capacitor'].includes(part.symbol) ? ' F' :
@@ -628,6 +634,20 @@ function treeNodeCandidates(point, reach = 60) {
         bounds: circleBounds(point[0] + dx, point[1] + dy), cost: 40 + index * 4}));
 }
 
+function portLabelCandidates(port, board) {
+    const text = `Port ${port.port}`, bounds = circleBounds(...port.at, 4);
+    if (!port.side) return labelCandidates(text, bounds, board.portLabelOffset ?
+        [port.at[0] + board.portLabelOffset[0], port.at[1] + board.portLabelOffset[1]] : undefined);
+    const halfWidth = Math.ceil(text.length * 9 / 2);
+    const offset = port.side === 'left' ? [-Math.ceil((halfWidth + 20) / 10) * 10, 40] :
+        port.side === 'right' ? [Math.ceil((halfWidth + 20) / 10) * 10, 40] :
+            port.side === 'top' ? [0, -40] : [0, 40];
+    return labelCandidates(text, bounds, port.at.map((value, axis) => value + offset[axis]))
+        .filter(candidate => port.side === 'left' ? candidate.bounds[2] < port.at[0] - 10 :
+            port.side === 'right' ? candidate.bounds[0] > port.at[0] + 10 :
+                port.side === 'top' ? candidate.bounds[3] < port.at[1] - 10 : candidate.bounds[1] > port.at[1] + 10);
+}
+
 function wireCrossings(wires) {
     const horizontal = [];
     const vertical = [];
@@ -675,7 +695,13 @@ function buildInterpretedBoardModel(root, shapeDefinition, digits, flipVertical 
     });
     if (!result) return null;
     shapeDefinition = result.definition || shapeDefinition;
-    const {placements, wires, nodePoints, externalPorts} = result;
+    return finishNodalModel(root, result, shapeDefinition, digits);
+}
+
+function finishNodalModel(root, result, shapeDefinition, digits) {
+    const {placements, wires, externalPorts} = result;
+    const nodePoints = placeBoardNodeMarkers(result);
+    externalPorts.forEach(port => { if (port.onWire) port.at = nodePoints.get(port.node).slice(); });
     const {board} = shapeDefinition;
     const labelTasks = placements.map(placement => {
         const label = componentLabel(placement.part, placement.id, digits);
@@ -689,10 +715,7 @@ function buildInterpretedBoardModel(root, shapeDefinition, digits, flipVertical 
         .concat(root.externalNodes))];
     if (nodeIds.some(node => !nodePoints.has(node))) return null;
     const nodeTasks = nodeIds.map(node => ({candidates: treeNodeCandidates(nodePoints.get(node), shapeDefinition.automatic ? 240 : 60)}));
-    const portTasks = externalPorts.map(port => ({text: `Port ${port.port}`, candidates:
-        labelCandidates(`Port ${port.port}`, circleBounds(...port.at, 4),
-            board.portLabelOffset ? [port.at[0] + board.portLabelOffset[0],
-                port.at[1] + board.portLabelOffset[1]] : undefined)}));
+    const portTasks = externalPorts.map(port => ({text: `Port ${port.port}`, candidates: portLabelCandidates(port, board)}));
     const placementsBounds = placements.map(treeLayoutBounds);
     if (placementsBounds.some((bounds, index) => placementsBounds.slice(index + 1)
         .some(other => intersects(bounds, other, GRID)))) return null;
@@ -729,19 +752,10 @@ function buildInterpretedBoardModel(root, shapeDefinition, digits, flipVertical 
         ...(result.sections ? {shapes: result.sections.map(({name, from, to}) => ({name, from, to}))} : {}),
         cells: result.cells ?? placements.length, viewBox: [minX, minY, maxX - minX, maxY - minY],
         components: placements, nodes, wires, ...(result.junctions ? {junctions: result.junctions} : {}), crossings: result.crossings || wireCrossings(wires), labels: annotations, externalPorts,
-        board: {grid: GRID, interpreter: 'ORI', version: shapeDefinition.version,
+        board: {grid: GRID, interpreter: shapeDefinition.interpreter || 'ORI', version: shapeDefinition.version,
             ...(result.sections ? {sections: result.sections} : {}),
             ...(result.regions ? {regions: result.regions} : {}), boxes}};
     return {graph, topology: flowTopology(root, placements, externalPorts)};
-}
-
-function boardWireCenter(points) {
-    const segments = points.slice(1).map((point, index) => [points[index], point]);
-    segments.sort((left, right) =>
-        (Math.abs(right[1][0] - right[0][0]) + Math.abs(right[1][1] - right[0][1])) -
-        (Math.abs(left[1][0] - left[0][0]) + Math.abs(left[1][1] - left[0][1])));
-    const [start, finish] = segments[0];
-    return [0, 1].map(axis => Math.round((start[axis] + finish[axis]) / (2 * GRID)) * GRID);
 }
 
 function boardWireBounds(points) {
@@ -799,14 +813,14 @@ function boardBoxes(placements, wires, externalPorts, board) {
         const segments = corner ? wiresByTile.get(wire.boardTile.id) || [] : [wire];
         if (corner && (segments.length !== 2 || segments.some(segment => segment.node !== wire.node))) return [];
         const points = corner ? [segments[0].points[0], segments[0].points[1], segments[1].points[1]] : wire.points;
+        // Boxes describe geometry on a node. Its single numbered marker is in graph.nodes.
         return [{kind: corner ? 'cornerWire' : 'wire', tile: wire.boardTile, node: wire.node,
             points, bounds: boardWireBounds(points),
-            ...(corner ? {} : {nodeDot: boardWireCenter(points)}),
             terminals: terminalsByNode.get(wire.node) || []}];
     });
     if (componentBoxes.some(box => box.tile?.kind !== 'component') ||
         wireBoxes.some(box => !['wire', 'cornerWire'].includes(box.tile?.kind) ||
-        box.terminals.length < 2 ||
+        box.terminals.length < (board.allowOpenEnds ? 1 : 2) ||
         box.points.slice(1).reduce((length, point, index) => length +
             Math.abs(point[0] - box.points[index][0]) +
             Math.abs(point[1] - box.points[index][1]), 0) !== box.tile.length)) return null;
@@ -866,10 +880,33 @@ function buildSignalFlowModel(path, options, digits) {
 }
 
 function detectedShapes(circuit) {
+    if (circuit && Object.prototype.hasOwnProperty.call(circuit, 'paths')) return null;
     return detectSchematicShapes(circuit, schematicShapeBoards, {symbol: symbolForSchematicEntry});
 }
 
 function buildSchematicModel(circuit, options = {}, detected = detectedShapes(circuit)) {
+    if (circuit && Object.prototype.hasOwnProperty.call(circuit, 'paths')) {
+        if (options.shapes !== undefined || options.flipVertical === true || options.view && options.view !== 'detail') {
+            throw new TypeError('Drawing input uses path directions, mirror and alignment instead of nPort shape/view options.');
+        }
+        const parsed = parseSchematicInput(circuit);
+        const result = layoutSchematicInput(parsed, {
+            symbol: symbolForSchematicEntry, bounds: treeLayoutBounds,
+            placement(entry, inputPort, at, angle, mirrorY, mirrorX, id) {
+                return nodalPlacement(id, entry, inputPort, at, angle, mirrorY, mirrorX);
+            }
+        });
+        const root = {kind: 'nodal', components: result.placements.map(part =>
+            ({part: part.part, nodes: part.ports.map(port => port.node)})),
+            externalNodes: result.externalPorts.map(port => port.node)};
+        const model = finishNodalModel(root, result, {name: 'drawing-input', layout: 'drawing-input', interpreter: 'paths', version: 1,
+            board: {grid: GRID, allowOpenEnds: true}}, schematicSignificantDigits(options));
+        if (!model) throw new RangeError('Schematic input: could not finish the drawing graph.');
+        model.graph.kind = 'schematic-input';
+        annotateSchematicInput(model, parsed, {bounds: treeLayoutBounds, textBounds: labelBounds,
+            wireBounds: boardWireBounds, choose: chooseAnnotations});
+        return {...model, detected: null, dots: schematicDots(options.dots)};
+    }
     if (options.shapes === undefined) {
         const grouped = groupedSchematicShapes(circuit?._schematic, schematicShapeBoards,
             {symbol: symbolForSchematicEntry}, true);
@@ -919,11 +956,8 @@ function renderNodalSvg(model) {
     const crossovers = (graph.crossings || []).map(([x, y]) =>
         `<rect x="${x - 8}" y="${y - 7}" width="16" height="14" fill="#ffffff" stroke="none"/>` +
         `<path d="M${x - 10} ${y} L${x + 10} ${y}"/>`).join('');
-    const junctions = graph.wires.filter(wire => wire.points.length > 2).map(wire => {
-        const point = wire.points[wire.points.length - 1];
-        return schematicDot(point, 'junction');
-    }).join('');
-    const branchDots = (graph.junctions || []).map(junction =>
+    // Junctions come from wire connectivity, never from a route's number of bends.
+    const junctions = (graph.junctions || []).map(junction =>
         schematicDot(junction.at, 'junction')).join('');
     const ports = dots.ports ? graph.externalPorts.map(port => schematicDot(port.at, 'port')).join('') : '';
     const symbols = graph.components.map(placement => {
@@ -935,7 +969,8 @@ function renderNodalSvg(model) {
         const transform = `translate(${placement.at[0]} ${placement.at[1]}) rotate(${placement.rotation}) ` +
             `scale(${scaleX} ${scaleY}) translate(${-source[0]} ${-source[1]})`;
         const terminals = dots.terminals ? symbol.ports.map(point => schematicDot(point, 'terminal')).join('') : '';
-        return `<g transform="${transform}" fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${symbol.geometry}${terminals}</g>`;
+        const identity = graph.kind === 'schematic-input' ? ` id="component-${escapeXml(placement.id)}" data-component="${escapeXml(placement.id)}"` : '';
+        return `<g${identity} transform="${transform}" fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${symbol.geometry}${terminals}</g>`;
     }).join('');
     const nodes = graph.nodes.map(node => (!dots.nodes || graph.showNodeDots === false ? '' :
         schematicDot(node.at, 'node')) +
@@ -943,11 +978,13 @@ function renderNodalSvg(model) {
         `<text x="${node.numberAt[0]}" y="${node.numberAt[1] + 5}" text-anchor="middle"` +
         `${String(node.id).length > 2 ? ' font-size="10"' : ''}>${escapeXml(node.id)}</text>`).join('');
     const labels = graph.labels.map(label => `<text x="${label.at[0]}" y="${label.at[1]}" text-anchor="middle">${escapeXml(label.text)}</text>`).join('');
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${minX} ${minY} ${width} ${height}" role="img" aria-label="Nodal nPort schematic"><rect x="${minX}" y="${minY}" width="${width}" height="${height}" fill="#ffffff"/><g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${wires}${crossovers}</g><g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="16">${symbols}${junctions}${branchDots}${ports}${nodes}${labels}</g></svg>`;
+    const extra = renderSchematicInputAnnotations(graph.annotations, escapeXml);
+    const name = graph.kind === 'schematic-input' ? 'Authored schematic' : 'Nodal nPort schematic';
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${minX} ${minY} ${width} ${height}" role="img" aria-label="${name}"><rect x="${minX}" y="${minY}" width="${width}" height="${height}" fill="#ffffff"/><g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${wires}${crossovers}</g><g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="16">${symbols}${junctions}${ports}${nodes}${labels}${extra}</g></svg>`;
 }
 
 function renderSchematicSvg(model) {
-    if (model.graph.kind === 'rf-nodal') return renderNodalSvg(model);
+    if (['rf-nodal', 'schematic-input'].includes(model.graph.kind)) return renderNodalSvg(model);
     const {layout} = model;
     const [minX, minY, width, height] = model.graph.viewBox;
     const wires = layout.wires.map(([start, end]) =>
@@ -1088,6 +1125,7 @@ function mountSchematic(circuit, options = {}, detected) {
     toolbar.style.display = 'flex';
     toolbar.style.justifyContent = 'flex-end';
     toolbar.style.gap = '8px';
+    toolbar.style.flexWrap = 'wrap';
     const viewport = document.createElement('div');
     viewport.style.width = '100%';
     viewport.style.overflow = 'auto';
@@ -1109,6 +1147,12 @@ function mountSchematic(circuit, options = {}, detected) {
     fitButton.addEventListener('click', toggleSchematicFit.bind(null, svg, viewport, fitButton));
     toolbar.appendChild(button);
     toolbar.appendChild(fitButton);
+    const saveButton = document.createElement('button');
+    saveButton.textContent = 'Save SVG';
+    saveButton.setAttribute('aria-label', 'Save SVG');
+    styleSchematicButton(saveButton);
+    saveButton.addEventListener('click', saveSchematicSvg.bind(null, markup));
+    toolbar.appendChild(saveButton);
     container.appendChild(toolbar);
     container.appendChild(viewport);
     mount.appendChild(container);
@@ -1116,7 +1160,16 @@ function mountSchematic(circuit, options = {}, detected) {
         new ResizeObserver(updateFittedSchematic.bind(null, svg, viewport, fitButton))
             .observe(viewport);
     }
-    return {svg, graph: model.graph, topology: model.topology, detected: model.detected, error: null};
+    return {svg, svgText: markup, graph: model.graph, topology: model.topology, detected: model.detected, error: null};
+}
+
+function saveSchematicSvg(markup) {
+    const url = URL.createObjectURL(new Blob([markup], {type: 'image/svg+xml;charset=utf-8'}));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'schematic.svg';
+    link.click();
+    setTimeout(URL.revokeObjectURL.bind(URL, url), 0);
 }
 
 function schematicErrorMount(options) {
@@ -1142,7 +1195,7 @@ function reportSchematicFailure(error, options, detected) {
     } catch (displayError) {
         console.error('Schematic error message could not be mounted:', displayError);
     }
-    return {svg: null, graph: null, topology: null, detected, error: failure};
+    return {svg: null, svgText: null, graph: null, topology: null, detected, error: failure};
 }
 
 export function schematic(circuit, options = {}) {

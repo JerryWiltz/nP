@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-07 -->
+<!-- Modified: 2026-11-14 -->
 
 # Schematics
 
@@ -9,7 +9,7 @@ Every symbol terminal and interconnect wire point uses the shared 10-unit grid. 
 
 ## Contents
 
-- `symbol-catalog.json` maps every drawable public RF and digital API to a canonical SVG. It records alternate symbols where a component has more than one visual orientation.
+- `symbol-catalog.json` maps every drawable public RF and digital API to a canonical SVG. It records alternate symbols where a component has more than one visual orientation. Its separate `sourceSymbols` mapping reserves the six source drawing names without declaring executable constructors.
 - `symbol-gallery.template.html` fixes the vertical gallery order and placement. `tools/generate-symbol-gallery.js` inserts current canonical geometry into it and writes `dev/canonicalSymbols.html`.
 - `runtime-symbol-layout.json` supplies body bounds, lead segments, and flow directions for the runtime subset. `tools/generate-runtime-symbols.js` reads each corresponding canonical SVG and generates `src/np-chart/src/schematicSymbols.js` with its exact geometry and port coordinates.
 - `symbols/` contains every canonical SVG at one level. The catalog identifies which constructors use each symbol and lists signal-flow symbols in `signalSymbols`. A digital block's numbered connectors describe diagram flow, not electrical nPort ports.
@@ -43,6 +43,23 @@ The example corresponds to `nP.R(75)` connected between circuit nodes 1 and 2. I
 The second example shows `nP.waveform()` feeding `nP.FFT()`. Its `domain: "signal"` connections name data signals; they are not RF circuit nodes. RF descriptions use `domain: "rf"` and integer node numbers. Both domains require a named layout center. The current composer draws one domain at a time.
 
 The [two-series-resistors example](circuits/two-series-resistors.mjs) pairs executable nP code with a [JSON description](circuits/two-series-resistors.json) and [generated schematic](../docs/public/schematics/two-series-resistors.svg). Each RF wire and external terminal names its electrical node. The same node may connect ports at different drawing coordinates; the validator checks that its wires actually join them. See [From nP code to a schematic](code-to-schematic.md) for the full procedure.
+
+## Source symbols
+
+The source artwork is registered and bundled independently of future source-behavior JavaScript:
+
+| Drawing name | Canonical SVG | Marking |
+| --- | --- | --- |
+| `V` | `symbols/voltage-source.svg` | Circle with `+` and `−` |
+| `I` | `symbols/current-source.svg` | Circle with a current arrow |
+| `VCVS` | `symbols/voltage-controlled-voltage-source.svg` | Diamond with `+`/`−`; `V = Av × Vc` |
+| `VCCS` | `symbols/voltage-controlled-current-source.svg` | Diamond with an arrow; `I = gm × Vc` |
+| `CCVS` | `symbols/current-controlled-voltage-source.svg` | Diamond with `+`/`−`; `V = rm × Ic` |
+| `CCCS` | `symbols/current-controlled-current-source.svg` | Diamond with an arrow; `I = Ai × Ic` |
+
+Each has two electrical terminals: terminal 1 above terminal 2. Voltage polarity is positive at terminal 1; current arrows point from terminal 2 toward terminal 1. The controlled-source captions identify their control relationship; the model will separately identify the sensed voltage or current. Reference captions are stripped when canonical body geometry is embedded in a circuit; instance labels and annotations will supply actual values and control names.
+
+Open `dev/canonicalSymbols.html#sources` to inspect the family. These symbols have no numerical behavior or new public JavaScript exports. The drawing-input syntax such as `Vin=V` selects their geometry directly; see [Schematic authoring language](../developmentDocs/schematicLanguage.md) and `dev/schematicAuthoring.html`. Source implementation files under `src/np-sources/` can be added separately without embedding SVG geometry in those files.
 
 ## Rebuild static documentation drawings
 

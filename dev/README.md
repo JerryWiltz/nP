@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-08 -->
+<!-- Modified: 2026-11-14 -->
 # Development pages
 
 The HTML files in this directory are executable browser harnesses. Top-level
@@ -10,7 +10,7 @@ aligned.
 
 | Harness | Focus | Companion note |
 | --- | --- | --- |
-| `canonicalSymbols.html` | All 60 canonical SVG symbols in Guide API order | — |
+| `canonicalSymbols.html` | All 66 canonical SVG symbols, including source primitives | — |
 | `chartDefaults.html` | Built-in line chart, line table, and Smith chart defaults | — |
 | `diode.html` | 1N4148 RF S-parameters and DC I-V | `diode.md` |
 | `edgeCoupledFilter.html` | Coupled-line filter with amplifier cascade | — |
@@ -21,6 +21,7 @@ aligned.
 | `nodal.html` | Series and parallel nodal connections | `nodal.md` |
 | `noiseAnalysis.html` | Three amplifier constructor forms compared through nodal and cascade NF and output noise floor | `noiseAnalysis.md` |
 | `schematic.html` | Guided and network-only schematics for 32 direct and stress circuits | `schematic.md` |
+| `schematicAuthoring.html` | Drawing descriptions: source/DUT figure, open paths, tee branch, coupled sections, mirror and ring | `schematicAuthoring.md` |
 | `seriesTee.html` | Series tee regression harness | — |
 | `timeDomain.html` | ASCII BER comparison and clocked PN7 through an attenuator and `demod()` | `timeDomain.md` |
 | `trf5Port.html` | nP hybrid power divider built from `trf()`, `trfAuto()`, Tees, and a 100 Ω isolation resistor | `trf5Port.md` |
@@ -40,7 +41,6 @@ Individual schematic-shape harnesses live in `shapes/`:
 | `shapes/ladder.html` | Blind `ladder` detection for ideal and microstrip line networks | `shapes/ladder.md` |
 | `shapes/powerDivider.html` | Wilkinson variants and a divider/combiner/ladder in one nodal network with three guided shapes | `shapes/powerDivider.md` |
 | `shapes/powerCombiner.html` | Explicit reflected views, independent divider detection, microstrip symbols and variable arm lengths | `shapes/powerCombiner.md` |
-| `shapes/splitRejoin.html` | Network-only parallel paths with tee junctions | `shapes/splitRejoin.md` |
 
 The diode, matrix, nodal, and visualization notes mirror their harness scripts. The time-domain note contains the PN7 signal setup; its harness adds logging and plots. The microstrip note keeps equivalent standalone examples with different chart mount IDs. The noise and intermodulation notes are worked derivations with different example settings from their harnesses; they share the [Gupta connection-scattering derivation](../developmentDocs/guptaConnectionScattering.md).
 

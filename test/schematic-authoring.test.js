@@ -1,4 +1,4 @@
-// Modified: 2026-11-07
+// Modified: 2026-11-14
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync, readdirSync} from 'node:fs';
@@ -96,7 +96,9 @@ test('canonical symbols reject malformed XML', () => {
 test('the gallery can be regenerated from canonical SVGs', () => {
   const published = readFileSync(new URL('../dev/canonicalSymbols.html', import.meta.url), 'utf8');
   assert.equal(generateGallery(), published);
-  assert.equal(checkGallery().length, 60);
+  const canonicalCount = readdirSync(new URL('../schematics/symbols/', import.meta.url))
+    .filter(name => name.endsWith('.svg')).length;
+  assert.equal(checkGallery().length, canonicalCount);
 });
 
 test('documentation schematic references resolve to current descriptions and SVGs', () => {

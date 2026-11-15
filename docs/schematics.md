@@ -1,7 +1,31 @@
-<!-- Modified: 2026-11-08 -->
+<!-- Modified: 2026-11-14 -->
 # Schematics
 
 `nP.schematic(network)` draws an RF network using its component symbols and electrical connections. You can draw a component, a network returned by `nP.nodal()` or `nP.cascade()`, or a transmitter–circuit–receiver path. Each call adds a drawing to the page; in the REPL, it appears in Output.
+
+## Draw from a schematic description
+
+For a note, article or presentation, pass a drawing description instead of constructing an electrical network. No frequency list or S-parameter calculation is required:
+
+```js
+// Draw two resistors without an RF calculation
+var mySchematic = {
+  paths: [
+    '45 right R1=R(50 ohm) 37',
+    '37 right R2=R(75 ohm) 1'
+  ],
+  annotations: [
+    {type: 'port', number: 1, node: 45, side: 'left'},
+    {type: 'port', number: 2, node: 1, side: 'right'}
+  ]
+};
+
+var mySchematicSVG = nP.schematic(mySchematic);
+```
+
+Each line names its starting node, approach direction, component instance and canonical symbol, and ending node. Values in parentheses are display text. Shared node numbers join the paths; they need not match the external port numbers. A source or closed loop is optional. Multiport symbols use full terminal lists, for example `'1 right T1=Tee[1,2,3] 10 1 2'`; a mirrored part adds `mirror` at the end of its line. Alignment instructions such as `'alignY Vin.1 R6.1'` use actual component terminals.
+
+The [Schematic authoring example](./repl#example-schematic-authoring) shows a voltage source, source/load resistors and a series-resistor DUT, with a dotted enclosure, voltage labels, inward current arrows and reference-node port annotations. This is drawing input; selecting `V` source artwork does not run a voltage-source model. The returned `.svgText` and **Save SVG** button provide self-contained vector artwork for Inkscape. The existing nPort workflow below remains available.
 
 ## How nP turns a network into an SVG
 
@@ -109,7 +133,7 @@ Each group belongs to one final nodal network. It adds no intermediate nPort, ex
 | `bridgedT` | A main path with upper bridges and downward terminated shunts |
 | `branchline` | Rectangular transmission-line cells with four external ports |
 | `edgeCoupledFilter` | A staircase of coupled sections with explicit terminations |
-| `powerDivider` | The supported transformer or single-stage Wilkinson divider |
+| `powerDivider` | Transformer, single-stage Wilkinson, or a junction with two or more output arms |
 | `powerCombiner` | The corresponding reflected combining arrangement |
 
 A group must fit the actual connections supported by its board. Put all two-port rows in groups when composing sections. Direct junctions such as `Tee()` and `Tee4()`, and one-port terminations, may remain ordinary rows outside groups. Group values contain component rows; nested group objects are not part of this syntax. Section-level crossover routing remains deferred.
@@ -189,6 +213,10 @@ nP.schematic(network, {
 
 Omitted fields keep their defaults. Use `dots: {terminals: true}` to show the component connections as well. Each field accepts a boolean. These switches apply to nodal, grouped, cascade, and MOD/DEMOD drawings. They change the rendered dots without changing the layout, topology or circuit calculation. Circled node-number labels are separate and remain visible. Actual wire-junction dots and dots inside canonical symbol artwork remain visible so connection meaning and symbol artwork are preserved.
 
+A connection retains one electrical node identity through all its straight wires and corners. It receives one numbered marker, regardless of how many wire boxes describe its route. Junction dots mark actual branches; external-port dots and optional component-terminal dots identify endpoints on those same nodes. They do not introduce extra node numbers. In nodal drawings, `drawing.graph.nodes` contains the numbered marker positions. The wire and corner records in `drawing.graph.board.boxes` carry their shared `node` identity and no longer contain per-box `nodeDot` coordinates.
+
+For a connection with corners, the numbered dot belongs on the straight wire before its first corner, following the layout's route direction. The renderer prefers that wire's midpoint and shifts the dot along the wire to avoid crossings and terminals. It chooses branching paths automatically; if the incoming lead has no clear position, another straight segment of the same node carries the marker. Straight connections keep their midpoint markers. Turns inside `Tee()`/`mtee()` symbols are component geometry, so a branchline square made with those symbols keeps its usual markers.
+
 ## Labels and drawing controls
 
 Labels show three significant digits by default. Set `significantDigits` from 1 to 15 when a drawing needs more or less detail:
@@ -200,7 +228,7 @@ var l1 = nP.L(45.65360855435164e-9);
 nP.schematic(l1, {significantDigits: 4});
 ```
 
-The precision option changes only printed labels. The circuit calculation and numeric values in `graph` and `topology` keep their original precision. The drawing opens at its natural scale and grows to its full height; wide drawings scroll horizontally. **Fit drawing** scales to the available width, and **Actual size** restores the natural scale. **Copy as png** copies the whole drawing.
+The precision option changes only printed numeric nPort labels. Drawing-input captions remain display text. The circuit calculation and numeric values in `graph` and `topology` keep their original precision. The drawing opens at its natural scale and grows to its full height; wide drawings scroll horizontally. **Fit drawing** scales to the available width, and **Actual size** restores the natural scale. **Copy as png** copies the whole drawing. **Save SVG** downloads the same vector geometry, available as `drawing.svgText`, for editing or publication.
 
 ## Transmitter, RF circuit and receiver
 

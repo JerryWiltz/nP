@@ -1,4 +1,4 @@
-// Modified: 2026-11-08
+// Modified: 2026-11-13
 import {matchSchematicBoard} from './schematicBoardInterpreter';
 import {boardInterface, validateSchematicSections} from './schematicBoardComposition';
 
@@ -72,7 +72,7 @@ function nodesValue(nodes) {
 function interfaceCandidates(root, region, definitions, boards, geometry, depths) {
     const candidates = [];
     for (const [name, definition] of definitions) {
-        const ports = boardInterface(definition, boards);
+        const ports = boardInterface(definition, boards, region.boundaries.length);
         if (ports.from.length + ports.to.length !== region.boundaries.length) continue;
         const components = region.indices.map(index => root.components[index]);
         for (const externalNodes of permutations(region.boundaries)) {

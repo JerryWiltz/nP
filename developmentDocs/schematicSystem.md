@@ -1,7 +1,9 @@
-<!-- Modified: 2026-11-09 -->
+<!-- Modified: 2026-11-14 -->
 # Schematic system
 
-This note explains how an nP network becomes a recognizable RF schematic. It starts with two series resistors, follows their data through the one reusable interpreter (ORI), and then explains the board language and graph algorithms behind the drawing.
+This note explains how an nP network or a drawing description becomes a recognizable RF schematic. It starts with two series resistors, follows their data through the one reusable interpreter (ORI), and then explains the board language and graph algorithms behind the drawing.
+
+The drawing-only input format, with `paths` and `annotations`, is documented separately in [Schematic authoring language](schematicLanguage.md). Its parser and constraint-based layout feed the shared graph finalizer and SVG renderer; the nPort workflow below continues to use construction metadata and ORI. Both routes return `svgText` and provide Save SVG in addition to the existing controls.
 
 ## Overview: drawing two series resistors
 
@@ -79,13 +81,13 @@ The registry's optional `detectionPriority` chooses a preferred view when severa
 
 The browser-facing `nP.schematic()` catches drawing failures, logs the original error to the console, and displays a message in the requested output area. It then returns normally, so the engineer's following `lineTable()`, `lineChart()` or other JavaScript statements can execute without a caller-side `try/catch`.
 
-A successful return contains `{svg, graph, topology, detected, error: null}`. On failure, it contains `{svg: null, graph: null, topology: null, detected, error}`. The message is inserted as text. If the requested mount is missing or its selector is invalid, the message falls back to the document body when available. Errors in lower-level source-module helpers such as `schematicGraph()` still throw; the browser API provides the display-and-continue boundary.
+A successful return contains `{svg, svgText, graph, topology, detected, error: null}`. On failure, it contains `{svg: null, svgText: null, graph: null, topology: null, detected, error}`. The message is inserted as text. If the requested mount is missing or its selector is invalid, the message falls back to the document body when available. Errors in lower-level source-module helpers such as `schematicGraph()` still throw; the browser API provides the display-and-continue boundary.
 
 ### Layout and render
 
 **Layout** turns the electrical connections into a drawing model. For this example, `interpretSchematicBoard()` reads the `series` board definition and chooses each resistor's position and orientation and the wires between numbered ports. `buildInterpretedBoardModel()` adds node numbers and component labels to the resulting layout. The resulting `graph` describes those placements and connections; `topology` gives a separate view of the electrical connectivity.
 
-**Render** turns that drawing model into SVG. `renderNodalSvg()` reads the graph and the canonical resistor artwork and draws the symbols, wires, dots, and text. `schematic()` mounts the SVG in the requested location and adds a toolbar above it. The toolbar contains <button type="button" disabled>Copy as png</button> and <button type="button" disabled>Fit drawing</button>; after fitting, the second button becomes <button type="button" disabled>Actual size</button>.
+**Render** turns that drawing model into SVG. `renderNodalSvg()` reads the graph and the canonical resistor artwork and draws the symbols, wires, dots, and text. `schematic()` mounts the SVG in the requested location and adds a toolbar above it. The toolbar contains <button type="button" disabled>Copy as png</button>, <button type="button" disabled>Fit drawing</button>, and <button type="button" disabled>Save SVG</button>; after fitting, the fit button becomes <button type="button" disabled>Actual size</button>. `drawing.svgText` is the original self-contained SVG text used by Save SVG.
 
 On success, the return value separates the visible picture from the data behind it. `drawing.svg` is the mounted SVG element. `drawing.graph` describes the layout, including symbol placements, wires, labels, and coordinates. `drawing.topology` describes the circuit connections between component ports and electrical nodes. Code can inspect all three without reading the rendered SVG markup.
 
@@ -276,7 +278,8 @@ The table lists selected functions used by this example, followed by the toolbar
     <tr><td><code>rotateVector()</code></td><td>Applies quarter-turn coordinate rotations used by the placement transform.</td></tr>
     <tr><td><code>appendBoardWire()</code><br>(Outside schematic.js)</td><td>In schematicBoardInterpreter.js. Joins points only when they share the electrical node and form a nonzero horizontal or vertical wire.</td></tr>
     <tr><td><code>boardWireDot()</code><br>(Outside schematic.js)</td><td>In schematicBoardInterpreter.js. Chooses an on-grid node-dot position along the wire.</td></tr>
-    <tr><td rowspan="7">Return useful circuit information</td><td><code>componentLabel()</code></td><td>Creates the designator and value text from component metadata.</td></tr>
+    <tr><td rowspan="8">Return useful circuit information</td><td><code>componentLabel()</code></td><td>Creates the designator and value text from component metadata.</td></tr>
+    <tr><td><code>placeBoardNodeMarkers()</code><br>(Outside schematic.js)</td><td>In schematicNodeMarkers.js. Finalizes one dot per electrical node, preferring the wire before its first corner. The straight resistor connections retain their midpoint dots.</td></tr>
     <tr><td><code>labelCandidates()</code></td><td>Proposes positions for component and external-port text around the placed geometry.</td></tr>
     <tr><td><code>treeNodeCandidates()</code></td><td>Proposes nearby positions for the circled node numbers, keeping them distinct from electrical dots.</td></tr>
     <tr><td><code>chooseAnnotations()</code></td><td>Uses collision checks and beam search to choose readable positions for the labels and node numbers together.</td></tr>
@@ -288,10 +291,11 @@ The table lists selected functions used by this example, followed by the toolbar
     <tr><td><code>escapeXml()</code></td><td>Escapes displayed text so labels produce valid SVG markup.</td></tr>
     <tr><td><code>sizeSchematicSvg()</code></td><td>Sets SVG display dimensions for actual-size and fitted views.</td></tr>
     <tr><td><code>styleSchematicButton()</code></td><td>Styles the fit and copy controls consistently.</td></tr>
-    <tr><td rowspan="4">Respond to toolbar actions</td><td><code>toggleSchematicFit()</code></td><td>Switches between Fit drawing and Actual size when the button is clicked.</td></tr>
+    <tr><td rowspan="5">Respond to toolbar actions</td><td><code>toggleSchematicFit()</code></td><td>Switches between Fit drawing and Actual size when the button is clicked.</td></tr>
     <tr><td><code>updateFittedSchematic()</code></td><td>Updates the fitted scale when the available width changes.</td></tr>
     <tr><td><code>copySchematicPng()</code></td><td>Copies the visible schematic as a PNG when requested.</td></tr>
     <tr><td><code>schematicPngBlob()</code></td><td>Rasterizes the SVG to a PNG blob for clipboard export.</td></tr>
+    <tr><td><code>saveSchematicSvg()</code></td><td>Downloads the original SVG text using a local Blob URL, preserving editable vector artwork.</td></tr>
   </tbody>
 </table>
 
@@ -371,7 +375,7 @@ Units are explicit: `grid` is the placement step in SVG units; named-slot `at`/`
 
 The interpreter binds by electrical connections, so rearranging the `nodal()` rows or reversing a resistor's numbered ports does not change the path. It creates new placement and wire records without changing the network. `buildInterpretedBoardModel()` uses the shared symbol geometry and annotation functions to turn those records into the existing drawing graph. The SVG renderer is unchanged. `drawing.graph.board.interpreter` identifies this route as `ORI`.
 
-**Current scope:** the interpreter supports repeated paths, attached paths, rejoining paths between existing anchors, connected lanes, named component slots, references with axis reflections, and composition of node-bounded sections with compatible interfaces. The seven named single-shape requests use ORI; `powerDivider` has transformer and Wilkinson alternatives, and `powerCombiner` reuses both. All nodal drawings and node-bounded board compositions use ORI. Cascade and signal-path drawings retain their separate series-layout route. ORI handles the connections described by those boards; arbitrary guided loop arrangements and broader symmetry rules remain future work. A new shape expressible with the current operations can be supplied as another description without changing ORI. A genuinely new language operation requires an extension to the shared interpreter, rather than a callback dedicated to that shape.
+**Current scope:** the interpreter supports repeated paths, attached paths, rejoining paths between existing anchors, connected lanes, named component slots, references with axis reflections, and composition of node-bounded sections with compatible interfaces. The seven named single-shape requests use ORI; `powerDivider` has transformer, Wilkinson and junction-only alternatives, and `powerCombiner` reuses all three. All nodal drawings and node-bounded board compositions use ORI. Cascade and signal-path drawings retain their separate series-layout route. ORI handles the connections described by those boards; arbitrary guided loop arrangements and broader symmetry rules remain future work. A new shape expressible with the current operations can be supplied as another description without changing ORI. A genuinely new language operation requires an extension to the shared interpreter, rather than a callback dedicated to that shape.
 
 For a ladder, `match.paths` binds the main path using each junction symbol's through ports. `match.attachments` traces every unused port on that path through two-port components to a one-port termination. `coverAllComponents` requires the definition to account for the complete network. The board's `attachments` describes repeating branch boxes and sets their direction to `down`. Changing this direction to `up` works through the same operations; it also rotates the junctions and terminations accordingly. Symbol geometry and the original numbered electrical ports remain authoritative.
 
@@ -399,15 +403,17 @@ For the transformer power divider, `match.slots` gives component predicates and 
 
 `board.components` positions a component relative to a named terminal of an already placed slot. Offsets are whole board cells, and `directions` specifies which way each terminal faces. The interpreter reads the canonical lead geometry to choose a 90-degree rotation and reflection. The resistor is placed one wire box below the upper tee's common pin. The lower tee is positioned from the resistor's other end, so both ends have a real wire rather than coincident symbol terminals. These rules are data in the shape description; there are no transformer or tee names in the interpreter's layout operations.
 
-The corner-wire operation splits a right-angle connection into a straight wire box, a corner box, and another straight wire box. Each straight box has a real electrical node; the corner box carries no node dot, touches only wire boxes and stays clear of symbol terminals. ORI records the corner in the board inspection data and emits its two line segments to the existing SVG renderer. The same slot and routing operations interpret this arrangement without a transformer-divider-specific JavaScript builder.
+The corner-wire operation splits a right-angle connection into a straight wire box, a corner box, and another straight wire box. All three carry the same electrical `node` identity. Splitting the geometry creates no new node and no additional numbered marker. The corner box touches only wire boxes and stays clear of symbol terminals. ORI records it in the board inspection data and emits its two line segments to the existing SVG renderer. The same slot and routing operations interpret this arrangement without a transformer-divider-specific JavaScript builder.
 
 The `powerDivider` description also contains a Wilkinson alternative. It declares three named junction `anchors` at board cells `[0, 1]`, `[1, 0]` and `[1, 2]`. The two arm lanes turn from the input junction upward/downward and then right; a third lane connects the output junctions downward through the isolation resistor. External-port declarations fix port 1 on the left and ports 2 and 3 on the upper and lower right. Matching uses the same contracted path graph and slot assignment as branchline, with both ideal and microstrip tee symbols allowed. The output tees' common ports face the resistor; their through ports connect the arms to the external outputs.
 
 `spacing: 'byAxis'` measures lanes independently along each axis. The longest arm controls horizontal pitch; the vertical isolation lane controls output separation. Named cell positions keep the input halfway between the outputs. Each arm can contain one or more two-port components, while the isolation lane accepts resistors. A turning lane uses `placeBoardTiles()` for the components on its final straight segment and `appendCornerBoardWire()` for its entry. No named RF constructor, circuit variable, or example coordinate appears in these shared operations.
 
-ORI reads `alternatives` only after the caller requests the containing shape. It tries the primary board and then its alternatives, retaining the matching definition for annotations and graph metadata. A transformer drawing reports `pattern: 'transformer'`; a Wilkinson drawing reports `pattern: 'wilkinson'`. This is selection within an explicitly requested family, not automatic shape selection for `nP.schematic(network)`. Resistive and multistage power dividers remain future descriptions. The current data definitions contain no JavaScript layout callbacks; they do not establish a universal shape language.
+Both blind detection and an explicit shape request use the same `alternatives`. It tries the primary board and then its alternatives, retaining the matching definition for annotations and graph metadata. A transformer drawing reports `pattern: 'transformer'`; a Wilkinson drawing reports `pattern: 'wilkinson'`. A junction-only drawing reports `pattern: 'junction'`. Blind detection can select the family for `nP.schematic(network)`; its default orientation is a divider. Resistive and multistage power dividers remain future descriptions. The current data definitions contain no JavaScript layout callbacks; they do not establish a universal shape language.
 
-The `powerCombiner` definition reuses that family rather than copying either layout:
+The junction-only alternative declares `match.fan` and `board.fan`. The shared `bindBoardFan()` reads `junction.commonPort` and `junction.branchPorts` from canonical runtime metadata, traces degree-two chains to external ports, and requires complete coverage. `placeBoardFan()` measures each arm with the common tile operation, spaces tracks symmetrically around the common-port axis, and connects them using ordinary wire/corner boxes. Bare junctions and two-port network blocks are allowed; no isolation resistor is assumed. Metadata covers `Tee()`, `mtee()`, `Tee4()` and `Tee5()` without constructor-name dispatch. Future line families declare these roles alongside their canonical lead geometry. This operation currently covers one junction with straight arms, rather than arbitrary trees of junctions.
+
+The `powerCombiner` definition reuses that family rather than copying its layouts:
 
 ```js
 powerCombiner: {
@@ -457,15 +463,253 @@ centerlines: [{
 This relation aligns the input terminal and center tap with the vertical resistor's terminal midpoint. `alignBoardCenterlines()` translates the corresponding placed components and all their numbered ports before wires and external leads are generated. The relation takes precedence over the board's initial offsets. It uses no constructor-specific JavaScript. In the current transformer example, the input wire and resistor midpoint both have y = 610. The relation also works after reordering components or reversing their numbered ports. Incompatible centerline relations, or a requested translation off the placement grid, report an error.
 
 
-## Two schematic workflows
+## Runtime inputs and complete file map
 
-nP has two related schematic workflows. The authoring workflow turns editable circuit descriptions into self-contained SVG files for the documentation site. The runtime workflow lets browser code call `nP.schematic(circuit)` for an nPort or `nP.schematic({transmitter, circuit, receiver})` for a simple signal path. Both describe the same electrical ideas, but they currently use different layout engines.
+An engineer can supply either an already calculated **nPort network** or a **drawing description**. Both reach `schematic.js`, use the bundled canonical symbols and produce a drawing graph, an electrical connection summary and SVG. Their layout instructions come from different places:
 
-The schematic is a view of how components are connected. It does not calculate S-parameters or change the circuit. The RF constructors, `cas()`/`cascade()`, and `nodal()` build the nPort and record the information the runtime renderer needs. `schematic.js` reads that information. A guided nodal drawing passes it to ORI with the chosen board definition; an unguided nodal drawing uses the generic ORI board. Shared rendering then draws SVG.
+| Input | Electrical connections | Layout guidance | Runtime route |
+| --- | --- | --- | --- |
+| `nP.schematic(network, options)` | The network's `_schematic` construction metadata | Detected shapes, declared nodal groups or explicit shape options; generic fallback when none matches | Nodal networks use ORI. Cascades use the series-placement code inside `schematic.js`. |
+| `nP.schematic(mySchematic, options)` | `mySchematic.paths` assigns symbols and numbered nodes directly | Path directions, terminal assignments, mirrors and alignment statements | The drawing-input parser and constraint-based layout feed the shared graph finalizer and renderer. |
+
+Drawing input does not construct RF components or calculate S-parameters. A name such as `R` selects resistor artwork; it does not call `nP.R()`. The nPort route reads the existing construction metadata without changing its electrical calculation. See [Schematic authoring language](schematicLanguage.md) for the drawing syntax and [Schematic shape vocabulary](schematicShapeVocabulary.md) for nPort layout guidance.
+
+The diagrams below show the schematic-specific source and supporting files. Paths are relative to the repository root. Directory collections and wildcard entries represent their individual files; the map does not repeat every RF constructor or numerical-analysis dependency.
+
+### Runtime source files
+
+```text
+src/
+├── index.js                         Normal nP entry
+├── plugin.js                        Restricted Obsidian entry; also exports
+│                                    DOM-free schematic graph/topology/SVG helpers
+├── np-chart/
+│   ├── index.js                     Exports nP.schematic()
+│   └── src/
+│       ├── schematic.js             Dispatch, shared geometry and annotations,
+│       │                            graph finalization, SVG and browser controls
+│       │
+│       │   DRAWING INPUT: {paths, annotations}
+│       ├── schematicInputParser.js  Parse and validate the drawing description
+│       ├── schematicDrawingSymbols.js
+│       │                            Generated drawing-name → symbol mapping
+│       ├── schematicInputLayout.js  Orient/place components and route wires
+│       ├── schematicInputConstraints.js
+│       │                            Solve spacing and alignment constraints
+│       ├── schematicInputAnnotations.js
+│       │                            Group/place annotations and render their SVG
+│       │
+│       │   NPORT NODAL INPUT
+│       ├── schematicShapeDetector.js
+│       │                            Detect supported shapes without reading hints
+│       ├── schematicGroups.js       Resolve groups beside nodal connection rows
+│       ├── schematicShapeBoards.js  Declarative shape/board definitions
+│       ├── schematicBoardInterpreter.js
+│       │                            Interpret the board descriptions: ORI
+│       ├── schematicBoardComposition.js
+│       │                            Combine sections and nested boards
+│       │
+│       │   SHARED SUPPORT
+│       ├── schematicBoardGraph.js   Generic board layout and routing;
+│       │                            drawing input also reuses its routing helpers
+│       ├── schematicNodeMarkers.js  Select one numbered marker per node
+│       │                            for authored drawings and nodal boards
+│       ├── schematicSymbols.js      Generated artwork, pins and symbol geometry
+│       └── nodalBlockSymbol.js      Select component/cascade symbols and generate
+│                                    multiport nodal blocks for upstream networks
+│
+└── np-nport/
+    ├── index.js                     Package entry
+    └── src/
+        ├── index.js                 RF constructor and network exports
+        ├── schematicPart.js         Create component _schematic metadata
+        ├── schematicSymbolMap.js    Generated constructor → symbol mapping
+        ├── nPort.js                 cas() preserves cascade construction
+        ├── combining/
+        │   ├── cascade.js           Combine two-port networks
+        │   ├── nodal.js             Preserve component/node/group metadata
+        │   └── nodalConnections.js  Normalize flat and grouped connection rows
+        ├── rlc/                     R(), L(), C() and compound components
+        ├── idealComponents/         Tee(), Tlin(), transformers and other ideals
+        └── mlin/                    Physical microstrip constructors
+```
+
+Other RF constructor directories follow the same `schematicPart()` metadata contract. A cascade's reusable block comes from the canonical cascade symbol in `schematicSymbols.js`; there is no separate `cascadeBlockSymbol.js`. `nodalBlockSymbol.js` also selects that cascade artwork, while generating flexible port geometry for nodal blocks.
+
+### Control flow inside schematic.js
+
+Functions followed by a filename are defined outside `schematic.js`. The other functions in this diagram are inside it. These are the main control paths; the geometry, bounds, search and formatting helpers support them.
+
+```text
+schematic(input, options)
+└── mountSchematic()
+    ├── buildSchematicModel()
+    │   │
+    │   ├── DRAWING OBJECT: {paths, annotations}
+    │   │   ├── parseSchematicInput()      schematicInputParser.js
+    │   │   ├── layoutSchematicInput()     schematicInputLayout.js
+    │   │   │   ├── solveDrawingConstraints()
+    │   │   │   │                         schematicInputConstraints.js
+    │   │   │   └── Shared routing helpers schematicBoardGraph.js
+    │   │   ├── finishNodalModel()
+    │   │   └── annotateSchematicInput()   schematicInputAnnotations.js
+    │   │
+    │   ├── NPORT: nodal network
+    │   │   ├── Detect shapes / resolve groups
+    │   │   │                             schematicShapeDetector.js,
+    │   │   │                             schematicGroups.js
+    │   │   └── buildNodalModel()
+    │   │       └── buildInterpretedBoardModel()
+    │   │           ├── interpretSchematicBoard()
+    │   │           │                     schematicBoardInterpreter.js
+    │   │           │   ├── Board data    schematicShapeBoards.js
+    │   │           │   ├── Composition   schematicBoardComposition.js
+    │   │           │   └── Generic layout/routing
+    │   │           │                     schematicBoardGraph.js
+    │   │           └── finishNodalModel()
+    │   │
+    │   ├── NPORT: cascade or two-port component
+    │   │   ├── drawingRoot() / flattenCascade()
+    │   │   ├── placeComponents()
+    │   │   ├── annotateLayout()
+    │   │   ├── buildSchematicGraph()
+    │   │   └── buildSchematicTopology()
+    │   │
+    │   └── SIGNAL PATH: {transmitter, circuit, receiver}
+    │       └── buildSignalFlowModel()
+    │           └── Reuses cascade placement
+    │
+    │       Result: model.graph + model.topology
+    │
+    ├── renderSchematicSvg(model)
+    │   ├── Authored/nodal graph → renderNodalSvg(model)
+    │   │   └── renderSchematicInputAnnotations()
+    │   │                                 schematicInputAnnotations.js
+    │   └── Cascade/signal path → series SVG rendering
+    │
+    │       Result: SVG text
+    │
+    ├── Mount the SVG and size its viewport
+    ├── Add Copy as png / Fit drawing / Save SVG controls
+    └── Return {svg, svgText, graph, topology, detected, error}
+```
+
+Detection is computed before model construction, and declared nodal groups are resolved when explicit shape options are absent. The diagram places those operations on the nodal branch to show their purpose. Drawing objects bypass shape detection. Standalone multiport components are wrapped as a one-component nodal drawing; they follow the nodal route rather than the two-port series route.
+
+`finishNodalModel()` calls `placeBoardNodeMarkers()` from `schematicNodeMarkers.js`, then uses the shared annotation search to add node numbers, component captions and port labels. Drawing input subsequently groups related node numbers, port labels, voltage labels and arrows by their wire row or column. `schematicInputAnnotations.js` supplies those grouped candidates to the existing `chooseAnnotations()` solver in `schematic.js`; symbols, wires, captions and enclosure borders constrain their positions. No example-specific label names or coordinates determine alignment. Cascade node numbering remains in the existing `annotateLayout()` series route.
+
+The DOM-free entry points `schematicGraph()`, `schematicTopology()` and `schematicSvg()` also live inside `schematic.js`. They accept either input type and call model construction without mounting the drawing. `schematicSvg()` additionally renders the SVG string. They do not execute toolbar, clipboard, canvas or download operations. They are available through direct source imports and the restricted plugin entry; the normal nP entry exports the mounted `schematic()` API.
+
+### Canonical artwork and generated symbol modules
+
+```text
+schematics/
+├── symbols/*.svg                    Canonical component and source artwork
+├── symbol-catalog.json              Constructor/source names → canonical SVGs
+├── runtime-symbol-layout.json       Bounds, leads, flow and junction roles
+├── svg-style-guide.md               Drawing and grid rules
+├── symbol-gallery.template.html     Canonical gallery order and presentation
+└── tools/
+    ├── symbol-library.js            Parse canonical artwork and numbered ports
+    ├── generate-runtime-symbols.js
+    │   ├── → src/np-chart/src/schematicSymbols.js
+    │   ├── → src/np-chart/src/schematicDrawingSymbols.js
+    │   └── → src/np-nport/src/schematicSymbolMap.js
+    ├── validate-symbol-library.js
+    ├── check-constructor-symbols.mjs
+    └── generate-symbol-gallery.js
+        └── → dev/canonicalSymbols.html
+```
+
+The three generated modules contain the data needed at runtime. The browser or isolated worker does not read repository SVG files, JSON files or a filesystem while drawing. The catalog and runtime-layout JSON are symbol build inputs; they are not shape-definition JSON files.
+
+### Builds and distributions
+
+```text
+package.json
+├── npm run build
+│   ├── Regenerate symbol modules and check constructor mappings
+│   └── rollup.config.js             Entry: src/index.js
+│       ├── → dist/nP.js             Browser UMD
+│       ├── → dist/nP.esm.js          ES module
+│       └── → dist/nP.cjs             CommonJS
+└── npm run build:plugin
+    ├── Regenerate symbol modules and check constructor mappings
+    └── rollup.plugin.config.js      Entry: src/plugin.js
+        └── → dist/nP.plugin.esm.js   Restricted Obsidian bundle
+
+dist/nP.js
+└── copied to docs/public/nP.js       REPL browser library
+```
+
+### Development pages, tests and notes
+
+```text
+dev/
+├── schematicAuthoring.html/.md       Drawing-object examples
+├── schematic.html/.md                Broad nPort rendering examples
+├── schematicCases.js
+├── schematicStressCases.js
+├── canonicalSymbols.html             Canonical symbol gallery
+└── shapes/                           Each harness also has a companion .md
+    ├── series.html
+    ├── ladder.html
+    ├── bridgedT.html
+    ├── branchline.html
+    ├── powerDivider.html
+    ├── powerCombiner.html
+    ├── edgeCoupledFilter.html
+    ├── groupedNetworks.html
+    └── parallelComposition.html
+
+test/
+├── schematic-input.test.js           Drawing language, layout and annotations
+├── schematic-node-markers.test.js
+├── schematic-junction-divider.test.js
+├── source-symbols.test.js
+├── schematic-*.test.js               Other layout/render/API regression tests
+├── nodal-shape-groups.test.js
+├── plugin-entry.test.js
+└── plugin-bundle.test.js              Includes DOM-free worker generation
+
+developmentDocs/
+├── schematicSystem.md                This architecture and theory note
+├── schematicLanguage.md              Drawing-object language
+├── schematicShapeVocabulary.md       Engineering shape definitions and usage
+└── pluginBundleAudit.md              Restricted-bundle audit
+
+docs/
+├── schematics.md                     Public schematic guide
+└── .vitepress/theme/replExamples.js   Runnable REPL examples
+```
+
+### Separate offline documentation illustrations
+
+The repository also retains a build-time SVG illustration workflow. It reads editable circuit descriptions and canonical artwork directly, and writes static SVG files for notes and documentation. Its composer is a separate layout engine from runtime `nP.schematic()`. It is not called by either runtime input route above.
+
+```text
+schematics/
+├── circuits/                         Editable static illustration descriptions
+├── shapes/previews/                  Generated printable shape references
+└── tools/
+    ├── build-example-schematics.js
+    │   ├── generate-linear-schematics.js
+    │   ├── generate-nodal-schematics.js
+    │   └── generate-vna-receivers.js
+    ├── compose-schematic.js           Static SVG composer using symbol-library.js
+    ├── validate-schematic.js
+    ├── validate-rf-connectivity.js
+    ├── check-example-schematics.js
+    └── generate-shape-previews.mjs    Calls runtime schematicSvg() for previews
+
+docs/public/schematics/               Generated static documentation SVGs
+```
+
+`generate-shape-previews.mjs` deliberately exercises the runtime renderer, while the static composer reads its own circuit descriptions. These files support authoring and verification; they are not extra browser dependencies.
 
 ## Sources of truth and generated artifacts
 
-The **60 individual SVG files in [`schematics/symbols/`](../schematics/symbols/)** are the source of truth for canonical symbol geometry. They live at one directory level. [`schematics/symbol-catalog.json`](../schematics/symbol-catalog.json) maps public constructor names to those files, records the alternate `mbend()` drawing, and identifies the signal-flow symbols. [`schematics/svg-style-guide.md`](../schematics/svg-style-guide.md) specifies the grid, port order, colors, dimensions, and labeling rules.
+The **66 individual SVG files in [`schematics/symbols/`](../schematics/symbols/)** are the source of truth for canonical symbol geometry. They live at one directory level. [`schematics/symbol-catalog.json`](../schematics/symbol-catalog.json) maps public constructor names to those files, records the alternate `mbend()` drawing, and identifies the signal-flow symbols. [`schematics/svg-style-guide.md`](../schematics/svg-style-guide.md) specifies the grid, port order, colors, dimensions, and labeling rules.
 
 The authoring tools read the canonical SVG files directly:
 
@@ -476,29 +720,15 @@ The authoring tools read the canonical SVG files directly:
 
 These published SVGs are independent documentation assets. The REPL no longer displays its old static schematic gallery; runnable nPort examples call `nP.schematic(...)` inside their code.
 
-[`src/np-chart/src/schematicSymbols.js`](../src/np-chart/src/schematicSymbols.js) is generated from the canonical SVGs. [`schematics/runtime-symbol-layout.json`](../schematics/runtime-symbol-layout.json) keeps only the extra placement data that an SVG does not state: body and ink bounds, lead segments, and flow directions. `generate-runtime-symbols.js` parses the canonical geometry and numbered port dots, validates the layout data against those ports, and writes the bundled module. The runtime bundle contains all RF component symbols, plus cascade, nodal, MOD, and DEMOD symbols. Signal-processing symbols that do not represent RF nPorts remain in the canonical library for authoring. `symbols:check` fails if this generated module is stale.
+[`src/np-chart/src/schematicSymbols.js`](../src/np-chart/src/schematicSymbols.js) is generated from the canonical SVGs. [`schematics/runtime-symbol-layout.json`](../schematics/runtime-symbol-layout.json) keeps only the extra placement data that an SVG does not state: body and ink bounds, lead segments, and flow directions. `generate-runtime-symbols.js` parses the canonical geometry and numbered port dots, validates the layout data against those ports, and writes the bundled module. The runtime bundle contains all RF component symbols, plus cascade, nodal, MOD, DEMOD and the six source symbols. Signal-processing symbols that do not represent RF nPorts remain in the canonical library for authoring. `symbols:check` fails if this generated module is stale.
 
 ## How the runtime code reaches distributions
 
-The import chain is:
-
-```text
-schematicSymbols.js ────────────┐
-nodalBlockSymbol.js ────────────┤
-schematicShapeBoards.js ────────┼→ schematic.js → src/np-chart/index.js → src/index.js
-schematicBoardInterpreter.js ───┤
-schematicShapeDetector.js ──────┤
-schematicGroups.js ────────────┘
-        ↑
-schematicBoardGraph.js (generic graph operations)
-schematicBoardComposition.js (node-bounded board sections)
-
-np-nport/src/combining/nodalConnections.js → nodal.js → _schematic.groups
-```
+The complete source and build maps are in [Runtime inputs and complete file map](#runtime-inputs-and-complete-file-map) above. Both input routes enter through `src/np-chart/index.js` and `schematic.js`; the normal bundle uses `src/index.js`, and the restricted bundle uses `src/plugin.js`.
 
 The same symbol-generation command writes `src/np-nport/src/schematicSymbolMap.js` from `schematics/symbol-catalog.json`. Each direct RF constructor calls `schematicPart(publicName, parameters)`; that helper reads the generated map, so constructor source does not repeat the SVG filename. The catalog gives `mbend()` explicit `left` and `right` variant keys. `symbols:check` and both Rollup builds instantiate all 51 direct RF constructors and compare each returned nPort's port count and symbol ID with the runtime symbol. `lpfGen()` inherits its cascade metadata from `paC()` and `seL()`.
 
-`npm run build` regenerates `schematicSymbols.js`, then runs Rollup from `src/index.js` and writes three tracked distributions:
+`npm run build` regenerates all three symbol modules, checks constructor mappings, then runs Rollup from `src/index.js` and writes three tracked distributions:
 
 | File | Format and use |
 | --- | --- |
@@ -514,7 +744,7 @@ Only `schematic` is exported through `src/np-chart/index.js` as `nP.schematic`. 
 
 | Function | Result |
 | --- | --- |
-| `nP.schematic(circuit, options)` | Builds the RF circuit model, mounts an SVG and controls, and returns `{svg, graph, topology, detected, error}`. On success, `error` is null. `svg` is the mounted DOM element. |
+| `nP.schematic(circuit, options)` | Accepts an nPort or drawing description, builds its drawing model, mounts an SVG and controls, and returns `{svg, svgText, graph, topology, detected, error}`. On success, `error` is null. `svg` is the mounted DOM element. |
 | `nP.schematic({transmitter, circuit, receiver}, options)` | Draws a two-port RF cascade between MOD and DEMOD blocks. `receiver` may be omitted when the displayed path ends at the RF circuit. |
 | `schematicGraph(circuit, options)` | Returns the computed drawing graph without mounting it. |
 | `schematicTopology(circuit, options)` | Returns the parts and electrical connections without mounting a drawing. |
@@ -525,6 +755,16 @@ Only `schematic` is exported through `src/np-chart/index.js` as `nP.schematic`. 
 Schematic dot presentation is resolved by `schematicDots()` with defaults `{ports: true, nodes: true, terminals: false}`. `options.dots` can override individual boolean fields; unknown fields and non-boolean values report an option error. The resolved settings live on the internal model as `model.dots`, outside `model.graph` and `model.topology`, so visibility changes do not change their geometry or connections. `schematicDot()` writes the solid markers and tags them with `data-schematic-dot` categories for inspection.
 
 `renderNodalSvg()` independently controls external-port dots, numbered-node dots on wires, and component-terminal dots. In the cascade and signal-path routes, `renderSymbol()` controls terminal markers and `renderNodes()` distinguishes the external endpoint markers from internal node markers; coincident external/node endpoints are drawn once according to `dots.ports`. Circled number labels are always drawn. Actual wire-junction markers and canonical artwork (including intrinsic dots) remain visible. The mounted SVG, including these settings, is what the PNG-copy operation serializes. [groupedNetworks.html](../dev/shapes/groupedNetworks.html) compares the same divider/combiner circuit with terminal dots off and on.
+
+**Numbered markers belong to electrical nodes, not geometry boxes.** `finishNodalModel()`, shared by ORI and drawing input, takes the unique node IDs from the nodal metadata and the interpreter's `nodePoints` map to create one `graph.nodes` entry per electrical node. Each entry holds its marker position in `at` and its circled-number position in `numberAt`. `renderNodalSvg()` draws one numbered marker from each entry. Several straight and corner wire boxes can share that ID; their `node` field records connectivity, and they contain no independent `nodeDot` field. Earlier board-inspection data supplied a midpoint called `nodeDot` on every straight box even though the renderer drew only the single `graph.nodes` marker. That ambiguous field has been removed. Consumers inspecting numbered marker positions should use `graph.nodes`.
+
+Before constructing those entries, `finishNodalModel()` calls `placeBoardNodeMarkers()` from `schematicNodeMarkers.js`. This shared finishing step sees the complete routed geometry after board composition and reflection. For each connection containing corner boxes, it follows the directed wire records and selects the straight wire immediately before the first corner. Branch choices use stable board-tile IDs rather than geometric left/right ordering, so reflection preserves the selected path. These directions describe layout traversal, not RF current or signal propagation.
+
+The marker starts near the incoming wire's midpoint on the 10-unit grid. Candidate positions move along that wire to remain clear of other nets, including crossings, and all component/external terminals. If the entire incoming lead is unusable, the selector tries subsequent incoming leads and then other clear straight wires on the same electrical node. It returns a new marker map without changing components, routes, port numbers or electrical topology. Straight connections retain their existing markers. Annotation placement then positions the circled number beside the finalized dot. There is still exactly one numbered marker per node.
+
+The rule concerns corner **wires**. A turn inside a canonical tee symbol does not qualify; the current branchline examples have straight arm connections and keep their markers unchanged. A physical bend component remains a two-port nPort with separate electrical connections on its two sides.
+
+Junction dots are separate: `graph.junctions` records actual same-node wire branches. A bend or a polyline with several segments does not establish a junction. External-port and optional component-terminal dots can also appear on a numbered node without creating more electrical identities. A real bend **component** remains a two-port nPort with separate connection nodes at its two terminals; only wire-routing corners continue an existing node without adding a component.
 
 Schematic labels use three significant digits by default. `options.significantDigits` accepts an integer from 1 to 15. The formatter changes only label text; component values in `graph` and `topology` retain the constructor's full numeric value.
 
@@ -582,6 +822,7 @@ The following source-module functions support the current routes. ORI functions 
     <tr><td><code>buildSchematicModel()</code></td><td>Dispatches nodal, cascade or signal-path metadata.</td></tr>
     <tr><td><code>buildNodalModel()</code></td><td>Selects ORI for every nodal drawing: the generic board, a registered single shape or composed board sections.</td></tr>
     <tr><td><code>buildInterpretedBoardModel()</code></td><td>Adapts ORI geometry to the public drawing graph, adds annotations, and returns topology.</td></tr>
+    <tr><td><code>placeBoardNodeMarkers()</code><br>(Outside schematic.js)</td><td>In schematicNodeMarkers.js. Selects markers from completed routes before annotation placement, preserving node identities through corners and avoiding crossings and terminals.</td></tr>
     <tr><td><code>layoutAutomaticBoard()</code><br>(Outside schematic.js)</td><td>In schematicBoardGraph.js. Decomposes the network into regions, places symbols and builds generic board wire routes.</td></tr>
     <tr><td><code>interpretSchematicBoard()</code><br>(Outside schematic.js)</td><td>ORI entry point in schematicBoardInterpreter.js; interprets board features rather than selecting by an RF shape name.</td></tr>
     <tr><td><code>reflectBoardResult()</code><br>(Outside schematic.js)</td><td>Applies a referenced board's axis reflections to complete bound geometry before annotation placement, preserving numbered terminals.</td></tr>

@@ -1,4 +1,4 @@
-// Modified: 2026-11-08
+// Modified: 2026-11-13
 // Compose measured boards and direct junction symbols through their electrical boundaries.
 import {automaticRoute, recordBoardRoute, graphWireBoxes} from './schematicBoardGraph';
 
@@ -10,15 +10,25 @@ function boundaryNodes(value) {
     return Array.isArray(value) ? value.slice() : [value];
 }
 
-export function boardInterface(definition, boards, visited = new Set()) {
+export function boardInterface(definition, boards, portCount, visited = new Set()) {
     if (!definition || visited.has(definition)) compositionError('unknown or circular board reference.');
-    if (definition.interface) return definition.interface;
+    if (definition.interface) {
+        const ports = definition.interface;
+        if (!Object.values(ports).includes('remaining')) return ports;
+        if (!Number.isInteger(portCount) || portCount < 3) return {from: [], to: []};
+        const named = Object.values(ports).filter(Array.isArray).flat();
+        const remaining = Array.from({length: portCount}, (_, index) => index + 1)
+            .filter(port => !named.includes(port));
+        return Object.fromEntries(Object.entries(ports).map(([side, value]) =>
+            [side, value === 'remaining' ? remaining : value]));
+    }
     if (!definition.use) compositionError(`"${definition.name}" has no declared from/to interface.`);
-    return boardInterface(boards[definition.use], boards, new Set([...visited, definition]));
+    return boardInterface(boards[definition.use], boards, portCount, new Set([...visited, definition]));
 }
 
 function sectionExternalNodes(section, definition, boards) {
-    const ports = boardInterface(definition, boards), nodes = [];
+    const portCount = boundaryNodes(section.from).length + boundaryNodes(section.to).length;
+    const ports = boardInterface(definition, boards, portCount), nodes = [];
     for (const side of ['from', 'to']) {
         const boundary = boundaryNodes(section[side]);
         if (!Array.isArray(ports[side]) || boundary.length !== ports[side].length) {

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-07 -->
+<!-- Modified: 2026-11-14 -->
 
 # Schematic authoring rules
 
@@ -11,8 +11,10 @@ Read and follow `schematics/svg-style-guide.md` for exact SVG dimensions, snappi
 - `shapes/previews/*.svg` are visual references only. Reusable shape descriptions live in `src/np-chart/src/schematicShapeBoards.js` and are read by `schematicBoardInterpreter.js`; do not add a parallel JSON shape-definition system.
 - When given a hand-drawn symbol, use the image to determine its shape and connections. Check the constructor's public port order in source and resolve ambiguities before drawing. Redraw it with the canonical SVG rules; do not trace the image's pixels.
 - Keep every drawable public RF or digital API in `symbol-catalog.json`. Two APIs may map to one symbol when their visible topology is identical. Keep distinct topologies as distinct symbols. `mbend()` has left and right visual variants.
+- Register source artwork without executable source constructors under the catalog's `sourceSymbols` mapping. These names select canonical drawings; they do not claim public nPort APIs or S-parameter models. Source captions use `Terminal 1`/`Terminal 2` for electrical terminals rather than RF port labels.
 - The RF constructor-to-symbol map is generated from `symbol-catalog.json`. Constructors call `schematicPart(publicName, parameters)` and never repeat the SVG filename. Give option-dependent variants explicit keys in `symbolVariants`; `mbend()` uses `left` and `right`. The symbol check verifies runtime geometry and nPort port counts.
 - For a new three-port line junction that can introduce a ladder shunt, record `flow.throughPorts` and `flow.shuntPort` in `runtime-symbol-layout.json`. Keep those public port numbers distinct. The renderer chooses 90-degree rotations and reflections from the canonical port geometry; do not encode a constructor-specific drawing angle.
+- For a junction usable as a divider/combiner, also record `junction.commonPort` and `junction.branchPorts` in `runtime-symbol-layout.json`. They must cover all numbered terminals exactly once, with at least two branches. Future transmission-line families use this same metadata; ORI does not identify their constructors by name.
 - RF component ports, including those on `trf()` and `trf4Port()`, are nPort ports. Connectors on digital blocks and `FFT()`/`invFFT()` are **diagram connectors**, not S-parameter ports or `nP.nodal()` arguments. State each connector's signal meaning in the symbol description or accompanying note. Some blocks, especially `mod()`, have mode-dependent inputs.
 
 ## SVG and layout
@@ -24,6 +26,8 @@ Read and follow `schematics/svg-style-guide.md` for exact SVG dimensions, snappi
 - Give every standalone symbol and complete circuit the same white `#ffffff` background and dark `#202020` ordinary stroke. Canonical symbols use only these two ink colors, with no colored or gray fills. Microstrip symbols have unshaded white interiors, dark conductor outlines, and dark terminal dots.
 - Preserve the nP public port order, including `Tee()` port 1 as the common branch and coupled-line ports clockwise from upper left: 1, 2, 3, 4. Give each symbol a title, description, visible numbered ports, and terminal dots.
 - Mark electrical nodes with filled dots and nearby circled numbers. Give node circles at least 8 units of clearance outside their 12-unit radius from wires. Keep text clear of wires and symbol bodies. Leave at least 40 units of drawing margin.
+- Number electrical nodes, not wire boxes. All straight and corner wire boxes along one continuous connection retain its node identity and share one numbered marker. In runtime drawings, `graph.nodes` owns numbered marker positions; wire boxes carry `node` but no independent `nodeDot`. True branch junctions, external-port dots, and optional component-terminal dots are separate markers and do not create new node numbers.
+- For a connection with corner wires, prefer the midpoint of the straight wire immediately before its first corner, following the board's route direction. Snap to the 10-unit grid and slide along that wire to avoid other nets and terminals. Branching paths use stable board-tile order. If that lead cannot accommodate a clear marker, use another clear straight segment of the same node. Straight connections retain their midpoint markers. A turn inside a tee or bend symbol is component geometry, not a corner wire.
 - Center the circuit's electrical reference on the SVG vertical axis and record it in the required circuit-description `layout` field. For digital flow diagrams, use a named functional center instead. Set `domain` to `rf` for electrical nodes or `signal` for named signal connections.
 
 ## Workflow

@@ -1,4 +1,4 @@
-// Modified: 2026-11-08
+// Modified: 2026-11-13
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -182,7 +182,7 @@ test('electrically indistinguishable divider/combiner views use a declared defau
 });
 
 test('an unsupported composite is not reported as a whole-network shape', () => {
-    const {circuit} = harnessNetworks('powerDivider').at(-1);
+    const {circuit} = harnessNetworks('powerDivider').find(item => item.options.shapes?.length === 3);
     assert.equal(detectSchematicShapes(circuit, schematicShapeBoards, geometry), null);
     withDocument(() => {
         const drawing = nP.schematic(circuit);

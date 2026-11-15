@@ -1,0 +1,145 @@
+<!doctype html>
+<!-- Modified: 2026-11-14 -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Schematic authoring language</title>
+  <script src="../dist/nP.js"></script>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; margin: 2rem; color: #202020; }
+    section { margin: 2rem 0; }
+  </style>
+</head>
+<body>
+  <h1>Schematic authoring</h1>
+  <p>Drawing descriptions use canonical symbols without constructing or simulating an nPort.</p>
+  <section>
+    <h2>Figure 1: source, DUT and load</h2>
+    <div id="figure-one"></div>
+  </section>
+  <section>
+    <h2>Open-ended series network, with distinct node and port numbers</h2>
+    <div id="open-series"></div>
+  </section>
+  <section>
+    <h2>Tee with a terminated shunt</h2>
+    <div id="ladder"></div>
+  </section>
+  <section>
+    <h2>Four-terminal coupled section</h2>
+    <div id="coupled"></div>
+  </section>
+  <section>
+    <h2>The same section mirrored across its approach axis</h2>
+    <div id="mirrored"></div>
+  </section>
+  <section>
+    <h2>Rectangular network with one component in each arm</h2>
+    <div id="ring"></div>
+  </section>
+  <script>
+    // Figure 1: source, DUT and load
+    var mySchematic = {
+      paths: [
+        '4 left up Vin=V(1 Vrms)[1,2] 1 4',
+        '1 right R1=R(50 ohm) 2',
+        '2 right R5=R(75 ohm) 3',
+        '3 down R6=R(50 ohm) 4',
+        'alignY Vin.1 R6.1'
+      ],
+      annotations: [
+        {
+          type: 'rectangle',
+          around: 'R5',
+          extendTo: {node: 4, segment: 'bottom'},
+          style: 'dotted',
+          padding: 20
+        },
+        {type: 'label', node: 2, label: 'V1', position: 'above'},
+        {type: 'label', node: 3, label: 'V2', position: 'above'},
+        {type: 'arrow', node: 2, toward: 'R5', label: 'I1', position: 'below'},
+        {type: 'arrow', node: 3, toward: 'R5', label: 'I2', position: 'below'},
+        {type: 'port', number: 1, node: 2, reference: 4, side: 'left'},
+        {type: 'port', number: 2, node: 3, reference: 4, side: 'right'}
+      ]
+    };
+    var mySchematicSVG = nP.schematic(mySchematic, {
+      mount: '#figure-one'
+    });
+
+    // Open-ended series network
+    var seriesSchematic = {
+      paths: ['45 right R1=R(50 ohm) 37', '37 right R2=R(75 ohm) 1'],
+      annotations: [
+        {type: 'port', number: 1, node: 45, side: 'left'},
+        {type: 'port', number: 2, node: 1, side: 'right'}
+      ]
+    };
+    var seriesDrawing = nP.schematic(seriesSchematic, {
+      mount: '#open-series'
+    });
+
+    // Tee with a terminated shunt
+    var ladderSchematic = {
+      paths: [
+        '1 right T1=Tee[1,2,3] 10 1 2',
+        '10 down C1=C(10 pF) 11',
+        '11 down S1=Short'
+      ],
+      annotations: [
+        {type: 'port', number: 1, node: 1, side: 'left'},
+        {type: 'port', number: 2, node: 2, side: 'right'}
+      ]
+    };
+    var ladderDrawing = nP.schematic(ladderSchematic, {
+      mount: '#ladder'
+    });
+
+    // Four-terminal coupled section
+    var coupledSchematic = {
+      paths: [
+        '1 right CL1=Tclin[1,2,3,4] 1 10 2 11',
+        '10 right O1=Open',
+        '11 left O2=Open'
+      ],
+      annotations: [
+        {type: 'port', number: 1, node: 1, side: 'left'},
+        {type: 'port', number: 2, node: 2, side: 'right'}
+      ]
+    };
+    var coupledDrawing = nP.schematic(coupledSchematic, {
+      mount: '#coupled'
+    });
+
+    // Mirrored coupled section
+    var mirroredSchematic = {
+      paths: [
+        '1 right CL1=Tclin[1,2,3,4] 1 10 2 11 mirror',
+        '10 right O1=Open',
+        '11 left O2=Open'
+      ]
+    };
+    var mirroredDrawing = nP.schematic(mirroredSchematic, {
+      mount: '#mirrored'
+    });
+
+    // Rectangular network
+    var ringSchematic = {
+      paths: [
+        '1 right R1=R 2',
+        '2 down R2=R 3',
+        '3 left R3=R 4',
+        '4 up R4=R 1',
+        'alignY R1.1 R1.2',
+        'alignX R2.1 R2.2',
+        'alignY R3.1 R3.2',
+        'alignX R4.1 R4.2'
+      ]
+    };
+    var ringDrawing = nP.schematic(ringSchematic, {
+      mount: '#ring'
+    });
+  </script>
+</body>
+</html>

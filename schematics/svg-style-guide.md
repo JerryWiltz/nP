@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-06 -->
+<!-- Modified: 2026-11-14 -->
 
 # SVG schematic style guide
 
@@ -63,6 +63,13 @@ All dimensions are SVG `viewBox` units. The detailed family rules below describe
 - For series-path constructors beginning with `sePa`, place the two external ports at the midpoint of the left and right vertical rails. Put the upper and lower parallel branches equally far above and below the port axis; a third branch, when present, lies on the port axis. Place port labels beside the external terminal dots, clear of the branches.
 - For `seriesTee()`, ports 1 and 2 form the horizontal through path and port 3 is the series branch. Keep its port-1 marker by the left through port so it cannot be confused with `Tee()`.
 
+## Source primitives
+
+- Independent voltage and current sources use a circle with a 60-unit diameter. Dependent sources use a 60-by-60-unit diamond. The canonical source family is vertical, with terminal 1 above terminal 2. Terminal centers are 100 units apart and each visible pin is 20 units long. Rotate the entire symbol and its terminals together in quarter turns.
+- Voltage-source markings are `+` above `−`, centered on the vertical axis; voltage is terminal 1 relative to terminal 2. Current-source arrows point upward from terminal 2 toward terminal 1. Use dark path strokes for the polarity marks and arrow, retaining their shape under rotation.
+- Source terminals are electrical terminals, not S-parameter ports. Canonical reference captions say `Terminal 1` and `Terminal 2`. Dependent-source control quantities are model references, not extra drawn terminals. Reference captions show `V = Av × Vc`, `I = gm × Vc`, `V = rm × Ic`, or `I = Ai × Ic`; actual control names and parameter values belong in instance annotations when those source models are added.
+- The catalog's `sourceSymbols` entries register artwork separately from public constructor mappings. Canonical source captions do not imply that `V()`, `I()`, or controlled-source behavior has been implemented. Runtime source geometry is bundled using the same pipeline as other symbols.
+
 ## Microstrip and multiport geometry
 
 - Use `Thru()`'s 80-by-30 outlined body and 20-unit pins for `Shift90()`, `Tlin()`, and `mlin()`. Match `mlin()` to `Tlin()` in its 280-by-180 canvas, terminal coordinates, and label positions. Use two 80-by-30 bodies with a 10-unit vertical gap for each four-port coupled symbol: `Tclin()`, `mclin()`, and `Coupler180()`. Match `mclin()` to `Tclin()` in its 320-by-220 canvas, 20-unit pins, clockwise port order, and label positions. Put `180` inside `Coupler180()`'s lower body between ports 4 and 3. Use the constructor title and an appropriate parameter caption to distinguish the physical model.
@@ -87,6 +94,8 @@ All dimensions are SVG `viewBox` units. The detailed family rules below describe
 
 - Every complete diagram declares `domain` as `rf` or `signal` and supplies `layout.centerAxisX` and `layout.centerReference`. The center axis must equal the `viewBox` vertical midpoint. Both RF and signal diagrams use the flat `symbols/` directory; the diagram domain determines whether connectors are electrical ports or signal-flow connections. Draw a mixed system as separate electrical and signal-flow diagrams until a mixed-domain format is defined.
 - In an RF diagram, each component connection has a positive integer `node` and a 10-grid `labelAt` position. Connections on the same node may be at different coordinates, joined by wires tagged with that `node`. External terminals carry the same node number. Keep one shared `labelAt` for the node's circled number. RF wires and terminals do not carry a signal name. Show component connection dots and one circled number per node.
+- Splitting a continuous connection into straight wire boxes and corner boxes does not create electrical nodes. Those boxes share the connection's node identity and one numbered marker. In the runtime drawing graph, `graph.nodes` owns that marker's position; wire boxes describe geometry and have no independent `nodeDot`. Junction dots indicate real branches, while external-port and component-terminal dots identify endpoints; none imply an additional electrical node number.
+- On a cornered connection, prefer the straight wire before the first corner in the board's route direction. Place its node marker near that wire's midpoint on the 10-unit grid, shifting along the wire to clear other nets and component/external terminals. Use stable board-tile order to choose among branching paths. If that incoming lead offers no clear position, use another clear straight wire on the same node. Straight connections retain their existing midpoint markers. Turns inside tee and bend symbols do not trigger this corner-wire rule.
 - In a signal diagram, each connector has a nonempty string `signal` instead of `node` or `labelAt`. Each wire and external terminal names its signal. Wires for each signal must form one connected route whose endpoints reach its declared connectors and terminals. Signal diagrams do not draw circled RF node numbers. Use labels to show data types such as samples or spectrum.
 - Place every component anchor, transformed canonical terminal, and interconnect wire point on the 10-unit grid. Diagram labels use the 10-unit grid. The composer checks described points and label anchors against the 40-unit margin; the validator also estimates label extents. Inspect symbol bodies and text visually because their full rendered bounds are not inferred by the tools.
 

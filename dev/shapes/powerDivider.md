@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-08 -->
+<!-- Modified: 2026-11-13 -->
 # Power-divider schematic guidance
 
 Open `powerDivider.html` to compare three single-stage, two-way Wilkinson arrangements:
@@ -16,7 +16,7 @@ nP.schematic(network, {
 });
 ```
 
-The existing transformer divider remains in `../trf5Port.html` and uses the same shape name. The `powerDivider` definition has two data alternatives: transformer and Wilkinson. ORI tries only those alternatives when the caller explicitly requests this family. Calls without shape guidance continue to use the generic board.
+The existing transformer divider remains in `../trf5Port.html` and uses the same shape name. The `powerDivider` definition has three data alternatives: transformer, Wilkinson and junction-only. Both explicit requests and blind detection use these alternatives. Unsupported networks retain the generic fallback.
 
 For Wilkinson, the input tee's common port faces left and its through ports split upward and downward. The output tees have horizontal through paths; their common ports face inward and connect to the vertical isolation resistor. Port 2 is the upper output and port 3 is the lower output. The input lies halfway between them. Electrical node numbers remain those in `nodal()`.
 
@@ -53,3 +53,9 @@ The composition operation now supports unequal interface spacing, parallel paths
 ## Blind detection
 
 The whole-network examples now omit shape hints and log `drawing.detected`. ORI uses the independently detected board; the equivalent explicit call remains valid. Any example composing several bounded sections keeps its explicit section list, because automatic composition detection is not enabled.
+
+## Junction-only networks
+
+The final three drawings use `Tee()` with two `Tlin()` arms, `mtee()` with two `mlin()` arms, and `Tee4()` with three `Tlin()` arms. They use the same family name and need no isolation resistor. These are not matched or isolated divider designs. The divider page uses blind detection; the combiner page requests the reflected view.
+
+ORI reads common/branch roles from symbol metadata, traces all arms, measures their bounds and places balanced output tracks. The same operation supports `Tee5()` and future line-junction families declaring these roles. Arm chains may contain straight two-port components or upstream two-port network blocks; multiple-junction trees remain outside this variant. Each wire/corner box retains its electrical node, and the complete connection receives one numbered marker.

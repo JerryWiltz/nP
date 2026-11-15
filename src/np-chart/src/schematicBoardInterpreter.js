@@ -1,4 +1,4 @@
-// Modified: 2026-11-08
+// Modified: 2026-11-13
 import {layoutAutomaticBoard} from './schematicBoardGraph';
 import {composeSchematicBoards} from './schematicBoardComposition';
 
@@ -1047,9 +1047,126 @@ function reflectBoardResult(result, definition, source) {
         layout: definition.layout || definition.name, board}};
 }
 
+// A fan binds terminal roles from symbol metadata, then follows degree-two
+// chains to external ports. Every occurrence must be consumed exactly once.
+function fanThroughEntry(entry, predicate, geometry) {
+    if (entry.nodes.length !== 2 || !acceptsEntry(entry, predicate)) return false;
+    if (!predicate.straight) return true;
+    const symbol = geometry.symbol(entry), input = symbol.entry || [1, 0], output = symbol.exit || [1, 0];
+    const delta = symbol.ports[1].map((value, axis) => value - symbol.ports[0][axis]);
+    return input.every((value, axis) => value === output[axis]) &&
+        delta[0] * input[1] === delta[1] * input[0];
+}
+
+function bindBoardFan(root, rule, adjacency, geometry) {
+    const anchors = root.components.flatMap((entry, index) => {
+        const junction = geometry.symbol(entry).junction;
+        return junction ? [{index, ...junction}] : [];
+    });
+    if (anchors.length !== 1) return null;
+    const anchor = anchors[0], entry = root.components[anchor.index];
+    const roles = [anchor.commonPort, ...anchor.branchPorts];
+    if (roles.length !== root.externalNodes.length || roles.length !== entry.nodes.length ||
+        new Set(roles).size !== roles.length || roles.some(port =>
+            !Number.isInteger(port) || port < 1 || port > entry.nodes.length)) return null;
+    const used = new Set([anchor.index]), arms = [];
+    for (const port of roles) {
+        let node = entry.nodes[port - 1];
+        const parts = [];
+        while (!root.externalNodes.includes(node)) {
+            const next = adjacency.get(node)?.find(end => !used.has(end.index));
+            if (!next || !fanThroughEntry(root.components[next.index], rule.through, geometry)) return null;
+            const outputPort = 3 - next.inputPort;
+            parts.push({...next, outputPort});
+            used.add(next.index);
+            node = root.components[next.index].nodes[outputPort - 1];
+        }
+        arms.push({port, externalPort: root.externalNodes.indexOf(node) + 1, parts});
+    }
+    if (used.size !== root.components.length || new Set(arms.map(arm => arm.externalPort)).size !== arms.length ||
+        arms[0].externalPort !== rule.commonExternalPort) return null;
+    return {anchor, common: arms[0], branches: arms.slice(1)};
+}
+
+function emptyBoardResult(grid) {
+    return {grid, placements: [], wires: [], nodePoints: new Map(), byIndex: new Map(), externalPorts: []};
+}
+
+function fanPathBoard(board, direction, parts) {
+    return {...board, direction, tiles: parts.length ? board.tiles : [{kind: 'wire'}]};
+}
+
+function placeFanArm(root, board, arm, geometry, result, start, direction, id) {
+    return placeBoardTiles(root, fanPathBoard(board, direction, arm.parts), {parts: arm.parts},
+        geometry, result, start, {port: arm.externalPort, node: root.externalNodes[arm.externalPort - 1]},
+        new Map(), id);
+}
+
+function appendFanConnector(result, start, end, direction, board, id) {
+    if (direction !== 'right' || start.at[1] === end.at[1]) {
+        return appendCornerBoardWire(result, start, end, 'verticalFirst', board.grid, id);
+    }
+    // A right-facing terminal needs a straight departure before turning, and
+    // another straight wire before the first component of the horizontal arm.
+    const via = {node: start.node, at: [start.at[0] + board.wireBoxLength, end.at[1]]};
+    return appendCornerBoardWire(result, start, via, 'horizontalFirst', board.grid, `${id}:turn`) &&
+        appendBoardWire(result, via, end, {kind: 'wire', id, length: end.at[0] - via.at[0]});
+}
+
+function placeBoardFan(root, definition, adjacency, geometry) {
+    const {board} = definition, binding = bindBoardFan(root, definition.match.fan, adjacency, geometry);
+    if (!binding) return null;
+    if (board.fan.direction !== 'right' || !onGrid(board.origin, board.grid) ||
+        !(board.wireBoxLength >= 2 * board.grid) || board.wireBoxLength % board.grid ||
+        !(board.fan.clearance >= 2 * board.grid)) boardError('invalid fan spacing or direction.');
+    const result = emptyBoardResult(board.grid), entry = root.components[binding.anchor.index];
+    const junction = orientBoardSlot(entry, {common: binding.anchor.commonPort},
+        {anchor: 'common', directions: {common: 'left'}}, board.origin, geometry);
+    if (!junction) return null;
+    junction.boardTile = {kind: 'component', id: 'fan:anchor', role: 'junction'};
+    result.placements.push(junction);
+    result.byIndex.set(binding.anchor.index, junction);
+    if (!placeFanArm(root, board, binding.common, geometry, result,
+        junction.ports[binding.anchor.commonPort - 1], 'left', 'fan:common')) return null;
+    const branches = binding.branches.map(arm => ({...arm,
+        terminal: junction.ports[arm.port - 1],
+        direction: placedBoardTerminalDirection(entry, junction, arm.port, geometry)}))
+        .sort((a, b) => a.terminal.at[1] - b.terminal.at[1] || a.terminal.at[0] - b.terminal.at[0]);
+    if (branches.some(arm => !['up', 'right', 'down'].includes(arm.direction))) return null;
+    let height = 0;
+    for (const arm of branches) {
+        const preview = emptyBoardResult(board.grid);
+        if (!placeFanArm(root, board, arm, {...geometry, placement: geometry.preview}, preview,
+            {node: arm.terminal.node, at: [0, 0]}, 'right', 'measure')) return null;
+        const bounds = preview.placements.map(geometry.bounds);
+        height = Math.max(height, ...bounds.flatMap(box => [Math.abs(box[1]) * 2, Math.abs(box[3]) * 2]));
+        // This operation describes horizontal arms. A turning path belongs in
+        // a different board or the generic fallback, never a misleading fan.
+        if (preview.externalPorts[0].at[1] !== 0) return null;
+    }
+    const count = branches.length, center = board.origin[1];
+    const reach = Math.max(...branches.map(arm => Math.abs(arm.terminal.at[1] - center)));
+    const pitch = Math.ceil(Math.max(height + board.fan.clearance,
+        2 * (reach + board.wireBoxLength)) / (2 * board.grid)) * 2 * board.grid;
+    const startX = Math.max(...branches.map((arm, index) => arm.terminal.at[0] + board.wireBoxLength *
+        (arm.direction === 'right' && arm.terminal.at[1] !== center + (index - (count - 1) / 2) * pitch ? 2 : 1)));
+    for (let index = 0; index < count; index++) {
+        const arm = branches[index], at = [startX, center + (index - (count - 1) / 2) * pitch];
+        const start = {node: arm.terminal.node, at};
+        if (!appendFanConnector(result, arm.terminal, start, arm.direction, board, `fan:connector:${index}`) ||
+            !placeFanArm(root, board, arm, geometry, result, start, 'right', `fan:arm:${index}`)) return null;
+    }
+    result.placements = root.components.map((_, index) => result.byIndex.get(index));
+    result.externalPorts.sort((a, b) => a.port - b.port);
+    return result;
+}
+
 function boardAdjacency(root, definition, geometry) {
     if (!root || !Array.isArray(root.components) || !root.components.length ||
-        !Array.isArray(root.externalNodes) || root.externalNodes.length !== definition.match.externalPortCount ||
+        !Array.isArray(root.externalNodes) ||
+        (definition.match.externalPortCount !== undefined &&
+            root.externalNodes.length !== definition.match.externalPortCount) ||
+        root.externalNodes.length < (definition.match.minimumExternalPortCount ?? 1) ||
         new Set(root.externalNodes).size !== root.externalNodes.length) return null;
     const adjacency = new Map();
     for (let index = 0; index < root.components.length; index++) {
@@ -1079,6 +1196,7 @@ export function matchSchematicBoard(root, definition, geometry, references = [])
     if (definition.board?.automatic || definition.sections || !definition.match) return false;
     const adjacency = boardAdjacency(root, definition, geometry);
     if (!adjacency) return false;
+    if (definition.match.fan) return !!bindBoardFan(root, definition.match.fan, adjacency, geometry);
     if (definition.match.slots) return !!bindBoardSlots(root, definition.match.slots, definition.board.wires);
     if (definition.board.rows || definition.board.anchors) {
         const network = collectBoardConnections(root, definition.match, adjacency);
@@ -1152,6 +1270,7 @@ export function interpretSchematicBoard(root, definition, geometry, references =
     // A wire box joins two terminals. Junctions belong to component symbols.
     const adjacency = boardAdjacency(root, definition, geometry);
     if (!adjacency) return null;
+    if (match.fan) return placeBoardFan(root, definition, adjacency, geometry);
     if (match.slots) return placeNamedBoardSlots(root, definition, geometry);
     if (definition.board.rows || definition.board.anchors) return placeBoardConnections(root, definition, adjacency, geometry);
     const bindings = bindBoardPaths(root, match, adjacency, geometry);

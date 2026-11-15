@@ -1,4 +1,4 @@
-// Modified: 2026-11-08
+// Modified: 2026-11-14
 // Add an example with a unique id, title, category, and code. Array order sets
 // sidebar order within a category; stable ids preserve links and browser drafts.
 // Sidebar categories and their section order are listed in config.js.
@@ -43,6 +43,34 @@ nP.lineChart({
 });
 
 nP.schematic(lowPass);` },
+  { id: 'schematic-authoring', title: 'Schematic authoring', category: 'getting-started', code: `// Schematic authoring
+
+var mySchematic = {
+  paths: [
+    '4 left up Vin=V(1 Vrms)[1,2] 1 4',
+    '1 right R1=R(50 ohm) 2',
+    '2 right R5=R(75 ohm) 3',
+    '3 down R6=R(50 ohm) 4',
+    'alignY Vin.1 R6.1'
+  ],
+  annotations: [
+    {
+      type: 'rectangle',
+      around: 'R5',
+      extendTo: {node: 4, segment: 'bottom'},
+      style: 'dotted',
+      padding: 20
+    },
+    {type: 'label', node: 2, label: 'V1', position: 'above'},
+    {type: 'label', node: 3, label: 'V2', position: 'above'},
+    {type: 'arrow', node: 2, toward: 'R5', label: 'I1', position: 'below'},
+    {type: 'arrow', node: 3, toward: 'R5', label: 'I2', position: 'below'},
+    {type: 'port', number: 1, node: 2, reference: 4, side: 'left'},
+    {type: 'port', number: 2, node: 3, reference: 4, side: 'right'}
+  ]
+};
+
+var mySchematicSVG = nP.schematic(mySchematic);` },
   { id: 'schematic-shape-detection', title: 'Schematic shape detection', category: 'getting-started', code: `// Schematic shape detection
 
 nP.global.fList = [2e9];

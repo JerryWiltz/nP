@@ -1,4 +1,5 @@
 {
+  "modified": "2026-11-14",
   "schemaVersion": 1,
   "constructors": {
     "cascade": "cascade.svg",
@@ -69,6 +70,14 @@
       "left": "microstrip-left-bend.svg",
       "right": "microstrip-right-bend.svg"
     }
+  },
+  "sourceSymbols": {
+    "V": "voltage-source.svg",
+    "I": "current-source.svg",
+    "VCVS": "voltage-controlled-voltage-source.svg",
+    "VCCS": "voltage-controlled-current-source.svg",
+    "CCVS": "current-controlled-voltage-source.svg",
+    "CCCS": "current-controlled-current-source.svg"
   },
   "signalSymbols": [
     "bit-error-rate.svg",

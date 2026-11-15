@@ -1,4 +1,4 @@
-// Modified: 2026-11-01
+// Modified: 2026-11-14
 import {readFileSync, writeFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import * as nP from '../../src/index.js';
@@ -45,59 +45,11 @@ const ladder = nP.nodal(
     ['out', 1, 11]
 );
 
-const splitRejoin = nP.nodal(
-    [nP.Tee(), 1, 2, 3],
-    [nP.Tee(), 2, 4, 5],
-    [nP.Tee(), 3, 6, 7],
-    [nP.R(50), 4, 8],
-    [nP.R(50), 8, 9],
-    [nP.Tee(), 10, 5, 11],
-    [nP.R(100), 10, 12],
-    [nP.Short(), 12],
-    [nP.R(50), 6, 13],
-    [nP.R(50), 13, 14],
-    [nP.Tee(), 15, 7, 16],
-    [nP.R(100), 15, 17],
-    [nP.Short(), 17],
-    [nP.Tee(), 18, 11, 9],
-    [nP.Tee(), 19, 16, 14],
-    [nP.Tee(), 20, 19, 18],
-    ['out', 1, 20]
-);
-
-const splitRejoinTee5 = nP.nodal(
-    [nP.Tee5(), 1, 2, 3, 4, 5],
-    [nP.R(50), 2, 6],
-    [nP.L(5e-9), 6, 7],
-    [nP.Tee(), 8, 3, 9],
-    [nP.C(1e-12), 8, 10],
-    [nP.Short(), 10],
-    [nP.Tlin(50, 0.01), 4, 11],
-    [nP.R(75), 11, 12],
-    [nP.Tee(), 13, 5, 14],
-    [nP.R(100), 13, 15],
-    [nP.Short(), 15],
-    [nP.Tee5(), 16, 14, 12, 9, 7],
-    ['out', 1, 16]
-);
-
-const splitRejoinTee4 = nP.nodal(
-    [nP.Tee4(), 1, 2, 3, 4],
-    [nP.R(50), 2, 5],
-    [nP.L(5e-9), 3, 6],
-    [nP.C(1e-12), 4, 7],
-    [nP.Tee4(), 8, 7, 6, 5],
-    ['out', 1, 8]
-);
-
 const previews = [
     ['seriesOf2Ports.svg', schematicSvg(reference, shape)],
     ['seriesOf2PortsBend.svg', schematicSvg(turned, shape)],
     ['seriesOf2PortsExpanded.svg', schematicSvg(d, {...shape, expand: true})],
-    ['ladder.svg', schematicSvg(ladder, {shapes: ['ladder']})],
-    ['splitRejoin.svg', schematicSvg(splitRejoin)],
-    ['splitRejoinTee4.svg', schematicSvg(splitRejoinTee4)],
-    ['splitRejoinTee5.svg', schematicSvg(splitRejoinTee5)]
+    ['ladder.svg', schematicSvg(ladder, {shapes: ['ladder']})]
 ];
 
 for (const [name, svg] of previews) {

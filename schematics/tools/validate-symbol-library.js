@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Modified: 2026-10-29
+// Modified: 2026-11-14
 'use strict';
 
 const fs = require('fs');
@@ -48,8 +48,15 @@ try {
   }
   const mapped = new Set([
     ...Object.values(catalog.constructors),
+    ...Object.values(catalog.sourceSymbols || {}),
     ...Object.values(catalog.symbolVariants || {}).flatMap(variants => Object.values(variants))
   ]);
+  for (const [name, filename] of Object.entries(catalog.sourceSymbols || {})) {
+    if (!/^[A-Za-z][A-Za-z0-9]*$/.test(name) || actual.has(name)) {
+      throw new Error(`source symbol needs a distinct symbol-only name: ${name}`);
+    }
+    if (!symbolNames.has(filename)) throw new Error(`source symbol is missing: ${name} -> ${filename}`);
+  }
   const signalSymbols = catalog.signalSymbols || [];
   if (new Set(signalSymbols).size !== signalSymbols.length) {
     throw new Error('signalSymbols contains duplicate filenames');

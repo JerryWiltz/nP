@@ -1,31 +1,53 @@
-<!-- Modified: 2026-11-09 -->
+<!-- Modified: 2026-11-14 -->
 # Restricted nP 0.49.0 plugin bundle audit
 
 The restricted build starts at `src/plugin.js` and produces
 `dist/nP.plugin.esm.js` with `npm run build:plugin`. It reports `0.49.0` and
 includes the current RF, math, global, chart, schematic, and digital APIs.
-The three main npm/browser bundles and the separately maintained Obsidian
-plugin repository are not changed by this update.
+The restricted helper exports were added separately from the main npm entry.
+The November 13–14 node-marker updates refresh the main and restricted bundles
+together. The separately maintained Obsidian plugin repository is not changed
+by this refresh.
 
 ## Source provenance
 
-This restricted-entry update was prepared **after** the existing `v0.49.0` tag,
-which points to `e711e354aeef6d559aba409b4268bebce7e43219`. The library version
-remains `0.49.0`. The follow-up commit containing this audit, its source change,
-tests, and regenerated bundle identifies this particular restricted build;
-the version string alone does not distinguish it from the tagged release.
-Record that follow-up commit when promoting the bundle to the Obsidian repository.
+The original restricted-entry update was committed as
+`ab8bd664e0d49927e752612dd5d2b17f5cecc124`, after the existing `v0.49.0` tag at
+`e711e354aeef6d559aba409b4268bebce7e43219`. The library version remains `0.49.0`.
+The November 13 refresh removes misleading per-wire-box `nodeDot` records;
+`graph.nodes` remains the authority for numbered marker coordinates. Actual
+wire junctions are drawn from connectivity rather than the number of bends.
+The same refresh adds metadata-based junction divider/combiner layout through
+ORI; it adds no public exports or browser capabilities.
+Record the source commit and artifact checksum when promoting any refreshed
+bundle to the Obsidian repository; the version string alone does not identify
+these post-release builds.
 
-The generated bundle is 796,842 bytes with SHA-256:
+The November 14 update finalizes cornered-connection markers on the incoming
+wire before the first corner, with shared crossing/terminal clearance and
+deterministic branching rules. Straight connections retain their markers.
+This finishing step is DOM-free and introduces no public exports.
+
+The same day's symbol refresh bundles six canonical source drawings (`V`, `I`,
+`VCVS`, `VCCS`, `CCVS`, `CCCS`). They are artwork registrations rather than
+executable source constructors and introduce no public exports or capabilities.
+
+The authoring-language update adds the `{paths, annotations}` input route to
+the shared schematic helpers. Its parser selects catalog geometry without
+executing constructors or caption expressions. Constraint layout, SVG labels,
+arrows and rectangle generation stay DOM-free. The mounted API also returns
+`svgText` and provides Save SVG; its local Blob URL and download-link operations
+run only when the browser control is clicked. Named module exports remain unchanged.
+
+The generated bundle is 861,871 bytes with SHA-256:
 
 ```text
-7fcf9ba94f951253041d6c5f191fcf200fccfdb5c706bb8dbcd93b72c335b05a
+935e0791c650fdb2b0b02d0e1614eec99c009f961f9613e2f94481a1076386c8
 ```
 
-The large generated diff also refreshes previously stale symbols and schematic
-layout code from existing nP source. The new hand-maintained runtime change is
-the restricted entry's three additional exports. The existing release tag and
-published npm package are not moved or replaced by this follow-up.
+The original helper-export commit also refreshed previously stale symbols and
+schematic layout code. The existing release tag and published npm package are
+not moved or replaced by subsequent local bundle refreshes.
 
 ## Worker calculations and host drawing
 
@@ -73,11 +95,13 @@ DOM-free.** Its worker-safe SVG generation path is the three helpers above.
 
 ## Integration still belongs in the Obsidian repository
 
-At audit time, `np-rf-analysis/src/npjs-worker.ts` imports the pinned vendor module
-and replaces the three chart calls with message proxies. Its protocol accepts
-chart/table render requests and text; it does not yet define schematic SVG
-transport. Its saved global settings cover `fList`, `Ro`, and `Temp`, so adoption
-of time grids and independent contexts also needs review there.
+At the original November 9 audit, `np-rf-analysis/src/npjs-worker.ts` imported the pinned vendor module
+and replaced the three chart calls with message proxies. Its protocol accepted
+chart/table render requests and text; it did not yet define schematic SVG
+transport. Its saved global settings covered `fList`, `Ro`, and `Temp`, so adoption
+of time grids and independent contexts also needed review there. These are
+historical observations; subsequent Obsidian integration was completed in its
+own repository. A local nP rebuild does not update that pinned copy automatically.
 
 A separate plugin update must intentionally copy this generated bundle into
 `vendor/nP.esm.js`, update its TypeScript declarations, and decide how to expose
@@ -130,7 +154,7 @@ text counts for this build, not runtime call counts or a proof of safety:
 
 | Pattern | Count | Why retained |
 | --- | ---: | --- |
-| Word `document` | 50 | D3, host charts, logging, and schematic mounting |
+| Word `document` | 52 | D3, host charts, logging, schematic mounting, and the SVG download link |
 | Word `window` | 13 | D3 feature detection and host browser helpers |
 | Word `navigator` | 11 | Clipboard support in host display functions |
 | `.innerHTML` | 6 | Four generic D3 HTML operations, schematic SVG insertion, and constant toolbar icon markup |
@@ -138,9 +162,9 @@ text counts for this build, not runtime call counts or a proof of safety:
 | Word `clipboard` | 14 | Host copy controls and related text |
 | `new Image(...)` | 4 | PNG conversion for chart, Smith chart, table, and schematic |
 | `new ClipboardItem(...)` | 4 | Those PNG-copy controls |
-| `new Blob(...)` | 4 | SVG-to-PNG conversion |
+| `new Blob(...)` | 5 | SVG-to-PNG conversion and the local SVG download |
 | `new XMLSerializer(...)` | 4 | SVG-to-PNG conversion |
-| `URL.createObjectURL(...)` | 4 | Local SVG image blobs, without remote fetching |
+| `URL.createObjectURL(...)` | 5 | Local SVG image/download blobs, without remote fetching |
 | `new ResizeObserver(...)` | 1 | Schematic fit control |
 
 The two schematic `.innerHTML` assignments are in the DOM mounting function;
@@ -168,9 +192,11 @@ returns its SVG strings, graph, and topology through `postMessage`, verifying
 that these results can cross a structured-clone boundary.
 
 Coverage includes cascades, nodal circuits with nonsequential node numbers and
-component reuse, grouped ladder layout, signal paths, XML escaping, invalid
+component reuse, grouped ladder layout, junction-divider graphs and reflected
+combiner SVG, authored source/DUT paths with arrows/rectangle/reference ports, signal paths, XML escaping, invalid
 inputs, PN generation, waveform sampling, FFT/dBV/inverse FFT, bit modulation,
-demodulation, and BER. Node's test harness uses a trusted worker bootstrap;
+demodulation, and BER. The generated worker graph must have unique node IDs and
+no per-box `nodeDot` records. Node's test harness uses a trusted worker bootstrap;
 that bootstrap is not part of the restricted artifact and is not a sandbox for
 untrusted code.
 
@@ -178,5 +204,11 @@ This audit also ran the generated ES module in a Firefox module worker, where
 `document` was absent during import. With browser, network, and storage globals
 then blocked, SVG/graph/topology crossed the worker message boundary and the
 FFT/inverse FFT and mod/demod/BER checks passed. This verifies the generation
-path in a browser worker; it does not test an installed Obsidian plugin or add
-its missing schematic message adapter.
+path in a browser worker; it does not test an installed Obsidian plugin or test
+its host's schematic message adapter.
+
+The authoring refresh additionally exercised a source/DUT drawing with a
+controlled set of arrows and an enclosing rectangle in a Firefox module worker.
+SVG text and the structured-cloneable graph returned with DOM, clipboard,
+canvas-related and network APIs blocked. The normal Firefox harness also
+verified that Save SVG downloads exactly the returned `svgText`.
