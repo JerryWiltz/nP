@@ -46,7 +46,7 @@ Completed two-ports provide `.stability` and `.out('K', 'deltaMag')`. Unconditio
 
 BFR93A includes its published SOT23 L/C network. The 2N3904 card includes terminal resistances but no explicit package L/C model. Noise uses classical shot/thermal sources, without fitted excess-noise or high-frequency induced-noise behavior. With `global.twoTone` set before construction, IM/OIP selectors use direct Taylor current and charge terms; they omit quadratic remixing, compression and harmonic balance. Neither card models avalanche or self-heating. External DC bias-network solving remains future work.
 
-Try [NPN curve tracer and RF in the REPL](/repl?example=npn-curve-tracer).
+Try [NPN curve tracer and RF in the REPL](/repl#example-npn-curve-tracer).
 
 ## PNP transistor
 
@@ -84,7 +84,7 @@ nP.schematic(amplifier);
 
 PNP supplies its own active noise covariance and bias-dependent nonlinear coefficients, and its completed two-port supports K. The 2N3906 card includes RB/RC but no explicit package L/C network. The NPN model limits and direct Taylor intercept approximation also apply here. The symbol's emitter arrow points inward; its numbered ports stay fixed during rotation or mirroring.
 
-Try [PNP curve tracer and RF in the REPL](/repl?example=pnp-curve-tracer).
+Try [PNP curve tracer and RF in the REPL](/repl#example-pnp-curve-tracer).
 
 ## Amplifier
 
@@ -161,7 +161,7 @@ These are also the defaults for `D()`, except that its frequency grid follows th
 
 The archived NXP SPICE card includes series resistance, leakage, junction charge and transit-time charge. It is a different parameter set from `diode1N4148()` below. It has no explicit package L/C network or large-signal transient simulation. Its noise follows classical SPICE junction shot noise plus resistor thermal noise; it does not model calibrated avalanche or excess noise. Weak nonlinear products use local current/charge derivatives and the existing two-tone analysis, with the same direct-source approximation described in [Intermodulation](./intermodulation.md#diode-intermodulation).
 
-Try [1N4148 DC and RF in the REPL](/repl?example=diode-dc-rf). Other diode families and part numbers are not implemented in `D()` yet.
+Try [1N4148 DC and RF in the REPL](/repl#example-diode-dc-rf). Other diode families and part numbers are not implemented in `D()` yet.
 
 ## Legacy 1N4148 diode: RF and DC
 
