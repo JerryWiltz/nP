@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-14 -->
+<!-- Modified: 2026-11-15 -->
 # Restricted nP 0.49.0 plugin bundle audit
 
 The restricted build starts at `src/plugin.js` and produces
@@ -39,10 +39,41 @@ arrows and rectangle generation stay DOM-free. The mounted API also returns
 `svgText` and provides Save SVG; its local Blob URL and download-link operations
 run only when the browser control is clicked. Named module exports remain unchanged.
 
-The generated bundle is 861,871 bytes with SHA-256:
+The November 15 transistor update adds the executable `NPN()` constructor for
+2N3904 (default) and BFR93A. Its canonical NPN artwork moves from the catalog's
+`deviceSymbols` registry to `constructors`. The shared device engine calculates
+DC curves, fixed-Q three-port S/noise data, and direct weak nonlinear sources;
+two-ports also expose computed K and delta magnitude. This adds one public
+export, `NPN`, and no browser capabilities. Tests exercise NPN curves, RF,
+noise, stability and SVG generation with browser/network globals blocked.
+
+The transistor layout correction adds symbol-level automatic orientation
+preferences and shared local-termination placement in ORI's generic board.
+Numbered transistor terminals remain fixed, attached one-ports follow the
+canonical lead direction, and external ports follow signal flow. Explicit
+drawing-language rotations remain available. This changes only DOM-free layout
+and adds no exports or browser capabilities.
+
+The same day's PNP update adds `PNP()` with the Fairchild 2N3906 parameter card,
+an inward-arrow canonical symbol and signed PNP DC defaults. NPN/PNP share the
+constructor, SPICE defaults, current/charge equations, RF and noise engine.
+Polarity conversion also transforms the even-order nonlinear coefficients.
+Worker tests calculate PNP curves, fixed-Q RF/noise/stability and a complete
+schematic with DOM/browser/network APIs blocked. This adds only the `PNP`
+export and no new browser capabilities.
+
+The same day's diode update adds `D()` with the archived NXP 1N4148 card.
+It separates the DC sweep from a fixed RF Q point, generates correlated noise
+and direct weak nonlinear sources, and shares the existing canonical diode
+symbol with `diode1N4148()`. The latter retains its older parameters and API.
+The junction-temperature helper is shared with BJT models. Worker tests cover
+D curves, fixed-Q RF/noise and DOM-free SVG generation. This adds only the `D`
+export; the security-sensitive literal counts below are unchanged.
+
+The generated bundle is 911,939 bytes with SHA-256:
 
 ```text
-935e0791c650fdb2b0b02d0e1614eec99c009f961f9613e2f94481a1076386c8
+be5c62424c999762d55822ad09fd843202810fbceb36f354ff6b4b5274d54d64
 ```
 
 The original helper-export commit also refreshed previously stale symbols and
@@ -83,8 +114,9 @@ var electricalTopology = nP.schematicTopology(network);
 ```
 
 These are additional exports of the **restricted entry**. The normal public
-entry continues to expose `nP.schematic()`; its exports and published npm package
-are unchanged. Each pure helper performs its own layout calculation. These
+entry continues to expose `nP.schematic()`; the November 15 NPN, PNP and D additions are shared
+by both entries. The published npm package remains unchanged until released.
+Each pure helper performs its own layout calculation. These
 helpers throw on invalid input, so the worker should catch errors and send its
 ordinary error message rather than attempting a DOM error display.
 
@@ -115,10 +147,10 @@ renderer to an installed plugin.
 
 ## Exact exports
 
-The resulting ES module has **79 named exports**, in alphabetical order:
+The resulting ES module has **82 named exports**, in alphabetical order:
 
 ```text
-Amp Attn C Coupler180 FFT L Load Open PN R Shift90 Short Tclin Tee Tee4
+Amp Attn C Coupler180 D FFT L Load NPN Open PN PNP R Shift90 Short Tclin Tee Tee4
 Tee5 Thru Tlin bitErrorRate cascade chebyLPLCs chebyLPNsec chebyLPgk
 complex demod dim diode1N4148 dup global invFFT lineChart lineTable log
 lpfGen matrix mbend mclin mcross mlin mod mstep mtee mtfr mvgnd mvia
@@ -194,8 +226,9 @@ that these results can cross a structured-clone boundary.
 Coverage includes cascades, nodal circuits with nonsequential node numbers and
 component reuse, grouped ladder layout, junction-divider graphs and reflected
 combiner SVG, authored source/DUT paths with arrows/rectangle/reference ports, signal paths, XML escaping, invalid
-inputs, PN generation, waveform sampling, FFT/dBV/inverse FFT, bit modulation,
-demodulation, and BER. The generated worker graph must have unique node IDs and
+inputs, NPN/PNP DC curves and fixed-Q RF/noise/stability, D diode curves/RF/noise/SVG, PN generation, waveform
+sampling, FFT/dBV/inverse FFT, bit modulation, demodulation, and BER.
+The generated worker graph must have unique node IDs and
 no per-box `nodeDot` records. Node's test harness uses a trusted worker bootstrap;
 that bootstrap is not part of the restricted artifact and is not a sandbox for
 untrusted code.

@@ -1,8 +1,11 @@
-// Modified: 2026-10-08
+// Modified: 2026-11-15
+export {NPN} from './transistors/bjt/NPN';
+export {PNP} from './transistors/bjt/PNP';
 export {chebyLPgk} from './filters/chebyLPgk';
 export {chebyLPLCs} from './filters/chebyLPLCs';
 export {chebyLPNsec} from './filters/chebyLPNsec';
 export {diode1N4148} from './diodes/diode1N4148';
+export {D} from './diodes/D';
 export {seR} from './rlc/seR';
 export {R} from './rlc/R';
 export {paR} from './rlc/paR';

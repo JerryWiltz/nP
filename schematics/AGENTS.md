@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-14 -->
+<!-- Modified: 2026-11-15 -->
 
 # Schematic authoring rules
 
@@ -12,9 +12,11 @@ Read and follow `schematics/svg-style-guide.md` for exact SVG dimensions, snappi
 - When given a hand-drawn symbol, use the image to determine its shape and connections. Check the constructor's public port order in source and resolve ambiguities before drawing. Redraw it with the canonical SVG rules; do not trace the image's pixels.
 - Keep every drawable public RF or digital API in `symbol-catalog.json`. Two APIs may map to one symbol when their visible topology is identical. Keep distinct topologies as distinct symbols. `mbend()` has left and right visual variants.
 - Register source artwork without executable source constructors under the catalog's `sourceSymbols` mapping. These names select canonical drawings; they do not claim public nPort APIs or S-parameter models. Source captions use `Terminal 1`/`Terminal 2` for electrical terminals rather than RF port labels.
+- Register device artwork whose numerical constructors are not yet implemented under `deviceSymbols`. These are drawing names, not public constructor exports. Move the mapping into `constructors` when the corresponding public constructor is implemented.
 - The RF constructor-to-symbol map is generated from `symbol-catalog.json`. Constructors call `schematicPart(publicName, parameters)` and never repeat the SVG filename. Give option-dependent variants explicit keys in `symbolVariants`; `mbend()` uses `left` and `right`. The symbol check verifies runtime geometry and nPort port counts.
 - For a new three-port line junction that can introduce a ladder shunt, record `flow.throughPorts` and `flow.shuntPort` in `runtime-symbol-layout.json`. Keep those public port numbers distinct. The renderer chooses 90-degree rotations and reflections from the canonical port geometry; do not encode a constructor-specific drawing angle.
 - For a junction usable as a divider/combiner, also record `junction.commonPort` and `junction.branchPorts` in `runtime-symbol-layout.json`. They must cover all numbered terminals exactly once, with at least two branches. Future transmission-line families use this same metadata; ORI does not identify their constructors by name.
+- Symbols with a conventional automatic orientation may declare `automatic` placement preferences in `runtime-symbol-layout.json`. Its quarter-turn `rotations`, mirror permissions, external-port flow and local-termination rule apply to the generic board. They do not change the numbered terminals or limit explicit drawing-language rotations. Keep these preferences in symbol data rather than adding device-name tests or circuit-specific coordinates to the router.
 - RF component ports, including those on `trf()` and `trf4Port()`, are nPort ports. Connectors on digital blocks and `FFT()`/`invFFT()` are **diagram connectors**, not S-parameter ports or `nP.nodal()` arguments. State each connector's signal meaning in the symbol description or accompanying note. Some blocks, especially `mod()`, have mode-dependent inputs.
 
 ## SVG and layout

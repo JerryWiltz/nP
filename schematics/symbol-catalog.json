@@ -1,5 +1,5 @@
 {
-  "modified": "2026-11-14",
+  "modified": "2026-11-15",
   "schemaVersion": 1,
   "constructors": {
     "cascade": "cascade.svg",
@@ -63,7 +63,10 @@
     "demod": "demod.svg",
     "bitErrorRate": "bit-error-rate.svg",
     "FFT": "fft.svg",
-    "invFFT": "inverse-fft.svg"
+    "invFFT": "inverse-fft.svg",
+    "NPN": "npn.svg",
+    "PNP": "pnp.svg",
+    "D": "diode-1n4148.svg"
   },
   "symbolVariants": {
     "mbend": {
@@ -79,6 +82,7 @@
     "CCVS": "current-controlled-voltage-source.svg",
     "CCCS": "current-controlled-current-source.svg"
   },
+  "deviceSymbols": {},
   "signalSymbols": [
     "bit-error-rate.svg",
     "demod.svg",

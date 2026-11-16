@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-14 -->
+<!-- Modified: 2026-11-15 -->
 
 # SVG schematic style guide
 
@@ -69,6 +69,12 @@ All dimensions are SVG `viewBox` units. The detailed family rules below describe
 - Voltage-source markings are `+` above `−`, centered on the vertical axis; voltage is terminal 1 relative to terminal 2. Current-source arrows point upward from terminal 2 toward terminal 1. Use dark path strokes for the polarity marks and arrow, retaining their shape under rotation.
 - Source terminals are electrical terminals, not S-parameter ports. Canonical reference captions say `Terminal 1` and `Terminal 2`. Dependent-source control quantities are model references, not extra drawn terminals. Reference captions show `V = Av × Vc`, `I = gm × Vc`, `V = rm × Ic`, or `I = Ai × Ic`; actual control names and parameter values belong in instance annotations when those source models are added.
 - The catalog's `sourceSymbols` entries register artwork separately from public constructor mappings. Canonical source captions do not imply that `V()`, `I()`, or controlled-source behavior has been implemented. Runtime source geometry is bundled using the same pipeline as other symbols.
+
+## Bipolar transistor artwork
+
+- The NPN and PNP reference drawings have port 1 (base) on the left, port 2 (collector) above right, and port 3 (emitter) below right. The NPN emitter arrow points outward; the PNP emitter arrow points inward. The circular enclosure is part of each canonical body; rotate or reflect its geometry and numbered terminals together.
+- Canonical NPN and PNP terminals are `(70, 120)`, `(170, 60)`, and `(170, 180)` on a 280-by-250 canvas. Twenty-unit pins meet the circular body at `(90, 120)`, `(170, 80)`, and `(170, 160)`. Sloping collector/emitter branches and the arrow are internal artwork, not diagonal interconnect wires.
+- `NPN` and `PNP` are registered under `constructors` and their numerical three-port constructors use the same base/collector/emitter order. Preserve SPICE model/netlist port translations explicitly; SPICE Q-instance node order is collector/base/emitter.
 
 ## Microstrip and multiport geometry
 

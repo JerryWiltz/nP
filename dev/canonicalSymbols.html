@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Modified: 2026-11-14 -->
+<!-- Modified: 2026-11-15 -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -14,7 +14,7 @@
     p { line-height: 1.5; }
     nav a { margin-right: 1.5rem; }
     main { overflow-x: auto; }
-    .symbol-sheet { display: block; width: 520px; height: 20120px; }
+    .symbol-sheet { display: block; width: 520px; height: 20900px; }
     a { color: #13558d; }
     a:focus-visible { outline: 3px solid #13558d; outline-offset: 2px; }
   </style>
@@ -22,13 +22,13 @@
 <body>
   <header>
     <h1>Canonical symbols</h1>
-    <p>All 66 canonical SVGs, ordered like the Guide API. Select a symbol to open its editable source drawing.</p>
-    <nav aria-label="Symbol groups"><a href="#rf">RF constructors</a><a href="#digital">Digital signals</a><a href="#math">Math</a><a href="#combining">Circuit combining</a><a href="#sources">Source primitives</a></nav>
+    <p>All 68 canonical SVGs, ordered like the Guide API. Select a symbol to open its editable source drawing.</p>
+    <nav aria-label="Symbol groups"><a href="#rf">RF constructors</a><a href="#digital">Digital signals</a><a href="#math">Math</a><a href="#combining">Circuit combining</a><a href="#sources">Source primitives</a><a href="#devices">Transistors</a></nav>
   </header>
   <main>
-    <svg class="symbol-sheet" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 20120" role="img" aria-labelledby="sheet-title sheet-description">
+    <svg class="symbol-sheet" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 20900" role="img" aria-labelledby="sheet-title sheet-description">
       <title id="sheet-title">Canonical nPort symbols</title>
-      <desc id="sheet-description">All 66 canonical symbols in Guide API order on one shared SVG canvas.</desc>
+      <desc id="sheet-description">All 68 canonical symbols in Guide API order on one shared SVG canvas.</desc>
       <rect width="100%" height="100%" fill="#ffffff"/>
       <g fill="#202020" font-family="Arial, Helvetica, sans-serif">
     <text id="rf" x="40" y="50" font-size="22" font-weight="bold">RF constructors (51)</text>
@@ -847,7 +847,7 @@
       </g>
     </a>
     <text id="diode" x="40" y="15360" font-size="17" font-weight="bold">Diode</text>
-    <text x="40" y="15400" font-size="16">diode1N4148()</text>
+    <text x="40" y="15400" font-size="16">D(), diode1N4148()</text>
     <text x="480" y="15400" font-size="13" text-anchor="end">diode-1n4148.svg</text>
     <a href="../schematics/symbols/diode-1n4148.svg" aria-label="Open diode-1n4148.svg">
       <g data-symbol-source="diode-1n4148.svg" transform="translate(150 15420)">
@@ -1122,6 +1122,63 @@
             <text x="160" y="175" text-anchor="start">Terminal 2</text>
             <circle cx="140" cy="70" r="4"/>
             <circle cx="140" cy="170" r="4"/>
+          </g>
+      </g>
+    </a>
+    <text id="devices" x="40" y="20170" font-size="22" font-weight="bold">Transistors (2)</text>
+    <text x="40" y="20220" font-size="16">NPN — three-port bipolar transistor</text>
+    <text x="480" y="20240" font-size="13" text-anchor="end">npn.svg</text>
+    <a href="../schematics/symbols/npn.svg" aria-label="Open npn.svg">
+      <g data-symbol-source="npn.svg" transform="translate(120 20260)">
+        <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <!-- Twenty-unit pins meet the circular body at their inner endpoints. -->
+            <path d="M70 120 H90 M170 60 V80 M170 180 V160"/>
+            <circle cx="140" cy="120" r="50"/>
+            <!-- The base bar and the collector/emitter branches are internal artwork. -->
+            <path d="M90 120 H120 M120 90 V150 M120 100 L170 80 M120 140 L170 160"/>
+            <!-- NPN emitter arrow: outward along the lower-right branch. -->
+            <path d="M160 156 L144 157 L150 143 Z" fill="#202020"/>
+          </g>
+          <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
+            <text x="140" y="25">NPN</text>
+            <text x="35" y="105">Port 1</text>
+            <text x="35" y="135">B</text>
+            <text x="210" y="65">Port 2</text>
+            <text x="210" y="85">C</text>
+            <text x="210" y="185">Port 3</text>
+            <text x="210" y="205">E</text>
+            <text x="140" y="235">NPN BJT · symbol only</text>
+            <circle cx="70" cy="120" r="4"/>
+            <circle cx="170" cy="60" r="4"/>
+            <circle cx="170" cy="180" r="4"/>
+          </g>
+      </g>
+    </a>
+    <text x="40" y="20520" font-size="16">PNP — three-port bipolar transistor</text>
+    <text x="480" y="20540" font-size="13" text-anchor="end">pnp.svg</text>
+    <a href="../schematics/symbols/pnp.svg" aria-label="Open pnp.svg">
+      <g data-symbol-source="pnp.svg" transform="translate(120 20560)">
+        <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <!-- Twenty-unit pins meet the circular body at their inner endpoints. -->
+            <path d="M70 120 H90 M170 60 V80 M170 180 V160"/>
+            <circle cx="140" cy="120" r="50"/>
+            <!-- The base bar and the collector/emitter branches are internal artwork. -->
+            <path d="M90 120 H120 M120 90 V150 M120 100 L170 80 M120 140 L170 160"/>
+            <!-- PNP emitter arrow: inward along the lower-right branch. -->
+            <path d="M140 148 L158 147 L152 161 Z" fill="#202020"/>
+          </g>
+          <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
+            <text x="140" y="25">PNP</text>
+            <text x="35" y="105">Port 1</text>
+            <text x="35" y="135">B</text>
+            <text x="210" y="65">Port 2</text>
+            <text x="210" y="85">C</text>
+            <text x="210" y="185">Port 3</text>
+            <text x="210" y="205">E</text>
+            <text x="140" y="235">PNP BJT</text>
+            <circle cx="70" cy="120" r="4"/>
+            <circle cx="170" cy="60" r="4"/>
+            <circle cx="170" cy="180" r="4"/>
           </g>
       </g>
     </a>

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-14 -->
+<!-- Modified: 2026-11-15 -->
 # Schematic system
 
 This note explains how an nP network or a drawing description becomes a recognizable RF schematic. It starts with two series resistors, follows their data through the one reusable interpreter (ORI), and then explains the board language and graph algorithms behind the drawing.
@@ -709,7 +709,7 @@ docs/public/schematics/               Generated static documentation SVGs
 
 ## Sources of truth and generated artifacts
 
-The **66 individual SVG files in [`schematics/symbols/`](../schematics/symbols/)** are the source of truth for canonical symbol geometry. They live at one directory level. [`schematics/symbol-catalog.json`](../schematics/symbol-catalog.json) maps public constructor names to those files, records the alternate `mbend()` drawing, and identifies the signal-flow symbols. [`schematics/svg-style-guide.md`](../schematics/svg-style-guide.md) specifies the grid, port order, colors, dimensions, and labeling rules.
+The **68 individual SVG files in [`schematics/symbols/`](../schematics/symbols/)** are the source of truth for canonical symbol geometry. They live at one directory level. [`schematics/symbol-catalog.json`](../schematics/symbol-catalog.json) maps public constructor names to those files, records the alternate `mbend()` drawing, and identifies the signal-flow symbols. Its `deviceSymbols` section is reserved for artwork whose numerical constructor is not implemented. `NPN` and `PNP` are in `constructors`, matching their executable three-port models. [`schematics/svg-style-guide.md`](../schematics/svg-style-guide.md) specifies the grid, port order, colors, dimensions, and labeling rules.
 
 The authoring tools read the canonical SVG files directly:
 
@@ -720,7 +720,7 @@ The authoring tools read the canonical SVG files directly:
 
 These published SVGs are independent documentation assets. The REPL no longer displays its old static schematic gallery; runnable nPort examples call `nP.schematic(...)` inside their code.
 
-[`src/np-chart/src/schematicSymbols.js`](../src/np-chart/src/schematicSymbols.js) is generated from the canonical SVGs. [`schematics/runtime-symbol-layout.json`](../schematics/runtime-symbol-layout.json) keeps only the extra placement data that an SVG does not state: body and ink bounds, lead segments, and flow directions. `generate-runtime-symbols.js` parses the canonical geometry and numbered port dots, validates the layout data against those ports, and writes the bundled module. The runtime bundle contains all RF component symbols, plus cascade, nodal, MOD, DEMOD and the six source symbols. Signal-processing symbols that do not represent RF nPorts remain in the canonical library for authoring. `symbols:check` fails if this generated module is stale.
+[`src/np-chart/src/schematicSymbols.js`](../src/np-chart/src/schematicSymbols.js) is generated from the canonical SVGs. [`schematics/runtime-symbol-layout.json`](../schematics/runtime-symbol-layout.json) keeps only the extra placement data that an SVG does not state: body and ink bounds, lead segments, and flow directions. `generate-runtime-symbols.js` parses the canonical geometry and numbered port dots, validates the layout data against those ports, and writes the bundled module. The runtime bundle contains all RF component symbols, including NPN and PNP, plus cascade, nodal, MOD, DEMOD and the six source symbols. Signal-processing symbols that do not represent RF nPorts remain in the canonical library for authoring. `symbols:check` fails if this generated module is stale.
 
 ## How the runtime code reaches distributions
 

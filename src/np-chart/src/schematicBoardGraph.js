@@ -1,4 +1,4 @@
-// Modified: 2026-11-08
+// Modified: 2026-11-15
 // General graph operations for ORI's automatic board. No RF circuit patterns.
 const AXES = [[1, 0], [0, 1], [-1, 0], [0, -1]];
 
@@ -207,8 +207,11 @@ function automaticPlacement(root, index, positions, graph, board, geometry) {
     const bodyCenter = [(symbol.bodyBounds[0] + symbol.bodyBounds[2]) / 2,
         (symbol.bodyBounds[1] + symbol.bodyBounds[3]) / 2];
     let best = null;
-    for (const mirrorX of [false, true]) for (const mirrorY of [false, true]) {
-        for (const angle of [0, 90, 180, 270]) {
+    const preference = symbol.automatic;
+    const horizontalMirrors = preference?.mirrorX === false ? [false] : [false, true];
+    const verticalMirrors = preference?.mirrorY === false ? [false] : [false, true];
+    for (const mirrorX of horizontalMirrors) for (const mirrorY of verticalMirrors) {
+        for (const angle of preference?.rotations || [0, 90, 180, 270]) {
             let score = 0;
             entry.nodes.forEach((node, port) => {
                 const outward = rotate(terminalDirection(symbol, port + 1), angle, mirrorX, mirrorY);
@@ -246,6 +249,57 @@ function placementBounds(placement, symbol) {
     });
     return [Math.min(...corners.map(p => p[0])), Math.min(...corners.map(p => p[1])),
         Math.max(...corners.map(p => p[0])), Math.max(...corners.map(p => p[1]))];
+}
+
+function boundsOverlap(a, b, clearance) {
+    return a[0] < b[2] + clearance && a[2] > b[0] - clearance &&
+        a[1] < b[3] + clearance && a[3] > b[1] - clearance;
+}
+
+// A terminal attachment is a local relation, not the next signal-flow column.
+// Use canonical lead vectors and bounds, independent of device or node names.
+function placeLocalTerminations(root, placements, graph, board, geometry) {
+    const moved = new Set();
+    for (let index = 0; index < root.components.length; index++) {
+        const entry = root.components[index], symbol = geometry.symbol(entry);
+        if (!symbol.automatic?.localTerminations) continue;
+        const parent = placements[index];
+        for (const port of parent.ports) {
+            const terminals = graph.byNode.get(port.node);
+            if (root.externalNodes.includes(port.node) || terminals.length !== 2) continue;
+            const other = terminals.find(terminal => terminal.index !== index);
+            if (!other || moved.has(other.index) || root.components[other.index].nodes.length !== 1) continue;
+            const childEntry = root.components[other.index], childSymbol = geometry.symbol(childEntry);
+            const direction = rotate(terminalDirection(symbol, port.port), parent.rotation, parent.mirrorX, parent.mirrorY);
+            const obstacles = placements.flatMap((placement, obstacle) => obstacle === other.index ? [] :
+                [placementBounds(placement, geometry.symbol(root.components[obstacle]))]);
+            let selected = null;
+            for (let distance = 2 * board.wireBoxLength; distance <= board.routingMargin + board.componentGap && !selected;
+                distance += board.grid) {
+                const at = port.at.map((value, axis) => value + direction[axis] * distance);
+                for (const angle of [0, 90, 180, 270]) {
+                    if (!same(rotate(terminalDirection(childSymbol, 1), angle, false, false), direction.map(value => -value))) continue;
+                    const candidate = geometry.placement(childEntry, 1, at, angle);
+                    const bounds = placementBounds(candidate, childSymbol);
+                    if (!obstacles.some(obstacle => boundsOverlap(bounds, obstacle, board.clearance))) {
+                        candidate.boardTile = placements[other.index].boardTile;
+                        selected = candidate; break;
+                    }
+                }
+            }
+            if (selected) { placements[other.index] = selected; moved.add(other.index); }
+        }
+    }
+}
+
+function automaticExternalPort(owner, index, board) {
+    const outward = owner.escape.map((value, axis) => Math.sign(value - owner.at[axis]));
+    const flow = automaticDirections(board).flow.map(value => value * (index === 0 ? -1 : 1));
+    const direction = owner.externalPorts === 'flow' ? flow : outward;
+    // Preserve a straight departure from the canonical terminal before a turn.
+    const start = same(direction, outward) ? owner.at : owner.escape;
+    return {port: index + 1, node: owner.node,
+        at: start.map((value, axis) => value + direction[axis] * board.externalPortLead)};
 }
 
 function heapPush(heap, item) {
@@ -401,6 +455,7 @@ export function layoutAutomaticBoard(root, definition, geometry) {
     const byIndex = new Map(ordered.map(index => [index,
         automaticPlacement(root, index, positions, graph, board, geometry)]));
     const placements = root.components.map((_, index) => byIndex.get(index));
+    placeLocalTerminations(root, placements, graph, board, geometry);
     const bounds = placements.map((placement, index) => placementBounds(placement, geometry.symbol(root.components[index])));
     const result = {grid: board.grid, placements, wires: [], nodePoints: new Map(), externalPorts: [],
         regions: regions.filter(region => region.cyclic).map(region => ({kind: 'loop', components: region.members.map(index => index + 1)}))};
@@ -409,13 +464,13 @@ export function layoutAutomaticBoard(root, definition, geometry) {
         const direction = rotate(terminalDirection(geometry.symbol(root.components[index]), port.port),
             placement.rotation, placement.mirrorX, placement.mirrorY);
         if (!terminals.has(port.node)) terminals.set(port.node, []);
-        terminals.get(port.node).push({...port, escape: port.at.map((value, axis) => value + direction[axis] * board.wireBoxLength)});
+        terminals.get(port.node).push({...port,
+            externalPorts: geometry.symbol(root.components[index]).automatic?.externalPorts,
+            escape: port.at.map((value, axis) => value + direction[axis] * board.wireBoxLength)});
     }));
     root.externalNodes.forEach((node, index) => {
         const owner = terminals.get(node)[0];
-        const direction = owner.escape.map((value, axis) => Math.sign(value - owner.at[axis]));
-        const port = {port: index + 1, node,
-            at: owner.at.map((value, axis) => value + direction[axis] * board.externalPortLead)};
+        const port = automaticExternalPort(owner, index, board);
         result.externalPorts.push(port);
         terminals.get(node).push({...port, escape: port.at});
     });

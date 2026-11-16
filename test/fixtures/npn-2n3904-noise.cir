@@ -1,0 +1,25 @@
+2N3904 independent DC and three-port RF reference
+* Modified: 2026-11-15
+.temp 27
+.options gmin=1e-15 abstol=1e-15 reltol=1e-9
+.model device NPN (NF=1 NR=1 ISE=6.734e-15 ISC=0 NE=1.259 NC=2 RB=10 RE=0 RC=1 CJE=4.493e-12 VJE=0.75 MJE=0.2593 CJC=3.638e-12 VJC=0.75 MJC=0.3085 FC=0.5 TF=3.012e-10 TR=2.395e-7 XTF=2 VTF=4 ITF=0.4 XTI=3 EG=1.11 XTB=1.5 KF=0 AF=1 IS=6.734e-15 BF=416.4 VAF=74.03 IKF=0.06678 BR=0.7371)
+Q1 c b e device
+Ibias 0 b DC 20u
+Vc dc 0 DC 5
+Lc dc c 1e3
+LeDc e 0 1e3
+Rsource acsrc acb 50
+Vsignal acsrc 0 DC 0 AC 1
+Cinput acb b 1e-3
+Coutput c load 1e-3
+Gload load 0 load 0 0.02
+Reground e 0 1e-9
+.control
+set wr_vecnames
+set wr_singlescale
+noise v(load) Vsignal dec 1 10meg 1g
+setplot noise1
+wrdata 2N3904-noise.txt inoise_spectrum onoise_spectrum
+quit
+.endc
+.end

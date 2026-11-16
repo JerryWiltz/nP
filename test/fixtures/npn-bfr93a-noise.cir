@@ -1,0 +1,33 @@
+BFR93A independent DC and three-port RF reference
+* Modified: 2026-11-15
+.temp 27
+.options gmin=1e-15 abstol=1e-15 reltol=1e-9
+.model device NPN (NF=1.00025 NR=0.994038 ISE=1.39029e-14 ISC=1.04297e-15 NE=1.51292 NC=1.18993 VAR=3.28032 IKR=10 RB=10 RE=0.763636 RC=9 CJE=2.03216e-12 VJE=0.6 MJE=0.290076 CJC=1.00353e-12 VJC=0.340808 MJC=0.194223 FC=0.5 TF=6.5579e-12 TR=0 XTF=38.9752 VTF=10.9308 ITF=0.521078 XTI=3 EG=1.11 XTB=0 KF=0 AF=1 IS=1.32873e-15 BF=102 VAF=51.9033 IKF=8.15511 BR=17.6953)
+Q1 ci bi ei device
+Lb bo bi .4n
+Le ei eo .83n
+L1 b bo .35n
+L2 c ci .17n
+L3 e eo .35n
+Ccb bo ci 71f
+Cbe bo eo 2f
+Cce ci eo 71f
+Ibias 0 b DC 20u
+Vc dc 0 DC 5
+Lc dc c 1e3
+LeDc e 0 1e3
+Rsource acsrc acb 50
+Vsignal acsrc 0 DC 0 AC 1
+Cinput acb b 1e-3
+Coutput c load 1e-3
+Gload load 0 load 0 0.02
+Reground e 0 1e-9
+.control
+set wr_vecnames
+set wr_singlescale
+noise v(load) Vsignal dec 1 10meg 1g
+setplot noise1
+wrdata BFR93A-noise.txt inoise_spectrum onoise_spectrum
+quit
+.endc
+.end

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Modified: 2026-11-14 -->
+<!-- Modified: 2026-11-15 -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -14,7 +14,7 @@
     p { line-height: 1.5; }
     nav a { margin-right: 1.5rem; }
     main { overflow-x: auto; }
-    .symbol-sheet { display: block; width: 520px; height: 20120px; }
+    .symbol-sheet { display: block; width: 520px; height: 20900px; }
     a { color: #13558d; }
     a:focus-visible { outline: 3px solid #13558d; outline-offset: 2px; }
   </style>
@@ -22,13 +22,13 @@
 <body>
   <header>
     <h1>Canonical symbols</h1>
-    <p>All 66 canonical SVGs, ordered like the Guide API. Select a symbol to open its editable source drawing.</p>
-    <nav aria-label="Symbol groups"><a href="#rf">RF constructors</a><a href="#digital">Digital signals</a><a href="#math">Math</a><a href="#combining">Circuit combining</a><a href="#sources">Source primitives</a></nav>
+    <p>All 68 canonical SVGs, ordered like the Guide API. Select a symbol to open its editable source drawing.</p>
+    <nav aria-label="Symbol groups"><a href="#rf">RF constructors</a><a href="#digital">Digital signals</a><a href="#math">Math</a><a href="#combining">Circuit combining</a><a href="#sources">Source primitives</a><a href="#devices">Transistors</a></nav>
   </header>
   <main>
-    <svg class="symbol-sheet" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 20120" role="img" aria-labelledby="sheet-title sheet-description">
+    <svg class="symbol-sheet" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 20900" role="img" aria-labelledby="sheet-title sheet-description">
       <title id="sheet-title">Canonical nPort symbols</title>
-      <desc id="sheet-description">All 66 canonical symbols in Guide API order on one shared SVG canvas.</desc>
+      <desc id="sheet-description">All 68 canonical symbols in Guide API order on one shared SVG canvas.</desc>
       <rect width="100%" height="100%" fill="#ffffff"/>
       <g fill="#202020" font-family="Arial, Helvetica, sans-serif">
     <text id="rf" x="40" y="50" font-size="22" font-weight="bold">RF constructors (51)</text>
@@ -390,7 +390,7 @@
       </g>
     </a>
     <text id="diode" x="40" y="15360" font-size="17" font-weight="bold">Diode</text>
-    <text x="40" y="15400" font-size="16">diode1N4148()</text>
+    <text x="40" y="15400" font-size="16">D(), diode1N4148()</text>
     <text x="480" y="15400" font-size="13" text-anchor="end">diode-1n4148.svg</text>
     <a href="../schematics/symbols/diode-1n4148.svg" aria-label="Open diode-1n4148.svg">
       <g data-symbol-source="diode-1n4148.svg" transform="translate(150 15420)">
@@ -504,6 +504,21 @@
     <a href="../schematics/symbols/current-controlled-current-source.svg" aria-label="Open current-controlled-current-source.svg">
       <g data-symbol-source="current-controlled-current-source.svg" transform="translate(120 19790)">
 {{SYMBOL:current-controlled-current-source.svg}}
+      </g>
+    </a>
+    <text id="devices" x="40" y="20170" font-size="22" font-weight="bold">Transistors (2)</text>
+    <text x="40" y="20220" font-size="16">NPN — three-port bipolar transistor</text>
+    <text x="480" y="20240" font-size="13" text-anchor="end">npn.svg</text>
+    <a href="../schematics/symbols/npn.svg" aria-label="Open npn.svg">
+      <g data-symbol-source="npn.svg" transform="translate(120 20260)">
+{{SYMBOL:npn.svg}}
+      </g>
+    </a>
+    <text x="40" y="20520" font-size="16">PNP — three-port bipolar transistor</text>
+    <text x="480" y="20540" font-size="13" text-anchor="end">pnp.svg</text>
+    <a href="../schematics/symbols/pnp.svg" aria-label="Open pnp.svg">
+      <g data-symbol-source="pnp.svg" transform="translate(120 20560)">
+{{SYMBOL:pnp.svg}}
       </g>
     </a>
       </g>

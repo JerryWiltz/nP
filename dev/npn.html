@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<!-- Modified: 2026-11-15 -->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NPN curve tracer and RF</title>
+    <script src="../dist/nP.js"></script>
+</head>
+<body>
+    <script>
+        // 2N3904 curve tracer and common-emitter RF analysis
+        var g = nP.global;
+        g.fList = g.fGen(10e6, 500e6, 31);
+        g.twoTone = {spacingHz: 1e6, p1dBm: -70, p2dBm: -70};
+
+        var q1 = nP.NPN({
+            model: '2N3904',
+            configuration: 'commonEmitter',
+            bias: {
+                ib: {start: 0, stop: 50e-6, points: 6},
+                vce: {start: 0, stop: 10, points: 201}
+            },
+            qPoint: {ib: 20e-6, vce: 5},
+            temperature: g.Temp
+        });
+        var short = nP.Short();
+        var ce = nP.nodal(
+            [q1, 1, 2, 3],
+            [short, 3],
+            ['out', 1, 2]
+        );
+        var curves = q1.ivTable();
+        var fixedBias = q1.bias;
+        var response = ce.out('s11dB', 's21dB');
+        var stability = ce.out('K', 'deltaMag');
+        var noise = ce.out('NF21dB');
+        var intercepts = ce.out('OIP2sum21dBm', 'OIP3lower21dBm');
+
+        nP.lineChart({inputTable: [curves], title: '2N3904 common emitter: stepped IB',
+            metricPrefix: 'none', xAxisTitle: 'VCE (V)', yAxisTitle: 'IC (A)'});
+        nP.lineChart({inputTable: [response], title: '2N3904 common-emitter S-parameters',
+            metricPrefix: 'mega', xAxisTitle: 'Frequency (MHz)', yAxisTitle: 'S (dB)'});
+        nP.lineChart({inputTable: [stability], title: 'Final two-port stability',
+            metricPrefix: 'mega', xAxisTitle: 'Frequency (MHz)', yAxisTitle: 'K and |delta|'});
+        nP.lineChart({inputTable: [noise], title: '2N3904 model noise figure',
+            metricPrefix: 'mega', xAxisTitle: 'Frequency (MHz)', yAxisTitle: 'NF (dB)'});
+        nP.lineChart({inputTable: [intercepts], title: '2N3904 direct Taylor intercept estimates',
+            metricPrefix: 'mega', xAxisTitle: 'First-tone frequency (MHz)', yAxisTitle: 'OIP (dBm)'});
+        nP.log(fixedBias);
+        nP.schematic(ce);
+
+        // Common-base curves: IC versus VCB, stepped outward IE
+        var q2 = nP.NPN({configuration: 'commonBase', qPoint: {ie: 2e-3, vcb: 5}});
+        var baseCurves = q2.ivTable();
+        nP.lineChart({inputTable: [baseCurves], title: '2N3904 common base: stepped IE',
+            metricPrefix: 'none', xAxisTitle: 'VCB (V)', yAxisTitle: 'IC (A)'});
+
+        // Common collector retains positive VCE and reports outward IE
+        var q3 = nP.NPN({configuration: 'commonCollector'});
+        var collectorCurves = q3.ivTable();
+        nP.lineChart({inputTable: [collectorCurves], title: '2N3904 common collector: stepped IB',
+            metricPrefix: 'none', xAxisTitle: 'VCE (V)', yAxisTitle: 'IE (A)'});
+
+        // BFR93A includes its published SOT23 L/C network
+        var q4 = nP.NPN({model: 'BFR93A', qPoint: {ib: 20e-6, vce: 5}});
+        var bfr = nP.nodal(
+            [q4, 1, 2, 3],
+            [short, 3],
+            ['out', 1, 2]
+        );
+        var bfrCurves = q4.ivTable();
+        var bfrResponse = bfr.out('s11dB', 's21dB');
+        nP.lineChart({inputTable: [bfrCurves], title: 'BFR93A common emitter: stepped IB',
+            metricPrefix: 'none', xAxisTitle: 'VCE (V)', yAxisTitle: 'IC (A)'});
+        nP.lineChart({inputTable: [bfrResponse], title: 'BFR93A packaged RF model',
+            metricPrefix: 'mega', xAxisTitle: 'Frequency (MHz)', yAxisTitle: 'S (dB)'});
+    </script>
+</body>
+</html>

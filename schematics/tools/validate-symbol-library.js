@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Modified: 2026-11-14
+// Modified: 2026-11-15
 'use strict';
 
 const fs = require('fs');
@@ -49,13 +49,17 @@ try {
   const mapped = new Set([
     ...Object.values(catalog.constructors),
     ...Object.values(catalog.sourceSymbols || {}),
+    ...Object.values(catalog.deviceSymbols || {}),
     ...Object.values(catalog.symbolVariants || {}).flatMap(variants => Object.values(variants))
   ]);
-  for (const [name, filename] of Object.entries(catalog.sourceSymbols || {})) {
-    if (!/^[A-Za-z][A-Za-z0-9]*$/.test(name) || actual.has(name)) {
-      throw new Error(`source symbol needs a distinct symbol-only name: ${name}`);
+  const drawingNames = new Set();
+  const drawingEntries = Object.entries(catalog.sourceSymbols || {}).concat(Object.entries(catalog.deviceSymbols || {}));
+  for (const [name, filename] of drawingEntries) {
+    if (!/^[A-Za-z][A-Za-z0-9]*$/.test(name) || actual.has(name) || drawingNames.has(name)) {
+      throw new Error(`drawing symbol needs a distinct symbol-only name: ${name}`);
     }
-    if (!symbolNames.has(filename)) throw new Error(`source symbol is missing: ${name} -> ${filename}`);
+    if (!symbolNames.has(filename)) throw new Error(`drawing symbol is missing: ${name} -> ${filename}`);
+    drawingNames.add(name);
   }
   const signalSymbols = catalog.signalSymbols || [];
   if (new Set(signalSymbols).size !== signalSymbols.length) {

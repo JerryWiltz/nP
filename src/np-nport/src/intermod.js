@@ -1,4 +1,5 @@
-// Modified: 2026-10-07
+// Modified: 2026-11-15
+import {bjtProducts} from './transistors/bjt/bjtRf';
 import {complex} from '../../np-math/src/complex';
 import {matrix, dim} from '../../np-math/src/matrix';
 
@@ -108,6 +109,12 @@ var prepare = function (nport, f1, f2, input1, input2) {
 
 var diodeJunctionVoltage = function (nport, frequency, incident, model) {
 	var reflected = linearOutput(nport, frequency, incident);
+	if (model.externalConductance !== undefined) {
+		var terminalVoltage = incident[0].add(reflected[0]).sub(incident[1].add(reflected[1]))
+			.mul(complex(Math.sqrt(model.referenceImpedance), 0));
+		var junctionAdmittance = complex(model.conductance, 2 * Math.PI * frequency * model.capacitance);
+		return terminalVoltage.div(complex(1, 0).add(junctionAdmittance.mul(complex(model.seriesResistance, 0))));
+	}
 	var current = incident[0].sub(reflected[0]).div(complex(Math.sqrt(model.referenceImpedance), 0));
 	var junctionImpedance = complex(model.conductance, 2 * Math.PI * frequency * model.capacitance).inv();
 	return current.mul(junctionImpedance);
@@ -140,6 +147,14 @@ var diodeProducts = function (nport, frequency, context, tones, model) {
 		productCurrent = productCurrent.add(v2.mul(v2).mul(conjugate(v1)).mul(third).mul(complex(1 / 4, 0)));
 	}
 	if (power(productCurrent) === 0) return output;
+	if (model.externalConductance !== undefined) {
+		var admittance = complex(model.conductance, 2 * Math.PI * frequency * model.capacitance);
+		var denominator = complex(1, 0).add(admittance.mul(complex(model.seriesResistance, 0)))
+			.mul(complex(1 + 2 * model.referenceImpedance * model.externalConductance, 0))
+			.add(admittance.mul(complex(2 * model.referenceImpedance, 0)));
+		var generatedWave = productCurrent.mul(complex(Math.sqrt(model.referenceImpedance), 0)).div(denominator);
+		return [generatedWave.neg(), generatedWave];
+	}
 	var junctionImpedance = complex(model.conductance, 2 * Math.PI * frequency * model.capacitance).inv();
 	var seriesImpedance = junctionImpedance.add(complex(model.seriesResistance + 2 * model.referenceImpedance, 0));
 	var outgoing = productCurrent.mul(junctionImpedance)
@@ -163,6 +178,7 @@ var generated = function (nport, frequency, context, tones) {
 		return solveConnection(model, frequency, zeroVector(count), childSources).outgoing;
 	}
 	if (model.type === 'diode') return diodeProducts(nport, frequency, context, tones, model);
+	if (model.type === 'bjt') return bjtProducts(model, frequency, context, tones);
 	if (model.type !== 'amp') return zeroVector(count);
 	var output = zeroVector(count);
 	var b1 = rowAt(nport, tones.f1)[3].mul(context.input1[0]);

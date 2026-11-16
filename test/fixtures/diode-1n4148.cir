@@ -1,0 +1,37 @@
+1N4148 archived NXP diode independent reference
+* Modified: 2026-11-15
+.temp 27
+.options gmin=1e-15 abstol=1e-15 reltol=1e-10
+.model device D (IS=4.352e-9 N=1.906 BV=110 IBV=0.0001 RS=0.6458 CJO=7.048e-13 VJ=0.869 M=0.03 FC=0.5 TT=3.48e-9 EG=1.11 XTI=3 NBV=1 KF=0 AF=1)
+D1 a k device
+Rleak a k 5.827e9
+Vbias supply 0 DC 0.6
+Lbias supply a 1e3
+Lreturn k 0 1e3
+Ra aca 0 50
+Rk ack 0 50
+Ca aca a 1e-3
+Ck ack k 1e-3
+Ia 0 aca DC 0 AC 1
+Ik 0 ack DC 0 AC 0
+.control
+set numdgt=15
+set wr_vecnames
+set wr_singlescale
+op
+wrdata diode-op.txt v(a) v(k) @d1[id] @d1[gd]
+ac dec 1 10meg 1g
+wrdata diode-port1.txt v(aca) v(ack)
+alter @Ia[acmag] = 0
+alter @Ik[acmag] = 1
+ac dec 1 10meg 1g
+wrdata diode-port2.txt v(aca) v(ack)
+alter Vbias = -110
+op
+wrdata diode-reverse.txt v(a) v(k) @d1[id]
+alter Vbias = 0.8
+op
+wrdata diode-forward.txt v(a) v(k) @d1[id]
+quit
+.endc
+.end

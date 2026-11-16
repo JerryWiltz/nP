@@ -3,8 +3,9 @@ import {passiveNoiseCovariance} from './passiveNoise';
 import {noiseAnalysis} from './noiseFigure';
 import {connectionModel, intermodAt, waveDbm, oipDbm} from './intermod';
 import {validateSignal, compatibleSignals, signalWithRows} from './signal';
+import {stabilityAt, stabilityRows} from './stability';
 
-// Modified: 2026-10-26
+// Modified: 2026-11-15
 var conjugate = function (value) { return complex(value.getR(), -value.getI()); };
 
 export function nPort() { this._noise = undefined; this._signal = undefined; }; // base class for nPort objects
@@ -59,6 +60,7 @@ nPort.prototype = {
 		this.spars = sparsArray;
 	},
 	getspars: function () { return this.spars; },
+	get stability() { return stabilityRows(this.spars); },
 	get noise() {
 		if (this._noise === undefined && this.spars) {
 			this._noise = normalizeNoise(derivePassiveNoise(this), this.spars);
@@ -155,6 +157,7 @@ nPort.prototype = {
 		var options = selectors.length && typeof selectors[selectors.length - 1] === 'object' ?
 			selectors.pop() : {};
 		var parsed = selectors.map(function (selector) {
+			if (selector === 'K' || selector === 'deltaMag') return {kind: 'stability', format: selector};
 			var match = /^s([1-9])([1-9])(dB|mag|ang|Re|Im)$/.exec(selector);
 			if (match) return {kind: 's', row: Number(match[1]) - 1, col: Number(match[2]) - 1, format: match[3]};
 			match = /^signal([1-9]\d*)(V|Deg|dBm)$/.exec(selector);
@@ -183,6 +186,9 @@ nPort.prototype = {
 			throw new TypeError('nPort.out(): invalid selector "' + selector + '".');
 		});
 		parsed.forEach(function (selection) {
+			if (selection.kind === 'stability' && portCount !== 2) {
+				throw new RangeError('K and deltaMag require a two-port network.');
+			}
 			if (selection.row >= portCount || selection.col >= portCount) {
 				throw new RangeError('nPort.out(): selected port is outside the n-port dimensions.');
 			}
@@ -203,7 +209,9 @@ nPort.prototype = {
 				var selection = parsed[selectionIndex];
 				if ((selection.kind === 'c' || selection.kind === 'NF' ||
 					selection.kind === 'noiseFloor') && noiseRow === null) noiseRow = this.noise[frequencyIndex];
-				if (selection.kind === 'signal') {
+				if (selection.kind === 'stability') {
+					row.push(stabilityAt(sparsRow)[selection.format]);
+				} else if (selection.kind === 'signal') {
 					var voltage = this.signal.rows[frequencyIndex].waves[selection.row]
 						.mul(complex(Math.sqrt(this.signal.referenceImpedanceOhms), 0));
 					if (selection.format === 'V') row.push(voltage.mag());

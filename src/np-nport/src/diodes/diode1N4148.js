@@ -1,13 +1,13 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-15
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {global} from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
 import {componentSettings} from '../componentSettings';
 import {nPort} from '../nPort';
+import {BOLTZMANN as K, ELEMENTARY_CHARGE as Q} from '../physicalConstants';
+import {seriesTwoPortFromImpedance} from './diodeRf';
 
-const Q = 1.602176634e-19;
-const K = 1.380649e-23;
 
 function thermalVoltage(temperatureK) {
 	return K * temperatureK / Q;
@@ -102,16 +102,6 @@ function diodeAdmittanceAtBias(p) {
 		conductance,
 		resistance: conductance > 0 ? 1 / conductance : Number.POSITIVE_INFINITY
 	};
-}
-
-function seriesTwoPortFromImpedance(frequency, impedance, ro) {
-	var zo = complex(ro, 0);
-	var twoZo = complex(2 * ro, 0);
-	var denominator = impedance.add(twoZo);
-	var s11 = impedance.div(denominator);
-	var s21 = twoZo.div(denominator);
-
-	return [frequency, s11, s21, s21, s11];
 }
 
 export function diode1N4148(options = {}) {

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-14 -->
+<!-- Modified: 2026-11-15 -->
 
 # Schematics
 
@@ -9,7 +9,7 @@ Every symbol terminal and interconnect wire point uses the shared 10-unit grid. 
 
 ## Contents
 
-- `symbol-catalog.json` maps every drawable public RF and digital API to a canonical SVG. It records alternate symbols where a component has more than one visual orientation. Its separate `sourceSymbols` mapping reserves the six source drawing names without declaring executable constructors.
+- `symbol-catalog.json` maps every drawable public RF and digital API to a canonical SVG. It records alternate symbols where a component has more than one visual orientation. Its separate `sourceSymbols` mapping reserves the six source drawing names without declaring executable constructors. The `deviceSymbols` mapping similarly registers device artwork before its numerical constructor is implemented.
 - `symbol-gallery.template.html` fixes the vertical gallery order and placement. `tools/generate-symbol-gallery.js` inserts current canonical geometry into it and writes `dev/canonicalSymbols.html`.
 - `runtime-symbol-layout.json` supplies body bounds, lead segments, and flow directions for the runtime subset. `tools/generate-runtime-symbols.js` reads each corresponding canonical SVG and generates `src/np-chart/src/schematicSymbols.js` with its exact geometry and port coordinates.
 - `symbols/` contains every canonical SVG at one level. The catalog identifies which constructors use each symbol and lists signal-flow symbols in `signalSymbols`. A digital block's numbered connectors describe diagram flow, not electrical nPort ports.
@@ -61,6 +61,21 @@ Each has two electrical terminals: terminal 1 above terminal 2. Voltage polarity
 
 Open `dev/canonicalSymbols.html#sources` to inspect the family. These symbols have no numerical behavior or new public JavaScript exports. The drawing-input syntax such as `Vin=V` selects their geometry directly; see [Schematic authoring language](../developmentDocs/schematicLanguage.md) and `dev/schematicAuthoring.html`. Source implementation files under `src/np-sources/` can be added separately without embedding SVG geometry in those files.
 
+## Device artwork
+
+`constructors.NPN` maps both `nP.NPN()` and the drawing name `NPN` to [symbols/npn.svg](symbols/npn.svg). It is a three-terminal bipolar symbol: 1 base, 2 collector, 3 emitter, with an outward emitter arrow. Its ports and visible pins use the same grid and dimensions as the rest of the library.
+
+Open [the device-artwork gallery section](../dev/canonicalSymbols.html#devices) to inspect it. Drawing input can select the artwork without constructing a transistor:
+
+```js
+var transistorSchematic = {
+    paths: ['1 right Q1=NPN[1,2,3] 1 2 3']
+};
+var transistorDrawing = nP.schematic(transistorSchematic);
+```
+
+`nP.NPN()` implements the 2N3904 and BFR93A models. Drawing-only paths select artwork without constructing a device or calculating DC/RF data. See [the transistor model note](../developmentDocs/transistorModels.md).
+
 ## Rebuild static documentation drawings
 
 Run `npm run schematics:build` from the repository root after changing the documentation drawing specifications in `tools/generate-linear-schematics.js`, `tools/generate-nodal-schematics.js`, or `tools/generate-vna-receivers.js`. It writes the 13 published drawings' JSON descriptions and self-contained SVGs. The three authoring fixtures (`series-resistor`, `two-series-resistors`, and `waveform-fft`) remain editable directly and use the individual compose command above.
@@ -70,3 +85,7 @@ Run `npm run schematics:check` to recompose all 16 drawings from their JSON and 
 The validator cannot infer whether the chosen topology matches an engineering sketch or nP code. Compare all three, then inspect the rendered SVG for text and stroke collisions before using it in a note. The tools do not open a browser.
 
 `chebyLPgk()`, `chebyLPLCs()`, and `chebyLPNsec()` calculate filter data; `nodal()` and `cascade()` assemble networks. They do not have independent component symbols. `FFT()` and `invFFT()` are math exports but have digital block symbols for signal-flow diagrams.
+
+`constructors.PNP` maps `nP.PNP()` and drawing name `PNP` to [symbols/pnp.svg](symbols/pnp.svg). It has the same B/C/E terminal positions and pin lengths as NPN, with the emitter arrow pointing inward. Both symbols use the shared automatic orientation and local-termination rules. `PNP()` currently supports 2N3906; drawing paths select artwork without calculating DC/RF data.
+
+`D()` and `diode1N4148()` share the existing canonical `symbols/diode-1n4148.svg` (port 1 anode, port 2 cathode); their distinct numerical models do not require distinct artwork.

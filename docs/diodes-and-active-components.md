@@ -1,7 +1,90 @@
-<!-- Modified: 2026-11-08 -->
+<!-- Modified: 2026-11-15 -->
 # Diodes and active components
 
-The public active-device constructors are `nP.Amp()` and `nP.diode1N4148()`. An amplifier is a configurable two-port gain and noise model. The diode combines a DC I–V curve with a small-signal RF n-port around one chosen bias point.
+The public active-device constructors are `nP.Amp()`, `nP.D()`, `nP.diode1N4148()`, `nP.NPN()` and `nP.PNP()`. The amplifier is a configurable two-port gain/noise model. Diode and transistor models combine DC I–V curves with RF behavior at a fixed bias.
+
+## NPN transistor
+
+`nP.NPN()` supports **2N3904** (default) and **BFR93A**. It returns a three-port: **1 base, 2 collector, 3 emitter**.
+
+```js
+// NPN curve tracer and RF at a selected Q point
+var g = nP.global;
+g.fList = g.fGen(10e6, 500e6, 51);
+
+var q1 = nP.NPN({
+    model: '2N3904',
+    configuration: 'commonEmitter',
+    bias: {
+        ib: {start: 0, stop: 50e-6, points: 6},
+        vce: {start: 0, stop: 10, points: 201}
+    },
+    qPoint: {ib: 20e-6, vce: 5},
+    temperature: g.Temp
+});
+var short = nP.Short();
+var amplifier = nP.nodal(
+    [q1, 1, 2, 3],
+    [short, 3],
+    ['out', 1, 2]
+);
+var curves = q1.ivTable();
+var rf = amplifier.out('s11dB', 's21dB');
+var stability = amplifier.out('K', 'deltaMag');
+var noise = amplifier.out('NF21dB');
+
+nP.lineChart({inputTable: [curves], metricPrefix: 'none',
+    title: '2N3904 curve tracer', xAxisTitle: 'VCE (V)', yAxisTitle: 'IC (A)'});
+nP.lineChart({inputTable: [rf], metricPrefix: 'mega', title: 'Common-emitter RF'});
+```
+
+`bias` defines the curves; `qPoint` fixes the RF operating point. Sweeping does not move it. Construct another NPN with different `qPoint` values to select another point. With no arguments, the constructor uses the defaults above and the current `global.fList`, initially `[2e9]`, just as `R()` does. Partial nested settings keep omitted defaults.
+
+For `commonBase`, use `bias: {ie: {...}, vcb: {...}}` and `qPoint: {ie: 2e-3, vcb: 5}`; its table plots IC versus VCB at stepped outward IE. For `commonCollector`, retain IB and positive VCE; the table reports outward IE. The DC `configuration` does not terminate an RF port: ground emitter, base or collector externally to obtain the corresponding RF configuration. `.bias`, `.qPoint`, `.smallSignal` and `.model` expose the chosen point, linearization and provenance.
+
+Completed two-ports provide `.stability` and `.out('K', 'deltaMag')`. Unconditional small-signal stability requires K > 1 and |Δ| < 1. K comes from the final S-parameters; intermediate K < 1 is allowed. Bare three-port NPNs have no two-port K value.
+
+BFR93A includes its published SOT23 L/C network. The 2N3904 card includes terminal resistances but no explicit package L/C model. Noise uses classical shot/thermal sources, without fitted excess-noise or high-frequency induced-noise behavior. With `global.twoTone` set before construction, IM/OIP selectors use direct Taylor current and charge terms; they omit quadratic remixing, compression and harmonic balance. Neither card models avalanche or self-heating. External DC bias-network solving remains future work.
+
+Try [NPN curve tracer and RF in the REPL](/repl?example=npn-curve-tracer).
+
+## PNP transistor
+
+`nP.PNP()` supports **2N3906** using the same model engine and APIs as NPN. Its ports remain **1 base, 2 collector, 3 emitter**. Use physical signed PNP values:
+
+```js
+// PNP curve tracer and RF
+var g = nP.global;
+g.fList = g.fGen(10e6, 500e6, 51);
+var q1 = nP.PNP({
+    model: '2N3906',
+    configuration: 'commonEmitter',
+    bias: {
+        ib: {start: 0, stop: -50e-6, points: 6},
+        vce: {start: 0, stop: -10, points: 201}
+    },
+    qPoint: {ib: -20e-6, vce: -5},
+    temperature: g.Temp
+});
+var short = nP.Short();
+var amplifier = nP.nodal(
+    [q1, 1, 2, 3],
+    [short, 3],
+    ['out', 1, 2]
+);
+var curves = q1.ivTable();
+var rf = amplifier.out('s11dB', 's21dB');
+nP.lineChart({inputTable: [curves], metricPrefix: 'none',
+    title: '2N3906 curve tracer', xAxisTitle: 'VCE (V)', yAxisTitle: 'IC (A)'});
+nP.lineChart({inputTable: [rf], metricPrefix: 'mega', title: 'PNP common-emitter RF'});
+nP.schematic(amplifier);
+```
+
+`PNP()` with no options uses these defaults and the current frequency context. IB and IC are negative. The reported outward IE is negative too: current physically enters the emitter. Curves retain their 0-to-negative sweep order; they do not change the RF Q point. For common base use negative `ie`/`vcb`, defaulting to `qPoint: {ie: -2e-3, vcb: -5}`. Common collector uses negative IB/VCE and plots outward IE. Configuration selects DC constraints; the RF network still needs explicit terminal connections.
+
+PNP supplies its own active noise covariance and bias-dependent nonlinear coefficients, and its completed two-port supports K. The 2N3906 card includes RB/RC but no explicit package L/C network. The NPN model limits and direct Taylor intercept approximation also apply here. The symbol's emitter arrow points inward; its numbered ports stay fixed during rotation or mirroring.
+
+Try [PNP curve tracer and RF in the REPL](/repl?example=pnp-curve-tracer).
 
 ## Amplifier
 
@@ -31,7 +114,56 @@ var amp3 = nP.Amp({
 
 The full options include `spars`, `fMinDb`, `gammaOpt`, `noiseResistanceOhms`, and `referenceTemperature`. See [Noise](./noise.md) and [Intermodulation](./intermodulation.md) for measurement setup and the limits of the intercept calculation.
 
-## 1N4148 diode: RF and DC
+## SPICE-style diode
+
+`nP.D()` currently selects **1N4148**, a silicon signal diode. Like the transistor constructors, it keeps the displayed DC sweep separate from an explicit RF Q point. Port **1 is the anode**; port **2 is the cathode**.
+
+```js
+// 1N4148 curves and RF at a fixed operating point
+var g = nP.global;
+g.fList = g.fGen(10e6, 1e9, 51);
+
+var d1 = nP.D({
+    model: '1N4148',
+    bias: {
+        vd: {start: 0, stop: 0.8, points: 201}
+    },
+    qPoint: {vd: 0.6},
+    temperature: g.Temp
+});
+
+var curves = d1.ivTable();
+var response = d1.out('s11dB', 's21dB');
+var noise = d1.out('NF21dB');
+var fixedBias = d1.bias;
+
+nP.log(fixedBias);
+nP.schematic(d1);
+nP.lineChart({
+    inputTable: [curves],
+    title: '1N4148 DC curve',
+    xAxisTitle: 'Anode-to-cathode voltage (V)',
+    yAxisTitle: 'Anode current (A)',
+    metricPrefix: 'none'
+});
+nP.lineChart({
+    inputTable: [response],
+    title: '1N4148 RF at VD = 0.6 V',
+    xAxisTitle: 'Frequency (MHz)',
+    yAxisTitle: 'S-parameters (dB)',
+    metricPrefix: 'mega'
+});
+```
+
+These are also the defaults for `D()`, except that its frequency grid follows the current `global.fList`, initially `[2e9]`. Temperature follows `global.Temp`, initially 293 K. Partial nested options keep omitted defaults. `vd` means anode minus cathode, in volts; `id` is positive from anode to cathode, in amperes.
+
+`ivTable()` returns a directly plottable table. `ivTable({vd: {start: -5, stop: 0.8, points: 301}})` selects another curve range without moving the Q point. `.bias` and `.qPoint` report the solved currents and voltages; `.smallSignal` reports the bias-dependent conductance, resistance and capacitance. `.model` records the selected card and its provenance. `.dc.bias` records the sweep. RF networks preserve the device's selected bias; `nodal()` does not solve a DC bias circuit.
+
+The archived NXP SPICE card includes series resistance, leakage, junction charge and transit-time charge. It is a different parameter set from `diode1N4148()` below. It has no explicit package L/C network or large-signal transient simulation. Its noise follows classical SPICE junction shot noise plus resistor thermal noise; it does not model calibrated avalanche or excess noise. Weak nonlinear products use local current/charge derivatives and the existing two-tone analysis, with the same direct-source approximation described in [Intermodulation](./intermodulation.md#diode-intermodulation).
+
+Try [1N4148 DC and RF in the REPL](/repl?example=diode-dc-rf). Other diode families and part numbers are not implemented in `D()` yet.
+
+## Legacy 1N4148 diode: RF and DC
 
 `nP.diode1N4148()` returns a **two-port series diode**. Its default applied bias is **0 V**, and its temperature defaults to `nP.global.Temp`. A new global context uses 293 K. The RF response is the small-signal behavior around the selected bias; the I–V method uses the same device parameters.
 
@@ -58,7 +190,7 @@ nP.lineChart({
 
 `ivTable(start, stop, points)` returns a table headed `['vD', 'iD']`, with volts and amperes. If you omit those arguments, the sweep defaults to **−110 V through 1 V**, **401 points**. The default RF frequency list is the selected `nP.global.fList`; `fList` in the constructor options can override it.
 
-## Diode options and defaults
+### Legacy diode options and defaults
 
 | Option | Default | Meaning |
 | --- | ---: | --- |
@@ -76,7 +208,7 @@ nP.lineChart({
 
 The model also accepts `breakdownCurrent` (default **100 µA**), `breakdownSoftness` (default **2 V**), and `ivStart`, `ivStop`, `ivPoints` for the default displayed I–V sweep.
 
-## Inspect the bias point
+### Inspect the legacy bias point
 
 The returned `.diode` metadata includes normalized parameters and the calculated bias point. This helps tie the RF response to the DC condition:
 

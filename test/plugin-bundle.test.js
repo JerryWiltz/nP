@@ -1,4 +1,4 @@
-// Modified: 2026-11-13
+// Modified: 2026-11-15
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -73,6 +73,18 @@ async function exerciseWorkerApi() {
     };
     const authoredSvg = nP.schematicSvg(authored), authoredGraph = nP.schematicGraph(authored);
 
+    const q = nP.NPN({model: 'BFR93A', bias: {ib: {points: 2}, vce: {points: 3}}});
+    const amplifier = nP.nodal([q, 1, 2, 3], [nP.Short(), 3], ['out', 1, 2]);
+    const npn = {curves: q.ivTable(), rf: amplifier.out('s21dB', 'K', 'NF21dB'),
+        svg: nP.schematicSvg(q)};
+    const pnpDevice = nP.PNP({bias: {ib: {points: 2}, vce: {points: 3}}});
+    const pnpAmplifier = nP.nodal([pnpDevice, 1, 2, 3], [nP.Short(), 3], ['out', 1, 2]);
+    const pnp = {curves: pnpDevice.ivTable(), rf: pnpAmplifier.out('s21dB', 'K', 'NF21dB'),
+        bias: pnpDevice.bias, svg: nP.schematicSvg(pnpAmplifier)};
+    const d = nP.D({bias: {vd: {points: 3}}});
+    const diode = {curves: d.ivTable(), rf: d.out('s21dB', 'NF21dB'),
+        bias: d.bias, svg: nP.schematicSvg(d)};
+
     nP.global.tList = nP.global.tGen(0, 6e-9, 7);
     const pnCount = nP.PN({stages: 3}).out('samples').length;
     nP.global.tList = nP.global.tGen(0, 7 / 8000, 8);
@@ -92,7 +104,7 @@ async function exerciseWorkerApi() {
     const signalSvg = nP.schematicSvg({transmitter: tx, circuit, receiver: rx});
     parentPort.postMessage({version: nP.version, graph, topology, svg, cascadeSvg,
         escapedSvg, invalidInputError, ladderGraph, ladderSvg, junctionGraph, junctionSvg, authoredSvg, authoredGraph, pnCount, fftError,
-        dbv, bits: rx.out('bit string'), ber, signalSvg});
+        dbv, bits: rx.out('bit string'), ber, signalSvg, npn, pnp, diode});
 }
 
 function runWorker() {
@@ -138,6 +150,18 @@ test('restricted bundle generates transferable SVG and data with browser APIs bl
     {timeout: 30000}, async () => {
         const result = await runWorker();
         assert.equal(result.version, packageVersion);
+        assert.equal(result.npn.curves.length, 4);
+        assert.ok(result.npn.rf[1].every(Number.isFinite));
+        assert.match(result.npn.svg, /<svg/);
+        assert.equal(result.pnp.curves.length, 4);
+        assert.equal(result.pnp.curves[3][0], -10);
+        assert.ok(result.pnp.bias.ic < 0);
+        assert.ok(result.pnp.rf[1].every(Number.isFinite));
+        assert.match(result.pnp.svg, /<svg/);
+        assert.equal(result.diode.curves.length, 4);
+        assert.equal(result.diode.bias.vd, 0.6);
+        assert.ok(result.diode.rf[1].every(Number.isFinite));
+        assert.match(result.diode.svg, /<svg/);
         assert.deepEqual(result.graph.externalPorts.map(port => port.node), [45, 1]);
         assert.equal(result.graph.components.length, 2);
         assert.equal(new Set(result.graph.nodes.map(node => node.id)).size, result.graph.nodes.length);

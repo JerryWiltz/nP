@@ -1,9 +1,87 @@
-// Modified: 2026-11-14
+// Modified: 2026-11-15
 // Add an example with a unique id, title, category, and code. Array order sets
 // sidebar order within a category; stable ids preserve links and browser drafts.
 // Sidebar categories and their section order are listed in config.js.
 // REPL example authoring rules are in docs/AGENTS.md under "REPL".
 export const examples = [
+  { id: 'npn-curve-tracer', title: 'NPN curve tracer and RF', category: 'nonlinear', code: `// NPN curve tracer and RF
+
+var g = nP.global;
+g.fList = g.fGen(10e6, 500e6, 51);
+
+var q1 = nP.NPN({
+  model: '2N3904', // Also supports BFR93A
+  configuration: 'commonEmitter',
+  bias: {
+    ib: {start: 0, stop: 50e-6, points: 6},
+    vce: {start: 0, stop: 10, points: 201}
+  },
+  qPoint: {ib: 20e-6, vce: 5},
+  temperature: g.Temp
+});
+var short = nP.Short();
+var amplifier = nP.nodal(
+  [q1, 1, 2, 3], // Base, collector, emitter
+  [short, 3],
+  ['out', 1, 2]
+);
+var curves = q1.ivTable();
+var fixedBias = q1.bias;
+var rf = amplifier.out('s11dB', 's21dB');
+var stability = amplifier.out('K', 'deltaMag');
+var noise = amplifier.out('NF21dB');
+
+nP.lineChart({
+  inputTable: [curves],
+  title: '2N3904 curve tracer: stepped IB',
+  metricPrefix: 'none',
+  xAxisTitle: 'VCE (V)',
+  yAxisTitle: 'IC (A)'
+});
+nP.lineChart({inputTable: [rf], title: 'Common-emitter RF', metricPrefix: 'mega'});
+nP.lineChart({inputTable: [stability], title: 'Final two-port K and |delta|', metricPrefix: 'mega'});
+nP.lineChart({inputTable: [noise], title: 'Model noise figure (dB)', metricPrefix: 'mega'});
+nP.log(fixedBias);
+nP.schematic(amplifier);` },
+  { id: 'pnp-curve-tracer', title: 'PNP curve tracer and RF', category: 'nonlinear', code: `// PNP curve tracer and RF
+
+var g = nP.global;
+g.fList = g.fGen(10e6, 500e6, 51);
+
+var q1 = nP.PNP({
+  model: '2N3906',
+  configuration: 'commonEmitter',
+  bias: {
+    ib: {start: 0, stop: -50e-6, points: 6},
+    vce: {start: 0, stop: -10, points: 201}
+  },
+  qPoint: {ib: -20e-6, vce: -5},
+  temperature: g.Temp
+});
+var short = nP.Short();
+var amplifier = nP.nodal(
+  [q1, 1, 2, 3], // Base, collector, emitter
+  [short, 3],
+  ['out', 1, 2]
+);
+var curves = q1.ivTable();
+var fixedBias = q1.bias;
+var rf = amplifier.out('s11dB', 's21dB');
+var stability = amplifier.out('K', 'deltaMag');
+var noise = amplifier.out('NF21dB');
+
+nP.lineChart({
+  inputTable: [curves],
+  title: '2N3906 curve tracer: stepped IB',
+  metricPrefix: 'none',
+  xAxisTitle: 'VCE (V)',
+  yAxisTitle: 'IC (A)'
+});
+nP.lineChart({inputTable: [rf], title: 'Common-emitter RF', metricPrefix: 'mega'});
+nP.lineChart({inputTable: [stability], title: 'Final two-port K and |delta|', metricPrefix: 'mega'});
+nP.lineChart({inputTable: [noise], title: 'Model noise figure (dB)', metricPrefix: 'mega'});
+nP.log(fixedBias);
+nP.schematic(amplifier);` },
   { id: 'frequency-sweep', title: 'Frequency sweep', category: 'getting-started', code: `// Frequency sweep
 
 nP.global.fList = nP.global.fGen(1e9, 3e9, 5);
@@ -1181,27 +1259,56 @@ nP.lineTable({
 });
 
 nP.schematic(chain);` },
-  { id: 'diode-dc-rf', title: '1N4148 DC and RF', category: 'nonlinear', code: `// 1N4148 DC and RF
+  { id: 'diode-dc-rf', title: '1N4148 DC and RF', category: 'nonlinear', code: `// 1N4148 curve tracer and RF at a fixed Q point
+var g = nP.global;
+g.fList = g.fGen(10e6, 1e9, 51);
+g.twoTone = {spacingHz: 1e6, p1dBm: -70, p2dBm: -70};
 
-nP.global.fList = nP.global.fGen(1e6, 1e9, 21);
-
-var diode = nP.diode1N4148({
-  biasVoltage: 0.5
+var d1 = nP.D({
+    model: '1N4148',
+    bias: {
+        vd: {start: 0, stop: 0.8, points: 201}
+    },
+    qPoint: {vd: 0.6},
+    temperature: g.Temp
 });
 
-var rfTable = diode.out('s11dB', 's21dB');
+var curves = d1.ivTable();
+var fixedBias = d1.bias;
+var response = d1.out('s11dB', 's21dB');
+var noise = d1.out('NF21dB');
+var intercepts = d1.out('OIP2sum21dBm', 'OIP3lower21dBm');
 
-nP.log(rfTable);
-
+nP.log(fixedBias);
+nP.schematic(d1);
 nP.lineChart({
-  inputTable: [diode.ivTable(0, 0.9, 41)],
-  title: '1N4148 I-V curve',
-  xAxisTitle: 'Voltage (V)',
-  yAxisTitle: 'Current (A)',
-  metricPrefix: 'none'
+    inputTable: [curves],
+    title: '1N4148 DC I-V curve',
+    xAxisTitle: 'Anode-to-cathode voltage (V)',
+    yAxisTitle: 'Anode current (A)',
+    metricPrefix: 'none'
 });
-
-nP.schematic(diode);` },
+nP.lineChart({
+    inputTable: [response],
+    title: '1N4148 RF at VD = 0.6 V',
+    xAxisTitle: 'Frequency (MHz)',
+    yAxisTitle: 'S-parameters (dB)',
+    metricPrefix: 'mega'
+});
+nP.lineChart({
+    inputTable: [noise],
+    title: '1N4148 noise at the fixed Q point',
+    xAxisTitle: 'Frequency (MHz)',
+    yAxisTitle: 'Noise figure (dB)',
+    metricPrefix: 'mega'
+});
+nP.lineChart({
+    inputTable: [intercepts],
+    title: '1N4148 direct weak-signal intercept estimates',
+    xAxisTitle: 'First-tone frequency (MHz)',
+    yAxisTitle: 'Output intercept (dBm)',
+    metricPrefix: 'mega'
+});` },
   { id: 'am-envelope', title: 'AM sidebands and envelope', category: 'analog-modulation', code: `// AM sidebands and envelope
 
 var g = nP.global;

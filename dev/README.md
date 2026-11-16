@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-14 -->
+<!-- Modified: 2026-11-15 -->
 # Development pages
 
 The HTML files in this directory are executable browser harnesses. Top-level
@@ -10,9 +10,9 @@ aligned.
 
 | Harness | Focus | Companion note |
 | --- | --- | --- |
-| `canonicalSymbols.html` | All 66 canonical SVG symbols, including source primitives | — |
+| `canonicalSymbols.html` | All 68 canonical SVG symbols, including source primitives and NPN/PNP artwork | — |
 | `chartDefaults.html` | Built-in line chart, line table, and Smith chart defaults | — |
-| `diode.html` | 1N4148 RF S-parameters and DC I-V | `diode.md` |
+| `diode.html` | D(): 1N4148 DC curves, fixed-Q RF, noise and weak nonlinear estimates | `diode.md` |
 | `edgeCoupledFilter.html` | Coupled-line filter with amplifier cascade | — |
 | `intermodAnalysis.html` | Two-tone amplifier then attenuator sweep: IP3 from nodal and cascade | `intermodAnalysis.md` |
 | `manchester.html` | Manchester PSK transmit, cascade, and demodulation example | — |
@@ -20,6 +20,8 @@ aligned.
 | `microstrip.html` | Microstrip line, coupled line, tee, divider, and thin-film resistor | `microstrip.md` |
 | `nodal.html` | Series and parallel nodal connections | `nodal.md` |
 | `noiseAnalysis.html` | Three amplifier constructor forms compared through nodal and cascade NF and output noise floor | `noiseAnalysis.md` |
+| `npn.html` | 2N3904/BFR93A curve tracer, fixed-Q RF, noise, stability and weak nonlinear estimates | `npn.md` |
+| `pnp.html` | 2N3906 signed PNP curves, fixed-Q RF, noise, stability and weak nonlinear estimates | `pnp.md` |
 | `schematic.html` | Guided and network-only schematics for 32 direct and stress circuits | `schematic.md` |
 | `schematicAuthoring.html` | Drawing descriptions: source/DUT figure, open paths, tee branch, coupled sections, mirror and ring | `schematicAuthoring.md` |
 | `seriesTee.html` | Series tee regression harness | — |

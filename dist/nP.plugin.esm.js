@@ -688,7 +688,7 @@ function bisector(f) {
     compare2 = (d, x) => ascending$1(f(d), x);
     delta = (d, x) => f(d) - x;
   } else {
-    compare1 = f === ascending$1 || f === descending ? f : zero$3;
+    compare1 = f === ascending$1 || f === descending ? f : zero$4;
     compare2 = f;
     delta = f;
   }
@@ -725,7 +725,7 @@ function bisector(f) {
   return {left, center, right};
 }
 
-function zero$3() {
+function zero$4() {
   return 0;
 }
 
@@ -1317,7 +1317,7 @@ EnterNode.prototype = {
   querySelectorAll: function(selector) { return this._parent.querySelectorAll(selector); }
 };
 
-function constant$2(x) {
+function constant$3(x) {
   return function() {
     return x;
   };
@@ -1404,7 +1404,7 @@ function selection_data(value, key) {
       parents = this._parents,
       groups = this._groups;
 
-  if (typeof value !== "function") value = constant$2(value);
+  if (typeof value !== "function") value = constant$3(value);
 
   for (var m = groups.length, update = new Array(m), enter = new Array(m), exit = new Array(m), j = 0; j < m; ++j) {
     var parent = parents[j],
@@ -1993,7 +1993,7 @@ function* selection_iterator() {
   }
 }
 
-var root = [null];
+var root$1 = [null];
 
 function Selection$1(groups, parents) {
   this._groups = groups;
@@ -2001,7 +2001,7 @@ function Selection$1(groups, parents) {
 }
 
 function selection() {
-  return new Selection$1([[document.documentElement]], root);
+  return new Selection$1([[document.documentElement]], root$1);
 }
 
 function selection_selection() {
@@ -2050,7 +2050,7 @@ Selection$1.prototype = selection.prototype = {
 function select(selector) {
   return typeof selector === "string"
       ? new Selection$1([[document.querySelector(selector)]], [document.documentElement])
-      : new Selection$1([[selector]], root);
+      : new Selection$1([[selector]], root$1);
 }
 
 function sourceEvent(event) {
@@ -2081,7 +2081,7 @@ function pointer(event, node) {
 function selectAll(selector) {
   return typeof selector === "string"
       ? new Selection$1([document.querySelectorAll(selector)], [document.documentElement])
-      : new Selection$1([array$1(selector)], root);
+      : new Selection$1([array$1(selector)], root$1);
 }
 
 function define(constructor, factory, prototype) {
@@ -2510,7 +2510,7 @@ function basis$1(values) {
   };
 }
 
-var constant$1 = x => () => x;
+var constant$2 = x => () => x;
 
 function linear$1(a, d) {
   return function(t) {
@@ -2518,7 +2518,7 @@ function linear$1(a, d) {
   };
 }
 
-function exponential(a, b, y) {
+function exponential$1(a, b, y) {
   return a = Math.pow(a, y), b = Math.pow(b, y) - a, y = 1 / y, function(t) {
     return Math.pow(a + t * b, y);
   };
@@ -2526,13 +2526,13 @@ function exponential(a, b, y) {
 
 function gamma(y) {
   return (y = +y) === 1 ? nogamma : function(a, b) {
-    return b - a ? exponential(a, b, y) : constant$1(isNaN(a) ? b : a);
+    return b - a ? exponential$1(a, b, y) : constant$2(isNaN(a) ? b : a);
   };
 }
 
 function nogamma(a, b) {
   var d = b - a;
-  return d ? linear$1(a, d) : constant$1(isNaN(a) ? b : a);
+  return d ? linear$1(a, d) : constant$2(isNaN(a) ? b : a);
 }
 
 var interpolateRgb = (function rgbGamma(y) {
@@ -2654,7 +2654,7 @@ function object(a, b) {
 var reA = /[-+]?(?:\d+\.?\d*|\.?\d+)(?:[eE][-+]?\d+)?/g,
     reB = new RegExp(reA.source, "g");
 
-function zero$2(b) {
+function zero$3(b) {
   return function() {
     return b;
   };
@@ -2707,7 +2707,7 @@ function interpolateString(a, b) {
   // Otherwise, interpolate each of the numbers and rejoin the string.
   return s.length < 2 ? (q[0]
       ? one(q[0].x)
-      : zero$2(b))
+      : zero$3(b))
       : (b = q.length, function(t) {
           for (var i = 0, o; i < b; ++i) s[(o = q[i]).i] = o.x(t);
           return s.join("");
@@ -2716,7 +2716,7 @@ function interpolateString(a, b) {
 
 function interpolate$1(a, b) {
   var t = typeof b, c;
-  return b == null || t === "boolean" ? constant$1(b)
+  return b == null || t === "boolean" ? constant$2(b)
       : (t === "number" ? interpolateNumber
       : t === "string" ? ((c = color(b)) ? (b = c, interpolateRgb) : interpolateString)
       : b instanceof color ? interpolateRgb
@@ -2840,7 +2840,7 @@ var interpolateTransformSvg = interpolateTransform(parseSvg, ", ", ")", ")");
 
 var frame = 0, // is an animation frame pending?
     timeout$1 = 0, // is a timeout pending?
-    interval = 0, // are any timers active?
+    interval$1 = 0, // are any timers active?
     pokeDelay = 1000, // how frequently we check for clock skew
     taskHead,
     taskTail,
@@ -2942,9 +2942,9 @@ function sleep(time) {
   var delay = time - clockNow; // Strictly less than if we recomputed clockNow.
   if (delay > 24) {
     if (time < Infinity) timeout$1 = setTimeout(wake, time - clock.now() - clockSkew);
-    if (interval) interval = clearInterval(interval);
+    if (interval$1) interval$1 = clearInterval(interval$1);
   } else {
-    if (!interval) clockLast = clock.now(), interval = setInterval(poke, pokeDelay);
+    if (!interval$1) clockLast = clock.now(), interval$1 = setInterval(poke, pokeDelay);
     frame = 1, setFrame(wake);
   }
 }
@@ -4752,7 +4752,7 @@ var scheme = new Array(3).concat(
 
 ramp(scheme);
 
-function constant(x) {
+function constant$1(x) {
   return function constant() {
     return x;
   };
@@ -4825,14 +4825,14 @@ function y(p) {
 }
 
 function line(x$1, y$1) {
-  var defined = constant(true),
+  var defined = constant$1(true),
       context = null,
       curve = curveLinear,
       output = null,
       path = withPath(line);
 
-  x$1 = typeof x$1 === "function" ? x$1 : (x$1 === undefined) ? x : constant(x$1);
-  y$1 = typeof y$1 === "function" ? y$1 : (y$1 === undefined) ? y : constant(y$1);
+  x$1 = typeof x$1 === "function" ? x$1 : (x$1 === undefined) ? x : constant$1(x$1);
+  y$1 = typeof y$1 === "function" ? y$1 : (y$1 === undefined) ? y : constant$1(y$1);
 
   function line(data) {
     var i,
@@ -4855,15 +4855,15 @@ function line(x$1, y$1) {
   }
 
   line.x = function(_) {
-    return arguments.length ? (x$1 = typeof _ === "function" ? _ : constant(+_), line) : x$1;
+    return arguments.length ? (x$1 = typeof _ === "function" ? _ : constant$1(+_), line) : x$1;
   };
 
   line.y = function(_) {
-    return arguments.length ? (y$1 = typeof _ === "function" ? _ : constant(+_), line) : y$1;
+    return arguments.length ? (y$1 = typeof _ === "function" ? _ : constant$1(+_), line) : y$1;
   };
 
   line.defined = function(_) {
-    return arguments.length ? (defined = typeof _ === "function" ? _ : constant(!!_), line) : defined;
+    return arguments.length ? (defined = typeof _ === "function" ? _ : constant$1(!!_), line) : defined;
   };
 
   line.curve = function(_) {
@@ -5985,6 +5985,154 @@ function lineChart(options = {}) {
 // Generated by schematics/tools/generate-runtime-symbols.js from canonical SVGs.
 // Edit schematics/symbols/ and schematics/runtime-symbol-layout.json, then run npm run symbols:bundle.
 const schematicSymbols = {
+    "pnp": {
+        "ports": [
+            [
+                70,
+                120
+            ],
+            [
+                170,
+                60
+            ],
+            [
+                170,
+                180
+            ]
+        ],
+        "automatic": {
+            "rotations": [
+                0
+            ],
+            "mirrorX": false,
+            "mirrorY": false,
+            "externalPorts": "flow",
+            "localTerminations": true
+        },
+        "bounds": [
+            66,
+            56,
+            194,
+            184
+        ],
+        "bodyBounds": [
+            90,
+            70,
+            190,
+            170
+        ],
+        "leads": [
+            [
+                [
+                    70,
+                    120
+                ],
+                [
+                    90,
+                    120
+                ]
+            ],
+            [
+                [
+                    170,
+                    60
+                ],
+                [
+                    170,
+                    80
+                ]
+            ],
+            [
+                [
+                    170,
+                    180
+                ],
+                [
+                    170,
+                    160
+                ]
+            ]
+        ],
+        "entry": [
+            1,
+            0
+        ],
+        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <!-- Twenty-unit pins meet the circular body at their inner endpoints. -->\n    <path d=\"M70 120 H90 M170 60 V80 M170 180 V160\"/>\n    <circle cx=\"140\" cy=\"120\" r=\"50\"/>\n    <!-- The base bar and the collector/emitter branches are internal artwork. -->\n    <path d=\"M90 120 H120 M120 90 V150 M120 100 L170 80 M120 140 L170 160\"/>\n    <!-- PNP emitter arrow: inward along the lower-right branch. -->\n    <path d=\"M140 148 L158 147 L152 161 Z\" fill=\"#202020\"/>\n  </g>"
+    },
+    "npn": {
+        "ports": [
+            [
+                70,
+                120
+            ],
+            [
+                170,
+                60
+            ],
+            [
+                170,
+                180
+            ]
+        ],
+        "automatic": {
+            "rotations": [
+                0
+            ],
+            "mirrorX": false,
+            "mirrorY": false,
+            "externalPorts": "flow",
+            "localTerminations": true
+        },
+        "bounds": [
+            66,
+            56,
+            194,
+            184
+        ],
+        "bodyBounds": [
+            90,
+            70,
+            190,
+            170
+        ],
+        "leads": [
+            [
+                [
+                    70,
+                    120
+                ],
+                [
+                    90,
+                    120
+                ]
+            ],
+            [
+                [
+                    170,
+                    60
+                ],
+                [
+                    170,
+                    80
+                ]
+            ],
+            [
+                [
+                    170,
+                    180
+                ],
+                [
+                    170,
+                    160
+                ]
+            ]
+        ],
+        "entry": [
+            1,
+            0
+        ],
+        "geometry": "<g fill=\"none\" stroke=\"#202020\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <!-- Twenty-unit pins meet the circular body at their inner endpoints. -->\n    <path d=\"M70 120 H90 M170 60 V80 M170 180 V160\"/>\n    <circle cx=\"140\" cy=\"120\" r=\"50\"/>\n    <!-- The base bar and the collector/emitter branches are internal artwork. -->\n    <path d=\"M90 120 H120 M120 90 V150 M120 100 L170 80 M120 140 L170 160\"/>\n    <!-- NPN emitter arrow: outward along the lower-right branch. -->\n    <path d=\"M160 156 L144 157 L150 143 Z\" fill=\"#202020\"/>\n  </g>"
+    },
     "voltage-source": {
         "ports": [
             [
@@ -9708,7 +9856,7 @@ const schematicShapeBoards = {
     }
 };
 
-// Modified: 2026-11-08
+// Modified: 2026-11-15
 // General graph operations for ORI's automatic board. No RF circuit patterns.
 const AXES = [[1, 0], [0, 1], [-1, 0], [0, -1]];
 
@@ -9917,8 +10065,11 @@ function automaticPlacement(root, index, positions, graph, board, geometry) {
     const bodyCenter = [(symbol.bodyBounds[0] + symbol.bodyBounds[2]) / 2,
         (symbol.bodyBounds[1] + symbol.bodyBounds[3]) / 2];
     let best = null;
-    for (const mirrorX of [false, true]) for (const mirrorY of [false, true]) {
-        for (const angle of [0, 90, 180, 270]) {
+    const preference = symbol.automatic;
+    const horizontalMirrors = preference?.mirrorX === false ? [false] : [false, true];
+    const verticalMirrors = preference?.mirrorY === false ? [false] : [false, true];
+    for (const mirrorX of horizontalMirrors) for (const mirrorY of verticalMirrors) {
+        for (const angle of preference?.rotations || [0, 90, 180, 270]) {
             let score = 0;
             entry.nodes.forEach((node, port) => {
                 const outward = rotate$1(terminalDirection$1(symbol, port + 1), angle, mirrorX, mirrorY);
@@ -9956,6 +10107,57 @@ function placementBounds(placement, symbol) {
     });
     return [Math.min(...corners.map(p => p[0])), Math.min(...corners.map(p => p[1])),
         Math.max(...corners.map(p => p[0])), Math.max(...corners.map(p => p[1]))];
+}
+
+function boundsOverlap(a, b, clearance) {
+    return a[0] < b[2] + clearance && a[2] > b[0] - clearance &&
+        a[1] < b[3] + clearance && a[3] > b[1] - clearance;
+}
+
+// A terminal attachment is a local relation, not the next signal-flow column.
+// Use canonical lead vectors and bounds, independent of device or node names.
+function placeLocalTerminations(root, placements, graph, board, geometry) {
+    const moved = new Set();
+    for (let index = 0; index < root.components.length; index++) {
+        const entry = root.components[index], symbol = geometry.symbol(entry);
+        if (!symbol.automatic?.localTerminations) continue;
+        const parent = placements[index];
+        for (const port of parent.ports) {
+            const terminals = graph.byNode.get(port.node);
+            if (root.externalNodes.includes(port.node) || terminals.length !== 2) continue;
+            const other = terminals.find(terminal => terminal.index !== index);
+            if (!other || moved.has(other.index) || root.components[other.index].nodes.length !== 1) continue;
+            const childEntry = root.components[other.index], childSymbol = geometry.symbol(childEntry);
+            const direction = rotate$1(terminalDirection$1(symbol, port.port), parent.rotation, parent.mirrorX, parent.mirrorY);
+            const obstacles = placements.flatMap((placement, obstacle) => obstacle === other.index ? [] :
+                [placementBounds(placement, geometry.symbol(root.components[obstacle]))]);
+            let selected = null;
+            for (let distance = 2 * board.wireBoxLength; distance <= board.routingMargin + board.componentGap && !selected;
+                distance += board.grid) {
+                const at = port.at.map((value, axis) => value + direction[axis] * distance);
+                for (const angle of [0, 90, 180, 270]) {
+                    if (!same(rotate$1(terminalDirection$1(childSymbol, 1), angle, false, false), direction.map(value => -value))) continue;
+                    const candidate = geometry.placement(childEntry, 1, at, angle);
+                    const bounds = placementBounds(candidate, childSymbol);
+                    if (!obstacles.some(obstacle => boundsOverlap(bounds, obstacle, board.clearance))) {
+                        candidate.boardTile = placements[other.index].boardTile;
+                        selected = candidate; break;
+                    }
+                }
+            }
+            if (selected) { placements[other.index] = selected; moved.add(other.index); }
+        }
+    }
+}
+
+function automaticExternalPort(owner, index, board) {
+    const outward = owner.escape.map((value, axis) => Math.sign(value - owner.at[axis]));
+    const flow = automaticDirections(board).flow.map(value => value * (index === 0 ? -1 : 1));
+    const direction = owner.externalPorts === 'flow' ? flow : outward;
+    // Preserve a straight departure from the canonical terminal before a turn.
+    const start = same(direction, outward) ? owner.at : owner.escape;
+    return {port: index + 1, node: owner.node,
+        at: start.map((value, axis) => value + direction[axis] * board.externalPortLead)};
 }
 
 function heapPush(heap, item) {
@@ -10111,6 +10313,7 @@ function layoutAutomaticBoard(root, definition, geometry) {
     const byIndex = new Map(ordered.map(index => [index,
         automaticPlacement(root, index, positions, graph, board, geometry)]));
     const placements = root.components.map((_, index) => byIndex.get(index));
+    placeLocalTerminations(root, placements, graph, board, geometry);
     const bounds = placements.map((placement, index) => placementBounds(placement, geometry.symbol(root.components[index])));
     const result = {grid: board.grid, placements, wires: [], nodePoints: new Map(), externalPorts: [],
         regions: regions.filter(region => region.cyclic).map(region => ({kind: 'loop', components: region.members.map(index => index + 1)}))};
@@ -10119,13 +10322,13 @@ function layoutAutomaticBoard(root, definition, geometry) {
         const direction = rotate$1(terminalDirection$1(geometry.symbol(root.components[index]), port.port),
             placement.rotation, placement.mirrorX, placement.mirrorY);
         if (!terminals.has(port.node)) terminals.set(port.node, []);
-        terminals.get(port.node).push({...port, escape: port.at.map((value, axis) => value + direction[axis] * board.wireBoxLength)});
+        terminals.get(port.node).push({...port,
+            externalPorts: geometry.symbol(root.components[index]).automatic?.externalPorts,
+            escape: port.at.map((value, axis) => value + direction[axis] * board.wireBoxLength)});
     }));
     root.externalNodes.forEach((node, index) => {
         const owner = terminals.get(node)[0];
-        const direction = owner.escape.map((value, axis) => Math.sign(value - owner.at[axis]));
-        const port = {port: index + 1, node,
-            at: owner.at.map((value, axis) => value + direction[axis] * board.externalPortLead)};
+        const port = automaticExternalPort(owner, index, board);
         result.externalPorts.push(port);
         terminals.get(node).push({...port, escape: port.at});
     });
@@ -12353,6 +12556,9 @@ const schematicDrawingSymbols = {
     "mvia": "microstrip-via-transition",
     "mod": "mod",
     "demod": "demod",
+    "NPN": "npn",
+    "PNP": "pnp",
+    "D": "diode-1n4148",
     "V": "voltage-source",
     "I": "current-source",
     "VCVS": "voltage-controlled-voltage-source",
@@ -15294,178 +15500,8 @@ function lineTable(options = {}) {
 	}
 
 // Modified: 2026-10-07
-// Generates an array of Chebyshev values based on the number of sections and ripple
-function chebyLPgk (n = 3, ripple = 0.1) { // Returns gk's shown in formula 4.05-2 on page 99 of MYJ
-	var	chebyLPgkin = new Array(1 + 1 + n + 1),  // Table title row, go row, gk's (n rows), and g(k+1)
-		chebyLPgkout = [],
-		i = 0, row = 0;
 
-	// The function, gk() Fills in the variable table above called "chebyLPgkin" to hold ak, bk, and gk's based on the n
-	for(i = 0; i < chebyLPgkin.length; i++) {chebyLPgkin[i] = new Array(4); }
-	// Table for complete display of values
-	chebyLPgkin[0][0] = 'ak'; chebyLPgkin[0][1] = 'bk'; chebyLPgkin[0][2] = 'gk'; chebyLPgkin[0][3] = 'R,C,L';
-
-	function coth(x) {return (Math.exp(x) + Math.exp(-x))/(Math.exp(x) - Math.exp(-x));}	function B() {return Math.log(coth(ripple/17.37));}	function sinh(x) {return (Math.exp(x) - Math.exp(-x))/2;}	function G() {return sinh(B()/(2 * n));} // Compute G() on page 99 of MYJ
-
-	chebyLPgkin[1][2] = 1; // Initialize the lowPassFilter array for g0=1;
-
-	for(row = 2; row < chebyLPgkin.length -1; row++) { chebyLPgkin[row][0] = Math.sin(((2*(row -1) -1) * Math.PI)/(2 * n)); }
-	for(row = 2; row < chebyLPgkin.length -1; row++) { // Populate the bk column on page 99 of MYJ
-		chebyLPgkin[row][1] = Math.pow(G(),2) + Math.pow(Math.sin(  (row-1) * Math.PI/n),2);
-	}
-	chebyLPgkin[2][2] = 2*chebyLPgkin[2][0]/G(); // Populate the first q1 in the cell
-
-	for(row = 3; row < chebyLPgkin.length -1; row++) { // Populate the gk column from g2 onward to gk
-		chebyLPgkin[row][2] = (4 * chebyLPgkin[row-1][0] * chebyLPgkin[row][0])/(chebyLPgkin[row-1][1] * chebyLPgkin[row-1][2]);
-	}
-	chebyLPgkin[ n+2][2] = (n % 2 === 0 ) ? Math.pow(coth(B()/4),2) : 1 ; // Populate the last g(k+1) in the cell
-
-	// Populate chebyLPgkout
-	for(row = 1; row < chebyLPgkin.length; row++) { chebyLPgkout[row - 1] = chebyLPgkin[row][2]; }
-	return chebyLPgkout;
-}
-
-// Modified: 2026-10-07
-// Generates an array of parallel capacitors and series inductors based on Chebyshev values
-function chebyLPLCs ( cheby = [1, 1.0315851425078764, 1.1474003299537219, 1.0315851425078761, 1], maxPassFrequency = 0.2e9, zo = 50) {
-	var	chebyLPLCsout = new Array(cheby.length),
-		i = 0;
-
-	chebyLPLCsout[0] = cheby[0] * zo; // Populate the first resistor in the array
-
-	for(i = 1; i < cheby.length -1; i++) { // Populate the C's and L's
-		chebyLPLCsout[i] = ( (i) % 2 === 0 ) ? cheby[i] * zo * (1/(2*Math.PI)) * (1/(maxPassFrequency )) : cheby[i] * 1/zo * (1/(2*Math.PI)) * (1/(maxPassFrequency));
-	}
-	chebyLPLCsout[cheby.length-1] = cheby[cheby.length-1] * zo; // Populate the last resistor in the array
-
-	return chebyLPLCsout;
-}
-
-// Modified: 2026-10-07
-// Computes the number of sections in a Chebyshev low-pass filter
-function chebyLPNsec (passFreq = .2, rejFreq = 1.5, ripple = 0.1, rejection = 30) { // Formula 4.03-4 for n on page 86 of MYJ
-	var chebyLPNsecout = 0;
-	function normalizedBandwidth() { return rejFreq/passFreq; }// Computes the w/w1 in MYJ on page 86 of MYJ
-	function epsilon() { return Math.pow(10,(ripple/10))-1;} // Formula 4.03-5 on page 87 on MYJ
-	function arcCosh(x) {return Math.log(x + Math.sqrt((x * x)-1));}
-	chebyLPNsecout = Math.ceil(arcCosh(Math.sqrt((Math.pow(10,(rejection/10))-1)/epsilon()))/arcCosh(normalizedBandwidth()));
-	return chebyLPNsecout;
-}
-
-// Generated by schematics/tools/generate-runtime-symbols.js from symbol-catalog.json.
-// Edit schematics/symbol-catalog.json, then run npm run symbols:bundle.
-const schematicSymbolMap = {
-    "diode1N4148": "diode-1n4148",
-    "seR": "resistor",
-    "R": "resistor",
-    "paR": "parallel-resistor",
-    "seL": "inductor",
-    "L": "inductor",
-    "paL": "parallel-inductor",
-    "seC": "capacitor",
-    "C": "capacitor",
-    "paC": "parallel-capacitor",
-    "trf": "transformer",
-    "trf4Port": "transformer-four-port",
-    "trfAuto": "transformer-auto",
-    "seSeRL": "se-series-rl",
-    "paSeRL": "pa-series-rl",
-    "seSeRC": "se-series-rc",
-    "paSeRC": "pa-series-rc",
-    "seSeLC": "se-series-lc",
-    "paSeLC": "pa-series-lc",
-    "seSeRLC": "se-series-rlc",
-    "paSeRLC": "pa-series-rlc",
-    "paPaRL": "pa-parallel-rl",
-    "sePaRL": "se-parallel-rl",
-    "paPaRC": "pa-parallel-rc",
-    "sePaRC": "se-parallel-rc",
-    "paPaLC": "pa-parallel-lc",
-    "sePaLC": "se-parallel-lc",
-    "paPaRLC": "pa-parallel-rlc",
-    "sePaRLC": "se-parallel-rlc",
-    "Attn": "attenuator",
-    "Amp": "amplifier",
-    "Thru": "thru",
-    "Tee": "tee",
-    "Tee4": "tee4",
-    "Tee5": "tee5",
-    "seriesTee": "series-tee",
-    "Open": "open",
-    "Short": "short",
-    "Load": "load",
-    "Shift90": "shift-90",
-    "Tclin": "coupled-transmission-line",
-    "Coupler180": "coupler-180",
-    "mlin": "microstrip-line",
-    "mclin": "microstrip-coupled-line",
-    "mtee": "microstrip-tee",
-    "mcross": "microstrip-cross",
-    "mstep": "microstrip-step",
-    "mbend": "microstrip-right-bend",
-    "mtfr": "microstrip-thin-film-resistor",
-    "mvgnd": "microstrip-via-to-ground",
-    "mvia": "microstrip-via-transition"
-};
-const schematicSymbolVariants = {
-    "mbend": {
-        "left": "microstrip-left-bend",
-        "right": "microstrip-right-bend"
-    }
-};
-
-// Modified: 2026-10-28
-
-function schematicPart(constructorName, parameters = {}, variant) {
-    const symbol = variant === undefined ? schematicSymbolMap[constructorName] :
-        schematicSymbolVariants[constructorName]?.[variant];
-    if (!symbol) {
-        throw new RangeError(`No bundled schematic symbol for ${constructorName}` +
-            (variant === undefined ? '.' : ` variant ${variant}.`));
-    }
-    return {...parameters, kind: 'component', symbol};
-}
-
-// Modified: 2026-10-07
-
-function analysisFrequencies(settings) {
-	if (!settings.twoTone) return settings.fList;
-	var spacing = settings.twoTone.spacingHz;
-	if (!Number.isFinite(spacing) || spacing <= 0) {
-		throw new RangeError('global.twoTone.spacingHz must be a positive frequency.');
-	}
-	var frequencies = new Set();
-	settings.fList.forEach(function (f1) {
-		if (!Number.isFinite(f1) || f1 <= 0) {
-			throw new RangeError('Two-tone sweep frequencies must be positive.');
-		}
-		var f2 = f1 + spacing;
-		[f1, f2, f2 - f1, f1 + f2, 2 * f1 - f2, 2 * f2 - f1, 2 * f1, 2 * f2]
-			.forEach(function (frequency) {
-				if (frequency > 0) frequencies.add(frequency);
-			});
-	});
-	return Array.from(frequencies).sort(function (a, b) { return a - b; });
-}
-
-// Modified: 2026-10-13
-
-// Capture the analysis settings when a component is constructed. An explicit
-// fList lets independent circuits use different grids without changing global.
-function componentSettings(global, options = {}) {
-	var fList = options.fList === undefined ? global.fList : options.fList;
-	if (!Array.isArray(fList)) throw new TypeError('fList must be an array of frequencies.');
-	return {
-		...global,
-		fList: fList.slice(),
-		tList: Array.isArray(global.tList) ? global.tList.slice() : global.tList,
-		twoTone: global.twoTone ? {...global.twoTone} : global.twoTone
-	};
-}
-
-// Modified: 2026-10-07
-
-var conjugate$5 = function (value) { return complex(value.getR(), -value.getI()); };
+var conjugate$6 = function (value) { return complex(value.getR(), -value.getI()); };
 
 // Passive Bosma noise covariance: C = kBT(I - S S†).
 function passiveNoiseCovariance(sparsRow, portCount, temperature) {
@@ -15476,7 +15512,7 @@ function passiveNoiseCovariance(sparsRow, portCount, temperature) {
 		for (var col = 0; col < portCount; col++) {
 			var value = row === col ? complex(1, 0) : complex(0, 0);
 			for (var port = 0; port < portCount; port++) {
-				value = value.sub(sparsRow[1 + row * portCount + port].mul(conjugate$5(sparsRow[1 + col * portCount + port])));
+				value = value.sub(sparsRow[1 + row * portCount + port].mul(conjugate$6(sparsRow[1 + col * portCount + port])));
 			}
 			var scaled = value.mul(scale);
 			// Remove round-off residuals from mathematically lossless models.
@@ -15489,11 +15525,11 @@ function passiveNoiseCovariance(sparsRow, portCount, temperature) {
 // Modified: 2026-10-03
 
 var kB$5 = 1.380649e-23;
-var zero$1 = function () { return complex(0, 0); };
-var conjugate$4 = function (value) { return complex(value.getR(), -value.getI()); };
+var zero$2 = function () { return complex(0, 0); };
+var conjugate$5 = function (value) { return complex(value.getR(), -value.getI()); };
 
 function reflection(value, label) {
-	var result = value === undefined ? zero$1() :
+	var result = value === undefined ? zero$2() :
 		typeof value === 'number' ? complex(value, 0) : value;
 	if (!result || typeof result.getR !== 'function' || typeof result.getI !== 'function' ||
 		typeof result.mag !== 'function' ||
@@ -15558,7 +15594,7 @@ function noiseAnalysis(sparsRow, covariance, inputPort, outputPort, options = {}
 		for (var col = 0; col < portCount; col++) {
 			var value = sparsRow[1 + row * portCount + col];
 			S[row][col] = value;
-			system[row][col] = (row === col ? complex(1, 0) : zero$1())
+			system[row][col] = (row === col ? complex(1, 0) : zero$2())
 				.sub(value.mul(setup.gammas[col]));
 		}
 	}
@@ -15567,7 +15603,7 @@ function noiseAnalysis(sparsRow, covariance, inputPort, outputPort, options = {}
 	var source = inputPort - 1;
 	var transfers = [];
 	for (var port = 0; port < portCount; port++) {
-		var transfer = zero$1();
+		var transfer = zero$2();
 		for (var index = 0; index < portCount; index++) {
 			transfer = transfer.add(H[output][index].mul(S[index][port]));
 		}
@@ -15577,12 +15613,12 @@ function noiseAnalysis(sparsRow, covariance, inputPort, outputPort, options = {}
 	var inputNoise = kB$5 * setup.referenceTemperature;
 	var sourceCoupling = 1 - setup.gammas[source].mag() ** 2;
 	var sourceNoise = transfers[source].mag() ** 2 * sourceCoupling * inputNoise;
-	var addedNoise = zero$1();
+	var addedNoise = zero$2();
 	for (var noiseRow = 0; noiseRow < portCount; noiseRow++) {
 		for (var noiseCol = 0; noiseCol < portCount; noiseCol++) {
 			addedNoise = addedNoise.add(H[output][noiseRow]
 				.mul(covariance[noiseRow][noiseCol])
-				.mul(conjugate$4(H[output][noiseCol])));
+				.mul(conjugate$5(H[output][noiseCol])));
 		}
 	}
 	var totalNoise = sourceNoise + addedNoise.getR();
@@ -15602,7 +15638,225 @@ function noiseAnalysis(sparsRow, covariance, inputPort, outputPort, options = {}
 	};
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-11-15
+
+const INCH_TO_METER = 0.0254;
+const MIL_TO_METER = 0.001 * INCH_TO_METER;
+
+const C0 = 2.99792458e8;
+const EPSILON0 = 8.854187817e-12;
+const MU0 = 4 * Math.PI * 1e-7;
+const VACUUM_IMPEDANCE = 120 * Math.PI;
+
+const COPPER_RESISTIVITY = 1.72e-8;
+const BOLTZMANN = 1.380649e-23;
+const ELEMENTARY_CHARGE = 1.602176634e-19;
+
+// Modified: 2026-11-15
+// Two-variable Taylor coefficients, normalized by i! j!, through degree three.
+// The same current/charge equations supply DC, RF and weak nonlinear analysis.
+const powers = [[0, 0], [1, 0], [0, 1], [2, 0], [1, 1], [0, 2],
+    [3, 0], [2, 1], [1, 2], [0, 3]];
+const products = powers.map(([i, j]) => powers.map(([k, l]) =>
+    powers.findIndex(([a, b]) => a === i + k && b === j + l)));
+
+function constant(value) { return [value, 0, 0, 0, 0, 0, 0, 0, 0, 0]; }
+function variable(value, index) {
+    const result = constant(value);
+    result[index + 1] = 1;
+    return result;
+}
+function add(a, b) { return a.map((value, i) => value + b[i]); }
+function scale(a, b) { return a.map(value => value * b); }
+function subtract(a, b) { return add(a, scale(b, -1)); }
+function multiply(a, b) {
+    const result = constant(0);
+    for (let i = 0; i < 10; i++) {
+        if (a[i] === 0) continue;
+        for (let j = 0; j < 10; j++) {
+            const index = products[i][j];
+            if (index >= 0) result[index] += a[i] * b[j];
+        }
+    }
+    return result;
+}
+function compose(a, derivatives) {
+    const delta = a.slice();
+    delta[0] = 0;
+    let result = constant(derivatives[0]), term = constant(1);
+    for (let degree = 1; degree <= 3; degree++) {
+        term = multiply(term, delta);
+        result = add(result, scale(term, derivatives[degree]));
+    }
+    return result;
+}
+function power$1(a, exponent) {
+    const x = a[0];
+    return compose(a, [x ** exponent, exponent * x ** (exponent - 1),
+        exponent * (exponent - 1) * x ** (exponent - 2) / 2,
+        exponent * (exponent - 1) * (exponent - 2) * x ** (exponent - 3) / 6]);
+}
+function divide(a, b) { return multiply(a, power$1(b, -1)); }
+function exponential(a) {
+    const value = Math.exp(a[0]);
+    return compose(a, [value, value, value / 2, value / 6]);
+}
+
+// Modified: 2026-11-15
+
+function zero$1() { return complex(0, 0); }
+function conjugate$4(value) { return complex(value.x, -value.y); }
+function zeros(count) { return Array.from({length: count}, zero$1); }
+function root(parents, node) {
+    while (parents[node] !== node) node = parents[node];
+    return node;
+}
+function join(parents, a, b) { parents[root(parents, a)] = root(parents, b); }
+function stampBranch(system, a, b, admittance) {
+    system[a][a] = system[a][a].add(admittance);
+    system[b][b] = system[b][b].add(admittance);
+    system[a][b] = system[a][b].sub(admittance);
+    system[b][a] = system[b][a].sub(admittance);
+}
+function covarianceSource(covariance, inverse, nodes, a, b, density, ro) {
+    if (density === 0) return;
+    const response = [];
+    for (let port = 0; port < 3; port++) {
+        response.push(inverse[nodes[port]][nodes[b]].sub(inverse[nodes[port]][nodes[a]])
+            .mul(complex(1 / Math.sqrt(ro), 0)));
+    }
+    for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+            covariance[i][j] = covariance[i][j].add(response[i].mul(conjugate$4(response[j]))
+                .mul(complex(density, 0)));
+        }
+    }
+}
+// Solve one linearized floating three-terminal device. The three 1/Ro port
+// terminations establish the reference; no internal transistor terminal is grounded.
+function bjtFrequencyRow(model, frequency) {
+    if (model.rows.has(frequency)) return model.rows.get(frequency);
+    const {p, point, record, referenceImpedance: ro, temperature} = model;
+    const resistors = [[3, 6, p.RB], [4, 7, p.RC], [5, 8, p.RE]];
+    const parents = Array.from({length: 11}, (_, i) => i);
+    if (!record.inductors.length) {
+        join(parents, 0, 3); join(parents, 1, 4); join(parents, 2, 5);
+        join(parents, 0, 9); join(parents, 2, 10);
+    }
+    for (const [a, b, resistance] of resistors) if (resistance === 0) join(parents, a, b);
+    if (frequency === 0) for (const [a, b] of record.inductors) join(parents, a, b);
+    const indices = new Map(), nodes = [];
+    for (let i = 0; i < 11; i++) {
+        const group = root(parents, i);
+        if (!indices.has(group)) indices.set(group, indices.size);
+        nodes[i] = indices.get(group);
+    }
+    const system = Array.from({length: indices.size}, () => zeros(indices.size)), omega = 2 * Math.PI * frequency;
+    for (let port = 0; port < 3; port++) {
+        system[nodes[port]][nodes[port]] = system[nodes[port]][nodes[port]].add(complex(1 / ro, 0));
+    }
+    for (const [a, b, resistance] of resistors) {
+        if (resistance > 0) stampBranch(system, nodes[a], nodes[b], complex(1 / resistance, 0));
+    }
+    if (frequency > 0) for (const [a, b, inductance] of record.inductors) {
+        stampBranch(system, nodes[a], nodes[b], complex(0, -1 / (omega * inductance)));
+    }
+    for (const [a, b, capacitance] of record.capacitors) {
+        stampBranch(system, nodes[a], nodes[b], complex(0, omega * capacitance));
+    }
+    for (let terminal = 0; terminal < 3; terminal++) {
+        const current = point.data.currents[terminal], charge = point.data.charges[terminal];
+        const be = complex(current[1], omega * charge[1]), bc = complex(current[2], omega * charge[2]);
+        const row = system[nodes[terminal + 6]];
+        row[nodes[6]] = row[nodes[6]].add(be).add(bc);
+        row[nodes[7]] = row[nodes[7]].sub(bc);
+        row[nodes[8]] = row[nodes[8]].sub(be);
+    }
+    const inverse = matrix(system).invertCplx().m, spars = [frequency];
+    for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+            spars.push(inverse[nodes[i]][nodes[j]].mul(complex(2 / ro, 0))
+                .sub(complex(i === j ? 1 : 0, 0)));
+        }
+    }
+    const covariance = Array.from({length: 3}, () => zeros(3));
+    for (const [a, b, resistance] of resistors) {
+        if (resistance > 0) covarianceSource(covariance, inverse, nodes, a, b,
+            4 * BOLTZMANN * temperature / resistance, ro);
+    }
+    covarianceSource(covariance, inverse, nodes, 6, 8, 2 * ELEMENTARY_CHARGE * Math.abs(point.ib), ro);
+    covarianceSource(covariance, inverse, nodes, 7, 8, 2 * ELEMENTARY_CHARGE * Math.abs(point.ic), ro);
+    // The supplied cards have KF=0; retain the equation rather than invent a fit.
+    if (p.KF > 0 && frequency > 0) covarianceSource(covariance, inverse, nodes, 6, 8,
+        p.KF * Math.abs(point.ib) ** p.AF / frequency, ro);
+    const result = {spars, noise: {frequency, C: covariance}, inverse, nodes};
+    model.rows.set(frequency, result);
+    return result;
+}
+function internalVoltages(model, frequency, incident) {
+    const {inverse, nodes} = bjtFrequencyRow(model, frequency), voltages = zeros(3);
+    for (let terminal = 0; terminal < 3; terminal++) {
+        for (let port = 0; port < 3; port++) {
+            voltages[terminal] = voltages[terminal].add(inverse[nodes[terminal + 6]][nodes[port]]
+                .mul(incident[port]).mul(complex(2 / Math.sqrt(model.referenceImpedance), 0)));
+        }
+    }
+    return [voltages[0].sub(voltages[2]), voltages[0].sub(voltages[1])];
+}
+function convolve(a, b) {
+    const result = new Map();
+    for (const [keyA, valueA] of a) {
+        const [a1, a2] = keyA.split(',').map(Number);
+        for (const [keyB, valueB] of b) {
+            const [b1, b2] = keyB.split(',').map(Number), key = [a1 + b1, a2 + b2].join(',');
+            result.set(key, (result.get(key) || zero$1()).add(valueA.mul(valueB)));
+        }
+    }
+    return result;
+}
+function toneSpectrum(first, second) {
+    const rms = complex(1 / Math.sqrt(2), 0);
+    return new Map([['1,0', first.mul(rms)], ['-1,0', conjugate$4(first).mul(rms)],
+        ['0,1', second.mul(rms)], ['0,-1', conjugate$4(second).mul(rms)]]);
+}
+// Third-order Taylor source calculation. Fourier coefficients use peak/2;
+// conversion back to RMS is explicit, including mixed VBE/VBC terms and dQ/dt.
+// Like the diode engine, this is direct weak nonlinearity, not harmonic balance.
+function bjtProducts(model, frequency, context, tones) {
+    const first = internalVoltages(model, tones.f1, context.input1);
+    const second = internalVoltages(model, tones.f2, context.input2);
+    const variables = [toneSpectrum(first[0], second[0]), toneSpectrum(first[1], second[1])];
+    const currents = zeros(3), omega = 2 * Math.PI * frequency;
+    for (let term = 3; term < powers.length; term++) {
+        let spectrum = new Map([['0,0', complex(1, 0)]]);
+        for (let variable = 0; variable < 2; variable++) {
+            for (let degree = 0; degree < powers[term][variable]; degree++) {
+                spectrum = convolve(spectrum, variables[variable]);
+            }
+        }
+        let amplitude = zero$1();
+        for (const [key, value] of spectrum) {
+            const [n1, n2] = key.split(',').map(Number);
+            if (Math.abs(n1 * tones.f1 + n2 * tones.f2 - frequency) <= Math.max(frequency, tones.f2) * 1e-13) {
+                amplitude = amplitude.add(value.mul(complex(Math.sqrt(2), 0)));
+            }
+        }
+        for (let terminal = 0; terminal < 3; terminal++) {
+            currents[terminal] = currents[terminal].add(amplitude.mul(complex(
+                model.point.data.currents[terminal][term], omega * model.point.data.charges[terminal][term])));
+        }
+    }
+    const {inverse, nodes} = bjtFrequencyRow(model, frequency), output = zeros(3);
+    for (let port = 0; port < 3; port++) {
+        for (let terminal = 0; terminal < 3; terminal++) {
+            output[port] = output[port].sub(inverse[nodes[port]][nodes[terminal + 6]]
+                .mul(currents[terminal]).mul(complex(1 / Math.sqrt(model.referenceImpedance), 0)));
+        }
+    }
+    return output;
+}
+
+// Modified: 2026-11-15
 
 var zero = function () { return complex(0, 0); };
 var conjugate$3 = function (value) { return complex(value.getR(), -value.getI()); };
@@ -15710,6 +15964,12 @@ var prepare = function (nport, f1, f2, input1, input2) {
 
 var diodeJunctionVoltage = function (nport, frequency, incident, model) {
 	var reflected = linearOutput(nport, frequency, incident);
+	if (model.externalConductance !== undefined) {
+		var terminalVoltage = incident[0].add(reflected[0]).sub(incident[1].add(reflected[1]))
+			.mul(complex(Math.sqrt(model.referenceImpedance), 0));
+		var junctionAdmittance = complex(model.conductance, 2 * Math.PI * frequency * model.capacitance);
+		return terminalVoltage.div(complex(1, 0).add(junctionAdmittance.mul(complex(model.seriesResistance, 0))));
+	}
 	var current = incident[0].sub(reflected[0]).div(complex(Math.sqrt(model.referenceImpedance), 0));
 	var junctionImpedance = complex(model.conductance, 2 * Math.PI * frequency * model.capacitance).inv();
 	return current.mul(junctionImpedance);
@@ -15742,6 +16002,14 @@ var diodeProducts = function (nport, frequency, context, tones, model) {
 		productCurrent = productCurrent.add(v2.mul(v2).mul(conjugate$3(v1)).mul(third).mul(complex(1 / 4, 0)));
 	}
 	if (power(productCurrent) === 0) return output;
+	if (model.externalConductance !== undefined) {
+		var admittance = complex(model.conductance, 2 * Math.PI * frequency * model.capacitance);
+		var denominator = complex(1, 0).add(admittance.mul(complex(model.seriesResistance, 0)))
+			.mul(complex(1 + 2 * model.referenceImpedance * model.externalConductance, 0))
+			.add(admittance.mul(complex(2 * model.referenceImpedance, 0)));
+		var generatedWave = productCurrent.mul(complex(Math.sqrt(model.referenceImpedance), 0)).div(denominator);
+		return [generatedWave.neg(), generatedWave];
+	}
 	var junctionImpedance = complex(model.conductance, 2 * Math.PI * frequency * model.capacitance).inv();
 	var seriesImpedance = junctionImpedance.add(complex(model.seriesResistance + 2 * model.referenceImpedance, 0));
 	var outgoing = productCurrent.mul(junctionImpedance)
@@ -15765,6 +16033,7 @@ var generated = function (nport, frequency, context, tones) {
 		return solveConnection(model, frequency, zeroVector(count), childSources).outgoing;
 	}
 	if (model.type === 'diode') return diodeProducts(nport, frequency, context, tones, model);
+	if (model.type === 'bjt') return bjtProducts(model, frequency, context, tones);
 	if (model.type !== 'amp') return zeroVector(count);
 	var output = zeroVector(count);
 	var b1 = rowAt(nport, tones.f1)[3].mul(context.input1[0]);
@@ -16070,7 +16339,25 @@ function applyInputSignal(network, options) {
 	return network;
 }
 
-// Modified: 2026-10-26
+// Modified: 2026-11-15
+// Rollett K belongs to the resulting two-port, never to its component history.
+function stabilityAt(row) {
+    if (row.length !== 5) throw new RangeError('K and deltaMag require a two-port network.');
+    const [, s11, s12, s21, s22] = row;
+    const deltaMag = s11.mul(s22).sub(s12.mul(s21)).mag();
+    const numerator = 1 - s11.mag() ** 2 - s22.mag() ** 2 + deltaMag ** 2;
+    const denominator = 2 * s12.mag() * s21.mag();
+    // 0/0 remains indeterminate, rather than claiming unconditional stability.
+    const K = numerator / denominator;
+    return {frequency: row[0], K, deltaMag,
+        unconditionallyStable: !Number.isNaN(K) && K > 1 && deltaMag < 1};
+}
+function stabilityRows(spars) {
+    if (!spars?.length || spars.some(row => row.length !== 5)) return undefined;
+    return spars.map(stabilityAt);
+}
+
+// Modified: 2026-11-15
 var conjugate$2 = function (value) { return complex(value.getR(), -value.getI()); };
 
 function nPort() { this._noise = undefined; this._signal = undefined; }
@@ -16124,6 +16411,7 @@ nPort.prototype = {
 		this.spars = sparsArray;
 	},
 	getspars: function () { return this.spars; },
+	get stability() { return stabilityRows(this.spars); },
 	get noise() {
 		if (this._noise === undefined && this.spars) {
 			this._noise = normalizeNoise(derivePassiveNoise(this), this.spars);
@@ -16219,6 +16507,7 @@ nPort.prototype = {
 		var options = selectors.length && typeof selectors[selectors.length - 1] === 'object' ?
 			selectors.pop() : {};
 		var parsed = selectors.map(function (selector) {
+			if (selector === 'K' || selector === 'deltaMag') return {kind: 'stability', format: selector};
 			var match = /^s([1-9])([1-9])(dB|mag|ang|Re|Im)$/.exec(selector);
 			if (match) return {kind: 's', row: Number(match[1]) - 1, col: Number(match[2]) - 1, format: match[3]};
 			match = /^signal([1-9]\d*)(V|Deg|dBm)$/.exec(selector);
@@ -16247,6 +16536,9 @@ nPort.prototype = {
 			throw new TypeError('nPort.out(): invalid selector "' + selector + '".');
 		});
 		parsed.forEach(function (selection) {
+			if (selection.kind === 'stability' && portCount !== 2) {
+				throw new RangeError('K and deltaMag require a two-port network.');
+			}
 			if (selection.row >= portCount || selection.col >= portCount) {
 				throw new RangeError('nPort.out(): selected port is outside the n-port dimensions.');
 			}
@@ -16267,7 +16559,9 @@ nPort.prototype = {
 				var selection = parsed[selectionIndex];
 				if ((selection.kind === 'c' || selection.kind === 'NF' ||
 					selection.kind === 'noiseFloor') && noiseRow === null) noiseRow = this.noise[frequencyIndex];
-				if (selection.kind === 'signal') {
+				if (selection.kind === 'stability') {
+					row.push(stabilityAt(sparsRow)[selection.format]);
+				} else if (selection.kind === 'signal') {
 					var voltage = this.signal.rows[frequencyIndex].waves[selection.row]
 						.mul(complex(Math.sqrt(this.signal.referenceImpedanceOhms), 0));
 					if (selection.format === 'V') row.push(voltage.mag());
@@ -16366,13 +16660,554 @@ nPort.prototype = {
 	},
 };
 
+// Modified: 2026-10-13
+
+// Capture the analysis settings when a component is constructed. An explicit
+// fList lets independent circuits use different grids without changing global.
+function componentSettings(global, options = {}) {
+	var fList = options.fList === undefined ? global.fList : options.fList;
+	if (!Array.isArray(fList)) throw new TypeError('fList must be an array of frequencies.');
+	return {
+		...global,
+		fList: fList.slice(),
+		tList: Array.isArray(global.tList) ? global.tList.slice() : global.tList,
+		twoTone: global.twoTone ? {...global.twoTone} : global.twoTone
+	};
+}
+
+// Modified: 2026-10-07
+
+function analysisFrequencies(settings) {
+	if (!settings.twoTone) return settings.fList;
+	var spacing = settings.twoTone.spacingHz;
+	if (!Number.isFinite(spacing) || spacing <= 0) {
+		throw new RangeError('global.twoTone.spacingHz must be a positive frequency.');
+	}
+	var frequencies = new Set();
+	settings.fList.forEach(function (f1) {
+		if (!Number.isFinite(f1) || f1 <= 0) {
+			throw new RangeError('Two-tone sweep frequencies must be positive.');
+		}
+		var f2 = f1 + spacing;
+		[f1, f2, f2 - f1, f1 + f2, 2 * f1 - f2, 2 * f2 - f1, 2 * f1, 2 * f2]
+			.forEach(function (frequency) {
+				if (frequency > 0) frequencies.add(frequency);
+			});
+	});
+	return Array.from(frequencies).sort(function (a, b) { return a - b; });
+}
+
+// Generated by schematics/tools/generate-runtime-symbols.js from symbol-catalog.json.
+// Edit schematics/symbol-catalog.json, then run npm run symbols:bundle.
+const schematicSymbolMap = {
+    "NPN": "npn",
+    "PNP": "pnp",
+    "diode1N4148": "diode-1n4148",
+    "D": "diode-1n4148",
+    "seR": "resistor",
+    "R": "resistor",
+    "paR": "parallel-resistor",
+    "seL": "inductor",
+    "L": "inductor",
+    "paL": "parallel-inductor",
+    "seC": "capacitor",
+    "C": "capacitor",
+    "paC": "parallel-capacitor",
+    "trf": "transformer",
+    "trf4Port": "transformer-four-port",
+    "trfAuto": "transformer-auto",
+    "seSeRL": "se-series-rl",
+    "paSeRL": "pa-series-rl",
+    "seSeRC": "se-series-rc",
+    "paSeRC": "pa-series-rc",
+    "seSeLC": "se-series-lc",
+    "paSeLC": "pa-series-lc",
+    "seSeRLC": "se-series-rlc",
+    "paSeRLC": "pa-series-rlc",
+    "paPaRL": "pa-parallel-rl",
+    "sePaRL": "se-parallel-rl",
+    "paPaRC": "pa-parallel-rc",
+    "sePaRC": "se-parallel-rc",
+    "paPaLC": "pa-parallel-lc",
+    "sePaLC": "se-parallel-lc",
+    "paPaRLC": "pa-parallel-rlc",
+    "sePaRLC": "se-parallel-rlc",
+    "Attn": "attenuator",
+    "Amp": "amplifier",
+    "Thru": "thru",
+    "Tee": "tee",
+    "Tee4": "tee4",
+    "Tee5": "tee5",
+    "seriesTee": "series-tee",
+    "Open": "open",
+    "Short": "short",
+    "Load": "load",
+    "Shift90": "shift-90",
+    "Tclin": "coupled-transmission-line",
+    "Coupler180": "coupler-180",
+    "mlin": "microstrip-line",
+    "mclin": "microstrip-coupled-line",
+    "mtee": "microstrip-tee",
+    "mcross": "microstrip-cross",
+    "mstep": "microstrip-step",
+    "mbend": "microstrip-right-bend",
+    "mtfr": "microstrip-thin-film-resistor",
+    "mvgnd": "microstrip-via-to-ground",
+    "mvia": "microstrip-via-transition"
+};
+const schematicSymbolVariants = {
+    "mbend": {
+        "left": "microstrip-left-bend",
+        "right": "microstrip-right-bend"
+    }
+};
+
 // Modified: 2026-10-28
 
-const Q = 1.602176634e-19;
-const K = 1.380649e-23;
+function schematicPart(constructorName, parameters = {}, variant) {
+    const symbol = variant === undefined ? schematicSymbolMap[constructorName] :
+        schematicSymbolVariants[constructorName]?.[variant];
+    if (!symbol) {
+        throw new RangeError(`No bundled schematic symbol for ${constructorName}` +
+            (variant === undefined ? '.' : ` variant ${variant}.`));
+    }
+    return {...parameters, kind: 'component', symbol};
+}
+
+// Modified: 2026-11-15
+
+function potentialCorrection(temperature) {
+    const vt = BOLTZMANN * temperature / ELEMENTARY_CHARGE;
+    const bandgap = 1.16 - 7.02e-4 * temperature ** 2 / (temperature + 1108);
+    const reference = 300.15;
+    return -2 * vt * (1.5 * Math.log(temperature / reference) -
+        bandgap / (2 * vt) + 1.1150877 / (2 * BOLTZMANN * reference / ELEMENTARY_CHARGE));
+}
+// SPICE temperature scaling of junction potential and zero-bias capacitance.
+function temperatureJunction(capacitance, potential, grading, tnom, temperature) {
+    const nominalCorrection = potentialCorrection(tnom), correction = potentialCorrection(temperature);
+    const pbo = (potential - nominalCorrection) / (tnom / 300.15);
+    const adjustedPotential = temperature / 300.15 * pbo + correction;
+    const nominalFactor = 1 + grading * (4e-4 * (tnom - 300.15) - (potential - pbo) / pbo);
+    const factor = 1 + grading * (4e-4 * (temperature - 300.15) - (adjustedPotential - pbo) / pbo);
+    if (adjustedPotential <= 0 || factor <= 0) throw new RangeError('Temperature is outside the junction model range.');
+    return [capacitance * factor / nominalFactor, adjustedPotential];
+}
+
+// Modified: 2026-11-15
+
+function temperatureParameters(parameters, temperature) {
+    const p = {...parameters}, ratio = temperature / p.TNOM;
+    p.VT = BOLTZMANN * temperature / ELEMENTARY_CHARGE;
+    const logarithm = (ratio - 1) * p.EG / p.VT + p.XTI * Math.log(ratio);
+    const betaFactor = ratio ** p.XTB;
+    p.IS *= Math.exp(logarithm);
+    p.ISE *= Math.exp(logarithm / p.NE) / betaFactor;
+    p.ISC *= Math.exp(logarithm / p.NC) / betaFactor;
+    p.BF *= betaFactor;
+    p.BR *= betaFactor;
+    [p.CJE, p.VJE] = temperatureJunction(p.CJE, p.VJE, p.MJE, p.TNOM, temperature);
+    [p.CJC, p.VJC] = temperatureJunction(p.CJC, p.VJC, p.MJC, p.TNOM, temperature);
+    return p;
+}
+function diodeCurrent(voltage, saturation, thermalVoltage) {
+    return scale(subtract(exponential(scale(voltage, 1 / thermalVoltage)), constant(1)), saturation);
+}
+function junctionCharge(voltage, capacitance, potential, grading, fc) {
+    if (voltage[0] < fc * potential) {
+        return scale(subtract(constant(1), power$1(subtract(constant(1), scale(voltage, 1 / potential)),
+            1 - grading)), capacitance * potential / (1 - grading));
+    }
+    const knee = fc * potential;
+    const qKnee = capacitance * potential * (1 - (1 - fc) ** (1 - grading)) / (1 - grading);
+    const cKnee = capacitance * (1 - fc) ** -grading;
+    const slope = cKnee * grading / (potential * (1 - fc));
+    const delta = subtract(voltage, constant(knee));
+    return add(constant(qKnee), add(scale(delta, cKnee), scale(multiply(delta, delta), slope / 2)));
+}
+function gummelPoon(p, vbeValue, vbcValue, charges = true) {
+    const vbe = variable(vbeValue, 0), vbc = variable(vbcValue, 1);
+    const forward = diodeCurrent(vbe, p.IS, p.NF * p.VT);
+    const reverse = diodeCurrent(vbc, p.IS, p.NR * p.VT);
+    const early = power$1(subtract(constant(1), add(scale(vbc, 1 / p.VAF), scale(vbe, 1 / p.VAR))), -1);
+    const highInjection = add(scale(forward, 1 / p.IKF), scale(reverse, 1 / p.IKR));
+    const qb = scale(multiply(early, add(constant(1), power$1(add(constant(1), scale(highInjection, 4)), 0.5))), 0.5);
+    const ibe = add(scale(forward, 1 / p.BF), diodeCurrent(vbe, p.ISE, p.NE * p.VT));
+    const ibc = add(scale(reverse, 1 / p.BR), diodeCurrent(vbc, p.ISC, p.NC * p.VT));
+    const transport = divide(subtract(forward, reverse), qb);
+    const ib = add(ibe, ibc), ic = subtract(transport, ibc), ie = scale(add(ib, ic), -1);
+    let qbe = constant(0), qbc = constant(0);
+    if (charges) {
+        let storage = constant(0);
+        if (vbeValue > 0 && p.TF !== 0) {
+            const fraction = divide(forward, add(forward, constant(p.ITF)));
+            const correction = scale(multiply(exponential(scale(vbc, 1 / (1.44 * p.VTF))),
+                multiply(fraction, fraction)), p.XTF);
+            storage = scale(divide(multiply(forward, add(constant(1), correction)), qb), p.TF);
+        }
+        qbe = add(junctionCharge(vbe, p.CJE, p.VJE, p.MJE, p.FC), storage);
+        qbc = add(junctionCharge(vbc, p.CJC, p.VJC, p.MJC, p.FC), scale(reverse, p.TR));
+    }
+    return {currents: [ib, ic, ie], charges: [add(qbe, qbc), scale(qbc, -1), scale(qbe, -1)],
+        qbe, qbc, forward: forward[0], reverse: reverse[0], ibe: ibe[0], ibc: ibc[0], qb: qb[0]};
+}
+function biasResidual(p, vbe, vbc, current, voltage, configuration) {
+    const data = gummelPoon(p, vbe, vbc, false), [ib, ic, ie] = data.currents;
+    const terminalVoltage = configuration === 'commonBase' ?
+        add(scale(variable(vbc, 1), -1), subtract(scale(ic, p.RC), scale(ib, p.RB))) :
+        add(subtract(variable(vbe, 0), variable(vbc, 1)), subtract(scale(ic, p.RC), scale(ie, p.RE)));
+    const terminalCurrent = configuration === 'commonBase' ? scale(ie, -1) : ib;
+    return {data, a: subtract(terminalCurrent, constant(current)), b: subtract(terminalVoltage, constant(voltage))};
+}
+function operatingPoint(p, current, voltage, configuration, initial) {
+    let vbe = initial ? initial[0] : p.NF * p.VT * Math.log1p(current *
+        (configuration === 'commonBase' ? 1 : p.BF) / p.IS);
+    let vbc = initial ? initial[1] : configuration === 'commonBase' ? -voltage : vbe - voltage;
+    const currentScale = Math.max(current, 1e-9);
+    for (let iteration = 0; iteration < 120; iteration++) {
+        const {a, b} = biasResidual(p, vbe, vbc, current, voltage, configuration);
+        const error = Math.abs(a[0]) / currentScale + Math.abs(b[0]);
+        if (Math.abs(a[0]) < 1e-13 + current * 1e-10 && Math.abs(b[0]) < 1e-9) {
+            const data = gummelPoon(p, vbe, vbc), [ib, ic, ieEntering] = data.currents.map(row => row[0]);
+            const vbeExternal = vbe + p.RB * ib - p.RE * ieEntering;
+            const vce = vbe - vbc + p.RC * ic - p.RE * ieEntering;
+            return {ib, ic, ie: -ieEntering, vbe: vbeExternal, vce, vcb: vce - vbeExternal,
+                vb: vbeExternal, vc: vce, ve: 0, intrinsicVbe: vbe, intrinsicVbc: vbc, data};
+        }
+        const determinant = a[1] * b[2] - a[2] * b[1];
+        let dx = (-a[0] * b[2] + a[2] * b[0]) / determinant;
+        let dy = (-a[1] * b[0] + a[0] * b[1]) / determinant;
+        const limit = Math.max(1, Math.abs(dx) / 0.15, Math.abs(dy) / 0.3);
+        dx /= limit; dy /= limit;
+        let accepted = false;
+        for (let step = 1; step >= 1 / 4096; step /= 2) {
+            const next = biasResidual(p, vbe + step * dx, vbc + step * dy, current, voltage, configuration);
+            const nextError = Math.abs(next.a[0]) / currentScale + Math.abs(next.b[0]);
+            if (Number.isFinite(nextError) && nextError < error) {
+                vbe += step * dx; vbc += step * dy; accepted = true; break;
+            }
+        }
+        if (!accepted) break;
+    }
+    throw new RangeError('BJT bias did not converge at ' + current + ' A, ' + voltage + ' V (' + configuration + ').');
+}
+
+// Modified: 2026-11-15
+
+function knownProperties$1(object, names, label) {
+    if (!object || typeof object !== 'object' || Array.isArray(object)) throw new TypeError(label + ' must be an object.');
+    for (const key of Object.keys(object)) {
+        if (!names.includes(key)) throw new TypeError('Unknown ' + label + ' property: ' + key + '.');
+    }
+}
+function interval(value, defaults, label, nonnegative, polarity) {
+    const input = value === undefined ? {} : value;
+    knownProperties$1(input, ['start', 'stop', 'points'], label);
+    const result = {...defaults, ...input};
+    if (!Number.isFinite(result.start) || !Number.isFinite(result.stop) || (result.stop - result.start) * polarity <= 0 ||
+        (nonnegative && result.start * polarity < 0) || !Number.isInteger(result.points) || result.points < 2) {
+        throw new RangeError(label + ' needs a finite interval in the device forward-bias direction and at least two points.');
+    }
+    return result;
+}
+function curveSettings(options, configuration, polarity) {
+    const cb = configuration === 'commonBase', current = cb ? 'ie' : 'ib', voltage = cb ? 'vcb' : 'vce';
+    knownProperties$1(options, [current, voltage], 'bias');
+    return {
+        current, voltage,
+        stepped: interval(options[current], {start: 0, stop: polarity * (cb ? 5e-3 : 50e-6), points: 6}, 'bias.' + current, true, polarity),
+        swept: interval(options[voltage], {start: 0, stop: polarity * 10, points: 201}, 'bias.' + voltage, !cb, polarity)
+    };
+}
+function sweepValues(interval) {
+    const result = [];
+    for (let i = 0; i < interval.points; i++) {
+        result.push(i === interval.points - 1 ? interval.stop : interval.start +
+            (interval.stop - interval.start) * i / (interval.points - 1));
+    }
+    return result;
+}
+function ivTable$1(p, configuration, bias, polarity, options = {}) {
+    knownProperties$1(options, [bias.current, bias.voltage], 'ivTable');
+    if (options[bias.current] !== undefined) knownProperties$1(options[bias.current], ['start', 'stop', 'points'], 'ivTable.' + bias.current);
+    if (options[bias.voltage] !== undefined) knownProperties$1(options[bias.voltage], ['start', 'stop', 'points'], 'ivTable.' + bias.voltage);
+    const selected = curveSettings({
+        [bias.current]: {...bias.stepped, ...options[bias.current]},
+        [bias.voltage]: {...bias.swept, ...options[bias.voltage]}
+    }, configuration, polarity);
+    const stepped = sweepValues(selected.stepped), swept = sweepValues(selected.swept);
+    const measured = configuration === 'commonCollector' ? 'ie' : 'ic';
+    const table = [[selected.voltage + ' (V)']];
+    const labelScale = selected.current === 'ib' ? 1e6 : 1e3;
+    const labelUnit = selected.current === 'ib' ? ' µA' : ' mA';
+    for (const current of stepped) table[0].push(measured + ' (A), ' + selected.current + '=' +
+        Number((current * labelScale).toPrecision(6)) + labelUnit);
+    for (const voltage of swept) table.push([voltage]);
+    for (const current of stepped) {
+        // Continue from high voltage into saturation for reliable low-voltage knees.
+        let initial;
+        for (let row = swept.length - 1; row >= 0; row--) {
+            const point = operatingPoint(p, current * polarity, swept[row] * polarity, configuration, initial);
+            table[row + 1].push(point[measured] * polarity);
+            initial = [point.intrinsicVbe, point.intrinsicVbc];
+        }
+    }
+    return table;
+}
+
+function polarizedCoefficients(row, polarity) {
+    return row.map((value, index) => value * polarity ** (powers[index][0] + powers[index][1] + 1));
+}
+function polarizedPoint(point, polarity) {
+    if (polarity === 1) return point;
+    const {data, ...bias} = point;
+    for (const key of Object.keys(bias)) bias[key] = bias[key] === 0 ? 0 : bias[key] * polarity;
+    return {...bias, data: {
+        ...data,
+        currents: data.currents.map(row => polarizedCoefficients(row, polarity)),
+        charges: data.charges.map(row => polarizedCoefficients(row, polarity)),
+        qbe: polarizedCoefficients(data.qbe, polarity),
+        qbc: polarizedCoefficients(data.qbc, polarity),
+        forward: data.forward * polarity, reverse: data.reverse * polarity,
+        ibe: data.ibe * polarity, ibc: data.ibc * polarity
+    }};
+}
+
+function bjtConstructor(options, type, resolveModel, polarity) {
+    knownProperties$1(options, ['model', 'configuration', 'bias', 'qPoint', 'temperature', 'fList'], type);
+    const record = resolveModel(options.model), configuration = options.configuration ?? 'commonEmitter';
+    if (!['commonEmitter', 'commonBase', 'commonCollector'].includes(configuration)) {
+        throw new RangeError(type + ' configuration must be commonEmitter, commonBase or commonCollector.');
+    }
+    const temperature = options.temperature === undefined ? global.Temp : options.temperature;
+    if (!Number.isFinite(temperature) || temperature <= 0) throw new RangeError(type + ' temperature must be positive kelvin.');
+    const settings = componentSettings(global, options), frequencies = analysisFrequencies(settings);
+    if (!Number.isFinite(settings.Ro) || settings.Ro <= 0 || frequencies.length === 0 ||
+        frequencies.some(frequency => !Number.isFinite(frequency) || frequency < 0)) {
+        throw new RangeError(type + ' requires positive reference impedance and a nonempty nonnegative frequency list.');
+    }
+    const bias = curveSettings(options.bias ?? {}, configuration, polarity), qInput = options.qPoint ?? {};
+    knownProperties$1(qInput, [bias.current, bias.voltage], 'qPoint');
+    const current = qInput[bias.current] === undefined ? polarity * (configuration === 'commonBase' ? 2e-3 : 20e-6) : qInput[bias.current];
+    const voltage = qInput[bias.voltage] === undefined ? polarity * 5 : qInput[bias.voltage];
+    if (!Number.isFinite(current) || current * polarity < 0 || !Number.isFinite(voltage) ||
+        (configuration !== 'commonBase' && voltage * polarity < 0)) throw new RangeError('Invalid ' + type + ' qPoint current or voltage.');
+    const p = temperatureParameters(record.parameters, temperature);
+    const point = polarizedPoint(operatingPoint(p, current * polarity, voltage * polarity, configuration), polarity);
+    const model = {type: 'bjt', p, point, record, referenceImpedance: settings.Ro, temperature, rows: new Map()};
+    const spars = [], noise = [];
+    for (const frequency of frequencies) {
+        const row = bjtFrequencyRow(model, frequency);
+        spars.push(row.spars); noise.push(row.noise);
+    }
+    const result = new nPort();
+    result.setspars(spars); result.setglobal(settings); result.noise = noise;
+    const {data, ...qPoint} = point;
+    result.bias = {...qPoint, temperature, configuration};
+    result.qPoint = {...result.bias};
+    result.model = {...record, parameters: {...record.parameters},
+        inductors: record.inductors.map(row => row.slice()),
+        capacitors: record.capacitors.map(row => row.slice())};
+    result.dc = {configuration, current: bias.current, voltage: bias.voltage,
+        bias: {[bias.current]: {...bias.stepped}, [bias.voltage]: {...bias.swept}}};
+    result.smallSignal = {
+        gm: data.currents[1][1] + data.currents[1][2],
+        gpi: data.currents[0][1], gmu: data.currents[0][2], go: -data.currents[1][2],
+        cpi: data.qbe[1], cmu: data.qbc[2], cbeCross: data.qbe[2],
+        rb: p.RB, rc: p.RC, re: p.RE
+    };
+    result.ivTable = ivTable$1.bind(null, p, configuration, bias, polarity);
+    result._intermod = model;
+    result._schematic = schematicPart(type, {model: record.name});
+    return result;
+}
+
+// Modified: 2026-11-15
+// Standard SPICE defaults shared by the supported NPN and PNP cards.
+const defaults = {NF: 1, NR: 1, ISE: 0, ISC: 0, NE: 1.5, NC: 2,
+    VAR: Infinity, IKR: Infinity, RB: 0, RE: 0, RC: 0,
+    CJE: 0, VJE: 0.75, MJE: 0.33, CJC: 0, VJC: 0.75, MJC: 0.33,
+    FC: 0.5, TF: 0, TR: 0, XTF: 0, VTF: Infinity, ITF: Infinity,
+    XTI: 3, EG: 1.11, XTB: 0, TNOM: 300.15, KF: 0, AF: 1};
+
+function bjtModel(records, name, fallback, type) {
+    const selected = name === undefined ? fallback : name;
+    if (typeof selected !== 'string' || !Object.hasOwn(records, selected.toUpperCase())) {
+        throw new RangeError(type + ' model must be ' + Object.keys(records).join(' or ') + '.');
+    }
+    const key = selected.toUpperCase(), record = records[key];
+    return {...record, name: key, parameters: {...defaults, ...record.parameters},
+        inductors: record.inductors.map(row => row.slice()),
+        capacitors: record.capacitors.map(row => row.slice())};
+}
+
+// Modified: 2026-11-15
+// SPICE Gummel–Poon parameters in SI units. Provenance and omissions are
+// documented in developmentDocs/transistorModels.md. No part-wide NF/IP fits.
+
+const records$2 = {
+    '2N3904': {
+        manufacturer: 'Fairchild Semiconductor', material: 'silicon', structure: 'NPN bipolar',
+        mathematicalModel: 'SPICE modified Gummel–Poon', modelVersion: 'SPICE level 1',
+        source: 'https://media.digikey.com/pdf/Data%20Sheets/Fairchild%20PDFs/2N3904.pdf',
+        leakageSource: 'https://learninglink.oup.com/protected/files/content/file/1574079180264-SedraSmith8e_SPICE_Problem_Guide_AppendixB.pdf',
+        package: 'Terminal resistances included; no explicit TO-92 lead inductance or package capacitance',
+        parameters: {IS: 6.734e-15, BF: 416.4, VAF: 74.03, IKF: 0.06678,
+            NE: 1.259, ISE: 6.734e-15, XTB: 1.5, BR: 0.7371,
+            RC: 1, RB: 10, CJC: 3.638e-12, MJC: 0.3085,
+            CJE: 4.493e-12, MJE: 0.2593, TR: 239.5e-9, TF: 301.2e-12,
+            ITF: 0.4, VTF: 4, XTF: 2},
+        inductors: [], capacitors: []
+    },
+    BFR93A: {
+        manufacturer: 'Philips Semiconductors / NXP', material: 'silicon', structure: 'NPN bipolar',
+        mathematicalModel: 'SPICE modified Gummel–Poon', modelVersion: 'BFR91A 1.0, February 1992; BFR93A September 1995',
+        source: 'https://www.nxp.com/downloads/en/spice-model/BFR93A_SPICE.prm',
+        package: 'Published SOT23 L/C network around the BFR91A die model',
+        parameters: {IS: 1.32873e-15, BF: 102, NF: 1.00025, VAF: 51.9033,
+            IKF: 8.15511, ISE: 1.39029e-14, NE: 1.51292, BR: 17.6953,
+            NR: 0.994038, VAR: 3.28032, IKR: 10, ISC: 1.04297e-15, NC: 1.18993,
+            RB: 10, RE: 0.763636, RC: 9, CJE: 2.03216e-12, VJE: 0.6,
+            MJE: 0.290076, TF: 6.5579e-12, XTF: 38.9752, VTF: 10.9308,
+            ITF: 0.521078, CJC: 1.00353e-12, VJC: 0.340808, MJC: 0.194223},
+        // External B,C,E: 0,1,2; contacts: 3,4,5; intrinsic: 6,7,8;
+        // outer package base and emitter: 9,10. Port order is NOT SPICE C,B,E.
+        inductors: [[0, 9, 0.35e-9], [9, 3, 0.4e-9], [1, 4, 0.17e-9],
+            [2, 10, 0.35e-9], [10, 5, 0.83e-9]],
+        capacitors: [[9, 4, 71e-15], [9, 10, 2e-15], [4, 10, 71e-15]]
+    }
+};
+
+function npnModel(name) {
+    return bjtModel(records$2, name, '2N3904', 'NPN');
+}
+
+// Modified: 2026-11-15
+
+function NPN(options = {}) {
+    return bjtConstructor(options, 'NPN', npnModel, 1);
+}
+
+// Modified: 2026-11-15
+
+const records$1 = {
+    '2N3906': {
+        manufacturer: 'Fairchild Semiconductor', material: 'silicon', structure: 'PNP bipolar',
+        mathematicalModel: 'SPICE modified Gummel–Poon', modelVersion: 'SPICE level 1',
+        source: 'https://www2.ensc.sfu.ca/reference/data-sheets/2N3906.PDF',
+        package: 'Terminal resistances included; no explicit TO-92 lead inductance or package capacitance',
+        parameters: {IS: 1.41e-15, VAF: 18.7, BF: 180.7, NE: 1.5, ISE: 0,
+            IKF: 0.08, XTB: 1.5, BR: 4.977, NC: 2, ISC: 0,
+            RC: 2.5, CJC: 9.728e-12, MJC: 0.5776, VJC: 0.75, FC: 0.5,
+            CJE: 8.063e-12, MJE: 0.3677, VJE: 0.75,
+            TR: 33.42e-9, TF: 179.3e-12, ITF: 0.4, VTF: 4, XTF: 6, RB: 10},
+        inductors: [], capacitors: []
+    }
+};
+
+function pnpModel(name) {
+    return bjtModel(records$1, name, '2N3906', 'PNP');
+}
+
+// Modified: 2026-11-15
+
+function PNP(options = {}) {
+    return bjtConstructor(options, 'PNP', pnpModel, -1);
+}
+
+// Modified: 2026-10-07
+// Generates an array of Chebyshev values based on the number of sections and ripple
+function chebyLPgk (n = 3, ripple = 0.1) { // Returns gk's shown in formula 4.05-2 on page 99 of MYJ
+	var	chebyLPgkin = new Array(1 + 1 + n + 1),  // Table title row, go row, gk's (n rows), and g(k+1)
+		chebyLPgkout = [],
+		i = 0, row = 0;
+
+	// The function, gk() Fills in the variable table above called "chebyLPgkin" to hold ak, bk, and gk's based on the n
+	for(i = 0; i < chebyLPgkin.length; i++) {chebyLPgkin[i] = new Array(4); }
+	// Table for complete display of values
+	chebyLPgkin[0][0] = 'ak'; chebyLPgkin[0][1] = 'bk'; chebyLPgkin[0][2] = 'gk'; chebyLPgkin[0][3] = 'R,C,L';
+
+	function coth(x) {return (Math.exp(x) + Math.exp(-x))/(Math.exp(x) - Math.exp(-x));}	function B() {return Math.log(coth(ripple/17.37));}	function sinh(x) {return (Math.exp(x) - Math.exp(-x))/2;}	function G() {return sinh(B()/(2 * n));} // Compute G() on page 99 of MYJ
+
+	chebyLPgkin[1][2] = 1; // Initialize the lowPassFilter array for g0=1;
+
+	for(row = 2; row < chebyLPgkin.length -1; row++) { chebyLPgkin[row][0] = Math.sin(((2*(row -1) -1) * Math.PI)/(2 * n)); }
+	for(row = 2; row < chebyLPgkin.length -1; row++) { // Populate the bk column on page 99 of MYJ
+		chebyLPgkin[row][1] = Math.pow(G(),2) + Math.pow(Math.sin(  (row-1) * Math.PI/n),2);
+	}
+	chebyLPgkin[2][2] = 2*chebyLPgkin[2][0]/G(); // Populate the first q1 in the cell
+
+	for(row = 3; row < chebyLPgkin.length -1; row++) { // Populate the gk column from g2 onward to gk
+		chebyLPgkin[row][2] = (4 * chebyLPgkin[row-1][0] * chebyLPgkin[row][0])/(chebyLPgkin[row-1][1] * chebyLPgkin[row-1][2]);
+	}
+	chebyLPgkin[ n+2][2] = (n % 2 === 0 ) ? Math.pow(coth(B()/4),2) : 1 ; // Populate the last g(k+1) in the cell
+
+	// Populate chebyLPgkout
+	for(row = 1; row < chebyLPgkin.length; row++) { chebyLPgkout[row - 1] = chebyLPgkin[row][2]; }
+	return chebyLPgkout;
+}
+
+// Modified: 2026-10-07
+// Generates an array of parallel capacitors and series inductors based on Chebyshev values
+function chebyLPLCs ( cheby = [1, 1.0315851425078764, 1.1474003299537219, 1.0315851425078761, 1], maxPassFrequency = 0.2e9, zo = 50) {
+	var	chebyLPLCsout = new Array(cheby.length),
+		i = 0;
+
+	chebyLPLCsout[0] = cheby[0] * zo; // Populate the first resistor in the array
+
+	for(i = 1; i < cheby.length -1; i++) { // Populate the C's and L's
+		chebyLPLCsout[i] = ( (i) % 2 === 0 ) ? cheby[i] * zo * (1/(2*Math.PI)) * (1/(maxPassFrequency )) : cheby[i] * 1/zo * (1/(2*Math.PI)) * (1/(maxPassFrequency));
+	}
+	chebyLPLCsout[cheby.length-1] = cheby[cheby.length-1] * zo; // Populate the last resistor in the array
+
+	return chebyLPLCsout;
+}
+
+// Modified: 2026-10-07
+// Computes the number of sections in a Chebyshev low-pass filter
+function chebyLPNsec (passFreq = .2, rejFreq = 1.5, ripple = 0.1, rejection = 30) { // Formula 4.03-4 for n on page 86 of MYJ
+	var chebyLPNsecout = 0;
+	function normalizedBandwidth() { return rejFreq/passFreq; }// Computes the w/w1 in MYJ on page 86 of MYJ
+	function epsilon() { return Math.pow(10,(ripple/10))-1;} // Formula 4.03-5 on page 87 on MYJ
+	function arcCosh(x) {return Math.log(x + Math.sqrt((x * x)-1));}
+	chebyLPNsecout = Math.ceil(arcCosh(Math.sqrt((Math.pow(10,(rejection/10))-1)/epsilon()))/arcCosh(normalizedBandwidth()));
+	return chebyLPNsecout;
+}
+
+// Modified: 2026-11-15
+
+function seriesTwoPortFromImpedance(frequency, impedance, ro) {
+    const denominator = impedance.add(complex(2 * ro, 0));
+    const reflection = impedance.div(denominator);
+    const transmission = complex(2 * ro, 0).div(denominator);
+    return [frequency, reflection, transmission, transmission, reflection];
+}
+
+function diodeFrequencyRow(p, point, frequency, ro, temperature, leakageResistance) {
+    const admittance = complex(point.conductance, 2 * Math.PI * frequency * point.totalCapacitance);
+    const junctionImpedance = admittance.inv();
+    const seriesImpedance = junctionImpedance.add(complex(p.RS, 0));
+    const externalConductance = 1 / leakageResistance;
+    const portAdmittance = admittance.div(complex(1, 0).add(admittance.mul(complex(p.RS, 0))))
+        .add(complex(externalConductance, 0));
+    const spars = seriesTwoPortFromImpedance(frequency, portAdmittance.inv(), ro);
+    const denominator = seriesImpedance.mul(complex(1 + 2 * ro * externalConductance, 0))
+        .add(complex(2 * ro, 0));
+    const shotDensity = 2 * ELEMENTARY_CHARGE * Math.abs(point.junctionCurrent);
+    const flickerDensity = p.KF && frequency > 0 ? p.KF * Math.abs(point.junctionCurrent) ** p.AF / frequency : 0;
+    let noise = (4 * BOLTZMANN * temperature * p.RS +
+        (shotDensity + flickerDensity) * junctionImpedance.mag() ** 2) * ro / denominator.mag() ** 2;
+    const externalTransfer = complex(1, 0).add(portAdmittance.mul(complex(2 * ro, 0)));
+    noise += 4 * BOLTZMANN * temperature * externalConductance * ro / externalTransfer.mag() ** 2;
+    return {spars, noise: {frequency, C: [[complex(noise, 0), complex(-noise, 0)],
+        [complex(-noise, 0), complex(noise, 0)]]}};
+}
+
+// Modified: 2026-11-15
+
 
 function thermalVoltage(temperatureK) {
-	return K * temperatureK / Q;
+	return BOLTZMANN * temperatureK / ELEMENTARY_CHARGE;
 }
 
 function normalizeOptions(options) {
@@ -16466,16 +17301,6 @@ function diodeAdmittanceAtBias(p) {
 	};
 }
 
-function seriesTwoPortFromImpedance(frequency, impedance, ro) {
-	complex(ro, 0);
-	var twoZo = complex(2 * ro, 0);
-	var denominator = impedance.add(twoZo);
-	var s11 = impedance.div(denominator);
-	var s21 = twoZo.div(denominator);
-
-	return [frequency, s11, s21, s21, s11];
-}
-
 function diode1N4148(options = {}) {
 	var p = normalizeOptions(options);
 	var diodePort = new nPort();
@@ -16495,14 +17320,14 @@ function diode1N4148(options = {}) {
 	var admittance;
 	var junctionImpedance;
 	var totalImpedance;
-	var thermalEnergy = K * p.temperatureK;
+	var thermalEnergy = BOLTZMANN * p.temperatureK;
 	var diodeCurrent = p.is * Math.expm1(Math.min(dc.junctionVoltage / (p.n * thermalVoltage(p.temperatureK)), 80));
 	var avalanche = breakdownCurrent(dc.junctionVoltage, p);
 	// A linearized junction has equilibrium conductance noise at zero bias.
 	// At finite bias, use the larger of that level and a weak shot-noise estimate.
 	var junctionNoiseCurrent = Math.max(
 		4 * thermalEnergy * Math.max(0, dc.conductance - 1 / p.leakageResistance),
-		2 * Q * (Math.abs(diodeCurrent) + Math.abs(avalanche))
+		2 * ELEMENTARY_CHARGE * (Math.abs(diodeCurrent) + Math.abs(avalanche))
 	) + 4 * thermalEnergy / p.leakageResistance;
 	var junctionVoltageScale = p.n * thermalVoltage(p.temperatureK);
 	var exponentialCurrent = p.is * Math.exp(Math.min(dc.junctionVoltage / junctionVoltageScale, 80));
@@ -16591,6 +17416,187 @@ function diode1N4148(options = {}) {
 
 	diodePort._schematic = schematicPart('diode1N4148');
 	return diodePort;
+}
+
+// Modified: 2026-11-15
+// Model parameters, not a SPICE text interpreter. More families need their own
+// validated records/equations; selecting a name never executes downloaded code.
+const records = {
+    '1N4148': {
+        manufacturer: 'NXP Semiconductors (archived model)', material: 'silicon', family: 'signal',
+        mathematicalModel: 'SPICE junction diode with external reverse-leakage resistor',
+        modelVersion: 'SPICE level 1; archived NXP PSPICE subcircuit',
+        source: 'https://raw.githubusercontent.com/PySpice-org/PySpice/master/examples/libraries/diode/switching/1N4148.lib',
+        originalSource: 'http://www.nxp.com/documents/spice_model/1N4148.prm',
+        package: 'SOD27 model; RS included; no explicit package L/C network',
+        pinning: 'nP/SPICE port 1 anode, port 2 cathode; the source states physical package pin numbering differs',
+        parameters: {IS: 4.352e-9, N: 1.906, BV: 110, IBV: 1e-4, RS: 0.6458,
+            CJO: 7.048e-13, VJ: 0.869, M: 0.03, FC: 0.5, TT: 3.48e-9,
+            EG: 1.11, XTI: 3, TNOM: 300.15, NBV: 1, KF: 0, AF: 1},
+        leakageResistance: 5.827e9,
+        leakageNote: 'The source explicitly describes this external resistor as a reverse-modeling element, not a physical resistor'
+    }
+};
+
+function diodeModel(name = '1N4148') {
+    if (typeof name !== 'string' || !Object.hasOwn(records, name.toUpperCase())) {
+        throw new RangeError('D model must be 1N4148.');
+    }
+    const key = name.toUpperCase(), record = records[key];
+    return {...record, name: key, parameters: {...record.parameters}};
+}
+
+// Modified: 2026-11-15
+
+function diodeTemperature(parameters, temperature) {
+    const p = {...parameters}, ratio = temperature / p.TNOM;
+    p.VT = BOLTZMANN * temperature / ELEMENTARY_CHARGE;
+    p.IS *= Math.exp(((ratio - 1) * p.EG / p.VT + p.XTI * Math.log(ratio)) / p.N);
+    [p.CJO, p.VJ] = temperatureJunction(p.CJO, p.VJ, p.M, p.TNOM, temperature);
+    p.breakdownKnee = p.BV;
+    if (p.IBV >= p.IS * p.BV / p.VT) {
+        let knee = p.BV - p.NBV * p.VT * Math.log1p(p.IBV / p.IS);
+        for (let i = 0; i < 25; i++) {
+            const next = p.BV - p.NBV * p.VT * Math.log(p.IBV / p.IS + 1 - knee / p.VT);
+            if (Math.abs(next - knee) < 1e-13) { knee = next; break; }
+            knee = next;
+        }
+        p.breakdownKnee = knee;
+    }
+    return p;
+}
+
+// Current and its first three derivatives, in junction-voltage coordinates.
+function junctionCurrent(p, voltage) {
+    const vt = p.N * p.VT;
+    if (voltage >= -3 * vt) {
+        const exponential = p.IS * Math.exp(voltage / vt);
+        return {current: p.IS * Math.expm1(voltage / vt), conductance: exponential / vt,
+            second: exponential / vt ** 2, third: exponential / vt ** 3};
+    }
+    if (voltage >= -p.breakdownKnee) {
+        const coefficient = p.IS * (3 * vt / Math.E) ** 3;
+        return {current: -p.IS - coefficient / voltage ** 3,
+            conductance: 3 * coefficient / voltage ** 4,
+            second: -12 * coefficient / voltage ** 5, third: 60 * coefficient / voltage ** 6};
+    }
+    const reverseVt = p.NBV * p.VT;
+    const current = -p.IS * Math.exp(-(p.breakdownKnee + voltage) / reverseVt);
+    return {current, conductance: -current / reverseVt,
+        second: current / reverseVt ** 2, third: -current / reverseVt ** 3};
+}
+
+// Charge is integrated before differentiation. The continuation at FC*VJ
+// keeps Q and C continuous instead of clamping a singular forward-bias law.
+function depletionCharge(p, voltage) {
+    const threshold = p.FC * p.VJ;
+    if (voltage < threshold) {
+        const remaining = 1 - voltage / p.VJ;
+        const capacitance = p.CJO * remaining ** -p.M;
+        return {charge: p.CJO * p.VJ * (1 - remaining ** (1 - p.M)) / (1 - p.M),
+            capacitance, derivative: capacitance * p.M / (p.VJ - voltage),
+            second: capacitance * p.M * (p.M + 1) / (p.VJ - voltage) ** 2};
+    }
+    const q0 = p.CJO * p.VJ * (1 - (1 - p.FC) ** (1 - p.M)) / (1 - p.M);
+    const c0 = p.CJO * (1 - p.FC) ** -p.M;
+    const slope = c0 * p.M / (p.VJ * (1 - p.FC)), delta = voltage - threshold;
+    return {charge: q0 + c0 * delta + slope * delta ** 2 / 2,
+        capacitance: c0 + slope * delta, derivative: slope, second: 0};
+}
+
+function diodeOperatingPoint(p, voltage, leakageResistance) {
+    let low = Math.min(voltage, 0), high = Math.max(voltage, 0), junctionVoltage = voltage;
+    for (let iteration = 0; iteration < 160; iteration++) {
+        const junction = junctionCurrent(p, junctionVoltage);
+        const residual = junctionVoltage + p.RS * junction.current - voltage;
+        if (Math.abs(residual) <= 1e-12 + Math.abs(voltage) * 1e-12) {
+            const depletion = depletionCharge(p, junctionVoltage);
+            const diffusionCapacitance = p.TT * junction.conductance;
+            return {vd: voltage, id: junction.current + voltage / leakageResistance,
+                junctionVoltage, junctionCurrent: junction.current, conductance: junction.conductance,
+                secondDerivative: junction.second, thirdDerivative: junction.third,
+                junctionCapacitance: depletion.capacitance, diffusionCapacitance,
+                totalCapacitance: depletion.capacitance + diffusionCapacitance,
+                capacitanceDerivative: depletion.derivative + p.TT * junction.second,
+                capacitanceSecondDerivative: depletion.second + p.TT * junction.third,
+                charge: depletion.charge + p.TT * junction.current};
+        }
+        if (residual > 0) high = junctionVoltage; else low = junctionVoltage;
+        let next = junctionVoltage - residual / (1 + p.RS * junction.conductance);
+        if (!Number.isFinite(next) || next <= low || next >= high) next = (low + high) / 2;
+        junctionVoltage = next;
+    }
+    throw new RangeError('D bias did not converge at ' + voltage + ' V.');
+}
+
+// Modified: 2026-11-15
+
+function knownProperties(value, fields, label) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) throw new TypeError(label + ' must be an object.');
+    for (const name of Object.keys(value)) if (!fields.includes(name)) throw new TypeError('Unknown ' + label + ' property: ' + name + '.');
+}
+function sweepSettings(value = {}, defaults = {start: 0, stop: 0.8, points: 201}) {
+    knownProperties(value, ['vd'], 'D bias');
+    const vd = value.vd === undefined ? {} : value.vd;
+    knownProperties(vd, ['start', 'stop', 'points'], 'bias.vd');
+    const sweep = {...defaults, ...vd};
+    if (!Number.isFinite(sweep.start) || !Number.isFinite(sweep.stop) || sweep.stop <= sweep.start ||
+        !Number.isInteger(sweep.points) || sweep.points < 2) {
+        throw new RangeError('bias.vd needs an increasing finite interval and at least two points.');
+    }
+    return sweep;
+}
+function ivTable(p, resistance, defaults, options = {}) {
+    const sweep = sweepSettings(options, defaults), table = [['vd (V)', 'id (A)']];
+    for (let index = 0; index < sweep.points; index++) {
+        const voltage = index === sweep.points - 1 ? sweep.stop :
+            sweep.start + index * (sweep.stop - sweep.start) / (sweep.points - 1);
+        table.push([voltage, diodeOperatingPoint(p, voltage, resistance).id]);
+    }
+    return table;
+}
+
+function D(options = {}) {
+    knownProperties(options, ['model', 'bias', 'qPoint', 'temperature', 'fList'], 'D');
+    const record = diodeModel(options.model), sweep = sweepSettings(options.bias);
+    const qPoint = options.qPoint === undefined ? {} : options.qPoint;
+    knownProperties(qPoint, ['vd'], 'D qPoint');
+    const voltage = qPoint.vd === undefined ? 0.6 : qPoint.vd;
+    const temperature = options.temperature === undefined ? global.Temp : options.temperature;
+    if (!Number.isFinite(voltage)) throw new RangeError('qPoint.vd must be finite volts.');
+    if (!Number.isFinite(temperature) || temperature <= 0) throw new RangeError('D temperature must be positive kelvin.');
+    const settings = componentSettings(global, options), frequencies = analysisFrequencies(settings);
+    if (!frequencies.length || frequencies.some(f => !Number.isFinite(f) || f < 0) ||
+        !Number.isFinite(settings.Ro) || settings.Ro <= 0) {
+        throw new RangeError('D requires a nonempty nonnegative frequency list and positive reference impedance.');
+    }
+    const p = diodeTemperature(record.parameters, temperature);
+    const point = diodeOperatingPoint(p, voltage, record.leakageResistance);
+    const result = new nPort(), spars = [], noise = [];
+    for (const frequency of frequencies) {
+        const row = diodeFrequencyRow(p, point, frequency, settings.Ro, temperature, record.leakageResistance);
+        spars.push(row.spars); noise.push(row.noise);
+    }
+    result.setspars(spars); result.setglobal(settings); result.noise = noise;
+    result.model = record;
+    result.bias = {vd: point.vd, id: point.id, junctionVoltage: point.junctionVoltage,
+        junctionCurrent: point.junctionCurrent, temperature};
+    result.qPoint = {...result.bias};
+    result.dc = {bias: {vd: {...sweep}}};
+    result.smallSignal = {conductance: point.conductance,
+        dynamicResistance: 1 / (point.conductance / (1 + p.RS * point.conductance) + 1 / record.leakageResistance),
+        seriesResistance: p.RS, leakageResistance: record.leakageResistance,
+        junctionCapacitance: point.junctionCapacitance, diffusionCapacitance: point.diffusionCapacitance,
+        totalCapacitance: point.totalCapacitance};
+    result.ivTable = ivTable.bind(null, p, record.leakageResistance, sweep);
+    result._intermod = {type: 'diode', conductance: point.conductance, capacitance: point.totalCapacitance,
+        seriesResistance: p.RS, referenceImpedance: settings.Ro,
+        externalConductance: 1 / record.leakageResistance,
+        secondDerivative: point.secondDerivative, thirdDerivative: point.thirdDerivative,
+        capacitanceDerivative: point.capacitanceDerivative,
+        capacitanceSecondDerivative: point.capacitanceSecondDerivative};
+    result._schematic = schematicPart('D', {model: record.name});
+    return result;
 }
 
 // Modified: 2026-10-28
@@ -17993,18 +18999,6 @@ function Shift90(options = {}) { // lossless matched two-port with +90 degree th
 	Shift90._schematic = schematicPart('Shift90', {labelPrefix: 'Shift90'});
 	return Shift90;
 }
-
-// Modified: 2026-10-07
-
-const INCH_TO_METER = 0.0254;
-const MIL_TO_METER = 0.001 * INCH_TO_METER;
-
-const C0 = 2.99792458e8;
-const EPSILON0 = 8.854187817e-12;
-const MU0 = 4 * Math.PI * 1e-7;
-const VACUUM_IMPEDANCE = 120 * Math.PI;
-
-const COPPER_RESISTIVITY = 1.72e-8;
 
 // Modified: 2026-10-26
 
@@ -21798,4 +22792,4 @@ function waveform(options = {}) {
 	return result;
 }
 
-export { Amp, Attn, C, Coupler180, FFT, L, Load, Open, PN, R, Shift90, Short, Tclin, Tee, Tee4, Tee5, Thru, Tlin, bitErrorRate, cascade, chebyLPLCs, chebyLPNsec, chebyLPgk, complex, demod, dim, diode1N4148, dup, global, invFFT, lineChart, lineTable, log, lpfGen, matrix, mbend, mclin, mcross, mlin, mod, mstep, mtee, mtfr, mvgnd, mvia, nodal, paC, paL, paPaLC, paPaRC, paPaRL, paPaRLC, paR, paSeLC, paSeRC, paSeRL, paSeRLC, schematic, schematicGraph, schematicSvg, schematicTopology, seC, seL, sePaLC, sePaRC, sePaRL, sePaRLC, seR, seSeLC, seSeRC, seSeRL, seSeRLC, seriesTee, smithChart, trf, trf4Port, trfAuto, version, waveform };
+export { Amp, Attn, C, Coupler180, D, FFT, L, Load, NPN, Open, PN, PNP, R, Shift90, Short, Tclin, Tee, Tee4, Tee5, Thru, Tlin, bitErrorRate, cascade, chebyLPLCs, chebyLPNsec, chebyLPgk, complex, demod, dim, diode1N4148, dup, global, invFFT, lineChart, lineTable, log, lpfGen, matrix, mbend, mclin, mcross, mlin, mod, mstep, mtee, mtfr, mvgnd, mvia, nodal, paC, paL, paPaLC, paPaRC, paPaRL, paPaRLC, paR, paSeLC, paSeRC, paSeRL, paSeRLC, schematic, schematicGraph, schematicSvg, schematicTopology, seC, seL, sePaLC, sePaRC, sePaRL, sePaRLC, seR, seSeLC, seSeRC, seSeRL, seSeRLC, seriesTee, smithChart, trf, trf4Port, trfAuto, version, waveform };

@@ -1,7 +1,73 @@
 {
-  "modified": "2026-11-14",
+  "modified": "2026-11-15",
   "schemaVersion": 1,
   "symbols": {
+    "pnp": {
+      "automatic": {
+        "rotations": [
+          0
+        ],
+        "mirrorX": false,
+        "mirrorY": false,
+        "externalPorts": "flow",
+        "localTerminations": true
+      },
+      "bounds": [
+        66,
+        56,
+        194,
+        184
+      ],
+      "bodyBounds": [
+        90,
+        70,
+        190,
+        170
+      ],
+      "leads": [
+        [
+          [
+            70,
+            120
+          ],
+          [
+            90,
+            120
+          ]
+        ],
+        [
+          [
+            170,
+            60
+          ],
+          [
+            170,
+            80
+          ]
+        ],
+        [
+          [
+            170,
+            180
+          ],
+          [
+            170,
+            160
+          ]
+        ]
+      ],
+      "entry": [
+        1,
+        0
+      ]
+    },
+    "npn": {
+      "automatic": {"rotations": [0], "mirrorX": false, "mirrorY": false, "externalPorts": "flow", "localTerminations": true},
+      "bounds": [66,56,194,184],
+      "bodyBounds": [90,70,190,170],
+      "leads": [[[70,120],[90,120]],[[170,60],[170,80]],[[170,180],[170,160]]],
+      "entry": [1,0]
+    },
     "voltage-source": {
       "bounds": [106,66,174,174],
       "bodyBounds": [110,90,170,150],

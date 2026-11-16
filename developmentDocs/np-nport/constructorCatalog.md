@@ -1,7 +1,7 @@
-<!-- Modified: 2026-11-08 -->
+<!-- Modified: 2026-11-15 -->
 # nP constructor catalog
 
-This catalog covers the 54 public functions that produce n-port objects from `src/np-nport/src/index.js`, the digital waveform functions from `src/np-digital`, and the exported math and low-pass prototype functions. Each JS call below spells out the **current defaults** where they exist. Each argument or property appears on its own line. Units are in comments. Each constructor has its own heading and code block.
+This catalog covers the 57 public functions that produce n-port objects from `src/np-nport/src/index.js`, the digital waveform functions from `src/np-digital`, and the exported math and low-pass prototype functions. Each JS call below spells out the **current defaults** where they exist. Each argument or property appears on its own line. Units are in comments. Each constructor has its own heading and code block.
 
 Parameter spelling follows the public API. Legacy positional names such as `R`, `N`, `Z`, and `Length` retain their source capitalization; physical options use `lowerCamelCase` property names. Positional argument order matters. Named object properties follow one presentation order: geometry, material and loss, then temperature.
 
@@ -37,7 +37,7 @@ var filter = nP.lpfGen(undefined, {fList: frequencies});
 
 Each nPort stores a copy of its selected frequency list and analysis settings. Components in one `nodal()` or `cascade()` circuit must have matching frequency rows. Call `nP.global()` to create and select an independent circuit context. It holds its own `fList`, `tList`, `twoTone`, `Ro`, and `Temp`; `nP.global(g)` selects an earlier context `g` again. Existing `nP.global.fList` and related property calls use the selected context. `nP.global.tGen(start, stop, points)` returns a uniformly spaced time list in seconds, including both endpoints. Two-tone analysis still requires positive first-tone frequencies and a positive spacing.
 
-The 51 symbol-backed direct RF component constructors record internal schematic metadata and have bundled runtime symbols. Composite RLC parts retain their resistance, inductance, and capacitance values in schematic metadata; transformers retain their turns ratio. `lpfGen()` inherits a cascade tree from the components it constructs. `mbend({turn: 'left'})` selects a left-turn drawing; the default is a right turn. The turn changes only the drawing, not the bend S-parameters. `cas()` and `cascade()` preserve their construction tree. `nodal()` records each component placement's port-to-node assignments and the external port order. When a completed nodal nPort is used as a component, the renderer gives it a `nodal` block with the matching number of ports. Two-port circuits with a series path and simple shunt branches are laid out from their port-to-node connections; tree-shaped multiport circuits use their node connections for placement. Nodal circuits with loops use ORI's generic board or explicit shape guidance.
+The 54 symbol-backed direct RF component constructors record internal schematic metadata and have bundled runtime symbols. Composite RLC parts retain their resistance, inductance, and capacitance values in schematic metadata; transformers retain their turns ratio. `lpfGen()` inherits a cascade tree from the components it constructs. `mbend({turn: 'left'})` selects a left-turn drawing; the default is a right turn. The turn changes only the drawing, not the bend S-parameters. `cas()` and `cascade()` preserve their construction tree. `nodal()` records each component placement's port-to-node assignments and the external port order. When a completed nodal nPort is used as a component, the renderer gives it a `nodal` block with the matching number of ports. Two-port circuits with a series path and simple shunt branches are laid out from their port-to-node connections; tree-shaped multiport circuits use their node connections for placement. Nodal circuits with loops use ORI's generic board or explicit shape guidance.
 
 Constructor source calls `schematicPart(publicName, parameters)` instead of naming an SVG. The generated constructor map reads `schematics/symbol-catalog.json`, and the symbol check verifies that the selected runtime symbol has the same port count as the returned nPort.
 
@@ -732,7 +732,104 @@ nP.mvia({
 
 Every physical microstrip options object also accepts `fList`, an array of frequencies in hertz, defaulting to `nP.global.fList`. For the physical object forms, use `resistivity` in Ω·m. Legacy `rho` defaults to **1** as a copper multiplier for `mlin`, `mclin`, `mtee`, `mstep`, `mbend`, and `mcross`; for `mvia` and `mvgnd` it defaults to **`1.72e-8 Ω·m`**. Do not supply `rho` and `resistivity` together. Other legacy property aliases are described in `developmentDocs/physicalModelApi.md`.
 
+## NPN transistor
+
+`NPN()` returns a three-port: **1 base, 2 collector, 3 emitter**. Select `2N3904` (default) or `BFR93A`. It uses the current `global.fList`, initially `[2e9]`, or an options-level `fList`.
+
+```js
+// NPN: defaults for DC curves and the fixed RF operating point
+nP.NPN({
+    model: '2N3904',
+    configuration: 'commonEmitter',
+    bias: {
+        ib: {
+            start: 0,       // A
+            stop: 50e-6,    // A
+            points: 6
+        },
+        vce: {
+            start: 0,       // V
+            stop: 10,       // V
+            points: 201
+        }
+    },
+    qPoint: {
+        ib: 20e-6,         // A
+        vce: 5             // V
+    },
+    temperature: nP.global.Temp // K
+});
+```
+
+`ivTable()` returns a chart-ready family in volts/amperes without moving the fixed RF Q point. Partial nested objects keep default fields. `commonCollector` retains IB and positive VCE but reports outward IE. `commonBase` instead uses `bias.ie` (0–5 mA, 6 points), `bias.vcb` (0–10 V, 201 points), and default `qPoint: {ie: 2e-3, vcb: 5}`. The selected `configuration` describes DC constraints; external `nodal()` connections determine RF configuration. No terminal is silently grounded.
+
+Returned metadata includes `.bias`, `.qPoint`, `.smallSignal`, `.model` and `.dc`. The model supplies active noise covariance and direct second/third-order current and charge sources. Intercept selectors require the normal two-tone grid before construction. They estimate direct Taylor products, omitting quadratic remixing and large-signal behavior. Package coverage and model limits are documented in [transistorModels.md](../transistorModels.md).
+
+Every completed **two-port** now has `.stability` rows `{frequency, K, deltaMag, unconditionallyStable}` and `.out('K', 'deltaMag')`. These are calculated from the final S-parameters; K values are not combined through networks. The unconditional test requires K > 1 and |Δ| < 1. A three-port transistor has no two-port K dataset. Intermediate K < 1 does not prevent network construction.
+
+## PNP transistor
+
+`PNP()` selects **2N3906** and exposes the same **1 base, 2 collector, 3 emitter** RF port order and methods as `NPN()`. Its physical signed defaults are:
+
+```js
+// PNP: DC curve family and fixed RF Q point
+nP.PNP({
+    model: '2N3906',
+    configuration: 'commonEmitter',
+    bias: {
+        ib: {
+            start: 0,       // A
+            stop: -50e-6,   // A
+            points: 6
+        },
+        vce: {
+            start: 0,       // V
+            stop: -10,      // V
+            points: 201
+        }
+    },
+    qPoint: {
+        ib: -20e-6,        // A
+        vce: -5            // V
+    },
+    temperature: nP.global.Temp // K
+});
+```
+
+The frequency grid defaults to `global.fList`, initially `[2e9]`; options-level `fList` overrides it. `ivTable()` returns signed volts/amperes in sweep order without moving the RF Q point. PNP IB/IC are negative and the library's outward IE is negative. Common collector retains negative IB/VCE and reports IE. Common base instead uses `bias.ie` (0 to −5 mA, 6 points), `bias.vcb` (0 to −10 V, 201 points), and default `qPoint: {ie: -2e-3, vcb: -5}`. External wiring determines the RF configuration.
+
+The returned `.bias`, `.qPoint`, `.smallSignal`, `.model`, `.dc`, `.noise` and nonlinear behavior follow the NPN contract. The 2N3906 uses its own sourced parameters, sharing the Gummel–Poon engine and SPICE defaults. It includes terminal resistances but no explicit package L/C model. Noise and direct Taylor IP limitations are the same as NPN; see [transistorModels.md](../transistorModels.md).
+
 ## Diode
+
+### `D`
+
+The generic SPICE-style diode constructor currently supports **1N4148**. It returns a two-port series branch: **1 anode, 2 cathode**. Defaults are:
+
+```js
+// D: DC sweep and a separate fixed RF Q point
+nP.D({
+    model: '1N4148',
+    bias: {
+        vd: {
+            start: 0,       // V
+            stop: 0.8,      // V
+            points: 201
+        }
+    },
+    qPoint: {
+        vd: 0.6            // V, anode minus cathode
+    },
+    temperature: nP.global.Temp, // K
+    fList: nP.global.fList       // Hz; initially [2e9]
+});
+```
+
+`ivTable()` returns `['vd (V)', 'id (A)']` followed by numeric rows. An optional `ivTable({vd: {start, stop, points}})` overrides the curve range without changing RF data. Partial nested options retain omitted defaults. Voltage is anode minus cathode; positive current flows from anode to cathode.
+
+`.bias` and `.qPoint` contain the solved terminal voltage/current, internal junction voltage/current and temperature. `.smallSignal` reports junction conductance, terminal dynamic resistance, series/leakage resistance and junction/diffusion/total capacitance. `.model` identifies the archived card and provenance; `.dc.bias` holds the curve settings. S-parameters, noise covariance and weak nonlinear sources use the fixed Q point. `nodal()`/`cascade()` preserve that RF/noise behavior; they do not solve a new DC bias circuit.
+
+This uses the archived NXP SPICE card, including RS and its external leakage resistor, continuous junction charge and temperature scaling. It differs numerically from the older datasheet-fit `diode1N4148()`, which remains unchanged. The model does not include an explicit package L/C network, self-heating, large-signal transients or calibrated avalanche/excess noise. Intercepts use direct Taylor sources. See [diodeModels.md](../diodeModels.md).
 
 `diode1N4148` takes one options object. Its scalar properties are JavaScript numbers; `ivPoints` is an integer. It also accepts `fList`, an array of frequencies in hertz, defaulting to `nP.global.fList`.
 
