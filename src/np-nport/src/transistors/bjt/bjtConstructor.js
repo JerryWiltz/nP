@@ -1,12 +1,13 @@
-// Modified: 2026-11-15
+// Modified: 2026-11-17
 import {global} from '../../../../np-global/src/global';
 import {nPort} from '../../nPort';
 import {componentSettings} from '../../componentSettings';
 import {analysisFrequencies} from '../../analysisFrequencies';
 import {schematicPart} from '../../schematicPart';
 import {powers} from './taylor';
-import {temperatureParameters, operatingPoint} from './gummelPoon';
+import {temperatureParameters, operatingPoint, junctionOperatingPoint} from './gummelPoon';
 import {bjtFrequencyRow} from './bjtRf';
+import {dcModel} from '../../dcModel';
 
 function knownProperties(object, names, label) {
     if (!object || typeof object !== 'object' || Array.isArray(object)) throw new TypeError(label + ' must be an object.');
@@ -108,6 +109,19 @@ export function bjtConstructor(options, type, resolveModel, polarity) {
         (configuration !== 'commonBase' && voltage * polarity < 0)) throw new RangeError('Invalid ' + type + ' qPoint current or voltage.');
     const p = temperatureParameters(record.parameters, temperature);
     const point = polarizedPoint(operatingPoint(p, current * polarity, voltage * polarity, configuration), polarity);
+    const {data, ...qPoint} = point;
+    const description = dcModel(type, 3, 'nonlinear', 'physical', {modelId: 'bjt', record,
+        polarity, temperature, configuration, curveSettings: {[bias.current]: bias.stepped, [bias.voltage]: bias.swept},
+        initialQPoint: {...qPoint, temperature, configuration}}, settings);
+    return bjtInstance(description, Object.freeze({...settings, ...description.analysis}), point);
+}
+
+// Both construction paths use exactly the same RF/noise/nonlinearity builder.
+function bjtInstance(description, settings, point) {
+    const {constructorName: type, definition} = description;
+    const {record, configuration, polarity, temperature} = definition;
+    const p = temperatureParameters(record.parameters, temperature);
+    const frequencies = analysisFrequencies(settings), bias = curveSettings(definition.curveSettings, configuration, polarity);
     const model = {type: 'bjt', p, point, record, referenceImpedance: settings.Ro, temperature, rows: new Map()};
     const spars = [], noise = [];
     for (const frequency of frequencies) {
@@ -124,14 +138,43 @@ export function bjtConstructor(options, type, resolveModel, polarity) {
         capacitors: record.capacitors.map(row => row.slice())};
     result.dc = {configuration, current: bias.current, voltage: bias.voltage,
         bias: {[bias.current]: {...bias.stepped}, [bias.voltage]: {...bias.swept}}};
+    const gmu = data.currents[0][2], go = -data.currents[1][2] - gmu;
+    // Hybrid-pi collector current: dIc = (gm + go) dVbe - (go + gmu) dVbc.
     result.smallSignal = {
-        gm: data.currents[1][1] + data.currents[1][2],
-        gpi: data.currents[0][1], gmu: data.currents[0][2], go: -data.currents[1][2],
+        gm: data.currents[1][1] - go,
+        gpi: data.currents[0][1], gmu, go,
         cpi: data.qbe[1], cmu: data.qbc[2], cbeCross: data.qbe[2],
         rb: p.RB, rc: p.RC, re: p.RE
     };
     result.ivTable = ivTable.bind(null, p, configuration, bias, polarity);
     result._intermod = model;
     result._schematic = schematicPart(type, {model: record.name});
+    result._dcModel = description;
+    result._rfModel = Object.freeze({atOperatingPoint: bjtAtOperatingPoint.bind(null, description, settings)});
     return result;
+}
+
+function bjtAtOperatingPoint(description, settings, state) {
+    knownProperties(state, ['intrinsicVbe', 'intrinsicVbc', 've'], 'solved BJT operating point');
+    const ve = state.ve === undefined ? 0 : state.ve;
+    if (!Number.isFinite(state.intrinsicVbe) || !Number.isFinite(state.intrinsicVbc) ||
+        (ve !== null && !Number.isFinite(ve))) {
+        throw new RangeError('Solved BJT state needs finite signed intrinsicVbe/intrinsicVbc and a finite or null ve.');
+    }
+    const {record, temperature, polarity} = description.definition;
+    const p = temperatureParameters(record.parameters, temperature);
+    const point = polarizedPoint(junctionOperatingPoint(p, polarity * state.intrinsicVbe, polarity * state.intrinsicVbc), polarity);
+    const {data, ...bias} = point;
+    if (Object.values(bias).some(value => !Number.isFinite(value)) || data.qb <= 0 ||
+        [data.currents.flat(), data.charges.flat(), data.qbe, data.qbc,
+            [data.forward, data.reverse, data.ibe, data.ibc, data.qb]].some(row => row.some(value => !Number.isFinite(value)))) {
+        throw new RangeError('Solved BJT state is outside the supported Gummel-Poon model domain.');
+    }
+    point.ve = ve;
+    point.vb = ve === null ? null : ve + point.vbe;
+    point.vc = ve === null ? null : ve + point.vce;
+    if (ve !== null && (!Number.isFinite(point.vb) || !Number.isFinite(point.vc))) {
+        throw new RangeError('Solved BJT terminal voltages exceed the supported numerical range.');
+    }
+    return bjtInstance(description, settings, point);
 }

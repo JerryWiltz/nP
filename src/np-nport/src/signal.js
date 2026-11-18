@@ -1,4 +1,4 @@
-// Modified: 2026-10-22
+// Modified: 2026-11-17
 import {complex} from '../../np-math/src/complex';
 
 function analogMode(mode) {
@@ -130,6 +130,23 @@ export function signalWithRows(template, rows) {
 	};
 }
 
+function copySignalData(value) {
+	if (Array.isArray(value)) return value.map(copySignalData);
+	if (value && typeof value === 'object') {
+		if (typeof value.getR === 'function' && typeof value.getI === 'function') return complex(value.getR(), value.getI());
+		return Object.fromEntries(Object.entries(value).map(function ([key, item]) { return [key, copySignalData(item)]; }));
+	}
+	return value;
+}
+
+function captureInputSignal(options) {
+	var source = options.signal;
+	var signal = copySignalData(signalWithRows(source, []));
+	signal.fList = source.fList.slice();
+	signal.spectrum = source.spectrum.map(function (value) { return complex(value.getR(), value.getI()); });
+	return {signal, inputPort: options.inputPort};
+}
+
 // Drive an external nPort input with a periodic, matched-source voltage spectrum.
 export function applyInputSignal(network, options) {
 	if (!options || !options.signal) return network;
@@ -191,5 +208,6 @@ export function applyInputSignal(network, options) {
 		return {frequency: sRow[0], waves: waves};
 	});
 	network.signal = signalWithRows(template, rows);
+	network._rfInputSignals = [...(network._rfInputSignals || []), captureInputSignal(options)];
 	return network;
 }

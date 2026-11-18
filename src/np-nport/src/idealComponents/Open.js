@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {connectionDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort'
@@ -18,5 +19,6 @@ export function Open(options = {}) { // one port, open
 	Open.setspars(sparsArray);
 	Open.setglobal(settings);
 	Open._schematic = schematicPart('Open');
+	Open._dcModel = connectionDcModel('Open', 1, [], [[1, 'g']], {}, settings);
 	return Open;
 };

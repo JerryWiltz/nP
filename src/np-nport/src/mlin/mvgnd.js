@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {physicalDcModel} from '../physicalDcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort';
@@ -80,5 +81,6 @@ export function mvgnd(input = {}) {
 	}, {resistivity: rho}, analysis, {validity: via.microstrip.validity});
 	via._schematic = schematicPart('mvgnd', {labelPrefix: 'mvgnd',
 		diameter: Diameter, height: Height, thickness: Thickness, resistivity: rho});
+	via._dcModel = physicalDcModel('mvgnd', 1, via.physicalModel, settings, Rdc);
 	return via;
 };

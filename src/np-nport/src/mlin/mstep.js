@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {physicalDcModel} from '../physicalDcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {matrix, dim} from '../../../np-math/src/matrix';
@@ -208,5 +209,6 @@ export function mstep(input = {}) {
 		inputWidth: width1, outputWidth: width2, height: Height, thickness: Thickness
 	}, {relativePermittivity: er, resistivity: rho * COPPER_RESISTIVITY, lossTangent: tand, roughnessRms}, analysis);
 	step._schematic = schematicPart('mstep');
+	step._dcModel = physicalDcModel('mstep', 2, step.physicalModel, settings);
 	return step;
 };

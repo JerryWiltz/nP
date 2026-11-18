@@ -1,4 +1,4 @@
-// Modified: 2026-11-15
+// Modified: 2026-11-16
 import {global} from '../../../np-global/src/global';
 import {componentSettings} from '../componentSettings';
 import {analysisFrequencies} from '../analysisFrequencies';
@@ -7,6 +7,7 @@ import {schematicPart} from '../schematicPart';
 import {diodeModel} from './diodeModels';
 import {diodeTemperature, diodeOperatingPoint} from './junctionDiode';
 import {diodeFrequencyRow} from './diodeRf';
+import {dcModel} from '../dcModel';
 
 function knownProperties(value, fields, label) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) throw new TypeError(label + ' must be an object.');
@@ -73,5 +74,7 @@ export function D(options = {}) {
         capacitanceDerivative: point.capacitanceDerivative,
         capacitanceSecondDerivative: point.capacitanceSecondDerivative};
     result._schematic = schematicPart('D', {model: record.name});
+    result._dcModel = dcModel('D', 2, 'nonlinear', 'physical', {modelId: 'diode', record,
+        temperature, curveSettings: result.dc.bias, initialQPoint: result.qPoint}, settings);
     return result;
 }

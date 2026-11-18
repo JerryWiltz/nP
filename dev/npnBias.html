@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<!-- Modified: 2026-11-17 -->
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NPN automatic DC bias and RF</title>
+    <script src="../dist/nP.js"></script>
+    <style>
+        body {
+            max-width: 900px;
+            margin: 24px auto;
+            padding: 0 16px;
+            font-family: sans-serif;
+        }
+
+        table {
+            border-collapse: collapse;
+            margin: 16px 0 28px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ccc;
+            padding: 7px 16px;
+            text-align: left;
+        }
+
+        td {
+            font-variant-numeric: tabular-nums;
+        }
+
+        #status {
+            padding: 12px;
+            background: #f1f5f9;
+        }
+
+        #status.pass {
+            color: #12652c;
+        }
+
+        #status.fail {
+            color: #b42318;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>NPN automatic DC bias and RF</h1>
+    <p>2N3904 with a 12 V supply, a 100 kohm / 22 kohm base divider,
+        a 2.2 kohm collector resistor and a 2 kohm emitter resistor bypassed by 10 nF.</p>
+    <p>All external capacitors: 0.01e-6 F (10 nF). Temperature: 293 K.
+        RF port 1: node 6. RF port 2: node 7. Reference impedance: 50 ohms.</p>
+    <p id="status" role="status">Running…</p>
+
+    <h2>Schematic</h2>
+    <div id="schematic"></div>
+    <p>Use <strong>Actual size</strong> to inspect the component values and node numbers.</p>
+    <p>The emitter branch uses <code>sePaRC(2e3, 0.01e-6)</code>: a 2 kohm
+        resistor in parallel with a 10 nF bypass capacitor. The resistor sets
+        the DC bias; the capacitor reduces emitter degeneration at RF.</p>
+
+    <h2>Solved transistor operating point</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Quantity</th>
+                <th>DC result</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <th scope="row">Base current, IB</th>
+                <td id="baseCurrent"></td>
+            </tr>
+            <tr>
+                <th scope="row">Collector current, IC</th>
+                <td id="collectorCurrent"></td>
+            </tr>
+            <tr>
+                <th scope="row">Emitter current, IE</th>
+                <td id="emitterCurrent"></td>
+            </tr>
+            <tr>
+                <th scope="row">Base voltage, VB</th>
+                <td id="baseVoltage"></td>
+            </tr>
+            <tr>
+                <th scope="row">Collector voltage, VC</th>
+                <td id="collectorVoltage"></td>
+            </tr>
+            <tr>
+                <th scope="row">Emitter voltage, VE</th>
+                <td id="emitterVoltage"></td>
+            </tr>
+            <tr>
+                <th scope="row">Base-emitter voltage, VBE</th>
+                <td id="baseEmitterVoltage"></td>
+            </tr>
+            <tr>
+                <th scope="row">Collector-emitter voltage, VCE</th>
+                <td id="collectorEmitterVoltage"></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>RF S-parameters at the solved bias</h2>
+    <div id="rfChart"></div>
+
+    <script>
+        var statusEl = document.getElementById('status');
+        try {
+            // 1. Set analysis frequencies and temperature.
+            var g = nP.global;
+            g.Ro = 50;
+            g.Temp = 293;
+            g.fList = g.fGen(1e6, 100e6, 51);
+
+            // 2. Create components. No final qPoint is supplied.
+            var q1 = nP.NPN({ model: '2N3904' });
+            var v1 = nP.V(12);
+            var r1 = nP.R(100e3);
+            var r2 = nP.R(22e3);
+            var r3 = nP.R(2200);
+            var rc1 = nP.sePaRC(1e3, 0.01e-6);
+            var c1 = nP.C(0.01e-6);
+            var c2 = nP.C(0.01e-6);
+            var t1 = nP.Tee4();
+            var t2 = nP.Tee();
+            var t3 = nP.Tee();
+            var short = nP.Short();
+
+            // 3. nodal() solves the external DC network before combining RF.
+            var amplifier = nP.nodal(
+                [c1, 6, 10],
+                [t1, 11, 10, 12, 13],
+                [r1, 14, 11],
+                [r2, 12, 15],
+                [short, 15],
+                [q1, 13, 20, 30], // base, collector, emitter
+                [t2, 21, 20, 22],
+                [r3, 23, 21],
+                [c2, 22, 7],
+                [rc1, 30, 31],
+                [short, 31],
+                [t3, 24, 14, 23],
+                [v1, 24, 25],
+                [short, 25],
+                ['out', 6, 7]
+            );
+
+            // 4. Read the returned DC result; no separate solveDC() call.
+            var dc = amplifier.operatingPoint;
+            if (!dc || !dc.converged || dc.method !== 'nonlinear') {
+                throw new Error('Expected an automatically solved nonlinear operating point.');
+            }
+            var bias = dc.components[5].qPoint; // q1 is placement p6
+            var response = amplifier.out('s11dB', 's21dB', 's12dB', 's22dB');
+
+            // 5. Display the solved bias and the RF response built from it.
+            document.getElementById('baseCurrent').textContent = (bias.ib * 1e6).toFixed(6) + ' µA';
+            document.getElementById('collectorCurrent').textContent = (bias.ic * 1000).toFixed(6) + ' mA';
+            document.getElementById('emitterCurrent').textContent = (bias.ie * 1000).toFixed(6) + ' mA';
+            document.getElementById('baseVoltage').textContent = bias.vb.toFixed(6) + ' V';
+            document.getElementById('collectorVoltage').textContent = bias.vc.toFixed(6) + ' V';
+            document.getElementById('emitterVoltage').textContent = bias.ve.toFixed(6) + ' V';
+            document.getElementById('baseEmitterVoltage').textContent = bias.vbe.toFixed(6) + ' V';
+            document.getElementById('collectorEmitterVoltage').textContent = bias.vce.toFixed(6) + ' V';
+            nP.lineChart({
+                inputTable: [response],
+                mount: '#rfChart',
+                title: '2N3904: RF at the automatically solved DC bias',
+                metricPrefix: 'mega',
+                xAxisTitle: 'Frequency (MHz)',
+                yAxisTitle: 'S-parameters (dB)',
+                backgroundColor: 'white'
+            });
+            var drawing = nP.schematic(amplifier, { mount: '#schematic' });
+            if (drawing.error) throw drawing.error;
+            var fitButton = document.querySelector('#schematic button[aria-label="Fit drawing"]');
+            fitButton.click();
+            statusEl.textContent = 'PASS: DC bias converged automatically in nodal() before RF analysis (' +
+                dc.convergence.iterations + ' Newton iterations).';
+            statusEl.className = 'pass';
+        } catch (error) {
+            statusEl.textContent = 'FAIL: ' + error.message;
+            statusEl.className = 'fail';
+            console.error(error);
+        }
+    </script>
+</body>
+
+</html>

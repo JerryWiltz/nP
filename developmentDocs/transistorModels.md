@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-15 -->
+<!-- Modified: 2026-11-17 -->
 # Bipolar transistor models
 
 `nP.NPN()` and `nP.PNP()` return three-port RF networks and DC curve-tracer tables from one shared bias-dependent model. NPN supports **2N3904** (default) and **BFR93A**; PNP supports **2N3906** (default). Ports are **1 base, 2 collector, 3 emitter**, each referenced to the selected context's `Ro` (normally 50 Ω). SPICE Q-instance order is collector, base, emitter; the implementation translates it explicitly.
@@ -169,15 +169,19 @@ Its integral supplies charge; a forward-bias continuation preserves charge and c
 
 ## RF, noise and nonlinear data flow
 
-1. `NPN.js` or `PNP.js` selects the device type and model resolver. `bjtConstructor.js` validates settings, supplies signed defaults, solves the Q point and transforms coefficients for the selected polarity.
+1. `NPN.js` or `PNP.js` selects the device type and model resolver. `bjtConstructor.js` validates settings, supplies signed defaults and solves the standalone fixed Q point. Its shared instance builder also accepts an already solved intrinsic state through an internal adapter, without rerunning the fixed-current bias solver.
 2. `gummelPoon.js` evaluates current and charge equations using `taylor.js`, a two-variable polynomial through degree three. Coefficients are derivatives divided by factorials.
-3. `bjtRf.js` stamps first derivatives, terminal resistances and the package into a small complex admittance matrix. Zero resistance merges nodes exactly; package inductors are shorts at DC. Three external matched loads establish the RF reference without grounding an intrinsic terminal.
+3. `bjtRf.js` stamps first derivatives, terminal resistances and the package into a small complex modified nodal system. Zero resistance merges nodes exactly. Each package inductor adds a branch-current unknown and the voltage equation `Va - Vb - jωL I = 0`, which also enforces its short at DC. This avoids the large `1/(jωL)` admittances that caused numerical cancellation near DC. Three external matched loads establish the RF reference without grounding an intrinsic terminal.
 4. Exciting each external port produces all nine S entries. The same inverse matrix transfers internal noise and weak nonlinear sources to outgoing waves.
-5. Ordinary `nodal()`, `cas()` and `cascade()` embed the device and propagate its noise and intermodulation sources.
+5. `nodal()`, `cas()` and `cascade()` capture the complete DC topology first. With an explicit `V()` supply and nonlinear devices, they solve coupled DC bias, rebuild independent transistor instances, and then combine RF/noise/intermodulation data. The solved data is exposed as `.operatingPoint`. RF-only networks preserve fixed-Q behavior.
 
-`.bias` and `.qPoint` report IB, IC, outward IE, terminal voltages, intrinsic VBE/VBC, temperature and configuration. DC terminal voltages use emitter zero as reference. `.smallSignal` reports `gm`, `gpi`, `gmu`, `go`, `cpi`, `cmu`, `cbeCross`, `rb`, `rc`, `re` in SI units. These come from the same equations, not a second independent fit.
+`.bias` and `.qPoint` report IB, IC, outward IE, terminal voltages, intrinsic VBE/VBC, temperature and configuration. Standalone DC terminal voltages use emitter zero as reference. An internal handoff can supply a finite absolute emitter voltage, or `null` when the absolute reference is undetermined; junction/terminal voltage differences and currents remain defined. `.smallSignal` reports `gm`, `gpi`, `gmu`, `go`, `cpi`, `cmu`, `cbeCross`, `rb`, `rc`, `re` in SI units. These come from the same equations, not a second independent fit.
+
+The intrinsic hybrid-π conductances satisfy `dIB = gpi dVbe + gmu dVbc` and `dIC = (gm + go) dVbe - (go + gmu) dVbc`. Thus `go = -∂IC/∂Vbc - gmu` and `gm = ∂IC/∂Vbe - go`, with the other intrinsic junction voltage held fixed for each partial derivative. The `gmu` correction matters in saturation; it is negligible at the forward-active reference points. These definitions apply to both NPN and signed PNP coordinates. Terminal resistances and package elements are included separately in the RF system.
 
 The active noise model uses independent base/collector shot sources, `2q|IB|` and `2q|IC|` A²/Hz, and resistor thermal sources `4kBT/R`. Their transferred outer products produce the full Hermitian three-port noise-wave covariance in W/Hz. Shared sources therefore create correlations between external ports. This is the classical shot/thermal approximation; it has no fitted high-frequency induced-noise correlation or measured optimum-noise model. Zero KF does not mean the real device has no excess low-frequency noise.
+
+The internal operating-point handoff is documented in [dcAnalysis.md](dcAnalysis.md#internal-operating-point-handoff). It evaluates current/charge derivatives afresh at signed intrinsic VBE/VBC, then rebuilds all RF/noise/Taylor data with a fresh frequency cache. Placement paths distinguish reused templates and nested networks. The nonlinear network solver now supplies those states automatically before RF combination when an explicit DC supply is present. It first estimates with fixed VBE/constant beta, then refines with the shared nonlinear current/Jacobian engine and reports any source stepping. See the [external divider-bias example](np-nport/constructorCatalog.md#external-transistor-bias). Diode network DC adapters remain future work.
 
 Set two-tone settings before the transistor and dependent parts:
 
@@ -220,6 +224,8 @@ The reference decks `test/fixtures/npn-2n3904.cir` and `npn-bfr93a.cir` were run
 At IB = 20 µA, VCE = 5 V, 300.15 K, reference IC is **3.174504 mA** for 2N3904 and **1.624672 mA** for BFR93A. All nine complex S entries agree within 5e-7 at 10 MHz, 100 MHz and 1 GHz. The adjacent `*-noise.cir` decks verify CE noise figure with a 50 Ω source and noiseless matched load; agreement is within 3e-6 dB at those frequencies. Temperature checks at 330 K also agree for IC and capacitances. Tests cover bias/sweep ownership, CE/CB/CC polarity, saturation and Early slopes, derivatives, charge conservation, floating-port wave sums, noise covariance, circuit embedding, two-tone slopes and final-network K.
 
 The cards do not define avalanche breakdown, self-heating, safe operating area or substrate behavior. The 2N3904 card lacks an explicit package L/C model. A computed 2 GHz default row does not guarantee useful gain or manufacturer-validated accuracy at that frequency. General DC circuit analysis and nonlinear transient simulation are outside this constructor.
+
+`test/bjt-linearization.test.js` checks the exposed hybrid-π conductances against finite differences of all three DC terminal currents in saturation and forward-active bias for both NPN cards and the PNP card. BFR93A checks cover cutoff, forward-active and saturated bias from DC through 1 Hz, including 1 pHz and 1 µHz: S rows and noise remain continuous toward DC, row/column sums preserve the floating three-terminal network, and noise covariance remains Hermitian.
 
 The browser harnesses are [dev/npn.html](../dev/npn.html) and [dev/pnp.html](../dev/pnp.html). Numerical calculations need no DOM, clipboard, canvas or network access. Both constructors are exported by the restricted plugin bundle; adopting them in Obsidian requires the usual separate vendor-bundle update.
 

@@ -1,4 +1,5 @@
-// Modified: 2026-11-15
+// Modified: 2026-11-16
+export {V} from './sources/V';
 export {NPN} from './transistors/bjt/NPN';
 export {PNP} from './transistors/bjt/PNP';
 export {chebyLPgk} from './filters/chebyLPgk';
@@ -55,7 +56,7 @@ export {Short} from './idealComponents/Short';
 export {Load} from './idealComponents/Load';
 export {Shift90} from './idealComponents/Shift90';
 
-export {Tlin} from  './idealComponents/Tlin';
+export {Tlin} from './idealComponents/Tlin';
 export {Tclin} from './idealComponents/Tclin';
 export {Coupler180} from './idealComponents/Coupler180';
 

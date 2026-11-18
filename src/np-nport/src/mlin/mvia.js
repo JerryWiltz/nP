@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {physicalDcModel} from '../physicalDcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort';
@@ -163,5 +164,6 @@ export function mvia(input = {}) {
 		topPadHeight, bottomPadHeight, topStubLength, bottomStubLength
 	}, {relativePermittivity: er, resistivity: rho}, analysis, {validity: via.microstrip.validity});
 	via._schematic = schematicPart('mvia');
+	via._dcModel = physicalDcModel('mvia', 2, via.physicalModel, settings, Rdc);
 	return via;
 };

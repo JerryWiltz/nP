@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {requiredDcModel} from '../dcModel';
 import { complex } from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import { nPort } from '../nPort'
@@ -21,5 +22,6 @@ export function trf(N = 0.5, options = {}) { // ideal transformer nPort object
 	trf.setspars(sparsArray);
 	trf.setglobal(settings);
 	trf._schematic = schematicPart('trf', {labelPrefix: 'trf', turnsRatio: N});
+	trf._dcModel = requiredDcModel('trf', 2, 'Supply winding DC resistance and return paths, or explicitly select an ideal transformer fixture.', {turnsRatio: N}, settings);
 	return trf;
 };

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-15 -->
+<!-- Modified: 2026-11-18 -->
 # Restricted nP 0.49.0 plugin bundle audit
 
 The restricted build starts at `src/plugin.js` and produces
@@ -10,6 +10,18 @@ together. The separately maintained Obsidian plugin repository is not changed
 by this refresh.
 
 ## Source provenance
+
+The November 18 update makes `lpfGen()` preserve caller-owned arrays, including
+frozen arrays, and reject malformed ladders or nonpositive/nonfinite values
+before component construction. Errors identify the invalid entry and electrical
+role. The ideal noise, intermodulation propagation and retained DC topology are
+unchanged. Regression coverage includes repeated construction, input errors,
+source-noise propagation, product-frequency attenuation and a solved DC load.
+This update introduces no exports or browser capabilities.
+
+The November 16 update adds `V()` for a floating DC supply represented as a two-port nPort. DC analysis reuses connections retained by the existing `nodal()`, `cas()` and `cascade()` APIs. Constructors and composed networks preserve validated DC descriptors; `network.solveDC()` now solves the supported linear DC models and returns transferable immutable voltage/current results. NPN/PNP nonlinear DC solving was added in the following update. The selected `V()` model is through at 0 Hz, open at positive frequencies, and explicitly noiseless. Its DC voltage constraint is separate from the incremental S data. `V` moves from drawing-only registration to the public constructor catalog. Coverage includes the solved 5.714286 mA resistorDC two-port, retained topology/source data and SVG generation with browser/network globals blocked; no browser capabilities are added.
+
+The November 17 update adds the internal NPN/PNP operating-point handoff and RF construction recipes. Independently biased placements rebuild their S/noise/nonlinear data and enclosing nodal/cascade networks without mutating templates. RF input excitations are replayed through the updated response. The restricted-worker test exercises the handoff with browser/network APIs blocked and transfers plain result data. The same update adds NPN/PNP nonlinear network solving and automatic DC-before-RF execution for networks with explicit voltage supplies. The restricted worker solves a divider-biased amplifier and checks its node/device operating point and RF response. Diode network DC adapters remain unsupported.
 
 The original restricted-entry update was committed as
 `ab8bd664e0d49927e752612dd5d2b17f5cecc124`, after the existing `v0.49.0` tag at
@@ -70,10 +82,10 @@ The junction-temperature helper is shared with BJT models. Worker tests cover
 D curves, fixed-Q RF/noise and DOM-free SVG generation. This adds only the `D`
 export; the security-sensitive literal counts below are unchanged.
 
-The generated bundle is 911,939 bytes with SHA-256:
+The November 18 generated bundle is 977,948 bytes with SHA-256:
 
 ```text
-be5c62424c999762d55822ad09fd843202810fbceb36f354ff6b4b5274d54d64
+f7d53c8b879d2a577359bc28ab609e17c6e0e91c79af48f89adef6ed6b12dd90
 ```
 
 The original helper-export commit also refreshed previously stale symbols and

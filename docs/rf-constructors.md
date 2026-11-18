@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-08 -->
+<!-- Modified: 2026-11-18 -->
 # RF Constructors
 
 Set the frequencies first. Then make each part of the circuit. These calls return [nPort objects](./nport-object.md) that you can [connect](./connecting-nports.md).
@@ -205,7 +205,11 @@ var filter2 = nP.lpfGen([
 
 `trfAuto()` is an ideal, reciprocal, lossless three-port autotransformer. Port 1 is the center tap; ports 2 and 3 are the winding ends. Its full-winding to half-winding turns ratio is fixed at 2:1; it does not take a positional turns-ratio argument. All three ports use the selected reference impedance, normally 50 Ω. An optional `{fList: frequencies}` overrides the analysis frequencies. The [transformer divider example](./lumped-components.md#center-tapped-autotransformer) combines it with `trf()`, two Tees, and an isolation resistor.
 
-`lpfGen()` removes the first and last entries from a supplied filter array. If you need that array afterward, pass a copy with `values.slice()`.
+`lpfGen()` preserves its input array, including frozen arrays. Supply at least
+three finite positive values: source resistance, one or more alternating shunt
+capacitors/series inductors, and load resistance. The endpoints are design
+information, not constructed terminating resistors. Invalid values report their
+array index and electrical role.
 
 ## Older combined RLC components
 

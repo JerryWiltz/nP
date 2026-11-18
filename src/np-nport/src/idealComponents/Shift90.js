@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {requiredDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort'
@@ -21,5 +22,6 @@ export function Shift90(options = {}) { // lossless matched two-port with +90 de
 	Shift90.setspars(sparsArray);
 	Shift90.setglobal(settings);
 	Shift90._schematic = schematicPart('Shift90', {labelPrefix: 'Shift90'});
+	Shift90._dcModel = requiredDcModel('Shift90', 2, 'Supply a real DC equivalent; a constant imaginary RF phase does not define static conduction.', {}, settings);
 	return Shift90;
 };

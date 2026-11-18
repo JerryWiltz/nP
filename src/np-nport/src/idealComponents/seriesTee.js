@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {dcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort';
@@ -30,5 +31,6 @@ export function seriesTee(options = {}) {
 	junction.setspars(sparsArray);
 	junction.setglobal(settings);
 	junction._schematic = schematicPart('seriesTee');
+	junction._dcModel = dcModel('seriesTee', 3, 'linear', 'ideal', {modelId: 'series-junction', voltageConstraint: [1, -1, 1], currentRatios: [1, -1, 1]}, settings);
 	return junction;
 };

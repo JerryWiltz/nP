@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {physicalDcModel} from '../physicalDcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort';
@@ -185,5 +186,6 @@ export function mtee(input = {}) { // microstrip tee nPort object
 		lossTangent: tand, roughnessRms
 	}, analysis, {sources: [mtee.microstrip.source], validity: mtee.microstrip.validity});
 	mtee._schematic = schematicPart('mtee');
+	mtee._dcModel = physicalDcModel('mtee', 3, mtee.physicalModel, settings);
 	return mtee;
 };

@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {lumpedDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort';
@@ -27,5 +28,6 @@ export function C(C = 1e-12, options = {}) { // series capacitor nPort object
 	cPort.setspars(sparsArray);
 	cPort.setglobal(settings);
 	cPort._schematic = schematicPart('C', {value: C});
+	cPort._dcModel = lumpedDcModel('C', 'series', 'series', {capacitance: C}, settings);
 	return cPort;
 };

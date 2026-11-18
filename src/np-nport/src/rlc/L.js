@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {lumpedDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort';
@@ -22,5 +23,6 @@ export function L(L = 5e-9, options = {}) { // series inductor nPort object
 	lPort.setspars(sparsArray);
 	lPort.setglobal(settings);
 	lPort._schematic = schematicPart('L', {value: L});
+	lPort._dcModel = lumpedDcModel('L', 'series', 'series', {inductance: L}, settings);
 	return lPort;
 };

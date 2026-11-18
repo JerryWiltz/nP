@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {connectionDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {global} from '../../../np-global/src/global';
@@ -28,5 +29,6 @@ export function Thru(options = {}) {
 	thru.noise = noiseArray;
 	thru.setglobal(settings);
 	thru._schematic = schematicPart('Thru');
+	thru._dcModel = connectionDcModel('Thru', 2, [[1, 2]], [], {}, settings);
 	return thru;
 }

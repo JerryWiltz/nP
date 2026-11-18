@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {namedDcModel} from '../dcModel';
 import {cascade} from '../combining/cascade';
 import {schematicPart} from '../schematicPart';
 import {global} from '../../../np-global/src/global';
@@ -81,5 +82,6 @@ export function mtfr(input = {}) {
 		temperatureUnit, sections: sectionCount
 	});
 	filmResistor._schematic = schematicPart('mtfr', {value: resistance});
+	filmResistor._dcModel = namedDcModel('mtfr', filmResistor._dcModel, filmResistor.filmResistor, filmResistor.global);
 	return filmResistor;
 };

@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {dcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {global} from '../../../np-global/src/global';
@@ -46,5 +47,6 @@ export function Attn(attenuationDb = 3, temperature = global.Temp, options = {})
 	attenuator.temperature = temperature;
 	attenuator._displayFrequencies = settings.fList.slice();
 	attenuator._schematic = schematicPart('Attn', {value: attenuationDb});
+	attenuator._dcModel = dcModel('Attn', 2, 'linear', 'ideal', {modelId: 'attenuator', parameters: {attenuationDb, referenceImpedance: settings.Ro, temperature}}, settings);
 	return attenuator;
 }

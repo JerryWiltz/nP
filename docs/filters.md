@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-08 -->
+<!-- Modified: 2026-11-18 -->
 # Filters
 
 The low-pass helpers calculate a Chebyshev prototype, scale it to component values, and build a two-port filter. Set the analysis frequencies before creating the final n-port.
@@ -45,14 +45,18 @@ The first and last values are source and load resistances. They are design endpo
 
 ## Build a filter from your values
 
-Pass the scaled array to `lpfGen()` **as a copy**. The function removes the two endpoint resistances from its input array.
+Pass the scaled array directly to `lpfGen()`. The function copies its input;
+the original values are preserved and can be reused or frozen. The array must
+contain source and load resistances and at least one shunt capacitor. Every
+entry must be a finite positive number. Invalid entries are reported by index
+and electrical role before the filter is constructed.
 
 ```js
 nP.global.fList = nP.global.fGen(10e6, 1e9, 51);
 
 var gValues = nP.chebyLPgk(3, 0.1);
 var values = nP.chebyLPLCs(gValues, 200e6, 50);
-var filter = nP.lpfGen(values.slice());
+var filter = nP.lpfGen(values);
 
 var response = filter.out('s21dB');
 nP.lineChart({

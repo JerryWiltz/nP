@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {dcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort'
@@ -18,5 +19,6 @@ export function Load(options = {}) { // one port, load
 	Load.setspars(sparsArray);
 	Load.setglobal(settings);
 	Load._schematic = schematicPart('Load');
+	Load._dcModel = dcModel('Load', 1, 'linear', 'ideal', {modelId: 'lumped', parameters: {resistance: Ro}, elements: [{type: 'resistor', terminals: [1, 'g'], resistance: Ro}], joins: []}, settings);
 	return Load;
 };

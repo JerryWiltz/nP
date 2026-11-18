@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {connectionDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort'
@@ -20,5 +21,6 @@ export function Tee5(options = {}) { // an ideal five-port junction
 	Tee5.setspars(sparsArray);
 	Tee5.setglobal(settings);
 	Tee5._schematic = schematicPart('Tee5', {labelPrefix: 'Tee5'});
+	Tee5._dcModel = connectionDcModel('Tee5', 5, [[1, 2, 3, 4, 5]], [], {}, settings);
 	return Tee5;
 };

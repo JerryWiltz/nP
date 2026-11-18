@@ -6,14 +6,38 @@ import {complex} from '../../../np-math/src/complex';
 import {connectionModel} from '../intermod';
 import {compatibleSignals, signalWithRows, applyInputSignal} from '../signal';
 import {nodalConnections} from './nodalConnections';
+import {dcConnection} from '../dcModel';
+import {rfConnection} from '../operatingPointHandoff';
+import {prepareDcBias, retainDcBias} from '../dcBias';
 
-// Modified: 2026-11-08
+// Modified: 2026-11-17
 var conjugate = function (value) { return complex(value.getR(), -value.getI()); };
 
 
 export function nodal( ... componentConnections) { // componentConnections = [[nPort1, n1, n2 ...], ... ['out', n1, n2, ...] ]
 	var normalized = nodalConnections(componentConnections);
-	componentConnections = normalized.connections;
+	var rows = normalized.connections, parts = rows.slice(0, -1).map(function (row) { return row[0]; });
+	var description = dcConnection('nodal', rows.slice(0, -1).map(function (row) {
+		return {part: row[0], nodes: row.slice(1)};
+	}), rows.at(-1).slice(1), normalized.groups, parts[0].global);
+	var prepared = prepareDcBias(description, parts);
+	if (prepared) normalized.connections = rows.map(function (row, index) {
+		return index < parts.length ? [prepared.components[index], ...row.slice(1)] : row.slice();
+	});
+	var network = nodalNetwork(normalized);
+	network._dcModel = description;
+	return retainDcBias(network, prepared);
+}
+
+function rebuildNodal(normalized, components) {
+	var connections = normalized.connections.map(function (row, index) {
+		return index < components.length ? [components[index], ...row.slice(1)] : row.slice();
+	});
+	return nodalNetwork({...normalized, connections, signalOptions: undefined});
+}
+
+function nodalNetwork(normalized) {
+	var componentConnections = normalized.connections;
 	var signalOptions = normalized.signalOptions;
 	var i = 0, j = 0, k = 0, row = 0, col = 0, offset = 0, base = 0;
 	var networkSpars = componentConnections[0][0].spars.map(function (row) {
@@ -168,5 +192,11 @@ export function nodal( ... componentConnections) { // componentConnections = [[n
 		externalNodes: componentConnections[m].slice(1),
 		...(normalized.groups.length ? {groups: normalized.groups} : {})
 	};
+	network._dcModel = dcConnection('nodal', componentConnections.slice(0, m).map(function (entry) {
+		return {part: entry[0], nodes: entry.slice(1)};
+	}), componentConnections[m].slice(1), normalized.groups, network.global);
+	var recipe = {connections: componentConnections.map(function (row) { return row.slice(); }), groups: normalized.groups};
+	network._rfModel = rfConnection(componentConnections.slice(0, m).map(function (entry) { return entry[0]; }),
+		rebuildNodal.bind(null, recipe));
 	return applyInputSignal(network, signalOptions);
 };

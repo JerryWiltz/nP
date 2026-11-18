@@ -1,4 +1,4 @@
-// Modified: 2026-11-15
+// Modified: 2026-11-16
 import {complex} from '../../../../np-math/src/complex';
 import {matrix} from '../../../../np-math/src/matrix';
 import {BOLTZMANN, ELEMENTARY_CHARGE} from '../../physicalConstants';
@@ -17,6 +17,15 @@ function stampBranch(system, a, b, admittance) {
     system[b][b] = system[b][b].add(admittance);
     system[a][b] = system[a][b].sub(admittance);
     system[b][a] = system[b][a].sub(admittance);
+}
+function stampInductor(system, a, b, branch, reactance) {
+    // Add a branch current and Va - Vb - j*omega*L*I = 0, including at DC.
+    const one = complex(1, 0);
+    system[a][branch] = system[a][branch].add(one);
+    system[b][branch] = system[b][branch].sub(one);
+    system[branch][a] = system[branch][a].add(one);
+    system[branch][b] = system[branch][b].sub(one);
+    system[branch][branch] = complex(0, -reactance);
 }
 function covarianceSource(covariance, inverse, nodes, a, b, density, ro) {
     if (density === 0) return;
@@ -44,22 +53,22 @@ export function bjtFrequencyRow(model, frequency) {
         join(parents, 0, 9); join(parents, 2, 10);
     }
     for (const [a, b, resistance] of resistors) if (resistance === 0) join(parents, a, b);
-    if (frequency === 0) for (const [a, b] of record.inductors) join(parents, a, b);
     const indices = new Map(), nodes = [];
     for (let i = 0; i < 11; i++) {
         const group = root(parents, i);
         if (!indices.has(group)) indices.set(group, indices.size);
         nodes[i] = indices.get(group);
     }
-    const system = Array.from({length: indices.size}, () => zeros(indices.size)), omega = 2 * Math.PI * frequency;
+    const size = indices.size + record.inductors.length;
+    const system = Array.from({length: size}, () => zeros(size)), omega = 2 * Math.PI * frequency;
     for (let port = 0; port < 3; port++) {
         system[nodes[port]][nodes[port]] = system[nodes[port]][nodes[port]].add(complex(1 / ro, 0));
     }
     for (const [a, b, resistance] of resistors) {
         if (resistance > 0) stampBranch(system, nodes[a], nodes[b], complex(1 / resistance, 0));
     }
-    if (frequency > 0) for (const [a, b, inductance] of record.inductors) {
-        stampBranch(system, nodes[a], nodes[b], complex(0, -1 / (omega * inductance)));
+    for (const [index, [a, b, inductance]] of record.inductors.entries()) {
+        stampInductor(system, nodes[a], nodes[b], indices.size + index, omega * inductance);
     }
     for (const [a, b, capacitance] of record.capacitors) {
         stampBranch(system, nodes[a], nodes[b], complex(0, omega * capacitance));

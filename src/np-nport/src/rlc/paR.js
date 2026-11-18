@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {lumpedDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort'
@@ -39,5 +40,6 @@ export function paR(R = 75, temperature = global.Temp, options = {}) { // parall
 	paR.noise = noiseArray;
 	paR.setglobal(settings);
 	paR._schematic = schematicPart('paR', {labelPrefix: 'paR', value: R});
+	paR._dcModel = lumpedDcModel('paR', 'shunt', 'series', {resistance: R}, settings, temperature);
 	return paR;
 };

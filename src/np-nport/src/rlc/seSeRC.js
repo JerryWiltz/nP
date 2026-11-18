@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {lumpedDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort';
@@ -27,5 +28,6 @@ export function seSeRC(R = 75, C = 1e-12, options = {}) { // series inductor nPo
 	seSeRC.setspars(sparsArray);
 	seSeRC.setglobal(settings);
 	seSeRC._schematic = schematicPart('seSeRC', {labelPrefix: 'seSeRC', resistance: R, capacitance: C});
+	seSeRC._dcModel = lumpedDcModel('seSeRC', 'series', 'series', {resistance: R, capacitance: C}, settings);
 	return seSeRC;
 };

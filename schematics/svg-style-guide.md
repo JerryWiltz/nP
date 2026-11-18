@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-15 -->
+<!-- Modified: 2026-11-16 -->
 
 # SVG schematic style guide
 
@@ -67,8 +67,8 @@ All dimensions are SVG `viewBox` units. The detailed family rules below describe
 
 - Independent voltage and current sources use a circle with a 60-unit diameter. Dependent sources use a 60-by-60-unit diamond. The canonical source family is vertical, with terminal 1 above terminal 2. Terminal centers are 100 units apart and each visible pin is 20 units long. Rotate the entire symbol and its terminals together in quarter turns.
 - Voltage-source markings are `+` above `−`, centered on the vertical axis; voltage is terminal 1 relative to terminal 2. Current-source arrows point upward from terminal 2 toward terminal 1. Use dark path strokes for the polarity marks and arrow, retaining their shape under rotation.
-- Source terminals are electrical terminals, not S-parameter ports. Canonical reference captions say `Terminal 1` and `Terminal 2`. Dependent-source control quantities are model references, not extra drawn terminals. Reference captions show `V = Av × Vc`, `I = gm × Vc`, `V = rm × Ic`, or `I = Ai × Ic`; actual control names and parameter values belong in instance annotations when those source models are added.
-- The catalog's `sourceSymbols` entries register artwork separately from public constructor mappings. Canonical source captions do not imply that `V()`, `I()`, or controlled-source behavior has been implemented. Runtime source geometry is bundled using the same pipeline as other symbols.
+- Canonical source captions say `Terminal 1` and `Terminal 2`. Implemented nPort sources expose those same terminals as their public numbered ports; `V()` uses port 1 positive and port 2 negative. Remaining drawing-only sources have no S-parameter model. Dependent-source control quantities are model references, not extra drawn terminals. Reference captions show `V = Av × Vc`, `I = gm × Vc`, `V = rm × Ic`, or `I = Ai × Ic`; actual control names and values belong in instance annotations when those source models are added.
+- The catalog's `sourceSymbols` entries register drawing-only artwork separately from public constructor mappings. `V` is now under `constructors`; `I` and controlled-source names remain under `sourceSymbols`. Runtime source geometry uses the same pipeline as other symbols, and drawing syntax never invokes constructors.
 
 ## Bipolar transistor artwork
 

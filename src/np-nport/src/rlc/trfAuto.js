@@ -1,4 +1,5 @@
-// Modified: 2026-11-04
+// Modified: 2026-11-16
+import {requiredDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {schematicPart} from '../schematicPart';
@@ -25,5 +26,6 @@ export function trfAuto(options = {}) {
 	transformer.setspars(sparsArray);
 	transformer.setglobal(settings);
 	transformer._schematic = schematicPart('trfAuto', {labelPrefix: 'trfAuto'});
+	transformer._dcModel = requiredDcModel('trfAuto', 3, 'Supply center-tapped winding DC resistances, or explicitly select an ideal autotransformer fixture.', {centerTap: 1, windingEnds: [2, 3]}, settings);
 	return transformer;
 }

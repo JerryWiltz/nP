@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {connectionDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort'
@@ -20,5 +21,6 @@ export function Tee4(options = {}) { // a 4-port dummy connection
 	Tee4.setspars(sparsArray);
 	Tee4.setglobal(settings);
 	Tee4._schematic = schematicPart('Tee4', {labelPrefix: 'Tee4'});
+	Tee4._dcModel = connectionDcModel('Tee4', 4, [[1, 2, 3, 4]], [], {}, settings);
 	return Tee4;
 };

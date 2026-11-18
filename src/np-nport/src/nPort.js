@@ -4,8 +4,12 @@ import {noiseAnalysis} from './noiseFigure';
 import {connectionModel, intermodAt, waveDbm, oipDbm} from './intermod';
 import {validateSignal, compatibleSignals, signalWithRows} from './signal';
 import {stabilityAt, stabilityRows} from './stability';
+import {cascadeDcModel} from './dcModel';
+import {solveDC} from './dcSolver';
+import {rfConnection, withOperatingPoints} from './operatingPointHandoff';
+import {prepareDcBias, retainDcBias} from './dcBias';
 
-// Modified: 2026-11-15
+// Modified: 2026-11-17
 var conjugate = function (value) { return complex(value.getR(), -value.getI()); };
 
 export function nPort() { this._noise = undefined; this._signal = undefined; }; // base class for nPort objects
@@ -44,33 +48,7 @@ var normalizeNoise = function (noiseData, spars) {
 	return rows;
 };
 
-nPort.prototype = {
-	constructor: nPort,
-	setglobal: function (global) {
-		this.global = {...global, fList: Array.isArray(global.fList) ? global.fList.slice() : global.fList,
-			tList: Array.isArray(global.tList) ? global.tList.slice() : global.tList,
-			twoTone: global.twoTone ? {...global.twoTone} : global.twoTone};
-		this._noiseTemperature = global.Temp;
-		if (global.twoTone) this._displayFrequencies = global.fList.slice();
-	},
-	getglobal: function () {return this.global;},
-	setspars: function (sparsArray) {
-		if (this._noise !== undefined) normalizeNoise(this._noise, sparsArray);
-		if (this._signal !== undefined) validateSignal(this._signal, sparsArray);
-		this.spars = sparsArray;
-	},
-	getspars: function () { return this.spars; },
-	get stability() { return stabilityRows(this.spars); },
-	get noise() {
-		if (this._noise === undefined && this.spars) {
-			this._noise = normalizeNoise(derivePassiveNoise(this), this.spars);
-		}
-		return this._noise;
-	},
-	set noise (noiseData) { this._noise = normalizeNoise(noiseData, this.spars); },
-	get signal() { return this._signal; },
-	set signal(signalData) { this._signal = validateSignal(signalData, this.spars); },
-	cas: function cas (n2) { // cascade two 2-ports along with method chaining since it returns an nPort
+function cascadeRf(n2, description) { // cascade two 2-ports along with method chaining since it returns an nPort
 		var freqCount = 0, one = complex(1,0),
 			sparsA = this.getspars(),
 			sparsB = n2.getspars(),
@@ -149,7 +127,49 @@ nPort.prototype = {
 		casOut._displayFrequencies = this._displayFrequencies || n2._displayFrequencies;
 		casOut._intermod = connectionModel([this, n2], [4, 2, 1, 5, 0, 3]);
 		casOut._schematic = {kind: 'cascade', left: this._schematic, right: n2._schematic};
+		casOut._dcModel = description || cascadeDcModel(this, n2, this.global);
+		casOut._rfModel = rfConnection([this, n2], rebuildCascade);
 		return casOut;
+}
+
+function rebuildCascade(components) { return cascadeRf.call(components[0], components[1]); }
+
+nPort.prototype = {
+	constructor: nPort,
+	setglobal: function (global) {
+		this.global = {...global, fList: Array.isArray(global.fList) ? global.fList.slice() : global.fList,
+			tList: Array.isArray(global.tList) ? global.tList.slice() : global.tList,
+			twoTone: global.twoTone ? {...global.twoTone} : global.twoTone};
+		this._noiseTemperature = global.Temp;
+		if (global.twoTone) this._displayFrequencies = global.fList.slice();
+	},
+	getglobal: function () {return this.global;},
+	setspars: function (sparsArray) {
+		if (this._noise !== undefined) normalizeNoise(this._noise, sparsArray);
+		if (this._signal !== undefined) validateSignal(this._signal, sparsArray);
+		this.spars = sparsArray;
+	},
+	getspars: function () { return this.spars; },
+	solveDC: function (...options) {
+		if (options.length) throw new TypeError('nPort.solveDC() currently takes no arguments.');
+		return solveDC(this);
+	},
+	_withOperatingPoints: function (records) { return withOperatingPoints(this, records); },
+	get stability() { return stabilityRows(this.spars); },
+	get noise() {
+		if (this._noise === undefined && this.spars) {
+			this._noise = normalizeNoise(derivePassiveNoise(this), this.spars);
+		}
+		return this._noise;
+	},
+	set noise (noiseData) { this._noise = normalizeNoise(noiseData, this.spars); },
+	get signal() { return this._signal; },
+	set signal(signalData) { this._signal = validateSignal(signalData, this.spars); },
+	cas: function cas(n2) {
+		var description = cascadeDcModel(this, n2, this.global);
+		var prepared = prepareDcBias(description, [this, n2]);
+		var components = prepared ? prepared.components : [this, n2];
+		return retainDcBias(cascadeRf.call(components[0], components[1], description), prepared);
 	},
 	out : function out (...selectors) {
 		var spars = this.getspars();

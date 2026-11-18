@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {physicalDcModel} from '../physicalDcModel';
 import { complex } from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import { nPort } from '../nPort';
@@ -196,5 +197,6 @@ export function mlin(input = {}) {
 		roughnessRms
 	}, analysis);
 	mlin._schematic = schematicPart('mlin', {length: Length});
+	mlin._dcModel = physicalDcModel('mlin', 2, mlin.physicalModel, settings);
 	return mlin;
 };

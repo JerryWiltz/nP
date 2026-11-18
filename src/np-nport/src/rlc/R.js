@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {lumpedDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort'
@@ -38,5 +39,6 @@ export function R(R = 75, temperature = global.Temp, options = {}) { // series r
 	rPort.noise = noiseArray;
 	rPort.setglobal(settings);
 	rPort._schematic = schematicPart('R', {value: R});
+	rPort._dcModel = lumpedDcModel('R', 'series', 'series', {resistance: R}, settings, temperature);
 	return rPort;
 };

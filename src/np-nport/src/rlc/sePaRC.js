@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {lumpedDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort';
@@ -27,5 +28,6 @@ export function sePaRC(R = 75, C = 1e-12, options = {}) { // parallel capacitor 
 	sePaRC.setspars(sparsArray);
 	sePaRC.setglobal(settings);
 	sePaRC._schematic = schematicPart('sePaRC', {labelPrefix: 'sePaRC', resistance: R, capacitance: C});
+	sePaRC._dcModel = lumpedDcModel('sePaRC', 'series', 'parallel', {resistance: R, capacitance: C}, settings);
 	return sePaRC;
 };

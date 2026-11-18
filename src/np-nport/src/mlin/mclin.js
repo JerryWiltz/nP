@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {physicalDcModel} from '../physicalDcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort';
@@ -355,5 +356,6 @@ export function mclin(input = {}) {
 		lossTangent: tand, roughnessRms
 	}, dispersion);
 	ctlin._schematic = schematicPart('mclin');
+	ctlin._dcModel = physicalDcModel('mclin', 4, ctlin.physicalModel, settings);
 	return ctlin;
 };

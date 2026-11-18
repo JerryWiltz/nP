@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {lumpedDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort';
@@ -28,5 +29,6 @@ export function paL(L = 5e-9, options = {}) { // parallel capacitor nPort object
 	paL.setspars(sparsArray);
 	paL.setglobal(settings);
 	paL._schematic = schematicPart('paL', {labelPrefix: 'paL', value: L});
+	paL._dcModel = lumpedDcModel('paL', 'shunt', 'series', {inductance: L}, settings);
 	return paL;
 };

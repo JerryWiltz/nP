@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {lumpedDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort';
@@ -27,5 +28,6 @@ export function sePaRL(R = 75, L = 5e-9, options = {}) { // parallel capacitor n
 	sePaRL.setspars(sparsArray);
 	sePaRL.setglobal(settings);
 	sePaRL._schematic = schematicPart('sePaRL', {labelPrefix: 'sePaRL', resistance: R, inductance: L});
+	sePaRL._dcModel = lumpedDcModel('sePaRL', 'series', 'parallel', {resistance: R, inductance: L}, settings);
 	return sePaRL;
 };

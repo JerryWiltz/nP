@@ -1,7 +1,7 @@
-<!-- Modified: 2026-11-14 -->
+<!-- Modified: 2026-11-16 -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 240" role="img" aria-labelledby="title description">
   <title id="title">V — independent voltage source</title>
-  <desc id="description">Independent voltage source. Two electrical terminals, not S-parameter ports. Terminal 1 is above terminal 2. Terminal 1 is positive relative to terminal 2.</desc>
+  <desc id="description">DC voltage source with two electrical terminals exposed as nPort ports 1 and 2. Terminal 1 is above terminal 2. Terminal 1 is positive relative to terminal 2.</desc>
   <rect width="100%" height="100%" fill="#ffffff"/>
   <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <!-- Twenty-unit pins join the grid-aligned terminals to the source body. -->

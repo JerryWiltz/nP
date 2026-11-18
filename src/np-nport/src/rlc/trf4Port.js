@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {requiredDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort'
@@ -25,6 +26,7 @@ export function trf4Port(N = 0.5, options = {}) { // parallel resistor nPort obj
 	trf4Port.setspars(sparsArray);
 	trf4Port.setglobal(settings);
 	trf4Port._schematic = schematicPart('trf4Port', {labelPrefix: 'trf4Port', turnsRatio: N});
+	trf4Port._dcModel = requiredDcModel('trf4Port', 4, 'Supply winding DC resistance for pairs 1-3 and 2-4, or explicitly select an ideal transformer fixture.', {turnsRatio: N, windingPairs: [[1, 3], [2, 4]]}, settings);
 	return trf4Port;
 };
 

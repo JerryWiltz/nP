@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-14 -->
+<!-- Modified: 2026-11-16 -->
 # Schematic authoring language
 
 This note describes the drawing-input language for `nP.schematic()`. Its audience is an engineer creating an SVG for a note, article, book, or presentation. The engineer describes components, connections, directions, and annotations; the renderer supplies the symbol placements, interconnect boxes, and finished SVG.
@@ -339,7 +339,7 @@ Component names and values belong above horizontal symbols or beside vertical on
 
 ## Canonical sources and separate source behavior
 
-The six source drawings are implemented under [schematics/symbols](../schematics/symbols/) and registered separately in the catalog's `sourceSymbols` mapping:
+The six source drawings are implemented under [schematics/symbols](../schematics/symbols/). `V` now has a numerical constructor and is registered under `constructors`; the other five names remain in `sourceSymbols`:
 
 | Symbol name | Body | Marking and meaning |
 | --- | --- | --- |
@@ -352,7 +352,7 @@ The six source drawings are implemented under [schematics/symbols](../schematics
 
 Their canonical orientation has electrical terminal 1 above terminal 2, with 20-unit pins and the same grid, fonts, colors, and rotation rules as the rest of the library. Dependent sources have two drawn output terminals; the model separately identifies the controlling voltage or current. In a concrete drawing, the caption can name that control expression. Reference captions are not numerical model definitions.
 
-The drawings do not implement `nP.V()`, `nP.I()`, or controlled-source behavior. Future `src/np-sources/src/` files named `V.js`, `I.js`, `VCVS.js`, `VCCS.js`, `CCVS.js`, and `CCCS.js` can define these model primitives separately. They express source relationships rather than independently returning an S-parameter nPort. An enclosing transistor constructor can assemble sources and parasitics and derive its external S-parameters. See [Dependent sources and a MESFET model](dependentSourcesAndMesfet.md).
+Drawing syntax still selects geometry without calling numerical constructors. The separate `nP.V()` implementation in `src/np-nport/src/sources/V.js` returns a two-port nPort with a DC voltage-source descriptor and explicit incremental S/noise rows; its terminal order matches this artwork. `I()`, `VCVS()`, `VCCS()`, `CCVS()` and `CCCS()` remain unimplemented numerical APIs. Future source implementations must describe their DC equations and public terminal/control references explicitly. See [DC analysis](dcAnalysis.md) and [Dependent sources and a MESFET model](dependentSourcesAndMesfet.md).
 
 ## Validation and errors
 

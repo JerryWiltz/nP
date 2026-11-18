@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {connectionDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort'
@@ -18,5 +19,6 @@ export function Short(options = {}) { //  one port, Short
 	Short.setspars(sparsArray);
 	Short.setglobal(settings);
 	Short._schematic = schematicPart('Short');
+	Short._dcModel = connectionDcModel('Short', 1, [[1, 'g']], [], {}, settings);
 	return Short;
 };

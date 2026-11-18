@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {lumpedDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort';
@@ -27,5 +28,6 @@ export function seSeLC(L = 5e-9, C = 1e-12, options = {}) { // series inductor n
 	seSeLC.setspars(sparsArray);
 	seSeLC.setglobal(settings);
 	seSeLC._schematic = schematicPart('seSeLC', {labelPrefix: 'seSeLC', inductance: L, capacitance: C});
+	seSeLC._dcModel = lumpedDcModel('seSeLC', 'series', 'series', {inductance: L, capacitance: C}, settings);
 	return seSeLC;
 };

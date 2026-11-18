@@ -1,4 +1,4 @@
-// Modified: 2026-11-15
+// Modified: 2026-11-16
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {global} from '../../../np-global/src/global';
@@ -7,6 +7,7 @@ import {componentSettings} from '../componentSettings';
 import {nPort} from '../nPort';
 import {BOLTZMANN as K, ELEMENTARY_CHARGE as Q} from '../physicalConstants';
 import {seriesTwoPortFromImpedance} from './diodeRf';
+import {dcModel} from '../dcModel';
 
 
 function thermalVoltage(temperatureK) {
@@ -218,5 +219,7 @@ export function diode1N4148(options = {}) {
 	};
 
 	diodePort._schematic = schematicPart('diode1N4148');
+	diodePort._dcModel = dcModel('diode1N4148', 2, 'nonlinear', 'approximate', {modelId: 'legacy-diode',
+		parameters: p, temperature: p.temperatureK, initialQPoint: diodePort.diode.bias}, settings);
 	return diodePort;
 }

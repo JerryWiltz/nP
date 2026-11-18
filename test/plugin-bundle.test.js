@@ -1,4 +1,4 @@
-// Modified: 2026-11-15
+// Modified: 2026-11-17
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -74,7 +74,53 @@ async function exerciseWorkerApi() {
     const authoredSvg = nP.schematicSvg(authored), authoredGraph = nP.schematicGraph(authored);
 
     const q = nP.NPN({model: 'BFR93A', bias: {ib: {points: 2}, vce: {points: 3}}});
+    const supply = nP.V(-12, {fList: [0, 1e6]});
+    const voltageSource = {source: supply.source, dc: supply._dcModel,
+        rf: supply.out('s11Re', 's12Re', 's21Re', 's22Re'), svg: nP.schematicSvg(supply)};
+    const dcNetwork = nP.nodal(
+        [nP.C(1e-9), 6, 1],
+        [nP.Tee(), 8, 1, 2],
+        [nP.V(1), 8, 9],
+        [nP.Short(), 9],
+        [nP.R(50), 2, 3],
+        [nP.R(75), 3, 4],
+        [nP.Tee(), 10, 4, 5],
+        [nP.R(50), 10, 11],
+        [nP.Short(), 11],
+        [nP.C(1e-9), 5, 7],
+        ['out', 6, 7]
+    );
+    const dcOperatingPoint = dcNetwork.solveDC();
+    const biased = nP.nodal(
+        [nP.C(1e-9), 100, 10],
+        [nP.Tee4(), 11, 10, 12, 13],
+        [nP.R(100e3), 14, 11],
+        [nP.R(22e3), 12, 15],
+        [nP.Short(), 15],
+        [nP.NPN(), 13, 20, 30],
+        [nP.Tee(), 21, 20, 22],
+        [nP.R(2200), 23, 21],
+        [nP.C(1e-9), 22, 101],
+        [nP.R(1000), 30, 31],
+        [nP.Short(), 31],
+        [nP.Tee(), 24, 14, 23],
+        [nP.V(12), 24, 25],
+        [nP.Short(), 25],
+        ['out', 100, 101]
+    );
+    const automaticBias = {operatingPoint: biased.operatingPoint, rf: biased.out('s21dB', 'NF21dB'),
+        qPoint: biased._intermod.components[5].bias};
+
+
     const amplifier = nP.nodal([q, 1, 2, 3], [nP.Short(), 3], ['out', 1, 2]);
+    const target = nP.NPN({model: 'BFR93A', qPoint: {ib: 40e-6, vce: 3}});
+    const rebuilt = amplifier._withOperatingPoints([{path: 'p1', intrinsicVbe: target.bias.intrinsicVbe,
+        intrinsicVbc: target.bias.intrinsicVbc, ve: 0}]);
+    const targetAmplifier = nP.nodal([target, 1, 2, 3], [nP.Short(), 3], ['out', 1, 2]);
+    const handoff = {bias: rebuilt._intermod.components[0].bias, originalBias: q.bias,
+        rf: rebuilt.out('s21dB', 'NF21dB'), expectedRf: targetAmplifier.out('s21dB', 'NF21dB'),
+        points: rebuilt._operatingPoints};
+
     const npn = {curves: q.ivTable(), rf: amplifier.out('s21dB', 'K', 'NF21dB'),
         svg: nP.schematicSvg(q)};
     const pnpDevice = nP.PNP({bias: {ib: {points: 2}, vce: {points: 3}}});
@@ -104,7 +150,7 @@ async function exerciseWorkerApi() {
     const signalSvg = nP.schematicSvg({transmitter: tx, circuit, receiver: rx});
     parentPort.postMessage({version: nP.version, graph, topology, svg, cascadeSvg,
         escapedSvg, invalidInputError, ladderGraph, ladderSvg, junctionGraph, junctionSvg, authoredSvg, authoredGraph, pnCount, fftError,
-        dbv, bits: rx.out('bit string'), ber, signalSvg, npn, pnp, diode});
+        dbv, bits: rx.out('bit string'), ber, signalSvg, npn, pnp, diode, dcTopology: amplifier._dcModel, voltageSource, dcOperatingPoint, handoff, automaticBias});
 }
 
 function runWorker() {
@@ -149,6 +195,24 @@ test('restricted distribution excludes legacy injection and executable loading p
 test('restricted bundle generates transferable SVG and data with browser APIs blocked',
     {timeout: 30000}, async () => {
         const result = await runWorker();
+        assert.ok(Math.abs(result.handoff.bias.ib - 40e-6) < 1e-12);
+        assert.ok(Math.abs(result.handoff.originalBias.ib - 20e-6) < 1e-12);
+        assert.deepEqual(result.handoff.rf, result.handoff.expectedRf);
+        assert.deepEqual(result.handoff.points.map(point => point.path), ['p1']);
+        assert.equal(result.automaticBias.operatingPoint.method, 'nonlinear');
+        assert.ok(Math.abs(result.automaticBias.qPoint.ic - 0.0013077639633) < 1e-10);
+        assert.ok(result.automaticBias.operatingPoint.residuals.maxNormalizedResidual <= 1);
+        assert.ok(result.automaticBias.rf[1].every(Number.isFinite));
+        assert.equal(result.dcOperatingPoint.converged, true);
+        assert.ok(Math.abs(result.dcOperatingPoint.components.find(part => part.path === 'p5').terminalCurrents[0] - 1 / 175) < 1e-12);
+        assert.deepEqual(result.dcOperatingPoint.ports.map(port => [port.node, port.voltage, port.current]), [[6, null, 0], [7, null, 0]]);
+        assert.equal(result.dcTopology.kind, 'connection');
+        assert.deepEqual(result.dcTopology.definition.components.map(p => p.id), ['p1', 'p2']);
+        assert.deepEqual(result.dcTopology.definition.components.map(p => p.model.constructorName), ['NPN', 'Short']);
+        assert.equal(result.voltageSource.source.voltage, -12);
+        assert.equal(result.voltageSource.dc.definition.voltage, -12);
+        assert.deepEqual(result.voltageSource.rf.slice(1), [[0, 0, 1, 1, 0], [1e6, 1, 0, 0, 1]]);
+        assert.match(result.voltageSource.svg, /V1 = -12 V/);
         assert.equal(result.version, packageVersion);
         assert.equal(result.npn.curves.length, 4);
         assert.ok(result.npn.rf[1].every(Number.isFinite));

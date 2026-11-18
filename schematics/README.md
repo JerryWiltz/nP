@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-15 -->
+<!-- Modified: 2026-11-16 -->
 
 # Schematics
 
@@ -46,7 +46,7 @@ The [two-series-resistors example](circuits/two-series-resistors.mjs) pairs exec
 
 ## Source symbols
 
-The source artwork is registered and bundled independently of future source-behavior JavaScript:
+The source artwork is bundled independently of the numerical implementation. `V()` is now a two-port nPort constructor under `src/np-nport/src/sources/V.js`; its catalog mapping is under `constructors`. The other five names remain drawing-only `sourceSymbols`:
 
 | Drawing name | Canonical SVG | Marking |
 | --- | --- | --- |
@@ -59,7 +59,7 @@ The source artwork is registered and bundled independently of future source-beha
 
 Each has two electrical terminals: terminal 1 above terminal 2. Voltage polarity is positive at terminal 1; current arrows point from terminal 2 toward terminal 1. The controlled-source captions identify their control relationship; the model will separately identify the sensed voltage or current. Reference captions are stripped when canonical body geometry is embedded in a circuit; instance labels and annotations will supply actual values and control names.
 
-Open `dev/canonicalSymbols.html#sources` to inspect the family. These symbols have no numerical behavior or new public JavaScript exports. The drawing-input syntax such as `Vin=V` selects their geometry directly; see [Schematic authoring language](../developmentDocs/schematicLanguage.md) and `dev/schematicAuthoring.html`. Source implementation files under `src/np-sources/` can be added separately without embedding SVG geometry in those files.
+Open `dev/canonicalSymbols.html#sources` to inspect the family. `V()` carries a DC voltage-source descriptor and the declared incremental S/noise model; it does not yet solve network DC bias. `I` and the controlled sources have no numerical behavior yet. Drawing syntax such as `Vin=V` continues to select geometry directly without executing a constructor; see [Schematic authoring language](../developmentDocs/schematicLanguage.md) and `dev/schematicAuthoring.html`. Future numerical sources must provide DC models and preserve canonical terminal orientation without embedding SVG geometry in their implementation.
 
 ## Device artwork
 

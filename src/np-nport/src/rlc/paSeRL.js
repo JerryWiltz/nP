@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {lumpedDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort';
@@ -23,5 +24,6 @@ export function paSeRL(R = 75, L = 5e-9, options = {}) { // parallel capacitor n
 	paSeRL.setspars(sparsArray);
 	paSeRL.setglobal(settings);
 	paSeRL._schematic = schematicPart('paSeRL', {labelPrefix: 'paSeRL', resistance: R, inductance: L});
+	paSeRL._dcModel = lumpedDcModel('paSeRL', 'shunt', 'series', {resistance: R, inductance: L}, settings);
 	return paSeRL;
 };

@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {lumpedDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort';
@@ -28,5 +29,6 @@ export function paSeLC(L = 5e-9, C = 1e-12, options = {}) { // parallel capacito
 	paSeLC.setspars(sparsArray);
 	paSeLC.setglobal(settings);
 	paSeLC._schematic = schematicPart('paSeLC', {labelPrefix: 'paSeLC', inductance: L, capacitance: C});
+	paSeLC._dcModel = lumpedDcModel('paSeLC', 'shunt', 'series', {inductance: L, capacitance: C}, settings);
 	return paSeLC;
 };

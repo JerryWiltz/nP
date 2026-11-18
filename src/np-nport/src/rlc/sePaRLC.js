@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {lumpedDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort';
@@ -27,5 +28,6 @@ export function sePaRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // parallel
 	sePaRLC.setspars(sparsArray);
 	sePaRLC.setglobal(settings);
 	sePaRLC._schematic = schematicPart('sePaRLC', {labelPrefix: 'sePaRLC', resistance: R, inductance: L, capacitance: C});
+	sePaRLC._dcModel = lumpedDcModel('sePaRLC', 'series', 'parallel', {resistance: R, inductance: L, capacitance: C}, settings);
 	return sePaRLC;
 };

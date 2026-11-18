@@ -1,4 +1,4 @@
-// Modified: 2026-11-15
+// Modified: 2026-11-17
 import {BOLTZMANN, ELEMENTARY_CHARGE} from '../../physicalConstants';
 import {temperatureJunction} from '../../junctionTemperature';
 import {constant, variable, add, subtract, multiply, scale, power, divide, exponential} from './taylor';
@@ -66,6 +66,14 @@ function biasResidual(p, vbe, vbc, current, voltage, configuration) {
     const terminalCurrent = configuration === 'commonBase' ? scale(ie, -1) : ib;
     return {data, a: subtract(terminalCurrent, constant(current)), b: subtract(terminalVoltage, constant(voltage))};
 }
+// Evaluate an already solved intrinsic state; do not run the fixed-current solver.
+export function junctionOperatingPoint(p, vbe, vbc) {
+    const data = gummelPoon(p, vbe, vbc), [ib, ic, ieEntering] = data.currents.map(row => row[0]);
+    const vbeExternal = vbe + p.RB * ib - p.RE * ieEntering;
+    const vce = vbe - vbc + p.RC * ic - p.RE * ieEntering;
+    return {ib, ic, ie: -ieEntering, vbe: vbeExternal, vce, vcb: vce - vbeExternal,
+        vb: vbeExternal, vc: vce, ve: 0, intrinsicVbe: vbe, intrinsicVbc: vbc, data};
+}
 export function operatingPoint(p, current, voltage, configuration, initial) {
     let vbe = initial ? initial[0] : p.NF * p.VT * Math.log1p(current *
         (configuration === 'commonBase' ? 1 : p.BF) / p.IS);
@@ -75,11 +83,7 @@ export function operatingPoint(p, current, voltage, configuration, initial) {
         const {a, b} = biasResidual(p, vbe, vbc, current, voltage, configuration);
         const error = Math.abs(a[0]) / currentScale + Math.abs(b[0]);
         if (Math.abs(a[0]) < 1e-13 + current * 1e-10 && Math.abs(b[0]) < 1e-9) {
-            const data = gummelPoon(p, vbe, vbc), [ib, ic, ieEntering] = data.currents.map(row => row[0]);
-            const vbeExternal = vbe + p.RB * ib - p.RE * ieEntering;
-            const vce = vbe - vbc + p.RC * ic - p.RE * ieEntering;
-            return {ib, ic, ie: -ieEntering, vbe: vbeExternal, vce, vcb: vce - vbeExternal,
-                vb: vbeExternal, vc: vce, ve: 0, intrinsicVbe: vbe, intrinsicVbc: vbc, data};
+            return junctionOperatingPoint(p, vbe, vbc);
         }
         const determinant = a[1] * b[2] - a[2] * b[1];
         let dx = (-a[0] * b[2] + a[2] * b[0]) / determinant;

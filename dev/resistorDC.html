@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<!-- Modified: 2026-11-16 -->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>resistorDC: with and without the DC supply</title>
+    <script src="../dist/nP.js"></script>
+    <style>
+        body { max-width: 900px; margin: 24px auto; padding: 0 16px; font-family: sans-serif; }
+        section { margin: 28px 0; }
+    </style>
+</head>
+<body>
+    <h1>resistorDC</h1>
+    <p>Port 1: node 6. Port 2: node 7. Reference impedance: 50 ohms.</p>
+
+    <section>
+        <h2>1. With the first tee and DC supply</h2>
+        <p id="dcCurrent"></p>
+        <div id="withSupplyChart"></div>
+    </section>
+
+    <section>
+        <h2>2. Without the first tee and DC supply</h2>
+        <div id="withoutSupplyChart"></div>
+    </section>
+
+    <script>
+        // Set frequencies before creating either circuit's components.
+        var g = nP.global;
+        g.Ro = 50;
+        g.fList = g.fGen(1e6, 1000e6, 101);
+
+        var c1 = nP.C(1e-9);
+        var c2 = nP.C(1e-9);
+        var r1 = nP.R(50);
+        var r2 = nP.R(75);
+        var r3 = nP.R(50);
+        var t1 = nP.Tee();
+        var t2 = nP.Tee();
+        var v1 = nP.V(1);
+        var short = nP.Short();
+
+        // Case 1: first tee, voltage source and its ground are present.
+        var withSupply = nP.nodal(
+            [c1, 6, 1],
+            [t1, 8, 1, 2],
+            [v1, 8, 9],
+            [short, 9],
+            [r1, 2, 3],
+            [r2, 3, 4],
+            [t2, 10, 4, 5],
+            [r3, 10, 11],
+            [short, 11],
+            [c2, 5, 7],
+            ['out', 6, 7]
+        );
+        var dc = withSupply.solveDC();
+        var dcCurrent = dc.components[4].terminalCurrents[0]; // r1, amperes
+        var withSupplyOut = withSupply.out('s11dB', 's21dB', 's12dB', 's22dB');
+        document.getElementById('dcCurrent').textContent =
+            'DC current through R1, R2 and R3: ' + (dcCurrent * 1000).toFixed(6) + ' mA';
+        nP.lineChart({
+            inputTable: [withSupplyOut],
+            mount: '#withSupplyChart',
+            title: 'With DC supply',
+            metricPrefix: 'mega',
+            xAxisTitle: 'Frequency (MHz)',
+            yAxisTitle: 'S-parameters (dB)',
+            backgroundColor: 'white'
+        });
+
+        // Case 2: remove t1, v1 and the source ground; connect c1 directly to r1.
+        var withoutSupply = nP.nodal(
+            [c1, 6, 2],
+            [r1, 2, 3],
+            [r2, 3, 4],
+            [t2, 10, 4, 5],
+            [r3, 10, 11],
+            [short, 11],
+            [c2, 5, 7],
+            ['out', 6, 7]
+        );
+        var withoutSupplyOut = withoutSupply.out('s11dB', 's21dB', 's12dB', 's22dB');
+        nP.lineChart({
+            inputTable: [withoutSupplyOut],
+            mount: '#withoutSupplyChart',
+            title: 'Without DC supply',
+            metricPrefix: 'mega',
+            xAxisTitle: 'Frequency (MHz)',
+            yAxisTitle: 'S-parameters (dB)',
+            backgroundColor: 'white'
+        });
+    </script>
+</body>
+</html>

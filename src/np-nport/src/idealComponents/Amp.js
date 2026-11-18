@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {requiredDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {global} from '../../../np-global/src/global';
@@ -184,5 +185,6 @@ export function Amp(gainDb = 20, noiseFigureDb = 4, referenceTemperature = 290, 
 		phase3: complex(Math.cos(im3PhaseDeg * Math.PI / 180), Math.sin(im3PhaseDeg * Math.PI / 180))
 	};
 	amplifier._schematic = schematicPart('Amp', {value: typeof gainDb === 'number' ? gainDb : options.gainDb});
+	amplifier._dcModel = requiredDcModel('Amp', 2, 'Supply a physical DC path and supply model, or an explicit controlled-source DC equivalent.', {}, settings);
 	return amplifier;
 }

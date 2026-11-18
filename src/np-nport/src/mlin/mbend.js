@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {physicalDcModel} from '../physicalDcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {matrix, dim} from '../../../np-math/src/matrix';
@@ -136,5 +137,6 @@ export function mbend(input = {}) {
 	}, {relativePermittivity: er, resistivity: rho * COPPER_RESISTIVITY, lossTangent: tand, roughnessRms}, analysis,
 	{validity: bend.microstrip.validity});
 	bend._schematic = schematicPart('mbend', {}, options.turn);
+	bend._dcModel = physicalDcModel('mbend', 2, bend.physicalModel, settings);
 	return bend;
 };

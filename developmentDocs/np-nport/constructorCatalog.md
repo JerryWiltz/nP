@@ -1,7 +1,7 @@
-<!-- Modified: 2026-11-15 -->
+<!-- Modified: 2026-11-18 -->
 # nP constructor catalog
 
-This catalog covers the 57 public functions that produce n-port objects from `src/np-nport/src/index.js`, the digital waveform functions from `src/np-digital`, and the exported math and low-pass prototype functions. Each JS call below spells out the **current defaults** where they exist. Each argument or property appears on its own line. Units are in comments. Each constructor has its own heading and code block.
+This catalog covers the 59 public functions that produce n-port objects from `src/np-nport/src/index.js`, the digital waveform functions from `src/np-digital`, and the exported math and low-pass prototype functions. Each JS call below spells out the **current defaults** where they exist. Each argument or property appears on its own line. Units are in comments. Each constructor has its own heading and code block.
 
 Parameter spelling follows the public API. Legacy positional names such as `R`, `N`, `Z`, and `Length` retain their source capitalization; physical options use `lowerCamelCase` property names. Positional argument order matters. Named object properties follow one presentation order: geometry, material and loss, then temperature.
 
@@ -22,6 +22,8 @@ If `nP.global.twoTone` is set, constructors also create S and noise rows at the 
 
 Frequency lists may include 0 Hz for digital waveform analysis. Ideal RLC branches use their exact DC circuit limits: a series capacitor opens, a shunt inductor shorts, and a series inductor or shunt capacitor becomes a through connection. Composite branches preserve any resistor that remains in the DC path. `mstep()` and `mbend()` become through connections, and `mcross()` becomes an ideal four-port junction. Their singular impedance or admittance metadata at 0 Hz is recorded as `null`. `mcross()` also uses that junction limit just above DC while its parasitic effects are below one part per million; the full admittance reduction loses precision there. The current `mlin()` and `mclin()` models produce lossless DC transmission even with finite conductor resistivity; they need a separate DC resistance model before their 0 Hz insertion loss can be treated as physical. `Shift90()` remains a frequency-independent phase fixture and should not be used as a physical DC path in a real-waveform analysis.
 
+Electrical constructors attach immutable internal `_dcModel` descriptors. Existing `nodal()`, `cas()` and `cascade()` retain their component connections and DC models for `network.solveDC()`. The [shared DC analysis contract](../dcAnalysis.md) and [constructor-by-constructor DC audit](dcConstructorAudit.md) describe model coverage, topology preservation, missing-model requirements and the planned initial-estimate/nonlinear-refinement workflow. The linear and NPN/PNP nonlinear network DC solvers are implemented. A network containing `V()` and nonlinear devices automatically solves DC and rebuilds transistor RF/noise/nonlinear data before RF combination. Its solved result is `network.operatingPoint`. Diode network DC adapters remain unsupported; current fixed-Q APIs retain their behavior. New electrical constructors must supply the same descriptor contract and pass export-coverage tests.
+
 Every n-port constructor uses `nP.global.fList` by default. For an independent frequency grid, pass `{fList: frequencies}`. Constructors that already take an options object accept `fList` in that object. Positional constructors accept it in a final options object after their existing arguments. No-argument fixtures accept the options object as their first argument. `lpfGen()` accepts it after the filter array. The default for every optional `fList` is the current `nP.global.fList` when the component is created.
 
 ```js
@@ -37,7 +39,7 @@ var filter = nP.lpfGen(undefined, {fList: frequencies});
 
 Each nPort stores a copy of its selected frequency list and analysis settings. Components in one `nodal()` or `cascade()` circuit must have matching frequency rows. Call `nP.global()` to create and select an independent circuit context. It holds its own `fList`, `tList`, `twoTone`, `Ro`, and `Temp`; `nP.global(g)` selects an earlier context `g` again. Existing `nP.global.fList` and related property calls use the selected context. `nP.global.tGen(start, stop, points)` returns a uniformly spaced time list in seconds, including both endpoints. Two-tone analysis still requires positive first-tone frequencies and a positive spacing.
 
-The 54 symbol-backed direct RF component constructors record internal schematic metadata and have bundled runtime symbols. Composite RLC parts retain their resistance, inductance, and capacitance values in schematic metadata; transformers retain their turns ratio. `lpfGen()` inherits a cascade tree from the components it constructs. `mbend({turn: 'left'})` selects a left-turn drawing; the default is a right turn. The turn changes only the drawing, not the bend S-parameters. `cas()` and `cascade()` preserve their construction tree. `nodal()` records each component placement's port-to-node assignments and the external port order. When a completed nodal nPort is used as a component, the renderer gives it a `nodal` block with the matching number of ports. Two-port circuits with a series path and simple shunt branches are laid out from their port-to-node connections; tree-shaped multiport circuits use their node connections for placement. Nodal circuits with loops use ORI's generic board or explicit shape guidance.
+The 56 symbol-backed direct RF component constructors record internal schematic metadata and have bundled runtime symbols. Composite RLC parts retain their resistance, inductance, and capacitance values in schematic metadata; transformers retain their turns ratio. `lpfGen()` inherits a cascade tree from the components it constructs. `mbend({turn: 'left'})` selects a left-turn drawing; the default is a right turn. The turn changes only the drawing, not the bend S-parameters. `cas()` and `cascade()` preserve their construction tree. `nodal()` records each component placement's port-to-node assignments and the external port order. When a completed nodal nPort is used as a component, the renderer gives it a `nodal` block with the matching number of ports. Two-port circuits with a series path and simple shunt branches are laid out from their port-to-node connections; tree-shaped multiport circuits use their node connections for placement. Nodal circuits with loops use ORI's generic board or explicit shape guidance.
 
 Constructor source calls `schematicPart(publicName, parameters)` instead of naming an SVG. The generated constructor map reads `schematics/symbol-catalog.json`, and the symbol check verifies that the selected runtime symbol has the same port count as the returned nPort.
 
@@ -375,6 +377,122 @@ nP.trfAuto();
 ```
 
 Port 1 is the center tap; ports 2 and 3 are the winding ends. The two half-windings are series-aiding, giving a 2:1 full-winding to half-winding turns ratio. Every port uses the configured reference impedance. Its canonical schematic symbol is bundled with the constructor.
+
+## Voltage source
+
+### `V`
+
+`V()` returns a floating two-port nPort. Port 1 is positive relative to port 2. The default DC voltage is 1 V; finite negative and zero voltages are supported.
+
+```js
+// A DC supply with explicit incremental frequency rows.
+nP.global.fList = [0, 1e6];
+var v1 = nP.V(1); // voltage: V
+var short = nP.Short();
+var rail = nP.nodal(
+    [v1, 1, 2],
+    [short, 2],
+    ['out', 1]
+);
+var incrementalReflection = rail.out('s11Re');
+```
+
+The equivalent object form is `nP.V({voltage: 1, fList: [0, 1e6]})`. The positional form accepts `{fList}` as its second argument. Without an explicit grid it uses current `global.fList`, including the usual added two-tone analysis frequencies. Unknown/conflicting options, nonfinite voltage, invalid frequencies and nonpositive reference impedance are rejected.
+
+At 0 Hz the source's incremental S entries are `[s11, s12, s21, s22] = [0, 1, 1, 0]`. At every positive frequency the entries are `[1, 0, 0, 1]`: the supply is open at both RF ports. A tee with that supply on its shunt branch becomes an ideal through between the remaining ports. An external bypass capacitor still contributes its own RF impedance. This is the selected ideal DC-feed convention. Explicit source-noise covariance is zero at every frequency.
+
+`.source` reports `{type: 'voltage', voltage, positivePort: 1, negativePort: 2, rfModel: 'open', noiseModel: 'noiseless'}`. The immutable `_dcModel` separately records `V1 - V2 = voltage`; neither port is grounded internally. The source uses the canonical `voltage-source` symbol with the same terminal polarity.
+
+The through S row is only an incremental model: the example above reports `s11Re = -1` at 0 Hz and `1` at 1 MHz. Call `rail.solveDC()` explicitly to solve the 1 V rail. `V()` does not add an RF/FFT signal. DC source constraints and the resulting resistor currents are separate from S-parameters.
+
+## DC operating point
+
+### `nPort.solveDC()`
+
+Call `.solveDC()` on a component or completed `nodal()`, `cas()` or `cascade()` network. It takes no arguments and returns a new immutable plain-data result for a supported linear or NPN/PNP nonlinear DC model. Capacitors open, inductors short, and physical/resolved resistances remain. RF measurement ports add no DC loads. Missing DC models and unsupported diode adapters produce errors listing their placement paths. Networks containing `V()` and nonlinear devices run this DC solve automatically before RF combination and expose the result as `.operatingPoint`. Purely linear networks retain explicit `.solveDC()` analysis.
+
+```js
+// resistorDC: nodes 6 and 7 are the two RF ports.
+nP.global.fList = [1e6, 1e9];
+var c1 = nP.C(1e-9);
+var c2 = nP.C(1e-9);
+var t1 = nP.Tee();
+var t2 = nP.Tee();
+var v1 = nP.V(1);
+var r1 = nP.R(50);
+var r2 = nP.R(75);
+var r3 = nP.R(50);
+var short = nP.Short();
+var network = nP.nodal(
+    [c1, 6, 1],
+    [t1, 8, 1, 2],
+    [v1, 8, 9],
+    [short, 9],
+    [r1, 2, 3],
+    [r2, 3, 4],
+    [t2, 10, 4, 5],
+    [r3, 10, 11],
+    [short, 11],
+    [c2, 5, 7],
+    ['out', 6, 7]
+);
+var rf = network.out('s11dB', 's21dB', 's12dB', 's22dB');
+var dc = network.solveDC();
+var resistorCurrent = dc.components[4].terminalCurrents[0]; // 0.005714285714 A
+// dc.nodes: node 2 = 1 V, node 3 = 0.714285714 V, node 5 = 0.285714286 V.
+// dc.ports: nodes 6 and 7 have voltage null and DC current 0.
+```
+
+`dc.nodes` contains `{path, node, internal, voltage}` rows; root node labels have `path: ''`. `dc.components` contains placement paths (`p1`, `p2`, …, with nested paths such as `p5/p1`), constructor/model identity, quality, `terminalVoltages`, `terminalCurrents` and primitive `elements`. Voltages are volts and currents are amperes entering the numbered terminal. Thus `v1` has a negative port-1 current while delivering power. The example's three resistor currents are `1 / 175 A`, or `5.714285714 mA`.
+
+`null` means an absolute voltage or ideal current is undetermined; `dc.diagnostics` explains it. Nodes 6 and 7 float at DC because their coupling capacitors open. Their undefined voltages do not prevent the internal resistor loop from solving. Equal parallel ideal sources can have nonunique source-current division; those currents remain `null`. Conflicting ideal sources throw `DC_INCONSISTENT` instead of returning a solved result.
+
+`dc.converged` is true after residual checks. Nonlinear results include `components[].qPoint`, placement-specific `operatingPoints`, `initialEstimate` and `convergence` history. `dc.residuals` reports KCL/scaled equation residuals, `dc.linearSystem` reports rank/unknown count, and `dc.model` retains the immutable construction model. All results support structured cloning. Missing or unsupported nonlinear models throw `DC_UNSUPPORTED_MODELS` with an `issues` array; unsupported numerical ranges or failed residual checks throw `DC_NUMERICAL_FAILURE`.
+
+An explicit `.solveDC()` call returns data while preserving the original RF/noise/signal data and `.dc` curve settings. During automatic analysis, `nodal()`/`cas()` first solve the complete DC network, rebuild independent transistor instances, and then combine their RF response. Original constructor templates remain intact. A failed solve stops RF construction. `DC_NONCONVERGENCE` reports failed nonlinear refinement; `DC_FLOATING_BIAS` reports an undetermined transistor bias. The [engineering contract](../dcAnalysis.md#implemented-linear-solve) describes reference rules, solver tolerances and numerical limits.
+
+## External transistor bias
+
+Use the ordinary constructors and one `nodal()` netlist. The explicit supply selects network bias automatically; no final Q point or separate solver call is required.
+
+```js
+nP.global.fList = [1e6, 100e6];
+var q1 = nP.NPN({model: '2N3904'});
+var v1 = nP.V(12);
+var r1 = nP.R(100e3); // upper divider resistor
+var r2 = nP.R(22e3);  // lower divider resistor
+var r3 = nP.R(2200);  // collector resistor
+var r4 = nP.R(1000);  // emitter resistor
+var c1 = nP.C(1e-9);
+var c2 = nP.C(1e-9);
+var t1 = nP.Tee4();
+var t2 = nP.Tee();
+var t3 = nP.Tee();
+var short = nP.Short();
+var amplifier = nP.nodal(
+    [c1, 6, 10],
+    [t1, 11, 10, 12, 13],
+    [r1, 14, 11],
+    [r2, 12, 15],
+    [short, 15],
+    [q1, 13, 20, 30], // base, collector, emitter
+    [t2, 21, 20, 22],
+    [r3, 23, 21],
+    [c2, 22, 7],
+    [r4, 30, 31],
+    [short, 31],
+    [t3, 24, 14, 23],
+    [v1, 24, 25],
+    [short, 25],
+    ['out', 6, 7]
+);
+// DC bias has already converged before these RF results are combined.
+var operatingPoint = amplifier.operatingPoint;
+var transistorBias = operatingPoint.components[5].qPoint;
+var response = amplifier.out('s11dB', 's21dB');
+```
+
+At the default 293 K, this example gives approximately IC = 1.307764 mA, VB = 1.999633 V, VE = 1.316875 V and VC = 9.122919 V. Finite base-current loading is included. The initial fixed-VBE/beta estimate is refined with the selected card's nonlinear equations. `operatingPoint.initialEstimate` and `.convergence` report assumptions, fallback and source stepping; final acceptance uses the original circuit. Nested and reused transistors receive independent states. Purely RF examples without a `V()` supply keep their selected fixed Q points.
 
 ## Ideal components and fixtures
 
@@ -763,7 +881,7 @@ nP.NPN({
 
 `ivTable()` returns a chart-ready family in volts/amperes without moving the fixed RF Q point. Partial nested objects keep default fields. `commonCollector` retains IB and positive VCE but reports outward IE. `commonBase` instead uses `bias.ie` (0–5 mA, 6 points), `bias.vcb` (0–10 V, 201 points), and default `qPoint: {ie: 2e-3, vcb: 5}`. The selected `configuration` describes DC constraints; external `nodal()` connections determine RF configuration. No terminal is silently grounded.
 
-Returned metadata includes `.bias`, `.qPoint`, `.smallSignal`, `.model` and `.dc`. The model supplies active noise covariance and direct second/third-order current and charge sources. Intercept selectors require the normal two-tone grid before construction. They estimate direct Taylor products, omitting quadratic remixing and large-signal behavior. Package coverage and model limits are documented in [transistorModels.md](../transistorModels.md).
+Returned metadata includes `.bias`, `.qPoint`, `.smallSignal`, `.model` and `.dc`. The `.smallSignal` conductances use intrinsic hybrid-π definitions, including base-collector conductance in saturation; terminal resistances are reported separately. The model supplies active noise covariance and direct second/third-order current and charge sources. Intercept selectors require the normal two-tone grid before construction. They estimate direct Taylor products, omitting quadratic remixing and large-signal behavior. Package coverage and model limits are documented in [transistorModels.md](../transistorModels.md). Internally, fixed-Q construction and rebuilding from solved intrinsic junction voltages share one RF/noise/nonlinear builder. Reused placements can receive independent states without changing the original object. This handoff introduces no new public constructor or required user call. With an external `V()` supply, `nodal()` determines the Q point from the connected bias network before RF combination. See [external transistor bias](#external-transistor-bias).
 
 Every completed **two-port** now has `.stability` rows `{frequency, K, deltaMag, unconditionallyStable}` and `.out('K', 'deltaMag')`. These are calculated from the final S-parameters; K values are not combined through networks. The unconditional test requires K > 1 and |Δ| < 1. A three-port transistor has no two-port K dataset. Intermediate K < 1 does not prevent network construction.
 
@@ -1624,11 +1742,23 @@ nP.lpfGen([
 // returns an nPort object
 ```
 
-These are the defaults when `filt` is omitted. `lpfGen()` cascades ideal capacitors and inductors; it does not generate intermodulation products itself, but it changes the levels of products passing through it. It removes the endpoint resistances from a **supplied array**, so use `nP.lpfGen(values.slice())` to preserve `values`.
+These are the defaults when `filt` is omitted. `lpfGen()` copies the supplied
+array and preserves it, including when frozen. Supply at least three finite
+positive numbers: source resistance, alternating shunt C/series L values
+starting with C, and load resistance. Invalid shapes or values throw a
+descriptive error before component construction; invalid entries identify the
+array index and electrical role. Endpoint resistances are design information,
+not physical terminations. An optional second argument `{fList: frequencies}`
+selects the component grid.
+
+The ideal lossless ladder adds no noise or intermodulation products, while
+preserving propagation of noise and products generated elsewhere. Its retained
+DC model opens shunt capacitors and shorts series inductors. Repeated calls
+with the same values produce the same filter without altering caller data.
 
 ## Network composition
 
-These functions create n-port objects from existing n-port objects. They have no default arguments.
+These functions create n-port objects from existing n-port objects. They have no default arguments. They preserve internal DC models and placement identity alongside RF data; `solveDC()` reuses these connections without requiring another netlist.
 
 ### `cascade`
 

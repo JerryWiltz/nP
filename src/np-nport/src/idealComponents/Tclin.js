@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {connectionDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort';
@@ -68,5 +69,6 @@ export function Tclin(Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254, options = {})
 	ctlin.setspars(sparsArray);
 	ctlin.setglobal(settings);
 	ctlin._schematic = schematicPart('Tclin', {length: Length});
+	ctlin._dcModel = connectionDcModel('Tclin', 4, [[1, 2], [4, 3]], [], {evenImpedance: Zoe, oddImpedance: Zoo, length: Length}, settings);
 	return ctlin;
 };

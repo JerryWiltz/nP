@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {physicalDcModel} from '../physicalDcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {matrix, dim} from '../../../np-math/src/matrix';
@@ -302,5 +303,6 @@ export function mcross(input = {}) {
 	}, {relativePermittivity: er, resistivity: rho * COPPER_RESISTIVITY, lossTangent: tand, roughnessRms}, analysis,
 	{sources: [cross.microstrip.source], validity: cross.microstrip.validity});
 	cross._schematic = schematicPart('mcross', {labelPrefix: 'mcross'});
+	cross._dcModel = physicalDcModel('mcross', 4, cross.physicalModel, settings);
 	return cross;
 };

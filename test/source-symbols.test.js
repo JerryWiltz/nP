@@ -1,4 +1,4 @@
-// Modified: 2026-11-14
+// Modified: 2026-11-16
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -11,9 +11,12 @@ import {schematicGraph, schematicSvg} from '../src/np-chart/src/schematic';
 const require = createRequire(import.meta.url);
 const {parseSymbol} = require('../schematics/tools/symbol-library.js');
 const catalog = JSON.parse(readFileSync(new URL('../schematics/symbol-catalog.json', import.meta.url), 'utf8'));
+const sourceArtwork = {V: catalog.constructors.V, ...catalog.sourceSymbols};
 
-test('source artwork is registered separately from executable nP constructors', () => {
-    assert.deepEqual(Object.keys(catalog.sourceSymbols), ['V', 'I', 'VCVS', 'VCCS', 'CCVS', 'CCCS']);
+test('V is an executable constructor and remaining source artwork stays drawing-only', () => {
+    assert.equal(catalog.constructors.V, 'voltage-source.svg');
+    assert.equal(typeof nP.V, 'function');
+    assert.deepEqual(Object.keys(catalog.sourceSymbols), ['I', 'VCVS', 'VCCS', 'CCVS', 'CCCS']);
     for (const name of Object.keys(catalog.sourceSymbols)) {
         assert.equal(name in catalog.constructors, false);
         assert.equal(name in nP, false, `${name} has no source-behavior implementation yet`);
@@ -21,7 +24,7 @@ test('source artwork is registered separately from executable nP constructors', 
 });
 
 test('canonical source terminals, pins and bundled geometry agree', () => {
-    for (const [name, filename] of Object.entries(catalog.sourceSymbols)) {
+    for (const [name, filename] of Object.entries(sourceArtwork)) {
         const source = readFileSync(new URL('../schematics/symbols/' + filename, import.meta.url), 'utf8');
         const canonical = parseSymbol(source, filename), runtime = schematicSymbols[filename.slice(0, -4)];
         assert.deepEqual(canonical.ports, {1: {x: 140, y: 70}, 2: {x: 140, y: 170}}, name);
@@ -50,7 +53,7 @@ test('source symbols render from drawing metadata without S-parameters or a freq
     const frequencies = nP.global.fList;
     nP.global.fList = [];
     try {
-        for (const filename of Object.values(catalog.sourceSymbols)) {
+        for (const filename of Object.values(sourceArtwork)) {
             const symbol = filename.slice(0, -4);
             const component = {_schematic: {kind: 'component', symbol}};
             const graph = schematicGraph(component), svg = schematicSvg(component);

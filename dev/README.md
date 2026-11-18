@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-15 -->
+<!-- Modified: 2026-11-17 -->
 # Development pages
 
 The HTML files in this directory are executable browser harnesses. Top-level
@@ -21,7 +21,9 @@ aligned.
 | `nodal.html` | Series and parallel nodal connections | `nodal.md` |
 | `noiseAnalysis.html` | Three amplifier constructor forms compared through nodal and cascade NF and output noise floor | `noiseAnalysis.md` |
 | `npn.html` | 2N3904/BFR93A curve tracer, fixed-Q RF, noise, stability and weak nonlinear estimates | `npn.md` |
+| `npnBias.html` | External divider bias solved automatically before NPN RF; DC operating-point table and all four S-parameters | `npnBias.md` |
 | `pnp.html` | 2N3906 signed PNP curves, fixed-Q RF, noise, stability and weak nonlinear estimates | `pnp.md` |
+| `resistorDC.html` | Two identical RF responses: with supply branch and DC solve, then without supply branch and RF only | `resistorDC.md` |
 | `schematic.html` | Guided and network-only schematics for 32 direct and stress circuits | `schematic.md` |
 | `schematicAuthoring.html` | Drawing descriptions: source/DUT figure, open paths, tee branch, coupled sections, mirror and ring | `schematicAuthoring.md` |
 | `seriesTee.html` | Series tee regression harness | — |

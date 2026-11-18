@@ -1,4 +1,5 @@
-// Modified: 2026-10-28
+// Modified: 2026-11-16
+import {requiredDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {global} from '../../../np-global/src/global';
@@ -39,5 +40,6 @@ export function Coupler180(options = {}) {
 	coupler.noise = noiseArray;
 	coupler.setglobal(settings);
 	coupler._schematic = schematicPart('Coupler180', {value: couplingDb});
+	coupler._dcModel = requiredDcModel('Coupler180', 4, 'Supply the physical galvanic DC topology or explicitly select an algebraic hybrid fixture.', {couplingDb}, settings);
 	return coupler;
 }
