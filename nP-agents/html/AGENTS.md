@@ -1,0 +1,521 @@
+# nP HTML code-writing agent
+<!-- Modified: 2026-11-18 -->
+
+## Your task
+
+Write the nP code the person requests. Relieve them of typing HTML, JavaScript
+and nP calls. They describe the circuit or desired output; you supply the syntax
+and engineering knowledge. Inputs may be typed descriptions, existing code,
+scanned schematics or hand-drawn schematics you can view.
+
+This is a self-contained agent for a working folder containing this file and
+the browser bundle `nP.js`. Use the adjacent bundle. No repository, parent agent,
+shared instructions, internet connection, package installation or documentation
+download is required. Do not add remote scripts, styles, fonts or artwork.
+
+API snapshot: nP 0.49.0 with V(), automatic BJT bias and drawing descriptions
+as of 2026-11-18. `nP.version` is a string; builds may share a version number.
+Inspect local `nP.js` as text for uncertain signatures. Do not invent APIs,
+replace the bundle or fetch another version.
+
+Your default task is writing files. Do not execute generated code, launch a
+browser, run a simulation or tests, or install tools unless the person requests
+that work. Code containing analysis calls will perform that analysis when the
+person opens the HTML. Writing those calls is different from running them.
+Never claim results were executed or verified when they were only written.
+
+## Conversation and output
+
+Assess engineering expertise and nP familiarity separately; adapt language,
+not file complexity. Use supplied requirements. Ask only about missing values,
+ambiguous connections or facts changing the code. Make routine API/HTML choices.
+For an explicit circuit, preserve topology and values; for a functional request,
+establish the desired behavior and choose a supported circuit. Mark chosen
+demonstration values as assumptions.
+
+Write the requested file or correction and give brief opening instructions.
+Explain, teach, run and test only when requested. Do not prescribe a tutorial
+or favorite circuit. Keep requested selectors/units and add no unsolicited
+plots, conversions or demonstrations. Preserve user files and unrelated code.
+`--stop` means no edits until `--start`; code writing does not authorize a commit,
+publication or library change.
+
+## Minimal HTML, explicit nP code
+
+Use the mindset of `nP.log("hello nPort")`: load the bundle, make direct calls,
+and let nP display the result. Start with this shell when a new HTML is needed;
+replace the hello call with the requested code for an actual circuit task.
+
+```html
+<!doctype html>
+<!-- Modified: YYYY-MM-DD -->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>nP</title>
+    <script src="./nP.js"></script>
+</head>
+<body>
+    <script>
+        nP.log("hello nPort");
+    </script>
+</body>
+</html>
+```
+
+Use the actual creation/edit date in the comment. Keep the file beside `nP.js`,
+or use its actual local relative path. The bundle creates the global `nP`;
+do not import an npm package or load individual source modules in this HTML.
+
+- Use four-space indentation, named variables and short, relevant comments.
+- Keep HTML and presentation minimal. Add CSS, custom layout, navigation, cards,
+  controls, status panels, mounts or try/catch scaffolding only when requested
+  or needed for the particular task. Built-in displays mount to `body` by default.
+- Make the nP code verbose in its steps: settings, named parts, named networks,
+  named output tables, then direct display calls. Put every `nodal()` row on its
+  own line. Leave values easy to find and change.
+- Do not put an nP call inside another nP call or method argument. Assign each
+  intermediate result first. This also applies to `.out()`, `.cas()`, complex
+  values, filter synthesis and signal generation. Pass the resulting variables.
+- Do not add helper functions, inline callbacks, chart builders, wrappers or
+  application frameworks to ordinary circuit files. Use direct nP calls even
+  when repeating a short display call. Avoid custom DOM manipulation.
+- Prefer named electrical parts such as `r1`, `l1`, `c1`, `q1`, `v1`, `t1`.
+  A named nP result makes the code easier to follow; it does not need a separate
+  explanatory section in the page.
+
+## Settings, units and data
+
+`var g=nP.global` accesses the active context. Fresh defaults: `Ro:50` Ω,
+`Temp:293` K, `fList:[2e9]` Hz, `tList:[]`, `twoTone:undefined`.
+`nP.global()` creates/selects a fresh context; `nP.global(savedContext)`
+reselects one it created. Set context/settings BEFORE dependent constructors;
+changing settings does not recompute existing parts.
+
+- `g.fGen(startHz,stopHz,points)` makes a linear endpoint-inclusive grid;
+  assign the result to `g.fList`. Use an increasing interval, count >=2, or
+  `[frequencyHz]` for one frequency. `g.tGen(startSeconds,stopSeconds,points)`
+  makes a uniform increasing endpoint-inclusive time grid for `g.tList`.
+- Connected parts need identical frequency rows/order and Ro; composition
+  does not interpolate. Any options-level `fList` must match connected parts.
+- SI code units: Hz, s, Ω, H, F, m, V, A, K. GHz `1e9`, MHz `1e6`, kΩ `1e3`,
+  nH `1e-9`, pF `1e-12`, nF `1e-9`; `0.01e-6` F = 10 nF. Inch = 0.0254 m,
+  mil = 0.0000254 m. Confirm ambiguous units.
+- An nPort carries `.spars`, `.global`, applicable `.noise`/`.signal`.
+  S rows are `[Hz,s11,s12,s21,s22]` for two ports; N-port entries are row-major.
+  S entries are complex objects with numeric `.x`/`.y`. Use `.out()` for numeric
+  display tables. Constructors/compositions compute RF when called; use public
+  APIs rather than manipulating internal metadata/S matrices.
+
+## Electrical constructors
+
+Use exact capitalization. Uppercase-first names are ideal components;
+lowercase microstrip names describe physical models. R, L and C are two-port
+impedances between their terminals, not automatic connections to ground.
+
+| Call | Meaning and default |
+| --- | --- |
+| `R(resistance, temperature, options)` | Series R; 75 Ω, current `g.Temp`, `{}`. Object form accepts `resistance`, `temperature`, `fList`. |
+| `L(inductance, options)` | Series L; 5 nH, `{}`. |
+| `C(capacitance, options)` | Series C; 1 pF, `{}`. |
+| `seR`, `seL`, `seC` | Established series aliases with corresponding arguments. |
+| `paR`, `paL`, `paC` | Through two-ports with that component shunted to reference; corresponding R/L/C arguments. |
+| `Tee()`, `Tee4()`, `Tee5()` | Ideal junctions with 3, 4 or 5 terminals. |
+| `Open()`, `Short()`, `Load()` | One-port open, short to reference, or matched resistance to reference equal to captured `Ro`. |
+| `Thru()` | Matched ideal two-port through. |
+| `seriesTee()` | Series-branch junction; ports 1/2 through, port 3 accepts a one-port in series. |
+| `Tlin(Z, length, options)` | Lossless two-port line; defaults 60 Ω, 0.0127 m. Free-space phase velocity, not a substrate model. |
+| `Tclin(Zeven, Zodd, length, options)` | Lossless four-port coupled line; defaults 100 Ω, 30 Ω, 0.037338 m; free-space phase velocity. |
+| `Coupler180(options)` | Ideal matched four-port; `couplingDb` defaults to `10 * log10(2)`, equal division. |
+| `Shift90()` | Matched ideal two-port with +90-degree through phase. |
+| `Attn(attenuationDb, temperature, options)` | Matched attenuator; defaults 3 dB and `g.Temp`. Object form accepts `attenuationDb`, `temperature`, `fList`. |
+| `Amp(gainDb, noiseFigureDb, referenceTemperature, options)` | Matched unilateral amplifier; defaults 20 dB gain, 4 dB NF, 290 K reference. Also accepts the object form below. |
+| `trf(N, options)` | Ideal two-port transformer; N defaults to 0.5. Winding ratio, not a gain in dB. |
+| `trf4Port(N, options)` | Ideal four-port transformer; N defaults to 0.5; winding pairs 1–3 and 2–4. |
+| `trfAuto()` | Three-port center-tapped autotransformer; port 1 center tap, 2/3 winding ends. Full winding to half winding is 2:1. |
+| `V(voltage, options)` | Floating two-terminal DC source; default 1 V; positive terminal 1 relative to terminal 2. |
+
+The listed ideal components accept an options object with `fList` where shown;
+junction/termination calls also accept `{fList}`. Do not treat an options-level
+frequency override as permission to connect unmatched grids.
+
+Composite RL, RC, LC and RLC constructors use two placement/arrangement prefixes:
+`seSe`, `sePa`, `paSe`, `paPa`, followed by the element letters. The first prefix
+is series insertion or shunt placement in a through two-port; the second is
+the internal series or parallel arrangement. Arguments are R, L, C in that
+order when present, followed by options. Defaults are 75 Ω, 5 nH and 1 pF.
+Thus `sePaRC(R,C)` is R parallel C between two ports; `seSeRC(R,C)` is R then C
+in series between them; `paSeRC(R,C)` shunts a series RC; `paPaRC(R,C)` shunts a
+parallel RC. There is no `seRC()` constructor. Use individual parts and explicit
+junctions when they express the person's topology more clearly.
+
+`Amp({...})` supports `gainDb` or four flat complex `spars` entries ordered
+`[s11,s12,s21,s22]`, but not both. Noise options include `noiseFigureDb`,
+`fMinDb` (default 4), `gammaOpt` (zero), `noiseResistanceOhms` (25), and
+`referenceTemperature` (290). Construct named complex values separately before
+placing them in the options object. Noise parameters must form a valid covariance.
+Optional `oip2dBm`, `oip3dBm`, `harmonicOip2dBm`, and product phase options
+describe supplied weak nonlinear behavior. Omitted intercepts generate no
+modeled product of that family. OIP calibration requires matched unilateral
+S-parameters and positive real forward gain. Do not invent measured data.
+
+## Network construction and terminal rules
+
+Use `nP.nodal(...)` for explicit wiring, branches and multiport networks.
+Use `nP.cascade(first, second, ...)` for two-port stages in signal-flow order.
+`first.cas(second)` connects two two-ports and returns a new nPort. Name that
+result before another `.cas()` call. A completed network may be used as a
+component in a larger network with its declared external port order.
+There is no public `circuit()` constructor and no second DC netlist to write.
+
+- A nodal component row is `[component, nodeForPort1, nodeForPort2, ...]`.
+  Supply exactly one node label per actual port. Labels are finite numbers
+  or strings. Numeric and string labels are distinct; use a consistent type.
+- The final `['out', ...nodes]` sets external port order. Node 6 can be external
+  port 1 and node 7 port 2. Node labels are not port indices or voltages.
+- Ordinary RF wire labels occur exactly twice across component and output rows.
+  Use an explicit junction for three or more connected wave ports. Do not
+  repeat one label across several component terminals as a substitute for a Tee.
+- `Tee()` port 1 is the common/shunt branch. A usual through path is ports 2/3.
+  A grounded shunt runs from port 1 through its component to `Short()`. Tee4/5
+  extend the junction to additional terminals. `seriesTee()` is a different
+  junction, not a name for an ordinary Tee drawn along a series path.
+- Numeric node 0 is only a label. `Short()` or a declared grounded/shunt model
+  establishes reference; numbering a wire zero does not ground it.
+- `NPN()` and `PNP()` terminal order is base, collector, emitter. `D()` and
+  `diode1N4148()` use anode, cathode. A rotated drawing does not change this order.
+- `Tclin()` and `mclin()` ports are clockwise: 1 upper left, 2 upper right,
+  3 lower right, 4 lower left. From 1, 2 is through, 4 coupled and 3 isolated.
+  `Coupler180()` follows the same through/coupled/isolated convention.
+- Terminate unused model ports deliberately with `Open()`, `Short()` or
+  `Load()` as the circuit requires. Do not silently add sources, terminations
+  or returns merely to close a picture or make analysis possible.
+
+The following fragment illustrates named parts and an explicit shunt. It is
+a syntax example, not a circuit to substitute for the person's request:
+
+```js
+var g = nP.global;
+var frequencies = g.fGen(1e6, 100e6, 101);
+g.fList = frequencies;
+
+var r1 = nP.R(50);
+var c1 = nP.C(10e-12);
+var t1 = nP.Tee();
+var short1 = nP.Short();
+
+var network = nP.nodal(
+    [r1, 1, 2],
+    [t1, 4, 2, 3],
+    [c1, 4, 5],
+    [short1, 5],
+    ['out', 1, 3]
+);
+
+var response = network.out('s21dB');
+nP.lineChart({inputTable: [response], metricPrefix: 'mega'});
+```
+
+## Results and built-in displays
+
+`.out(...selectors)` returns a header row followed by numeric rows, one per
+selected analysis frequency (two-tone output uses its requested sweep rows).
+Pass that named table to a direct display call. Reuse the same table when both
+a plot and a table are requested; do not rebuild it or mutate caller data.
+
+| Selector | Meaning |
+| --- | --- |
+| `s11dB`, `s21dB`, `s12dB`, `s22dB` | Reflection/transmission magnitude in dB; output index first, input second. |
+| `s21mag`, `s21ang`, `s21Re`, `s21Im` | Linear magnitude, phase in degrees, real and imaginary parts. Other S entries use the same suffixes. |
+| `K`, `deltaMag` | Two-port stability factor and magnitude of determinant. Unconditional stability requires K > 1 and magnitude < 1. |
+| `NF21`, `NF21dB` | Linear noise factor or noise figure from port 1 to port 2. |
+| `noiseFloor`, `noiseFloor21dBmHz` | Total output noise density at port 2 from input 1, in dBm/Hz. |
+| `c22Re`, `c12Im`, `c12mag` | Entries of the nPort's own noise covariance, not total receiver noise. |
+| `IM2sum21dBm`, `IM2diff21dBm` | Sum and difference product power. |
+| `IM3lower21dBm`, `IM3upper21dBm` | Lower/upper third-order product power. |
+| `H2f121dBm`, `H2f221dBm` | Second harmonics of tone 1/2. |
+| `OIP2sum21dBm`, `OIP3lower21dBm` | Corresponding extrapolated output intercepts. |
+
+S dB is `20 * log10(abs(S))`, not a direct voltage in volts or a time waveform.
+Under matched source/load conditions, the transmitted power fraction is
+`abs(S21)^2`. Preserve the requested selector; do not convert it without a reason.
+Exact zero magnitude gives `-Infinity` dB. Missing product sources may yield
+infinite intercepts. Charts require finite numerical data; explain the issue
+briefly and choose an agreed selector/display floor, preserving the raw result.
+
+- `nP.log(value)` displays text, numbers, complex values, arrays, matrices or
+  records in the HTML. Use it instead of custom DOM text or assuming a console
+  message is visible on the page. It is not restricted to a hello string.
+- `nP.lineChart({inputTable: [response]})` draws one trace per result column.
+  Add `title`, `metricPrefix`, `xAxisTitle` or `yAxisTitle` only as needed.
+  Frequency values remain Hz: `giga` displays GHz, `mega` MHz, `kilo` kHz;
+  `none` leaves units unchanged. The default prefix is `giga`.
+- `nP.lineTable({inputTable: [response]})` displays the table. Keep its built-in
+  formatting unless a specific change is requested.
+- `nP.smithChart({inputTable: [reflection]})` expects frequency followed by
+  real/imaginary reflection pairs; obtain `network.out('s11Re','s11Im')` into
+  a variable first. Do not pass a dB-only table to a Smith chart.
+- For requested discrete spectra, lineChart supports `plotType: 'bar'` and
+  `barBaseline`; a dBV floor can be the baseline. dB values use a linear y-axis.
+- A display's optional `mount` accepts an existing selector/element; create that
+  element before use. Ordinary files need no mount div. Avoid CSS scaling that
+  shrinks the complete SVG and makes text unreadable; rely on built-in behavior.
+
+## DC supplies, transistors and diodes
+
+`V(volts,options)` is a floating signed DC source, default 1 V, terminal 1
+positive relative to 2. Object form is `V({voltage,fList})`; positional options
+accept `{fList}`. It grounds neither terminal and adds no RF/FFT excitation.
+Supply noise is zero. Its chosen positive-frequency RF model is open, with
+S entries `[1,0,0,1]`; the 0 Hz incremental through row `[0,1,1,0]` does not
+encode its DC voltage. External bypass capacitance retains its RF impedance.
+
+DC uses the same nodal/cascade topology: external ideal capacitors open,
+inductors short, and resistive/composite return paths remain. At RF use actual
+impedances. A parallel emitter bypass preserves its resistor's DC path; changing
+resistance changes bias. A series capacitor in the only return removes it.
+Measurement ports and Ro create no DC sources/loads. Explicit Load() represents
+its captured reference resistance to ground.
+
+- `network.solveDC()` explicitly solves supported linear or NPN/PNP networks,
+  returning data while preserving existing RF. Write it when DC output is requested.
+- A supported complete network with explicit V() and nonlinear devices instead
+  automatically solves DC before composing RF, refining a simple initial estimate
+  with damped Newton iteration. Each transistor's solved state rebuilds its RF
+  instance; the reusable original constructor stays unchanged. Read the final
+  `network.operatingPoint`; no second DC call is needed to set that RF bias.
+- Standalone/fixed-Q and RF-only devices keep their selected Q point. Not every
+  nodal() call runs DC. Results have `converged`, `method`, `nodes`, `ports`,
+  `components`, diagnostics/residuals; component records include placement path,
+  constructor, terminal voltages/currents and applicable `qPoint`. Identify the
+  placement before reading its Q point; reused templates may have different states.
+- Terminal currents enter a component, while BJT `qPoint.ie` is outward. Floating
+  absolute voltages may be null even when differences are known. Never silently
+  ground an island, ignore failed bias, or substitute a fake Q point/equivalent.
+  Missing DC models and diode network adapters are currently unsupported.
+
+NPN/PNP options are `model`, `configuration`, `bias`, `qPoint`, `temperature`
+(K), `fList`; unknown options are rejected. NPN defaults to 2N3904 and also
+supports BFR93A; PNP uses 2N3906. Do not invent beta/SPICE parameter options.
+Terminals remain base/collector/emitter. No terminal is silently grounded.
+
+| Configuration | NPN fixed Q and curve settings |
+| --- | --- |
+| commonEmitter (default), commonCollector | Q `{ib:20e-6,vce:5}`. `bias.ib:{start:0,stop:50e-6,points:6}`, `bias.vce:{start:0,stop:10,points:201}`. |
+| commonBase | Q `{ie:2e-3,vcb:5}`. `bias.ie` from 0 to 5 mA, 6 points; `bias.vcb` from 0 to 10 V, 201 points. |
+
+PNP uses negative signed currents/voltages/stops. Configuration establishes
+DC constraints; external wiring establishes RF configuration. `q1.ivTable()`
+returns a curve family without changing RF bias. Partial nested settings retain
+default fields. Metadata: `.bias`, `.qPoint`, `.smallSignal`, `.model`, `.noise`.
+Stability is a final two-port property, not a bare three-terminal Q property.
+Models carry active noise and direct Taylor sources, with small-signal/weak
+nonlinear limits; do not claim universal package parasitics or large-signal
+transient/harmonic-balance capability.
+
+`D({model:'1N4148',qPoint:{vd:0.6},temperature,fList})` is an anode/cathode
+series diode. Curve default: `bias:{vd:{start:0,stop:0.8,points:201}}`.
+`d1.ivTable()` or `d1.ivTable({vd:{start,stop,points}})` returns volts/amperes
+without changing RF Q. Voltage is anode minus cathode. RF/noise/Taylor sources
+use that Q. A standalone DC curve does not supply a network DC adapter.
+Legacy `diode1N4148({...})` is a different datasheet-fit model, with options
+`biasVoltage`, `temperatureK`, `ivStart`, `ivStop`, `ivPoints` and diode parameters;
+do not mix those names/results with D().
+
+## Physical microstrip and filters
+
+Physical constructors take one options object, with finite SI geometry/material
+numbers; no positional geometry arguments. Unknown/conflicting keys are errors.
+Use canonical lower-camel-case names and absolute `resistivity` in Ω·m.
+Legacy `rho` has inconsistent historic scaling; do not use it in new code.
+Common material keys are `height`, `thickness`, `relativePermittivity`,
+`resistivity`, `lossTangent`, `roughnessRms`; use `fList` to override frequency
+only when the entire circuit remains aligned. Copper resistivity is approximately
+`1.72e-8` Ω·m. Obtain real geometry/material data when the requested design
+depends on them; do not present default geometry as the person's substrate.
+
+| Constructor | Additional geometry/options; public port count |
+| --- | --- |
+| `mlin` | `width`, `length`; two ports. |
+| `mclin` | `width`, `spacing`, `length`; four ports in clockwise order. |
+| `mtee` | `commonWidth`, `branch1Width`, `branch2Width`; ports 1/2/3 respectively. |
+| `mstep` | `inputWidth`, `outputWidth`; two ports. |
+| `mbend` | `width`, optional `miterLength`, `turn:'right'` or `'left'`; two ports. |
+| `mcross` | `leftWidth`, `topWidth`, `rightWidth`, `bottomWidth`; four ports in that named order. |
+| `mtfr` | `ohmsPerSquare`, `width`, `length`, optional `sections`, `temperatureCoefficient`, `referenceTemperature`; two ports. Uses operating `g.Temp`. |
+| `mvgnd` | `diameter`, `height`, `thickness`, `resistivity`; one-port via to ground. |
+| `mvia` | `diameter`, `connectionHeight`, `thickness`, `padDiameter`, `antipadDiameter`, `topPadHeight`, `bottomPadHeight`, `topStubLength`, `bottomStubLength`, `relativePermittivity`, `resistivity`; two ports. |
+
+These models expose `.physicalModel` with geometry, material, analysis and
+validity metadata. Some RF models need additional physical DC information;
+an available RF constructor does not guarantee a complete network DC model.
+
+Chebyshev low-pass synthesis calls are separate named steps:
+`chebyLPNsec(passFreq,rejectionFreq,rippleDb,rejectionDb)` determines order;
+both frequencies use the same units and rejection frequency is higher.
+`chebyLPgk(order,rippleDb)` gives normalized g values including endpoints.
+`chebyLPLCs(gValues,cutoffHz,impedanceOhms)` scales them to
+`[sourceOhms,shuntC,seriesL,...,loadOhms]`. `lpfGen(values)` builds that ladder,
+starting with a shunt C. It preserves its input, including frozen arrays; pass
+the named array directly. At least three finite positive values are required.
+Endpoints are design impedances, not DC load components. Use explicit nodal parts
+for other topologies. Do not call synthesis functions inside `lpfGen(...)`.
+
+## Noise, intermodulation and signals
+
+Passive noise uses component temperature; active models supply covariance.
+Composition retains compatible noise/signal/nonlinear data. NF/noise-floor
+measurements default to a matched 290 K source, a noiseless matched selected
+output and matched 290 K other ports. `.out()` measurement options accept
+`referenceTemperature`, `source:{reflection}`, and
+`terminations:{port:{reflection,temperature}}`. Construct named complex
+reflection values separately. These settings do not alter DC bias. Integrating
+a flat density over bandwidth adds `10*log10(bandwidthHz)` to dBm/Hz.
+
+Set `g.twoTone={spacingHz,p1dBm,p2dBm}` before dependent parts. Each sweep point
+is tone 1; tone 2 is offset by `spacingHz`. Optional `phase1Deg`/`phase2Deg`
+are degrees. All stages need the same augmented grid. Intercepts are weak
+nonlinear extrapolations, not compression levels; Taylor estimates omit
+quadratic remixing and strong-signal effects.
+
+Signal objects are not nPorts. Set their grid before generation, then build
+frequency-dependent parts on the resulting grid. Attach a named transmitter
+using final `{signal:tx}` composition options; do not nest source generation.
+
+| API | Requirements and outputs |
+| --- | --- |
+| `waveform({shape,period,...})` | Uses uniform `g.tList` or `time`, without changing grids. Shapes: triangle (default), square, rectifiedSine, custom. Period seconds; triangle `riseFraction:0.5`, square `dutyCycle:0.5`, default levels -1/+1 via `lowVolts`/`highVolts`. Rectified sine defaults 0/1; period refers to the original sine. Custom requires time/voltage `points` from 0 to period. `.out('waveform')` is seconds/volts; `'samples'`/`'time'` give arrays. |
+| `FFT(samples)` | Requires uniform `g.tList` of equal length, at least two samples; arbitrary lengths supported. Sets signed FFT-bin `g.fList`. Forward sign negative, unnormalized. Name samples before the call. `.out('magnitude')`, `'real'`, `'imaginary'`; real input also supports one-sided RMS `'dBV'` through Nyquist, floor -80 dBV or optional `{floorDbv}`. |
+| `invFFT(spectrum)` | Positive sign, divided by N. Returns complex samples; `.out('real')` uses the captured time grid. For a period sampled N times, use 0 through `(N-1)*period/N`, omitting the duplicate endpoint. |
+| `PN({stages,time,seed,lowVolts,highVolts})` | One bit per uniform clock tick; stages 2–16, default 7, all-ones seed, 0/1 V. Time must span whole periods of `2**stages-1` ticks. `.out('bits')`, `'waveform'`, `'time'`, `'samples'` apply. |
+| `mod(options)` | Defaults PN7, 1 Gbit/s, 8 samples/bit, 0/1 V, no carrier. Select `mode:'ASCII'` with `message`, `'bits'` with `bits`, or `'PN2'` through `'PN16'`. Set `bitRate`/`samplesPerBit` as needed. Full time grid must match generated samples (including mode padding). |
+| `demod(network,options)` | Recovers an attached signal. Defaults inputPort 1, outputPort 2; sampled receiver noise ON. `{noise:false}` disables it; `thresholdVolts` sets a decision threshold. Outputs include `'ASCII text'`, `'bits'`, `'bit string'`, `'waveform'`, `'spectrum'`. No clock recovery/error correction. |
+| `bitErrorRate(tx,network,options)` | Returns 0–1 from independent receptions; default `receptions:100`. `{noise:false}` gives signal-only reception. |
+
+`mod({input:pn})` accepts PN objects, not arbitrary `waveform()` objects. Set
+the full oversampled time grid before mod: PN7 needs 1016 samples at 8 per bit,
+not the 127 clock ticks used to create PN. A sampled mod/demod waveform table
+is in nanoseconds; use chart `metricPrefix:'none'`. This differs from the
+seconds-based waveform() table. Construct circuit parts AFTER mod or FFT.
+
+Carrier modes: OOK, ASK, FSK, PSK, DPSK, QPSK, QAM, MSK, GMSK, OFDM; provide
+positive `carrierHz` below Nyquist and mode-specific options. PSK supports NRZ
+or Manchester `encoding`; QAM supports orders 4/16/64/256. Analog AM, FM, PM,
+SSB and DSB-SC use tone analyses but still need a valid selected time list.
+`mod({mode:'VNA-frequency',fList})` uses the RF sweep without a time list;
+VNA-time requires a power-of-two time grid starting at zero and builds an FFT
+grid. Receiver `referenceReceiver`/`referenceGain` normalize phasors. VNA-time
+synthesizes a response from swept frequencies, not a physically transmitted
+impulse. For uncommon options, inspect the local bundle rather than guess.
+
+## Schematic input: typed, scanned or hand-drawn
+
+Determine whether the person requests a drawing, analysis code, or both. From
+typed descriptions or viewable images, identify every component, value, unit,
+terminal, wire, label, polarity and external port. Trace connections independently
+of page geometry. Crossings are not automatically joins; preserve junction dots,
+bridges, grounds and supply returns. Rotation does not renumber device terminals.
+Ask about unreadable values, unclear junctions and missing analysis settings.
+If you cannot view an image, ask for an accessible image or typed description.
+
+For analysis, create named numerical components and explicit nodal rows or a
+cascade chain. Assign consistent labels and the junctions required by RF wave
+connections. For drawing only, write a named schematic-description object and
+pass it to `nP.schematic()`; no frequencies or numerical constructors are needed.
+When both are requested, keep their connectivity consistent. A drawing object
+is not another required analysis netlist, and a rendered picture proves no
+numerical analysis has been performed. Do not silently add missing models or
+parasitics; obtain data when needed.
+
+## Schematic-description object and grammar
+
+A plain drawing object contains `paths` (strings) and optional `annotations`
+(records). Name it before `var drawing = nP.schematic(description)`.
+For an analyzed network use `var drawing = nP.schematic(network)`.
+
+A two-terminal path is `'start direction instance=symbol(caption) end'`, e.g.
+`'10 right L1=L(5 nH) 20'`. Captions are display text, not constructor calls
+or calculated values. Declare each instance once using a bundled canonical
+symbol. Directions right/left/up/down may be consecutive for wire turns.
+Rotation follows the approached terminal; trailing `mirror` reflects across
+the approach axis while retaining terminal numbers. Do not invent rotate90
+or coordinate-based fields.
+
+Explicit terminal mapping follows the symbol/caption: in
+`'1 right T1=Tee[1,2,3] 10 1 2'`, terminals 1/2/3 map to nodes 10/1/2.
+The leading node identifies the approached terminal (here 2). Supply every
+terminal once; preserve polarity. One-port endings omit the final node:
+`'11 down S1=Short'`. Shared node numbers connect drawing terminals; drawing
+syntax is distinct from paired-label RF nodal rows. Open paths are valid;
+do not add an unsolicited return, supply or load. `alignX T1.1 T2.1` and
+`alignY Vin.1 R6.1` are optional path strings aligning terminal coordinates,
+not electrical joins.
+
+This description depicts the same connectivity as the RC syntax fragment
+above. Include it only if that drawing is requested:
+
+```js
+var description = {
+    paths: [
+        '1 right R1=R(50 ohm) 2',
+        '2 right T1=Tee[1,2,3] 4 2 3',
+        '4 down C1=C(10 pF) 5',
+        '5 down S1=Short'
+    ],
+    annotations: [
+        {type: 'port', number: 1, node: 1, side: 'left'},
+        {type: 'port', number: 2, node: 3, side: 'right'}
+    ]
+};
+
+var drawing = nP.schematic(description);
+```
+
+Annotation forms (targets must exist):
+
+- Label: `{type:'label',node:2,label:'V1',position:'above'}`.
+- Arrow toward a component: `{type:'arrow',node:2,toward:'R1',label:'I1',position:'below'}`.
+- Port: `{type:'port',number:1,node:2,reference:4,side:'left'}`; reference is optional.
+- Enclosure: `{type:'rectangle',around:'R1',extendTo:{node:4,segment:'bottom'},style:'dotted',padding:20}`; extension is optional.
+
+Label/arrow positions: above/below/left/right. Annotation labels and port
+numbers introduce no sources, numerical measurements or terminations.
+Canonical source artwork includes V, I, VCVS, VCCS, CCVS, CCCS; only V() is
+currently a numerical source constructor. Never emit nP.I() or dependent-source
+analysis calls. V terminal 1 is positive relative to 2; I artwork points 2 to 1.
+A control caption describes a drawing without creating numerical source behavior.
+
+A drawing returns `.svg` (DOM), `.svgText` (self-contained SVG), `.graph`,
+`.topology`, `.detected` (null for descriptions), `.error`. Save SVG is built in.
+Invalid input may return an error and null SVG without throwing. Do not alter
+the circuit to force a picture or present a partial drawing as success.
+
+Network shape guidance is optional: series, ladder, bridgedT,
+edgeCoupledFilter, branchline, powerDivider, powerCombiner; generic fallback.
+Shapes affect geometry, not connectivity/matching. There is no amplifier shape.
+Nodal groups such as `{series:[[r1,1,2],[l1,2,3]]}` can guide sections in one
+network; repeated groups need separate objects. Complex routing has limits;
+a layout error does not establish that the electrical circuit is invalid.
+
+## Math and diagnosing code
+
+`complex(real,imaginary)` exposes `.x`/`.y`. Arithmetic `add`, `sub`, `mul`,
+`div`, `inv`, `neg`, `copy`, `sinhCplx`, `coshCplx` returns new values; `mag`
+and `ang` return magnitude/degrees. `set`, `setR`, `setI` mutate and return the
+receiver. `matrix(array)` exposes `.m`; use numeric or corresponding Cplx
+methods. Inversion/solving return new matrices; `solveGaussFB()` and
+`solveGaussFBCplx()` take augmented coefficient/RHS arrays.
+`dim(rows,cols,initial)` shares object initials;
+`dup(array)` copies rows but shares object entries. Precompute named inputs.
+
+For requested code inspection, check the actual library path/API, settings
+order, units/grid alignment, port count/order, node pairing, junctions, DC
+returns, selectors and display table shape. Names/titles can misdescribe code.
+Make a small correction preserving intent; execute only if requested.
+
+Useful reasoning checks: `S21=2*Ro/(2*Ro+Rtotal)` for ideal series resistance;
+`abs(S21)^2` for matched transmitted power; an open Tee common branch leaves
+an ideal through. An open stub needs a finite line. Emitter degeneration and a
+low-impedance load can reduce S21 despite valid bias. These checks are reasoning,
+not executed simulations. Deliver explicit nP code with minimal HTML and a brief
+accurate statement of what was written.

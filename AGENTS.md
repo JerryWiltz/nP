@@ -1,5 +1,5 @@
 # AGENTS.md
-<!-- Modified: 2026-10-28 -->
+<!-- Modified: 2026-11-18 -->
 
 Instructions for `/home/jerrywiltz/cad-development/nP`. Read this file and any `AGENTS.md` in the directory being changed. Use current source and tests for API behavior; keep detailed engineering explanations in `developmentDocs/`.
 
@@ -29,6 +29,14 @@ Treat these as user-message shorthands when they reach the agent as text; they a
 - Set `global.fList` before ordinary RF components. Components may accept an options-level `fList`; all components in one network need matching frequency rows. Digital examples set the required time or frequency grid before `mod()` and create dependent components afterward.
 - Preserve public exports and aliases unless the user requests a breaking change. Update consumers, examples, tests, and `developmentDocs/np-nport/constructorCatalog.md` when changing an n-port constructor, method, public math helper, or low-pass prototype generator.
 
+## Shipped nP agents
+
+- Agent maintenance is required for every new feature or change to public nP behavior. Update all applicable `nP-agents/html/AGENTS.md`, `nP-agents/obsidian/AGENTS.md`, `nP-agents/nodejs/AGENTS.md` and `nP-agents/websites/AGENTS.md` in the same work as the implementation.
+- Keep signatures, defaults, units, terminal order, result formats, model assumptions and limitations aligned with current behavior. Update affected embedded examples and verify runnable snippets in the relevant environment. Distinguish capabilities of each environment and its supplied or pinned bundle; do not promise unavailable APIs.
+- Each shipped agent must remain self-contained for use outside this repository, without repository links or required parent/shared instructions. Preserve minimal deliverables and explicit, named nP steps; the primary task is code writing, with explanation and execution only when requested.
+- Update canonical agent files first, then refresh their managed distribution copies without overwriting user edits. For Obsidian, run `npm run agent:sync` and `npm run agent:check` in the `np-rf-analysis` plugin repository, then build and verify the plugin so its embedded agent matches. This does not authorize a commit, publication or deployment.
+- Leave `nP-agents/online-repl/` empty until the user explicitly requests its agent.
+
 ## Data contracts
 
 - `complex()` objects expose numeric `.x` and `.y`. `setR()` and `setI()` mutate and return `this`; arithmetic returns new objects. Some logging code checks `constructor.name === 'Complex'`.
@@ -41,6 +49,8 @@ Treat these as user-message shorthands when they reach the agent as text; they a
 
 - Ideal constructors use uppercase-first names such as `Tlin()`, `Tclin()`, `Tee()`, `Short()`, and `Open()`. Physical microstrip constructors use lowercase names such as `mlin()` and `mclin()`. Ideal source filenames match public constructor names.
 - RF constructors use `schematicPart(publicName, parameters)` for `_schematic` metadata. The symbol ID comes from the generated map based on `schematics/symbol-catalog.json`; do not duplicate an SVG filename in a constructor. Add a canonical symbol and runtime layout for new drawable constructors.
+- Use `nodal()`, `cas()` and `cascade()` for public network construction and retain their connections for DC analysis. Do not introduce a separate public `circuit()` API or require a second netlist.
+- Every new electrical constructor must also attach a validated immutable `_dcModel` using the shared DC helpers, with the same public terminal order, resolved SI parameters and construction context. Supply its actual DC circuit/device model; when physical DC information is absent, attach an actionable `requiresModel` reason instead of assuming an open or short. Preserve public `.dc` curve settings. New composition paths must retain child DC models and placement identity. Update the DC constructor audit and export-coverage tests; see `developmentDocs/dcAnalysis.md` and `developmentDocs/np-nport/dcConstructorAudit.md`. Synthesis, digital, math and presentation helpers without electrical terminals do not need a DC stamp.
 - `Tee()` port 1 is the common/shunt branch. A shunt branch runs from that port through its component to `Short()`. `seriesTee()` inserts a one-port as a floating series branch. Name electrical parts `r1`, `l1`, `c1`, etc., and put each `nodal()` connection on its own line.
 - Coupled-line ports are clockwise from upper left: 1 upper left, 2 upper right, 3 lower right, 4 lower left. From port 1, port 2 is through, port 4 coupled, and port 3 isolated.
 - Reuse constants from `src/np-nport/src/physicalConstants.js`. Physical-model options use canonical lower-camel-case SI names; `resistivity` is absolute ohm-meters. Preserve documented aliases, reject conflicting or unknown properties, and keep `.physicalModel` metadata. See `developmentDocs/physicalModelApi.md`.
