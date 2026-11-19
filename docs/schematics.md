@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-14 -->
+<!-- Modified: 2026-11-19 -->
 # Schematics
 
 `nP.schematic(network)` draws an RF network using its component symbols and electrical connections. You can draw a component, a network returned by `nP.nodal()` or `nP.cascade()`, or a transmitter–circuit–receiver path. Each call adds a drawing to the page; in the REPL, it appears in Output.
@@ -135,8 +135,43 @@ Each group belongs to one final nodal network. It adds no intermediate nPort, ex
 | `edgeCoupledFilter` | A staircase of coupled sections with explicit terminations |
 | `powerDivider` | Transformer, single-stage Wilkinson, or a junction with two or more output arms |
 | `powerCombiner` | The corresponding reflected combining arrangement |
+| `commonEmitter` | A divider-biased NPN/PNP amplifier with coupling capacitors, collector load and emitter resistance/bypass |
 
 A group must fit the actual connections supported by its board. Put all two-port rows in groups when composing sections. Direct junctions such as `Tee()` and `Tee4()`, and one-port terminations, may remain ordinary rows outside groups. Group values contain component rows; nested group objects are not part of this syntax. Section-level crossover routing remains deferred.
+
+### Divider-biased transistor amplifier
+
+The [externally biased NPN example](./tech-notes-npn-constructor#let-an-external-network-determine-the-bias)
+is recognized as `commonEmitter` by `nP.schematic(amplifier)`. For explicit guidance,
+use `var drawing = nP.schematic(amplifier, {shapes: ['commonEmitter']});`.
+The input appears on the left, the collector output on the right, the collector
+load above, and the emitter network below. The voltage source sits at the far
+right, beyond the optional supply bypass capacitor. A supported supply rail
+runs from the upper divider resistor through the collector-feed Tee, then the
+bypass Tee and voltage source. The earlier grouping with a source branch before
+the collector Tee remains supported; the supplied connections select the layout.
+
+Related terminated branches share a baseline even when their symbols have
+different heights. The renderer measures component, caption and terminal space;
+supply returns stay above the signal path. Layout is calculated from these
+relationships rather than fixed amplifier coordinates.
+
+The initial layout covers one `NPN()` or `PNP()`, a `Tee4()` base junction,
+a two-resistor divider, a collector resistor and `Tee()`, a grounded `V()`
+supply and `Tee()`, and two coupling capacitors. It accepts either a separate
+emitter resistor/capacitor with a `Tee()` and separate `Short()` terminations,
+a `sePaRC()` ending in `Short()`, or an unbypassed resistor ending in `Short()`.
+An optional supply bypass uses another `Tee()`, capacitor and `Short()`.
+The collector Tee's common branch may carry the output or the collector resistor.
+PNP uses the same numbered base/collector/emitter roles and its own canonical symbol;
+the supplied circuit determines source polarity and bias.
+
+Every drawn part comes from the network. Layout does not insert bypass
+capacitors or modify the solved bias or RF response. Other bias arrangements,
+direct shared-node junctions, missing coupling capacitors and multiple transistors
+are outside this first board's coverage. An explicit incompatible shape reports
+a drawing error. A supplied drawing-description object still follows its own
+directions instead of using network shape detection.
 
 ## Existing flat syntax and blind detection
 

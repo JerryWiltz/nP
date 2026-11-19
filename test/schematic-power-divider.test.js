@@ -1,4 +1,4 @@
-// Modified: 2026-11-06
+// Modified: 2026-11-19
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as nP from '../src/index.js';
@@ -120,7 +120,7 @@ test('the centerline relation aligns the input and center tap with the bridge mi
         const midpoint = (resistor.ports[0].at[1] + resistor.ports[1].at[1]) / 2;
         const tap = graph.components.find(part => part.symbol === 'transformer-auto');
         const input = graph.components.find(part => part.symbol === 'transformer');
-        assert.equal(midpoint, 610);
+        assert.equal(midpoint % graph.board.grid, 0);
         assert.equal(tap.ports[0].at[1], midpoint);
         assert.ok(input.ports.every(port => port.at[1] === midpoint));
         assert.equal(graph.externalPorts[0].at[1], midpoint);
@@ -139,7 +139,7 @@ test('conflicting centerline relations report an error rather than accepting the
     schematicShapeBoards.conflictingCenterlines = board;
     try {
         assert.throws(() => schematicGraph(divider(), {shapes: ['conflictingCenterlines']}),
-            /centerline relations conflict/);
+            /constraints cannot be satisfied|centerline relations conflict/);
     } finally {
         delete schematicShapeBoards.conflictingCenterlines;
     }

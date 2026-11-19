@@ -1,4 +1,4 @@
-// Modified: 2026-11-13
+// Modified: 2026-11-19
 // Compose measured boards and direct junction symbols through their electrical boundaries.
 import {automaticRoute, recordBoardRoute, graphWireBoxes} from './schematicBoardGraph';
 
@@ -101,11 +101,14 @@ function translateSection(result, offset) {
 function measureSection(result, geometry) {
     const points = result.externalPorts.map(port => port.at).concat(result.wires.flatMap(wire => wire.points),
         result.placements.flatMap(part => {
-            const box = geometry.bounds(part);
-            return [[box[0], box[1]], [box[2], box[3]]];
+            const boxes = [geometry.bounds(part), ...(geometry.captionBounds ? [geometry.captionBounds(part)] : [])];
+            return boxes.flatMap(box => [[box[0], box[1]], [box[2], box[3]]]);
         }));
-    return [Math.min(...points.map(p => p[0])), Math.min(...points.map(p => p[1])),
-        Math.max(...points.map(p => p[0])), Math.max(...points.map(p => p[1]))];
+    const grid = result.grid;
+    return [Math.floor(Math.min(...points.map(p => p[0])) / grid) * grid,
+        Math.floor(Math.min(...points.map(p => p[1])) / grid) * grid,
+        Math.ceil(Math.max(...points.map(p => p[0])) / grid) * grid,
+        Math.ceil(Math.max(...points.map(p => p[1])) / grid) * grid];
 }
 
 function compactSectionLeads(item, geometry, grid) {
@@ -125,19 +128,29 @@ function compactSectionLeads(item, geometry, grid) {
     result.externalPorts = result.externalPorts.map(port => leads.has(port.node) ?
         {...port, at: leads.get(port.node).terminal.at.slice()} : port);
     const bounds = measureSection(result, geometry);
+    const board = {grid, clearance: grid, wireBoxLength: 2 * grid, cornerSize: grid,
+        routingMargin: 200, bendCost: 20, allowCrossings: false};
+    const obstacles = result.placements.flatMap(part => [geometry.bounds(part),
+        ...(geometry.captionBounds ? [geometry.captionBounds(part)] : [])]);
+    const occupied = new Map();
+    for (const wire of result.wires) recordBoardRoute(wire.points, wire.node, occupied, grid);
     result.externalPorts = result.externalPorts.map(port => {
         const lead = leads.get(port.node);
         if (!lead) return port;
-        const {terminal, direction, external, wire} = lead;
+        const {terminal, direction, wire} = lead;
         const axis = direction[0] ? 0 : 1;
         const reach = Math.max(0, (bounds[axis + (direction[axis] > 0 ? 2 : 0)] - terminal.at[axis]) * direction[axis]);
-        const original = Math.abs(external.at[axis] - terminal.at[axis]);
-        // Retain only the part of a lead needed to reach the complete section's
-        // outer envelope. The composer supplies the wire between sections.
-        const length = Math.min(original, Math.ceil(reach / grid) * grid);
+        // Reach the measured envelope even when the original display lead was
+        // buried inside it. Route around symbols, captions and other nets.
+        const length = Math.ceil(reach / grid) * grid;
         const at = terminal.at.map((value, index) => value + direction[index] * length);
-        if (length) result.wires.push({...wire, points: [terminal.at.slice(), at.slice()],
-            boardTile: {...wire.boardTile, length}});
+        if (length) {
+            const escape = terminal.at.map((value, index) => value + direction[index] * Math.min(length, board.wireBoxLength));
+            const points = [terminal.at, ...automaticRoute(escape, at, obstacles, new Set(), occupied,
+                port.node, {...board, startDirection: direction, finishDirection: direction})];
+            recordBoardRoute(points, port.node, occupied, grid);
+            graphWireBoxes(result, port.node, points, board, `${wire.boardTile.id}:exit`);
+        }
         result.nodePoints.delete(port.node);
         return {...port, at, direction};
     });
@@ -482,7 +495,9 @@ function registerSection(result, item, root, combined) {
 function routeSections(root, ordered, edges, geometry, combined) {
     const grid = combined.grid, board = {grid, clearance: 10, routingMargin: 100,
         wireBoxLength: 20, cornerSize: 10, bendCost: 20, allowCrossings: false};
-    const bounds = ordered.filter(item => !item.external).map(item => measureSection(item.result, geometry));
+    const bounds = ordered.filter(item => !item.external).flatMap(item => item.entry ?
+        item.result.placements.flatMap(part => [geometry.bounds(part),
+            ...(geometry.captionBounds ? [geometry.captionBounds(part)] : [])]) : [measureSection(item.result, geometry)]);
     const occupied = new Map(), obstacles = new Set();
     for (const wire of combined.wires) recordBoardRoute(wire.points, wire.node, occupied, grid);
     const routes = edges.map(edge => {

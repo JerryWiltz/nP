@@ -1,4 +1,4 @@
-// Modified: 2026-11-17
+// Modified: 2026-11-19
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -109,7 +109,7 @@ async function exerciseWorkerApi() {
         ['out', 100, 101]
     );
     const automaticBias = {operatingPoint: biased.operatingPoint, rf: biased.out('s21dB', 'NF21dB'),
-        qPoint: biased._intermod.components[5].bias};
+        qPoint: biased._intermod.components[5].bias, graph: nP.schematicGraph(biased), svg: nP.schematicSvg(biased)};
 
 
     const amplifier = nP.nodal([q, 1, 2, 3], [nP.Short(), 3], ['out', 1, 2]);
@@ -203,6 +203,8 @@ test('restricted bundle generates transferable SVG and data with browser APIs bl
         assert.ok(Math.abs(result.automaticBias.qPoint.ic - 0.0013077639633) < 1e-10);
         assert.ok(result.automaticBias.operatingPoint.residuals.maxNormalizedResidual <= 1);
         assert.ok(result.automaticBias.rf[1].every(Number.isFinite));
+        assert.equal(result.automaticBias.graph.shape, 'commonEmitter');
+        assert.equal(result.automaticBias.graph.components.length, 14);
         assert.equal(result.dcOperatingPoint.converged, true);
         assert.ok(Math.abs(result.dcOperatingPoint.components.find(part => part.path === 'p5').terminalCurrents[0] - 1 / 175) < 1e-12);
         assert.deepEqual(result.dcOperatingPoint.ports.map(port => [port.node, port.voltage, port.current]), [[6, null, 0], [7, null, 0]]);
@@ -246,7 +248,7 @@ test('restricted bundle generates transferable SVG and data with browser APIs bl
         assert.equal(result.dbv.length, 6);
         assert.equal(result.bits, '10');
         assert.equal(result.ber, 0);
-        for (const svg of [result.svg, result.cascadeSvg, result.ladderSvg, result.junctionSvg, result.authoredSvg, result.signalSvg]) {
+        for (const svg of [result.svg, result.cascadeSvg, result.ladderSvg, result.junctionSvg, result.authoredSvg, result.signalSvg, result.automaticBias.svg]) {
             assert.equal(typeof svg, 'string');
             assert.equal(new DOMParser().parseFromString(svg, 'image/svg+xml')
                 .getElementsByTagName('parsererror').length, 0);

@@ -1,5 +1,5 @@
 # AGENTS.md
-<!-- Modified: 2026-11-18 -->
+<!-- Modified: 2026-11-19 -->
 
 Instructions for `/home/jerrywiltz/cad-development/nP`. Read this file and any `AGENTS.md` in the directory being changed. Use current source and tests for API behavior; keep detailed engineering explanations in `developmentDocs/`.
 
@@ -55,6 +55,16 @@ Treat these as user-message shorthands when they reach the agent as text; they a
 - Coupled-line ports are clockwise from upper left: 1 upper left, 2 upper right, 3 lower right, 4 lower left. From port 1, port 2 is through, port 4 coupled, and port 3 isolated.
 - Reuse constants from `src/np-nport/src/physicalConstants.js`. Physical-model options use canonical lower-camel-case SI names; `resistivity` is absolute ohm-meters. Preserve documented aliases, reject conflicting or unknown properties, and keep `.physicalModel` metadata. See `developmentDocs/physicalModelApi.md`.
 - Preserve diode RF and DC behavior together. Biased diode models need their own noise covariance and weak nonlinear source model; see the diode-directory instructions.
+
+## General solutions; no special-case workarounds
+
+- Fix the shared cause of a failure. Do not make one example pass by adding component-name or node-number checks, example-specific coordinates, shape-specific corrections, or compensating spacing/alignment overrides.
+- A small diff is appropriate when it solves the general problem. Minimal editing is not permission to substitute a local workaround for a missing shared capability.
+- For schematic layout, shapes express topology, terminal roles and engineering organization. Shared tools must calculate placement, branch balance, alignment, clearance, routing, section exits and label space from those relationships and measured geometry. Read `src/np-chart/AGENTS.md` before layout work.
+- Moving a correction into board data, symbol metadata, an option, a helper or generated output does not make it general. Do not add temporary corrective exceptions or silently preserve one as the solution.
+- When existing tools cannot express the required relationship, identify the missing capability and implement the shared solution within the authorized task. Report any remaining limitation explicitly instead of disguising it with tuned constants.
+- Verify a shared layout change across different circuit arrangements and component sizes, including reordered rows, renamed nodes and composition where applicable. Check connectivity, clearance and visual organization; a successful screenshot of one circuit is insufficient.
+- Explain the shared rule being changed and disclose remaining manual compensation or special handling. Distinguish intended engineering conventions and documented style defaults from corrective workarounds. Do not describe a renderer as untweaked merely because it uses shared code or data-driven settings.
 
 ## Naming and editing
 

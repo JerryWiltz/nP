@@ -1,6 +1,8 @@
-// Modified: 2026-11-13
+// Modified: 2026-11-19
 import {layoutAutomaticBoard} from './schematicBoardGraph';
 import {composeSchematicBoards} from './schematicBoardComposition';
+import {schematicBranchFamilies, measuredBranchAlignment} from './schematicBranches';
+import {layoutSchematicRelations} from './schematicRelations';
 
 // Shared board operations. This module never selects a layout by shape name.
 const DIRECTIONS = {right: [1, 0], down: [0, 1], left: [-1, 0], up: [0, -1]};
@@ -294,7 +296,21 @@ function placeBoardTiles(root, board, bindings, geometry, result, start, end, ta
         const oriented = orientBoardPart(entry, part, cursor, direction,
             targets.get(part.index) || [], geometry, tile.orientation);
         if (!oriented) return null;
-        const placement = oriented.placement;
+        let placement = oriented.placement;
+        const alignment = board.branchAlignment?.get(part.index);
+        if (alignment) {
+            const {axis, sign, target} = alignment;
+            const position = part.outputPort ?
+                (placement.ports[part.inputPort - 1].at[axis] + placement.ports[part.outputPort - 1].at[axis]) / 2 :
+                placement.ports[part.inputPort - 1].at[axis];
+            const growth = target - sign * position;
+            if (growth < 0 || growth % grid) return null;
+            cursor[axis] += sign * growth;
+            pendingWire.length += growth;
+            placement = {...placement, at: placement.at.map((value, i) => value + (i === axis ? sign * growth : 0)),
+                ports: placement.ports.map(port => ({...port,
+                    at: port.at.map((value, i) => value + (i === axis ? sign * growth : 0))}))};
+        }
         if (!placement.ports.every(port => onGrid(port.at, grid))) return null;
         placement.boardTile = {kind: tile.kind, role: tile.role, id: `${pathId}:${tile.id}`,
             ...(board.componentLabelOffset ? {labelOffset: board.componentLabelOffset} : {})};
@@ -319,11 +335,11 @@ function placeBoardTiles(root, board, bindings, geometry, result, start, end, ta
 }
 
 function placeBoardPaths(root, definition, bindings, geometry) {
-    const board = boardPathSpacing(root, definition, bindings, geometry);
-    if (!board) return null;
-    if (board.spacing !== 'attachments') return placeBoundBoardPaths(root, board, bindings, geometry);
+    const spaced = boardPathSpacing(root, definition, bindings, geometry);
+    if (!spaced) return null;
+    const board = {clearance: spaced.grid, ...spaced};
     if (!geometry.preview || !(board.clearance >= board.grid) || board.clearance % board.grid !== 0) {
-        boardError('attachment spacing needs preview geometry and grid clearance.');
+        boardError('path spacing needs preview geometry and grid clearance.');
     }
     const preview = placeBoundBoardPaths(root, board, bindings, {...geometry, placement: geometry.preview});
     if (!preview) return null;
@@ -338,7 +354,7 @@ function placeBoardPaths(root, definition, bindings, geometry) {
     }
     const direction = DIRECTIONS[board.direction], axis = direction[0] ? 0 : 1, across = 1 - axis;
     const entries = [...preview.byIndex].map(([index, placement]) =>
-        ({rank: ranks.get(index), bounds: geometry.bounds(placement)}));
+        ({rank: ranks.get(index), bounds: (geometry.footprintBounds || geometry.bounds)(placement)}));
     let growth = 0;
     for (const a of entries) for (const b of entries) {
         if (!(b.rank > a.rank) || a.bounds[across + 2] + board.clearance <= b.bounds[across] ||
@@ -380,6 +396,24 @@ function placeBoundBoardPaths(root, board, bindings, geometry) {
         }
     }
     if (!placeBoardTiles(root, board, bindings, geometry, result, start, end, targets, 'main')) return null;
+    const attachmentMeasurements = new Map();
+    for (const attachment of board.attachments || []) {
+        for (const branch of bindings[attachment.source] || []) {
+            const placement = result.byIndex.get(branch.anchor.index);
+            const anchor = placement?.ports[branch.anchor.port - 1];
+            const direction = attachment.direction === 'terminal' ?
+                placedBoardTerminalDirection(root.components[branch.anchor.index], placement,
+                    branch.anchor.port, geometry) : attachment.direction;
+            const preview = {grid: board.grid, placements: [], wires: [], nodePoints: new Map(), byIndex: new Map(), externalPorts: []};
+            if (!anchor || !placeBoardTiles(root, {...board, ...attachment, direction, attachments: []}, branch,
+                {...geometry, placement: geometry.preview}, preview, anchor, null, new Map(), 'measure')) return null;
+            attachmentMeasurements.set(branch.termination[0].index, {result: preview, direction: DIRECTIONS[direction]});
+        }
+    }
+    const families = schematicBranchFamilies(root, geometry.symbol,
+        (Object.values(bindings).filter(Array.isArray)).filter(path => path[0]?.inputPort)
+            .map(path => path.map(step => step.index)));
+    const branchAlignment = measuredBranchAlignment(families, attachmentMeasurements);
     for (const attachment of board.attachments || []) {
         const branches = bindings[attachment.source];
         if (!branches) boardError(`unknown attachment binding "${attachment.source}".`);
@@ -390,7 +424,7 @@ function placeBoundBoardPaths(root, board, bindings, geometry) {
             const direction = attachment.direction === 'terminal' ?
                 placedBoardTerminalDirection(root.components[branch.anchor.index], placement,
                     branch.anchor.port, geometry) : attachment.direction;
-            if (!anchor || !placeBoardTiles(root, {...board, ...attachment, direction, attachments: []},
+            if (!anchor || !placeBoardTiles(root, {...board, ...attachment, direction, attachments: [], branchAlignment},
                 branch, geometry, result, anchor, null, new Map(), `${attachment.source}:${index}`)) return null;
         }
     }
@@ -805,7 +839,8 @@ function slotEndpoint(root, endpoint, bindings) {
     return binding ? {node: root.components[binding.index].nodes[binding.ports[endpoint.port] - 1]} : null;
 }
 
-function bindBoardSlots(root, slots, wires, bindings = new Map(), used = new Set()) {
+function bindBoardSlots(root, slots, board, geometry, bindings = new Map(), used = new Set()) {
+    if (slots.length !== root.components.length) return null;
     if (bindings.size === slots.length) return used.size === root.components.length ? bindings : null;
     let choice = null;
     for (const slot of slots) {
@@ -813,9 +848,11 @@ function bindBoardSlots(root, slots, wires, bindings = new Map(), used = new Set
         const candidates = root.components.flatMap((entry, index) => {
             if (used.has(index) || !acceptsEntry(entry, slot)) return [];
             return slotPortBindings(slot.ports, entry.nodes.length).flatMap(ports => {
+                const tile = board.components.find(component => component.slot === slot.name);
+                if (!tile || !boardSlotOrientation(geometry.symbol(entry), ports, tile.directions)) return [];
                 const candidate = {index, ports};
                 const tentative = new Map([...bindings, [slot.name, candidate]]);
-                return wires.every(wire => {
+                return board.wires.every(wire => {
                     const a = slotEndpoint(root, wire.from, tentative), b = slotEndpoint(root, wire.to, tentative);
                     return !a || !b || a.node === b.node;
                 }) ? [candidate] : [];
@@ -825,7 +862,7 @@ function bindBoardSlots(root, slots, wires, bindings = new Map(), used = new Set
         if (!choice || candidates.length < choice.candidates.length) choice = {slot, candidates};
     }
     for (const candidate of choice.candidates) {
-        const result = bindBoardSlots(root, slots, wires,
+        const result = bindBoardSlots(root, slots, board, geometry,
             new Map([...bindings, [choice.slot.name, candidate]]), new Set([...used, candidate.index]));
         if (result) return result;
     }
@@ -849,21 +886,26 @@ function placedBoardTerminalDirection(entry, placement, port, geometry) {
     return name;
 }
 
-function orientBoardSlot(entry, ports, tile, at, geometry) {
-    const symbol = geometry.symbol(entry);
+function boardSlotOrientation(symbol, ports, directions) {
     for (const mirrorX of [false, true]) {
         for (const mirrorY of [false, true]) {
             for (const angle of [0, 90, 180, 270]) {
-                const fits = Object.entries(tile.directions).every(([role, direction]) => {
+                const fits = Object.entries(directions).every(([role, direction]) => {
                     const vector = symbolTerminalDirection(symbol, ports[role]);
                     if (!DIRECTIONS[direction]) boardError('unknown terminal direction.');
                     return vector && pointsAlong(rotateBoardVector(vector, angle, mirrorX, mirrorY), DIRECTIONS[direction]);
                 });
-                if (fits) return geometry.placement(entry, ports[tile.anchor], at, angle, mirrorY, mirrorX);
+                if (fits) return {angle, mirrorY, mirrorX};
             }
         }
     }
     return null;
+}
+
+function orientBoardSlot(entry, ports, tile, at, geometry) {
+    const orientation = boardSlotOrientation(geometry.symbol(entry), ports, tile.directions);
+    return orientation ? geometry.placement(entry, ports[tile.anchor], at,
+        orientation.angle, orientation.mirrorY, orientation.mirrorX) : null;
 }
 
 function placedSlotTerminal(reference, bindings, result) {
@@ -952,9 +994,22 @@ function alignBoardCenterlines(board, bindings, result) {
 
 function placeNamedBoardSlots(root, definition, geometry) {
     const {board, match} = definition;
-    if (!onGrid(board.origin, board.grid)) boardError('invalid board origin or grid.');
-    const bindings = bindBoardSlots(root, match.slots, board.wires);
+    if (board.layout !== 'relations' && !onGrid(board.origin, board.grid)) boardError('invalid board origin or grid.');
+    const bindings = bindBoardSlots(root, match.slots, board, geometry);
     if (!bindings) return null;
+    if (board.layout === 'relations') {
+        const entries = new Array(root.components.length);
+        for (const tile of board.components) {
+            const binding = bindings.get(tile.slot);
+            const preview = orientBoardSlot(root.components[binding.index], binding.ports, tile, [0, 0], geometry);
+            if (!preview) return null;
+            preview.boardTile = {kind: 'component', id: tile.slot, role: tile.role};
+            entries[binding.index] = {part: {line: 0}, preview,
+                outward: preview.ports.map(port => DIRECTIONS[placedBoardTerminalDirection(
+                    root.components[binding.index], preview, port.port, geometry)])};
+        }
+        return layoutSchematicRelations(root, definition, bindings, entries, geometry);
+    }
     const result = {grid: board.grid, placements: [], wires: [], nodePoints: new Map(), byIndex: new Map(), externalPorts: []};
     const pending = board.components.slice();
     while (pending.length) {
@@ -1039,7 +1094,8 @@ function reflectBoardResult(result, definition, source) {
     result.nodePoints = new Map([...result.nodePoints].map(([node, point]) =>
         [node, reflectBoardPoint(point, mirrorX, mirrorY)]));
     result.externalPorts = result.externalPorts.map(port => ({...port,
-        at: reflectBoardPoint(port.at, mirrorX, mirrorY)}));
+        at: reflectBoardPoint(port.at, mirrorX, mirrorY),
+        ...(port.direction ? {direction: reflectBoardPoint(port.direction, mirrorX, mirrorY)} : {})}));
     if (result.junctions) result.junctions = result.junctions.map(junction => ({...junction,
         at: reflectBoardPoint(junction.at, mirrorX, mirrorY)}));
     if (result.crossings) result.crossings = result.crossings.map(point => reflectBoardPoint(point, mirrorX, mirrorY));
@@ -1197,7 +1253,7 @@ export function matchSchematicBoard(root, definition, geometry, references = [])
     const adjacency = boardAdjacency(root, definition, geometry);
     if (!adjacency) return false;
     if (definition.match.fan) return !!bindBoardFan(root, definition.match.fan, adjacency, geometry);
-    if (definition.match.slots) return !!bindBoardSlots(root, definition.match.slots, definition.board.wires);
+    if (definition.match.slots) return !!bindBoardSlots(root, definition.match.slots, definition.board, geometry);
     if (definition.board.rows || definition.board.anchors) {
         const network = collectBoardConnections(root, definition.match, adjacency);
         if (!network) return false;

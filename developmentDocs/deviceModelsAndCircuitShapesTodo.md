@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-18 -->
+<!-- Modified: 2026-11-19 -->
 # Device models and circuit shapes: to-do
 
 Planning note for the remaining SPICE-style device families, canonical symbols and reusable circuit layouts. Proposed constructor and shape names are not available APIs until implemented.
@@ -8,12 +8,13 @@ Planning note for the remaining SPICE-style device families, canonical symbols a
 - NPN and PNP share a modified Gummel–Poon engine. Supported records are 2N3904, BFR93A and 2N3906.
 - `D()` supports the SPICE-style 1N4148 model. Its external-network DC adapter remains unfinished.
 - Networks retain their connections for DC analysis; supported supply-driven BJT networks solve bias before RF.
-- Named circuit shapes are `series`, `ladder`, `bridgedT`, `branchline`, `edgeCoupledFilter`, `powerDivider` and `powerCombiner`. There are no named transistor circuit shapes yet.
+- Named circuit shapes are `series`, `ladder`, `bridgedT`, `branchline`, `edgeCoupledFilter`, `powerDivider`, `powerCombiner` and `commonEmitter`. The first transistor board covers a divider-biased NPN/PNP stage with separate or combined emitter bypass and optional supply bypass; other bias topologies remain to be added.
 - Voltage, current and four controlled-source symbols already exist. Only `V()` currently has a numerical source constructor.
 
 ## Recommended order
 
-- [ ] Start with a divider-biased NPN amplifier shape using the existing numerical model.
+- [x] Start with a divider-biased NPN amplifier shape using the existing numerical model: `commonEmitter`, including PNP symbol roles, independent detection, explicit guidance and composition. See [coverage](./schematicShapeVocabulary.md#common-emitter-amplifier) and [browser harness](../dev/shapes/commonEmitter.html).
+- [x] Replace amplifier/transformer coordinate compensation with shared relational placement; infer related branch baselines, measure attachment/caption/terminal clearance, and calculate section exits from their envelopes. Keep engineering organization explicit in board data.
 - [ ] Finish diode network DC support.
 - [ ] Add JFET models and symbols, then exercise the shared amplifier layouts with them.
 - [ ] Add MOSFET models and symbols, including the body-terminal decision.

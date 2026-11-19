@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-15 -->
+<!-- Modified: 2026-11-19 -->
 
 # Schematic authoring rules
 
@@ -16,14 +16,22 @@ Read and follow `schematics/svg-style-guide.md` for exact SVG dimensions, snappi
 - The RF constructor-to-symbol map is generated from `symbol-catalog.json`. Constructors call `schematicPart(publicName, parameters)` and never repeat the SVG filename. Give option-dependent variants explicit keys in `symbolVariants`; `mbend()` uses `left` and `right`. The symbol check verifies runtime geometry and nPort port counts.
 - For a new three-port line junction that can introduce a ladder shunt, record `flow.throughPorts` and `flow.shuntPort` in `runtime-symbol-layout.json`. Keep those public port numbers distinct. The renderer chooses 90-degree rotations and reflections from the canonical port geometry; do not encode a constructor-specific drawing angle.
 - For a junction usable as a divider/combiner, also record `junction.commonPort` and `junction.branchPorts` in `runtime-symbol-layout.json`. They must cover all numbered terminals exactly once, with at least two branches. Future transmission-line families use this same metadata; ORI does not identify their constructors by name.
-- Symbols with a conventional automatic orientation may declare `automatic` placement preferences in `runtime-symbol-layout.json`. Its quarter-turn `rotations`, mirror permissions, external-port flow and local-termination rule apply to the generic board. They do not change the numbered terminals or limit explicit drawing-language rotations. Keep these preferences in symbol data rather than adding device-name tests or circuit-specific coordinates to the router.
+- Symbols with a conventional automatic orientation may declare `automatic` placement preferences in `runtime-symbol-layout.json`. Its quarter-turn `rotations`, mirror permissions and external-port flow apply to the generic board. They do not change the numbered terminals or limit explicit drawing-language rotations. NPN/PNP retain base-left, collector-above, emitter-below orientation for familiar bias-network reading. Direct one-port attachments use shared terminal geometry for every multiport component, without a symbol opt-in. Record and disclose the engineering reason for preferences; metadata must not hide a corrective exception.
 - RF component ports, including those on `trf()` and `trf4Port()`, are nPort ports. Connectors on digital blocks and `FFT()`/`invFFT()` are **diagram connectors**, not S-parameter ports or `nP.nodal()` arguments. State each connector's signal meaning in the symbol description or accompanying note. Some blocks, especially `mod()`, have mode-dependent inputs.
+
+## General layout tools; no corrective patches
+
+- Follow the root prohibition on special-case workarounds. For runtime layout changes, also read `src/np-chart/AGENTS.md`.
+- Shape definitions describe electrical roles and intended organization. They must not encode a manually positioned example or accumulate offsets, stretched leads or per-branch corrections to compensate for missing shared behavior.
+- Related branch alignment, measured spacing and clear section exits belong in shared layout capabilities. Verify them on different circuit arrangements before treating a rendering defect as resolved.
+- User-authored drawing descriptions and static circuit specifications may deliberately supply geometry. Preserve that authoring intent; do not transfer an example's coordinates into library layout code as a repair.
+- Disclose any remaining manual compensation and its reason. A correction is still a workaround when stored in a board definition, canonical-symbol metadata or a generated bundle.
 
 ## SVG and layout
 
 - Author symbols as readable SVG text. Do not use raster tracing, SVG drawing applications, external image references, scripts, animation, or remote resources. A complete schematic must embed its canonical symbol geometry so the result is self-contained.
 - Use the same 10-unit grid for every symbol terminal, component anchor, circuit connection, junction, external port, and interconnect wire point. Use a 10-unit grid for complete-diagram labels. Draw interconnect wires horizontally or vertically, and rotate symbols only in 90-degree increments.
-- Centerline relations belong in board data. Align a terminal axis to a midpoint between named terminals when that is the electrical reference; do not substitute an asymmetric artwork bounding-box center. ORI applies these relations before routing wires and rejects incompatible relations or translations off the placement grid.
+- A board may declare an intended electrical axis or symmetry relation, such as a terminal axis through the midpoint of two reference terminals. Use shared constraint operations to resolve it from measured geometry; do not substitute an asymmetric artwork bounding-box center. Do not add an isolated centerline override to repair one example when the engine needs a general branch-alignment rule. Reject incompatible relations and translations off the placement grid.
 - Give canonical symbol terminals visibly 20-unit pins from their terminal dots to the first body edge or marked junction, except the standalone `C()`/`seC()` symbol: its 10-unit plate gap requires two 25-unit leads between grid-aligned terminal dots. `Attn()` is a stylized icon with a continuous through line, so it has no separate pin-to-body segment. Keep terminals on the electrical grid.
 - Give every standalone symbol and complete circuit the same white `#ffffff` background and dark `#202020` ordinary stroke. Canonical symbols use only these two ink colors, with no colored or gray fills. Microstrip symbols have unshaded white interiors, dark conductor outlines, and dark terminal dots.
 - Preserve the nP public port order, including `Tee()` port 1 as the common branch and coupled-line ports clockwise from upper left: 1, 2, 3, 4. Give each symbol a title, description, visible numbered ports, and terminal dots.

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-18 -->
+<!-- Modified: 2026-11-19 -->
 # NPN constructor
 
 `nP.NPN()` turns a nonlinear bipolar transistor model into an nPort at a selected DC operating point. It returns the three-port S-parameters, the transistor's noise covariance and the model needed for weak nonlinear analysis. The DC state connects these calculations: changing the bias changes the RF model.
@@ -258,6 +258,11 @@ nP.lineChart({inputTable: [response], title: 'Externally biased amplifier', metr
 ```
 
 At DC, coupling and bypass capacitors open; the emitter resistor remains. At RF, the capacitors retain their frequency-dependent impedance. `sePaRC()` places the resistor and bypass capacitor in parallel between its two terminals. `V()` establishes the DC voltage while its positive-frequency RF branch is open. Measurement ports and `Ro` add no DC source or load.
+
+The current schematic renderer detects this circuit as `commonEmitter` and arranges
+the divider, collector feed and emitter network around the transistor. The same
+layout also supports separate emitter resistor/bypass branches and an optional
+supply bypass. See [amplifier layout coverage](./schematics#divider-biased-transistor-amplifier).
 
 The solved states belong to component **placements** in the network. `nodal()` rebuilds each placed transistor's S-parameters, noise and nonlinear data at its solved point before combining RF. The original `q1` object retains its construction state. The example reads placement `p6`, the sixth component row; use placement paths to distinguish multiple transistors or reused templates. No separate `.solveDC()` call is needed to establish this amplifier's RF bias.
 

@@ -6012,8 +6012,7 @@
 	            ],
 	            "mirrorX": false,
 	            "mirrorY": false,
-	            "externalPorts": "flow",
-	            "localTerminations": true
+	            "externalPorts": "flow"
 	        },
 	        "bounds": [
 	            66,
@@ -6086,8 +6085,7 @@
 	            ],
 	            "mirrorX": false,
 	            "mirrorY": false,
-	            "externalPorts": "flow",
-	            "localTerminations": true
+	            "externalPorts": "flow"
 	        },
 	        "bounds": [
 	            66,
@@ -9426,7 +9424,7 @@
 
 	const PORT_SPACING = 80;
 	const PIN_LENGTH = 20;
-	const SIDES = ['left', 'right', 'top', 'bottom'];
+	const SIDES$1 = ['left', 'right', 'top', 'bottom'];
 
 	function centeredPositions(start, length, count) {
 	    return Array.from({length: count}, (_, index) =>
@@ -9439,20 +9437,20 @@
 	    }
 	    const sides = Array.from({length: portCount}, (_, index) =>
 	        index === 0 ? 'left' : 'right');
-	    if (sides.length !== portCount || sides.some(side => !SIDES.includes(side))) {
+	    if (sides.length !== portCount || sides.some(side => !SIDES$1.includes(side))) {
 	        throw new TypeError('A nodal block needs one valid side for each electrical port.');
 	    }
 	    if (portCount === 2 && sides[0] === 'left' && sides[1] === 'right') {
 	        return schematicSymbols.nodal;
 	    }
-	    const grouped = Object.fromEntries(SIDES.map(side =>
+	    const grouped = Object.fromEntries(SIDES$1.map(side =>
 	        [side, sides.flatMap((value, index) => value === side ? [index] : [])]));
 	    const width = Math.max(80, PORT_SPACING * Math.max(grouped.top.length, grouped.bottom.length));
 	    const height = Math.max(40, PORT_SPACING * Math.max(grouped.left.length, grouped.right.length));
 	    const bodyBounds = [100, 60, 100 + width, 60 + height];
 	    const ports = new Array(portCount);
 	    const leads = new Array(portCount);
-	    for (const side of SIDES) {
+	    for (const side of SIDES$1) {
 	        const indices = grouped[side];
 	        const positions = centeredPositions(side === 'left' || side === 'right' ?
 	            bodyBounds[1] : bodyBounds[0], side === 'left' || side === 'right' ?
@@ -9491,9 +9489,142 @@
 	        schematicSymbols[entry.part?.symbol];
 	}
 
-	// Modified: 2026-11-13
+	// Modified: 2026-11-19
 	// Declarative board settings consumed by the schematic layout interpreter.
+
+	function twoTerminalSlot(name, symbols) {
+	    return {name, symbols, portCount: 2, ports: {in: [1, 2], out: [1, 2]}};
+	}
+
+	function groundSlot(name) {
+	    return {name, symbols: ['short'], portCount: 1, ports: {in: [1]}};
+	}
+
+	function commonEmitterBoard(emitter, supplyBypass, collectorCommon, railOrder = 'sourceFirst') {
+	    const sideOutput = collectorCommon === 'output';
+	    const collectorFirst = supplyBypass && railOrder === 'collectorFirst';
+	    const slots = [
+	        {name: 'device', symbols: ['npn', 'pnp'], portCount: 3,
+	            ports: {base: [1], collector: [2], emitter: [3]}},
+	        twoTerminalSlot('input', ['capacitor']),
+	        {name: 'baseJunction', symbols: ['tee4'], portCount: 4,
+	            ports: {input: [1, 2, 3, 4], device: [1, 2, 3, 4], upper: [1, 2, 3, 4], lower: [1, 2, 3, 4]}},
+	        twoTerminalSlot('upperBias', ['resistor']),
+	        twoTerminalSlot('lowerBias', ['resistor']),
+	        groundSlot('biasGround'),
+	        twoTerminalSlot('collectorLoad', ['resistor']),
+	        {name: 'collectorJunction', symbols: ['tee'], portCount: 3,
+	            ports: {supply: sideOutput ? [2, 3] : [1], device: [2, 3], output: sideOutput ? [1] : [2, 3]}},
+	        twoTerminalSlot('output', ['capacitor']),
+	        {name: 'supplyJunction', symbols: ['tee'], portCount: 3,
+	            ports: collectorFirst ? {source: [2, 3], bias: [2, 3], load: [1]} :
+	                {source: [1], bias: [2, 3], load: [2, 3]}},
+	        {name: 'source', symbols: ['voltage-source'], portCount: 2, ports: {in: [1], out: [2]}},
+	        groundSlot('sourceGround')
+	    ];
+	    const components = [
+	        {slot: 'device', anchor: 'base', directions: {base: 'left', collector: 'up', emitter: 'down'}},
+	        {slot: 'input', anchor: 'out', directions: {in: 'left', out: 'right'}},
+	        {slot: 'baseJunction', anchor: 'device',
+	            directions: {input: 'left', device: 'right', upper: 'up', lower: 'down'}},
+	        {slot: 'upperBias', anchor: 'out', directions: {in: 'up', out: 'down'}},
+	        {slot: 'lowerBias', anchor: 'in', directions: {in: 'up', out: 'down'}},
+	        {slot: 'biasGround', anchor: 'in', directions: {in: 'up'}},
+	        {slot: 'collectorLoad', anchor: 'in', directions: {in: 'up', out: 'down'}},
+	        {slot: 'collectorJunction', anchor: sideOutput ? 'supply' : 'device',
+	            directions: sideOutput ? {supply: 'up', device: 'down', output: 'right'} :
+	                {supply: 'up', device: 'left', output: 'right'}},
+	        {slot: 'output', anchor: 'in',
+	            directions: {in: 'left', out: 'right'}},
+	        {slot: 'supplyJunction', anchor: collectorFirst ? 'load' : 'bias',
+	            directions: collectorFirst ? {source: 'right', bias: 'left', load: 'down'} :
+	                {source: 'up', bias: 'left', load: 'right'}},
+	        {slot: 'source', anchor: 'in',
+	            directions: {in: 'up', out: 'down'}},
+	        {slot: 'sourceGround', anchor: 'in', directions: {in: 'up'}}
+	    ];
+	    const wires = [
+	        {from: {externalPort: 1}, to: {slot: 'input', port: 'in'}},
+	        {from: {slot: 'input', port: 'out'}, to: {slot: 'baseJunction', port: 'input'}},
+	        {from: {slot: 'baseJunction', port: 'device'}, to: {slot: 'device', port: 'base'}},
+	        {from: {slot: 'baseJunction', port: 'upper'}, to: {slot: 'upperBias', port: 'out'}},
+	        {from: {slot: 'baseJunction', port: 'lower'}, to: {slot: 'lowerBias', port: 'in'}},
+	        {from: {slot: 'lowerBias', port: 'out'}, to: {slot: 'biasGround', port: 'in'}},
+	        {from: {slot: 'upperBias', port: 'in'}, to: {slot: 'supplyJunction', port: 'bias'}, route: 'verticalFirst'},
+	        ...(!collectorFirst ? [{from: {slot: 'supplyJunction', port: 'source'}, to: {slot: 'source', port: 'in'}, route: 'horizontalFirst'}] : []),
+	        {from: {slot: 'source', port: 'out'}, to: {slot: 'sourceGround', port: 'in'}},
+	        {from: {slot: 'collectorLoad', port: 'out'}, to: {slot: 'collectorJunction', port: 'supply'}},
+	        {from: {slot: 'device', port: 'collector'}, to: {slot: 'collectorJunction', port: 'device'}, route: 'verticalFirst'},
+	        {from: {slot: 'collectorJunction', port: 'output'}, to: {slot: 'output', port: 'in'}},
+	        {from: {slot: 'output', port: 'out'}, to: {externalPort: 2}}
+	    ];
+	    if (supplyBypass) {
+	        slots.push({name: 'railJunction', symbols: ['tee'], portCount: 3,
+	            ports: collectorFirst ? {load: [2, 3], supply: [2, 3], bypass: [1]} :
+	                {load: [1], supply: [2, 3], bypass: [2, 3]}},
+	        twoTerminalSlot('supplyBypass', ['capacitor']), groundSlot('supplyBypassGround'));
+	        components.push(
+	            {slot: 'railJunction', anchor: collectorFirst ? 'bypass' : 'load',
+	                directions: collectorFirst ? {load: 'left', supply: 'right', bypass: 'down'} :
+	                    {load: 'down', supply: 'left', bypass: 'right'}},
+	            {slot: 'supplyBypass', anchor: 'in', directions: {in: 'up', out: 'down'}},
+	            {slot: 'supplyBypassGround', anchor: 'in', directions: {in: 'up'}});
+	        wires.push(...(collectorFirst ? [
+	            {from: {slot: 'supplyJunction', port: 'load'}, to: {slot: 'collectorLoad', port: 'in'}},
+	            {from: {slot: 'supplyJunction', port: 'source'}, to: {slot: 'railJunction', port: 'load'}},
+	            {from: {slot: 'railJunction', port: 'supply'}, to: {slot: 'source', port: 'in'}, route: 'horizontalFirst'}
+	        ] : [
+	            {from: {slot: 'supplyJunction', port: 'load'}, to: {slot: 'railJunction', port: 'supply'}},
+	            {from: {slot: 'railJunction', port: 'load'}, to: {slot: 'collectorLoad', port: 'in'}}
+	        ]),
+	            {from: {slot: 'railJunction', port: 'bypass'}, to: {slot: 'supplyBypass', port: 'in'}, route: 'horizontalFirst'},
+	            {from: {slot: 'supplyBypass', port: 'out'}, to: {slot: 'supplyBypassGround', port: 'in'}});
+	    } else wires.push({from: {slot: 'supplyJunction', port: 'load'}, to: {slot: 'collectorLoad', port: 'in'}, route: 'horizontalFirst'});
+	    if (emitter === 'split') {
+	        slots.push({name: 'emitterJunction', symbols: ['tee'], portCount: 3,
+	            ports: {device: [1], resistor: [2, 3], bypass: [2, 3]}},
+	        twoTerminalSlot('emitterResistor', ['resistor']), twoTerminalSlot('emitterBypass', ['capacitor']),
+	        groundSlot('emitterGround'), groundSlot('emitterBypassGround'));
+	        components.push(
+	            {slot: 'emitterJunction', anchor: 'device', directions: {device: 'up', resistor: 'left', bypass: 'right'}},
+	            {slot: 'emitterResistor', anchor: 'in', directions: {in: 'up', out: 'down'}},
+	            {slot: 'emitterBypass', anchor: 'in', directions: {in: 'up', out: 'down'}},
+	            {slot: 'emitterGround', anchor: 'in', directions: {in: 'up'}},
+	            {slot: 'emitterBypassGround', anchor: 'in', directions: {in: 'up'}});
+	        wires.push(
+	            {from: {slot: 'device', port: 'emitter'}, to: {slot: 'emitterJunction', port: 'device'}},
+	            {from: {slot: 'emitterJunction', port: 'resistor'}, to: {slot: 'emitterResistor', port: 'in'}, route: 'horizontalFirst'},
+	            {from: {slot: 'emitterJunction', port: 'bypass'}, to: {slot: 'emitterBypass', port: 'in'}, route: 'horizontalFirst'},
+	            {from: {slot: 'emitterResistor', port: 'out'}, to: {slot: 'emitterGround', port: 'in'}},
+	            {from: {slot: 'emitterBypass', port: 'out'}, to: {slot: 'emitterBypassGround', port: 'in'}});
+	    } else {
+	        slots.push(twoTerminalSlot('emitterNetwork', [emitter === 'combined' ? 'se-parallel-rc' : 'resistor']), groundSlot('emitterGround'));
+	        components.push(
+	            {slot: 'emitterNetwork', anchor: 'in', directions: {in: 'up', out: 'down'}},
+	            {slot: 'emitterGround', anchor: 'in', directions: {in: 'up'}});
+	        wires.push(
+	            {from: {slot: 'device', port: 'emitter'}, to: {slot: 'emitterNetwork', port: 'in'}},
+	            {from: {slot: 'emitterNetwork', port: 'out'}, to: {slot: 'emitterGround', port: 'in'}});
+	    }
+	    return {name: 'commonEmitter', version: 1, variant: `${emitter}${supplyBypass ? '-supply-bypass' : ''}-${collectorCommon}${collectorFirst ? '-collector-first' : ''}`,
+	        match: {externalPortCount: 2, slots}, board: {grid: 10, layout: 'relations', components, wires,
+	            order: [{axis: 'x', slots: ['input', 'baseJunction', 'device', 'output',
+	                ...(supplyBypass ? ['supplyBypass'] : []), 'source']},
+	            {axis: 'y', slots: [['sourceGround', ...(supplyBypass ? ['supplyBypassGround'] : [])], 'output', 'device']}],
+	            externalPorts: [
+	                {port: 1, from: {slot: 'input', port: 'in'}, side: 'left'},
+	                {port: 2, from: {slot: 'output', port: 'out'}, side: 'right'}
+	            ]}};
+	}
+
+	const commonEmitterVariants = ['split', 'combined', 'resistor'].flatMap(emitter => [true, false]
+	    .flatMap(bypass => ['output', 'supply'].flatMap(common =>
+	        (bypass ? ['collectorFirst', 'sourceFirst'] : ['sourceFirst'])
+	            .map(order => commonEmitterBoard(emitter, bypass, common, order)))));
+
 	const schematicShapeBoards = {
+	    commonEmitter: {...commonEmitterVariants[0], detect: true, interface: {from: [1], to: [2]},
+	        alternatives: commonEmitterVariants.slice(1)},
 	    generic: {
 	        name: 'generic',
 	        version: 1,
@@ -9552,8 +9683,6 @@
 	            origin: [40, 100],
 	            direction: 'right',
 	            wireBoxLength: 80,
-	            componentLabelOffset: [0, -90],
-	            portLabelOffset: [0, 60]
 	        }
 	    },
 	    ladder: {
@@ -9581,7 +9710,6 @@
 	                {kind: 'wire', slot: 'output'}
 	            ],
 	            attachments: [{source: 'branches', direction: 'down',
-	                componentLabelOffset: [100, 0],
 	                tiles: [
 	                    {kind: 'wire', slot: 'entry'},
 	                    {kind: 'component', source: 'parts', role: 'shuntPart',
@@ -9592,8 +9720,6 @@
 	            origin: [40, 100],
 	            direction: 'right',
 	            wireBoxLength: 80,
-	            componentLabelOffset: [0, -90],
-	            portLabelOffset: [0, 60]
 	        }
 	    },
 	    edgeCoupledFilter: {
@@ -9611,7 +9737,6 @@
 	                through: {portCounts: []}, until: {portCount: 1}, minimum: 0, minimumBranches: 2}]
 	        },
 	        board: {
-	            spacing: 'attachments',
 	            clearance: 10,
 	            grid: 10,
 	            from: {externalPort: 1},
@@ -9619,8 +9744,6 @@
 	            origin: [40, 100],
 	            direction: 'right',
 	            wireBoxLength: 80,
-	            componentLabelOffset: [0, -90],
-	            portLabelOffset: [0, 60],
 	            tiles: [
 	                {kind: 'wire'},
 	                {kind: 'component', source: 'sections', role: 'section', repeat: 'oneOrMore',
@@ -9656,8 +9779,6 @@
 	            origin: [40, 100],
 	            direction: 'right',
 	            wireBoxLength: 40,
-	            componentLabelOffset: [0, -90],
-	            portLabelOffset: [0, 60],
 	            tiles: [
 	                {kind: 'wire'},
 	                {kind: 'component', source: 'mainParts', role: 'mainPart', repeat: 'oneOrMore',
@@ -9671,7 +9792,7 @@
 	                        between: {kind: 'wire'}},
 	                    {kind: 'wire'}
 	                ]}],
-	            attachments: [{source: 'branches', direction: 'down', componentLabelOffset: [100, 0],
+	            attachments: [{source: 'branches', direction: 'down',
 	                tiles: [
 	                    {kind: 'wire'},
 	                    {kind: 'component', source: 'parts', role: 'shuntPart', repeat: 'oneOrMore',
@@ -9760,26 +9881,26 @@
 	        },
 	        board: {
 	            grid: 10,
-	            origin: [0, 0],
+	            layout: 'relations',
 	            components: [
-	                {slot: 'input', anchor: 'in', at: [12, 60],
+	                {slot: 'input', anchor: 'in',
 	                    directions: {in: 'left', out: 'right'}},
-	                {slot: 'tap', anchor: 'center', from: {slot: 'input', port: 'out'}, offset: [4, 0],
+	                {slot: 'tap', anchor: 'center',
 	                    directions: {center: 'left', upper: 'up', lower: 'down'}},
-	                {slot: 'upper', anchor: 'feed', from: {slot: 'tap', port: 'upper'}, offset: [12, -4],
+	                {slot: 'upper', anchor: 'feed',
 	                    directions: {feed: 'left', out: 'right', common: 'down'}},
-	                {slot: 'bridge', anchor: 'top', from: {slot: 'upper', port: 'common'}, offset: [0, 2],
+	                {slot: 'bridge', anchor: 'top',
 	                    directions: {top: 'up', bottom: 'down'}},
-	                {slot: 'lower', anchor: 'common', from: {slot: 'bridge', port: 'bottom'}, offset: [0, 2],
+	                {slot: 'lower', anchor: 'common',
 	                    directions: {feed: 'left', out: 'right', common: 'up'}}
 	            ],
 	            centerlines: [{axis: 'y',
 	                reference: {slot: 'bridge', between: ['top', 'bottom']},
 	                align: [{slot: 'input', port: 'in'}, {slot: 'tap', port: 'center'}]}],
 	            externalPorts: [
-	                {port: 1, from: {slot: 'input', port: 'in'}, side: 'left', cells: 8},
-	                {port: 2, from: {slot: 'upper', port: 'out'}, side: 'right', cells: 8},
-	                {port: 3, from: {slot: 'lower', port: 'out'}, side: 'right', cells: 8}
+	                {port: 1, from: {slot: 'input', port: 'in'}, side: 'left'},
+	                {port: 2, from: {slot: 'upper', port: 'out'}, side: 'right'},
+	                {port: 3, from: {slot: 'lower', port: 'out'}, side: 'right'}
 	            ],
 	            wires: [
 	                {from: {externalPort: 1}, to: {slot: 'input', port: 'in'}},
@@ -9862,7 +9983,7 @@
 	    }
 	};
 
-	// Modified: 2026-11-15
+	// Modified: 2026-11-19
 	// General graph operations for ORI's automatic board. No RF circuit patterns.
 	const AXES = [[1, 0], [0, 1], [-1, 0], [0, -1]];
 
@@ -9874,7 +9995,7 @@
 	    return a[0] === b[0] && a[1] === b[1];
 	}
 
-	function rotate$1(vector, angle, mirrorX, mirrorY) {
+	function rotate$2(vector, angle, mirrorX, mirrorY) {
 	    const x = vector[0] * (mirrorX ? -1 : 1), y = vector[1] * (mirrorY ? -1 : 1);
 	    return angle === 0 ? [x, y] : angle === 90 ? [-y, x] : angle === 180 ? [-x, -y] : [y, -x];
 	}
@@ -10022,7 +10143,9 @@
 	    }
 	    const sizes = regions.map(region => {
 	        const extent = Math.max(...region.members.map(index => {
-	            const b = geometry.symbol(root.components[index]).bounds;
+	            const entry = root.components[index];
+	            const b = geometry.packingBounds && geometry.preview ?
+	                geometry.packingBounds(geometry.preview(entry, 1, [0, 0], 0)) : geometry.symbol(entry).bounds;
 	            return Math.max(b[2] - b[0], b[3] - b[1]);
 	        }));
 	        const pitch = Math.ceil((extent + board.componentGap) / board.grid) * board.grid;
@@ -10078,7 +10201,7 @@
 	        for (const angle of preference?.rotations || [0, 90, 180, 270]) {
 	            let score = 0;
 	            entry.nodes.forEach((node, port) => {
-	                const outward = rotate$1(terminalDirection$1(symbol, port + 1), angle, mirrorX, mirrorY);
+	                const outward = rotate$2(terminalDirection$1(symbol, port + 1), angle, mirrorX, mirrorY);
 	                const neighbors = graph.byNode.get(node).filter(terminal => terminal.index !== index);
 	                for (const neighbor of neighbors) {
 	                    const target = positions.get(neighbor.index);
@@ -10092,7 +10215,7 @@
 	                }
 	            });
 	            if (best && best.score >= score) continue;
-	            const delta = rotate$1([symbol.ports[0][0] - bodyCenter[0], symbol.ports[0][1] - bodyCenter[1]],
+	            const delta = rotate$2([symbol.ports[0][0] - bodyCenter[0], symbol.ports[0][1] - bodyCenter[1]],
 	                angle, mirrorX, mirrorY);
 	            best = {score, angle, mirrorX, mirrorY,
 	                at: [snap(center[0] + delta[0], board.grid), snap(center[1] + delta[1], board.grid)]};
@@ -10107,7 +10230,7 @@
 	    const source = symbol.ports[placement.sourcePort - 1];
 	    const [x1, y1, x2, y2] = symbol.bounds;
 	    const corners = [[x1, y1], [x2, y1], [x2, y2], [x1, y2]].map(point => {
-	        const v = rotate$1([point[0] - source[0], point[1] - source[1]], placement.rotation,
+	        const v = rotate$2([point[0] - source[0], point[1] - source[1]], placement.rotation,
 	            placement.mirrorX, placement.mirrorY);
 	        return [v[0] + placement.at[0], v[1] + placement.at[1]];
 	    });
@@ -10126,7 +10249,7 @@
 	    const moved = new Set();
 	    for (let index = 0; index < root.components.length; index++) {
 	        const entry = root.components[index], symbol = geometry.symbol(entry);
-	        if (!symbol.automatic?.localTerminations) continue;
+	        if (entry.nodes.length < 2) continue;
 	        const parent = placements[index];
 	        for (const port of parent.ports) {
 	            const terminals = graph.byNode.get(port.node);
@@ -10134,19 +10257,20 @@
 	            const other = terminals.find(terminal => terminal.index !== index);
 	            if (!other || moved.has(other.index) || root.components[other.index].nodes.length !== 1) continue;
 	            const childEntry = root.components[other.index], childSymbol = geometry.symbol(childEntry);
-	            const direction = rotate$1(terminalDirection$1(symbol, port.port), parent.rotation, parent.mirrorX, parent.mirrorY);
+	            const direction = rotate$2(terminalDirection$1(symbol, port.port), parent.rotation, parent.mirrorX, parent.mirrorY);
 	            const obstacles = placements.flatMap((placement, obstacle) => obstacle === other.index ? [] :
-	                [placementBounds(placement, geometry.symbol(root.components[obstacle]))]);
+	                [(geometry.packingBounds || geometry.bounds)(placement)]);
 	            let selected = null;
 	            for (let distance = 2 * board.wireBoxLength; distance <= board.routingMargin + board.componentGap && !selected;
 	                distance += board.grid) {
 	                const at = port.at.map((value, axis) => value + direction[axis] * distance);
 	                for (const angle of [0, 90, 180, 270]) {
-	                    if (!same(rotate$1(terminalDirection$1(childSymbol, 1), angle, false, false), direction.map(value => -value))) continue;
-	                    const candidate = geometry.placement(childEntry, 1, at, angle);
-	                    const bounds = placementBounds(candidate, childSymbol);
+	                    if (!same(rotate$2(terminalDirection$1(childSymbol, 1), angle, false, false), direction.map(value => -value))) continue;
+	                    const candidate = (geometry.preview || geometry.placement)(childEntry, 1, at, angle);
+	                    const bounds = (geometry.packingBounds || geometry.bounds)(candidate);
 	                    if (!obstacles.some(obstacle => boundsOverlap(bounds, obstacle, board.clearance))) {
 	                        candidate.boardTile = placements[other.index].boardTile;
+	                        candidate.id = placements[other.index].id;
 	                        selected = candidate; break;
 	                    }
 	                }
@@ -10320,12 +10444,14 @@
 	        automaticPlacement(root, index, positions, graph, board, geometry)]));
 	    const placements = root.components.map((_, index) => byIndex.get(index));
 	    placeLocalTerminations(root, placements, graph, board, geometry);
-	    const bounds = placements.map((placement, index) => placementBounds(placement, geometry.symbol(root.components[index])));
+	    const bounds = placements.flatMap((placement, index) =>
+	        [placementBounds(placement, geometry.symbol(root.components[index])),
+	            ...(geometry.captionBounds ? [geometry.captionBounds(placement)] : [])]);
 	    const result = {grid: board.grid, placements, wires: [], nodePoints: new Map(), externalPorts: [],
 	        regions: regions.filter(region => region.cyclic).map(region => ({kind: 'loop', components: region.members.map(index => index + 1)}))};
 	    const terminals = new Map();
 	    placements.forEach((placement, index) => placement.ports.forEach(port => {
-	        const direction = rotate$1(terminalDirection$1(geometry.symbol(root.components[index]), port.port),
+	        const direction = rotate$2(terminalDirection$1(geometry.symbol(root.components[index]), port.port),
 	            placement.rotation, placement.mirrorX, placement.mirrorY);
 	        if (!terminals.has(port.node)) terminals.set(port.node, []);
 	        terminals.get(port.node).push({...port,
@@ -10376,7 +10502,7 @@
 	    return result;
 	}
 
-	// Modified: 2026-11-13
+	// Modified: 2026-11-19
 	// Compose measured boards and direct junction symbols through their electrical boundaries.
 
 	function compositionError(message) {
@@ -10478,11 +10604,14 @@
 	function measureSection(result, geometry) {
 	    const points = result.externalPorts.map(port => port.at).concat(result.wires.flatMap(wire => wire.points),
 	        result.placements.flatMap(part => {
-	            const box = geometry.bounds(part);
-	            return [[box[0], box[1]], [box[2], box[3]]];
+	            const boxes = [geometry.bounds(part), ...(geometry.captionBounds ? [geometry.captionBounds(part)] : [])];
+	            return boxes.flatMap(box => [[box[0], box[1]], [box[2], box[3]]]);
 	        }));
-	    return [Math.min(...points.map(p => p[0])), Math.min(...points.map(p => p[1])),
-	        Math.max(...points.map(p => p[0])), Math.max(...points.map(p => p[1]))];
+	    const grid = result.grid;
+	    return [Math.floor(Math.min(...points.map(p => p[0])) / grid) * grid,
+	        Math.floor(Math.min(...points.map(p => p[1])) / grid) * grid,
+	        Math.ceil(Math.max(...points.map(p => p[0])) / grid) * grid,
+	        Math.ceil(Math.max(...points.map(p => p[1])) / grid) * grid];
 	}
 
 	function compactSectionLeads(item, geometry, grid) {
@@ -10502,19 +10631,29 @@
 	    result.externalPorts = result.externalPorts.map(port => leads.has(port.node) ?
 	        {...port, at: leads.get(port.node).terminal.at.slice()} : port);
 	    const bounds = measureSection(result, geometry);
+	    const board = {grid, clearance: grid, wireBoxLength: 2 * grid, cornerSize: grid,
+	        routingMargin: 200, bendCost: 20, allowCrossings: false};
+	    const obstacles = result.placements.flatMap(part => [geometry.bounds(part),
+	        ...(geometry.captionBounds ? [geometry.captionBounds(part)] : [])]);
+	    const occupied = new Map();
+	    for (const wire of result.wires) recordBoardRoute(wire.points, wire.node, occupied, grid);
 	    result.externalPorts = result.externalPorts.map(port => {
 	        const lead = leads.get(port.node);
 	        if (!lead) return port;
-	        const {terminal, direction, external, wire} = lead;
+	        const {terminal, direction, wire} = lead;
 	        const axis = direction[0] ? 0 : 1;
 	        const reach = Math.max(0, (bounds[axis + (direction[axis] > 0 ? 2 : 0)] - terminal.at[axis]) * direction[axis]);
-	        const original = Math.abs(external.at[axis] - terminal.at[axis]);
-	        // Retain only the part of a lead needed to reach the complete section's
-	        // outer envelope. The composer supplies the wire between sections.
-	        const length = Math.min(original, Math.ceil(reach / grid) * grid);
+	        // Reach the measured envelope even when the original display lead was
+	        // buried inside it. Route around symbols, captions and other nets.
+	        const length = Math.ceil(reach / grid) * grid;
 	        const at = terminal.at.map((value, index) => value + direction[index] * length);
-	        if (length) result.wires.push({...wire, points: [terminal.at.slice(), at.slice()],
-	            boardTile: {...wire.boardTile, length}});
+	        if (length) {
+	            const escape = terminal.at.map((value, index) => value + direction[index] * Math.min(length, board.wireBoxLength));
+	            const points = [terminal.at, ...automaticRoute(escape, at, obstacles, new Set(), occupied,
+	                port.node, {...board, startDirection: direction, finishDirection: direction})];
+	            recordBoardRoute(points, port.node, occupied, grid);
+	            graphWireBoxes(result, port.node, points, board, `${wire.boardTile.id}:exit`);
+	        }
 	        result.nodePoints.delete(port.node);
 	        return {...port, at, direction};
 	    });
@@ -10859,7 +10998,9 @@
 	function routeSections(root, ordered, edges, geometry, combined) {
 	    const grid = combined.grid, board = {grid, clearance: 10, routingMargin: 100,
 	        wireBoxLength: 20, cornerSize: 10, bendCost: 20, allowCrossings: false};
-	    const bounds = ordered.filter(item => !item.external).map(item => measureSection(item.result, geometry));
+	    const bounds = ordered.filter(item => !item.external).flatMap(item => item.entry ?
+	        item.result.placements.flatMap(part => [geometry.bounds(part),
+	            ...(geometry.captionBounds ? [geometry.captionBounds(part)] : [])]) : [measureSection(item.result, geometry)]);
 	    const occupied = new Map(), obstacles = new Set();
 	    for (const wire of combined.wires) recordBoardRoute(wire.points, wire.node, occupied, grid);
 	    const routes = edges.map(edge => {
@@ -10941,7 +11082,766 @@
 	    return combined;
 	}
 
-	// Modified: 2026-11-13
+	// Modified: 2026-11-19
+	// Discover related terminated branches from connectivity, never instance names.
+	function schematicBranchFamilies(root, symbolFor, paths = []) {
+	    const adjacency = new Map(), parents = new Map();
+	    root.components.forEach((entry, index) => {
+	        if (symbolFor(entry).junction) parents.set(index, index);
+	        entry.nodes.forEach((node, port) => {
+	            if (!adjacency.has(node)) adjacency.set(node, []);
+	            adjacency.get(node).push({index, port: port + 1});
+	        });
+	    });
+	    for (const terminals of adjacency.values()) {
+	        const junctions = terminals.filter(end => parents.has(end.index));
+	        for (const end of junctions.slice(1)) joinBranches(parents, junctions[0].index, end.index);
+	    }
+	    // A bound main path supplies an engineering relationship between its shunts.
+	    for (const path of paths) {
+	        const junctions = path.filter(index => parents.has(index));
+	        for (const index of junctions.slice(1)) joinBranches(parents, junctions[0], index);
+	    }
+	    const families = new Map();
+	    root.components.forEach((entry, termination) => {
+	        if (entry.nodes.length !== 1) return;
+	        const chain = [], visited = new Set([termination]);
+	        let node = entry.nodes[0], prior = termination;
+	        while (!root.externalNodes.includes(node)) {
+	            const terminals = adjacency.get(node);
+	            if (terminals.length !== 2) break;
+	            const next = terminals.find(end => end.index !== prior);
+	            if (!next || visited.has(next.index)) break;
+	            if (parents.has(next.index)) {
+	                const anchor = branchRoot(parents, next.index);
+	                const key = `${anchor}:${entry.part.symbol}`;
+	                if (!families.has(key)) families.set(key, []);
+	                families.get(key).push({termination, anchor: next.index, port: next.port, chain: chain.reverse()});
+	                break;
+	            }
+	            const component = root.components[next.index];
+	            if (component.nodes.length !== 2) break;
+	            visited.add(next.index); chain.push(next.index);
+	            prior = next.index; node = component.nodes[2 - next.port];
+	        }
+	    });
+	    return [...families.values()].filter(family => family.length > 1);
+	}
+
+	function branchRoot(parents, index) {
+	    let root = index;
+	    while (parents.get(root) !== root) root = parents.get(root);
+	    return root;
+	}
+
+	function joinBranches(parents, a, b) {
+	    parents.set(branchRoot(parents, b), branchRoot(parents, a));
+	}
+
+	function measuredBranchAlignment(families, measurements) {
+	    const plan = new Map();
+	    for (const family of families) {
+	        const directions = new Map();
+	        for (const branch of family) {
+	            const measured = measurements.get(branch.termination);
+	            if (!measured) continue;
+	            const key = measured.direction.join(',');
+	            if (!directions.has(key)) directions.set(key, []);
+	            directions.get(key).push({...branch, ...measured, shift: 0});
+	        }
+	        for (const branches of directions.values()) {
+	            if (branches.length < 2) continue;
+	            const direction = branches[0].direction, axis = direction[0] ? 0 : 1, sign = direction[axis];
+	            if (branches.every(branch => branch.chain.length === branches[0].chain.length)) {
+	                for (let stage = 0; stage < branches[0].chain.length; stage++) {
+	                    const target = Math.max(...branches.map(branch => {
+	                        const part = branch.result.byIndex.get(branch.chain[stage]);
+	                        return sign * (part.ports[0].at[axis] + part.ports[1].at[axis]) / 2 + branch.shift;
+	                    }));
+	                    for (const branch of branches) {
+	                        const index = branch.chain[stage], part = branch.result.byIndex.get(index);
+	                        const center = sign * (part.ports[0].at[axis] + part.ports[1].at[axis]) / 2;
+	                        branch.shift = target - center;
+	                        plan.set(index, {axis, sign, target});
+	                    }
+	                }
+	            }
+	            const target = Math.max(...branches.map(branch => sign *
+	                branch.result.byIndex.get(branch.termination).ports[0].at[axis] + branch.shift));
+	            for (const branch of branches) plan.set(branch.termination, {axis, sign, target});
+	        }
+	    }
+	    return plan;
+	}
+
+	// Generated by schematics/tools/generate-runtime-symbols.js from symbol-catalog.json.
+	// Drawing names select geometry; they never invoke constructors.
+	const schematicDrawingSymbols = {
+	    "cascade": "cascade",
+	    "nodal": "nodal",
+	    "R": "resistor",
+	    "seR": "resistor",
+	    "paR": "parallel-resistor",
+	    "L": "inductor",
+	    "seL": "inductor",
+	    "paL": "parallel-inductor",
+	    "C": "capacitor",
+	    "seC": "capacitor",
+	    "paC": "parallel-capacitor",
+	    "trf": "transformer",
+	    "trf4Port": "transformer-four-port",
+	    "trfAuto": "transformer-auto",
+	    "seSeRL": "se-series-rl",
+	    "paSeRL": "pa-series-rl",
+	    "seSeRC": "se-series-rc",
+	    "paSeRC": "pa-series-rc",
+	    "seSeLC": "se-series-lc",
+	    "paSeLC": "pa-series-lc",
+	    "seSeRLC": "se-series-rlc",
+	    "paSeRLC": "pa-series-rlc",
+	    "paPaRL": "pa-parallel-rl",
+	    "sePaRL": "se-parallel-rl",
+	    "paPaRC": "pa-parallel-rc",
+	    "sePaRC": "se-parallel-rc",
+	    "paPaLC": "pa-parallel-lc",
+	    "sePaLC": "se-parallel-lc",
+	    "paPaRLC": "pa-parallel-rlc",
+	    "sePaRLC": "se-parallel-rlc",
+	    "diode1N4148": "diode-1n4148",
+	    "Attn": "attenuator",
+	    "Amp": "amplifier",
+	    "Thru": "thru",
+	    "Tee": "tee",
+	    "Tee4": "tee4",
+	    "Tee5": "tee5",
+	    "seriesTee": "series-tee",
+	    "Open": "open",
+	    "Short": "short",
+	    "Load": "load",
+	    "Shift90": "shift-90",
+	    "Tlin": "transmission-line",
+	    "Tclin": "coupled-transmission-line",
+	    "Coupler180": "coupler-180",
+	    "mlin": "microstrip-line",
+	    "mclin": "microstrip-coupled-line",
+	    "mtee": "microstrip-tee",
+	    "mcross": "microstrip-cross",
+	    "mstep": "microstrip-step",
+	    "mbend": "microstrip-right-bend",
+	    "mtfr": "microstrip-thin-film-resistor",
+	    "mvgnd": "microstrip-via-to-ground",
+	    "mvia": "microstrip-via-transition",
+	    "mod": "mod",
+	    "demod": "demod",
+	    "NPN": "npn",
+	    "PNP": "pnp",
+	    "D": "diode-1n4148",
+	    "V": "voltage-source",
+	    "I": "current-source",
+	    "VCVS": "voltage-controlled-voltage-source",
+	    "VCCS": "voltage-controlled-current-source",
+	    "CCVS": "current-controlled-voltage-source",
+	    "CCCS": "current-controlled-current-source"
+	};
+
+	// Modified: 2026-11-14
+
+	const drawingDirections = {right: [1, 0], down: [0, 1], left: [-1, 0], up: [0, -1]};
+
+	function drawingError(line, message) {
+	    throw new TypeError(`${line ? `Path line ${line}` : 'Schematic input'}: ${message}`);
+	}
+
+	function tokensForLine(text, line) {
+	    const tokens = []; let start = 0, depth = 0;
+	    for (let index = 0; index <= text.length; index++) {
+	        const character = text[index];
+	        if (character === '(' || character === '[') depth++;
+	        if (character === ')' || character === ']') depth--;
+	        if (depth < 0) drawingError(line, 'unmatched closing delimiter.');
+	        if (index === text.length || !depth && /\s/.test(character)) {
+	            if (index > start) tokens.push(text.slice(start, index));
+	            start = index + 1;
+	        }
+	    }
+	    if (depth) drawingError(line, 'unclosed value or terminal list.');
+	    return tokens;
+	}
+
+	function nodeToken(token, line) {
+	    if (!/^-?\d+$/.test(token || '') || !Number.isSafeInteger(Number(token))) drawingError(line, `expected a node number; received "${token ?? ''}".`);
+	    return Number(token);
+	}
+
+	function declaration(token, line) {
+	    const match = /^([A-Za-z_][\w-]*)=([A-Za-z_]\w*)(?:\(([\s\S]*)\))?(?:\[([\d,\s]+)\])?$/.exec(token);
+	    if (!match) drawingError(line, `invalid component declaration "${token}".`);
+	    const [, id, name, caption, list] = match;
+	    if (!Object.prototype.hasOwnProperty.call(schematicDrawingSymbols, name)) drawingError(line, `unknown symbol "${name}".`);
+	    const symbol = schematicDrawingSymbols[name], count = schematicSymbols[symbol].ports.length;
+	    const terminals = list === undefined ? null : list.split(',').map(value => Number(value.trim()));
+	    if (terminals && (terminals.length !== count || new Set(terminals).size !== count ||
+	        terminals.some(port => !Number.isInteger(port) || port < 1 || port > count))) {
+	        drawingError(line, `${name} requires ${count} distinct terminal assignments numbered 1 through ${count}.`);
+	    }
+	    if (!terminals && count > 2) drawingError(line, `${name} requires an explicit terminal list.`);
+	    return {id, name, symbol, caption, terminals, count, line};
+	}
+
+	function parseComponentLine(tokens, line, parts, declarations) {
+	    let node = nodeToken(tokens.shift(), line), previous = null;
+	    while (tokens.length) {
+	        const directions = [];
+	        while (Object.hasOwn(drawingDirections, tokens[0])) directions.push(tokens.shift());
+	        if (!directions.length && !previous) drawingError(line, 'a component needs an approach direction.');
+	        const part = declaration(tokens.shift() || '', line);
+	        if (declarations.has(part.id)) drawingError(line, `duplicate component "${part.id}".`);
+	        if (part.terminals) {
+	            const supplied = tokens.findIndex(token => !/^-?\d+$/.test(token));
+	            const available = supplied < 0 ? tokens.length : supplied;
+	            if (available < part.count) drawingError(line, `${part.name} requires ${part.count} terminal node assignments; received ${available}.`);
+	        }
+	        const assignments = part.terminals ? part.terminals.map(() => nodeToken(tokens.shift(), line)) :
+	            part.count === 1 ? [node] : [node, nodeToken(tokens.shift(), line)];
+	        part.nodes = new Array(part.count);
+	        (part.terminals || Array.from({length: part.count}, (_, index) => index + 1))
+	            .forEach((terminal, index) => { part.nodes[terminal - 1] = assignments[index]; });
+	        const approaches = part.nodes.flatMap((value, index) => value === node ? [index + 1] : []);
+	        if (approaches.length !== 1) drawingError(line, 'the approach node must identify exactly one component terminal.');
+	        part.inputPort = approaches[0];
+	        part.outputPort = part.count === 2 ? 3 - part.inputPort : null;
+	        part.directions = directions;
+	        part.previous = previous;
+	        part.mirror = tokens[0] === 'mirror';
+	        if (part.mirror) tokens.shift();
+	        parts.push(part); declarations.set(part.id, part);
+	        node = part.outputPort ? part.nodes[part.outputPort - 1] : null;
+	        previous = part.id;
+	        if (tokens.length && node === null) drawingError(line, 'end a multi-terminal or termination declaration on its own line.');
+	    }
+	}
+
+	function drawingTerminal(reference, declarations, line = 0) {
+	    const match = /^([A-Za-z_][\w-]*)\.([1-9]\d*)$/.exec(reference || '');
+	    const part = match && declarations.get(match[1]), port = match && Number(match[2]);
+	    if (!part || port > part.count) drawingError(line, `unknown component terminal "${reference}".`);
+	    return {part, port};
+	}
+
+	function validateAnnotations(annotations, declarations, nodes) {
+	    const ports = new Set(), types = {
+	        label: ['type', 'node', 'label', 'position'],
+	        arrow: ['type', 'node', 'toward', 'label', 'position'],
+	        rectangle: ['type', 'around', 'extendTo', 'style', 'padding'],
+	        port: ['type', 'number', 'node', 'reference', 'side']
+	    };
+	    return annotations.map((annotation, index) => {
+	        const fail = message => drawingError(0, `annotation ${index + 1}: ${message}`);
+	        if (!annotation || !Object.hasOwn(types, annotation.type)) fail('unknown annotation type.');
+	        if (Object.keys(annotation).some(key => !types[annotation.type].includes(key))) fail('unknown annotation property.');
+	        if (annotation.type !== 'rectangle' && !nodes.has(annotation.node)) fail(`unknown node ${annotation.node}.`);
+	        if (['label', 'arrow'].includes(annotation.type) && typeof annotation.label !== 'string') fail('label must be text.');
+	        if (annotation.position !== undefined && !['above', 'below', 'left', 'right'].includes(annotation.position)) fail('invalid label position.');
+	        if (annotation.type === 'arrow') {
+	            const target = typeof annotation.toward === 'string' && annotation.toward.includes('.') ?
+	                drawingTerminal(annotation.toward, declarations) : null;
+	            const part = target?.part || declarations.get(annotation.toward);
+	            if (!part || (target ? part.nodes[target.port - 1] !== annotation.node : !part.nodes.includes(annotation.node))) {
+	                fail('arrow target must be a component or terminal on its node.');
+	            }
+	        }
+	        if (annotation.type === 'rectangle') {
+	            if (!declarations.has(annotation.around)) fail('unknown enclosing component.');
+	            if (annotation.extendTo && (Object.keys(annotation.extendTo).some(key => !['node', 'segment'].includes(key)) ||
+	                !nodes.has(annotation.extendTo.node) || annotation.extendTo.segment !== 'bottom')) fail('extendTo needs a known node and bottom segment.');
+	            if (annotation.padding !== undefined && (!Number.isFinite(annotation.padding) || annotation.padding < 10 || annotation.padding % 10)) fail('padding must be a positive multiple of 10.');
+	            if (annotation.style !== undefined && !['solid', 'dotted', 'dashed'].includes(annotation.style)) fail('unknown rectangle style.');
+	        }
+	        if (annotation.type === 'port') {
+	            if (!Number.isInteger(annotation.number) || annotation.number < 1 || ports.has(annotation.number)) fail('port number must be a unique positive integer.');
+	            ports.add(annotation.number);
+	            if (annotation.reference !== undefined && (!nodes.has(annotation.reference) || annotation.reference === annotation.node)) fail('reference must name a different known node.');
+	            if (annotation.side !== undefined && !['left', 'right', 'top', 'bottom'].includes(annotation.side)) fail('invalid port side.');
+	        }
+	        return {...annotation, ...(annotation.extendTo ? {extendTo: {...annotation.extendTo}} : {})};
+	    });
+	}
+
+	function parseSchematicInput(input) {
+	    if (!input || !Array.isArray(input.paths) || !input.paths.length) drawingError(0, 'paths must be a nonempty array.');
+	    if (Object.keys(input).some(key => !['paths', 'annotations'].includes(key))) drawingError(0, 'unknown drawing-input property.');
+	    if (input.annotations !== undefined && !Array.isArray(input.annotations)) drawingError(0, 'annotations must be an array.');
+	    const parts = [], alignments = [], declarations = new Map();
+	    input.paths.forEach((text, index) => {
+	        const line = index + 1;
+	        if (typeof text !== 'string' || !text.trim()) drawingError(line, 'expected a nonempty path string.');
+	        const tokens = tokensForLine(text.trim(), line);
+	        if (['alignX', 'alignY'].includes(tokens[0])) {
+	            if (tokens.length < 3) drawingError(line, 'alignment needs at least two component terminals.');
+	            alignments.push({axis: tokens.shift() === 'alignX' ? 0 : 1, references: tokens, line});
+	        } else parseComponentLine(tokens, line, parts, declarations);
+	    });
+	    if (!parts.length) drawingError(0, 'at least one component is required.');
+	    alignments.forEach(rule => rule.references.forEach(reference => drawingTerminal(reference, declarations, rule.line)));
+	    const nodes = new Set(parts.flatMap(part => part.nodes));
+	    return {parts, declarations, alignments, nodes, annotations: validateAnnotations(input.annotations || [], declarations, nodes)};
+	}
+
+	// Modified: 2026-11-14
+
+	// Per-axis difference constraints: equality groups carry terminal offsets;
+	// longest-path relaxation supplies the smallest coordinates satisfying gaps.
+	function solveDrawingAxis(count, equalities, minima) {
+	    const links = Array.from({length: count}, () => []);
+	    for (const {a, b, gap, line} of equalities) {
+	        links[a].push({to: b, delta: gap, line});
+	        links[b].push({to: a, delta: -gap, line});
+	    }
+	    const groups = new Array(count), offsets = new Array(count), roots = [];
+	    for (let start = 0; start < count; start++) {
+	        if (groups[start] !== undefined) continue;
+	        const group = roots.length, pending = [start]; roots.push(start);
+	        groups[start] = group; offsets[start] = 0;
+	        for (let index = 0; index < pending.length; index++) {
+	            const from = pending[index];
+	            for (const link of links[from]) {
+	                const value = offsets[from] + link.delta;
+	                if (groups[link.to] !== undefined) {
+	                    if (offsets[link.to] !== value) drawingError(link.line, 'conflicting alignment or straight-path constraints.');
+	                } else {
+	                    groups[link.to] = group; offsets[link.to] = value; pending.push(link.to);
+	                }
+	            }
+	        }
+	    }
+	    const edges = minima.map(rule => ({...rule, a: groups[rule.a], b: groups[rule.b],
+	        gap: rule.gap + offsets[rule.a] - offsets[rule.b]}));
+	    const values = roots.map(() => 0);
+	    for (let pass = 0; pass <= roots.length; pass++) {
+	        let changed = false;
+	        for (const edge of edges) if (values[edge.b] < values[edge.a] + edge.gap) {
+	            if (pass === roots.length) drawingError(edge.line, 'direction or clearance constraints cannot be satisfied.');
+	            values[edge.b] = values[edge.a] + edge.gap; changed = true;
+	        }
+	        if (!changed) return groups.map((group, index) => values[group] + offsets[index]);
+	    }
+	}
+
+	function solveDrawingConstraints(state) {
+	    return [0, 1].map(axis => solveDrawingAxis(state.count, state.equalities[axis], state.minima[axis]));
+	}
+
+	// Modified: 2026-11-19
+
+	const GRID$1 = 10, WIRE = 40;
+
+	function rotate$1(point, angle, mirrorX = false, mirrorY = false) {
+	    const [x, y] = [point[0] * (mirrorX ? -1 : 1), point[1] * (mirrorY ? -1 : 1)];
+	    return angle === 0 ? [x, y] : angle === 90 ? [-y, x] : angle === 180 ? [-x, -y] : [y, -x];
+	}
+
+	function directionName(vector) {
+	    return Object.keys(drawingDirections).find(name => drawingDirections[name].every((value, axis) => value === Math.sign(vector[axis])));
+	}
+
+	function leadDirection(symbol, port) {
+	    const terminal = symbol.ports[port - 1], lead = symbol.leads[port - 1];
+	    const inside = lead.find(point => point.some((value, axis) => value !== terminal[axis]));
+	    return terminal.map((value, axis) => Math.sign(value - inside[axis]));
+	}
+
+	function orientPart(part, parsed, geometry, oriented) {
+	    if (oriented.has(part.id)) return oriented.get(part.id);
+	    const prior = part.previous && orientPart(parsed.declarations.get(part.previous), parsed, geometry, oriented);
+	    const flow = part.directions.at(-1) || directionName(prior.outward[parsed.declarations.get(part.previous).outputPort - 1]);
+	    const target = drawingDirections[flow];
+	    const entry = {part: {kind: 'component', symbol: part.symbol, displayName: part.id, displayValue: part.caption}, nodes: part.nodes};
+	    const symbol = geometry.symbol(entry), normal = leadDirection(symbol, part.inputPort);
+	    // Reflect across the world approach axis after the quarter turn.
+	    let selected;
+	    for (const angle of [0, 90, 180, 270]) {
+	        const transformed = rotate$1(normal, angle);
+	        if (transformed.every((value, axis) => value === -target[axis])) { selected = angle; break; }
+	    }
+	    if (selected === undefined) drawingError(part.line, 'canonical input lead has no orthogonal approach.');
+	    const localMirrorX = part.mirror && (selected % 180 ? target[0] !== 0 : target[1] !== 0);
+	    const localMirrorY = part.mirror && !localMirrorX;
+	    const preview = geometry.placement(entry, part.inputPort, [0, 0], selected, localMirrorY, localMirrorX, part.id);
+	    preview.boardTile = {kind: 'component', id: part.id};
+	    const result = {part, entry, preview, flow,
+	        outward: symbol.ports.map((_, index) => rotate$1(leadDirection(symbol, index + 1), selected, localMirrorX, localMirrorY))};
+	    oriented.set(part.id, result);
+	    return result;
+	}
+
+	function routeDirections(start, target, requested) {
+	    const names = [directionName(start), ...requested, directionName(target.map(value => -value))];
+	    const result = [];
+	    for (const name of names) {
+	        if (result.at(-1) === name) continue;
+	        if (result.length && drawingDirections[result.at(-1)].every((value, axis) => value === -drawingDirections[name][axis])) {
+	            // Opposed leads need a U-shaped path, not a 180-degree corner.
+	            result.push(drawingDirections[name][0] ? 'down' : 'right');
+	        }
+	        result.push(name);
+	    }
+	    return result;
+	}
+
+	function addRouteConstraints(route, state) {
+	    for (const axis of [0, 1]) {
+	        const steps = route.directions.map(name => drawingDirections[name][axis]).filter(Boolean);
+	        const {a, b} = route, offset = a.offset[axis] - b.offset[axis];
+	        if (!steps.length) state.equalities[axis].push({a: a.variable, b: b.variable, gap: offset, line: route.line});
+	        else if (steps.every(value => value === steps[0])) {
+	            const positive = steps[0] > 0;
+	            state.minima[axis].push({a: positive ? a.variable : b.variable,
+	                b: positive ? b.variable : a.variable,
+	                gap: steps.length * route.minimum + (positive ? offset : -offset), line: route.line});
+	        }
+	    }
+	}
+
+	function endpoint(variable, offset, direction, extra = {}) {
+	    return {variable, offset, direction, ...extra};
+	}
+
+	function buildRoutes(parsed, entries) {
+	    const state = {count: entries.length, equalities: [[], []], minima: [[], []], routes: []};
+	    const byNode = new Map(), byId = new Map(entries.map((entry, index) => [entry.part.id, index]));
+	    entries.forEach((entry, index) => entry.preview.ports.forEach((port, portIndex) => {
+	        if (!byNode.has(port.node)) byNode.set(port.node, []);
+	        byNode.get(port.node).push(endpoint(index, port.at, entry.outward[portIndex],
+	            {part: entry.part, port: portIndex + 1, node: port.node}));
+	    }));
+	    for (const rule of parsed.alignments) {
+	        const terminals = rule.references.map(reference => drawingTerminal(reference, parsed.declarations, rule.line));
+	        const first = terminals[0], a = byId.get(first.part.id), offset = entries[a].preview.ports[first.port - 1].at[rule.axis];
+	        for (const terminal of terminals.slice(1)) {
+	            const b = byId.get(terminal.part.id);
+	            state.equalities[rule.axis].push({a, b, gap: offset - entries[b].preview.ports[terminal.port - 1].at[rule.axis], line: rule.line});
+	        }
+	    }
+	    for (const [node, ends] of byNode) {
+	        const targets = ends.filter(end => end.port === end.part.inputPort);
+	        if (ends.length === 1) {
+	            const end = ends[0], isInput = targets.length > 0;
+	            const requested = isInput ? end.part.directions : [];
+	            const directions = requested.length ? requested : [directionName(end.direction.map(value => -value))];
+	            const offset = end.offset.slice();
+	            directions.forEach(name => drawingDirections[name].forEach((value, axis) => { offset[axis] -= value * WIRE; }));
+	            const free = endpoint(end.variable, offset, drawingDirections[directions[0]], {free: true, node});
+	            state.routes.push({node, a: free, b: end, directions, line: end.part.line});
+	        } else if (ends.length === 2) {
+	            const target = targets.length === 1 ? targets[0] : ends.slice().sort((a, b) => a.part.id.localeCompare(b.part.id))[1];
+	            const start = ends.find(end => end !== target);
+	            const requested = target.port === target.part.inputPort ? target.part.directions : [];
+	            state.routes.push({node, a: start, b: target,
+	                directions: routeDirections(start.direction, target.direction, requested), line: target.part.line});
+	        } else {
+	            const hub = endpoint(state.count++, [0, 0], null, {hub: true, node});
+	            // Each terminal owns one straight leg to a shared junction. Junction
+	            // coordinates are independent of component/node label positions.
+	            for (const end of ends) state.routes.push({node, a: end, b: hub,
+	                directions: [directionName(end.direction)], line: end.part.line});
+	        }
+	    }
+	    for (const route of state.routes) {
+	        route.minimum = parsed.annotations.some(annotation => annotation.node === route.node &&
+	            ['label', 'arrow', 'port'].includes(annotation.type)) ? 80 : WIRE;
+	        if (route.a.free) {
+	            route.a.offset = route.b.offset.slice();
+	            route.directions.forEach(name => drawingDirections[name].forEach((value, axis) => {
+	                route.a.offset[axis] -= value * route.minimum;
+	            }));
+	        } else addRouteConstraints(route, state);
+	    }
+	    return state;
+	}
+
+	function placedEntries(entries, values) {
+	    return entries.map((entry, index) => {
+	        const at = [values[0][index], values[1][index]];
+	        return {...entry.preview, at, ports: entry.preview.ports.map(port =>
+	            ({...port, at: port.at.map((value, axis) => value + at[axis])}))};
+	    });
+	}
+
+	function overlap(a, b, gap = 20) {
+	    return a[0] < b[2] + gap && a[2] > b[0] - gap && a[1] < b[3] + gap && a[3] > b[1] - gap;
+	}
+
+	function separateComponents(state, entries, geometry) {
+	    const boundsFor = geometry.packingBounds || geometry.bounds;
+	    let values = solveDrawingConstraints(state);
+	    for (let pass = 0; pass < entries.length * entries.length + 1; pass++) {
+	        const placements = placedEntries(entries, values), boxes = placements.map(boundsFor);
+	        let pair;
+	        for (let a = 0; a < boxes.length && !pair; a++) for (let b = a + 1; b < boxes.length; b++) {
+	            if (overlap(boxes[a], boxes[b])) { pair = [a, b]; break; }
+	        }
+	        if (!pair) return {values, placements};
+	        const [a, b] = pair, candidates = [];
+	        for (const axis of [0, 1]) for (const [from, to] of [[a, b], [b, a]]) {
+	            const start = boundsFor(entries[from].preview), end = boundsFor(entries[to].preview);
+	            const rule = {a: from, b: to, gap: Math.ceil((start[axis + 2] - end[axis] + 40) / GRID$1) * GRID$1,
+	                line: entries[to].part.line};
+	            const trial = {...state, minima: state.minima.map((list, index) => index === axis ? list.concat(rule) : list)};
+	            try {
+	                const solution = solveDrawingConstraints(trial), measured = placedEntries(entries, solution).map(boundsFor);
+	                const extent = [0, 1].map(i => Math.max(...measured.map(box => box[i + 2])) - Math.min(...measured.map(box => box[i])));
+	                candidates.push({axis, rule, values: solution, cost: extent[0] + extent[1]});
+	            } catch (error) { if (!(error instanceof TypeError)) throw error; }
+	        }
+	        candidates.sort((a, b) => a.cost - b.cost);
+	        if (!candidates.length) drawingError(entries[b].part.line, 'component boxes overlap under the requested constraints.');
+	        const best = candidates[0]; state.minima[best.axis].push(best.rule); values = best.values;
+	    }
+	    drawingError(0, 'layout clearance did not converge.');
+	}
+
+	function routePoints(route, values) {
+	    const start = route.a.offset.map((value, axis) => value + values[axis][route.a.variable]);
+	    const finish = route.b.offset.map((value, axis) => value + values[axis][route.b.variable]);
+	    const lengths = route.directions.map(() => route.minimum);
+	    for (const axis of [0, 1]) {
+	        const difference = finish[axis] - start[axis] - route.directions.reduce((sum, name) => sum + drawingDirections[name][axis] * route.minimum, 0);
+	        if (!difference) continue;
+	        const index = route.directions.findIndex(name => drawingDirections[name][axis] === Math.sign(difference));
+	        if (index < 0) drawingError(route.line, 'route directions conflict with terminal alignment.');
+	        lengths[index] += Math.abs(difference);
+	    }
+	    const points = [start];
+	    route.directions.forEach((name, index) => points.push(points.at(-1).map((value, axis) =>
+	        value + drawingDirections[name][axis] * lengths[index])));
+	    return points;
+	}
+
+	function pathClear(points, boxes) {
+	    return points.slice(1).every((end, index) => {
+	        const start = points[index];
+	        return boxes.every(box => !overlap([Math.min(start[0], end[0]), Math.min(start[1], end[1]),
+	            Math.max(start[0], end[0]), Math.max(start[1], end[1])], box, 0));
+	    });
+	}
+
+	function layoutSchematicInput(parsed, geometry) {
+	    const oriented = new Map();
+	    const entries = parsed.parts.slice().sort((a, b) => a.id.localeCompare(b.id, 'en', {numeric: true}))
+	        .map(part => orientPart(part, parsed, geometry, oriented));
+	    const state = buildRoutes(parsed, entries), {values, placements} = separateComponents(state, entries, geometry);
+	    const result = {grid: GRID$1, placements, wires: [], externalPorts: [], nodePoints: new Map(), junctions: [], regions: []};
+	    const boxes = placements.flatMap(placement => [geometry.bounds(placement),
+	        ...(geometry.captionBounds ? [geometry.captionBounds(placement)] : [])]), occupied = new Map();
+	    const board = {grid: GRID$1, cornerSize: 10, wireBoxLength: WIRE, routingMargin: 200,
+	        clearance: 10, bendCost: 20, allowCrossings: true};
+	    for (const [index, route] of state.routes.entries()) {
+	        let points = routePoints(route, values);
+	        if (!pathClear(points, boxes)) {
+	            const first = drawingDirections[route.directions[0]], last = drawingDirections[route.directions.at(-1)];
+	            const start = points[0].map((value, axis) => value + first[axis] * 20);
+	            const finish = points.at(-1).map((value, axis) => value - last[axis] * 20);
+	            points = [points[0], ...automaticRoute(start, finish, boxes, new Set(), occupied, route.node,
+	                {...board, startDirection: first, finishDirection: last}), points.at(-1)];
+	        }
+	        recordBoardRoute(points, route.node, occupied, GRID$1);
+	        graphWireBoxes(result, route.node, points, board, `input:${route.node}:${index}`);
+	        result.nodePoints.set(route.node, points[0].map((value, axis) =>
+	            Math.round((value + points[1][axis]) / (2 * GRID$1)) * GRID$1));
+	        if (route.b.hub) {
+	            const at = points.at(-1);
+	            result.nodePoints.set(route.node, at);
+	            if (!result.junctions.some(junction => junction.node === route.node)) result.junctions.push({node: route.node, at});
+	        }
+	    }
+	    for (const annotation of parsed.annotations.filter(item => item.type === 'port')) {
+	        const free = state.routes.find(route => route.node === annotation.node && route.a.free);
+	        const at = free ? routePoints(free, values)[0] : result.nodePoints.get(annotation.node);
+	        result.externalPorts.push({port: annotation.number, node: annotation.node, at,
+	            ...(!free ? {onWire: true} : {}),
+	            ...(annotation.reference === undefined ? {} : {reference: annotation.reference}), side: annotation.side});
+	    }
+	    return result;
+	}
+
+	// Modified: 2026-11-19
+	// Measured layout of oriented components connected by semantic terminal roles.
+
+	const DIRECTIONS$1 = {right: [1, 0], down: [0, 1], left: [-1, 0], up: [0, -1]};
+
+	function relationEndpoint(reference, bindings, entries) {
+	    const binding = bindings.get(reference.slot);
+	    if (!binding || !binding.ports[reference.port]) throw new TypeError('Unknown layout terminal role.');
+	    const port = binding.ports[reference.port], entry = entries[binding.index];
+	    return {variable: binding.index, offset: entry.preview.ports[port - 1].at,
+	        direction: entry.outward[port - 1], node: entry.preview.ports[port - 1].node};
+	}
+
+	function equalLayoutPoints(state, axis, a, b) {
+	    const gap = a.offset[axis] - b.offset[axis];
+	    if (gap % 10) throw new TypeError('Layout alignment conflicts with the placement grid.');
+	    state.equalities[axis].push({a: a.variable, b: b.variable, gap});
+	}
+
+	function componentMidpoint(index, entries) {
+	    const ports = entries[index].preview.ports;
+	    return {variable: index, offset: ports[0].at.map((value, axis) =>
+	        (value + ports[1].at[axis]) / 2)};
+	}
+
+	function addBranchRelations(root, entries, geometry, state) {
+	    for (const family of schematicBranchFamilies(root, geometry.symbol)) {
+	        const grouped = new Map();
+	        for (const branch of family) {
+	            const direction = entries[branch.termination].outward[0], key = direction.join(',');
+	            if (!grouped.has(key)) grouped.set(key, []);
+	            grouped.get(key).push(branch);
+	        }
+	        for (const branches of grouped.values()) {
+	            const first = branches[0], normal = entries[first.termination].outward[0], axis = normal[0] ? 0 : 1;
+	            addBranchBalance(branches, axis, entries, geometry, state);
+	            const a = {variable: first.termination, offset: entries[first.termination].preview.ports[0].at};
+	            for (const branch of branches.slice(1)) {
+	                equalLayoutPoints(state, axis, a, {variable: branch.termination,
+	                    offset: entries[branch.termination].preview.ports[0].at});
+	                if (branch.chain.length === first.chain.length) {
+	                    first.chain.forEach((index, stage) => equalLayoutPoints(state, axis,
+	                        componentMidpoint(index, entries), componentMidpoint(branch.chain[stage], entries)));
+	                }
+	            }
+	        }
+	    }
+	}
+
+	function addBranchBalance(branches, axis, entries, geometry, state) {
+	    if (branches.length !== 2 || branches.some(branch => !branch.chain.length || branch.anchor !== branches[0].anchor)) return;
+	    const across = 1 - axis, anchor = entries[branches[0].anchor];
+	    const directions = branches.map(branch => anchor.outward[branch.port - 1][across]);
+	    if (!directions[0] || directions[0] !== -directions[1]) return;
+	    const parts = branches.map(branch => entries[branch.chain[0]]);
+	    if (parts.some(part => part.outward.some(normal => normal[across]))) return;
+	    const center = anchor.preview.ports.reduce((sum, port) => sum + port.at[across], 0) / anchor.preview.ports.length;
+	    const pitch = Math.ceil(Math.max(...branches.map((branch, index) => {
+	        const box = (geometry.packingBounds || geometry.bounds)(parts[index].preview);
+	        return Math.max(Math.abs(anchor.preview.ports[branch.port - 1].at[across] - center),
+	            (box[across + 2] - box[across]) / 2) + 40;
+	    })) / 10) * 10;
+	    branches.forEach((branch, index) => {
+	        const part = componentMidpoint(branch.chain[0], entries);
+	        equalLayoutPoints(state, across,
+	            {variable: branch.anchor, offset: anchor.preview.ports[0].at.map((value, i) => i === across ? center + directions[index] * pitch : value)}, part);
+	    });
+	}
+
+	function addBoardRelations(board, bindings, entries, geometry, state) {
+	    for (const rule of board.order || []) {
+	        const axis = rule.axis === 'x' ? 0 : 1;
+	        for (let i = 1; i < rule.slots.length; i++) {
+	            for (const from of [rule.slots[i - 1]].flat()) for (const to of [rule.slots[i]].flat()) {
+	                const a = bindings.get(from).index, b = bindings.get(to).index;
+	                const boundsFor = geometry.packingBounds || geometry.bounds;
+	                const left = boundsFor(entries[a].preview), right = boundsFor(entries[b].preview);
+	                state.minima[axis].push({a, b, gap: Math.ceil((left[axis + 2] - right[axis] + 40) / 10) * 10});
+	            }
+	        }
+	    }
+	    for (const rule of board.centerlines || []) {
+	        const axis = rule.axis === 'x' ? 0 : 1;
+	        let reference;
+	        if (rule.reference.between) {
+	            const points = rule.reference.between.map(port => relationEndpoint({slot: rule.reference.slot, port}, bindings, entries));
+	            reference = {...points[0], offset: points[0].offset.map((value, i) => (value + points[1].offset[i]) / 2)};
+	        } else reference = relationEndpoint(rule.reference, bindings, entries);
+	        for (const member of rule.align) equalLayoutPoints(state, axis, reference, relationEndpoint(member, bindings, entries));
+	    }
+	}
+
+	function clearRoute(points, boxes) {
+	    return points.slice(1).every((b, index) => {
+	        const a = points[index];
+	        return boxes.every(box => a[0] === b[0] ?
+	            a[0] <= box[0] || a[0] >= box[2] || Math.max(a[1], b[1]) <= box[1] || Math.min(a[1], b[1]) >= box[3] :
+	            a[1] <= box[1] || a[1] >= box[3] || Math.max(a[0], b[0]) <= box[0] || Math.min(a[0], b[0]) >= box[2]);
+	    });
+	}
+
+	function clearOccupied(points, occupied, node, grid) {
+	    return points.slice(1).every((b, index) => {
+	        const a = points[index], length = Math.abs(b[0] - a[0]) + Math.abs(b[1] - a[1]);
+	        for (let step = 0; step <= length; step += grid) {
+	            const key = a.map((value, axis) => value + Math.sign(b[axis] - value) * step).join(',');
+	            if ([...(occupied.get(key)?.keys() || [])].some(other => other !== node)) return false;
+	        }
+	        return true;
+	    });
+	}
+
+	function connectLayout(result, route, values, boxes, occupied, board, id) {
+	    let points = routePoints(route, values);
+	    if (!clearRoute(points, boxes) || !clearOccupied(points, occupied, route.node, board.grid)) {
+	        const first = DIRECTIONS$1[route.directions[0]], last = DIRECTIONS$1[route.directions.at(-1)];
+	        const start = points[0].map((value, axis) => value + first[axis] * board.wireBoxLength);
+	        const finish = points.at(-1).map((value, axis) => value - last[axis] * board.wireBoxLength);
+	        try {
+	            points = [points[0], ...automaticRoute(start, finish, boxes, new Set(), occupied, route.node,
+	                {...board, startDirection: first, finishDirection: last}), points.at(-1)];
+	        } catch (error) {
+	            throw new RangeError(`Layout cannot route node ${route.node} from ${start} to ${finish}.`, {cause: error});
+	        }
+	    }
+	    recordBoardRoute(points, route.node, occupied, board.grid);
+	    graphWireBoxes(result, route.node, points, board, id);
+	    result.nodePoints.set(route.node, points[0].map((value, axis) =>
+	        Math.round((value + points[1][axis]) / (2 * board.grid)) * board.grid));
+	}
+
+	function layoutSchematicRelations(root, definition, bindings, entries, geometry) {
+	    const board = {grid: 10, wireBoxLength: 40, clearance: 10, routingMargin: 200,
+	        cornerSize: 10, bendCost: 20, allowCrossings: false};
+	    const state = {count: entries.length, equalities: [[], []], minima: [[], []]};
+	    const routes = definition.board.wires.filter(wire => !wire.from.externalPort && !wire.to.externalPort).map(wire => {
+	        const a = relationEndpoint(wire.from, bindings, entries), b = relationEndpoint(wire.to, bindings, entries);
+	        const route = {a, b, node: a.node, minimum: board.wireBoxLength,
+	            directions: routeDirections(a.direction, b.direction, [])};
+	        if (a.node !== b.node) throw new TypeError('Layout wire changes an electrical node.');
+	        addRouteConstraints(route, state);
+	        return route;
+	    });
+	    addBoardRelations(definition.board, bindings, entries, geometry, state);
+	    addBranchRelations(root, entries, geometry, state);
+	    const {values, placements} = separateComponents(state, entries, geometry);
+	    const origin = definition.board.origin || [0, 0];
+	    if (!origin.every(value => Number.isFinite(value) && value % board.grid === 0)) throw new TypeError('Invalid layout origin.');
+	    placements.forEach(part => { part.at = part.at.map((value, i) => value + origin[i]);
+	        part.ports.forEach(port => { port.at = port.at.map((value, i) => value + origin[i]); }); });
+	    values.forEach((list, axis) => list.forEach((value, index) => { list[index] = value + origin[axis]; }));
+	    const boxes = placements.flatMap(placement => [geometry.bounds(placement),
+	        ...(geometry.captionBounds ? [geometry.captionBounds(placement)] : [])]), occupied = new Map();
+	    const result = {grid: board.grid, placements, wires: [], externalPorts: [], nodePoints: new Map(),
+	        byIndex: new Map(placements.map((part, index) => [index, part]))};
+	    placements.forEach((part, index) => part.ports.forEach((port, number) => {
+	        const escape = port.at.map((value, axis) => value + entries[index].outward[number][axis] * board.wireBoxLength);
+	        recordBoardRoute([port.at, escape], port.node, occupied, board.grid);
+	    }));
+	    routes.forEach((route, index) => connectLayout(result, route, values, boxes, occupied, board, `relation:${index}`));
+	    const bounds = [Math.min(...boxes.map(box => box[0])), Math.min(...boxes.map(box => box[1])),
+	        Math.max(...boxes.map(box => box[2])), Math.max(...boxes.map(box => box[3]))];
+	    for (const port of definition.board.externalPorts) {
+	        const terminal = relationEndpoint(port.from, bindings, entries), normal = DIRECTIONS$1[port.side];
+	        const axis = normal[0] ? 0 : 1, sign = normal[axis];
+	        const start = terminal.offset.map((value, i) => value + values[i][terminal.variable]);
+	        const end = start.slice(); end[axis] = (sign > 0 ? Math.ceil(bounds[axis + 2] / board.grid) :
+	            Math.floor(bounds[axis] / board.grid)) * board.grid + sign * 80;
+	        const direction = Object.keys(DIRECTIONS$1).find(name => DIRECTIONS$1[name].every((value, i) => value === normal[i]));
+	        const route = {node: terminal.node, minimum: 0, a: {variable: terminal.variable, offset: terminal.offset},
+	            b: {variable: terminal.variable, offset: end.map((value, i) => value - values[i][terminal.variable])}, directions: [direction]};
+	        connectLayout(result, route, values, boxes, occupied, board, `external:${port.port}`);
+	        result.externalPorts.push({port: port.port, node: terminal.node, at: end, direction: normal});
+	    }
+	    return result;
+	}
+
+	// Modified: 2026-11-19
 
 	// Shared board operations. This module never selects a layout by shape name.
 	const DIRECTIONS = {right: [1, 0], down: [0, 1], left: [-1, 0], up: [0, -1]};
@@ -11235,7 +12135,21 @@
 	        const oriented = orientBoardPart(entry, part, cursor, direction,
 	            targets.get(part.index) || [], geometry, tile.orientation);
 	        if (!oriented) return null;
-	        const placement = oriented.placement;
+	        let placement = oriented.placement;
+	        const alignment = board.branchAlignment?.get(part.index);
+	        if (alignment) {
+	            const {axis, sign, target} = alignment;
+	            const position = part.outputPort ?
+	                (placement.ports[part.inputPort - 1].at[axis] + placement.ports[part.outputPort - 1].at[axis]) / 2 :
+	                placement.ports[part.inputPort - 1].at[axis];
+	            const growth = target - sign * position;
+	            if (growth < 0 || growth % grid) return null;
+	            cursor[axis] += sign * growth;
+	            pendingWire.length += growth;
+	            placement = {...placement, at: placement.at.map((value, i) => value + (i === axis ? sign * growth : 0)),
+	                ports: placement.ports.map(port => ({...port,
+	                    at: port.at.map((value, i) => value + (i === axis ? sign * growth : 0))}))};
+	        }
 	        if (!placement.ports.every(port => onGrid(port.at, grid))) return null;
 	        placement.boardTile = {kind: tile.kind, role: tile.role, id: `${pathId}:${tile.id}`,
 	            ...(board.componentLabelOffset ? {labelOffset: board.componentLabelOffset} : {})};
@@ -11260,11 +12174,11 @@
 	}
 
 	function placeBoardPaths(root, definition, bindings, geometry) {
-	    const board = boardPathSpacing(root, definition, bindings, geometry);
-	    if (!board) return null;
-	    if (board.spacing !== 'attachments') return placeBoundBoardPaths(root, board, bindings, geometry);
+	    const spaced = boardPathSpacing(root, definition, bindings, geometry);
+	    if (!spaced) return null;
+	    const board = {clearance: spaced.grid, ...spaced};
 	    if (!geometry.preview || !(board.clearance >= board.grid) || board.clearance % board.grid !== 0) {
-	        boardError('attachment spacing needs preview geometry and grid clearance.');
+	        boardError('path spacing needs preview geometry and grid clearance.');
 	    }
 	    const preview = placeBoundBoardPaths(root, board, bindings, {...geometry, placement: geometry.preview});
 	    if (!preview) return null;
@@ -11279,7 +12193,7 @@
 	    }
 	    const direction = DIRECTIONS[board.direction], axis = direction[0] ? 0 : 1, across = 1 - axis;
 	    const entries = [...preview.byIndex].map(([index, placement]) =>
-	        ({rank: ranks.get(index), bounds: geometry.bounds(placement)}));
+	        ({rank: ranks.get(index), bounds: (geometry.footprintBounds || geometry.bounds)(placement)}));
 	    let growth = 0;
 	    for (const a of entries) for (const b of entries) {
 	        if (!(b.rank > a.rank) || a.bounds[across + 2] + board.clearance <= b.bounds[across] ||
@@ -11321,6 +12235,24 @@
 	        }
 	    }
 	    if (!placeBoardTiles(root, board, bindings, geometry, result, start, end, targets, 'main')) return null;
+	    const attachmentMeasurements = new Map();
+	    for (const attachment of board.attachments || []) {
+	        for (const branch of bindings[attachment.source] || []) {
+	            const placement = result.byIndex.get(branch.anchor.index);
+	            const anchor = placement?.ports[branch.anchor.port - 1];
+	            const direction = attachment.direction === 'terminal' ?
+	                placedBoardTerminalDirection(root.components[branch.anchor.index], placement,
+	                    branch.anchor.port, geometry) : attachment.direction;
+	            const preview = {grid: board.grid, placements: [], wires: [], nodePoints: new Map(), byIndex: new Map(), externalPorts: []};
+	            if (!anchor || !placeBoardTiles(root, {...board, ...attachment, direction}, branch,
+	                {...geometry, placement: geometry.preview}, preview, anchor, null, new Map(), 'measure')) return null;
+	            attachmentMeasurements.set(branch.termination[0].index, {result: preview, direction: DIRECTIONS[direction]});
+	        }
+	    }
+	    const families = schematicBranchFamilies(root, geometry.symbol,
+	        (Object.values(bindings).filter(Array.isArray)).filter(path => path[0]?.inputPort)
+	            .map(path => path.map(step => step.index)));
+	    const branchAlignment = measuredBranchAlignment(families, attachmentMeasurements);
 	    for (const attachment of board.attachments || []) {
 	        const branches = bindings[attachment.source];
 	        if (!branches) boardError(`unknown attachment binding "${attachment.source}".`);
@@ -11331,7 +12263,7 @@
 	            const direction = attachment.direction === 'terminal' ?
 	                placedBoardTerminalDirection(root.components[branch.anchor.index], placement,
 	                    branch.anchor.port, geometry) : attachment.direction;
-	            if (!anchor || !placeBoardTiles(root, {...board, ...attachment, direction},
+	            if (!anchor || !placeBoardTiles(root, {...board, ...attachment, direction, branchAlignment},
 	                branch, geometry, result, anchor, null, new Map(), `${attachment.source}:${index}`)) return null;
 	        }
 	    }
@@ -11746,7 +12678,8 @@
 	    return binding ? {node: root.components[binding.index].nodes[binding.ports[endpoint.port] - 1]} : null;
 	}
 
-	function bindBoardSlots(root, slots, wires, bindings = new Map(), used = new Set()) {
+	function bindBoardSlots(root, slots, board, geometry, bindings = new Map(), used = new Set()) {
+	    if (slots.length !== root.components.length) return null;
 	    if (bindings.size === slots.length) return used.size === root.components.length ? bindings : null;
 	    let choice = null;
 	    for (const slot of slots) {
@@ -11754,9 +12687,11 @@
 	        const candidates = root.components.flatMap((entry, index) => {
 	            if (used.has(index) || !acceptsEntry(entry, slot)) return [];
 	            return slotPortBindings(slot.ports, entry.nodes.length).flatMap(ports => {
+	                const tile = board.components.find(component => component.slot === slot.name);
+	                if (!tile || !boardSlotOrientation(geometry.symbol(entry), ports, tile.directions)) return [];
 	                const candidate = {index, ports};
 	                const tentative = new Map([...bindings, [slot.name, candidate]]);
-	                return wires.every(wire => {
+	                return board.wires.every(wire => {
 	                    const a = slotEndpoint(root, wire.from, tentative), b = slotEndpoint(root, wire.to, tentative);
 	                    return !a || !b || a.node === b.node;
 	                }) ? [candidate] : [];
@@ -11766,7 +12701,7 @@
 	        if (!choice || candidates.length < choice.candidates.length) choice = {slot, candidates};
 	    }
 	    for (const candidate of choice.candidates) {
-	        const result = bindBoardSlots(root, slots, wires,
+	        const result = bindBoardSlots(root, slots, board, geometry,
 	            new Map([...bindings, [choice.slot.name, candidate]]), new Set([...used, candidate.index]));
 	        if (result) return result;
 	    }
@@ -11790,21 +12725,26 @@
 	    return name;
 	}
 
-	function orientBoardSlot(entry, ports, tile, at, geometry) {
-	    const symbol = geometry.symbol(entry);
+	function boardSlotOrientation(symbol, ports, directions) {
 	    for (const mirrorX of [false, true]) {
 	        for (const mirrorY of [false, true]) {
 	            for (const angle of [0, 90, 180, 270]) {
-	                const fits = Object.entries(tile.directions).every(([role, direction]) => {
+	                const fits = Object.entries(directions).every(([role, direction]) => {
 	                    const vector = symbolTerminalDirection(symbol, ports[role]);
 	                    if (!DIRECTIONS[direction]) boardError('unknown terminal direction.');
 	                    return vector && pointsAlong(rotateBoardVector(vector, angle, mirrorX, mirrorY), DIRECTIONS[direction]);
 	                });
-	                if (fits) return geometry.placement(entry, ports[tile.anchor], at, angle, mirrorY, mirrorX);
+	                if (fits) return {angle, mirrorY, mirrorX};
 	            }
 	        }
 	    }
 	    return null;
+	}
+
+	function orientBoardSlot(entry, ports, tile, at, geometry) {
+	    const orientation = boardSlotOrientation(geometry.symbol(entry), ports, tile.directions);
+	    return orientation ? geometry.placement(entry, ports[tile.anchor], at,
+	        orientation.angle, orientation.mirrorY, orientation.mirrorX) : null;
 	}
 
 	function placedSlotTerminal(reference, bindings, result) {
@@ -11893,9 +12833,22 @@
 
 	function placeNamedBoardSlots(root, definition, geometry) {
 	    const {board, match} = definition;
-	    if (!onGrid(board.origin, board.grid)) boardError('invalid board origin or grid.');
-	    const bindings = bindBoardSlots(root, match.slots, board.wires);
+	    if (board.layout !== 'relations' && !onGrid(board.origin, board.grid)) boardError('invalid board origin or grid.');
+	    const bindings = bindBoardSlots(root, match.slots, board, geometry);
 	    if (!bindings) return null;
+	    if (board.layout === 'relations') {
+	        const entries = new Array(root.components.length);
+	        for (const tile of board.components) {
+	            const binding = bindings.get(tile.slot);
+	            const preview = orientBoardSlot(root.components[binding.index], binding.ports, tile, [0, 0], geometry);
+	            if (!preview) return null;
+	            preview.boardTile = {kind: 'component', id: tile.slot, role: tile.role};
+	            entries[binding.index] = {part: {line: 0}, preview,
+	                outward: preview.ports.map(port => DIRECTIONS[placedBoardTerminalDirection(
+	                    root.components[binding.index], preview, port.port, geometry)])};
+	        }
+	        return layoutSchematicRelations(root, definition, bindings, entries, geometry);
+	    }
 	    const result = {grid: board.grid, placements: [], wires: [], nodePoints: new Map(), byIndex: new Map(), externalPorts: []};
 	    const pending = board.components.slice();
 	    while (pending.length) {
@@ -11980,7 +12933,8 @@
 	    result.nodePoints = new Map([...result.nodePoints].map(([node, point]) =>
 	        [node, reflectBoardPoint(point, mirrorX, mirrorY)]));
 	    result.externalPorts = result.externalPorts.map(port => ({...port,
-	        at: reflectBoardPoint(port.at, mirrorX, mirrorY)}));
+	        at: reflectBoardPoint(port.at, mirrorX, mirrorY),
+	        ...(port.direction ? {direction: reflectBoardPoint(port.direction, mirrorX, mirrorY)} : {})}));
 	    if (result.junctions) result.junctions = result.junctions.map(junction => ({...junction,
 	        at: reflectBoardPoint(junction.at, mirrorX, mirrorY)}));
 	    if (result.crossings) result.crossings = result.crossings.map(point => reflectBoardPoint(point, mirrorX, mirrorY));
@@ -12138,7 +13092,7 @@
 	    const adjacency = boardAdjacency(root, definition, geometry);
 	    if (!adjacency) return false;
 	    if (definition.match.fan) return !!bindBoardFan(root, definition.match.fan, adjacency, geometry);
-	    if (definition.match.slots) return !!bindBoardSlots(root, definition.match.slots, definition.board.wires);
+	    if (definition.match.slots) return !!bindBoardSlots(root, definition.match.slots, definition.board, geometry);
 	    if (definition.board.rows || definition.board.anchors) {
 	        const network = collectBoardConnections(root, definition.match, adjacency);
 	        if (!network) return false;
@@ -12503,494 +13457,6 @@
 	    return nodePoints;
 	}
 
-	// Generated by schematics/tools/generate-runtime-symbols.js from symbol-catalog.json.
-	// Drawing names select geometry; they never invoke constructors.
-	const schematicDrawingSymbols = {
-	    "cascade": "cascade",
-	    "nodal": "nodal",
-	    "R": "resistor",
-	    "seR": "resistor",
-	    "paR": "parallel-resistor",
-	    "L": "inductor",
-	    "seL": "inductor",
-	    "paL": "parallel-inductor",
-	    "C": "capacitor",
-	    "seC": "capacitor",
-	    "paC": "parallel-capacitor",
-	    "trf": "transformer",
-	    "trf4Port": "transformer-four-port",
-	    "trfAuto": "transformer-auto",
-	    "seSeRL": "se-series-rl",
-	    "paSeRL": "pa-series-rl",
-	    "seSeRC": "se-series-rc",
-	    "paSeRC": "pa-series-rc",
-	    "seSeLC": "se-series-lc",
-	    "paSeLC": "pa-series-lc",
-	    "seSeRLC": "se-series-rlc",
-	    "paSeRLC": "pa-series-rlc",
-	    "paPaRL": "pa-parallel-rl",
-	    "sePaRL": "se-parallel-rl",
-	    "paPaRC": "pa-parallel-rc",
-	    "sePaRC": "se-parallel-rc",
-	    "paPaLC": "pa-parallel-lc",
-	    "sePaLC": "se-parallel-lc",
-	    "paPaRLC": "pa-parallel-rlc",
-	    "sePaRLC": "se-parallel-rlc",
-	    "diode1N4148": "diode-1n4148",
-	    "Attn": "attenuator",
-	    "Amp": "amplifier",
-	    "Thru": "thru",
-	    "Tee": "tee",
-	    "Tee4": "tee4",
-	    "Tee5": "tee5",
-	    "seriesTee": "series-tee",
-	    "Open": "open",
-	    "Short": "short",
-	    "Load": "load",
-	    "Shift90": "shift-90",
-	    "Tlin": "transmission-line",
-	    "Tclin": "coupled-transmission-line",
-	    "Coupler180": "coupler-180",
-	    "mlin": "microstrip-line",
-	    "mclin": "microstrip-coupled-line",
-	    "mtee": "microstrip-tee",
-	    "mcross": "microstrip-cross",
-	    "mstep": "microstrip-step",
-	    "mbend": "microstrip-right-bend",
-	    "mtfr": "microstrip-thin-film-resistor",
-	    "mvgnd": "microstrip-via-to-ground",
-	    "mvia": "microstrip-via-transition",
-	    "mod": "mod",
-	    "demod": "demod",
-	    "NPN": "npn",
-	    "PNP": "pnp",
-	    "D": "diode-1n4148",
-	    "V": "voltage-source",
-	    "I": "current-source",
-	    "VCVS": "voltage-controlled-voltage-source",
-	    "VCCS": "voltage-controlled-current-source",
-	    "CCVS": "current-controlled-voltage-source",
-	    "CCCS": "current-controlled-current-source"
-	};
-
-	// Modified: 2026-11-14
-
-	const drawingDirections = {right: [1, 0], down: [0, 1], left: [-1, 0], up: [0, -1]};
-
-	function drawingError(line, message) {
-	    throw new TypeError(`${line ? `Path line ${line}` : 'Schematic input'}: ${message}`);
-	}
-
-	function tokensForLine(text, line) {
-	    const tokens = []; let start = 0, depth = 0;
-	    for (let index = 0; index <= text.length; index++) {
-	        const character = text[index];
-	        if (character === '(' || character === '[') depth++;
-	        if (character === ')' || character === ']') depth--;
-	        if (depth < 0) drawingError(line, 'unmatched closing delimiter.');
-	        if (index === text.length || !depth && /\s/.test(character)) {
-	            if (index > start) tokens.push(text.slice(start, index));
-	            start = index + 1;
-	        }
-	    }
-	    if (depth) drawingError(line, 'unclosed value or terminal list.');
-	    return tokens;
-	}
-
-	function nodeToken(token, line) {
-	    if (!/^-?\d+$/.test(token || '') || !Number.isSafeInteger(Number(token))) drawingError(line, `expected a node number; received "${token ?? ''}".`);
-	    return Number(token);
-	}
-
-	function declaration(token, line) {
-	    const match = /^([A-Za-z_][\w-]*)=([A-Za-z_]\w*)(?:\(([\s\S]*)\))?(?:\[([\d,\s]+)\])?$/.exec(token);
-	    if (!match) drawingError(line, `invalid component declaration "${token}".`);
-	    const [, id, name, caption, list] = match;
-	    if (!Object.prototype.hasOwnProperty.call(schematicDrawingSymbols, name)) drawingError(line, `unknown symbol "${name}".`);
-	    const symbol = schematicDrawingSymbols[name], count = schematicSymbols[symbol].ports.length;
-	    const terminals = list === undefined ? null : list.split(',').map(value => Number(value.trim()));
-	    if (terminals && (terminals.length !== count || new Set(terminals).size !== count ||
-	        terminals.some(port => !Number.isInteger(port) || port < 1 || port > count))) {
-	        drawingError(line, `${name} requires ${count} distinct terminal assignments numbered 1 through ${count}.`);
-	    }
-	    if (!terminals && count > 2) drawingError(line, `${name} requires an explicit terminal list.`);
-	    return {id, name, symbol, caption, terminals, count, line};
-	}
-
-	function parseComponentLine(tokens, line, parts, declarations) {
-	    let node = nodeToken(tokens.shift(), line), previous = null;
-	    while (tokens.length) {
-	        const directions = [];
-	        while (Object.hasOwn(drawingDirections, tokens[0])) directions.push(tokens.shift());
-	        if (!directions.length && !previous) drawingError(line, 'a component needs an approach direction.');
-	        const part = declaration(tokens.shift() || '', line);
-	        if (declarations.has(part.id)) drawingError(line, `duplicate component "${part.id}".`);
-	        if (part.terminals) {
-	            const supplied = tokens.findIndex(token => !/^-?\d+$/.test(token));
-	            const available = supplied < 0 ? tokens.length : supplied;
-	            if (available < part.count) drawingError(line, `${part.name} requires ${part.count} terminal node assignments; received ${available}.`);
-	        }
-	        const assignments = part.terminals ? part.terminals.map(() => nodeToken(tokens.shift(), line)) :
-	            part.count === 1 ? [node] : [node, nodeToken(tokens.shift(), line)];
-	        part.nodes = new Array(part.count);
-	        (part.terminals || Array.from({length: part.count}, (_, index) => index + 1))
-	            .forEach((terminal, index) => { part.nodes[terminal - 1] = assignments[index]; });
-	        const approaches = part.nodes.flatMap((value, index) => value === node ? [index + 1] : []);
-	        if (approaches.length !== 1) drawingError(line, 'the approach node must identify exactly one component terminal.');
-	        part.inputPort = approaches[0];
-	        part.outputPort = part.count === 2 ? 3 - part.inputPort : null;
-	        part.directions = directions;
-	        part.previous = previous;
-	        part.mirror = tokens[0] === 'mirror';
-	        if (part.mirror) tokens.shift();
-	        parts.push(part); declarations.set(part.id, part);
-	        node = part.outputPort ? part.nodes[part.outputPort - 1] : null;
-	        previous = part.id;
-	        if (tokens.length && node === null) drawingError(line, 'end a multi-terminal or termination declaration on its own line.');
-	    }
-	}
-
-	function drawingTerminal(reference, declarations, line = 0) {
-	    const match = /^([A-Za-z_][\w-]*)\.([1-9]\d*)$/.exec(reference || '');
-	    const part = match && declarations.get(match[1]), port = match && Number(match[2]);
-	    if (!part || port > part.count) drawingError(line, `unknown component terminal "${reference}".`);
-	    return {part, port};
-	}
-
-	function validateAnnotations(annotations, declarations, nodes) {
-	    const ports = new Set(), types = {
-	        label: ['type', 'node', 'label', 'position'],
-	        arrow: ['type', 'node', 'toward', 'label', 'position'],
-	        rectangle: ['type', 'around', 'extendTo', 'style', 'padding'],
-	        port: ['type', 'number', 'node', 'reference', 'side']
-	    };
-	    return annotations.map((annotation, index) => {
-	        const fail = message => drawingError(0, `annotation ${index + 1}: ${message}`);
-	        if (!annotation || !Object.hasOwn(types, annotation.type)) fail('unknown annotation type.');
-	        if (Object.keys(annotation).some(key => !types[annotation.type].includes(key))) fail('unknown annotation property.');
-	        if (annotation.type !== 'rectangle' && !nodes.has(annotation.node)) fail(`unknown node ${annotation.node}.`);
-	        if (['label', 'arrow'].includes(annotation.type) && typeof annotation.label !== 'string') fail('label must be text.');
-	        if (annotation.position !== undefined && !['above', 'below', 'left', 'right'].includes(annotation.position)) fail('invalid label position.');
-	        if (annotation.type === 'arrow') {
-	            const target = typeof annotation.toward === 'string' && annotation.toward.includes('.') ?
-	                drawingTerminal(annotation.toward, declarations) : null;
-	            const part = target?.part || declarations.get(annotation.toward);
-	            if (!part || (target ? part.nodes[target.port - 1] !== annotation.node : !part.nodes.includes(annotation.node))) {
-	                fail('arrow target must be a component or terminal on its node.');
-	            }
-	        }
-	        if (annotation.type === 'rectangle') {
-	            if (!declarations.has(annotation.around)) fail('unknown enclosing component.');
-	            if (annotation.extendTo && (Object.keys(annotation.extendTo).some(key => !['node', 'segment'].includes(key)) ||
-	                !nodes.has(annotation.extendTo.node) || annotation.extendTo.segment !== 'bottom')) fail('extendTo needs a known node and bottom segment.');
-	            if (annotation.padding !== undefined && (!Number.isFinite(annotation.padding) || annotation.padding < 10 || annotation.padding % 10)) fail('padding must be a positive multiple of 10.');
-	            if (annotation.style !== undefined && !['solid', 'dotted', 'dashed'].includes(annotation.style)) fail('unknown rectangle style.');
-	        }
-	        if (annotation.type === 'port') {
-	            if (!Number.isInteger(annotation.number) || annotation.number < 1 || ports.has(annotation.number)) fail('port number must be a unique positive integer.');
-	            ports.add(annotation.number);
-	            if (annotation.reference !== undefined && (!nodes.has(annotation.reference) || annotation.reference === annotation.node)) fail('reference must name a different known node.');
-	            if (annotation.side !== undefined && !['left', 'right', 'top', 'bottom'].includes(annotation.side)) fail('invalid port side.');
-	        }
-	        return {...annotation, ...(annotation.extendTo ? {extendTo: {...annotation.extendTo}} : {})};
-	    });
-	}
-
-	function parseSchematicInput(input) {
-	    if (!input || !Array.isArray(input.paths) || !input.paths.length) drawingError(0, 'paths must be a nonempty array.');
-	    if (Object.keys(input).some(key => !['paths', 'annotations'].includes(key))) drawingError(0, 'unknown drawing-input property.');
-	    if (input.annotations !== undefined && !Array.isArray(input.annotations)) drawingError(0, 'annotations must be an array.');
-	    const parts = [], alignments = [], declarations = new Map();
-	    input.paths.forEach((text, index) => {
-	        const line = index + 1;
-	        if (typeof text !== 'string' || !text.trim()) drawingError(line, 'expected a nonempty path string.');
-	        const tokens = tokensForLine(text.trim(), line);
-	        if (['alignX', 'alignY'].includes(tokens[0])) {
-	            if (tokens.length < 3) drawingError(line, 'alignment needs at least two component terminals.');
-	            alignments.push({axis: tokens.shift() === 'alignX' ? 0 : 1, references: tokens, line});
-	        } else parseComponentLine(tokens, line, parts, declarations);
-	    });
-	    if (!parts.length) drawingError(0, 'at least one component is required.');
-	    alignments.forEach(rule => rule.references.forEach(reference => drawingTerminal(reference, declarations, rule.line)));
-	    const nodes = new Set(parts.flatMap(part => part.nodes));
-	    return {parts, declarations, alignments, nodes, annotations: validateAnnotations(input.annotations || [], declarations, nodes)};
-	}
-
-	// Modified: 2026-11-14
-
-	// Per-axis difference constraints: equality groups carry terminal offsets;
-	// longest-path relaxation supplies the smallest coordinates satisfying gaps.
-	function solveDrawingAxis(count, equalities, minima) {
-	    const links = Array.from({length: count}, () => []);
-	    for (const {a, b, gap, line} of equalities) {
-	        links[a].push({to: b, delta: gap, line});
-	        links[b].push({to: a, delta: -gap, line});
-	    }
-	    const groups = new Array(count), offsets = new Array(count), roots = [];
-	    for (let start = 0; start < count; start++) {
-	        if (groups[start] !== undefined) continue;
-	        const group = roots.length, pending = [start]; roots.push(start);
-	        groups[start] = group; offsets[start] = 0;
-	        for (let index = 0; index < pending.length; index++) {
-	            const from = pending[index];
-	            for (const link of links[from]) {
-	                const value = offsets[from] + link.delta;
-	                if (groups[link.to] !== undefined) {
-	                    if (offsets[link.to] !== value) drawingError(link.line, 'conflicting alignment or straight-path constraints.');
-	                } else {
-	                    groups[link.to] = group; offsets[link.to] = value; pending.push(link.to);
-	                }
-	            }
-	        }
-	    }
-	    const edges = minima.map(rule => ({...rule, a: groups[rule.a], b: groups[rule.b],
-	        gap: rule.gap + offsets[rule.a] - offsets[rule.b]}));
-	    const values = roots.map(() => 0);
-	    for (let pass = 0; pass <= roots.length; pass++) {
-	        let changed = false;
-	        for (const edge of edges) if (values[edge.b] < values[edge.a] + edge.gap) {
-	            if (pass === roots.length) drawingError(edge.line, 'direction or clearance constraints cannot be satisfied.');
-	            values[edge.b] = values[edge.a] + edge.gap; changed = true;
-	        }
-	        if (!changed) return groups.map((group, index) => values[group] + offsets[index]);
-	    }
-	}
-
-	function solveDrawingConstraints(state) {
-	    return [0, 1].map(axis => solveDrawingAxis(state.count, state.equalities[axis], state.minima[axis]));
-	}
-
-	// Modified: 2026-11-14
-
-	const GRID$1 = 10, WIRE = 40;
-
-	function rotate(point, angle, mirrorX = false, mirrorY = false) {
-	    const [x, y] = [point[0] * (mirrorX ? -1 : 1), point[1] * (mirrorY ? -1 : 1)];
-	    return angle === 0 ? [x, y] : angle === 90 ? [-y, x] : angle === 180 ? [-x, -y] : [y, -x];
-	}
-
-	function directionName(vector) {
-	    return Object.keys(drawingDirections).find(name => drawingDirections[name].every((value, axis) => value === Math.sign(vector[axis])));
-	}
-
-	function leadDirection(symbol, port) {
-	    const terminal = symbol.ports[port - 1], lead = symbol.leads[port - 1];
-	    const inside = lead.find(point => point.some((value, axis) => value !== terminal[axis]));
-	    return terminal.map((value, axis) => Math.sign(value - inside[axis]));
-	}
-
-	function orientPart(part, parsed, geometry, oriented) {
-	    if (oriented.has(part.id)) return oriented.get(part.id);
-	    const prior = part.previous && orientPart(parsed.declarations.get(part.previous), parsed, geometry, oriented);
-	    const flow = part.directions.at(-1) || directionName(prior.outward[parsed.declarations.get(part.previous).outputPort - 1]);
-	    const target = drawingDirections[flow];
-	    const entry = {part: {kind: 'component', symbol: part.symbol, displayName: part.id, displayValue: part.caption}, nodes: part.nodes};
-	    const symbol = geometry.symbol(entry), normal = leadDirection(symbol, part.inputPort);
-	    // Reflect across the world approach axis after the quarter turn.
-	    let selected;
-	    for (const angle of [0, 90, 180, 270]) {
-	        const transformed = rotate(normal, angle);
-	        if (transformed.every((value, axis) => value === -target[axis])) { selected = angle; break; }
-	    }
-	    if (selected === undefined) drawingError(part.line, 'canonical input lead has no orthogonal approach.');
-	    const localMirrorX = part.mirror && (selected % 180 ? target[0] !== 0 : target[1] !== 0);
-	    const localMirrorY = part.mirror && !localMirrorX;
-	    const preview = geometry.placement(entry, part.inputPort, [0, 0], selected, localMirrorY, localMirrorX, part.id);
-	    preview.boardTile = {kind: 'component', id: part.id};
-	    const result = {part, entry, preview, flow,
-	        outward: symbol.ports.map((_, index) => rotate(leadDirection(symbol, index + 1), selected, localMirrorX, localMirrorY))};
-	    oriented.set(part.id, result);
-	    return result;
-	}
-
-	function routeDirections(start, target, requested) {
-	    const names = [directionName(start), ...requested, directionName(target.map(value => -value))];
-	    const result = [];
-	    for (const name of names) {
-	        if (result.at(-1) === name) continue;
-	        if (result.length && drawingDirections[result.at(-1)].every((value, axis) => value === -drawingDirections[name][axis])) {
-	            // Opposed leads need a U-shaped path, not a 180-degree corner.
-	            result.push(drawingDirections[name][0] ? 'down' : 'right');
-	        }
-	        result.push(name);
-	    }
-	    return result;
-	}
-
-	function addRouteConstraints(route, state) {
-	    for (const axis of [0, 1]) {
-	        const steps = route.directions.map(name => drawingDirections[name][axis]).filter(Boolean);
-	        const {a, b} = route, offset = a.offset[axis] - b.offset[axis];
-	        if (!steps.length) state.equalities[axis].push({a: a.variable, b: b.variable, gap: offset, line: route.line});
-	        else if (steps.every(value => value === steps[0])) {
-	            const positive = steps[0] > 0;
-	            state.minima[axis].push({a: positive ? a.variable : b.variable,
-	                b: positive ? b.variable : a.variable,
-	                gap: steps.length * route.minimum + (positive ? offset : -offset), line: route.line});
-	        }
-	    }
-	}
-
-	function endpoint(variable, offset, direction, extra = {}) {
-	    return {variable, offset, direction, ...extra};
-	}
-
-	function buildRoutes(parsed, entries) {
-	    const state = {count: entries.length, equalities: [[], []], minima: [[], []], routes: []};
-	    const byNode = new Map(), byId = new Map(entries.map((entry, index) => [entry.part.id, index]));
-	    entries.forEach((entry, index) => entry.preview.ports.forEach((port, portIndex) => {
-	        if (!byNode.has(port.node)) byNode.set(port.node, []);
-	        byNode.get(port.node).push(endpoint(index, port.at, entry.outward[portIndex],
-	            {part: entry.part, port: portIndex + 1, node: port.node}));
-	    }));
-	    for (const rule of parsed.alignments) {
-	        const terminals = rule.references.map(reference => drawingTerminal(reference, parsed.declarations, rule.line));
-	        const first = terminals[0], a = byId.get(first.part.id), offset = entries[a].preview.ports[first.port - 1].at[rule.axis];
-	        for (const terminal of terminals.slice(1)) {
-	            const b = byId.get(terminal.part.id);
-	            state.equalities[rule.axis].push({a, b, gap: offset - entries[b].preview.ports[terminal.port - 1].at[rule.axis], line: rule.line});
-	        }
-	    }
-	    for (const [node, ends] of byNode) {
-	        const targets = ends.filter(end => end.port === end.part.inputPort);
-	        if (ends.length === 1) {
-	            const end = ends[0], isInput = targets.length > 0;
-	            const requested = isInput ? end.part.directions : [];
-	            const directions = requested.length ? requested : [directionName(end.direction.map(value => -value))];
-	            const offset = end.offset.slice();
-	            directions.forEach(name => drawingDirections[name].forEach((value, axis) => { offset[axis] -= value * WIRE; }));
-	            const free = endpoint(end.variable, offset, drawingDirections[directions[0]], {free: true, node});
-	            state.routes.push({node, a: free, b: end, directions, line: end.part.line});
-	        } else if (ends.length === 2) {
-	            const target = targets.length === 1 ? targets[0] : ends.slice().sort((a, b) => a.part.id.localeCompare(b.part.id))[1];
-	            const start = ends.find(end => end !== target);
-	            const requested = target.port === target.part.inputPort ? target.part.directions : [];
-	            state.routes.push({node, a: start, b: target,
-	                directions: routeDirections(start.direction, target.direction, requested), line: target.part.line});
-	        } else {
-	            const hub = endpoint(state.count++, [0, 0], null, {hub: true, node});
-	            // Each terminal owns one straight leg to a shared junction. Junction
-	            // coordinates are independent of component/node label positions.
-	            for (const end of ends) state.routes.push({node, a: end, b: hub,
-	                directions: [directionName(end.direction)], line: end.part.line});
-	        }
-	    }
-	    for (const route of state.routes) {
-	        route.minimum = parsed.annotations.some(annotation => annotation.node === route.node &&
-	            ['label', 'arrow', 'port'].includes(annotation.type)) ? 80 : WIRE;
-	        if (route.a.free) {
-	            route.a.offset = route.b.offset.slice();
-	            route.directions.forEach(name => drawingDirections[name].forEach((value, axis) => {
-	                route.a.offset[axis] -= value * route.minimum;
-	            }));
-	        } else addRouteConstraints(route, state);
-	    }
-	    return state;
-	}
-
-	function placedEntries(entries, values) {
-	    return entries.map((entry, index) => {
-	        const at = [values[0][index], values[1][index]];
-	        return {...entry.preview, at, ports: entry.preview.ports.map(port =>
-	            ({...port, at: port.at.map((value, axis) => value + at[axis])}))};
-	    });
-	}
-
-	function overlap(a, b, gap = 20) {
-	    return a[0] < b[2] + gap && a[2] > b[0] - gap && a[1] < b[3] + gap && a[3] > b[1] - gap;
-	}
-
-	function separateComponents(state, entries, geometry) {
-	    let values = solveDrawingConstraints(state);
-	    for (let pass = 0; pass < entries.length * entries.length + 1; pass++) {
-	        const placements = placedEntries(entries, values), boxes = placements.map(geometry.bounds);
-	        let pair;
-	        for (let a = 0; a < boxes.length && !pair; a++) for (let b = a + 1; b < boxes.length; b++) {
-	            if (overlap(boxes[a], boxes[b])) { pair = [a, b]; break; }
-	        }
-	        if (!pair) return {values, placements};
-	        const [a, b] = pair, candidates = [];
-	        for (const axis of [0, 1]) for (const [from, to] of [[a, b], [b, a]]) {
-	            const start = geometry.bounds(entries[from].preview), end = geometry.bounds(entries[to].preview);
-	            const rule = {a: from, b: to, gap: Math.ceil((start[axis + 2] - end[axis] + 40) / GRID$1) * GRID$1,
-	                line: entries[to].part.line};
-	            const trial = {...state, minima: state.minima.map((list, index) => index === axis ? list.concat(rule) : list)};
-	            try {
-	                const solution = solveDrawingConstraints(trial), measured = placedEntries(entries, solution).map(geometry.bounds);
-	                const extent = [0, 1].map(i => Math.max(...measured.map(box => box[i + 2])) - Math.min(...measured.map(box => box[i])));
-	                candidates.push({axis, rule, values: solution, cost: extent[0] + extent[1]});
-	            } catch (error) { if (!(error instanceof TypeError)) throw error; }
-	        }
-	        candidates.sort((a, b) => a.cost - b.cost);
-	        if (!candidates.length) drawingError(entries[b].part.line, 'component boxes overlap under the requested constraints.');
-	        const best = candidates[0]; state.minima[best.axis].push(best.rule); values = best.values;
-	    }
-	    drawingError(0, 'layout clearance did not converge.');
-	}
-
-	function routePoints(route, values) {
-	    const start = route.a.offset.map((value, axis) => value + values[axis][route.a.variable]);
-	    const finish = route.b.offset.map((value, axis) => value + values[axis][route.b.variable]);
-	    const lengths = route.directions.map(() => route.minimum);
-	    for (const axis of [0, 1]) {
-	        const difference = finish[axis] - start[axis] - route.directions.reduce((sum, name) => sum + drawingDirections[name][axis] * route.minimum, 0);
-	        if (!difference) continue;
-	        const index = route.directions.findIndex(name => drawingDirections[name][axis] === Math.sign(difference));
-	        if (index < 0) drawingError(route.line, 'route directions conflict with terminal alignment.');
-	        lengths[index] += Math.abs(difference);
-	    }
-	    const points = [start];
-	    route.directions.forEach((name, index) => points.push(points.at(-1).map((value, axis) =>
-	        value + drawingDirections[name][axis] * lengths[index])));
-	    return points;
-	}
-
-	function pathClear(points, boxes) {
-	    return points.slice(1).every((end, index) => {
-	        const start = points[index];
-	        return boxes.every(box => !overlap([Math.min(start[0], end[0]), Math.min(start[1], end[1]),
-	            Math.max(start[0], end[0]), Math.max(start[1], end[1])], box, 0));
-	    });
-	}
-
-	function layoutSchematicInput(parsed, geometry) {
-	    const oriented = new Map();
-	    const entries = parsed.parts.slice().sort((a, b) => a.id.localeCompare(b.id, 'en', {numeric: true}))
-	        .map(part => orientPart(part, parsed, geometry, oriented));
-	    const state = buildRoutes(parsed, entries), {values, placements} = separateComponents(state, entries, geometry);
-	    const result = {grid: GRID$1, placements, wires: [], externalPorts: [], nodePoints: new Map(), junctions: [], regions: []};
-	    const boxes = placements.map(geometry.bounds), occupied = new Map();
-	    const board = {grid: GRID$1, cornerSize: 10, wireBoxLength: WIRE, routingMargin: 200,
-	        clearance: 10, bendCost: 20, allowCrossings: true};
-	    for (const [index, route] of state.routes.entries()) {
-	        let points = routePoints(route, values);
-	        if (!pathClear(points, boxes)) {
-	            const first = drawingDirections[route.directions[0]], last = drawingDirections[route.directions.at(-1)];
-	            const start = points[0].map((value, axis) => value + first[axis] * 20);
-	            const finish = points.at(-1).map((value, axis) => value - last[axis] * 20);
-	            points = [points[0], ...automaticRoute(start, finish, boxes, new Set(), occupied, route.node,
-	                {...board, startDirection: first, finishDirection: last}), points.at(-1)];
-	        }
-	        recordBoardRoute(points, route.node, occupied, GRID$1);
-	        graphWireBoxes(result, route.node, points, board, `input:${route.node}:${index}`);
-	        result.nodePoints.set(route.node, points[0].map((value, axis) =>
-	            Math.round((value + points[1][axis]) / (2 * GRID$1)) * GRID$1));
-	        if (route.b.hub) {
-	            const at = points.at(-1);
-	            result.nodePoints.set(route.node, at);
-	            if (!result.junctions.some(junction => junction.node === route.node)) result.junctions.push({node: route.node, at});
-	        }
-	    }
-	    for (const annotation of parsed.annotations.filter(item => item.type === 'port')) {
-	        const free = state.routes.find(route => route.node === annotation.node && route.a.free);
-	        const at = free ? routePoints(free, values)[0] : result.nodePoints.get(annotation.node);
-	        result.externalPorts.push({port: annotation.number, node: annotation.node, at,
-	            ...(!free ? {onWire: true} : {}),
-	            ...(annotation.reference === undefined ? {} : {reference: annotation.reference}), side: annotation.side});
-	    }
-	    return result;
-	}
-
 	// Modified: 2026-11-14
 
 	function union(boxes) {
@@ -13220,7 +13686,60 @@
 	    }).join('');
 	}
 
-	// Modified: 2026-11-14
+	// Modified: 2026-11-19
+	// Captions reserve measured space on a side without a canonical terminal lead.
+	const SIDES = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+
+	// Conservative glyph advances for the renderer's 16-unit sans-serif font.
+	// Pure/worker rendering cannot query a browser's font metrics. A single average
+	// character width under-reserves long uppercase references and wide glyphs.
+	function schematicTextWidth(text) {
+	    return Math.ceil(Array.from(text).reduce((width, character) => width +
+	        (/^[mwMW@]$/.test(character) || character.codePointAt(0) > 127 ? 16 :
+	            /^[ilI.,:;!'|]$/.test(character) ? 5 : character === ' ' ? 5 :
+	                /^[frt()[\]]$/.test(character) ? 7 : /^[A-Z]$/.test(character) ? 12 : 10), 0));
+	}
+
+	function captionBounds(text, x, y) {
+	    const half = Math.ceil(schematicTextWidth(text) / 2);
+	    return [x - half, y - 16, x + half, y + 4];
+	}
+
+	function rotate(vector, placement) {
+	    const x = vector[0] * (placement.mirrorX ? -1 : 1), y = vector[1] * (placement.mirrorY ? -1 : 1);
+	    return placement.rotation === 0 ? [x, y] : placement.rotation === 90 ? [-y, x] :
+	        placement.rotation === 180 ? [-x, -y] : [y, -x];
+	}
+
+	function componentLeadDirections(placement, symbol) {
+	    return symbol.ports.map((port, index) => {
+	        const inside = symbol.leads[index].find(point => point.some((value, axis) => value !== port[axis]));
+	        return rotate(port.map((value, axis) => Math.sign(value - inside[axis])), placement);
+	    });
+	}
+
+	function componentCaption(text, placement, symbol, bounds, distance = 20) {
+	    const normals = componentLeadDirections(placement, symbol);
+	    const sides = SIDES.filter(side => !normals.some(normal => side.every((value, axis) => value === normal[axis])));
+	    if (normals.length === 1) sides.sort((a, b) =>
+	        a[0] * normals[0][0] + a[1] * normals[0][1] - b[0] * normals[0][0] - b[1] * normals[0][1]);
+	    const side = sides[0] || [1, -1];
+	    const half = Math.ceil(schematicTextWidth(text) / 2);
+	    const x = side[0] > 0 ? Math.ceil((bounds[2] + distance + half) / 10) * 10 :
+	        side[0] < 0 ? Math.floor((bounds[0] - distance - half) / 10) * 10 : Math.round((bounds[0] + bounds[2]) / 20) * 10;
+	    const y = side[1] > 0 ? Math.ceil((bounds[3] + distance + 16) / 10) * 10 :
+	        side[1] < 0 ? Math.floor((bounds[1] - distance - 4) / 10) * 10 : Math.round((bounds[1] + bounds[3] + 12) / 20) * 10;
+	    return {x, y, bounds: captionBounds(text, x, y), cost: distance - 20};
+	}
+
+	function captionPackingBounds(body, caption, escapes = []) {
+	    return [Math.min(body[0], caption.bounds[0], ...escapes.map(point => point[0])),
+	        Math.min(body[1], caption.bounds[1], ...escapes.map(point => point[1])),
+	        Math.max(body[2], caption.bounds[2], ...escapes.map(point => point[0])),
+	        Math.max(body[3], caption.bounds[3], ...escapes.map(point => point[1]))];
+	}
+
+	// Modified: 2026-11-19
 
 	const GRID = 10;
 	// Keep annotation search coverage tied to text size, independently of placement resolution.
@@ -13365,11 +13884,6 @@
 	        Math.max(start[0], end[0]) + thickness, Math.max(start[1], end[1]) + thickness];
 	}
 
-	function labelBounds(text, x, y) {
-	    const halfWidth = Math.ceil((text.length * 9) / 2);
-	    return [x - halfWidth, y - 16, x + halfWidth, y + 4];
-	}
-
 	function circleBounds(x, y, radius = 12) {
 	    return [x - radius, y - radius, x + radius, y + radius];
 	}
@@ -13410,12 +13924,12 @@
 	function labelCandidates(text, bounds, preferredAt = null) {
 	    const centerX = Math.round((bounds[0] + bounds[2]) / (2 * GRID)) * GRID;
 	    const centerY = Math.round((bounds[1] + bounds[3]) / (2 * GRID)) * GRID;
-	    const halfWidth = Math.ceil(text.length * 9 / 2);
+	    const halfWidth = Math.ceil(schematicTextWidth(text) / 2);
 	    const tall = bounds[3] - bounds[1] > bounds[2] - bounds[0];
 	    const candidates = [];
 	    if (preferredAt) {
 	        candidates.push({x: preferredAt[0], y: preferredAt[1],
-	            bounds: labelBounds(text, preferredAt[0], preferredAt[1]), cost: 0});
+	            bounds: captionBounds(text, preferredAt[0], preferredAt[1]), cost: 0});
 	    }
 	    for (let distance = ANNOTATION_STEP; distance <= 400; distance += ANNOTATION_STEP) {
 	        for (const offset of [0, -ANNOTATION_STEP, ANNOTATION_STEP, -2 * ANNOTATION_STEP, 2 * ANNOTATION_STEP]) {
@@ -13428,8 +13942,9 @@
 	                [bounds[0] - distance - halfWidth, centerY + offset + 6]
 	            ];
 	            const positions = tall ? vertical.concat(horizontal) : horizontal.concat(vertical);
-	            positions.forEach(([x, y], preference) => {
-	                candidates.push({x, y, bounds: labelBounds(text, x, y),
+	            positions.forEach(([px, py], preference) => {
+	                const x = Math.round(px / GRID) * GRID, y = Math.round(py / GRID) * GRID;
+	                candidates.push({x, y, bounds: captionBounds(text, x, y),
 	                    cost: distance + Math.abs(offset) / 2 + preference * 4});
 	            });
 	        }
@@ -13477,7 +13992,7 @@
 	    const occupied = fixedBounds.slice(), choices = [];
 	    for (const task of tasks) {
 	        let choice = task.candidates.find(candidate => boxesClear(candidateBounds(candidate), occupied));
-	        if (!choice) {
+	        if (!choice && !task.component) {
 	            const base = task.candidates[0];
 	            const extent = Math.max(...occupied.flatMap(box => [Math.abs(box[0] - base.x),
 	                Math.abs(box[2] - base.x), Math.abs(box[1] - base.y), Math.abs(box[3] - base.y)]), 400) + 400;
@@ -13850,7 +14365,7 @@
 	    const text = `Port ${port.port}`, bounds = circleBounds(...port.at, 4);
 	    if (!port.side) return labelCandidates(text, bounds, board.portLabelOffset ?
 	        [port.at[0] + board.portLabelOffset[0], port.at[1] + board.portLabelOffset[1]] : undefined);
-	    const halfWidth = Math.ceil(text.length * 9 / 2);
+	    const halfWidth = Math.ceil(schematicTextWidth(text) / 2);
 	    const offset = port.side === 'left' ? [-Math.ceil((halfWidth + 20) / 10) * 10, 40] :
 	        port.side === 'right' ? [Math.ceil((halfWidth + 20) / 10) * 10, 40] :
 	            port.side === 'top' ? [0, -40] : [0, 40];
@@ -13891,13 +14406,33 @@
 	    return crossings;
 	}
 
+	function placementCaption(digits, count, placement) {
+	    const id = placement.id || flowPartId(placement.part, {}).replace(/1$/, '9'.repeat(String(count).length));
+	    return componentCaption(componentLabel(placement.part, id, digits), placement,
+	        symbolForSchematicEntry({part: placement.part, nodes: placement.ports}), treeLayoutBounds(placement));
+	}
+
+	function placementPackingBounds(caption, placement) {
+	    const normals = componentLeadDirections(placement, symbolForSchematicEntry({part: placement.part, nodes: placement.ports}));
+	    const escapes = placement.ports.map((port, index) => port.at.map((value, axis) => value + normals[index][axis] * 40));
+	    return captionPackingBounds(treeLayoutBounds(placement), caption(placement), escapes);
+	}
+
+	function placementFootprint(caption, placement) {
+	    return captionPackingBounds(treeLayoutBounds(placement), caption(placement));
+	}
+
 	function buildInterpretedBoardModel(root, shapeDefinition, digits, flipVertical = false) {
 	    if (flipVertical) shapeDefinition = {...shapeDefinition,
 	        transform: {...shapeDefinition.transform, mirrorY: !shapeDefinition.transform?.mirrorY}};
 	    const counters = {};
+	    const caption = placementCaption.bind(null, digits, root.components.length);
 	    const result = interpretSchematicBoard(root, shapeDefinition, {
 	        boards: schematicShapeBoards,
 	        bounds: treeLayoutBounds,
+	        packingBounds: placementPackingBounds.bind(null, caption),
+	        footprintBounds: placementFootprint.bind(null, caption),
+	        captionBounds: placement => caption(placement).bounds,
 	        preview: nodalPlacement.bind(null, ''),
 	        symbol: symbolForSchematicEntry,
 	        placement(entry, inputPort, at, angle, mirrorY, mirrorX) {
@@ -13918,10 +14453,10 @@
 	    const labelTasks = placements.map(placement => {
 	        const label = componentLabel(placement.part, placement.id, digits);
 	        const bounds = treeLayoutBounds(placement);
-	        const center = [(bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2];
-	        const offset = placement.boardTile.labelOffset || board.componentLabelOffset;
-	        return {text: label, candidates: labelCandidates(label, bounds,
-	            offset ? [center[0] + offset[0], center[1] + offset[1]] : undefined)};
+	        const symbol = symbolForSchematicEntry({part: placement.part, nodes: placement.ports});
+	        const preferred = componentCaption(label, placement, symbol, bounds);
+	        return {text: label, component: placement.id, candidates: [preferred,
+	            ...labelCandidates(label, bounds).filter(candidate => candidate.cost <= 100)]};
 	    });
 	    const nodeIds = [...new Set(root.components.flatMap(entry => entry.nodes)
 	        .concat(root.externalNodes))];
@@ -13935,24 +14470,21 @@
 	        .map((point, index) => segmentBounds([wire.points[index], point], 4))));
 	    let choices;
 	    try {
-	        choices = chooseAnnotations(nodeTasks.concat(labelTasks, portTasks), fixedBounds);
+	        choices = chooseAnnotations(labelTasks.concat(nodeTasks, portTasks), fixedBounds);
 	    } catch (error) {
 	        if (!(error instanceof RangeError)) throw error;
-	        // Dense terminal groups can exhaust the bounded beam for a valid
-	        // guided board too. Reuse the shared spacing fallback rather than
-	        // reporting an electrical/shape mismatch for an annotation failure.
-	        choices = chooseSpacedAnnotations(nodeTasks.concat(labelTasks, portTasks), fixedBounds);
+	        choices = chooseSpacedAnnotations(labelTasks.concat(nodeTasks, portTasks), fixedBounds);
 	    }
 	    const nodes = nodeIds.map((node, index) => ({id: node, at: nodePoints.get(node),
-	        numberAt: [choices[index].x, choices[index].y]}));
-	    const annotationOffset = nodeIds.length;
+	        numberAt: [choices[labelTasks.length + index].x, choices[labelTasks.length + index].y]}));
+	    const annotationChoices = choices.slice(0, labelTasks.length).concat(choices.slice(labelTasks.length + nodeIds.length));
 	    const annotations = labelTasks.concat(portTasks).map((task, index) => ({text: task.text,
-	        at: [choices[annotationOffset + index].x, choices[annotationOffset + index].y]}));
+	        at: [annotationChoices[index].x, annotationChoices[index].y]}));
 	    const boxes = boardBoxes(placements, wires, externalPorts, board);
 	    if (!boxes) return null;
 	    const allPoints = placements.flatMap(placement => placement.ports.map(port => port.at))
 	        .concat(wires.flatMap(wire => wire.points), nodes.flatMap(node => [node.at, node.numberAt]),
-	            annotations.map(label => label.at), placementsBounds.flatMap(bounds =>
+	            annotationChoices.flatMap(label => [[label.bounds[0], label.bounds[1]], [label.bounds[2], label.bounds[3]]]), placementsBounds.flatMap(bounds =>
 	                [[bounds[0], bounds[1]], [bounds[2], bounds[3]]]));
 	    const minX = Math.floor((Math.min(...allPoints.map(point => point[0])) - 100) / GRID) * GRID;
 	    const minY = Math.floor((Math.min(...allPoints.map(point => point[1])) - 100) / GRID) * GRID;
@@ -14102,8 +14634,12 @@
 	            throw new TypeError('Drawing input uses path directions, mirror and alignment instead of nPort shape/view options.');
 	        }
 	        const parsed = parseSchematicInput(circuit);
+	        const caption = placementCaption.bind(null, schematicSignificantDigits(options), parsed.parts.length);
 	        const result = layoutSchematicInput(parsed, {
 	            symbol: symbolForSchematicEntry, bounds: treeLayoutBounds,
+	            packingBounds: placementPackingBounds.bind(null, caption),
+	            footprintBounds: placementFootprint.bind(null, caption),
+	            captionBounds: placement => caption(placement).bounds,
 	            placement(entry, inputPort, at, angle, mirrorY, mirrorX, id) {
 	                return nodalPlacement(id, entry, inputPort, at, angle, mirrorY, mirrorX);
 	            }
@@ -14115,7 +14651,7 @@
 	            board: {grid: GRID, allowOpenEnds: true}}, schematicSignificantDigits(options));
 	        if (!model) throw new RangeError('Schematic input: could not finish the drawing graph.');
 	        model.graph.kind = 'schematic-input';
-	        annotateSchematicInput(model, parsed, {bounds: treeLayoutBounds, textBounds: labelBounds,
+	        annotateSchematicInput(model, parsed, {bounds: treeLayoutBounds, textBounds: captionBounds,
 	            wireBounds: boardWireBounds, choose: chooseAnnotations});
 	        return {...model, detected: null, dots: schematicDots(options.dots)};
 	    }

@@ -1,4 +1,4 @@
-// Modified: 2026-11-07
+// Modified: 2026-11-19
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as nP from '../src/index.js';
@@ -94,9 +94,9 @@ for (const options of [{transformer: true}, {transformer: true, reversed: true},
         assert.deepEqual(graph.components.map(part => part.ports.map(port => port.node)),
             circuit._schematic.components.map(entry => entry.nodes));
         assert.deepEqual(graph.components.map(part => part.ports.map(port => port.at)),
-            divider.components.map(part => part.ports.map(port => [-port.at[0], port.at[1]])));
+            divider.components.map(part => part.ports.map(port => [-port.at[0] || 0, port.at[1]])));
         assert.deepEqual(graph.wires.map(wire => wire.points),
-            divider.wires.map(wire => wire.points.map(point => [-point[0], point[1]])));
+            divider.wires.map(wire => wire.points.map(point => [-point[0] || 0, point[1]])));
         const [output, upperInput, lowerInput] = graph.externalPorts;
         assert.deepEqual(graph.externalPorts.map(port => port.node), [1, 2, 3]);
         assert.equal(upperInput.at[0], lowerInput.at[0]);

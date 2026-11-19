@@ -1,5 +1,5 @@
 # nP website code-writing agent
-<!-- Modified: 2026-11-18 -->
+<!-- Modified: 2026-11-19 -->
 
 ## Your task
 
@@ -485,9 +485,28 @@ Invalid input may return an error and null SVG without throwing. Do not alter
 the circuit to force a picture or present a partial drawing as success.
 
 Shapes: series, ladder, bridgedT, edgeCoupledFilter, branchline, powerDivider,
-powerCombiner, generic fallback; geometry only. No amplifier shape exists.
+powerCombiner, commonEmitter, generic fallback; geometry only.
+Current bundles detect commonEmitter automatically or accept
+`var drawing = nP.schematic(network, {shapes: ['commonEmitter'], mount: drawingMount});`.
+It covers one NPN/PNP, Tee4 base junction, two divider resistors, collector
+resistor/Tee, grounded V supply/Tee and two coupling capacitors. The emitter
+is R to Short, sePaRC to Short, or Tee-led separate R/C branches with a Short
+on each. Supply bypass is optional via another Tee/C/Short. Both the original
+source-first rail and an R1-to-collector-Tee-to-bypass-Tee-to-V rail are supported;
+preserve the supplied numbered terminal assignments. The collector
+Tee common branch can carry the output or collector resistor. Other bias
+arrangements are outside this first board. Drawing descriptions still use
+their own directions. Check the website's actual pinned bundle before using it.
 Nodal groups such as {series:[[r1,1,2],[l1,2,3]]} guide sections; repeated names
 need separate objects. A layout failure does not invalidate the circuit.
+
+Preserve topology when diagnosing layout. Never add spacer components, tuned
+coordinates, SVG edits or graph postprocessing to force a picture. Current
+renderers infer related branch baselines, measure caption/terminal space and
+solve amplifier/transformer placement from terminal directions and ordering.
+Use supported shape guidance or drawing-language directions/alignment to express
+engineering intent. Confirm these capabilities in older supplied renderers;
+report a layout limitation without disguising it or invalidating the analysis.
 
 ## Math and diagnosing code
 

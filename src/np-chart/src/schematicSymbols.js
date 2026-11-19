@@ -22,8 +22,7 @@ export const schematicSymbols = {
             ],
             "mirrorX": false,
             "mirrorY": false,
-            "externalPorts": "flow",
-            "localTerminations": true
+            "externalPorts": "flow"
         },
         "bounds": [
             66,
@@ -96,8 +95,7 @@ export const schematicSymbols = {
             ],
             "mirrorX": false,
             "mirrorY": false,
-            "externalPorts": "flow",
-            "localTerminations": true
+            "externalPorts": "flow"
         },
         "bounds": [
             66,

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-18 -->
+<!-- Modified: 2026-11-19 -->
 # nP constructor catalog
 
 This catalog covers the 59 public functions that produce n-port objects from `src/np-nport/src/index.js`, the digital waveform functions from `src/np-digital`, and the exported math and low-pass prototype functions. Each JS call below spells out the **current defaults** where they exist. Each argument or property appears on its own line. Units are in comments. Each constructor has its own heading and code block.
@@ -454,6 +454,11 @@ An explicit `.solveDC()` call returns data while preserving the original RF/nois
 ## External transistor bias
 
 Use the ordinary constructors and one `nodal()` netlist. The explicit supply selects network bias automatically; no final Q point or separate solver call is required.
+
+The schematic renderer recognizes the divider-biased stage below as `commonEmitter`.
+Its layout also supports `sePaRC()` or separate Tee-led emitter R/C branches,
+optional supply bypass, and equivalent PNP terminal roles. See
+[the supported topology](../../docs/schematics.md#divider-biased-transistor-amplifier).
 
 ```js
 nP.global.fList = [1e6, 100e6];

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Modified: 2026-11-15
+// Modified: 2026-11-19
 'use strict';
 
 const fs = require('fs');
@@ -120,11 +120,11 @@ function validateLayout(name, layout, ports) {
   }
   if (layout.automatic) {
     const rule = layout.automatic;
-    if (Object.keys(rule).some(key => !['rotations', 'mirrorX', 'mirrorY', 'externalPorts', 'localTerminations'].includes(key)) ||
+    if (Object.keys(rule).some(key => !['rotations', 'mirrorX', 'mirrorY', 'externalPorts'].includes(key)) ||
         !Array.isArray(rule.rotations) || !rule.rotations.length ||
         new Set(rule.rotations).size !== rule.rotations.length ||
         rule.rotations.some(angle => ![0, 90, 180, 270].includes(angle)) ||
-        ['mirrorX', 'mirrorY', 'localTerminations'].some(key => typeof rule[key] !== 'boolean') ||
+        ['mirrorX', 'mirrorY'].some(key => typeof rule[key] !== 'boolean') ||
         rule.externalPorts !== 'flow') {
       throw new Error(`${name} has invalid automatic placement preferences`);
     }

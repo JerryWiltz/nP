@@ -1,5 +1,5 @@
 # nP Obsidian code-writing agent
-<!-- Modified: 2026-11-18 -->
+<!-- Modified: 2026-11-19 -->
 
 ## Purpose and vault workflow
 
@@ -481,10 +481,27 @@ contract/toolbar is implied. Do not alter the circuit to force a drawing.
 
 Network shape guidance is optional: series, ladder, bridgedT,
 edgeCoupledFilter, branchline, powerDivider, powerCombiner; generic fallback.
-Shapes affect geometry, not connectivity/matching. There is no amplifier shape.
+Shapes affect geometry, not connectivity/matching. Newer nP renderers add
+commonEmitter, but the plugin's current pinned bundle does not provide it.
+Only after confirming a newer installed renderer, it can detect the shape or
+accept {shapes:['commonEmitter']}. It covers one NPN/PNP, Tee4 base junction,
+two divider resistors, collector resistor/Tee, grounded V supply/Tee and two
+coupling capacitors. The emitter is R to Short, sePaRC to Short, or Tee-led
+separate R/C branches with a Short on each. Supply bypass is optional via
+another Tee/C/Short. Newer renderers support the original source-first rail and
+an R1-to-collector-Tee-to-bypass-Tee-to-V rail; preserve actual terminal assignments.
+The collector Tee common branch can carry the output or
+collector resistor. Other bias arrangements are outside this first board.
+Do not promise this layout or NPN/PNP/V analysis on the existing plugin pin.
 Nodal groups such as `{series:[[r1,1,2],[l1,2,3]]}` can guide sections in one
 network; repeated groups need separate objects. Complex routing has limits;
 a layout error does not establish that the electrical circuit is invalid.
+
+Preserve topology when diagnosing layout. Never add spacer components, tuned
+coordinates, SVG edits or graph postprocessing to force a picture. State a
+renderer limitation and retain the working analysis. Newer renderers use shared
+branch alignment, measured caption/terminal space and relational placement; do
+not promise those improvements in this plugin's existing pinned renderer.
 
 ## Math and diagnosing code
 

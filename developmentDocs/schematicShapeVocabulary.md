@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-13 -->
+<!-- Modified: 2026-11-19 -->
 # Schematic shape vocabulary
 
 A shape name expresses an RF engineer's intended layout. The network's connections and the canonical component symbols remain the electrical and drawing facts; a shape guides how those facts are arranged. A network is the named nPort produced by `nodal()` or a cascade. Shape names describe engineering layout intent; their current definitions determine which connections and component counts the renderer can actually handle.
@@ -36,6 +36,63 @@ All two-port occurrences must be in groups for composed rendering; ordinary dire
 See [groupedNetworks.html](../dev/shapes/groupedNetworks.html) for series–ladder–series, repeated series groups with component reuse, and parallel series/ladder groups. The [public schematic guide](../docs/schematics.md) introduces this workflow and its available shape names.
 
 ## Implemented boards
+
+### Common-emitter amplifier
+
+`commonEmitter` is a named-slot board for a divider-biased NPN/PNP stage. It is
+blindly detected from the complete terminal connectivity or explicitly selected
+with `{shapes: ['commonEmitter']}`. Its single-node input/output interface also
+allows composition with other supported boards. The reference is the supplied
+`npn2.jpg` drawing; [commonEmitter.html](../dev/shapes/commonEmitter.html) analyzes
+that network before drawing it. The original `npnAmp.jpg` grouping is also supported.
+
+The source and its Short termination are placed to the right of the optional
+supply bypass, with matching source/capacitor center heights and aligned Short
+terminations. The `npn2.jpg` rail connects R1 to the collector-feed Tee `[18, 6, 8]`,
+then the bypass Tee `[16, 8, 7]`, then V1 `[7, 17]`. The supply capacitor connects
+`[16, 22]`. The original source-first Tee grouping uses its own variant and routes
+the source lead above the amplifier. Selection follows the actual connections;
+the renderer does not rewire either circuit.
+
+ORI discovers related terminated branches from junction connectivity. Parallel
+branches share a termination baseline; equal-stage branches also share component
+center heights. This applies to emitter branches, supply branches and ladder
+shunts, including unequal symbol sizes and chain lengths. The shorter branch
+receives the additional wire length; canonical geometry is preserved.
+
+The amplifier and transformer divider use `layout: 'relations'`. Their boards
+specify terminal directions, ordering and intended symmetry, without component
+coordinates or compensating output leads. Ordered bands put the supply returns
+above the signal path. The shared difference-constraint solver measures symbol,
+caption and terminal-escape space, then routes orthogonally. Section exits reach
+the measured envelope rather than depending on a long display lead.
+
+The board covers a Tee4 base junction, two divider resistors, collector resistor,
+collector Tee, a grounded voltage source with a supply Tee, and input/output
+coupling capacitors. It has declarative variants for separate emitter R/C branches
+with a Tee and two Short terminations, combined `sePaRC()` with one Short, and
+an unbypassed resistor with one Short. A supply bypass adds a second rail Tee,
+capacitor and Short. The collector Tee may have its common branch at the output
+or at the collector resistor. Other bias topologies and omitted coupling parts
+are not claimed. Short terminations, terminal numbering and source polarity
+must match the actual network; no parts are synthesized by layout.
+
+Named-slot binding now checks whether candidate port roles can meet the board's
+terminal directions under canonical quarter-turn rotations/reflections. This is
+a structural geometry check shared by detection and placement; it does not place
+symbols during detection. It avoids accepting an electrically connected but
+geometrically impossible role permutation on a Tee4 or Tee. Slot count is checked
+before searching. Numerical values, component row order and node labels do not
+select the shape. Each reused component occurrence is bound separately.
+
+Tests cover all eighteen combinations, equivalent ideal-tee DC/RF/noise results,
+renamed nodes, reversed row order, PNP,
+whole-board reflection, composition, invalid terminal/polarity changes, complete
+wire connectivity, symbol clearance and unchanged analyzed state. The board uses
+the existing ORI slot, wire, annotation and SVG operations without a dedicated
+amplifier matcher or renderer callback.
+
+### Other boards
 
 | Shape | Engineering layout intent |
 | --- | --- |
@@ -103,7 +160,7 @@ Main-path wire spacing grows when needed to fit a bridge's actual symbol spans a
 
 `shapes: ['edgeCoupledFilter']` accepts a path of one or more ideal or microstrip coupled sections using numbered terminal pairs 1/3 or 3/1. The two unused ports of every section must have direct one-port terminations in the nodal network. Open-ended sections are the ordinary filter arrangement; short and load symbols are also supported when explicitly present. The first board does not include intermediate two-port parts along the connections or termination arms.
 
-Allowed `portPairs` and the repeated tile's `orientation: {terminals: 'leads', advance: 'down'}` are data. ORI follows the canonical lead direction at each input and output. Their vertical separation creates the staircase, while `direction: 'terminal'` lets unused-port terminations face outward. The shared attachment-spacing operation calculates wire growth from actual body bounds and clearance. Neither the matcher nor the placement code tests an RF constructor name.
+Allowed `portPairs` and the repeated tile's `orientation: {terminals: 'leads', advance: 'down'}` are data. ORI follows the canonical lead direction at each input and output. Their vertical separation creates the staircase, while `direction: 'terminal'` lets unused-port terminations face outward. Every path with attachments uses shared measured clearance, including caption and terminal-escape space; no shape-specific spacing opt-in is required. Neither the matcher nor the placement code tests an RF constructor name.
 
 ```js
 nP.schematic(network, {

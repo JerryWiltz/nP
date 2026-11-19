@@ -1,0 +1,69 @@
+<!doctype html>
+<!-- Modified: 2026-11-19 -->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Divider-biased NPN amplifier</title>
+    <script src="../../dist/nP.js"></script>
+</head>
+<body>
+    <script>
+        var g = nP.global();
+        g.Ro = 50;
+        g.Temp = 293;
+        var frequencies = g.fGen(1e6, 100e6, 51);
+        g.fList = frequencies;
+
+        var q1 = nP.NPN({model: '2N3904'});
+        var v1 = nP.V(12);
+        var r1 = nP.R(100e3);
+        var r2 = nP.R(22e3);
+        var r3 = nP.R(2.2e3);
+        var r4 = nP.R(1e3);
+        var c1 = nP.C(10e-9);
+        var c2 = nP.C(10e-9);
+        var c3 = nP.C(10e-9);
+        var c4 = nP.C(10e-9);
+        var t1 = nP.Tee4();
+        var t2 = nP.Tee();
+        var t3 = nP.Tee();
+        var t4 = nP.Tee();
+        var t5 = nP.Tee();
+        var short1 = nP.Short();
+
+        // Connections transcribed from Downloads/npn2.jpg.
+        var amplifier = nP.nodal(
+            [c1, 1, 2],
+            [t1, 9, 2, 21, 3],
+            [q1, 3, 20, 11],
+            [r1, 21, 6],
+            [r2, 9, 10],
+            [short1, 10],
+            [t2, 18, 6, 8],
+            [t3, 16, 8, 7],
+            [v1, 7, 17],
+            [short1, 17],
+            [c2, 16, 22],
+            [short1, 22],
+            [r3, 18, 19],
+            [t4, 4, 20, 19],
+            [c4, 4, 5],
+            [t5, 11, 14, 12],
+            [r4, 12, 13],
+            [short1, 13],
+            [c3, 14, 15],
+            [short1, 15],
+            ['out', 1, 5]
+        );
+
+        var response = amplifier.out('s11dB', 's21dB');
+        var operatingPoint = amplifier.operatingPoint;
+        var transistorPoint = operatingPoint.components[2].qPoint;
+
+        var drawing = nP.schematic(amplifier);
+        nP.log(transistorPoint);
+        nP.lineChart({inputTable: [response], title: 'Divider-biased NPN amplifier', metricPrefix: 'mega'});
+    </script>
+</body>
+</html>

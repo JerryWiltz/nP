@@ -1,5 +1,5 @@
 # nP Node.js code-writing agent
-<!-- Modified: 2026-11-18 -->
+<!-- Modified: 2026-11-19 -->
 
 ## Your task
 
@@ -496,8 +496,26 @@ and error; this contract does not make it work in Node. Pure host renderers
 may throw on invalid input. Never alter the circuit to force a picture or
 present a partial drawing as success.
 
-Optional shapes affect geometry, not electrical behavior. There is no amplifier
-shape. A layout failure does not establish that the circuit is invalid.
+Optional shapes affect geometry, not electrical behavior. Newer browser/host
+renderers detect commonEmitter automatically or accept {shapes:['commonEmitter']}.
+It covers one NPN/PNP, Tee4 base junction, two divider resistors, collector
+resistor/Tee, grounded V supply/Tee and two coupling capacitors. The emitter
+is R to Short, sePaRC to Short, or Tee-led separate R/C branches with a Short
+on each. Supply bypass is optional via another Tee/C/Short. Both the original
+source-first rail and an R1-to-collector-Tee-to-bypass-Tee-to-V rail are supported;
+preserve the supplied numbered terminal assignments. The collector
+Tee common branch can carry the output or collector resistor. Other bias
+arrangements are outside this first board. Confirm host renderer availability;
+the standard Node bundle still supplies no DOM and no pure schematic exports.
+A layout failure does not establish that the circuit is invalid.
+
+Preserve topology when diagnosing layout. Never add spacer components, tuned
+coordinates, SVG edits or graph postprocessing to force a picture. Current
+renderers infer related branch baselines, measure caption/terminal space and
+solve amplifier/transformer placement from terminal directions and ordering.
+Use supported shape guidance or drawing-language directions/alignment to express
+engineering intent. Confirm these capabilities in older supplied renderers;
+report a layout limitation without disguising it or invalidating the analysis.
 
 ## Math and diagnosing code
 

@@ -1,4 +1,4 @@
-// Modified: 2026-11-15
+// Modified: 2026-11-19
 // General graph operations for ORI's automatic board. No RF circuit patterns.
 const AXES = [[1, 0], [0, 1], [-1, 0], [0, -1]];
 
@@ -158,7 +158,9 @@ function automaticPositions(root, board, graph, geometry) {
     }
     const sizes = regions.map(region => {
         const extent = Math.max(...region.members.map(index => {
-            const b = geometry.symbol(root.components[index]).bounds;
+            const entry = root.components[index];
+            const b = geometry.packingBounds && geometry.preview ?
+                geometry.packingBounds(geometry.preview(entry, 1, [0, 0], 0)) : geometry.symbol(entry).bounds;
             return Math.max(b[2] - b[0], b[3] - b[1]);
         }));
         const pitch = Math.ceil((extent + board.componentGap) / board.grid) * board.grid;
@@ -262,7 +264,7 @@ function placeLocalTerminations(root, placements, graph, board, geometry) {
     const moved = new Set();
     for (let index = 0; index < root.components.length; index++) {
         const entry = root.components[index], symbol = geometry.symbol(entry);
-        if (!symbol.automatic?.localTerminations) continue;
+        if (entry.nodes.length < 2) continue;
         const parent = placements[index];
         for (const port of parent.ports) {
             const terminals = graph.byNode.get(port.node);
@@ -272,17 +274,18 @@ function placeLocalTerminations(root, placements, graph, board, geometry) {
             const childEntry = root.components[other.index], childSymbol = geometry.symbol(childEntry);
             const direction = rotate(terminalDirection(symbol, port.port), parent.rotation, parent.mirrorX, parent.mirrorY);
             const obstacles = placements.flatMap((placement, obstacle) => obstacle === other.index ? [] :
-                [placementBounds(placement, geometry.symbol(root.components[obstacle]))]);
+                [(geometry.packingBounds || geometry.bounds)(placement)]);
             let selected = null;
             for (let distance = 2 * board.wireBoxLength; distance <= board.routingMargin + board.componentGap && !selected;
                 distance += board.grid) {
                 const at = port.at.map((value, axis) => value + direction[axis] * distance);
                 for (const angle of [0, 90, 180, 270]) {
                     if (!same(rotate(terminalDirection(childSymbol, 1), angle, false, false), direction.map(value => -value))) continue;
-                    const candidate = geometry.placement(childEntry, 1, at, angle);
-                    const bounds = placementBounds(candidate, childSymbol);
+                    const candidate = (geometry.preview || geometry.placement)(childEntry, 1, at, angle);
+                    const bounds = (geometry.packingBounds || geometry.bounds)(candidate);
                     if (!obstacles.some(obstacle => boundsOverlap(bounds, obstacle, board.clearance))) {
                         candidate.boardTile = placements[other.index].boardTile;
+                        candidate.id = placements[other.index].id;
                         selected = candidate; break;
                     }
                 }
@@ -456,7 +459,9 @@ export function layoutAutomaticBoard(root, definition, geometry) {
         automaticPlacement(root, index, positions, graph, board, geometry)]));
     const placements = root.components.map((_, index) => byIndex.get(index));
     placeLocalTerminations(root, placements, graph, board, geometry);
-    const bounds = placements.map((placement, index) => placementBounds(placement, geometry.symbol(root.components[index])));
+    const bounds = placements.flatMap((placement, index) =>
+        [placementBounds(placement, geometry.symbol(root.components[index])),
+            ...(geometry.captionBounds ? [geometry.captionBounds(placement)] : [])]);
     const result = {grid: board.grid, placements, wires: [], nodePoints: new Map(), externalPorts: [],
         regions: regions.filter(region => region.cyclic).map(region => ({kind: 'loop', components: region.members.map(index => index + 1)}))};
     const terminals = new Map();

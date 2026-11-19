@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-17 -->
+<!-- Modified: 2026-11-19 -->
 # Development pages
 
 The HTML files in this directory are executable browser harnesses. Top-level
@@ -38,6 +38,7 @@ Individual schematic-shape harnesses live in `shapes/`:
 | --- | --- | --- |
 | `shapes/branchline.html` | One-cell, multi-cell, and microstrip `branchline` layouts | `shapes/branchline.md` |
 | `shapes/bridgedT.html` | Upper bridges, downward shunts, variable component counts, Tee4 junctions and microstrip parts | `shapes/bridgedT.md` |
+| `shapes/commonEmitter.html` | Divider-biased NPN, automatic DC-before-RF and common-emitter layout with supply/emitter bypass capacitors | `shapes/commonEmitter.md` |
 | `shapes/edgeCoupledFilter.html` | Ideal/microstrip staircases, vertical flip, variable section counts and actual terminations | `shapes/edgeCoupledFilter.md` |
 | `shapes/parallelComposition.html` | Sequential, parallel and nested shape sections; direct tees, separate outputs and deferred-crossover errors | `shapes/parallelComposition.md` |
 | `shapes/groupedNetworks.html` | Shape groups in nodal: inferred boundaries, series–ladder–series, component reuse, divider/combiner paths and terminal-dot comparison | `shapes/groupedNetworks.md` |

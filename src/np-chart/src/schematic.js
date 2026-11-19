@@ -1,4 +1,4 @@
-// Modified: 2026-11-14
+// Modified: 2026-11-19
 import {schematicSymbols} from './schematicSymbols';
 import {nodalBlockSymbol, symbolForSchematicEntry} from './nodalBlockSymbol';
 import {schematicShapeBoards} from './schematicShapeBoards';
@@ -9,6 +9,8 @@ import {placeBoardNodeMarkers} from './schematicNodeMarkers';
 import {parseSchematicInput} from './schematicInputParser';
 import {layoutSchematicInput} from './schematicInputLayout';
 import {annotateSchematicInput, renderSchematicInputAnnotations} from './schematicInputAnnotations';
+import {componentCaption, componentLeadDirections, captionPackingBounds,
+    captionBounds as labelBounds, schematicTextWidth} from './schematicCaptions';
 
 const GRID = 10;
 // Keep annotation search coverage tied to text size, independently of placement resolution.
@@ -153,11 +155,6 @@ function segmentBounds([start, end], thickness = 2) {
         Math.max(start[0], end[0]) + thickness, Math.max(start[1], end[1]) + thickness];
 }
 
-function labelBounds(text, x, y) {
-    const halfWidth = Math.ceil((text.length * 9) / 2);
-    return [x - halfWidth, y - 16, x + halfWidth, y + 4];
-}
-
 function circleBounds(x, y, radius = 12) {
     return [x - radius, y - radius, x + radius, y + radius];
 }
@@ -198,7 +195,7 @@ function nodeGroupCandidates(group) {
 function labelCandidates(text, bounds, preferredAt = null) {
     const centerX = Math.round((bounds[0] + bounds[2]) / (2 * GRID)) * GRID;
     const centerY = Math.round((bounds[1] + bounds[3]) / (2 * GRID)) * GRID;
-    const halfWidth = Math.ceil(text.length * 9 / 2);
+    const halfWidth = Math.ceil(schematicTextWidth(text) / 2);
     const tall = bounds[3] - bounds[1] > bounds[2] - bounds[0];
     const candidates = [];
     if (preferredAt) {
@@ -216,7 +213,8 @@ function labelCandidates(text, bounds, preferredAt = null) {
                 [bounds[0] - distance - halfWidth, centerY + offset + 6]
             ];
             const positions = tall ? vertical.concat(horizontal) : horizontal.concat(vertical);
-            positions.forEach(([x, y], preference) => {
+            positions.forEach(([px, py], preference) => {
+                const x = Math.round(px / GRID) * GRID, y = Math.round(py / GRID) * GRID;
                 candidates.push({x, y, bounds: labelBounds(text, x, y),
                     cost: distance + Math.abs(offset) / 2 + preference * 4});
             });
@@ -265,7 +263,7 @@ function chooseSpacedAnnotations(tasks, fixedBounds) {
     const occupied = fixedBounds.slice(), choices = [];
     for (const task of tasks) {
         let choice = task.candidates.find(candidate => boxesClear(candidateBounds(candidate), occupied));
-        if (!choice) {
+        if (!choice && !task.component) {
             const base = task.candidates[0];
             const extent = Math.max(...occupied.flatMap(box => [Math.abs(box[0] - base.x),
                 Math.abs(box[2] - base.x), Math.abs(box[1] - base.y), Math.abs(box[3] - base.y)]), 400) + 400;
@@ -638,7 +636,7 @@ function portLabelCandidates(port, board) {
     const text = `Port ${port.port}`, bounds = circleBounds(...port.at, 4);
     if (!port.side) return labelCandidates(text, bounds, board.portLabelOffset ?
         [port.at[0] + board.portLabelOffset[0], port.at[1] + board.portLabelOffset[1]] : undefined);
-    const halfWidth = Math.ceil(text.length * 9 / 2);
+    const halfWidth = Math.ceil(schematicTextWidth(text) / 2);
     const offset = port.side === 'left' ? [-Math.ceil((halfWidth + 20) / 10) * 10, 40] :
         port.side === 'right' ? [Math.ceil((halfWidth + 20) / 10) * 10, 40] :
             port.side === 'top' ? [0, -40] : [0, 40];
@@ -679,13 +677,33 @@ function wireCrossings(wires) {
     return crossings;
 }
 
+function placementCaption(digits, count, placement) {
+    const id = placement.id || flowPartId(placement.part, {}).replace(/1$/, '9'.repeat(String(count).length));
+    return componentCaption(componentLabel(placement.part, id, digits), placement,
+        symbolForSchematicEntry({part: placement.part, nodes: placement.ports}), treeLayoutBounds(placement));
+}
+
+function placementPackingBounds(caption, placement) {
+    const normals = componentLeadDirections(placement, symbolForSchematicEntry({part: placement.part, nodes: placement.ports}));
+    const escapes = placement.ports.map((port, index) => port.at.map((value, axis) => value + normals[index][axis] * 40));
+    return captionPackingBounds(treeLayoutBounds(placement), caption(placement), escapes);
+}
+
+function placementFootprint(caption, placement) {
+    return captionPackingBounds(treeLayoutBounds(placement), caption(placement));
+}
+
 function buildInterpretedBoardModel(root, shapeDefinition, digits, flipVertical = false) {
     if (flipVertical) shapeDefinition = {...shapeDefinition,
         transform: {...shapeDefinition.transform, mirrorY: !shapeDefinition.transform?.mirrorY}};
     const counters = {};
+    const caption = placementCaption.bind(null, digits, root.components.length);
     const result = interpretSchematicBoard(root, shapeDefinition, {
         boards: schematicShapeBoards,
         bounds: treeLayoutBounds,
+        packingBounds: placementPackingBounds.bind(null, caption),
+        footprintBounds: placementFootprint.bind(null, caption),
+        captionBounds: placement => caption(placement).bounds,
         preview: nodalPlacement.bind(null, ''),
         symbol: symbolForSchematicEntry,
         placement(entry, inputPort, at, angle, mirrorY, mirrorX) {
@@ -706,10 +724,10 @@ function finishNodalModel(root, result, shapeDefinition, digits) {
     const labelTasks = placements.map(placement => {
         const label = componentLabel(placement.part, placement.id, digits);
         const bounds = treeLayoutBounds(placement);
-        const center = [(bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2];
-        const offset = placement.boardTile.labelOffset || board.componentLabelOffset;
-        return {text: label, candidates: labelCandidates(label, bounds,
-            offset ? [center[0] + offset[0], center[1] + offset[1]] : undefined)};
+        const symbol = symbolForSchematicEntry({part: placement.part, nodes: placement.ports});
+        const preferred = componentCaption(label, placement, symbol, bounds);
+        return {text: label, component: placement.id, candidates: [preferred,
+            ...labelCandidates(label, bounds).filter(candidate => candidate.cost <= 100)]};
     });
     const nodeIds = [...new Set(root.components.flatMap(entry => entry.nodes)
         .concat(root.externalNodes))];
@@ -723,24 +741,21 @@ function finishNodalModel(root, result, shapeDefinition, digits) {
         .map((point, index) => segmentBounds([wire.points[index], point], 4))));
     let choices;
     try {
-        choices = chooseAnnotations(nodeTasks.concat(labelTasks, portTasks), fixedBounds);
+        choices = chooseAnnotations(labelTasks.concat(nodeTasks, portTasks), fixedBounds);
     } catch (error) {
         if (!(error instanceof RangeError)) throw error;
-        // Dense terminal groups can exhaust the bounded beam for a valid
-        // guided board too. Reuse the shared spacing fallback rather than
-        // reporting an electrical/shape mismatch for an annotation failure.
-        choices = chooseSpacedAnnotations(nodeTasks.concat(labelTasks, portTasks), fixedBounds);
+        choices = chooseSpacedAnnotations(labelTasks.concat(nodeTasks, portTasks), fixedBounds);
     }
     const nodes = nodeIds.map((node, index) => ({id: node, at: nodePoints.get(node),
-        numberAt: [choices[index].x, choices[index].y]}));
-    const annotationOffset = nodeIds.length;
+        numberAt: [choices[labelTasks.length + index].x, choices[labelTasks.length + index].y]}));
+    const annotationChoices = choices.slice(0, labelTasks.length).concat(choices.slice(labelTasks.length + nodeIds.length));
     const annotations = labelTasks.concat(portTasks).map((task, index) => ({text: task.text,
-        at: [choices[annotationOffset + index].x, choices[annotationOffset + index].y]}));
+        at: [annotationChoices[index].x, annotationChoices[index].y]}));
     const boxes = boardBoxes(placements, wires, externalPorts, board);
     if (!boxes) return null;
     const allPoints = placements.flatMap(placement => placement.ports.map(port => port.at))
         .concat(wires.flatMap(wire => wire.points), nodes.flatMap(node => [node.at, node.numberAt]),
-            annotations.map(label => label.at), placementsBounds.flatMap(bounds =>
+            annotationChoices.flatMap(label => [[label.bounds[0], label.bounds[1]], [label.bounds[2], label.bounds[3]]]), placementsBounds.flatMap(bounds =>
                 [[bounds[0], bounds[1]], [bounds[2], bounds[3]]]));
     const minX = Math.floor((Math.min(...allPoints.map(point => point[0])) - 100) / GRID) * GRID;
     const minY = Math.floor((Math.min(...allPoints.map(point => point[1])) - 100) / GRID) * GRID;
@@ -890,8 +905,12 @@ function buildSchematicModel(circuit, options = {}, detected = detectedShapes(ci
             throw new TypeError('Drawing input uses path directions, mirror and alignment instead of nPort shape/view options.');
         }
         const parsed = parseSchematicInput(circuit);
+        const caption = placementCaption.bind(null, schematicSignificantDigits(options), parsed.parts.length);
         const result = layoutSchematicInput(parsed, {
             symbol: symbolForSchematicEntry, bounds: treeLayoutBounds,
+            packingBounds: placementPackingBounds.bind(null, caption),
+            footprintBounds: placementFootprint.bind(null, caption),
+            captionBounds: placement => caption(placement).bounds,
             placement(entry, inputPort, at, angle, mirrorY, mirrorX, id) {
                 return nodalPlacement(id, entry, inputPort, at, angle, mirrorY, mirrorX);
             }

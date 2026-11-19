@@ -1,4 +1,4 @@
-// Modified: 2026-11-14
+// Modified: 2026-11-19
 import {drawingDirections, drawingError, drawingTerminal} from './schematicInputParser';
 import {solveDrawingConstraints} from './schematicInputConstraints';
 import {automaticRoute, recordBoardRoute, graphWireBoxes} from './schematicBoardGraph';
@@ -44,7 +44,7 @@ function orientPart(part, parsed, geometry, oriented) {
     return result;
 }
 
-function routeDirections(start, target, requested) {
+export function routeDirections(start, target, requested) {
     const names = [directionName(start), ...requested, directionName(target.map(value => -value))];
     const result = [];
     for (const name of names) {
@@ -58,7 +58,7 @@ function routeDirections(start, target, requested) {
     return result;
 }
 
-function addRouteConstraints(route, state) {
+export function addRouteConstraints(route, state) {
     for (const axis of [0, 1]) {
         const steps = route.directions.map(name => drawingDirections[name][axis]).filter(Boolean);
         const {a, b} = route, offset = a.offset[axis] - b.offset[axis];
@@ -141,10 +141,11 @@ function overlap(a, b, gap = 20) {
     return a[0] < b[2] + gap && a[2] > b[0] - gap && a[1] < b[3] + gap && a[3] > b[1] - gap;
 }
 
-function separateComponents(state, entries, geometry) {
+export function separateComponents(state, entries, geometry) {
+    const boundsFor = geometry.packingBounds || geometry.bounds;
     let values = solveDrawingConstraints(state);
     for (let pass = 0; pass < entries.length * entries.length + 1; pass++) {
-        const placements = placedEntries(entries, values), boxes = placements.map(geometry.bounds);
+        const placements = placedEntries(entries, values), boxes = placements.map(boundsFor);
         let pair;
         for (let a = 0; a < boxes.length && !pair; a++) for (let b = a + 1; b < boxes.length; b++) {
             if (overlap(boxes[a], boxes[b])) { pair = [a, b]; break; }
@@ -152,12 +153,12 @@ function separateComponents(state, entries, geometry) {
         if (!pair) return {values, placements};
         const [a, b] = pair, candidates = [];
         for (const axis of [0, 1]) for (const [from, to] of [[a, b], [b, a]]) {
-            const start = geometry.bounds(entries[from].preview), end = geometry.bounds(entries[to].preview);
+            const start = boundsFor(entries[from].preview), end = boundsFor(entries[to].preview);
             const rule = {a: from, b: to, gap: Math.ceil((start[axis + 2] - end[axis] + 40) / GRID) * GRID,
                 line: entries[to].part.line};
             const trial = {...state, minima: state.minima.map((list, index) => index === axis ? list.concat(rule) : list)};
             try {
-                const solution = solveDrawingConstraints(trial), measured = placedEntries(entries, solution).map(geometry.bounds);
+                const solution = solveDrawingConstraints(trial), measured = placedEntries(entries, solution).map(boundsFor);
                 const extent = [0, 1].map(i => Math.max(...measured.map(box => box[i + 2])) - Math.min(...measured.map(box => box[i])));
                 candidates.push({axis, rule, values: solution, cost: extent[0] + extent[1]});
             } catch (error) { if (!(error instanceof TypeError)) throw error; }
@@ -169,7 +170,7 @@ function separateComponents(state, entries, geometry) {
     drawingError(0, 'layout clearance did not converge.');
 }
 
-function routePoints(route, values) {
+export function routePoints(route, values) {
     const start = route.a.offset.map((value, axis) => value + values[axis][route.a.variable]);
     const finish = route.b.offset.map((value, axis) => value + values[axis][route.b.variable]);
     const lengths = route.directions.map(() => route.minimum);
@@ -200,7 +201,8 @@ export function layoutSchematicInput(parsed, geometry) {
         .map(part => orientPart(part, parsed, geometry, oriented));
     const state = buildRoutes(parsed, entries), {values, placements} = separateComponents(state, entries, geometry);
     const result = {grid: GRID, placements, wires: [], externalPorts: [], nodePoints: new Map(), junctions: [], regions: []};
-    const boxes = placements.map(geometry.bounds), occupied = new Map();
+    const boxes = placements.flatMap(placement => [geometry.bounds(placement),
+        ...(geometry.captionBounds ? [geometry.captionBounds(placement)] : [])]), occupied = new Map();
     const board = {grid: GRID, cornerSize: 10, wireBoxLength: WIRE, routingMargin: 200,
         clearance: 10, bendCost: 20, allowCrossings: true};
     for (const [index, route] of state.routes.entries()) {
