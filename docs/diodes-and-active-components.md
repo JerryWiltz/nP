@@ -1,5 +1,5 @@
-<!-- Modified: 2026-11-15 -->
-# Diodes and active components
+<!-- Modified: 2026-11-18 -->
+# Transistors and Diodes
 
 The public active-device constructors are `nP.Amp()`, `nP.D()`, `nP.diode1N4148()`, `nP.NPN()` and `nP.PNP()`. The amplifier is a configurable two-port gain/noise model. Diode and transistor models combine DC I–V curves with RF behavior at a fixed bias.
 

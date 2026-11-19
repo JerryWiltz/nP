@@ -1,22 +1,16 @@
-<!-- Modified: 2026-10-22 -->
+<!-- Modified: 2026-11-18 -->
 # Tech Notes
 
-Engineering notes for the ideas behind nP. The left sidebar groups notes by subject; the right sidebar lists headings on the current page.
+Tech Notes explains the engineering behind nP's models and calculations. Each note develops a concept, follows the relevant equations, and connects them to a concrete nP result.
 
-## RF Notes
+## RF networks and device models
 
-RF notes cover circuit and network theory, including the concepts used by nP's n-port models.
+An n-port describes a circuit through the waves at its external ports. The RF notes develop S-parameters from incident and outgoing waves, explain how component models become connected networks, and follow the signals measured by a vector network analyzer.
 
-- [S-parameters for the novice](./tech-notes-s-parameters-for-the-novice.md) explains incident and outgoing waves, calculates the S-parameters of a 5 nH series inductor at 2 GHz, and follows the calculation into `nP.L()`.
-- [nPort overview](./tech-notes-nport-overview.md) explains how nP represents components and complete circuits as frequency-dependent nPort objects.
-- [VNA time-domain reflection](./tech-notes-vna-time-domain-reflection.md) derives the synthetic impulse, checks a 1 km cable's return time, and explains the inductor's three receiver impulse plots.
-- [VNA frequency-domain measurement](./tech-notes-vna-frequency-domain-measurement.md) follows R, A, and B through the ideal fixture and derives the 5 nH inductor's measured S11 and S21 values.
+Device notes connect internal physics to those external models. The NPN note follows the Gummel–Poon model through its DC operating point, stored charge, small-signal RF response, noise and weak nonlinear behavior.
 
-## Digital Notes
+## Sampled signals
 
-Digital notes cover sampled signals, modulation, and the time and frequency domain concepts used by nP.
+The signal notes explain sampling, quantization, waveform generation, Fourier transforms and modulation. They track how a voltage waveform becomes samples, how those samples map to frequency bins, and how a modulated signal is prepared for an RF network.
 
-- [Sampling and quantization](./tech-notes-sampling-and-quantization.md) explains sample frequency, Nyquist, ADC bit depth, and anti-alias filtering.
-- [Waveform in nPort](./tech-notes-waveform-in-nport.md) explains how a periodic voltage shape becomes samples on a chosen time grid.
-- [FFT in nPort](./tech-notes-fft-in-nport.md) explains the frequency bins produced from time samples and how nP exposes them.
-- [mod() in nPort](./tech-notes-mod-in-nport.md) explains how nP turns bits into a sampled transmit signal and prepares it for an n-port circuit.
+Choose a note from the left sidebar. The previous and next controls follow the same reading order.

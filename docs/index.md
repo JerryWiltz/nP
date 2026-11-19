@@ -13,7 +13,7 @@ hero:
   actions:
     - theme: brand
       text: Get started
-      link: /hello-nport
+      link: /agentic-nport
     - theme: alt
       text: What's new in 0.49.0
       link: /whats-new-0-49-0
@@ -22,49 +22,60 @@ hero:
       link: https://github.com/JerryWiltz/nP
 
 features:
-  - icon: 🧰
-    title: Microwave engineering
-    details: Build reusable n-port components for RF and microwave analysis.
-    link: /nport-object
-    linkText: Explore n-port analysis
+  - icon: 🤖
+    title: Agentic nPort
+    details: Describe your circuit or supply a schematic; your agent writes readable nP code.
+    link: /agentic-nport
+    linkText: Use Agentic nPort
   - icon: 🔬
-    title: S-parameters
-    details: Set frequencies, create circuits, and extract meaningful network data.
-    link: /nport-object
-    linkText: Learn the workflow
-  - icon: ⚙️
-    title: Transmission lines
-    details: Work with ideal, coupled, and physical microstrip transmission lines.
-    link: /ideal-components#a-lossless-line
-    linkText: See transmission lines
-  - icon: 🔗
-    title: Network assembly
-    details: Connect components with nodal interconnection or two-port cascade analysis.
+    title: RF network analysis
+    details: Build connected networks and calculate S-parameters and stability.
     link: /connecting-nports
-    linkText: Connect components
+    linkText: Analyze RF networks
+  - icon: 📶
+    title: Time-domain signals
+    details: Generate waveforms, use FFTs, explore modulation and VNA impulse responses.
+    link: /digital-signals
+    linkText: Explore time-domain signals
+  - icon: ⚡
+    title: DC bias analysis
+    details: Determine operating points from external bias networks before RF analysis.
+    link: /dc-bias-analysis
+    linkText: Explore DC bias
+  - icon: ✏️
+    title: Schematics and results
+    details: Draw circuits and display charts, Smith charts and tables.
+    link: /schematics
+    linkText: Draw and display results
   - icon: 📡
-    title: Noise
-    details: Analyze noise figure and output noise density in connected RF chains.
+    title: Noise and distortion
+    details: Calculate noise figure, intermodulation and harmonics.
     link: /noise
-    linkText: Analyze noise
-  - icon: 📶
-    title: Intermodulation
-    details: Analyze two-tone IP2, IP3, and harmonic products in connected RF chains.
-    link: /intermodulation
-    linkText: Analyze intermodulation
-  - icon: ➕
-    title: Math included
-    details: Use complex-number and real or complex matrix operations directly from nP.
-    link: /math
-    linkText: Browse math functions
-  - icon: 📶
-    title: Visualize results
-    details: Render line charts, SVG tables, and Smith charts from nP output tables.
-    link: /charts-tables-and-logs
-    linkText: View chart APIs
+    linkText: Analyze noise and distortion
 ---
 
-<!-- Modified: 2026-11-09 -->
+<!-- Modified: 2026-11-18 -->
+
+## Agentic nPort
+
+**Describe your circuit. Let your agent write the nP code.** Give Codex, Claude or another coding assistant a typed request, existing code, or a scanned or hand-drawn schematic. It supplies the nP syntax and writes explicit, readable code with named components and connections.
+
+Follow the [Agentic nPort guide](./agentic-nport.md) for environment setup, or choose the instructions below and save them as `AGENTS.md` in your working folder:
+
+- [HTML agent](https://raw.githubusercontent.com/JerryWiltz/nP/master/nP-agents/html/AGENTS.md): complete, minimal pages using an adjacent `nP.js`.
+- [Obsidian agent](https://raw.githubusercontent.com/JerryWiltz/nP/master/nP-agents/obsidian/AGENTS.md): Markdown notes with `npjs` blocks for nPort RF Analysis.
+- [Node.js agent](https://raw.githubusercontent.com/JerryWiltz/nP/master/nP-agents/nodejs/AGENTS.md): scripts using an installed nP package or a supplied module such as [nP.cjs](https://raw.githubusercontent.com/JerryWiltz/nP/master/dist/nP.cjs).
+- [Website agent](https://raw.githubusercontent.com/JerryWiltz/nP/master/nP-agents/websites/AGENTS.md): nP code integrated into an existing site.
+
+Supply the appropriate nP library and ask your coding assistant to read `AGENTS.md`. These instructions work outside this repository and need no repository checkout. Locally supplied nP files support offline analysis; the coding assistant has its own connection requirements. The agent writes code by default and runs it when asked. For HTML or website work, the site's [browser bundle](./nP.js) provides `nP.js`.
+
+## DC bias analysis
+
+The current browser bundle includes `nP.V()` and network DC solving using the same `nodal()` or cascade connections as RF analysis. External capacitors open at DC, inductors short, and supported resistive paths remain. Call `network.solveDC()` when you want an explicit DC result.
+
+For a supported network containing voltage supplies and NPN/PNP transistors, nP solves the external bias network before building its RF response. Read the returned `network.operatingPoint` for the solved state. Fixed-Q transistor construction remains available. Diode network DC adapters are not yet supported.
+
+Start with the [DC bias analysis guide](./dc-bias-analysis.md). See the [DC analysis details](https://github.com/JerryWiltz/nP/blob/master/developmentDocs/dcAnalysis.md) and [active-device guide](./diodes-and-active-components.md). Published npm and Obsidian builds have their own update schedules; use the APIs present in the bundle you supply.
 
 ## What's new in nP 0.49.0
 

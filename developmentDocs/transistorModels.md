@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-17 -->
+<!-- Modified: 2026-11-18 -->
 # Bipolar transistor models
 
 `nP.NPN()` and `nP.PNP()` return three-port RF networks and DC curve-tracer tables from one shared bias-dependent model. NPN supports **2N3904** (default) and **BFR93A**; PNP supports **2N3906** (default). Ports are **1 base, 2 collector, 3 emitter**, each referenced to the selected context's `Ro` (normally 50 Ω). SPICE Q-instance order is collector, base, emitter; the implementation translates it explicitly.
@@ -54,7 +54,7 @@ Common collector retains positive VCE rather than silently changing to VEC. Comm
 
 `ivTable()` returns a header row followed by numeric rows: one voltage column and one current column per stepped curve. Overrides use the same fields, for example `q1.ivTable({ib: {points: 3}, vce: {points: 51}})`. Each call returns new arrays and preserves the fixed RF data and caller's options.
 
-`configuration` defines the DC family and constraints. It **does not ground an RF terminal**. Wire the three-port with `nodal()`: short emitter for CE, base for CB, or collector for CC. RF bypass and matching networks can replace that ideal short. A general DC solution through those external components is future work.
+`configuration` defines the DC family and constraints. It **does not ground an RF terminal**. Wire the three-port with `nodal()`: short emitter for CE, base for CB, or collector for CC. RF bypass and matching networks can replace that ideal short. Supported networks with an explicit `V()` supply now solve their external bias components before RF construction; the solved placement states replace the standalone fixed-Q seeds. See [dcAnalysis.md](dcAnalysis.md).
 
 ## PNP uses the same API with signed bias
 
@@ -166,6 +166,51 @@ C_j(v) = C_{j0}(1-v/V_j)^{-m}
 \]
 
 Its integral supplies charge; a forward-bias continuation preserves charge and capacitance continuity. Forward diffusion charge includes TF/XTF/VTF/ITF bias dependence; reverse diffusion charge uses TR. Terminal currents and charges sum to zero.
+
+### Stored charge equations
+
+For either junction, below the boundary $v<F_CV_j$, the implementation uses:
+
+\[
+Q_{\mathrm{dep}}(v)=\frac{C_{j0}V_j}{1-m}
+\left[1-\left(1-\frac{v}{V_j}\right)^{1-m}\right].
+\]
+
+At and above the boundary, let $v_k=F_CV_j$, $\Delta v=v-v_k$,
+$C_k=C_{j0}(1-F_C)^{-m}$ and $C'_k=mC_k/[V_j(1-F_C)]$. The charge continues as:
+
+\[
+Q_{\mathrm{dep}}(v)=Q_{\mathrm{dep}}(v_k)+C_k\Delta v+\tfrac12 C'_k(\Delta v)^2.
+\]
+
+This preserves charge, capacitance and the capacitance slope at the boundary.
+For positive intrinsic $v_{be}$ and nonzero TF, forward diffusion charge is:
+
+\[
+A_T=X_{TF}\exp\!\left(\frac{v_{bc}}{1.44V_{TF}}\right)
+\left(\frac{I_F}{I_F+I_{TF}}\right)^2,
+\qquad
+Q_{F}=T_F\frac{I_F}{q_b}(1+A_T).
+\]
+
+Otherwise $Q_F=0$. The resulting junction and intrinsic terminal charges are:
+
+\[
+Q_{BE}=Q_{\mathrm{dep,BE}}+Q_F,\qquad
+Q_{BC}=Q_{\mathrm{dep,BC}}+T_RI_R,
+\]
+
+\[
+Q_B=Q_{BE}+Q_{BC},\qquad Q_C=-Q_{BC},\qquad Q_E=-Q_{BE}.
+\]
+
+All parameters in these equations are evaluated after the model's temperature
+corrections. The charge reference permits negative BC charge at reverse bias.
+First derivatives produce the RF charge Jacobian; higher Taylor coefficients
+supply the direct weak nonlinear sources. These equations describe nP's
+supported modified Gummel–Poon implementation, not every optional SPICE BJT
+extension. See the [ngspice Gummel–Poon model documentation](https://ngspice.sourceforge.io/docs/ngspice-manual.pdf)
+for broader SPICE background.
 
 ## RF, noise and nonlinear data flow
 

@@ -1,4 +1,4 @@
-// Modified: 2026-11-09
+// Modified: 2026-11-18
 import { examples } from './theme/replExamples.js'
 
 function replSidebarItems(category) {
@@ -9,7 +9,7 @@ function replSidebarItems(category) {
     )
 }
 
-export default {
+const config = {
     title: 'nP Docs',
     description: 'Documentation for the nP project',
     base: '/nP/',
@@ -25,9 +25,9 @@ export default {
         siteTitle: false,
         nav: [
             { text: "What's new", link: '/whats-new-0-49-0' },
-            { text: 'Guide', link: '/hello-nport' },
+            { text: 'Guide', link: '/agentic-nport' },
             { text: 'REPL', link: '/repl.html', activeMatch: '^$' },
-            { text: 'Tech Notes', link: '/tech-notes' },
+            { text: 'Tech Notes', link: '/tech-notes-s-parameters-for-the-novice', activeMatch: '^/tech-notes' },
             { text: 'npm', link: 'https://www.npmjs.com/package/@jerrywiltz/np' },
             { text: 'Obsidian', link: 'https://community.obsidian.md/plugins/np-rf-analysis' },
             { text: 'GitHub', link: 'https://github.com/JerryWiltz/nP' }
@@ -35,18 +35,23 @@ export default {
         sidebar: {
           '/tech-notes': [
             {
+                text: 'Getting Started',
+                items: [
+                    { text: 'Overview', link: '/tech-notes' }
+                ]
+            },
+            {
                 text: 'RF notes',
-                link: '/tech-notes#rf-notes',
                 items: [
                     { text: 'S-parameters for the novice', link: '/tech-notes-s-parameters-for-the-novice' },
                     { text: 'nPort overview', link: '/tech-notes-nport-overview' },
+                    { text: 'NPN constructor', link: '/tech-notes-npn-constructor' },
                     { text: 'VNA time-domain reflection', link: '/tech-notes-vna-time-domain-reflection' },
                     { text: 'VNA frequency-domain measurement', link: '/tech-notes-vna-frequency-domain-measurement' }
                 ]
             },
             {
                 text: 'Digital notes',
-                link: '/tech-notes#digital-notes',
                 items: [
                     { text: 'Sampling and quantization', link: '/tech-notes-sampling-and-quantization' },
                     { text: 'Waveform in nPort', link: '/tech-notes-waveform-in-nport' },
@@ -70,44 +75,57 @@ export default {
           ],
           '/': [
             {
-                text: 'Getting Started',
+                text: 'Getting started',
                 items: [
-                    { text: "What's new in 0.49.0", link: '/whats-new-0-49-0' },
+                    { text: 'Agentic nPort', link: '/agentic-nport' },
                     { text: 'Hello nPort', link: '/hello-nport' },
-                    { text: 'Introduction', link: '/introduction' }
+                    { text: 'Introduction', link: '/introduction' },
+                    { text: 'Symbol library', link: '/canonical-symbols' },
+                    { text: 'Using the REPL', link: '/using-the-repl' },
+                    { text: 'Tutorial', link: '/tutorial' }
                 ]
             },
             {
-                text: 'REPL',
+                text: 'Core workflow',
                 items: [
-                    { text: 'Using the REPL', link: '/using-the-repl' }
+                    { text: 'Global settings', link: '/global-settings' },
+                    { text: 'nPort object', link: '/nport-object' },
+                    { text: 'RF constructors', link: '/rf-constructors' },
+                    { text: 'Connecting nPorts', link: '/connecting-nports' },
+                    { text: 'Charts, tables, and logs', link: '/charts-tables-and-logs' },
+                    { text: 'Schematics', link: '/schematics' }
                 ]
             },
             {
-                text: 'More info',
+                text: 'Component library',
                 items: [
-                    { text: 'Tutorial', link: '/tutorial' },
+                    { text: 'Lumped components', link: '/lumped-components' },
+                    { text: 'Ideal components', link: '/ideal-components' },
+                    { text: 'Transistors and Diodes', link: '/diodes-and-active-components' },
+                    { text: 'Filters', link: '/filters' },
+                    { text: 'Microstrip', link: '/microstrip' }
+                ]
+            },
+            {
+                text: 'Analysis',
+                items: [
+                    { text: 'DC bias analysis', link: '/dc-bias-analysis' },
+                    { text: 'Noise', link: '/noise' },
+                    { text: 'Intermodulation', link: '/intermodulation' },
+                    { text: 'Time-domain signals', link: '/digital-signals' }
+                ]
+            },
+            {
+                text: 'Examples',
+                items: [
                     { text: 'Circuit examples', link: '/circuit-examples' }
                 ]
             },
             {
-                text: 'API',
+                text: 'Reference and updates',
                 items: [
-                    { text: 'Global settings', link: '/global-settings' },
-                    { text: 'nPort object', link: '/nport-object' },
-                    { text: 'RF Constructors', link: '/rf-constructors' },
-                    { text: 'Connecting nPorts', link: '/connecting-nports' },
-                    { text: 'Schematics', link: '/schematics' },
-                    { text: 'Charts, tables, and logs', link: '/charts-tables-and-logs' },
-                    { text: 'Noise', link: '/noise' },
-                    { text: 'Intermodulation', link: '/intermodulation' },
-                    { text: 'Digital signals', link: '/digital-signals' },
                     { text: 'Math', link: '/math' },
-                    { text: 'Ideal components', link: '/ideal-components' },
-                    { text: 'Lumped components', link: '/lumped-components' },
-                    { text: 'Filters', link: '/filters' },
-                    { text: 'Microstrip', link: '/microstrip' },
-                    { text: 'Diodes and active components', link: '/diodes-and-active-components' }
+                    { text: "What's new in 0.49.0", link: '/whats-new-0-49-0' }
                 ]
             }
           ]
@@ -117,3 +135,14 @@ export default {
         ]
     }
 }
+
+// Match the Guide's actual pages without duplicating its sidebar route list.
+const whatsNewLink = config.themeConfig.nav.find(item => item.text === "What's new").link
+const guideLinks = config.themeConfig.sidebar['/'].flatMap(group => group.items)
+    .map(item => item.link)
+    .filter(link => link !== whatsNewLink)
+    .map(link => link.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+config.themeConfig.nav.find(item => item.text === 'Guide').activeMatch =
+    `^(?:${guideLinks.join('|')})(?:\\.html)?/?$`
+
+export default config
