@@ -1,6 +1,7 @@
 // Modified: 2026-11-19
 // Measured layout of oriented components connected by semantic terminal roles.
 import {addRouteConstraints, routeDirections, separateComponents, routePoints} from './schematicInputLayout';
+import {solveDrawingConstraints} from './schematicInputConstraints';
 import {schematicBranchFamilies} from './schematicBranches';
 import {automaticRoute, recordBoardRoute, graphWireBoxes} from './schematicBoardGraph';
 
@@ -132,21 +133,44 @@ function connectLayout(result, route, values, boxes, occupied, board, id) {
         Math.round((value + points[1][axis]) / (2 * board.grid)) * board.grid));
 }
 
+function directionCandidates(route) {
+    const preferred = routeDirections(route.a.direction, route.b.direction, []);
+    if (preferred.length !== 3 || !route.a.direction.every((value, axis) => value === route.b.direction[axis])) return [preferred];
+    // Parallel outward leads need a U route. Its transverse direction is a
+    // free layout choice, not an implicit right/down ordering of components.
+    const opposite = {right: 'left', left: 'right', up: 'down', down: 'up'};
+    return [preferred, [preferred[0], opposite[preferred[1]], preferred[2]]];
+}
+
+function solveRelationRoutes(routes, index, chosen, state, entries, geometry) {
+    if (index === routes.length) return {...separateComponents(state, entries, geometry), routes: chosen};
+    let failure;
+    for (const directions of directionCandidates(routes[index])) {
+        const route = {...routes[index], directions};
+        const trial = {...state, equalities: state.equalities.map(rows => rows.slice()), minima: state.minima.map(rows => rows.slice())};
+        addRouteConstraints(route, trial);
+        try {
+            solveDrawingConstraints(trial);
+            return solveRelationRoutes(routes, index + 1, chosen.concat(route), trial, entries, geometry);
+        } catch (error) { if (!(error instanceof TypeError)) throw error; failure = error; }
+    }
+    throw failure;
+}
+
 export function layoutSchematicRelations(root, definition, bindings, entries, geometry) {
     const board = {grid: 10, wireBoxLength: 40, clearance: 10, routingMargin: 200,
         cornerSize: 10, bendCost: 20, allowCrossings: false};
     const state = {count: entries.length, equalities: [[], []], minima: [[], []]};
-    const routes = definition.board.wires.filter(wire => !wire.from.externalPort && !wire.to.externalPort).map(wire => {
+    const connections = definition.board.wires.filter(wire => !wire.from.externalPort && !wire.to.externalPort).map(wire => {
         const a = relationEndpoint(wire.from, bindings, entries), b = relationEndpoint(wire.to, bindings, entries);
         const route = {a, b, node: a.node, minimum: board.wireBoxLength,
             directions: routeDirections(a.direction, b.direction, [])};
         if (a.node !== b.node) throw new TypeError('Layout wire changes an electrical node.');
-        addRouteConstraints(route, state);
         return route;
     });
     addBoardRelations(definition.board, bindings, entries, geometry, state);
     addBranchRelations(root, entries, geometry, state);
-    const {values, placements} = separateComponents(state, entries, geometry);
+    const {values, placements, routes} = solveRelationRoutes(connections, 0, [], state, entries, geometry);
     const origin = definition.board.origin || [0, 0];
     if (!origin.every(value => Number.isFinite(value) && value % board.grid === 0)) throw new TypeError('Invalid layout origin.');
     placements.forEach(part => { part.at = part.at.map((value, i) => value + origin[i]);

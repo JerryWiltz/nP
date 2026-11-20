@@ -1,4 +1,4 @@
-// Modified: 2026-11-17
+// Modified: 2026-11-19
 import {dcModelOf, dcSnapshot} from './dcModel';
 import {applyInputSignal} from './signal';
 
@@ -70,7 +70,7 @@ export function withOperatingPoints(part, records) {
             throw new TypeError('Each operating-point record needs a placement path.');
         }
         if (points.has(record.path)) throw new TypeError('Duplicate operating point at ' + (record.path || '(root)') + '.');
-        if (!placements.has(record.path)) throw new TypeError('Unknown transistor placement ' + (record.path || '(root)') + '.');
+        if (!placements.has(record.path)) throw new TypeError('Unknown nonlinear-device placement ' + (record.path || '(root)') + '.');
         const {path, ...state} = record;
         points.set(path, dcSnapshot(state));
     }

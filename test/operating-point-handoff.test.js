@@ -1,4 +1,4 @@
-// Modified: 2026-11-17
+// Modified: 2026-11-19
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as nP from '../src/index.js';
@@ -164,7 +164,9 @@ test('handoff rejects missing/duplicate/unknown points, malformed states and uns
     assert.throws(() => q._withOperatingPoints([{...point, intrinsicVbc: undefined}]), /finite/);
     assert.throws(() => q._withOperatingPoints([{...point, ib: 1e-3}]), /Unknown/);
     assert.throws(() => q._withOperatingPoints([{...point, intrinsicVbe: 1000}]), /model domain/);
-    assert.throws(() => nP.D({fList: [1e6]})._withOperatingPoints([point]), /No RF operating-point adapter/);
+    const missingRecipe = nP.D({fList: [1e6]});
+    delete missingRecipe._rfModel;
+    assert.throws(() => missingRecipe._withOperatingPoints([point]), /No RF operating-point adapter/);
     const pair = nP.nodal([q, 1, 2, 3], [q, 4, 5, 6], ['out', 1, 2, 3, 4, 5, 6]);
     assert.throws(() => pair._withOperatingPoints([state(q, 'p1')]), /Missing operating point at p2/);
     assert.deepEqual(snapshot(q), before);

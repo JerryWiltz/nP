@@ -1,0 +1,28 @@
+Externally biased NXP 1N4148 network reference
+* Modified: 2026-11-19
+.options gmin=1e-15 abstol=1e-15 reltol=1e-10
+.temp 27
+.model device D (IS=4.352e-9 N=1.906 BV=110 IBV=0.0001 RS=0.6458 CJO=7.048e-13 VJ=0.869 M=0.03 FC=0.5 TT=3.48e-9 EG=1.11 XTI=3 NBV=1 KF=0 AF=1)
+Vbias supply 0 DC 1
+Rbias supply a 1000
+D1 a 0 device
+Rleak a 0 5.827e9
+.control
+set numdgt=16
+set wr_vecnames
+set wr_singlescale
+op
+wrdata forward.txt v(a) i(Vbias)
+alter Vbias=-5
+op
+wrdata reverse.txt v(a) i(Vbias)
+alter Vbias=-120
+op
+wrdata breakdown.txt v(a) i(Vbias)
+alter Vbias=1
+set temp=65
+op
+wrdata hot.txt v(a) i(Vbias)
+quit
+.endc
+.end

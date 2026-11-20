@@ -6,30 +6,31 @@ Planning note for the remaining SPICE-style device families, canonical symbols a
 ## Current foundation
 
 - NPN and PNP share a modified Gummel–Poon engine. Supported records are 2N3904, BFR93A and 2N3906.
-- `D()` supports the SPICE-style 1N4148 model. Its external-network DC adapter remains unfinished.
-- Networks retain their connections for DC analysis; supported supply-driven BJT networks solve bias before RF.
-- Named circuit shapes are `series`, `ladder`, `bridgedT`, `branchline`, `edgeCoupledFilter`, `powerDivider`, `powerCombiner` and `commonEmitter`. The first transistor board covers a divider-biased NPN/PNP stage with separate or combined emitter bypass and optional supply bypass; other bias topologies remain to be added.
+- `D()` supports the SPICE-style 1N4148 model. Its external-network DC adapter and the separate legacy diode adapter are implemented.
+- Networks retain their connections for DC analysis; supported supply-driven BJT, JFET, MOSFET, MESFET and diode networks solve bias before RF.
+- Named circuit shapes are `series`, `ladder`, `bridgedT`, `branchline`, `edgeCoupledFilter`, `powerDivider`, `powerCombiner`, `commonEmitter` and `commonSource`. The first transistor board covers a divider-biased NPN/PNP stage with separate or combined emitter bypass and optional supply bypass; other bias topologies remain to be added.
 - Voltage, current and four controlled-source symbols already exist. Only `V()` currently has a numerical source constructor.
 
 ## Recommended order
 
 - [x] Start with a divider-biased NPN amplifier shape using the existing numerical model: `commonEmitter`, including PNP symbol roles, independent detection, explicit guidance and composition. See [coverage](./schematicShapeVocabulary.md#common-emitter-amplifier) and [browser harness](../dev/shapes/commonEmitter.html).
 - [x] Replace amplifier/transformer coordinate compensation with shared relational placement; infer related branch baselines, measure attachment/caption/terminal clearance, and calculate section exits from their envelopes. Keep engineering organization explicit in board data.
-- [ ] Finish diode network DC support.
-- [ ] Add JFET models and symbols, then exercise the shared amplifier layouts with them.
-- [ ] Add MOSFET models and symbols, including the body-terminal decision.
+- [x] Finish diode network DC support for D() and diode1N4148(), including mixed BJT networks, immutable placement handoff and independent ngspice references.
+- [x] Add NJF/PJF models, symbols, shared DC/RF/noise/intermodulation and a self-biased commonSource board.
+- [x] Add NMOS/PMOS level-1 models with sourced records, default source tie, optional external body and shared DC/RF/noise/intermodulation.
 - [ ] Add the multi-device circuit shapes below.
-- [ ] Extend to MESFETs, HEMTs, HBTs and specialized diodes as validated models become available.
+- [ ] Extend commercial MESFET records, HEMTs, HBTs and specialized diodes as validated models become available.
 
 ## Device models
 
-- [ ] **JFET:** implement `NJF()` and `PJF()` with an identified equation family and sourced part records.
-- [ ] **MOSFET:** implement `NMOS()` and `PMOS()`. Define gate/drain/source/body order and explicit versus internally tied body handling. Begin with a documented basic model; treat BSIM/EKV support as separate later work.
-- [ ] **MESFET:** select an appropriate equation family, such as a Statz-type model, and validated microwave part records. Decide public names and terminal order before implementation.
+- [x] **JFET:** NJF/PJF use SPICE level-1 Shichman–Hodges and onsemi MMBF5457LT1/MMBFJ175LT1 records; see [models and limits](jfetModels.md).
+- [x] **MOSFET:** NMOS/PMOS use Diodes DMN55D0UT and one DMP58D0SV channel. G/D/S order; body: external adds B as port 4, default body: source ties to external S. Level-1 charge/noise limits are explicit; MOS3/BSIM/EKV remain later work. See [models](mosfetModels.md).
+- [x] **MESFET primitive:** `MESFET()` implements N-channel Statz/MES1 with the explicitly labeled SPICE3_REFERENCE profile, G/D/S order, shared DC/RF, differential gate capacitances, approximate noise and weak nonlinear analysis. See [contract](mesfetModels.md).
+- [ ] **Commercial MESFET records:** source and validate microwave part fits and package data. SPICE3_REFERENCE is not a commercial part model.
 - [ ] **HEMT/pHEMT:** select suitable models and parameter records for the target GaAs/GaN devices. Document treatment or omission of trapping, self-heating and dispersion.
 - [ ] **HBT and advanced bipolar:** add validated HBT records where the existing engine is adequate; assess VBIC/HICUM when additional physics is needed. A material label alone must not select the equations.
 - [ ] **Specialized diodes:** add Schottky, Zener and varactor records/equations where validated; implement suitable charge-storage behavior for PIN diodes.
-- [ ] **Diode DC adapter:** use the existing diode current law, resistances, temperature and breakdown behavior in external-network bias solving.
+- [x] **Diode DC adapter:** both constructors reuse their own current laws, resistances, temperature and breakdown behavior in external-network bias solving.
 
 For every device family:
 
@@ -46,19 +47,22 @@ For every device family:
 
 ## Canonical symbols
 
-- [ ] N-channel and P-channel JFET.
-- [ ] N-channel and P-channel MOSFET, with enhancement/depletion variants and explicit body-terminal artwork where required.
-- [ ] Suitable MESFET/HEMT artwork; share geometry where visible topology matches.
-- [ ] Schottky, Zener and varactor diode.
-- [ ] Reuse NPN/PNP artwork for HBTs and advanced bipolar engines; reuse ordinary diode artwork for PIN diodes with an appropriate label.
-- [ ] Register artwork without executable constructors under `deviceSymbols`; move mappings to `constructors` as implementations arrive. Add runtime terminal/layout metadata and regenerate the symbol gallery and bundle.
+- [x] N-channel and P-channel JFET: `NJF`/`PJF` drawing names, gate/drain/source terminal order, runtime geometry and Symbol library entries. Numerical NJF/PJF constructors are implemented.
+- [x] N-channel and P-channel MOSFET: enhancement/depletion artwork, three-terminal body-to-source versions and four-terminal independent-body versions. Drawing order is gate/drain/source/body. Enhancement numerical constructors and body handling are implemented; depletion numerical records remain future work.
+- [x] MESFET/HEMT drawing names share the existing N-channel FET geometry and gate/drain/source terminal order. MESFET now has a Statz/MES1 reference constructor; HEMT numerical physics remains pending.
+- [x] Schottky, Zener and varactor diode artwork, with anode/cathode terminal order, runtime metadata and Symbol library entries. Specialized numerical models remain to be implemented.
+- [x] Reuse NPN/PNP artwork for HBT drawings and ordinary diode artwork for PIN drawings, identifying the family through an instance caption. Captions select no numerical model; HBT records/advanced bipolar engines and PIN charge-storage behavior remain future work.
+- [x] Register the new drawing-only artwork under `deviceSymbols`, supply runtime terminal/layout metadata and regenerate the symbol gallery and bundles. Move individual mappings to `constructors` when numerical implementations arrive.
 
 ## Reusable circuit shapes
 
 These are circuit arrangements containing symbols. Implement them as declarative boards interpreted by the existing shared interpreter, with shared variants where topology permits.
 
-- [ ] **Single-stage amplifier:** device centered, input left, output right, supply above, emitter/source network below. Cover common-emitter/source, common-base/gate and emitter/source-follower variants with the appropriate terminal roles.
-- [ ] **Bias network:** compose divider, fixed-bias and self-bias arrangements with the amplifier. Support collector/drain feeds, emitter/source resistance, optional bypass and input/output coupling capacitors.
+- [ ] **Shared description self-connections:** support routing a net back to another terminal on the same component. Currently, repeated terminal-node assignments such as four-terminal MOSFET body/source ties are rejected by layout. Keep the existing three-terminal body-to-source artwork as an intentional symbol topology, not a workaround for other requested ties.
+
+- [ ] **Single-stage amplifier (commonEmitter divider bias and commonSource self/divider bias implemented):** device centered, input left, output right, supply above, emitter/source network below. Cover common-emitter/source, common-base/gate and emitter/source-follower variants with the appropriate terminal roles.
+- [ ] **Bias network (BJT/FET divider and FET self-bias implemented):** compose divider, fixed-bias and self-bias arrangements with the amplifier. Support collector/drain feeds, emitter/source resistance, optional bypass and input/output coupling capacitors.
+- [ ] **Independent-body amplifier boards:** extend named FET layouts to explicit body bias branches; retain the current standalone four-terminal drawings.
 - [ ] **Cascode:** stacked devices, lower input and upper output, with explicit bias branches.
 - [ ] **Differential pair:** two devices with separate inputs, shared emitter/source connection, tail source and collector/drain loads.
 - [ ] **Current mirror:** reference and output devices, shared base/gate wiring and the actual reference feedback connection.

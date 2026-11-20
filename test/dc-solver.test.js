@@ -1,4 +1,4 @@
-// Modified: 2026-11-17
+// Modified: 2026-11-19
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as nP from '../src/index.js';
@@ -40,7 +40,7 @@ function drive(part, volts = 1) {
 
 function pendingModel(model) {
     if (model.kind === 'connection') return model.definition.components.some(part => pendingModel(part.model));
-    return model.kind === 'requiresModel' || (model.kind === 'nonlinear' && model.definition.modelId !== 'bjt');
+    return model.kind === 'requiresModel' || (model.kind === 'nonlinear' && !['bjt', 'jfet', 'mesfet', 'mosfet', 'diode', 'legacy-diode'].includes(model.definition.modelId));
 }
 
 function parallelSources(first, second) {
@@ -200,13 +200,12 @@ test('attenuators and explicit real linear constraints use voltage/current equat
     close(component(ratio, 'p5').terminalCurrents[1], -0.004);
 });
 
-test('missing and nonlinear DC models are reported together with complete placement paths', () => {
+test('missing DC models are reported with complete placement paths alongside supported diodes', () => {
     const network = nP.cascade(nP.Amp(), nP.mlin(), nP.D());
     assert.throws(() => network.solveDC(), error => {
         assert.equal(error.code, 'DC_UNSUPPORTED_MODELS');
         assert.deepEqual(error.issues.map(item => [item.path, item.constructorName]),
-            [['p1/p1', 'Amp'], ['p1/p2', 'mlin'], ['p2', 'D']]);
-        assert.match(error.message, /nonlinear DC adapter/);
+            [['p1/p1', 'Amp'], ['p1/p2', 'mlin']]);
         assert.match(error.message, /conductor-resistance/);
         return true;
     });
@@ -215,7 +214,7 @@ test('missing and nonlinear DC models are reported together with complete placem
     assert.throws(() => custom.solveDC(), error => error.code === 'DC_UNSUPPORTED_MODELS');
 });
 
-test('every electrical constructor reaches a linear solve or an explicit model-support error', () => {
+test('every electrical constructor reaches a DC solve or an explicit missing-model/floating-bias error', () => {
     const helpers = new Set(['chebyLPgk', 'chebyLPLCs', 'chebyLPNsec']);
     for (const name of Object.keys(electrical)) {
         if (helpers.has(name)) continue;
@@ -223,6 +222,7 @@ test('every electrical constructor reaches a linear solve or an explicit model-s
             name === 'cascade' ? nP.cascade(nP.R(), nP.C()) : electrical[name]();
         const pending = pendingModel(part._dcModel);
         if (pending) assert.throws(() => part.solveDC(), error => error.code === 'DC_UNSUPPORTED_MODELS', name);
+        else if (part._dcModel.definition.modelId === 'mosfet') assert.throws(() => part.solveDC(), error => error.code === 'DC_FLOATING_BIAS', name);
         else assert.equal(part.solveDC().converged, true, name);
     }
 });

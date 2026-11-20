@@ -1,0 +1,30 @@
+PMOS external manufacturer MOS1 independent reference
+* Modified: 2026-11-19
+* DMN55D0UT / DMP58D0SV parameter facts; source URLs in mosfet-reference.js
+.temp 27
+.options gmin=1e-18 abstol=1e-18 reltol=1e-10
+.model device PMOS (LEVEL=1 VTO=-2.10 KP=25m GAMMA=2.60 PHI=.75 LAMBDA=133u RD=1.12 RS=1.12 IS=80f PB=.8 MJ=.460 CBD=12.8p CBS=15.4p CGSO=16.8n CGDO=14n CGBO=239n)
+M1 d g s b device L=100u W=100u
+VG gb 0 DC -3.1
+VD db 0 DC -5
+VS sb 0 DC 0
+VB bb 0 DC 0.5
+LG gb g 1e9
+LD db d 1e9
+LS sb s 1e-20
+LB bb b 1e-20
+Rsource input acg 50
+Vsignal input 0 DC 0 AC 1
+CG acg g 1e-4
+CD d load 1e-4
+Gload load 0 load 0 .02
+.control
+set numdgt=16
+set wr_vecnames
+set wr_singlescale
+noise v(load) Vsignal dec 1 10meg 1g
+setplot noise1
+wrdata mosfet-pmos-external-noise.txt inoise_spectrum onoise_spectrum
+quit
+.endc
+.end

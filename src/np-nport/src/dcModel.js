@@ -1,4 +1,4 @@
-// Modified: 2026-11-16
+// Modified: 2026-11-19
 // Owned immutable data can be shared across circuit trees without copying each
 // earlier cascade again. Caller-owned objects are always copied before freezing.
 const ownedData = new WeakSet();
@@ -22,7 +22,9 @@ function validateDefinition(model) {
         return;
     }
     if (model.kind === 'nonlinear') {
-        if (d.modelId === 'bjt' && count === 3 && [1, -1].includes(d.polarity) && d.record?.parameters &&
+        if (d.modelId === 'mosfet' && count === (d.body === 'source' ? 3 : d.body === 'external' ? 4 : 0) &&
+            [1, -1].includes(d.polarity) && d.record?.parameters && Number.isFinite(d.temperature) && d.temperature > 0) return;
+        if (['bjt', 'jfet', 'mesfet'].includes(d.modelId) && count === 3 && [1, -1].includes(d.polarity) && d.record?.parameters &&
             Number.isFinite(d.temperature) && d.temperature > 0) return;
         if (d.modelId === 'diode' && count === 2 && d.record?.parameters &&
             Number.isFinite(d.temperature) && d.temperature > 0) return;

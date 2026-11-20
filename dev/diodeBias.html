@@ -1,0 +1,47 @@
+<!doctype html>
+<!-- Modified: 2026-11-19 -->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Externally biased diode</title>
+    <script src="../dist/nP.js"></script>
+</head>
+<body>
+    <script>
+        nP.global.fList = nP.global.fGen(1e6, 100e6, 51);
+
+        var c1 = nP.C(10e-9);
+        var c2 = nP.C(10e-9);
+        var t1 = nP.Tee();
+        var t2 = nP.Tee();
+        var r1 = nP.R(1000);
+        var r2 = nP.R(100);
+        var v1 = nP.V(1);
+        var d1 = nP.D({temperature: 300.15});
+        var short1 = nP.Short();
+        var short2 = nP.Short();
+
+        var network = nP.nodal(
+            [c1, 100, 1],
+            [t1, 3, 1, 2],
+            [r1, 4, 3],
+            [v1, 4, 5],
+            [short1, 5],
+            [d1, 2, 6],
+            [t2, 8, 6, 7],
+            [r2, 8, 9],
+            [short2, 9],
+            [c2, 7, 101],
+            ['out', 100, 101]
+        );
+
+        var bias = network.operatingPoint.components[5].qPoint;
+        var biasTable = [['VD (V)', 'ID (mA)'], [bias.vd, bias.id * 1e3]];
+        var response = network.out('s11dB', 's21dB');
+
+        nP.lineTable({inputTable: [biasTable], title: 'External network DC bias', metricPrefix: 'none'});
+        nP.lineChart({inputTable: [response], title: 'Diode RF at solved bias',
+            xAxisTitle: 'Frequency (MHz)', metricPrefix: 'mega'});
+    </script>
+</body>
+</html>

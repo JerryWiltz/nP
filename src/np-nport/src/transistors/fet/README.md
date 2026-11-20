@@ -1,10 +1,10 @@
-<!-- Modified: 2026-11-15 -->
+<!-- Modified: 2026-11-19 -->
 # Field-effect transistor models
 
-Reserved for the proposed `NJF()`, `PJF()`, `NMOS()`, and `PMOS()` constructors and their shared model engines. No executable models or exports are present yet.
+`NJF()` and `PJF()` implement SPICE level-1 Shichman–Hodges silicon JFETs in gate/drain/source order. Defaults select onsemi MMBF5457LT1 and MMBFJ175LT1. Their sourced parameters, signed current/charge jets, fixed-Q and network DC solvers, curves, RF, NLEV=1 approximate noise and direct Taylor products use one device law. See [equations, API, provenance and limitations](../../../../../developmentDocs/jfetModels.md).
 
-Part parameter sets select their appropriate mathematical model. JFET, MOSFET, MESFET, and HEMT structures require suitable equations; a material label alone does not select a model. Define any additional public device-type names and the gate/drain/source/body port conventions before implementing those families.
+RD/RS contact resistance is included; explicit package L/C is absent. All three terminal currents enter the device. `NMOS()` and `PMOS()` implement sourced level-1 enhancement models, in G/D/S order, with optional external B as port 4. Defaults tie B to external S; body junctions and contacts remain. See [MOSFET API and limitations](../../../../../developmentDocs/mosfetModels.md). `MESFET()` implements a Statz/MES1 SPICE reference profile (not a commercial fit); commercial records, HEMT and advanced MOS engines remain future work; drawing names do not imply numerical support. Independent-body primitive equations do not imply an accessible body pin on the sourced packages.
 
-Use the same device model for DC curves and bias-dependent RF, noise, and nonlinear calculations. Keep intrinsic-device behavior separate from documented package parasitics.
+Follow [../AGENTS.md](../AGENTS.md). Intrinsic equations, parameter facts and package coverage must remain distinct.
 
-Follow [../AGENTS.md](../AGENTS.md). The shared scope and implementation status are in [../README.md](../README.md).
+MESFET details: [reference profile, differential capacitance and limits](../../../../../developmentDocs/mesfetModels.md). No material label or shared drawing geometry selects HEMT physics.

@@ -1,0 +1,27 @@
+njf manufacturer parameter data, independent ngspice reference
+* Modified: 2026-11-19
+.temp 27
+.options gmin=1e-18 abstol=1e-18 reltol=1e-10
+.model device NJF (VTO=-3.86852 BETA=0.000307346 LAMBDA=0.00449867 RD=15.735 RS=49.9999 IS=1e-14 CGS=1e-12 CGD=1e-12 PB=1 FC=0.5 KF=1e-20 AF=0.2)
+J1 d g s device
+VG gb 0 DC -1
+VD db 0 DC 5
+VS sb 0 DC 0
+LG gb g 1e3
+LD db d 1e3
+LS sb s 1e-20
+Rsource input acg 50
+Vsignal input 0 DC 0 AC 1
+CG acg g 1e-3
+CD d load 1e-3
+Gload load 0 load 0 0.02
+.control
+set numdgt=16
+set wr_vecnames
+set wr_singlescale
+noise v(load) Vsignal dec 1 10meg 1g
+setplot noise1
+wrdata njf-noise.txt inoise_spectrum onoise_spectrum
+quit
+.endc
+.end

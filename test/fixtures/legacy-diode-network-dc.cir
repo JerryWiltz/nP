@@ -1,0 +1,23 @@
+Legacy diode current law solved independently by ngspice B source
+* Modified: 2026-11-19
+.options gmin=1e-15 abstol=1e-15 reltol=1e-10
+.param tk=293 vt='1.380649e-23*tk/1.602176634e-19'
+Vbias supply 0 DC 1
+Rbias supply a 1000
+Rs a j 0.568
+Bjunction j 0 I={2.75e-11*(exp(min(v(j)/(2*vt),80))-1)+v(j)/4e9-100e-6*(exp(max(-v(j)-100,0)/2)-1)}
+.control
+set numdgt=16
+set wr_vecnames
+set wr_singlescale
+op
+wrdata legacy-forward.txt v(a) i(Vbias)
+alter Vbias=-5
+op
+wrdata legacy-reverse.txt v(a) i(Vbias)
+alter Vbias=-120
+op
+wrdata legacy-breakdown.txt v(a) i(Vbias)
+quit
+.endc
+.end

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Modified: 2026-11-16 -->
+<!-- Modified: 2026-11-19 -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -14,7 +14,7 @@
     p { line-height: 1.5; }
     nav a { margin-right: 1.5rem; }
     main { overflow-x: auto; }
-    .symbol-sheet { display: block; width: 520px; height: 20900px; }
+    .symbol-sheet { display: block; width: 520px; height: 24900px; }
     a { color: #13558d; }
     a:focus-visible { outline: 3px solid #13558d; outline-offset: 2px; }
   </style>
@@ -22,13 +22,13 @@
 <body>
   <header>
     <h1>Canonical symbols</h1>
-    <p>All 68 canonical SVGs, ordered like the Guide API. Select a symbol to open its editable source drawing.</p>
-    <nav aria-label="Symbol groups"><a href="#rf">RF constructors</a><a href="#digital">Digital signals</a><a href="#math">Math</a><a href="#combining">Circuit combining</a><a href="#sources">Source primitives</a><a href="#devices">Transistors</a></nav>
+    <p>All 81 canonical SVGs, ordered like the Guide API. Select a symbol to open its editable source drawing.</p>
+    <nav aria-label="Symbol groups"><a href="#rf">RF constructors</a><a href="#digital">Digital signals</a><a href="#math">Math</a><a href="#combining">Circuit combining</a><a href="#sources">Source primitives</a><a href="#devices">Transistors</a><a href="#specialized-diodes">Specialized diodes</a></nav>
   </header>
   <main>
-    <svg class="symbol-sheet" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 20900" role="img" aria-labelledby="sheet-title sheet-description">
+    <svg class="symbol-sheet" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 24900" role="img" aria-labelledby="sheet-title sheet-description">
       <title id="sheet-title">Canonical nPort symbols</title>
-      <desc id="sheet-description">All 68 canonical symbols in Guide API order on one shared SVG canvas.</desc>
+      <desc id="sheet-description">All 81 canonical symbols in Guide API order on one shared SVG canvas.</desc>
       <rect width="100%" height="100%" fill="#ffffff"/>
       <g fill="#202020" font-family="Arial, Helvetica, sans-serif">
     <text id="rf" x="40" y="50" font-size="22" font-weight="bold">RF constructors (51)</text>
@@ -506,7 +506,7 @@
 {{SYMBOL:current-controlled-current-source.svg}}
       </g>
     </a>
-    <text id="devices" x="40" y="20170" font-size="22" font-weight="bold">Transistors (2)</text>
+    <text id="devices" x="40" y="20170" font-size="22" font-weight="bold">Transistors (12)</text>
     <text x="40" y="20220" font-size="16">NPN — three-port bipolar transistor</text>
     <text x="480" y="20240" font-size="13" text-anchor="end">npn.svg</text>
     <a href="../schematics/symbols/npn.svg" aria-label="Open npn.svg">
@@ -519,6 +519,98 @@
     <a href="../schematics/symbols/pnp.svg" aria-label="Open pnp.svg">
       <g data-symbol-source="pnp.svg" transform="translate(120 20560)">
 {{SYMBOL:pnp.svg}}
+      </g>
+    </a>
+    <text x="40" y="20820" font-size="16">NJF, MESFET, HEMT — shared N-channel FET</text>
+    <text x="480" y="20840" font-size="13" text-anchor="end">njf.svg</text>
+    <a href="../schematics/symbols/njf.svg" aria-label="Open njf.svg">
+      <g data-symbol-source="njf.svg" transform="translate(120 20860)">
+{{SYMBOL:njf.svg}}
+      </g>
+    </a>
+    <text x="40" y="21120" font-size="16">PJF — P-channel JFET</text>
+    <text x="480" y="21140" font-size="13" text-anchor="end">pjf.svg</text>
+    <a href="../schematics/symbols/pjf.svg" aria-label="Open pjf.svg">
+      <g data-symbol-source="pjf.svg" transform="translate(120 21160)">
+{{SYMBOL:pjf.svg}}
+      </g>
+    </a>
+    <text x="40" y="21420" font-size="16">NMOS — N enhancement, 3 terminals</text>
+    <text x="480" y="21440" font-size="13" text-anchor="end">nmos.svg</text>
+    <a href="../schematics/symbols/nmos.svg" aria-label="Open nmos.svg">
+      <g data-symbol-source="nmos.svg" transform="translate(120 21460)">
+{{SYMBOL:nmos.svg}}
+      </g>
+    </a>
+    <text x="40" y="21720" font-size="16">PMOS — P enhancement, 3 terminals</text>
+    <text x="480" y="21740" font-size="13" text-anchor="end">pmos.svg</text>
+    <a href="../schematics/symbols/pmos.svg" aria-label="Open pmos.svg">
+      <g data-symbol-source="pmos.svg" transform="translate(120 21760)">
+{{SYMBOL:pmos.svg}}
+      </g>
+    </a>
+    <text x="40" y="22020" font-size="16">NMOS({body: 'external'}) — N enhancement, 4 terminals</text>
+    <text x="480" y="22040" font-size="13" text-anchor="end">nmos-four-terminal.svg</text>
+    <a href="../schematics/symbols/nmos-four-terminal.svg" aria-label="Open nmos-four-terminal.svg">
+      <g data-symbol-source="nmos-four-terminal.svg" transform="translate(120 22060)">
+{{SYMBOL:nmos-four-terminal.svg}}
+      </g>
+    </a>
+    <text x="40" y="22320" font-size="16">PMOS({body: 'external'}) — P enhancement, 4 terminals</text>
+    <text x="480" y="22340" font-size="13" text-anchor="end">pmos-four-terminal.svg</text>
+    <a href="../schematics/symbols/pmos-four-terminal.svg" aria-label="Open pmos-four-terminal.svg">
+      <g data-symbol-source="pmos-four-terminal.svg" transform="translate(120 22360)">
+{{SYMBOL:pmos-four-terminal.svg}}
+      </g>
+    </a>
+    <text x="40" y="22620" font-size="16">NMOSD — N depletion, 3 terminals, symbol only</text>
+    <text x="480" y="22640" font-size="13" text-anchor="end">nmos-depletion.svg</text>
+    <a href="../schematics/symbols/nmos-depletion.svg" aria-label="Open nmos-depletion.svg">
+      <g data-symbol-source="nmos-depletion.svg" transform="translate(120 22660)">
+{{SYMBOL:nmos-depletion.svg}}
+      </g>
+    </a>
+    <text x="40" y="22920" font-size="16">PMOSD — P depletion, 3 terminals, symbol only</text>
+    <text x="480" y="22940" font-size="13" text-anchor="end">pmos-depletion.svg</text>
+    <a href="../schematics/symbols/pmos-depletion.svg" aria-label="Open pmos-depletion.svg">
+      <g data-symbol-source="pmos-depletion.svg" transform="translate(120 22960)">
+{{SYMBOL:pmos-depletion.svg}}
+      </g>
+    </a>
+    <text x="40" y="23220" font-size="16">NMOSD4 — N depletion, 4 terminals, symbol only</text>
+    <text x="480" y="23240" font-size="13" text-anchor="end">nmos-depletion-four-terminal.svg</text>
+    <a href="../schematics/symbols/nmos-depletion-four-terminal.svg" aria-label="Open nmos-depletion-four-terminal.svg">
+      <g data-symbol-source="nmos-depletion-four-terminal.svg" transform="translate(120 23260)">
+{{SYMBOL:nmos-depletion-four-terminal.svg}}
+      </g>
+    </a>
+    <text x="40" y="23520" font-size="16">PMOSD4 — P depletion, 4 terminals, symbol only</text>
+    <text x="480" y="23540" font-size="13" text-anchor="end">pmos-depletion-four-terminal.svg</text>
+    <a href="../schematics/symbols/pmos-depletion-four-terminal.svg" aria-label="Open pmos-depletion-four-terminal.svg">
+      <g data-symbol-source="pmos-depletion-four-terminal.svg" transform="translate(120 23560)">
+{{SYMBOL:pmos-depletion-four-terminal.svg}}
+      </g>
+    </a>
+    <text id="specialized-diodes" x="40" y="23900" font-size="22" font-weight="bold">Specialized diodes (3)</text>
+    <text x="40" y="23950" font-size="16">Schottky — symbol only</text>
+    <text x="480" y="23970" font-size="13" text-anchor="end">schottky-diode.svg</text>
+    <a href="../schematics/symbols/schottky-diode.svg" aria-label="Open schottky-diode.svg">
+      <g data-symbol-source="schottky-diode.svg" transform="translate(150 23990)">
+{{SYMBOL:schottky-diode.svg}}
+      </g>
+    </a>
+    <text x="40" y="24250" font-size="16">Zener — symbol only</text>
+    <text x="480" y="24270" font-size="13" text-anchor="end">zener-diode.svg</text>
+    <a href="../schematics/symbols/zener-diode.svg" aria-label="Open zener-diode.svg">
+      <g data-symbol-source="zener-diode.svg" transform="translate(150 24290)">
+{{SYMBOL:zener-diode.svg}}
+      </g>
+    </a>
+    <text x="40" y="24550" font-size="16">Varactor — symbol only</text>
+    <text x="480" y="24570" font-size="13" text-anchor="end">varactor-diode.svg</text>
+    <a href="../schematics/symbols/varactor-diode.svg" aria-label="Open varactor-diode.svg">
+      <g data-symbol-source="varactor-diode.svg" transform="translate(150 24590)">
+{{SYMBOL:varactor-diode.svg}}
       </g>
     </a>
       </g>

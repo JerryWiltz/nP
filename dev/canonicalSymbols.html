@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Modified: 2026-11-16 -->
+<!-- Modified: 2026-11-19 -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -14,7 +14,7 @@
     p { line-height: 1.5; }
     nav a { margin-right: 1.5rem; }
     main { overflow-x: auto; }
-    .symbol-sheet { display: block; width: 520px; height: 20900px; }
+    .symbol-sheet { display: block; width: 520px; height: 24900px; }
     a { color: #13558d; }
     a:focus-visible { outline: 3px solid #13558d; outline-offset: 2px; }
   </style>
@@ -22,13 +22,13 @@
 <body>
   <header>
     <h1>Canonical symbols</h1>
-    <p>All 68 canonical SVGs, ordered like the Guide API. Select a symbol to open its editable source drawing.</p>
-    <nav aria-label="Symbol groups"><a href="#rf">RF constructors</a><a href="#digital">Digital signals</a><a href="#math">Math</a><a href="#combining">Circuit combining</a><a href="#sources">Source primitives</a><a href="#devices">Transistors</a></nav>
+    <p>All 81 canonical SVGs, ordered like the Guide API. Select a symbol to open its editable source drawing.</p>
+    <nav aria-label="Symbol groups"><a href="#rf">RF constructors</a><a href="#digital">Digital signals</a><a href="#math">Math</a><a href="#combining">Circuit combining</a><a href="#sources">Source primitives</a><a href="#devices">Transistors</a><a href="#specialized-diodes">Specialized diodes</a></nav>
   </header>
   <main>
-    <svg class="symbol-sheet" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 20900" role="img" aria-labelledby="sheet-title sheet-description">
+    <svg class="symbol-sheet" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 24900" role="img" aria-labelledby="sheet-title sheet-description">
       <title id="sheet-title">Canonical nPort symbols</title>
-      <desc id="sheet-description">All 68 canonical symbols in Guide API order on one shared SVG canvas.</desc>
+      <desc id="sheet-description">All 81 canonical symbols in Guide API order on one shared SVG canvas.</desc>
       <rect width="100%" height="100%" fill="#ffffff"/>
       <g fill="#202020" font-family="Arial, Helvetica, sans-serif">
     <text id="rf" x="40" y="50" font-size="22" font-weight="bold">RF constructors (51)</text>
@@ -1125,7 +1125,7 @@
           </g>
       </g>
     </a>
-    <text id="devices" x="40" y="20170" font-size="22" font-weight="bold">Transistors (2)</text>
+    <text id="devices" x="40" y="20170" font-size="22" font-weight="bold">Transistors (12)</text>
     <text x="40" y="20220" font-size="16">NPN — three-port bipolar transistor</text>
     <text x="480" y="20240" font-size="13" text-anchor="end">npn.svg</text>
     <a href="../schematics/symbols/npn.svg" aria-label="Open npn.svg">
@@ -1179,6 +1179,412 @@
             <circle cx="70" cy="120" r="4"/>
             <circle cx="170" cy="60" r="4"/>
             <circle cx="170" cy="180" r="4"/>
+          </g>
+      </g>
+    </a>
+    <text x="40" y="20820" font-size="16">NJF, MESFET, HEMT — shared N-channel FET</text>
+    <text x="480" y="20840" font-size="13" text-anchor="end">njf.svg</text>
+    <a href="../schematics/symbols/njf.svg" aria-label="Open njf.svg">
+      <g data-symbol-source="njf.svg" transform="translate(120 20860)">
+        <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <!-- Twenty-unit pins meet the circular body at their inner endpoints. -->
+            <path d="M70 120 H90 M170 60 V80 M170 180 V160"/>
+            <circle cx="140" cy="120" r="50"/>
+            <!-- Continuous channel, drain/source branches and gate junction. -->
+            <path d="M140 90 V150 M170 80 V90 H140 M170 160 V150 H140 M90 120 H140"/>
+            <!-- N-channel gate arrow: inward toward the channel. -->
+            <path d="M140 120 L120 110 V130 Z" fill="#202020"/>
+          </g>
+          <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
+            <text x="140" y="25">NJF / MESFET / HEMT</text>
+            <text x="35" y="105">Terminal 1</text>
+            <text x="35" y="135">G</text>
+            <text x="225" y="65">Terminal 2</text>
+            <text x="225" y="85">D</text>
+            <text x="225" y="185">Terminal 3</text>
+            <text x="225" y="205">S</text>
+            <text x="140" y="235">N-channel FET</text>
+            <circle cx="70" cy="120" r="4"/>
+            <circle cx="170" cy="60" r="4"/>
+            <circle cx="170" cy="180" r="4"/>
+          </g>
+      </g>
+    </a>
+    <text x="40" y="21120" font-size="16">PJF — P-channel JFET</text>
+    <text x="480" y="21140" font-size="13" text-anchor="end">pjf.svg</text>
+    <a href="../schematics/symbols/pjf.svg" aria-label="Open pjf.svg">
+      <g data-symbol-source="pjf.svg" transform="translate(120 21160)">
+        <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <!-- Twenty-unit pins meet the circular body at their inner endpoints. -->
+            <path d="M70 120 H90 M170 60 V80 M170 180 V160"/>
+            <circle cx="140" cy="120" r="50"/>
+            <!-- Continuous channel, drain/source branches and gate junction. -->
+            <path d="M140 90 V150 M170 80 V90 H140 M170 160 V150 H140 M90 120 H140"/>
+            <!-- P-channel gate arrow: outward away from the channel. -->
+            <path d="M110 120 L130 110 V130 Z" fill="#202020"/>
+          </g>
+          <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
+            <text x="140" y="25">PJF</text>
+            <text x="35" y="105">Terminal 1</text>
+            <text x="35" y="135">G</text>
+            <text x="225" y="65">Terminal 2</text>
+            <text x="225" y="85">D</text>
+            <text x="225" y="185">Terminal 3</text>
+            <text x="225" y="205">S</text>
+            <text x="140" y="235">P-channel JFET</text>
+            <circle cx="70" cy="120" r="4"/>
+            <circle cx="170" cy="60" r="4"/>
+            <circle cx="170" cy="180" r="4"/>
+          </g>
+      </g>
+    </a>
+    <text x="40" y="21420" font-size="16">NMOS — N enhancement, 3 terminals</text>
+    <text x="480" y="21440" font-size="13" text-anchor="end">nmos.svg</text>
+    <a href="../schematics/symbols/nmos.svg" aria-label="Open nmos.svg">
+      <g data-symbol-source="nmos.svg" transform="translate(120 21460)">
+        <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <!-- Twenty-unit external pins meet the circular body. -->
+            <path d="M70 120 H90 M170 60 V80 M170 180 V160"/>
+            <circle cx="140" cy="120" r="50"/>
+            <!-- The gate is separated from the channel by a visible insulating gap. -->
+            <path d="M90 120 H120 M120 90 V150"/>
+            <!-- Broken enhancement channel, with drain and source branches. -->
+            <path d="M140 90 V100 M140 110 V130 M140 140 V150"/>
+            <path d="M170 80 V90 H140 M170 160 V150 H140"/>
+            <!-- Internal body-to-source connection and polarity arrow. -->
+            <path d="M140 120 H170 V150"/>
+            <path d="M140 120 L160 110 V130 Z" fill="#202020"/>
+            <circle cx="170" cy="150" r="3" fill="#202020"/>
+          </g>
+          <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
+            <text x="140" y="25">NMOS</text>
+            <text x="35" y="105">Terminal 1</text>
+            <text x="35" y="135">G</text>
+            <text x="225" y="65">Terminal 2</text>
+            <text x="225" y="85">D</text>
+            <text x="225" y="185">Terminal 3</text>
+            <text x="225" y="205">S</text>
+            <text x="140" y="220">N-channel enhancement</text>
+            <text x="140" y="240">Body to source</text>
+            <circle cx="70" cy="120" r="4"/>
+            <circle cx="170" cy="60" r="4"/>
+            <circle cx="170" cy="180" r="4"/>
+          </g>
+      </g>
+    </a>
+    <text x="40" y="21720" font-size="16">PMOS — P enhancement, 3 terminals</text>
+    <text x="480" y="21740" font-size="13" text-anchor="end">pmos.svg</text>
+    <a href="../schematics/symbols/pmos.svg" aria-label="Open pmos.svg">
+      <g data-symbol-source="pmos.svg" transform="translate(120 21760)">
+        <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <!-- Twenty-unit external pins meet the circular body. -->
+            <path d="M70 120 H90 M170 60 V80 M170 180 V160"/>
+            <circle cx="140" cy="120" r="50"/>
+            <!-- The gate is separated from the channel by a visible insulating gap. -->
+            <path d="M90 120 H120 M120 90 V150"/>
+            <!-- Broken enhancement channel, with drain and source branches. -->
+            <path d="M140 90 V100 M140 110 V130 M140 140 V150"/>
+            <path d="M170 80 V90 H140 M170 160 V150 H140"/>
+            <!-- Internal body-to-source connection and polarity arrow. -->
+            <path d="M140 120 H170 V150"/>
+            <path d="M170 120 L150 110 V130 Z" fill="#202020"/>
+            <circle cx="170" cy="150" r="3" fill="#202020"/>
+          </g>
+          <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
+            <text x="140" y="25">PMOS</text>
+            <text x="35" y="105">Terminal 1</text>
+            <text x="35" y="135">G</text>
+            <text x="225" y="65">Terminal 2</text>
+            <text x="225" y="85">D</text>
+            <text x="225" y="185">Terminal 3</text>
+            <text x="225" y="205">S</text>
+            <text x="140" y="220">P-channel enhancement</text>
+            <text x="140" y="240">Body to source</text>
+            <circle cx="70" cy="120" r="4"/>
+            <circle cx="170" cy="60" r="4"/>
+            <circle cx="170" cy="180" r="4"/>
+          </g>
+      </g>
+    </a>
+    <text x="40" y="22020" font-size="16">NMOS({body: 'external'}) — N enhancement, 4 terminals</text>
+    <text x="480" y="22040" font-size="13" text-anchor="end">nmos-four-terminal.svg</text>
+    <a href="../schematics/symbols/nmos-four-terminal.svg" aria-label="Open nmos-four-terminal.svg">
+      <g data-symbol-source="nmos-four-terminal.svg" transform="translate(120 22060)">
+        <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <!-- Twenty-unit external pins meet the circular body. -->
+            <path d="M70 120 H90 M170 60 V80 M170 180 V160 M210 120 H190"/>
+            <circle cx="140" cy="120" r="50"/>
+            <!-- The gate is separated from the channel by a visible insulating gap. -->
+            <path d="M90 120 H120 M120 90 V150"/>
+            <!-- Broken enhancement channel, with drain and source branches. -->
+            <path d="M140 90 V100 M140 110 V130 M140 140 V150"/>
+            <path d="M170 80 V90 H140 M170 160 V150 H140"/>
+            <!-- Separate body terminal and polarity arrow. -->
+            <path d="M140 120 H190"/>
+            <path d="M140 120 L160 110 V130 Z" fill="#202020"/>
+          </g>
+          <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
+            <text x="140" y="25">NMOS4</text>
+            <text x="35" y="105">Terminal 1</text>
+            <text x="35" y="135">G</text>
+            <text x="225" y="65">Terminal 2</text>
+            <text x="225" y="85">D</text>
+            <text x="225" y="185">Terminal 3</text>
+            <text x="225" y="205">S</text>
+            <text x="245" y="105">Terminal 4</text>
+            <text x="245" y="135">B</text>
+            <text x="140" y="220">N-channel enhancement</text>
+            <text x="140" y="240">Separate body</text>
+            <circle cx="70" cy="120" r="4"/>
+            <circle cx="170" cy="60" r="4"/>
+            <circle cx="170" cy="180" r="4"/>
+            <circle cx="210" cy="120" r="4"/>
+          </g>
+      </g>
+    </a>
+    <text x="40" y="22320" font-size="16">PMOS({body: 'external'}) — P enhancement, 4 terminals</text>
+    <text x="480" y="22340" font-size="13" text-anchor="end">pmos-four-terminal.svg</text>
+    <a href="../schematics/symbols/pmos-four-terminal.svg" aria-label="Open pmos-four-terminal.svg">
+      <g data-symbol-source="pmos-four-terminal.svg" transform="translate(120 22360)">
+        <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <!-- Twenty-unit external pins meet the circular body. -->
+            <path d="M70 120 H90 M170 60 V80 M170 180 V160 M210 120 H190"/>
+            <circle cx="140" cy="120" r="50"/>
+            <!-- The gate is separated from the channel by a visible insulating gap. -->
+            <path d="M90 120 H120 M120 90 V150"/>
+            <!-- Broken enhancement channel, with drain and source branches. -->
+            <path d="M140 90 V100 M140 110 V130 M140 140 V150"/>
+            <path d="M170 80 V90 H140 M170 160 V150 H140"/>
+            <!-- Separate body terminal and polarity arrow. -->
+            <path d="M140 120 H190"/>
+            <path d="M170 120 L150 110 V130 Z" fill="#202020"/>
+          </g>
+          <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
+            <text x="140" y="25">PMOS4</text>
+            <text x="35" y="105">Terminal 1</text>
+            <text x="35" y="135">G</text>
+            <text x="225" y="65">Terminal 2</text>
+            <text x="225" y="85">D</text>
+            <text x="225" y="185">Terminal 3</text>
+            <text x="225" y="205">S</text>
+            <text x="245" y="105">Terminal 4</text>
+            <text x="245" y="135">B</text>
+            <text x="140" y="220">P-channel enhancement</text>
+            <text x="140" y="240">Separate body</text>
+            <circle cx="70" cy="120" r="4"/>
+            <circle cx="170" cy="60" r="4"/>
+            <circle cx="170" cy="180" r="4"/>
+            <circle cx="210" cy="120" r="4"/>
+          </g>
+      </g>
+    </a>
+    <text x="40" y="22620" font-size="16">NMOSD — N depletion, 3 terminals, symbol only</text>
+    <text x="480" y="22640" font-size="13" text-anchor="end">nmos-depletion.svg</text>
+    <a href="../schematics/symbols/nmos-depletion.svg" aria-label="Open nmos-depletion.svg">
+      <g data-symbol-source="nmos-depletion.svg" transform="translate(120 22660)">
+        <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <!-- Twenty-unit external pins meet the circular body. -->
+            <path d="M70 120 H90 M170 60 V80 M170 180 V160"/>
+            <circle cx="140" cy="120" r="50"/>
+            <!-- The gate is separated from the channel by a visible insulating gap. -->
+            <path d="M90 120 H120 M120 90 V150"/>
+            <!-- Continuous depletion channel, with drain and source branches. -->
+            <path d="M140 90 V150"/>
+            <path d="M170 80 V90 H140 M170 160 V150 H140"/>
+            <!-- Internal body-to-source connection and polarity arrow. -->
+            <path d="M140 120 H170 V150"/>
+            <path d="M140 120 L160 110 V130 Z" fill="#202020"/>
+            <circle cx="170" cy="150" r="3" fill="#202020"/>
+          </g>
+          <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
+            <text x="140" y="25">NMOSD</text>
+            <text x="35" y="105">Terminal 1</text>
+            <text x="35" y="135">G</text>
+            <text x="225" y="65">Terminal 2</text>
+            <text x="225" y="85">D</text>
+            <text x="225" y="185">Terminal 3</text>
+            <text x="225" y="205">S</text>
+            <text x="140" y="220">N-channel depletion</text>
+            <text x="140" y="240">Body to source · symbol only</text>
+            <circle cx="70" cy="120" r="4"/>
+            <circle cx="170" cy="60" r="4"/>
+            <circle cx="170" cy="180" r="4"/>
+          </g>
+      </g>
+    </a>
+    <text x="40" y="22920" font-size="16">PMOSD — P depletion, 3 terminals, symbol only</text>
+    <text x="480" y="22940" font-size="13" text-anchor="end">pmos-depletion.svg</text>
+    <a href="../schematics/symbols/pmos-depletion.svg" aria-label="Open pmos-depletion.svg">
+      <g data-symbol-source="pmos-depletion.svg" transform="translate(120 22960)">
+        <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <!-- Twenty-unit external pins meet the circular body. -->
+            <path d="M70 120 H90 M170 60 V80 M170 180 V160"/>
+            <circle cx="140" cy="120" r="50"/>
+            <!-- The gate is separated from the channel by a visible insulating gap. -->
+            <path d="M90 120 H120 M120 90 V150"/>
+            <!-- Continuous depletion channel, with drain and source branches. -->
+            <path d="M140 90 V150"/>
+            <path d="M170 80 V90 H140 M170 160 V150 H140"/>
+            <!-- Internal body-to-source connection and polarity arrow. -->
+            <path d="M140 120 H170 V150"/>
+            <path d="M170 120 L150 110 V130 Z" fill="#202020"/>
+            <circle cx="170" cy="150" r="3" fill="#202020"/>
+          </g>
+          <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
+            <text x="140" y="25">PMOSD</text>
+            <text x="35" y="105">Terminal 1</text>
+            <text x="35" y="135">G</text>
+            <text x="225" y="65">Terminal 2</text>
+            <text x="225" y="85">D</text>
+            <text x="225" y="185">Terminal 3</text>
+            <text x="225" y="205">S</text>
+            <text x="140" y="220">P-channel depletion</text>
+            <text x="140" y="240">Body to source · symbol only</text>
+            <circle cx="70" cy="120" r="4"/>
+            <circle cx="170" cy="60" r="4"/>
+            <circle cx="170" cy="180" r="4"/>
+          </g>
+      </g>
+    </a>
+    <text x="40" y="23220" font-size="16">NMOSD4 — N depletion, 4 terminals, symbol only</text>
+    <text x="480" y="23240" font-size="13" text-anchor="end">nmos-depletion-four-terminal.svg</text>
+    <a href="../schematics/symbols/nmos-depletion-four-terminal.svg" aria-label="Open nmos-depletion-four-terminal.svg">
+      <g data-symbol-source="nmos-depletion-four-terminal.svg" transform="translate(120 23260)">
+        <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <!-- Twenty-unit external pins meet the circular body. -->
+            <path d="M70 120 H90 M170 60 V80 M170 180 V160 M210 120 H190"/>
+            <circle cx="140" cy="120" r="50"/>
+            <!-- The gate is separated from the channel by a visible insulating gap. -->
+            <path d="M90 120 H120 M120 90 V150"/>
+            <!-- Continuous depletion channel, with drain and source branches. -->
+            <path d="M140 90 V150"/>
+            <path d="M170 80 V90 H140 M170 160 V150 H140"/>
+            <!-- Separate body terminal and polarity arrow. -->
+            <path d="M140 120 H190"/>
+            <path d="M140 120 L160 110 V130 Z" fill="#202020"/>
+          </g>
+          <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
+            <text x="140" y="25">NMOSD4</text>
+            <text x="35" y="105">Terminal 1</text>
+            <text x="35" y="135">G</text>
+            <text x="225" y="65">Terminal 2</text>
+            <text x="225" y="85">D</text>
+            <text x="225" y="185">Terminal 3</text>
+            <text x="225" y="205">S</text>
+            <text x="245" y="105">Terminal 4</text>
+            <text x="245" y="135">B</text>
+            <text x="140" y="220">N-channel depletion</text>
+            <text x="140" y="240">Separate body · symbol only</text>
+            <circle cx="70" cy="120" r="4"/>
+            <circle cx="170" cy="60" r="4"/>
+            <circle cx="170" cy="180" r="4"/>
+            <circle cx="210" cy="120" r="4"/>
+          </g>
+      </g>
+    </a>
+    <text x="40" y="23520" font-size="16">PMOSD4 — P depletion, 4 terminals, symbol only</text>
+    <text x="480" y="23540" font-size="13" text-anchor="end">pmos-depletion-four-terminal.svg</text>
+    <a href="../schematics/symbols/pmos-depletion-four-terminal.svg" aria-label="Open pmos-depletion-four-terminal.svg">
+      <g data-symbol-source="pmos-depletion-four-terminal.svg" transform="translate(120 23560)">
+        <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <!-- Twenty-unit external pins meet the circular body. -->
+            <path d="M70 120 H90 M170 60 V80 M170 180 V160 M210 120 H190"/>
+            <circle cx="140" cy="120" r="50"/>
+            <!-- The gate is separated from the channel by a visible insulating gap. -->
+            <path d="M90 120 H120 M120 90 V150"/>
+            <!-- Continuous depletion channel, with drain and source branches. -->
+            <path d="M140 90 V150"/>
+            <path d="M170 80 V90 H140 M170 160 V150 H140"/>
+            <!-- Separate body terminal and polarity arrow. -->
+            <path d="M140 120 H190"/>
+            <path d="M170 120 L150 110 V130 Z" fill="#202020"/>
+          </g>
+          <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
+            <text x="140" y="25">PMOSD4</text>
+            <text x="35" y="105">Terminal 1</text>
+            <text x="35" y="135">G</text>
+            <text x="225" y="65">Terminal 2</text>
+            <text x="225" y="85">D</text>
+            <text x="225" y="185">Terminal 3</text>
+            <text x="225" y="205">S</text>
+            <text x="245" y="105">Terminal 4</text>
+            <text x="245" y="135">B</text>
+            <text x="140" y="220">P-channel depletion</text>
+            <text x="140" y="240">Separate body · symbol only</text>
+            <circle cx="70" cy="120" r="4"/>
+            <circle cx="170" cy="60" r="4"/>
+            <circle cx="170" cy="180" r="4"/>
+            <circle cx="210" cy="120" r="4"/>
+          </g>
+      </g>
+    </a>
+    <text id="specialized-diodes" x="40" y="23900" font-size="22" font-weight="bold">Specialized diodes (3)</text>
+    <text x="40" y="23950" font-size="16">Schottky — symbol only</text>
+    <text x="480" y="23970" font-size="13" text-anchor="end">schottky-diode.svg</text>
+    <a href="../schematics/symbols/schottky-diode.svg" aria-label="Open schottky-diode.svg">
+      <g data-symbol-source="schottky-diode.svg" transform="translate(150 23990)">
+        <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <!-- Twenty-unit pins terminate at the anode body and cathode marking. -->
+            <path d="M80 80 H100 M120 80 H140"/>
+            <path d="M100 70 L120 80 L100 90 Z"/>
+            <!-- A hooked cathode bar distinguishes the Schottky drawing. -->
+            <path d="M115 70 V65 H120 V95 H125 V90"/>
+          </g>
+          <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
+            <text x="110" y="25">Schottky</text>
+            <text x="50" y="65">A</text>
+            <text x="170" y="65">K</text>
+            <text x="50" y="115">Terminal 1</text>
+            <text x="170" y="115">Terminal 2</text>
+            <text x="110" y="145">Schottky · symbol only</text>
+            <circle cx="80" cy="80" r="4"/>
+            <circle cx="140" cy="80" r="4"/>
+          </g>
+      </g>
+    </a>
+    <text x="40" y="24250" font-size="16">Zener — symbol only</text>
+    <text x="480" y="24270" font-size="13" text-anchor="end">zener-diode.svg</text>
+    <a href="../schematics/symbols/zener-diode.svg" aria-label="Open zener-diode.svg">
+      <g data-symbol-source="zener-diode.svg" transform="translate(150 24290)">
+        <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <!-- Twenty-unit pins terminate at the anode body and cathode marking. -->
+            <path d="M80 80 H100 M120 80 H140"/>
+            <path d="M100 70 L120 80 L100 90 Z"/>
+            <!-- Angled ends on the cathode bar distinguish the Zener drawing. -->
+            <path d="M115 65 L120 70 V90 L125 95"/>
+          </g>
+          <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
+            <text x="110" y="25">Zener</text>
+            <text x="50" y="65">A</text>
+            <text x="170" y="65">K</text>
+            <text x="50" y="115">Terminal 1</text>
+            <text x="170" y="115">Terminal 2</text>
+            <text x="110" y="145">Zener · symbol only</text>
+            <circle cx="80" cy="80" r="4"/>
+            <circle cx="140" cy="80" r="4"/>
+          </g>
+      </g>
+    </a>
+    <text x="40" y="24550" font-size="16">Varactor — symbol only</text>
+    <text x="480" y="24570" font-size="13" text-anchor="end">varactor-diode.svg</text>
+    <a href="../schematics/symbols/varactor-diode.svg" aria-label="Open varactor-diode.svg">
+      <g data-symbol-source="varactor-diode.svg" transform="translate(150 24590)">
+        <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <!-- Twenty-unit pins terminate at the anode body and cathode marking. -->
+            <path d="M80 80 H100 M130 80 H150"/>
+            <path d="M100 70 L120 80 L100 90 Z"/>
+            <!-- Two parallel cathode plates with a visible gap distinguish the variable-capacitance drawing. -->
+            <path d="M120 70 V90 M130 70 V90"/>
+          </g>
+          <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
+            <text x="110" y="25">Varactor</text>
+            <text x="50" y="65">A</text>
+            <text x="170" y="65">K</text>
+            <text x="50" y="115">Terminal 1</text>
+            <text x="170" y="115">Terminal 2</text>
+            <text x="110" y="145">Varactor · symbol only</text>
+            <circle cx="80" cy="80" r="4"/>
+            <circle cx="150" cy="80" r="4"/>
           </g>
       </g>
     </a>

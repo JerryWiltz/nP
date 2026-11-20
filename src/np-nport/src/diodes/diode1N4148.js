@@ -1,4 +1,4 @@
-// Modified: 2026-11-16
+// Modified: 2026-11-19
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {global} from '../../../np-global/src/global';
@@ -8,11 +8,9 @@ import {nPort} from '../nPort';
 import {BOLTZMANN as K, ELEMENTARY_CHARGE as Q} from '../physicalConstants';
 import {seriesTwoPortFromImpedance} from './diodeRf';
 import {dcModel} from '../dcModel';
+import {legacyJunction, legacyDiodeCurrentAtVoltage, legacyDiodeAdmittance} from './legacyDiode';
+import {validateDiodeState, validateDiodeDrop} from './diodeState';
 
-
-function thermalVoltage(temperatureK) {
-	return K * temperatureK / Q;
-}
 
 function normalizeOptions(options) {
 	return {
@@ -43,76 +41,18 @@ function junctionCapacitance(voltage, cj0, vj, m) {
 	return cj0 / Math.pow(1e-12, m);
 }
 
-function breakdownCurrent(junctionVoltage, p) {
-	var excessVoltage = Math.max(-junctionVoltage - p.breakdownVoltage, 0);
-
-	return -p.breakdownCurrent * (Math.exp(excessVoltage / p.breakdownSoftness) - 1);
-}
-
-function breakdownConductance(junctionVoltage, p) {
-	if (-junctionVoltage <= p.breakdownVoltage) {
-		return 0;
-	}
-
-	return p.breakdownCurrent * Math.exp((-junctionVoltage - p.breakdownVoltage) / p.breakdownSoftness) / p.breakdownSoftness;
-}
-
-function diodeCurrentAtVoltage(voltage, p) {
-	var vt = thermalVoltage(p.temperatureK);
-	var current = voltage >= 0 ? voltage / Math.max(p.rs + p.n * vt / p.is, 1) : -p.is;
-	var iteration;
-	var limitedExp;
-	var junctionVoltage;
-	var expTerm;
-	var f;
-	var df;
-	var next;
-	var avalancheCurrent;
-	var avalancheConductance;
-
-	for (iteration = 0; iteration < 60; iteration++) {
-		junctionVoltage = voltage - current * p.rs;
-		limitedExp = Math.min(junctionVoltage / (p.n * vt), 80);
-		expTerm = Math.exp(limitedExp);
-		avalancheCurrent = breakdownCurrent(junctionVoltage, p);
-		avalancheConductance = breakdownConductance(junctionVoltage, p);
-		f = current - p.is * (expTerm - 1) - junctionVoltage / p.leakageResistance - avalancheCurrent;
-		df = 1 + p.rs * p.is * expTerm / (p.n * vt) + p.rs / p.leakageResistance + p.rs * avalancheConductance;
-		next = current - f / df;
-
-		if (Math.abs(next - current) <= Math.max(1e-15, Math.abs(next) * 1e-12)) {
-			return next;
-		}
-
-		current = next;
-	}
-
-	return current;
-}
-
-function diodeAdmittanceAtBias(p) {
-	var vt = thermalVoltage(p.temperatureK);
-	var current = diodeCurrentAtVoltage(p.biasVoltage, p);
-	var junctionVoltage = p.biasVoltage - current * p.rs;
-	var limitedExp = Math.min(junctionVoltage / (p.n * vt), 80);
-	var conductance = p.is * Math.exp(limitedExp) / (p.n * vt) + 1 / p.leakageResistance + breakdownConductance(junctionVoltage, p);
-
-	return {
-		current,
-		junctionVoltage,
-		conductance,
-		resistance: conductance > 0 ? 1 / conductance : Number.POSITIVE_INFINITY
-	};
-}
-
 export function diode1N4148(options = {}) {
 	var p = normalizeOptions(options);
-	var diodePort = new nPort();
 	var settings = componentSettings(global, options);
+	return legacyDiodeInstance(p, settings);
+}
+
+function legacyDiodeInstance(p, settings, state, description) {
+	var diodePort = new nPort();
 	var frequencyList = analysisFrequencies(settings);
-	var ro = global.Ro;
+	var ro = settings.Ro;
 	var twoZo = complex(2 * ro, 0);
-	var dc = diodeAdmittanceAtBias(p);
+	var dc = legacyDiodeAdmittance(p, p.biasVoltage, state?.junctionVoltage);
 	var cj = junctionCapacitance(dc.junctionVoltage, p.cj0, p.vj, p.m);
 	var diffusionCapacitance = p.tt * dc.conductance;
 	var capacitance = cj + diffusionCapacitance;
@@ -125,24 +65,17 @@ export function diode1N4148(options = {}) {
 	var junctionImpedance;
 	var totalImpedance;
 	var thermalEnergy = K * p.temperatureK;
-	var diodeCurrent = p.is * Math.expm1(Math.min(dc.junctionVoltage / (p.n * thermalVoltage(p.temperatureK)), 80));
-	var avalanche = breakdownCurrent(dc.junctionVoltage, p);
+	var junction = legacyJunction(p, dc.junctionVoltage);
+	var diodeCurrent = junction.forwardCurrent;
+	var avalanche = junction.avalanche;
 	// A linearized junction has equilibrium conductance noise at zero bias.
 	// At finite bias, use the larger of that level and a weak shot-noise estimate.
 	var junctionNoiseCurrent = Math.max(
 		4 * thermalEnergy * Math.max(0, dc.conductance - 1 / p.leakageResistance),
 		2 * Q * (Math.abs(diodeCurrent) + Math.abs(avalanche))
 	) + 4 * thermalEnergy / p.leakageResistance;
-	var junctionVoltageScale = p.n * thermalVoltage(p.temperatureK);
-	var exponentialCurrent = p.is * Math.exp(Math.min(dc.junctionVoltage / junctionVoltageScale, 80));
-	var secondDerivative = exponentialCurrent / junctionVoltageScale ** 2;
-	var thirdDerivative = exponentialCurrent / junctionVoltageScale ** 3;
-	if (-dc.junctionVoltage > p.breakdownVoltage) {
-		var avalancheSlope = p.breakdownCurrent *
-			Math.exp((-dc.junctionVoltage - p.breakdownVoltage) / p.breakdownSoftness);
-		secondDerivative -= avalancheSlope / p.breakdownSoftness ** 2;
-		thirdDerivative += avalancheSlope / p.breakdownSoftness ** 3;
-	}
+	var secondDerivative = junction.second;
+	var thirdDerivative = junction.third;
 	var capacitanceDerivative = p.tt * secondDerivative;
 	var capacitanceSecondDerivative = p.tt * thirdDerivative;
 	if (dc.junctionVoltage < p.vj) {
@@ -212,14 +145,24 @@ export function diode1N4148(options = {}) {
 
 		for (index = 0; index < points; index++) {
 			voltage = start + step * index;
-			table.push([voltage, diodeCurrentAtVoltage(voltage, p)]);
+			table.push([voltage, legacyDiodeCurrentAtVoltage(voltage, p)]);
 		}
 
 		return table;
 	};
 
 	diodePort._schematic = schematicPart('diode1N4148');
-	diodePort._dcModel = dcModel('diode1N4148', 2, 'nonlinear', 'approximate', {modelId: 'legacy-diode',
+	diodePort._dcModel = description || dcModel('diode1N4148', 2, 'nonlinear', 'approximate', {modelId: 'legacy-diode',
 		parameters: p, temperature: p.temperatureK, initialQPoint: diodePort.diode.bias}, settings);
+	var captured = Object.freeze({...settings, ...diodePort._dcModel.analysis});
+	diodePort._rfModel = Object.freeze({atOperatingPoint: legacyAtOperatingPoint.bind(null, diodePort._dcModel, captured)});
 	return diodePort;
+}
+
+function legacyAtOperatingPoint(description, settings, input) {
+    const state = validateDiodeState(input), p = {...description.definition.parameters, biasVoltage: state.vd};
+    const junction = legacyJunction(p, state.junctionVoltage);
+    validateDiodeDrop(state, state.junctionVoltage + p.rs * junction.current);
+    if (Object.values(junction).some(value => !Number.isFinite(value))) throw new RangeError('Solved legacy diode state exceeds the model domain.');
+    return legacyDiodeInstance(p, settings, state, description);
 }

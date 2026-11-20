@@ -1,0 +1,53 @@
+NMOS external manufacturer MOS1 independent reference
+* Modified: 2026-11-19
+* DMN55D0UT / DMP58D0SV parameter facts; source URLs in mosfet-reference.js
+.temp 27
+.options gmin=1e-18 abstol=1e-18 reltol=1e-10
+.model device NMOS (LEVEL=1 VTO=1 KP=.324 GAMMA=1.24 PHI=.75 LAMBDA=133u RD=.560 RS=.560 IS=80f PB=.8 MJ=.460 CBD=9.60p CBS=11.5p CGSO=25.2n CGDO=21n CGBO=204n)
+M1 d g s b device L=100u W=100u
+VG gb 0 DC 2
+VD db 0 DC 5
+VS sb 0 DC 0
+VB bb 0 DC -0.5
+Lg gb g 1e9
+Rg acg 0 50
+Cg acg g 1e-4
+Ig 0 acg DC 0 AC 1
+Ld db d 1e9
+Rd acd 0 50
+Cd acd d 1e-4
+Id 0 acd DC 0 AC 0
+Ls sb s 1e9
+Rs acs 0 50
+Cs acs s 1e-4
+Is 0 acs DC 0 AC 0
+Lb bb b 1e9
+Rb acb 0 50
+Cb acb b 1e-4
+Ib 0 acb DC 0 AC 0
+.control
+set numdgt=16
+set wr_vecnames
+set wr_singlescale
+op
+wrdata mosfet-nmos-external-op.txt v(g) v(d) v(s) v(b) i(VG) i(VD) i(VS) i(VB) @m1[gm] @m1[gds] @m1[gmbs]
+ac dec 1 10meg 1g
+wrdata mosfet-nmos-external-port1.txt v(acg) v(acd) v(acs) v(acb)
+alter @Ig[acmag]=0
+alter @Id[acmag]=1
+ac dec 1 10meg 1g
+wrdata mosfet-nmos-external-port2.txt v(acg) v(acd) v(acs) v(acb)
+alter @Id[acmag]=0
+alter @Is[acmag]=1
+ac dec 1 10meg 1g
+wrdata mosfet-nmos-external-port3.txt v(acg) v(acd) v(acs) v(acb)
+alter @Is[acmag]=0
+alter @Ib[acmag]=1
+ac dec 1 10meg 1g
+wrdata mosfet-nmos-external-port4.txt v(acg) v(acd) v(acs) v(acb)
+set temp=65
+op
+wrdata mosfet-nmos-external-hot.txt v(g) v(d) v(s) v(b) i(VG) i(VD) i(VS) i(VB)
+quit
+.endc
+.end

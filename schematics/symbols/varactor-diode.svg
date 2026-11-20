@@ -1,0 +1,23 @@
+<!-- Modified: 2026-11-19 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 160" role="img" aria-labelledby="title description">
+  <title id="title">Varactor — two-terminal diode artwork</title>
+  <desc id="description">Varactor diode artwork with terminal 1 the anode on the left and terminal 2 the cathode on the right. Two parallel cathode plates with a visible gap distinguish the variable-capacitance drawing. Both external pins are 20 units long. Varactor is a drawing name only; no numerical constructor or specialized diode model is implemented. Terminal numbers are not package pin numbers.</desc>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Twenty-unit pins terminate at the anode body and cathode marking. -->
+    <path d="M80 80 H100 M130 80 H150"/>
+    <path d="M100 70 L120 80 L100 90 Z"/>
+    <!-- Two parallel cathode plates with a visible gap distinguish the variable-capacitance drawing. -->
+    <path d="M120 70 V90 M130 70 V90"/>
+  </g>
+  <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
+    <text x="110" y="25">Varactor</text>
+    <text x="50" y="65">A</text>
+    <text x="170" y="65">K</text>
+    <text x="50" y="115">Terminal 1</text>
+    <text x="170" y="115">Terminal 2</text>
+    <text x="110" y="145">Varactor · symbol only</text>
+    <circle cx="80" cy="80" r="4"/>
+    <circle cx="150" cy="80" r="4"/>
+  </g>
+</svg>

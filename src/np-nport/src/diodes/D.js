@@ -1,13 +1,14 @@
-// Modified: 2026-11-16
+// Modified: 2026-11-19
 import {global} from '../../../np-global/src/global';
 import {componentSettings} from '../componentSettings';
 import {analysisFrequencies} from '../analysisFrequencies';
 import {nPort} from '../nPort';
 import {schematicPart} from '../schematicPart';
 import {diodeModel} from './diodeModels';
-import {diodeTemperature, diodeOperatingPoint} from './junctionDiode';
+import {diodeTemperature, diodeOperatingPoint, diodeJunctionOperatingPoint} from './junctionDiode';
 import {diodeFrequencyRow} from './diodeRf';
 import {dcModel} from '../dcModel';
+import {validateDiodeState, validateDiodeDrop} from './diodeState';
 
 function knownProperties(value, fields, label) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) throw new TypeError(label + ' must be an object.');
@@ -50,15 +51,26 @@ export function D(options = {}) {
     }
     const p = diodeTemperature(record.parameters, temperature);
     const point = diodeOperatingPoint(p, voltage, record.leakageResistance);
+    const initialQPoint = {vd: point.vd, id: point.id, junctionVoltage: point.junctionVoltage,
+        junctionCurrent: point.junctionCurrent, temperature};
+    const description = dcModel('D', 2, 'nonlinear', 'physical', {modelId: 'diode', record,
+        temperature, curveSettings: {vd: sweep}, initialQPoint}, settings);
+    return diodeInstance(description, Object.freeze({...settings, ...description.analysis}), point);
+}
+
+function diodeInstance(description, settings, point, terminals) {
+    const {record, temperature, curveSettings} = description.definition;
+    const p = diodeTemperature(record.parameters, temperature), sweep = curveSettings.vd;
+    const frequencies = analysisFrequencies(settings);
     const result = new nPort(), spars = [], noise = [];
     for (const frequency of frequencies) {
         const row = diodeFrequencyRow(p, point, frequency, settings.Ro, temperature, record.leakageResistance);
         spars.push(row.spars); noise.push(row.noise);
     }
     result.setspars(spars); result.setglobal(settings); result.noise = noise;
-    result.model = record;
+    result.model = {...record, parameters: {...record.parameters}};
     result.bias = {vd: point.vd, id: point.id, junctionVoltage: point.junctionVoltage,
-        junctionCurrent: point.junctionCurrent, temperature};
+        junctionCurrent: point.junctionCurrent, temperature, ...(terminals ? {va: terminals.va, vk: terminals.vk} : {})};
     result.qPoint = {...result.bias};
     result.dc = {bias: {vd: {...sweep}}};
     result.smallSignal = {conductance: point.conductance,
@@ -74,7 +86,16 @@ export function D(options = {}) {
         capacitanceDerivative: point.capacitanceDerivative,
         capacitanceSecondDerivative: point.capacitanceSecondDerivative};
     result._schematic = schematicPart('D', {model: record.name});
-    result._dcModel = dcModel('D', 2, 'nonlinear', 'physical', {modelId: 'diode', record,
-        temperature, curveSettings: result.dc.bias, initialQPoint: result.qPoint}, settings);
+    result._dcModel = description;
+    result._rfModel = Object.freeze({atOperatingPoint: diodeAtOperatingPoint.bind(null, description, settings)});
     return result;
+}
+
+function diodeAtOperatingPoint(description, settings, input) {
+    const state = validateDiodeState(input), {record, temperature} = description.definition;
+    const p = diodeTemperature(record.parameters, temperature);
+    const point = diodeJunctionOperatingPoint(p, state.vd, state.junctionVoltage, record.leakageResistance);
+    validateDiodeDrop(state, point.junctionVoltage + p.RS * point.junctionCurrent);
+    if (Object.values(point).some(value => !Number.isFinite(value))) throw new RangeError('Solved diode state exceeds the model domain.');
+    return diodeInstance(description, settings, point, state);
 }

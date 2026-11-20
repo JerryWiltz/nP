@@ -1,0 +1,43 @@
+njf manufacturer parameter data, independent ngspice reference
+* Modified: 2026-11-19
+.temp 27
+.options gmin=1e-18 abstol=1e-18 reltol=1e-10
+.model device NJF (VTO=-3.86852 BETA=0.000307346 LAMBDA=0.00449867 RD=15.735 RS=49.9999 IS=1e-14 CGS=1e-12 CGD=1e-12 PB=1 FC=0.5 KF=1e-20 AF=0.2)
+J1 d g s device
+VG gb 0 DC -1
+VD db 0 DC 5
+VS sb 0 DC 0
+LG gb g 1e3
+LD db d 1e3
+LS sb s 1e3
+RG acg 0 50
+RD acd 0 50
+RS acs 0 50
+CG acg g 1e-3
+CD acd d 1e-3
+CS acs s 1e-3
+IG 0 acg DC 0 AC 1
+ID 0 acd DC 0 AC 0
+IS 0 acs DC 0 AC 0
+.control
+set numdgt=16
+set wr_vecnames
+set wr_singlescale
+op
+wrdata njf-op.txt v(g) v(d) v(s) i(VG) i(VD) i(VS) @j1[gm] @j1[gds]
+ac dec 1 10meg 1g
+wrdata njf-port1.txt v(acg) v(acd) v(acs)
+alter @IG[acmag]=0
+alter @ID[acmag]=1
+ac dec 1 10meg 1g
+wrdata njf-port2.txt v(acg) v(acd) v(acs)
+alter @ID[acmag]=0
+alter @IS[acmag]=1
+ac dec 1 10meg 1g
+wrdata njf-port3.txt v(acg) v(acd) v(acs)
+set temp=65
+op
+wrdata njf-hot.txt v(g) v(d) v(s) i(VG) i(VD) i(VS)
+quit
+.endc
+.end

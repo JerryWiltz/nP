@@ -1,0 +1,28 @@
+MES1 SPICE3 manual reference profile, not a commercial part fit
+* Modified: 2026-11-19
+* https://pages.hmc.edu/harris/class/e158/07/spice3man.pdf section 3.4.10
+.temp 27
+.options gmin=1e-18 abstol=1e-18 reltol=1e-10
+.model device NMF (VTO=-2 BETA=1m B=.3 ALPHA=2 LAMBDA=1e-4 RD=100 RS=100 CGS=5p CGD=1p PB=.6 IS=1e-14 KF=0 AF=1)
+Z1 d g s device
+VG gb 0 DC -.5
+VD db 0 DC 2
+VS sb 0 DC 0
+LG gb g 1e9
+LD db d 1e9
+LS sb s 1e-20
+Rsource input acg 50
+Vsignal input 0 DC 0 AC 1
+CG acg g 1e-4
+CD d load 1e-4
+Gload load 0 load 0 .02
+.control
+set numdgt=16
+set wr_vecnames
+set wr_singlescale
+noise v(load) Vsignal dec 1 10meg 1g
+setplot noise1
+wrdata mesfet-reference-noise.txt inoise_spectrum onoise_spectrum
+quit
+.endc
+.end

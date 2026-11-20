@@ -1,7 +1,7 @@
 <!-- Modified: 2026-11-19 -->
 # nP constructor catalog
 
-This catalog covers the 59 public functions that produce n-port objects from `src/np-nport/src/index.js`, the digital waveform functions from `src/np-digital`, and the exported math and low-pass prototype functions. Each JS call below spells out the **current defaults** where they exist. Each argument or property appears on its own line. Units are in comments. Each constructor has its own heading and code block.
+This catalog covers the 64 public functions that produce n-port objects from `src/np-nport/src/index.js`, the digital waveform functions from `src/np-digital`, and the exported math and low-pass prototype functions. Each JS call below spells out the **current defaults** where they exist. Each argument or property appears on its own line. Units are in comments. Each constructor has its own heading and code block.
 
 Parameter spelling follows the public API. Legacy positional names such as `R`, `N`, `Z`, and `Length` retain their source capitalization; physical options use `lowerCamelCase` property names. Positional argument order matters. Named object properties follow one presentation order: geometry, material and loss, then temperature.
 
@@ -22,7 +22,7 @@ If `nP.global.twoTone` is set, constructors also create S and noise rows at the 
 
 Frequency lists may include 0 Hz for digital waveform analysis. Ideal RLC branches use their exact DC circuit limits: a series capacitor opens, a shunt inductor shorts, and a series inductor or shunt capacitor becomes a through connection. Composite branches preserve any resistor that remains in the DC path. `mstep()` and `mbend()` become through connections, and `mcross()` becomes an ideal four-port junction. Their singular impedance or admittance metadata at 0 Hz is recorded as `null`. `mcross()` also uses that junction limit just above DC while its parasitic effects are below one part per million; the full admittance reduction loses precision there. The current `mlin()` and `mclin()` models produce lossless DC transmission even with finite conductor resistivity; they need a separate DC resistance model before their 0 Hz insertion loss can be treated as physical. `Shift90()` remains a frequency-independent phase fixture and should not be used as a physical DC path in a real-waveform analysis.
 
-Electrical constructors attach immutable internal `_dcModel` descriptors. Existing `nodal()`, `cas()` and `cascade()` retain their component connections and DC models for `network.solveDC()`. The [shared DC analysis contract](../dcAnalysis.md) and [constructor-by-constructor DC audit](dcConstructorAudit.md) describe model coverage, topology preservation, missing-model requirements and the planned initial-estimate/nonlinear-refinement workflow. The linear and NPN/PNP nonlinear network DC solvers are implemented. A network containing `V()` and nonlinear devices automatically solves DC and rebuilds transistor RF/noise/nonlinear data before RF combination. Its solved result is `network.operatingPoint`. Diode network DC adapters remain unsupported; current fixed-Q APIs retain their behavior. New electrical constructors must supply the same descriptor contract and pass export-coverage tests.
+Electrical constructors attach immutable internal `_dcModel` descriptors. Existing `nodal()`, `cas()` and `cascade()` retain their component connections and DC models for `network.solveDC()`. The [shared DC analysis contract](../dcAnalysis.md) and [constructor-by-constructor DC audit](dcConstructorAudit.md) describe model coverage, topology preservation, missing-model requirements and the planned initial-estimate/nonlinear-refinement workflow. The linear, NPN/PNP, NJF/PJF, NMOS/PMOS, MESFET and diode nonlinear network DC solvers are implemented. A network containing `V()` and nonlinear devices automatically solves DC and rebuilds device RF/noise/nonlinear data before RF combination. Its solved result is `network.operatingPoint`. Both diode adapters preserve their own model laws; standalone fixed-Q APIs retain their behavior. New electrical constructors must supply the same descriptor contract and pass export-coverage tests.
 
 Every n-port constructor uses `nP.global.fList` by default. For an independent frequency grid, pass `{fList: frequencies}`. Constructors that already take an options object accept `fList` in that object. Positional constructors accept it in a final options object after their existing arguments. No-argument fixtures accept the options object as their first argument. `lpfGen()` accepts it after the filter array. The default for every optional `fList` is the current `nP.global.fList` when the component is created.
 
@@ -409,7 +409,7 @@ The through S row is only an incremental model: the example above reports `s11Re
 
 ### `nPort.solveDC()`
 
-Call `.solveDC()` on a component or completed `nodal()`, `cas()` or `cascade()` network. It takes no arguments and returns a new immutable plain-data result for a supported linear or NPN/PNP nonlinear DC model. Capacitors open, inductors short, and physical/resolved resistances remain. RF measurement ports add no DC loads. Missing DC models and unsupported diode adapters produce errors listing their placement paths. Networks containing `V()` and nonlinear devices run this DC solve automatically before RF combination and expose the result as `.operatingPoint`. Purely linear networks retain explicit `.solveDC()` analysis.
+Call `.solveDC()` on a component or completed `nodal()`, `cas()` or `cascade()` network. It takes no arguments and returns a new immutable plain-data result for a supported linear, NPN/PNP, NJF/PJF, NMOS/PMOS, MESFET or diode nonlinear DC model. Capacitors open, inductors short, and physical/resolved resistances remain. RF measurement ports add no DC loads. Missing physical DC models and unsupported definitions produce errors listing their placement paths. Networks containing `V()` and nonlinear devices run this DC solve automatically before RF combination and expose the result as `.operatingPoint`. Purely linear networks retain explicit `.solveDC()` analysis.
 
 ```js
 // resistorDC: nodes 6 and 7 are the two RF ports.
@@ -923,6 +923,42 @@ The frequency grid defaults to `global.fList`, initially `[2e9]`; options-level 
 
 The returned `.bias`, `.qPoint`, `.smallSignal`, `.model`, `.dc`, `.noise` and nonlinear behavior follow the NPN contract. The 2N3906 uses its own sourced parameters, sharing the Gummel–Poon engine and SPICE defaults. It includes terminal resistances but no explicit package L/C model. Noise and direct Taylor IP limitations are the same as NPN; see [transistorModels.md](../transistorModels.md).
 
+## JFET transistors
+
+### `NJF`
+
+`NJF({model: 'MMBF5457LT1', qPoint: {vgs: -1, vds: 10}, temperature: global.Temp, fList: global.fList})` returns a three-port in **gate, drain, source** order. These shown values are defaults. `PJF` selects `MMBFJ175LT1` with default `qPoint: {vgs: 1, vds: -10}`. Both use onsemi silicon parameter records and SPICE level-1 Shichman–Hodges equations, contact RD/RS and gate junction charge. No explicit package L/C is supplied.
+
+### `PJF`
+
+Both accept only `model`, `qPoint`, `bias`, `temperature` (K), `fList` (Hz). `bias.vgs` and `bias.vds` each take `{start, stop, points}`. Defaults are VGS 0 to the signed cutoff voltage (5 curves), VDS 0 to ±10 V (101 points). `.ivTable({vgs, vds})` returns terminal VDS (V) versus signed ID (A); it never changes the selected RF Q point. All three currents ig/id/is enter the device.
+
+`.qPoint`, `.bias`, `.smallSignal`, `.model`, `.dc`, active covariance and direct Taylor IM2/IM3 follow the nPort contracts. Supply-driven networks solve DC first and rebuild each placement from intrinsic VGS/VGD and source reference. NLEV=1 channel/flicker noise is an approximation with an ohmic-region limitation and no induced gate/gate shot noise; direct Taylor products omit quadratic remixing and large-signal behavior. See [JFET models](../jfetModels.md) for full defaults, provenance, equations and limits, and [common-source harness](../../dev/shapes/commonSource.html).
+
+## MESFET transistors
+
+### `MESFET`
+
+`MESFET({model: 'SPICE3_REFERENCE', qPoint: {vgs: -0.5, vds: 2}, temperature: global.Temp, fList: global.fList})` shows defaults. It returns G/D/S ports 1/2/3. The N-channel Statz/MES1 current and differential gate-capacitance law includes RD/RS and gate leakage. This published SPICE reference profile is **not a commercial part fit**; commercial microwave records remain pending.
+
+`bias` and `ivTable()` use `vgs`/`vds` intervals; defaults are 0 to −2 V in 5 curves and 0 to 3 V in 101 points. Output is a header plus numeric V/A rows. Q point and curves are independent. Signed ig/id/is enter the device. Supply-driven networks solve bias before rebuilding RF, approximate classical noise and direct Taylor sources. Electrical scaling is fixed at 300.15 K; selected temperature affects thermal noise only. No P-channel, trapping, dispersion, self-heating or characterized package is supplied. See [MESFET model contract](../mesfetModels.md).
+
+## MOSFET transistors
+
+### `NMOS`
+
+`NMOS({model: 'DMN55D0UT', body: 'source', qPoint: {vgs: 1.5, vds: 5, vbs: 0}, temperature: global.Temp, fList: global.fList})` shows defaults. It returns G/D/S ports 1/2/3, with body tied to **external source**. `body: 'external'` exposes port 4 body. RD/RS and intrinsic body bias remain in either form.
+
+### `PMOS`
+
+`PMOS()` defaults to `DMP58D0SV` (one channel of the dual part), VGS=−2.6 V, VDS=−5 V, VBS=0 V, otherwise the same API. These are Diodes silicon enhancement MOSFET records using level-1 Shichman–Hodges. Their fixed L=W=100 µm belongs to the discrete fit; no geometry scaling or general SPICE import is offered.
+
+Only model/body/qPoint/bias/temperature/fList are accepted. `bias.vgs` and `bias.vds` take {start,stop,points}; default gate sweeps 0 to +2 V or −3.1 V, 5 curves, and drain sweeps 0 to ±5 V, 101 points. `bias.vbs` is a constant, default zero. `.ivTable({vgs,vds,vbs})` returns signed volts/amperes without moving RF bias. Source-tied bodies reject nonzero VBS. All public terminal currents enter the device; source-tied IS includes the body return. Independent-body IB is an additional terminal current; bodyCurrent reports the internal body current in either form.
+
+Explicit supplies trigger DC-before-RF reconstruction per placement. An insulated floating gate gives DC_FLOATING_BIAS, rather than using qPoint as a source. The default body tie is RF/DC-equivalent to joining an external-body four-port's source and body. The commonSource board covers three-terminal divider/self-bias arrangements.
+
+Noise is classical channel/contact thermal noise, without a measured fit (vendor KF=0); inversion charge is absent because the records omit TOX. Body junction and overlap charge remain. Direct Taylor IM omits remixing and large-signal effects. See [full equations, source provenance and limits](../mosfetModels.md) and [browser harness](../../dev/shapes/mosfetCommonSource.html).
+
 ## Diode
 
 ### `D`
@@ -955,6 +991,8 @@ nP.D({
 This uses the archived NXP SPICE card, including RS and its external leakage resistor, continuous junction charge and temperature scaling. It differs numerically from the older datasheet-fit `diode1N4148()`, which remains unchanged. The model does not include an explicit package L/C network, self-heating, large-signal transients or calibrated avalanche/excess noise. Intercepts use direct Taylor sources. See [diodeModels.md](../diodeModels.md).
 
 `diode1N4148` takes one options object. Its scalar properties are JavaScript numbers; `ivPoints` is an integer. It also accepts `fList`, an array of frequencies in hertz, defaulting to `nP.global.fList`.
+
+Both D() and diode1N4148() now participate in network DC solving. With an explicit V() supply, nodal()/cas()/cascade() solve before RF combination and expose network.operatingPoint. Diode component qPoint records contain vd, id, junctionVoltage, junctionCurrent, va, vk and temperature. Absolute va/vk may be null. RF/noise/nonlinearity rebuild independently per placement, leaving original objects and I–V settings unchanged. Standalone/RF-only devices retain their selected construction bias. See [diode network bias](../../dev/diodeBias.html) and [DC analysis](../dcAnalysis.md).
 
 ### `diode1N4148`
 

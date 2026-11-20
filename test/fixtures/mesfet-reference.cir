@@ -1,0 +1,44 @@
+MES1 SPICE3 manual reference profile, not a commercial part fit
+* Modified: 2026-11-19
+* https://pages.hmc.edu/harris/class/e158/07/spice3man.pdf section 3.4.10
+.temp 27
+.options gmin=1e-18 abstol=1e-18 reltol=1e-10
+.model device NMF (VTO=-2 BETA=1m B=.3 ALPHA=2 LAMBDA=1e-4 RD=100 RS=100 CGS=5p CGD=1p PB=.6 IS=1e-14 KF=0 AF=1)
+Z1 d g s device
+VG gb 0 DC -.5
+VD db 0 DC 2
+VS sb 0 DC 0
+Lg gb g 1e9
+Rg acg 0 50
+Cg acg g 1e-4
+Ig 0 acg DC 0 AC 1
+Ld db d 1e9
+Rd acd 0 50
+Cd acd d 1e-4
+Id 0 acd DC 0 AC 0
+Ls sb s 1e9
+Rs acs 0 50
+Cs acs s 1e-4
+Is 0 acs DC 0 AC 0
+.control
+set numdgt=16
+set wr_vecnames
+set wr_singlescale
+op
+wrdata mesfet-reference-op.txt v(g) v(d) v(s) i(VG) i(VD) i(VS) @z1[gm] @z1[gds]
+ac dec 1 10meg 1g
+wrdata mesfet-reference-port1.txt v(acg) v(acd) v(acs)
+alter @Ig[acmag]=0
+alter @Id[acmag]=1
+ac dec 1 10meg 1g
+wrdata mesfet-reference-port2.txt v(acg) v(acd) v(acs)
+alter @Id[acmag]=0
+alter @Is[acmag]=1
+ac dec 1 10meg 1g
+wrdata mesfet-reference-port3.txt v(acg) v(acd) v(acs)
+set temp=65
+op
+wrdata mesfet-reference-hot.txt v(g) v(d) v(s) i(VG) i(VD) i(VS)
+quit
+.endc
+.end

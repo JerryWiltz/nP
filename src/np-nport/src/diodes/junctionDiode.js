@@ -1,4 +1,4 @@
-// Modified: 2026-11-15
+// Modified: 2026-11-19
 import {BOLTZMANN, ELEMENTARY_CHARGE} from '../physicalConstants';
 import {temperatureJunction} from '../junctionTemperature';
 
@@ -58,22 +58,26 @@ export function depletionCharge(p, voltage) {
         capacitance: c0 + slope * delta, derivative: slope, second: 0};
 }
 
+export function diodeJunctionOperatingPoint(p, voltage, junctionVoltage, leakageResistance) {
+    const junction = junctionCurrent(p, junctionVoltage), depletion = depletionCharge(p, junctionVoltage);
+    const diffusionCapacitance = p.TT * junction.conductance;
+    return {vd: voltage, id: junction.current + voltage / leakageResistance,
+        junctionVoltage, junctionCurrent: junction.current, conductance: junction.conductance,
+        secondDerivative: junction.second, thirdDerivative: junction.third,
+        junctionCapacitance: depletion.capacitance, diffusionCapacitance,
+        totalCapacitance: depletion.capacitance + diffusionCapacitance,
+        capacitanceDerivative: depletion.derivative + p.TT * junction.second,
+        capacitanceSecondDerivative: depletion.second + p.TT * junction.third,
+        charge: depletion.charge + p.TT * junction.current};
+}
+
 export function diodeOperatingPoint(p, voltage, leakageResistance) {
     let low = Math.min(voltage, 0), high = Math.max(voltage, 0), junctionVoltage = voltage;
     for (let iteration = 0; iteration < 160; iteration++) {
         const junction = junctionCurrent(p, junctionVoltage);
         const residual = junctionVoltage + p.RS * junction.current - voltage;
         if (Math.abs(residual) <= 1e-12 + Math.abs(voltage) * 1e-12) {
-            const depletion = depletionCharge(p, junctionVoltage);
-            const diffusionCapacitance = p.TT * junction.conductance;
-            return {vd: voltage, id: junction.current + voltage / leakageResistance,
-                junctionVoltage, junctionCurrent: junction.current, conductance: junction.conductance,
-                secondDerivative: junction.second, thirdDerivative: junction.third,
-                junctionCapacitance: depletion.capacitance, diffusionCapacitance,
-                totalCapacitance: depletion.capacitance + diffusionCapacitance,
-                capacitanceDerivative: depletion.derivative + p.TT * junction.second,
-                capacitanceSecondDerivative: depletion.second + p.TT * junction.third,
-                charge: depletion.charge + p.TT * junction.current};
+            return diodeJunctionOperatingPoint(p, voltage, junctionVoltage, leakageResistance);
         }
         if (residual > 0) high = junctionVoltage; else low = junctionVoltage;
         let next = junctionVoltage - residual / (1 + p.RS * junction.conductance);

@@ -1,4 +1,4 @@
-// Modified: 2026-11-04
+// Modified: 2026-11-19
 import {readFileSync} from 'node:fs';
 import {dirname, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -32,14 +32,16 @@ for (const name of names) {
     }
     checkPart(name, nP[name](), expected);
 }
-for (const [variant, filename] of Object.entries(catalog.symbolVariants.mbend)) {
-    const expected = filename.replace(/\.svg$/, '');
-    if (schematicSymbolVariants.mbend[variant] !== expected) {
-        throw new Error(`mbend ${variant}: generated variant map differs from the catalog`);
+const variantOptions = {mbend: {left: {turn: 'left'}, right: {turn: 'right'}},
+    NMOS: {external: {body: 'external'}}, PMOS: {external: {body: 'external'}}};
+for (const [name, variants] of Object.entries(catalog.symbolVariants)) for (const [variant, filename] of Object.entries(variants)) {
+    const expected = filename.replace(/\.svg$/, ''), options = variantOptions[name]?.[variant];
+    if (schematicSymbolVariants[name]?.[variant] !== expected || !options) {
+        throw new Error(name + ' ' + variant + ': variant map or constructor verification fixture is missing');
     }
-    checkPart(`mbend ${variant}`, nP.mbend({turn: variant}), expected);
+    checkPart(name + ' ' + variant, nP[name](options), expected);
 }
 if (nP.lpfGen()._schematic?.kind !== 'cascade') {
     throw new Error('lpfGen: expected inherited cascade schematic metadata');
 }
-process.stdout.write(`Checked ${names.length} RF constructor symbols, mbend variants, and lpfGen.\n`);
+process.stdout.write(`Checked ${names.length} RF constructor symbols, option-dependent variants, and lpfGen.\n`);

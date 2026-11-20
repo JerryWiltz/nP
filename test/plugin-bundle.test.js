@@ -130,6 +130,60 @@ async function exerciseWorkerApi() {
     const d = nP.D({bias: {vd: {points: 3}}});
     const diode = {curves: d.ivTable(), rf: d.out('s21dB', 'NF21dB'),
         bias: d.bias, svg: nP.schematicSvg(d)};
+    const diodeNetworkBias = [];
+    for (const constructor of [nP.D, nP.diode1N4148]) {
+        const template = constructor(), fixed = template.bias?.vd ?? template.diode.bias.voltage;
+        const network = nP.nodal(
+            [nP.Tee(), 1, 2, 3],
+            [nP.V(1), 1, 4],
+            [nP.Short(), 4],
+            [nP.R(1000), 3, 5],
+            [template, 5, 6],
+            [nP.Short(), 6],
+            ['out', 2]
+        );
+        diodeNetworkBias.push({point: network.operatingPoint.components[4].qPoint,
+            residual: network.operatingPoint.residuals.maxNormalizedResidual,
+            rf: network.out('s11dB'), fixed, unchanged: template.bias?.vd ?? template.diode.bias.voltage});
+    }
+
+    const jfetNetworks = [];
+    for (const name of ['NJF', 'PJF', 'MESFET']) {
+        const template = nP[name](), fixed = template.bias.vgs;
+        const sign = name === 'PJF' ? -1 : 1;
+        const tee = nP.Tee(), short = nP.Short(), cap = nP.C(10e-9);
+        const network = nP.nodal(
+            [cap, 100, 1], [tee, 3, 1, 2], [nP.R(1e6), 3, 4], [short, 4],
+            [template, 2, 5, 6], [tee, 8, 5, 7], [nP.R(2200), 9, 7],
+            [nP.V(12 * sign), 9, 10], [short, 10], [cap, 8, 101],
+            [nP.sePaRC(2200, 10e-9), 6, 12], [short, 12], ['out', 100, 101]
+        );
+        jfetNetworks.push({point: network.operatingPoint.components[4].qPoint,
+            residual: network.operatingPoint.residuals.maxNormalizedResidual,
+            rf: network.out('s21dB', 'NF21dB'), fixed, unchanged: template.bias.vgs,
+            graph: nP.schematicGraph(network), svg: nP.schematicSvg(network)});
+    }
+
+    const mosfetNetworks = [];
+    for (const name of ['NMOS', 'PMOS']) {
+        const sign = name === 'NMOS' ? 1 : -1, template = nP[name](), fixed = template.bias.vgs;
+        const cap = nP.C(10e-9), tee = nP.Tee(), short = nP.Short();
+        const network = nP.nodal(
+            [cap, 1, 2], [nP.Tee4(), 9, 2, 21, 3], [template, 3, 20, 11],
+            [nP.R(100e3), 21, 6], [nP.R(47e3), 9, 10], [short, 10],
+            [tee, 16, 6, 18], [nP.V(12 * sign), 16, 17], [short, 17],
+            [nP.R(2200), 18, 19], [tee, 4, 20, 19], [cap, 4, 5],
+            [nP.sePaRC(1000, 10e-9), 11, 13], [short, 13], ['out', 1, 5]
+        );
+        const four = nP[name]({body: 'external', fList: [1e6], temperature: 310});
+        const fourShort = nP.Short({fList: [1e6]});
+        const unpowered = nP.nodal([four, 1, 2, 3, 4], [fourShort, 1], [fourShort, 3], [fourShort, 4], ['out', 2]).solveDC();
+        mosfetNetworks.push({point: network.operatingPoint.components[2].qPoint,
+            residual: network.operatingPoint.residuals.maxNormalizedResidual, rf: network.out('s21dB', 'NF21dB'),
+            fixed, unchanged: template.bias.vgs, graph: nP.schematicGraph(network), svg: nP.schematicSvg(network),
+            fourPorts: four.spars[0].length, bodyCurrent: unpowered.components[0].qPoint.ib,
+            fourSvg: nP.schematicSvg(four)});
+    }
 
     nP.global.tList = nP.global.tGen(0, 6e-9, 7);
     const pnCount = nP.PN({stages: 3}).out('samples').length;
@@ -150,7 +204,8 @@ async function exerciseWorkerApi() {
     const signalSvg = nP.schematicSvg({transmitter: tx, circuit, receiver: rx});
     parentPort.postMessage({version: nP.version, graph, topology, svg, cascadeSvg,
         escapedSvg, invalidInputError, ladderGraph, ladderSvg, junctionGraph, junctionSvg, authoredSvg, authoredGraph, pnCount, fftError,
-        dbv, bits: rx.out('bit string'), ber, signalSvg, npn, pnp, diode, dcTopology: amplifier._dcModel, voltageSource, dcOperatingPoint, handoff, automaticBias});
+        dbv, bits: rx.out('bit string'), ber, signalSvg, npn, pnp, diode, diodeNetworkBias, jfetNetworks, mosfetNetworks,
+        dcTopology: amplifier._dcModel, voltageSource, dcOperatingPoint, handoff, automaticBias});
 }
 
 function runWorker() {
@@ -228,6 +283,26 @@ test('restricted bundle generates transferable SVG and data with browser APIs bl
         assert.equal(result.diode.bias.vd, 0.6);
         assert.ok(result.diode.rf[1].every(Number.isFinite));
         assert.match(result.diode.svg, /<svg/);
+        for (const biased of result.diodeNetworkBias) {
+            assert.ok(Math.abs((1 - biased.point.vd) / 1000 - biased.point.id) < 1e-11);
+            assert.ok(biased.residual <= 1);
+            assert.equal(biased.fixed, biased.unchanged);
+            assert.ok(biased.rf[1].every(Number.isFinite));
+        }
+        for (const biased of result.jfetNetworks) {
+            assert.ok(biased.residual <= 1);
+            assert.ok(Math.abs(biased.point.ig + biased.point.id + biased.point.is) < 1e-12);
+            assert.equal(biased.fixed, biased.unchanged);
+            assert.ok(biased.rf[1].every(Number.isFinite));
+            assert.equal(biased.graph.shape, 'commonSource');
+            assert.match(biased.svg, /<svg/);
+        }
+        for (const biased of result.mosfetNetworks) {
+            assert.ok(biased.residual <= 1); assert.ok(Math.abs(biased.point.ig) === 0);
+            assert.equal(biased.fixed, biased.unchanged); assert.ok(biased.rf[1].every(Number.isFinite));
+            assert.equal(biased.graph.shape, 'commonSource'); assert.match(biased.svg, /<svg/);
+            assert.equal(biased.fourPorts, 17); assert.ok(Math.abs(biased.bodyCurrent) < 1e-12); assert.match(biased.fourSvg, /<svg/);
+        }
         assert.deepEqual(result.graph.externalPorts.map(port => port.node), [45, 1]);
         assert.equal(result.graph.components.length, 2);
         assert.equal(new Set(result.graph.nodes.map(node => node.id)).size, result.graph.nodes.length);

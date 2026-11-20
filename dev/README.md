@@ -10,9 +10,10 @@ aligned.
 
 | Harness | Focus | Companion note |
 | --- | --- | --- |
-| `canonicalSymbols.html` | All 68 canonical SVG symbols, including source primitives and NPN/PNP artwork | — |
+| `canonicalSymbols.html` | All 81 canonical SVG symbols, including semiconductor and source artwork | — |
 | `chartDefaults.html` | Built-in line chart, line table, and Smith chart defaults | — |
 | `diode.html` | D(): 1N4148 DC curves, fixed-Q RF, noise and weak nonlinear estimates | `diode.md` |
+| `diodeBias.html` | External diode network DC bias before RF analysis | `diodeBias.md` |
 | `edgeCoupledFilter.html` | Coupled-line filter with amplifier cascade | — |
 | `intermodAnalysis.html` | Two-tone amplifier then attenuator sweep: IP3 from nodal and cascade | `intermodAnalysis.md` |
 | `manchester.html` | Manchester PSK transmit, cascade, and demodulation example | — |
@@ -70,3 +71,8 @@ and `.md` files share a basename. Individual shape pages belong under
 conventional `README.md` and `AGENTS.md` names and the separate `dev/raw/`
 rules are exceptions. `npm run dev:new -- pageName [divId ...]` uses the page
 name exactly as given.
+
+- [shapes/commonSource.html](shapes/commonSource.html): self-biased JFET DC-before-RF analysis and relational common-source drawing; [notes](shapes/commonSource.md).
+
+- [shapes/mosfetCommonSource.html](shapes/mosfetCommonSource.html): sourced MOSFET divider bias, DC-before-RF and shared amplifier layout; [notes](shapes/mosfetCommonSource.md).
+- [shapes/mesfetCommonSource.html](shapes/mesfetCommonSource.html): MES1 reference-profile self-bias, DC-before-RF and shared common-source drawing; [notes](shapes/mesfetCommonSource.md).

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-18 -->
+<!-- Modified: 2026-11-19 -->
 <script setup>
 import catalog from '../../../schematics/symbol-catalog.json'
 
@@ -35,7 +35,8 @@ const symbols = Object.entries(artwork).map(([source, url]) => {
 
 const signals = new Set(catalog.signalSymbols)
 const sources = new Set(Object.values(catalog.sourceSymbols))
-const devices = new Set(Object.values(catalog.deviceSymbols))
+const implemented = new Set([...Object.values(catalog.constructors), ...Object.values(catalog.symbolVariants).flatMap(variants => Object.values(variants))])
+const devices = new Set(Object.values(catalog.deviceSymbols).filter(filename => !implemented.has(filename)))
 const groups = [
     {id: 'rf-symbols', title: 'RF components and networks',
         symbols: symbols.filter(symbol => !signals.has(symbol.filename)

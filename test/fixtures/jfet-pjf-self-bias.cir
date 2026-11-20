@@ -1,0 +1,19 @@
+pjf external self-bias reference
+* Modified: 2026-11-19
+.temp 27
+.options gmin=1e-18 abstol=1e-18 reltol=1e-10
+.model device PJF (VTO=-4.25882 BETA=0.00388105 LAMBDA=0.00751457 RD=114.077 RS=42.5978 IS=3.40344e-10 CGS=7.1608e-12 CGD=1.66048e-11 PB=0.757866 FC=0.5 KF=1e-20 AF=0.2)
+VDD supply 0 -12
+RD supply drain 2200
+RG gate 0 1e6
+RS source 0 2200
+J1 drain gate source device
+.control
+set numdgt=16
+set wr_vecnames
+set wr_singlescale
+op
+wrdata pjf-self-bias.txt v(gate) v(drain) v(source) i(VDD)
+quit
+.endc
+.end

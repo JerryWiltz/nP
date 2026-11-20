@@ -1,0 +1,20 @@
+PMOS external divider bias, body source
+* Modified: 2026-11-19
+.temp 27
+.options gmin=1e-18 abstol=1e-18 reltol=1e-10
+.model device PMOS (LEVEL=1 VTO=-2.10 KP=25m GAMMA=2.60 PHI=.75 LAMBDA=133u RD=1.12 RS=1.12 IS=80f PB=.8 MJ=.460 CBD=12.8p CBS=15.4p CGSO=16.8n CGDO=14n CGBO=239n)
+VDD supply 0 -12
+RD supply drain 2200
+RUP supply gate 100e3
+RLOW gate 0 47000
+RS source 0 1000
+M1 drain gate source source device L=100u W=100u
+.control
+set numdgt=16
+set wr_vecnames
+set wr_singlescale
+op
+wrdata mosfet-pmos-source-divider.txt v(gate) v(drain) v(source) @m1[id] @m1[ib]
+quit
+.endc
+.end

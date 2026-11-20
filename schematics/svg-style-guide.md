@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-16 -->
+<!-- Modified: 2026-11-19 -->
 
 # SVG schematic style guide
 
@@ -75,6 +75,27 @@ All dimensions are SVG `viewBox` units. The detailed family rules below describe
 - The NPN and PNP reference drawings have port 1 (base) on the left, port 2 (collector) above right, and port 3 (emitter) below right. The NPN emitter arrow points outward; the PNP emitter arrow points inward. The circular enclosure is part of each canonical body; rotate or reflect its geometry and numbered terminals together.
 - Canonical NPN and PNP terminals are `(70, 120)`, `(170, 60)`, and `(170, 180)` on a 280-by-250 canvas. Twenty-unit pins meet the circular body at `(90, 120)`, `(170, 80)`, and `(170, 160)`. Sloping collector/emitter branches and the arrow are internal artwork, not diagonal interconnect wires.
 - `NPN` and `PNP` are registered under `constructors` and their numerical three-port constructors use the same base/collector/emitter order. Preserve SPICE model/netlist port translations explicitly; SPICE Q-instance node order is collector/base/emitter.
+
+## JFET artwork
+
+- `NJF` and `PJF` are numerical constructors registered under `constructors`. Number the independent terminals gate 1, drain 2, source 3. These are public nPort/drawing terminal numbers, not package pin numbers; SPICE J-instance order is drain/gate/source.
+- Match the bipolar family's 280-by-250 reference canvas, circular enclosure and 20-unit pins: gate `(70,120)`, drain `(170,60)`, source `(170,180)`. Keep the channel continuous, with drain above and source below. The gate arrow points toward the channel for NJF and away from it for PJF. Rotate or reflect the entire artwork and numbered terminals together.
+- Arrow conventions follow Figure 3 in Texas Instruments' [Understanding Basic Analog — Active Devices](https://www.ti.com/lit/an/sloa026a/sloa026a.pdf). This is an artwork reference, not the selection of a numerical device model.
+
+## MOSFET artwork
+
+- Drawing names `NMOS`/`PMOS` select enhancement symbols; `NMOSD`/`PMOSD` select depletion symbols. These three-terminal drawings explicitly join body to source inside the symbol. Suffix `4` (`NMOS4`, `PMOS4`, `NMOSD4`, `PMOSD4`) exposes the independent body instead. NMOS/PMOS are numerical constructors in `constructors`, with `external` variants for the four-terminal symbols. The NMOS4/PMOS4 drawing aliases and depletion-only artwork remain under `deviceSymbols`; there are no public NMOS4/PMOS4 or depletion numerical constructors.
+- Number gate/drain/source as 1/2/3, with body 4 when exposed. Preserve the JFET family's canvas, enclosure, terminal positions and 20-unit pins. The fourth terminal is `(210,120)`, with its pin ending at `(190,120)`. These drawing numbers are not package pin numbers; SPICE M-instance order is drain/gate/source/body.
+- The insulated gate bar is at `x=120`, separated from the channel at `x=140`. Enhancement artwork has three channel segments; depletion artwork has a continuous channel. Put the polarity arrow on the body branch: toward the channel for N-channel and away for P-channel. Do not apply the arrow convention of a source-arrow symbol to this body-arrow family.
+- Body handling is visible electrical organization, not a layout correction. Three-terminal artwork includes the body/source tie and its junction dot; four-terminal artwork omits that tie and exposes a separate terminal. No separate body diode is drawn, and the artwork supplies no numerical device behavior.
+- Conventions follow the symbols in W. Marshall Leach Jr.'s [MOSFET notes](https://leachlegacy.ece.gatech.edu/ece3050/notes/mosfet/mosfet2Rev.pdf). Rotate or reflect the complete geometry and numbered terminals together.
+
+## Microwave FETs and specialized diodes
+
+- `MESFET` and `HEMT` share the existing N-channel `NJF` geometry; MESFET is now registered as a numerical Statz/MES1 reference constructor, while HEMT is drawing-only, with gate/drain/source terminals 1/2/3. The reference legend lists all three names. Shared artwork does not imply the same device physics, mode, material or numerical equations. This follows the shared FET convention in Table 6 of Michael Steer's [RF and microwave schematic symbols](https://eng.libretexts.org/Bookshelves/Electrical_Engineering/Electronics/Microwave_and_RF_Design_IV%3A_Modules_%28Steer%29/01%3A_Introduction_to_RF_and_Microwave_Modules/1.A%3A_Appendix-_RF_and_Microwave_Circuit_Schematic_Symbols).
+- Drawing-only diode names are `Schottky`, `Zener` and `Varactor`. Their independent terminals are anode 1 on the left and cathode 2 on the right, unrelated to package pin numbers. Preserve the ordinary diode family's 220-by-160 reference canvas and 20-unit pins. Keep their artwork separate from the numerical `D()`/`diode1N4148()` mapping.
+- The Schottky cathode has orthogonal hooks; the Zener cathode has angled ends; the varactor has two parallel plates with a 10-unit gap and no wire across that gap. Terminals are `(80,80)` and `(140,80)` for Schottky/Zener, and `(80,80)` and `(150,80)` for Varactor. The latter's extra plate accounts for the larger span, without shortening its pins. Five-unit cathode-hook details are internal artwork, not off-grid terminals.
+- Varactor and Zener conventions are illustrated in Steer's Table 4. The hooked Schottky drawing is a traditional distinguishing variant; a general diode symbol is also used, as [Toshiba explains](https://toshiba.semicon-storage.com/ap-en/semiconductor/knowledge/faq/diode/what-are-diodes.html). None of these drawing names selects a numerical part record, breakdown voltage or capacitance law.
 
 ## Microstrip and multiport geometry
 

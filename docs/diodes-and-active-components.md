@@ -1,7 +1,7 @@
-<!-- Modified: 2026-11-18 -->
+<!-- Modified: 2026-11-19 -->
 # Transistors and Diodes
 
-The public active-device constructors are `nP.Amp()`, `nP.D()`, `nP.diode1N4148()`, `nP.NPN()` and `nP.PNP()`. The amplifier is a configurable two-port gain/noise model. Diode and transistor models combine DC I–V curves with RF behavior at a fixed bias.
+The public active-device constructors are `nP.Amp()`, `nP.D()`, `nP.diode1N4148()`, `nP.NPN()`, `nP.PNP()`, `nP.NJF()`, `nP.PJF()`, `nP.NMOS()` and `nP.PMOS()`. The amplifier is a configurable two-port gain/noise model. Diode and transistor models combine DC I–V curves with RF behavior at a fixed bias.
 
 ## NPN transistor
 
@@ -157,7 +157,7 @@ nP.lineChart({
 
 These are also the defaults for `D()`, except that its frequency grid follows the current `global.fList`, initially `[2e9]`. Temperature follows `global.Temp`, initially 293 K. Partial nested options keep omitted defaults. `vd` means anode minus cathode, in volts; `id` is positive from anode to cathode, in amperes.
 
-`ivTable()` returns a directly plottable table. `ivTable({vd: {start: -5, stop: 0.8, points: 301}})` selects another curve range without moving the Q point. `.bias` and `.qPoint` report the solved currents and voltages; `.smallSignal` reports the bias-dependent conductance, resistance and capacitance. `.model` records the selected card and its provenance. `.dc.bias` records the sweep. RF networks preserve the device's selected bias; `nodal()` does not solve a DC bias circuit.
+`ivTable()` returns a directly plottable table. `ivTable({vd: {start: -5, stop: 0.8, points: 301}})` selects another curve range without moving the Q point. `.bias` and `.qPoint` report the solved currents and voltages; `.smallSignal` reports the bias-dependent conductance, resistance and capacitance. `.model` records the selected card and its provenance. `.dc.bias` records the sweep. Without a DC supply, RF networks preserve the device's selected bias. A supported nodal/cascade network containing V() automatically solves its external bias before rebuilding diode RF, noise and weak nonlinear data. Read network.operatingPoint; the original diode object and I–V curve settings stay unchanged.
 
 The archived NXP SPICE card includes series resistance, leakage, junction charge and transit-time charge. It is a different parameter set from `diode1N4148()` below. It has no explicit package L/C network or large-signal transient simulation. Its noise follows classical SPICE junction shot noise plus resistor thermal noise; it does not model calibrated avalanche or excess noise. Weak nonlinear products use local current/charge derivatives and the existing two-tone analysis, with the same direct-source approximation described in [Intermodulation](./intermodulation.md#diode-intermodulation).
 
@@ -224,3 +224,75 @@ nP.log(totalCapacitance);  // farads
 ```
 
 The diode also supplies noise covariance and weak-signal IM2, IM3, and second-harmonic sources when used in the corresponding analyses. Its RF model is linearized at one bias point; it does not simulate large-signal switching, compression, or transient charge storage. See [Noise](./noise.md#diode-noise) and [Intermodulation](./intermodulation.md#diode-intermodulation).
+
+## JFET transistors
+
+`NJF()` and `PJF()` return **1 gate, 2 drain, 3 source**. Defaults select onsemi **MMBF5457LT1** and **MMBFJ175LT1** silicon records. The shared SPICE level-1 model includes contact resistance, gate leakage and nonlinear junction charge.
+
+```js
+nP.global.fList = nP.global.fGen(1e6, 100e6, 51);
+var q1 = nP.NJF({qPoint: {vgs: -1, vds: 10}});
+var curves = q1.ivTable({vgs: {points: 3}, vds: {points: 21}});
+nP.lineChart({inputTable: [curves], title: 'JFET drain curves', metricPrefix: 'none'});
+```
+
+The NJF Q point above is the default; PJF defaults to VGS=+1 V and VDS=−10 V. Options are `model`, `qPoint`, `bias`, `temperature` (K), `fList` (Hz). Curves return VDS in volts and signed drain current in amperes, without changing RF bias. All three JFET currents enter the device. Networks with `V()` solve external bias first, then rebuild RF, noise and weak nonlinear data per placement. Without a supply, the constructor Q point remains the RF bias.
+
+The `commonSource` schematic board covers self-bias with a gate resistor, drain load, AC coupling, optional source bypass and optional supply bypass, for either polarity. NLEV=1 channel/flicker noise has an ohmic-region limitation; gate shot/induced noise and measured package/noise fitting are absent. Direct Taylor intermodulation omits quadratic remixing and large-signal effects. MESFET now has a Statz reference profile; HEMT and advanced MOS numerical models remain future work.
+
+## MOSFET transistors
+
+`NMOS()` selects Diodes [DMN55D0UT](https://www.diodes.com/spice/download/1842/DMN55D0UT.spice.txt); `PMOS()` selects [DMP58D0SV](https://www.diodes.com/spice/download/2329/DMP58D0SV.spice.txt), **one channel** of the dual part. Both use level-1 Shichman–Hodges equations with body effect, contact resistances and the records' body-junction/overlap charge.
+
+The default `body: 'source'` gives ports **1 gate, 2 drain, 3 source**, tying body to external source. `body: 'external'` exposes **4 body**. This equation-level body option does not imply an accessible body pin on these packages.
+
+```js
+nP.global.fList = [10e6, 100e6];
+var q1 = nP.NMOS({body: 'external', qPoint: {vgs: 1.5, vds: 5, vbs: -0.25}});
+var short1 = nP.Short();
+var network = nP.nodal(
+    [q1, 1, 2, 3, 4],
+    [short1, 3],
+    [short1, 4],
+    ['out', 1, 2]
+);
+var response = network.out('s21dB', 'NF21dB');
+nP.lineTable({inputTable: [response]});
+```
+
+This uses a fixed Q point. An explicit V supply selects external network DC solving before RF. An unconnected insulated gate has undetermined DC bias; the solver reports it. A constructor Q point supplies no hidden DC source.
+
+Options are `model`, `body`, `qPoint`, `bias`, `temperature` (K), `fList` (Hz). Default NMOS Q: VGS=1.5 V, VDS=5 V, VBS=0; PMOS: −2.6 V, −5 V, 0. Source-tied bodies reject nonzero VBS. `bias.vgs`/`bias.vds` accept {start,stop,points}; default VGS curves span 0 to +2 V or −3.1 V (5 curves), VDS 0 to ±5 V (101 points). `bias.vbs` is constant volts. `.ivTable({vgs,vds,vbs})` returns terminal volts versus signed amperes without moving RF bias. All public terminal currents enter the device; three-port IS includes its body return.
+
+The `commonSource` board supports three-terminal MOSFET divider bias, source resistance with split/combined/no bypass, optional supply bypass and both rail orders. Standalone four-terminal symbols work; an independent-body amplifier board remains future work.
+
+These records omit TOX, so inversion/Meyer charge is absent. Classical channel/contact thermal noise is approximate, with no fitted 1/f term (KF defaults to zero), body shot or induced gate noise. No avalanche, ESD clamp, package L/C, self-heating, BSIM/EKV or large-signal switching behavior is claimed. Direct Taylor IM2/IM3 omits quadratic remixing and compression.
+
+## MESFET transistors
+
+`MESFET()` returns **1 gate, 2 drain, 3 source**, using N-channel Statz/MES1.
+Its only model, **SPICE3_REFERENCE**, uses published SPICE example parameters;
+**it is not a commercial transistor fit**. Default Q point is VGS=−0.5 V,
+VDS=2 V. Gate/drain curve intervals use the same API as JFETs, defaulting to
+0…−2 V (5 curves) and 0…3 V (101 points).
+
+```js
+nP.global.fList = [10e6, 100e6, 1e9];
+var q1 = nP.MESFET({model: 'SPICE3_REFERENCE'});
+var short1 = nP.Short();
+var network = nP.nodal(
+    [q1, 1, 2, 3],
+    [short1, 3],
+    ['out', 1, 2]
+);
+var response = network.out('s21dB', 'NF21dB');
+nP.lineTable({inputTable: [response]});
+```
+
+Supply-driven networks solve DC before RF using contacts and Schottky gate
+currents. Voltage-dependent gate capacitances preserve MES1's differential
+branch partition. Classical channel/contact noise and direct weak Taylor
+products are approximate. Electrical temperature stays fixed at 300.15 K;
+selected temperature changes thermal noise only. There is no fitted microwave
+noise, package L/C, trapping, dispersion, self-heating or P-channel profile.
+HEMT remains drawing-only. Commercial MESFET records are still pending.

@@ -1,16 +1,16 @@
-<!-- Modified: 2026-11-17 -->
+<!-- Modified: 2026-11-19 -->
 # DC constructor audit
 
-This source-inspected inventory supports the [shared DC analysis contract](../dcAnalysis.md). Electrical constructors attach validated immutable `_dcModel` descriptors. Existing `nodal()`, `cas()` and `cascade()` preserve their component connections and child DC models. `nPort.solveDC()` implements the linear reductions/equations below. NPN/PNP nonlinear solving and automatic DC-before-RF handoff are implemented for networks with explicit `V()` supplies. Missing physical DC laws and unsupported diode adapters are reported with placement paths before assembly. Existing I–V methods and 0 Hz S rows remain separate from network DC solving.
+This source-inspected inventory supports the [shared DC analysis contract](../dcAnalysis.md). Electrical constructors attach validated immutable `_dcModel` descriptors. Existing `nodal()`, `cas()` and `cascade()` preserve their component connections and child DC models. `nPort.solveDC()` implements the linear reductions/equations below. NPN/PNP, NJF/PJF, NMOS/PMOS, MESFET and both diode adapters implement nonlinear solving and automatic DC-before-RF handoff for networks with explicit `V()` supplies. Missing physical DC laws and unsupported definitions are reported with placement paths before assembly. Existing I–V methods and 0 Hz S rows remain separate from network DC solving.
 
-`src/np-nport/src/index.js` exports 62 functions: 56 direct components, `lpfGen()`, `nodal()`, `cascade()` and three synthesis helpers. Thus 59 return nPorts. Export-coverage tests check every export against this inventory and require each electrical result to have a validated DC descriptor. Add an explicit test fixture if a future constructor requires arguments; never silently exclude it from coverage. The `Tlin` export now uses the normal whitespace so generated symbol coverage includes it.
+`src/np-nport/src/index.js` exports 67 functions: 61 direct components, `lpfGen()`, `nodal()`, `cascade()` and three synthesis helpers. Thus 64 return nPorts. Export-coverage tests check every export against this inventory and require each electrical result to have a validated DC descriptor. Add an explicit test fixture if a future constructor requires arguments; never silently exclude it from coverage. The `Tlin` export now uses the normal whitespace so generated symbol coverage includes it.
 
 ## Adapter classes
 
 | Class | Meaning |
 | --- | --- |
 | Linear | DC equations follow from the declared circuit model; descriptors and linear stamping/reduction are implemented. |
-| Nonlinear | NPN/PNP network current/Jacobian solving and reconstruction are implemented. Diode network adapters and reconstruction remain future work. |
+| Nonlinear | NPN/PNP, NJF/PJF, NMOS/PMOS, MESFET and both diode current/Jacobian adapters and RF reconstruction are implemented. |
 | Composite | Preserve and compose actual child definitions and connectivity. |
 | Needs model | Physical DC behavior is incomplete/unspecified; require DC data/equivalent or explicit mathematical-fixture selection. |
 | Helper | Synthesis data, not an electrical component; no DC stamping. |
@@ -106,8 +106,13 @@ Sources: `src/np-nport/src/transistors/bjt/` and `src/np-nport/src/diodes/`. Pre
 | --- | --- | --- | --- |
 | `NPN` | 3 | Nonlinear | B/C/E = 1/2/3. Fixed-VBE/constant-beta estimate, then shared Gummel–Poon currents/Jacobian. Retain RB/RC/RE and the selected package, with internal package L shorted and C opened. Repeated placements get independent states. |
 | `PNP` | 3 | Nonlinear | Same B/C/E order/engine, with signed physical voltages/currents. Entering emitter terminal current differs in sign from legacy outward `.bias.ie`. |
+| `MESFET` | 3 | Nonlinear | N-channel Statz/MES1 SPICE reference profile (not a commercial fit), G/D/S currents, RD/RS, Schottky gates; shared DC solve and intrinsic-voltage RF/noise/nonlinear handoff. Electrical temperature fixed at 300.15 K. |
+| `NJF` | 3 | Nonlinear | Level-1 G/D/S JFET, signed entering currents, gate leakage and RD/RS; shared Newton solve and intrinsic-voltage RF handoff. |
+| `PJF` | 3 | Nonlinear | P-channel signed counterpart with its own onsemi record; same G/D/S order and DC/RF reconstruction. |
+| `NMOS` | 3 or 4 | Nonlinear | Level-1 G/D/S plus optional B. Default ties B to external S; RD/RS and body junctions remain. Shared Newton solve and three intrinsic-voltage RF handoff. A floating gate gives DC_FLOATING_BIAS. |
+| `PMOS` | 3 or 4 | Nonlinear | P-channel signed counterpart, one DMP58D0SV channel. Same body contract; external body uses the equation-level primitive, not an accessible package pin. |
 | `D` | 2 | Nonlinear | Anode/cathode = 1/2. Selected SPICE-style junction law and RS; leakage resistor outside the RS-plus-junction branch. Retain supported temperature/breakdown behavior. |
-| `diode1N4148` | 2 | Nonlinear | Reuse legacy current law/parameters: leakage inside the junction branch, series resistance and its own breakdown continuation. Extract a reusable evaluator without substituting the `D()` card or noise treatment. |
+| `diode1N4148` | 2 | Nonlinear | Reuse legacy current law/parameters: leakage inside the junction branch, series resistance and its own breakdown continuation. The reusable legacyDiode.js evaluator serves DC and RF without substituting the D() card or noise treatment. |
 
 ## Composition and synthesis
 
@@ -126,7 +131,7 @@ Sources: `src/np-nport/src/combining/`, `src/np-nport/src/filters/` and `src/np-
 
 ## Numerical sources
 
-`V()` is implemented in `src/np-nport/src/sources/V.js` as a floating two-port nPort with an immutable DC voltage-source definition. The other source drawings below still lack numerical constructors. `solveDC()` stamps the voltage constraint and source-current unknown. NPN/PNP nonlinear solving is implemented; diode DC adapters remain future work.
+`V()` is implemented in `src/np-nport/src/sources/V.js` as a floating two-port nPort with an immutable DC voltage-source definition. The other source drawings below still lack numerical constructors. `solveDC()` stamps the voltage constraint and source-current unknown. NPN/PNP, NJF/PJF, NMOS/PMOS, D() and diode1N4148() nonlinear solving and RF rebuilding are implemented.
 
 | Constructor | Ports | Class | DC and incremental RF behavior |
 | --- | --- | --- | --- |

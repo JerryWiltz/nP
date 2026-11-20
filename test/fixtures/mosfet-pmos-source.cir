@@ -1,0 +1,44 @@
+PMOS source manufacturer MOS1 independent reference
+* Modified: 2026-11-19
+* DMN55D0UT / DMP58D0SV parameter facts; source URLs in mosfet-reference.js
+.temp 27
+.options gmin=1e-18 abstol=1e-18 reltol=1e-10
+.model device PMOS (LEVEL=1 VTO=-2.10 KP=25m GAMMA=2.60 PHI=.75 LAMBDA=133u RD=1.12 RS=1.12 IS=80f PB=.8 MJ=.460 CBD=12.8p CBS=15.4p CGSO=16.8n CGDO=14n CGBO=239n)
+M1 d g s s device L=100u W=100u
+VG gb 0 DC -2.6
+VD db 0 DC -5
+VS sb 0 DC 0
+Lg gb g 1e9
+Rg acg 0 50
+Cg acg g 1e-4
+Ig 0 acg DC 0 AC 1
+Ld db d 1e9
+Rd acd 0 50
+Cd acd d 1e-4
+Id 0 acd DC 0 AC 0
+Ls sb s 1e9
+Rs acs 0 50
+Cs acs s 1e-4
+Is 0 acs DC 0 AC 0
+.control
+set numdgt=16
+set wr_vecnames
+set wr_singlescale
+op
+wrdata mosfet-pmos-source-op.txt v(g) v(d) v(s) i(VG) i(VD) i(VS) @m1[gm] @m1[gds] @m1[gmbs]
+ac dec 1 10meg 1g
+wrdata mosfet-pmos-source-port1.txt v(acg) v(acd) v(acs)
+alter @Ig[acmag]=0
+alter @Id[acmag]=1
+ac dec 1 10meg 1g
+wrdata mosfet-pmos-source-port2.txt v(acg) v(acd) v(acs)
+alter @Id[acmag]=0
+alter @Is[acmag]=1
+ac dec 1 10meg 1g
+wrdata mosfet-pmos-source-port3.txt v(acg) v(acd) v(acs)
+set temp=65
+op
+wrdata mosfet-pmos-source-hot.txt v(g) v(d) v(s) i(VG) i(VD) i(VS)
+quit
+.endc
+.end

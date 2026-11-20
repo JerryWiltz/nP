@@ -1,5 +1,7 @@
-// Modified: 2026-11-15
+// Modified: 2026-11-19
+import {deviceProducts} from './transistors/deviceRf';
 import {bjtProducts} from './transistors/bjt/bjtRf';
+import {threeTerminalProducts} from './transistors/threeTerminalRf';
 import {complex} from '../../np-math/src/complex';
 import {matrix, dim} from '../../np-math/src/matrix';
 
@@ -179,6 +181,8 @@ var generated = function (nport, frequency, context, tones) {
 	}
 	if (model.type === 'diode') return diodeProducts(nport, frequency, context, tones, model);
 	if (model.type === 'bjt') return bjtProducts(model, frequency, context, tones);
+	if (['mosfet', 'mesfet'].includes(model.type)) return deviceProducts(model, frequency, context, tones);
+	if (model.type === 'jfet') return threeTerminalProducts(model, frequency, context, tones);
 	if (model.type !== 'amp') return zeroVector(count);
 	var output = zeroVector(count);
 	var b1 = rowAt(nport, tones.f1)[3].mul(context.input1[0]);

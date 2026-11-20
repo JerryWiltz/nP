@@ -1,20 +1,45 @@
-// Modified: 2026-11-17
+// Modified: 2026-11-19
 import {temperatureParameters, gummelPoon} from './transistors/bjt/gummelPoon';
 import {solveDcLinearSystem, dcLinearError} from './dcLinearSystem';
+import {diodeDcCurrent} from './diodes/diodeDc';
+import {mosfetJunction} from './transistors/fet/mosfetEquations';
+import {mesfetJunction} from './transistors/fet/mesfetEquations';
+import {jfetJunction} from './transistors/fet/jfetEquations';
 
 export function bjtDcDevice(model, nodes, path) {
     const d = model.definition;
-    return {path, nodes, p: temperatureParameters(d.record.parameters, d.temperature), polarity: d.polarity};
+    return {kind: 'bjt', path, nodes, p: temperatureParameters(d.record.parameters, d.temperature), polarity: d.polarity};
 }
 function add(terms, index, value) {
     if (index !== null && value) terms.set(index, (terms.get(index) || 0) + value);
 }
 function value(values, node) { return node === null ? 0 : values[node]; }
 function intrinsic(device, values) {
+    if (device.controls) return device.controls.map(([a, b]) => value(values, device.nodes[a]) - value(values, device.nodes[b]));
+    if (device.nodes.length === 2) return [value(values, device.nodes[0]) - value(values, device.nodes[1])];
     const [b, c, e] = device.nodes;
     return [value(values, b) - value(values, e), value(values, b) - value(values, c)];
 }
 function evaluate(device, values) {
+    if (device.kind === 'mosfet') {
+        try {
+            return mosfetJunction(device.p, ...intrinsic(device, values), device.polarity).currents.map(row =>
+                ({current: row[0], derivatives: [row[1], row[2], -row[1] - row[2] - row[3], row[3]]}));
+        } catch (error) { if (error instanceof RangeError) return null; throw error; }
+    }
+    if (device.nodes.length === 2) {
+        const data = diodeDcCurrent(device, intrinsic(device, values)[0]);
+        if (![data.current, data.conductance].every(Number.isFinite)) return null;
+        return [{current: data.current, derivatives: [data.conductance, -data.conductance]},
+            {current: -data.current, derivatives: [-data.conductance, data.conductance]}];
+    }
+    if (['jfet', 'mesfet'].includes(device.kind)) {
+        try {
+            const equations = device.kind === 'mesfet' ? mesfetJunction : jfetJunction;
+            return equations(device.p, ...intrinsic(device, values), device.polarity).currents
+                .map(row => ({current: row[0], derivatives: [row[1] + row[2], -row[2], -row[1]]}));
+        } catch (error) { if (error instanceof RangeError) return null; throw error; }
+    }
     const [be, bc] = intrinsic(device, values), s = device.polarity;
     const data = gummelPoon(device.p, s * be, s * bc, false);
     if (data.qb <= 0 || data.currents.some(row => row.slice(0, 3).some(term => !Number.isFinite(term)))) return null;
@@ -67,12 +92,16 @@ function residual(assembly, values, sourceScale = 1) {
     });
     return {norm, maxKclAmps, maxVoltageResidual, maxScaledResidual};
 }
+function fetEstimateConductance(device) {
+    const u = Math.max(0, -device.p.VTO);
+    return device.kind === 'mesfet' ? device.p.ALPHA * device.p.BETA * u * u / (1 + device.p.B * u) : 2 * device.p.BETA * u;
+}
 function estimate(assembly) {
     if (assembly.constraints.every(row => !row.source || row.value === 0)) return {
         values: Array(assembly.variables.length).fill(0),
         report: {method: 'zero-source', status: 'used', assumptions: []}
     };
-    const regions = assembly.devices.map(() => 'forward'), attempted = new Set();
+    const regions = assembly.devices.map(device => ['jfet', 'mesfet'].includes(device.kind) ? 'ohmic' : device.kind === 'mosfet' ? 'cutoff' : 'forward'), attempted = new Set();
     const base = baseEquations(assembly), indices = rowIndex(assembly), size = assembly.variables.length;
     for (let attempt = 0; attempt < 8; attempt++) {
         const signature = regions.join(',');
@@ -81,20 +110,44 @@ function estimate(assembly) {
         const rows = base.map(row => ({...row, terms: new Map(row.terms)}));
         let count = size;
         assembly.devices.forEach((device, index) => {
+            if (device.kind === 'mosfet') return;
+            if (['jfet', 'mesfet'].includes(device.kind)) {
+                const conductance = fetEstimateConductance(device);
+                for (const [terminal, sign] of [[1, 1], [2, -1]]) {
+                    add(rows[indices.get(device.nodes[terminal])].terms, device.nodes[1], sign * conductance);
+                    add(rows[indices.get(device.nodes[terminal])].terms, device.nodes[2], -sign * conductance);
+                }
+                return;
+            }
             if (regions[index] === 'off') return;
-            const branches = [{voltage: 0.7, pair: [0, 2], ratios: [1, device.p.BF, -1 - device.p.BF]}];
-            if (regions[index] === 'saturation') branches.push({voltage: 0.55, pair: [0, 1], ratios: [1, -1 - device.p.BR, device.p.BR]});
+            const branches = device.kind === 'bjt' ? [{voltage: 0.7, pair: [0, 2], ratios: [1, device.p.BF, -1 - device.p.BF]}] :
+                [{voltage: regions[index] === 'breakdown' ? -device.breakdownVoltage : 0.7, pair: [0, 1], ratios: [1, -1]}];
+            if (device.kind === 'bjt' && regions[index] === 'saturation') branches.push({voltage: 0.55, pair: [0, 1], ratios: [1, -1 - device.p.BR, device.p.BR]});
             for (const branch of branches) {
                 const current = count++, terms = new Map();
                 device.nodes.forEach((node, port) => add(rows[indices.get(node)].terms, current, branch.ratios[port]));
                 add(terms, device.nodes[branch.pair[0]], 1); add(terms, device.nodes[branch.pair[1]], -1);
-                rows.push({terms, value: device.polarity * branch.voltage, kind: 'constraint'});
+                rows.push({terms, value: (device.polarity || 1) * branch.voltage, kind: 'constraint'});
             }
         });
         try {
             const solution = solveDcLinearSystem(rows, count), values = solution.values.slice(0, size);
             let currentIndex = size, changed = false;
             assembly.devices.forEach((device, index) => {
+                if (['jfet', 'mesfet', 'mosfet'].includes(device.kind)) return;
+                if (device.nodes.length === 2) {
+                    const voltage = intrinsic(device, values)[0], previous = regions[index];
+                    let next = previous;
+                    if (previous === 'off') {
+                        if (voltage > 0.7) next = 'forward';
+                        else if (voltage < -device.breakdownVoltage) next = 'breakdown';
+                    } else {
+                        const current = solution.values[currentIndex++];
+                        if (previous === 'forward' && current < -1e-12 || previous === 'breakdown' && current > 1e-12) next = 'off';
+                    }
+                    if (next !== previous) { regions[index] = next; changed = true; }
+                    return;
+                }
                 const [be, bc] = intrinsic(device, values), s = device.polarity;
                 let next = regions[index];
                 if (next === 'off') { if (s * be > 0.7) next = 'forward'; }
@@ -107,9 +160,15 @@ function estimate(assembly) {
                 }
                 if (next !== regions[index]) { regions[index] = next; changed = true; }
             });
-            if (!changed) return {values, report: {method: 'piecewise-bjt', status: 'used',
+            if (!changed) return {values, report: {method: assembly.devices.every(device => device.kind === 'bjt') ? 'piecewise-bjt' :
+                assembly.devices.every(device => device.nodes.length === 2) ? 'piecewise-diode' :
+                assembly.devices.every(device => device.kind === 'jfet') ? 'piecewise-jfet' :
+                assembly.devices.every(device => device.kind === 'mesfet') ? 'piecewise-mesfet' :
+                assembly.devices.every(device => device.kind === 'mosfet') ? 'piecewise-mosfet' : 'piecewise-devices', status: 'used',
                 assumptions: assembly.devices.map((device, index) => ({path: device.path, region: regions[index],
-                    forwardVoltage: 0.7, reverseVoltage: 0.55, beta: device.p.BF}))}};
+                    ...(device.kind === 'mosfet' ? {gateCurrent: 0, channelCurrent: 0, bodyJunctions: 'open estimate'} : ['jfet', 'mesfet'].includes(device.kind) ? {gateVoltage: 0, channelConductance: fetEstimateConductance(device)} :
+                        {forwardVoltage: 0.7, ...(device.kind === 'bjt' ? {reverseVoltage: 0.55, beta: device.p.BF} :
+                            {breakdownVoltage: device.breakdownVoltage})})}))}};
         } catch (error) {
             if (!['DC_INCONSISTENT', 'DC_NUMERICAL_FAILURE'].includes(error.code)) throw error;
             break;
@@ -117,7 +176,7 @@ function estimate(assembly) {
     }
     const solution = solveDcLinearSystem(base, size);
     return {values: solution.values, report: {method: 'open-device', status: 'fallback',
-        reason: 'A consistent piecewise transistor estimate was unavailable; try the open-device linear state.'}};
+        reason: 'A consistent piecewise device estimate was unavailable; try the open-device linear state.'}};
 }
 function failedNewton(history, sourceScale, iterations, reason) {
     history.push({sourceScale, iterations, status: 'failed', reason});
@@ -182,14 +241,24 @@ function cleanGaugeModes(assembly, solution) {
         if (!groups.has(root)) groups.set(root, []);
         groups.get(root).push(node);
     }
-    solution.nullSpace = solution.nullSpace.map(direction => {
-        const remaining = direction.slice(), exact = Array(direction.length).fill(0);
-        for (const nodes of groups.values()) {
-            const common = direction[nodes[0]];
-            for (const node of nodes) { remaining[node] -= common; exact[node] = common; }
-        }
-        return Math.max(...remaining.map(Math.abs)) <= 32 * solution.tolerance ? exact : direction;
+    if (!groups.size) return;
+    const floating = [...groups.values()], numeric = solution.nullSpace;
+    // The topology proves these exact translation modes, even when very weak
+    // gate junctions make elimination's voltage entries differ by roundoff.
+    // Retain independent nongauge modes by solving for combinations with zero
+    // group-reference voltages; never enlarge a numerical cleanup threshold.
+    const constraints = Array.from({length: numeric.length}, (_, row) => ({kind: 'constraint', value: 0,
+        terms: new Map(row < floating.length ? numeric.map((direction, index) => [index, direction[floating[row][0]]]) : [])}));
+    const combinations = solveDcLinearSystem(constraints, numeric.length);
+    if (combinations.rank !== floating.length) throw dcLinearError('DC_NUMERICAL_FAILURE', 'DC null space does not preserve the topology-defined voltage gauges.');
+    const remaining = combinations.nullSpace.map(coefficients => Array.from({length: assembly.variables.length}, (_, column) =>
+        coefficients.reduce((sum, coefficient, index) => sum + coefficient * numeric[index][column], 0)));
+    const exact = floating.map(nodes => {
+        const direction = Array(assembly.variables.length).fill(0);
+        for (const node of nodes) direction[node] = 1;
+        return direction;
     });
+    solution.nullSpace = exact.concat(remaining);
 }
 function gaugeRoot(parents, node) {
     while (parents.get(node) !== node) node = parents.get(node);
@@ -214,7 +283,7 @@ export function solveDcNonlinear(assembly) {
             if (trial) { scale = next; values = trial.solution.values; result = trial; increment = Math.min(0.25, increment * 1.5); }
             else { increment /= 2; if (increment < 1e-5) break; }
         }
-        if (scale < 1) throw dcLinearError('DC_NONCONVERGENCE', 'DC transistor bias did not converge at the original source values.');
+        if (scale < 1) throw dcLinearError('DC_NONCONVERGENCE', 'DC device bias did not converge at the original source values.');
     }
     const checked = residual(assembly, result.solution.values);
     if (!Number.isFinite(checked.norm) || checked.norm > 1) throw dcLinearError('DC_NONCONVERGENCE', 'DC nonlinear residual checks failed.');

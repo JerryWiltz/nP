@@ -1,4 +1,4 @@
-// Modified: 2026-11-17
+// Modified: 2026-11-19
 import {global} from '../../../../np-global/src/global';
 import {nPort} from '../../nPort';
 import {componentSettings} from '../../componentSettings';
@@ -8,6 +8,7 @@ import {powers} from './taylor';
 import {temperatureParameters, operatingPoint, junctionOperatingPoint} from './gummelPoon';
 import {bjtFrequencyRow} from './bjtRf';
 import {dcModel} from '../../dcModel';
+import {ELEMENTARY_CHARGE} from '../../physicalConstants';
 
 function knownProperties(object, names, label) {
     if (!object || typeof object !== 'object' || Array.isArray(object)) throw new TypeError(label + ' must be an object.');
@@ -116,13 +117,20 @@ export function bjtConstructor(options, type, resolveModel, polarity) {
     return bjtInstance(description, Object.freeze({...settings, ...description.analysis}), point);
 }
 
+function bjtNoiseSources(p, point, frequency) {
+    const sources = [[0, 2, 2 * ELEMENTARY_CHARGE * Math.abs(point.ib)], [1, 2, 2 * ELEMENTARY_CHARGE * Math.abs(point.ic)]];
+    if (p.KF > 0 && frequency > 0) sources.push([0, 2, p.KF * Math.abs(point.ib) ** p.AF / frequency]);
+    return sources;
+}
+
 // Both construction paths use exactly the same RF/noise/nonlinearity builder.
 function bjtInstance(description, settings, point) {
     const {constructorName: type, definition} = description;
     const {record, configuration, polarity, temperature} = definition;
     const p = temperatureParameters(record.parameters, temperature);
     const frequencies = analysisFrequencies(settings), bias = curveSettings(definition.curveSettings, configuration, polarity);
-    const model = {type: 'bjt', p, point, record, referenceImpedance: settings.Ro, temperature, rows: new Map()};
+    const model = {type: 'bjt', p, point, record, referenceImpedance: settings.Ro, temperature, rows: new Map(),
+        seriesResistances: [p.RB, p.RC, p.RE], noiseSources: bjtNoiseSources.bind(null, p, point)};
     const spars = [], noise = [];
     for (const frequency of frequencies) {
         const row = bjtFrequencyRow(model, frequency);

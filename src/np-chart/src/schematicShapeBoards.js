@@ -9,20 +9,27 @@ function groundSlot(name) {
     return {name, symbols: ['short'], portCount: 1, ports: {in: [1]}};
 }
 
-function commonEmitterBoard(emitter, supplyBypass, collectorCommon, railOrder = 'sourceFirst') {
+const bipolarDivider = {name: 'commonEmitter', symbols: ['npn', 'pnp'], control: 'base', output: 'collector', common: 'emitter', returnPrefix: 'emitter'};
+const fetDivider = {name: 'commonSource', symbols: ['njf', 'pjf', 'nmos', 'pmos'], control: 'gate', output: 'drain', common: 'source', returnPrefix: 'return'};
+
+function dividerBiasedAmplifierBoard(emitter, supplyBypass, collectorCommon, railOrder = 'sourceFirst', device = bipolarDivider) {
+    const {control, output, common, returnPrefix} = device;
+    const controlJunction = control + 'Junction', outputLoad = output + 'Load', outputJunction = output + 'Junction';
+    const returnJunction = returnPrefix + 'Junction', returnResistor = returnPrefix + 'Resistor', returnBypass = returnPrefix + 'Bypass';
+    const returnGround = returnPrefix + 'Ground', returnBypassGround = returnPrefix + 'BypassGround', returnNetwork = returnPrefix + 'Network';
     const sideOutput = collectorCommon === 'output';
     const collectorFirst = supplyBypass && railOrder === 'collectorFirst';
     const slots = [
-        {name: 'device', symbols: ['npn', 'pnp'], portCount: 3,
-            ports: {base: [1], collector: [2], emitter: [3]}},
+        {name: 'device', symbols: device.symbols, portCount: 3,
+            ports: {[control]: [1], [output]: [2], [common]: [3]}},
         twoTerminalSlot('input', ['capacitor']),
-        {name: 'baseJunction', symbols: ['tee4'], portCount: 4,
+        {name: controlJunction, symbols: ['tee4'], portCount: 4,
             ports: {input: [1, 2, 3, 4], device: [1, 2, 3, 4], upper: [1, 2, 3, 4], lower: [1, 2, 3, 4]}},
         twoTerminalSlot('upperBias', ['resistor']),
         twoTerminalSlot('lowerBias', ['resistor']),
         groundSlot('biasGround'),
-        twoTerminalSlot('collectorLoad', ['resistor']),
-        {name: 'collectorJunction', symbols: ['tee'], portCount: 3,
+        twoTerminalSlot(outputLoad, ['resistor']),
+        {name: outputJunction, symbols: ['tee'], portCount: 3,
             ports: {supply: sideOutput ? [2, 3] : [1], device: [2, 3], output: sideOutput ? [1] : [2, 3]}},
         twoTerminalSlot('output', ['capacitor']),
         {name: 'supplyJunction', symbols: ['tee'], portCount: 3,
@@ -32,15 +39,15 @@ function commonEmitterBoard(emitter, supplyBypass, collectorCommon, railOrder = 
         groundSlot('sourceGround')
     ];
     const components = [
-        {slot: 'device', anchor: 'base', directions: {base: 'left', collector: 'up', emitter: 'down'}},
+        {slot: 'device', anchor: control, directions: {[control]: 'left', [output]: 'up', [common]: 'down'}},
         {slot: 'input', anchor: 'out', directions: {in: 'left', out: 'right'}},
-        {slot: 'baseJunction', anchor: 'device',
+        {slot: controlJunction, anchor: 'device',
             directions: {input: 'left', device: 'right', upper: 'up', lower: 'down'}},
         {slot: 'upperBias', anchor: 'out', directions: {in: 'up', out: 'down'}},
         {slot: 'lowerBias', anchor: 'in', directions: {in: 'up', out: 'down'}},
         {slot: 'biasGround', anchor: 'in', directions: {in: 'up'}},
-        {slot: 'collectorLoad', anchor: 'in', directions: {in: 'up', out: 'down'}},
-        {slot: 'collectorJunction', anchor: sideOutput ? 'supply' : 'device',
+        {slot: outputLoad, anchor: 'in', directions: {in: 'up', out: 'down'}},
+        {slot: outputJunction, anchor: sideOutput ? 'supply' : 'device',
             directions: sideOutput ? {supply: 'up', device: 'down', output: 'right'} :
                 {supply: 'up', device: 'left', output: 'right'}},
         {slot: 'output', anchor: 'in',
@@ -54,17 +61,17 @@ function commonEmitterBoard(emitter, supplyBypass, collectorCommon, railOrder = 
     ];
     const wires = [
         {from: {externalPort: 1}, to: {slot: 'input', port: 'in'}},
-        {from: {slot: 'input', port: 'out'}, to: {slot: 'baseJunction', port: 'input'}},
-        {from: {slot: 'baseJunction', port: 'device'}, to: {slot: 'device', port: 'base'}},
-        {from: {slot: 'baseJunction', port: 'upper'}, to: {slot: 'upperBias', port: 'out'}},
-        {from: {slot: 'baseJunction', port: 'lower'}, to: {slot: 'lowerBias', port: 'in'}},
+        {from: {slot: 'input', port: 'out'}, to: {slot: controlJunction, port: 'input'}},
+        {from: {slot: controlJunction, port: 'device'}, to: {slot: 'device', port: control}},
+        {from: {slot: controlJunction, port: 'upper'}, to: {slot: 'upperBias', port: 'out'}},
+        {from: {slot: controlJunction, port: 'lower'}, to: {slot: 'lowerBias', port: 'in'}},
         {from: {slot: 'lowerBias', port: 'out'}, to: {slot: 'biasGround', port: 'in'}},
         {from: {slot: 'upperBias', port: 'in'}, to: {slot: 'supplyJunction', port: 'bias'}, route: 'verticalFirst'},
         ...(!collectorFirst ? [{from: {slot: 'supplyJunction', port: 'source'}, to: {slot: 'source', port: 'in'}, route: 'horizontalFirst'}] : []),
         {from: {slot: 'source', port: 'out'}, to: {slot: 'sourceGround', port: 'in'}},
-        {from: {slot: 'collectorLoad', port: 'out'}, to: {slot: 'collectorJunction', port: 'supply'}},
-        {from: {slot: 'device', port: 'collector'}, to: {slot: 'collectorJunction', port: 'device'}, route: 'verticalFirst'},
-        {from: {slot: 'collectorJunction', port: 'output'}, to: {slot: 'output', port: 'in'}},
+        {from: {slot: outputLoad, port: 'out'}, to: {slot: outputJunction, port: 'supply'}},
+        {from: {slot: 'device', port: output}, to: {slot: outputJunction, port: 'device'}, route: 'verticalFirst'},
+        {from: {slot: outputJunction, port: 'output'}, to: {slot: 'output', port: 'in'}},
         {from: {slot: 'output', port: 'out'}, to: {externalPort: 2}}
     ];
     if (supplyBypass) {
@@ -79,45 +86,45 @@ function commonEmitterBoard(emitter, supplyBypass, collectorCommon, railOrder = 
             {slot: 'supplyBypass', anchor: 'in', directions: {in: 'up', out: 'down'}},
             {slot: 'supplyBypassGround', anchor: 'in', directions: {in: 'up'}});
         wires.push(...(collectorFirst ? [
-            {from: {slot: 'supplyJunction', port: 'load'}, to: {slot: 'collectorLoad', port: 'in'}},
+            {from: {slot: 'supplyJunction', port: 'load'}, to: {slot: outputLoad, port: 'in'}},
             {from: {slot: 'supplyJunction', port: 'source'}, to: {slot: 'railJunction', port: 'load'}},
             {from: {slot: 'railJunction', port: 'supply'}, to: {slot: 'source', port: 'in'}, route: 'horizontalFirst'}
         ] : [
             {from: {slot: 'supplyJunction', port: 'load'}, to: {slot: 'railJunction', port: 'supply'}},
-            {from: {slot: 'railJunction', port: 'load'}, to: {slot: 'collectorLoad', port: 'in'}}
+            {from: {slot: 'railJunction', port: 'load'}, to: {slot: outputLoad, port: 'in'}}
         ]),
             {from: {slot: 'railJunction', port: 'bypass'}, to: {slot: 'supplyBypass', port: 'in'}, route: 'horizontalFirst'},
             {from: {slot: 'supplyBypass', port: 'out'}, to: {slot: 'supplyBypassGround', port: 'in'}});
-    } else wires.push({from: {slot: 'supplyJunction', port: 'load'}, to: {slot: 'collectorLoad', port: 'in'}, route: 'horizontalFirst'});
+    } else wires.push({from: {slot: 'supplyJunction', port: 'load'}, to: {slot: outputLoad, port: 'in'}, route: 'horizontalFirst'});
     if (emitter === 'split') {
-        slots.push({name: 'emitterJunction', symbols: ['tee'], portCount: 3,
+        slots.push({name: returnJunction, symbols: ['tee'], portCount: 3,
             ports: {device: [1], resistor: [2, 3], bypass: [2, 3]}},
-        twoTerminalSlot('emitterResistor', ['resistor']), twoTerminalSlot('emitterBypass', ['capacitor']),
-        groundSlot('emitterGround'), groundSlot('emitterBypassGround'));
+        twoTerminalSlot(returnResistor, ['resistor']), twoTerminalSlot(returnBypass, ['capacitor']),
+        groundSlot(returnGround), groundSlot(returnBypassGround));
         components.push(
-            {slot: 'emitterJunction', anchor: 'device', directions: {device: 'up', resistor: 'left', bypass: 'right'}},
-            {slot: 'emitterResistor', anchor: 'in', directions: {in: 'up', out: 'down'}},
-            {slot: 'emitterBypass', anchor: 'in', directions: {in: 'up', out: 'down'}},
-            {slot: 'emitterGround', anchor: 'in', directions: {in: 'up'}},
-            {slot: 'emitterBypassGround', anchor: 'in', directions: {in: 'up'}});
+            {slot: returnJunction, anchor: 'device', directions: {device: 'up', resistor: 'left', bypass: 'right'}},
+            {slot: returnResistor, anchor: 'in', directions: {in: 'up', out: 'down'}},
+            {slot: returnBypass, anchor: 'in', directions: {in: 'up', out: 'down'}},
+            {slot: returnGround, anchor: 'in', directions: {in: 'up'}},
+            {slot: returnBypassGround, anchor: 'in', directions: {in: 'up'}});
         wires.push(
-            {from: {slot: 'device', port: 'emitter'}, to: {slot: 'emitterJunction', port: 'device'}},
-            {from: {slot: 'emitterJunction', port: 'resistor'}, to: {slot: 'emitterResistor', port: 'in'}, route: 'horizontalFirst'},
-            {from: {slot: 'emitterJunction', port: 'bypass'}, to: {slot: 'emitterBypass', port: 'in'}, route: 'horizontalFirst'},
-            {from: {slot: 'emitterResistor', port: 'out'}, to: {slot: 'emitterGround', port: 'in'}},
-            {from: {slot: 'emitterBypass', port: 'out'}, to: {slot: 'emitterBypassGround', port: 'in'}});
+            {from: {slot: 'device', port: common}, to: {slot: returnJunction, port: 'device'}},
+            {from: {slot: returnJunction, port: 'resistor'}, to: {slot: returnResistor, port: 'in'}, route: 'horizontalFirst'},
+            {from: {slot: returnJunction, port: 'bypass'}, to: {slot: returnBypass, port: 'in'}, route: 'horizontalFirst'},
+            {from: {slot: returnResistor, port: 'out'}, to: {slot: returnGround, port: 'in'}},
+            {from: {slot: returnBypass, port: 'out'}, to: {slot: returnBypassGround, port: 'in'}});
     } else {
-        slots.push(twoTerminalSlot('emitterNetwork', [emitter === 'combined' ? 'se-parallel-rc' : 'resistor']), groundSlot('emitterGround'));
+        slots.push(twoTerminalSlot(returnNetwork, [emitter === 'combined' ? 'se-parallel-rc' : 'resistor']), groundSlot(returnGround));
         components.push(
-            {slot: 'emitterNetwork', anchor: 'in', directions: {in: 'up', out: 'down'}},
-            {slot: 'emitterGround', anchor: 'in', directions: {in: 'up'}});
+            {slot: returnNetwork, anchor: 'in', directions: {in: 'up', out: 'down'}},
+            {slot: returnGround, anchor: 'in', directions: {in: 'up'}});
         wires.push(
-            {from: {slot: 'device', port: 'emitter'}, to: {slot: 'emitterNetwork', port: 'in'}},
-            {from: {slot: 'emitterNetwork', port: 'out'}, to: {slot: 'emitterGround', port: 'in'}});
+            {from: {slot: 'device', port: common}, to: {slot: returnNetwork, port: 'in'}},
+            {from: {slot: returnNetwork, port: 'out'}, to: {slot: returnGround, port: 'in'}});
     }
-    return {name: 'commonEmitter', version: 1, variant: `${emitter}${supplyBypass ? '-supply-bypass' : ''}-${collectorCommon}${collectorFirst ? '-collector-first' : ''}`,
+    return {name: device.name, version: 1, variant: `${emitter}${supplyBypass ? '-supply-bypass' : ''}-${collectorCommon}${collectorFirst ? '-collector-first' : ''}`,
         match: {externalPortCount: 2, slots}, board: {grid: 10, layout: 'relations', components, wires,
-            order: [{axis: 'x', slots: ['input', 'baseJunction', 'device', 'output',
+            order: [{axis: 'x', slots: ['input', controlJunction, 'device', 'output',
                 ...(supplyBypass ? ['supplyBypass'] : []), 'source']},
             {axis: 'y', slots: [['sourceGround', ...(supplyBypass ? ['supplyBypassGround'] : [])], 'output', 'device']}],
             externalPorts: [
@@ -126,12 +133,101 @@ function commonEmitterBoard(emitter, supplyBypass, collectorCommon, railOrder = 
             ]}};
 }
 
+function commonSourceBoard(sourceNetwork, supplyBypass, drainCommon) {
+    const sideOutput = drainCommon === 'output';
+    const slots = [
+        {name: 'device', symbols: ['njf', 'pjf', 'nmos', 'pmos'], portCount: 3, ports: {gate: [1], drain: [2], source: [3]}},
+        twoTerminalSlot('input', ['capacitor']),
+        {name: 'gateJunction', symbols: ['tee'], portCount: 3, ports: {bias: [1], input: [2, 3], device: [2, 3]}},
+        twoTerminalSlot('gateResistor', ['resistor']), groundSlot('gateGround'),
+        twoTerminalSlot('drainLoad', ['resistor']),
+        {name: 'drainJunction', symbols: ['tee'], portCount: 3,
+            ports: {supply: sideOutput ? [2, 3] : [1], device: [2, 3], output: sideOutput ? [1] : [2, 3]}},
+        twoTerminalSlot('output', ['capacitor']),
+        {name: 'source', symbols: ['voltage-source'], portCount: 2, ports: {in: [1], out: [2]}},
+        groundSlot('sourceGround')
+    ];
+    const components = [
+        {slot: 'device', anchor: 'gate', directions: {gate: 'left', drain: 'up', source: 'down'}},
+        {slot: 'input', anchor: 'out', directions: {in: 'left', out: 'right'}},
+        {slot: 'gateJunction', anchor: 'device', directions: {input: 'left', device: 'right', bias: 'down'}},
+        {slot: 'gateResistor', anchor: 'in', directions: {in: 'up', out: 'down'}},
+        {slot: 'gateGround', anchor: 'in', directions: {in: 'up'}},
+        {slot: 'drainLoad', anchor: 'in', directions: {in: 'up', out: 'down'}},
+        {slot: 'drainJunction', anchor: sideOutput ? 'supply' : 'device', directions: sideOutput ?
+            {supply: 'up', device: 'down', output: 'right'} : {supply: 'up', device: 'left', output: 'right'}},
+        {slot: 'output', anchor: 'in', directions: {in: 'left', out: 'right'}},
+        {slot: 'source', anchor: 'in', directions: {in: 'up', out: 'down'}},
+        {slot: 'sourceGround', anchor: 'in', directions: {in: 'up'}}
+    ];
+    const wires = [
+        {from: {externalPort: 1}, to: {slot: 'input', port: 'in'}},
+        {from: {slot: 'input', port: 'out'}, to: {slot: 'gateJunction', port: 'input'}},
+        {from: {slot: 'gateJunction', port: 'device'}, to: {slot: 'device', port: 'gate'}},
+        {from: {slot: 'gateJunction', port: 'bias'}, to: {slot: 'gateResistor', port: 'in'}},
+        {from: {slot: 'gateResistor', port: 'out'}, to: {slot: 'gateGround', port: 'in'}},
+        {from: {slot: 'drainLoad', port: 'out'}, to: {slot: 'drainJunction', port: 'supply'}},
+        {from: {slot: 'device', port: 'drain'}, to: {slot: 'drainJunction', port: 'device'}, route: 'verticalFirst'},
+        {from: {slot: 'drainJunction', port: 'output'}, to: {slot: 'output', port: 'in'}},
+        {from: {slot: 'output', port: 'out'}, to: {externalPort: 2}},
+        {from: {slot: 'source', port: 'out'}, to: {slot: 'sourceGround', port: 'in'}}
+    ];
+    if (supplyBypass) {
+        slots.push({name: 'supplyJunction', symbols: ['tee'], portCount: 3, ports: {bypass: [1], load: [2, 3], source: [2, 3]}},
+            twoTerminalSlot('supplyBypass', ['capacitor']), groundSlot('supplyBypassGround'));
+        components.push({slot: 'supplyJunction', anchor: 'load', directions: {load: 'left', source: 'right', bypass: 'down'}},
+            {slot: 'supplyBypass', anchor: 'in', directions: {in: 'up', out: 'down'}},
+            {slot: 'supplyBypassGround', anchor: 'in', directions: {in: 'up'}});
+        wires.push({from: {slot: 'drainLoad', port: 'in'}, to: {slot: 'supplyJunction', port: 'load'}, route: 'verticalFirst'},
+            {from: {slot: 'supplyJunction', port: 'source'}, to: {slot: 'source', port: 'in'}, route: 'horizontalFirst'},
+            {from: {slot: 'supplyJunction', port: 'bypass'}, to: {slot: 'supplyBypass', port: 'in'}},
+            {from: {slot: 'supplyBypass', port: 'out'}, to: {slot: 'supplyBypassGround', port: 'in'}});
+    } else wires.push({from: {slot: 'source', port: 'in'}, to: {slot: 'drainLoad', port: 'in'}, route: 'horizontalFirst'});
+    if (sourceNetwork === 'split') {
+        slots.push({name: 'returnJunction', symbols: ['tee'], portCount: 3, ports: {device: [1], resistor: [2, 3], bypass: [2, 3]}},
+            twoTerminalSlot('sourceResistor', ['resistor']), twoTerminalSlot('sourceBypass', ['capacitor']),
+            groundSlot('returnGround'), groundSlot('returnBypassGround'));
+        components.push({slot: 'returnJunction', anchor: 'device', directions: {device: 'up', resistor: 'left', bypass: 'right'}},
+            {slot: 'sourceResistor', anchor: 'in', directions: {in: 'up', out: 'down'}},
+            {slot: 'sourceBypass', anchor: 'in', directions: {in: 'up', out: 'down'}},
+            {slot: 'returnGround', anchor: 'in', directions: {in: 'up'}},
+            {slot: 'returnBypassGround', anchor: 'in', directions: {in: 'up'}});
+        wires.push({from: {slot: 'device', port: 'source'}, to: {slot: 'returnJunction', port: 'device'}},
+            {from: {slot: 'returnJunction', port: 'resistor'}, to: {slot: 'sourceResistor', port: 'in'}, route: 'horizontalFirst'},
+            {from: {slot: 'returnJunction', port: 'bypass'}, to: {slot: 'sourceBypass', port: 'in'}, route: 'horizontalFirst'},
+            {from: {slot: 'sourceResistor', port: 'out'}, to: {slot: 'returnGround', port: 'in'}},
+            {from: {slot: 'sourceBypass', port: 'out'}, to: {slot: 'returnBypassGround', port: 'in'}});
+    } else {
+        slots.push(twoTerminalSlot('sourceNetwork', [sourceNetwork === 'combined' ? 'se-parallel-rc' : 'resistor']), groundSlot('returnGround'));
+        components.push({slot: 'sourceNetwork', anchor: 'in', directions: {in: 'up', out: 'down'}},
+            {slot: 'returnGround', anchor: 'in', directions: {in: 'up'}});
+        wires.push({from: {slot: 'device', port: 'source'}, to: {slot: 'sourceNetwork', port: 'in'}},
+            {from: {slot: 'sourceNetwork', port: 'out'}, to: {slot: 'returnGround', port: 'in'}});
+    }
+    return {name: 'commonSource', version: 1, variant: `${sourceNetwork}${supplyBypass ? '-supply-bypass' : ''}-${drainCommon}`,
+        match: {externalPortCount: 2, slots}, board: {grid: 10, layout: 'relations', components, wires,
+            order: [{axis: 'x', slots: ['input', 'gateJunction', 'device', 'output', ...(supplyBypass ? ['supplyBypass'] : []), 'source']},
+                {axis: 'y', slots: [['sourceGround', ...(supplyBypass ? ['supplyBypassGround'] : [])], 'output', 'device']}],
+            externalPorts: [{port: 1, from: {slot: 'input', port: 'in'}, side: 'left'}, {port: 2, from: {slot: 'output', port: 'out'}, side: 'right'}]}};
+}
+
+const commonSourceVariants = ['split', 'combined', 'resistor'].flatMap(source => [false, true]
+    .flatMap(bypass => ['output', 'supply'].map(common => commonSourceBoard(source, bypass, common))));
+
+const dividerFetVariants = ['split', 'combined', 'resistor'].flatMap(source => [false, true]
+    .flatMap(bypass => ['output', 'supply'].flatMap(common => (bypass ? ['sourceFirst', 'collectorFirst'] : ['sourceFirst'])
+        .map(order => ({...dividerBiasedAmplifierBoard(source, bypass, common, order, fetDivider),
+            variant: 'divider-' + source + (bypass ? '-supply-bypass' : '') + '-' + common + '-' + order})))));
+commonSourceVariants.push(...dividerFetVariants);
+
+
 const commonEmitterVariants = ['split', 'combined', 'resistor'].flatMap(emitter => [true, false]
     .flatMap(bypass => ['output', 'supply'].flatMap(common =>
         (bypass ? ['collectorFirst', 'sourceFirst'] : ['sourceFirst'])
-            .map(order => commonEmitterBoard(emitter, bypass, common, order)))));
+            .map(order => dividerBiasedAmplifierBoard(emitter, bypass, common, order)))));
 
 export const schematicShapeBoards = {
+    commonSource: {...commonSourceVariants[0], detect: true, interface: {from: [1], to: [2]}, alternatives: commonSourceVariants.slice(1)},
     commonEmitter: {...commonEmitterVariants[0], detect: true, interface: {from: [1], to: [2]},
         alternatives: commonEmitterVariants.slice(1)},
     generic: {

@@ -37,6 +37,14 @@ See [groupedNetworks.html](../dev/shapes/groupedNetworks.html) for series–ladd
 
 ## Implemented boards
 
+### Common-source amplifier
+
+`commonSource` supports a self-biased NJF/PJF/MESFET with gate resistor to reference, drain resistor to a floating V supply, AC-coupled input/output, and source resistor with split R/C, combined sePaRC or no bypass. A supply bypass is optional. Both drain-Tee common-port arrangements are accepted. All 12 variants preserve G/D/S roles, automatic detection, explicit guidance, reflection, renamed nodes, row order and section composition. Divider-biased three-terminal NJF/PJF/NMOS/PMOS/MESFET stages now share the divider-amplifier topology with the bipolar board. Both rail orders and return-network variants are supported. Standalone independent-body MOSFET drawings work, but four-terminal amplifier boards and common-gate/common-drain remain unsupported. See [commonSource.html](../dev/shapes/commonSource.html) and [model contract](jfetModels.md).
+
+The divider generator takes control/output/common terminal roles and symbol sets; it preserves the existing BJT graph identities and derives FET role names without geometry corrections. See [MOSFET harness](../dev/shapes/mosfetCommonSource.html).
+
+The relational engine tries either transverse direction for a parallel-lead U connection, pruning incompatible difference constraints before component separation. This is a shared routing choice, not a shape coordinate correction. Related source and supply branch baselines use the ordinary topology-derived branch rules.
+
 ### Common-emitter amplifier
 
 `commonEmitter` is a named-slot board for a divider-biased NPN/PNP stage. It is

@@ -1,0 +1,20 @@
+NMOS external divider bias, body source
+* Modified: 2026-11-19
+.temp 27
+.options gmin=1e-18 abstol=1e-18 reltol=1e-10
+.model device NMOS (LEVEL=1 VTO=1 KP=.324 GAMMA=1.24 PHI=.75 LAMBDA=133u RD=.560 RS=.560 IS=80f PB=.8 MJ=.460 CBD=9.60p CBS=11.5p CGSO=25.2n CGDO=21n CGBO=204n)
+VDD supply 0 12
+RD supply drain 2200
+RUP supply gate 100e3
+RLOW gate 0 47000
+RS source 0 1000
+M1 drain gate source source device L=100u W=100u
+.control
+set numdgt=16
+set wr_vecnames
+set wr_singlescale
+op
+wrdata mosfet-nmos-source-divider.txt v(gate) v(drain) v(source) @m1[id] @m1[ib]
+quit
+.endc
+.end

@@ -286,6 +286,17 @@ ivTable returns volts/amperes without changing RF Q. Legacy diode1N4148 is a
 separate, available model using biasVoltage, temperatureK, ivStart, ivStop,
 ivPoints and diode parameters. A curve is not a network DC adapter.
 
+In capable bundles, diode component qPoint records report vd (anode minus
+cathode), id (positive anode to cathode), junctionVoltage, junctionCurrent,
+va, vk and temperature (K). Absolute va/vk may be null for a floating loop.
+Read the placement record from network.operatingPoint.components; it is not
+the unchanged template d1.qPoint or legacy d1.diode.bias. Both diode laws
+share the estimate/refine solver with BJTs but retain their own leakage
+placement, breakdown, temperature and RF/noise/nonlinearity treatment. Curves
+and reused templates stay unchanged. The legacy forward Cj clamp remains
+a model limitation; do not substitute it for a specialized diode model.
+
+
 Newer V(volts,{fList}), default 1 V, imposes terminal 1 minus 2 equal to signed
 voltage; object form V({voltage,fList}) also exists. Incremental S is open
 [1,0,0,1] above zero frequency and through [0,1,1,0] at zero; S does not encode
@@ -300,7 +311,8 @@ without mutating reusable templates; placements can have independent bias.
 Read convergence, placement, terminal values and qPoint before interpreting Q.
 Terminal currents enter devices; BJT qPoint.ie is outward. Floating absolute
 voltages may be null. Do not invent a reference/fake Q or ignore failed bias.
-Newer network diode adapters remain unsupported. Parallel emitter bypass C
+Newer renderers support both D() and diode1N4148() in network DC solving;
+the current plugin pin does not. Parallel emitter bypass C
 preserves the resistor's DC path; changing R changes bias; series C in the only
 return removes that path.
 
@@ -474,6 +486,221 @@ VCVS, VCCS, CCVS, CCCS artwork; only newer pins provide V() for numerical
 analysis. Never emit nP.I() or dependent-source analysis calls.
 V terminal 1 is positive relative to 2; I artwork points 2 to 1.
 A control caption describes a drawing without creating numerical source behavior.
+
+The plugin’s currently pinned nP bundle lacks these JFET numerical APIs and
+commonSource layout. Do not emit the following calls for that bundle. Use them
+only after confirming an updated plugin runtime actually supplies them.
+
+JFET numerical models require an updated bundle exporting NJF and PJF.
+Verify those exports in the actual supplied bundle; older published builds with
+the same version number may lack them. Both use ports 1 gate, 2 drain, 3 source,
+not package pin numbers (SPICE J instances use drain/gate/source).
+
+NJF({model:'MMBF5457LT1', qPoint:{vgs:-1,vds:10}}) and
+PJF({model:'MMBFJ175LT1', qPoint:{vgs:1,vds:-10}}) show the defaults.
+Only those onsemi silicon records are supported. Options are model, qPoint,
+bias, temperature (K, default global.Temp), fList (Hz, default global.fList).
+The SPICE level-1 Shichman–Hodges model includes RD/RS contact resistance,
+gate leakage and junction charge; it has no explicit package L/C network.
+
+bias.vgs and bias.vds each accept {start,stop,points}. Default curves step VGS
+from 0 to -3.86852 V (NJF) or +4.25882 V (PJF), 5 curves, and sweep VDS
+from 0 to +10 V or -10 V, 101 points. ivTable({vgs,vds}) returns a header
+and numeric rows: terminal VDS in volts, signed ID columns in amperes.
+Curve overrides do not move RF bias. qPoint/bias report vgs,vds,ig,id,is,
+intrinsicVgs,intrinsicVgd,vg,vd,vs,region,temperature. All three currents enter
+the JFET and sum to zero; source current is normally negative for NJF.
+Absolute references can be null when floating. smallSignal reports intrinsic
+gm,gds,ggs,ggd,cgs,cgd and contact rd,rs in SI units.
+
+For a fixed-bias common-source RF result, after loading nP:
+
+```js
+nP.global.fList = [10e6];
+var q1 = nP.NJF();
+var short1 = nP.Short();
+var network = nP.nodal(
+    [q1, 1, 2, 3],
+    [short1, 3],
+    ['out', 1, 2]
+);
+var response = network.out('s21dB', 'NF21dB');
+```
+
+With an explicit V supply, nodal/cascade solve the external bias network first
+and rebuild RF, active noise and weak nonlinear data for each JFET placement.
+Read the immutable network.operatingPoint and component qPoint; do not invent
+a second netlist or reuse a template's original qPoint as the solved result.
+An unpowered explicit solveDC() finds the unpowered state. Without a supply,
+RF retains the selected fixed Q point. External C opens and L shorts only
+for DC; bypass capacitance retains its RF impedance. V is RF-open, so include
+an actual supply bypass when a return is needed.
+
+Noise is approximate NLEV=1 channel thermal plus KF*abs(Id)^AF/f and RD/RS
+thermal noise, not measured NF. Gate shot and induced gate noise are absent;
+NLEV=1 has an ohmic-region limitation. Intermodulation is direct weak Taylor
+IM2/IM3, omitting quadratic remixing, compression and large-signal switching.
+No gate/drain breakdown, self-heating or trapping is modeled.
+
+Drawing descriptions can use '1 right J1=NJF[1,2,3] 1 2 3' or PJF without
+running a numerical constructor. MESFET has a reference-profile numerical model in updated bundles; HEMT remains drawing-only.
+Updated renderers detect commonSource or accept {shapes:['commonSource']}.
+It covers self-bias with gate resistor to reference, drain load, V supply,
+AC-coupled ports and source resistance with separate R/C, combined sePaRC,
+or no bypass; supply bypass is optional. Both polarities retain G/D/S roles.
+The source and its ground appear right of the supply bypass. Three-terminal
+FET divider bias is also supported by newer renderers; common-gate/common-drain
+and multiple-FET boards remain future work.
+
+The plugin's currently pinned nP bundle lacks NMOS/PMOS numerical APIs and
+the new commonSource layouts. Do not emit those calls unless an updated actual
+plugin runtime has been verified to provide them. The reference below describes
+newer supplied bundles only.
+
+MOSFET numerical models require an updated supplied bundle exposing NMOS and
+PMOS. Verify the exports; published/pinned builds may share nP.version while
+lacking them. NMOS defaults to Diodes DMN55D0UT; PMOS to one DMP58D0SV channel
+of the dual part. These sourced silicon enhancement records use SPICE level-1
+Shichman–Hodges, body effect, RD/RS and body-junction/overlap charge. Their fixed
+L=W=100 um is part of the discrete fit; there is no geometry scaling option.
+
+NMOS({body:'source', qPoint:{vgs:1.5,vds:5,vbs:0}}) shows defaults; PMOS Q
+defaults to vgs=-2.6, vds=-5, vbs=0. body:'source' gives ports 1 gate, 2 drain,
+3 source, tying body to the EXTERNAL source while retaining RS. body:'external'
+adds independent port 4 body, in the same constructor. This exposes primitive
+equations, not an accessible pin on these packages. SPICE M order is D/G/S/B.
+Only model,body,qPoint,bias,temperature (K),fList (Hz) are accepted; temperature
+and frequencies default to captured global settings. A source tie rejects
+nonzero qPoint.vbs or curve VBS.
+
+bias.vgs/bias.vds take {start,stop,points}. Default gate sweeps: 0 to +2 V or
+-3.1 V, 5 curves; drain: 0 to +5 V or -5 V, 101 points. bias.vbs is constant
+volts, default zero. ivTable({vgs,vds,vbs}) returns a header and signed terminal
+VDS (V) versus ID (A) columns without moving RF Q. qPoint/bias include external
+vgs/vds/vbs, ig/id/is, ib only with external body, bodyCurrent, terminalCurrents,
+intrinsicVgs/Vds/Vbs, absolute vg/vd/vs/vb (possibly null), threshold,region,
+body,temperature. Public currents enter the device and their array sums to zero.
+Three-port IS includes the body return; bodyCurrent is an internal diagnostic.
+smallSignal reports intrinsic gm/gds/gmb, cgs/cgd/cgb/cbs/cbd and rd/rs in SI.
+
+A fixed-bias four-terminal RF example after loading nP:
+
+```js
+nP.global.fList = [10e6];
+var q1 = nP.NMOS({body: 'external', qPoint: {vgs: 1.5, vds: 5, vbs: -0.25}});
+var short1 = nP.Short();
+var network = nP.nodal(
+    [q1, 1, 2, 3, 4],
+    [short1, 3],
+    [short1, 4],
+    ['out', 1, 2]
+);
+var response = network.out('s21dB', 'NF21dB');
+```
+
+Without a V supply, RF retains the selected Q point. With a V supply, the
+complete graph solves DC first and reconstructs each placement's RF/noise/IM.
+Read network.operatingPoint.components for solved bias; templates and curve
+settings stay intact. An insulated floating gate produces DC_FLOATING_BIAS.
+Never supply hidden gate leakage, assume a Q point is a DC source, or silently
+ground a terminal. A floating body's voltage can be set by its real junction
+current balance. External capacitors open only for DC, retaining RF impedance.
+
+Noise is classical channel/contact thermal noise, not measured NF; KF=0 means
+no fitted 1/f contribution. Body shot/induced gate noise is absent and the channel
+formula has an ohmic-region limitation. The records omit TOX/inversion charge,
+ESD clamps, avalanche, explicit package L/C, self-heating and inter-channel
+coupling. Direct Taylor IM2/IM3 omits quadratic remixing, compression and switching.
+MOS3/BSIM/EKV and generic model-text import are not implemented.
+
+Updated commonSource boards support three-terminal MOSFET/FET divider bias with
+a Tee4 gate junction, two bias resistors, drain load, V supply, AC-coupled ports,
+optional supply bypass and source R, split R/C or sePaRC. Both rail orders share
+the divider-amplifier layout rules with BJTs; do not add corrective coordinates.
+Self-bias drawings also work, but an enhancement FET returned to zero gate bias
+can remain off. Independent-body amplifier boards remain unsupported; standalone
+four-terminal drawings work. Do not change topology to force a named shape.
+
+Drawing descriptions use NMOS/PMOS or NMOS4/PMOS4 aliases, with G/D/S/B order.
+There are no NMOS4()/PMOS4() constructors: use NMOS/PMOS({body:'external'}).
+Depletion names NMOSD/PMOSD/NMOSD4/PMOSD4 remain drawing-only, without numerical
+constructors. A four-terminal path is '1 right M1=NMOS4[1,2,3,4] 1 2 3 4'.
+Current drawing-description layout rejects a repeated node on two terminals of
+one component. Use the three-terminal form for its internal body/source tie;
+report other requested self-connection layout limits without changing the circuit.
+
+
+The current pinned plugin bundle does NOT export MESFET. Do not emit this
+numerical example in an installed vault unless that bundle is verified to
+support it. The following is an updated-bundle contract only, not a request
+to install or modify a plugin.
+
+MESFET numerical support requires a supplied bundle exporting MESFET. The only
+record is SPICE3_REFERENCE: a published SPICE example profile, NOT a fitted
+commercial transistor. Do not assign it a commercial part name or promise
+microwave performance. HEMT has no numerical constructor.
+
+MESFET({model:'SPICE3_REFERENCE', qPoint:{vgs:-0.5,vds:2}}) shows defaults.
+Ports are G/D/S (1/2/3), all ig/id/is currents enter the device. It uses
+N-channel Statz/MES1, Schottky gate currents, RD=RS=100 ohms and differential
+voltage-dependent gate capacitances. No P-channel, arbitrary card import or
+area scaling is available. temperature defaults to global.Temp in kelvin,
+fList to global.fList. Electrical temperature stays fixed at 300.15 K in
+this historical primitive; selected temperature changes thermal noise only.
+
+bias and ivTable() accept vgs/vds {start,stop,points} intervals, defaulting
+to gate 0 to -2 V (5 curves), drain 0 to 3 V (101 points). ivTable() returns
+one header followed by numeric voltage/current rows in V/A and leaves Q point
+and .dc curve settings unchanged. qPoint/bias expose external vgs/vds,
+intrinsicVgs/intrinsicVgd, entering ig/id/is, vg/vd/vs and temperature;
+standalone results also report region and electricalTemperature. Floating
+absolute node references can be null. smallSignal reports intrinsic gm/gds,
+ggs/ggd, cgs/cgd and rd/rs. Do not treat it as a full external Y matrix.
+
+Networks containing V() solve DC first and rebuild each device placement's
+RF/noise/weak nonlinear data; inspect network.operatingPoint. With no supply,
+RF retains the selected Q point and solveDC() is an explicit snapshot. Current
+curves, contacts, RF and nonlinear sources share one model. Classical
+channel/contact thermal noise is approximate; KF=0. Gate shot/induced noise,
+measured NF, package L/C, trapping, dispersion, avalanche, self-heating,
+compression and large-signal/harmonic-balance behavior are not supplied.
+Direct IM2/IM3 includes differential C(V)*dV/dt sources, without quadratic
+remixing. Use the existing commonSource shape for supported self/divider bias;
+there is no MESFET-specific coordinate adjustment.
+
+A minimal fixed-Q MESFET result, when the bundle supports it:
+
+```npjs
+nP.global.fList = [10e6, 100e6, 1e9];
+var q1 = nP.MESFET({model: 'SPICE3_REFERENCE'});
+var short1 = nP.Short();
+var network = nP.nodal(
+    [q1, 1, 2, 3],
+    [short1, 3],
+    ['out', 1, 2]
+);
+var response = network.out('s21dB', 'NF21dB');
+nP.lineTable({inputTable: [response]});
+```
+
+MESFET and the drawing-only HEMT share the N-channel NJF artwork,
+with terminals 1 gate, 2 drain, 3 source. Use an instance caption to identify
+the family, e.g. '1 right Q1=HEMT(HEMT)[1,2,3] 1 2 3'. Shared geometry
+does not select material, operating mode or model equations. Schottky, Zener
+and Varactor are drawing-only diode names with 1 anode, 2 cathode; e.g.
+'1 right D1=Varactor 2'. Their distinct cathode markings provide no DC/RF,
+noise or intermodulation model. Do not invent nP.HEMT(),
+nP.Schottky(), nP.Zener() or nP.Varactor() calls. Check the supplied bundle
+contains this artwork. Existing standalone D()/diode1N4148() models are retained.
+For drawing descriptions, HBTs reuse NPN/PNP with an HBT caption, e.g.
+'1 right Q1=NPN(HBT)[1,2,3] 1 2 3' (base/collector/emitter). PIN diodes
+reuse D artwork, e.g. '1 right D1=D(PIN) 2' (anode/cathode). Captions
+select no HBT/PIN numerical behavior. Confirm even the reused artwork exists
+in the supplied renderer; the drawing grammar never invokes constructors.
+
+The plugin's current pinned renderer lacks JFET/MOSFET, MESFET/HEMT and
+specialized diode artwork; use these names only after confirming an updated
+installed renderer.
 
 The plugin adapter displays the SVG and returns its string in `.svg`, plus
 `.graph`, `.topology`, `.error:null`. Errors can throw; no DOM or .svgText

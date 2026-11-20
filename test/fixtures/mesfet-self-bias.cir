@@ -1,0 +1,20 @@
+MES1 SPICE3 manual reference profile, not a commercial part fit
+* Modified: 2026-11-19
+* https://pages.hmc.edu/harris/class/e158/07/spice3man.pdf section 3.4.10
+.temp 27
+.options gmin=1e-18 abstol=1e-18 reltol=1e-10
+.model device NMF (VTO=-2 BETA=1m B=.3 ALPHA=2 LAMBDA=1e-4 RD=100 RS=100 CGS=5p CGD=1p PB=.6 IS=1e-14 KF=0 AF=1)
+Z1 d g s device
+VDD rail 0 12
+RD rail d 2200
+RG g 0 1meg
+RS s 0 2200
+.control
+set numdgt=16
+set wr_vecnames
+set wr_singlescale
+op
+wrdata mesfet-self-bias.txt v(g) v(d) v(s) i(VDD)
+quit
+.endc
+.end

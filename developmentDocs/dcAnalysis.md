@@ -1,7 +1,7 @@
-<!-- Modified: 2026-11-17 -->
+<!-- Modified: 2026-11-19 -->
 # Shared circuit description and DC operating-point analysis
 
-This is the contract for circuit-derived bias in nP. The shared immutable DC descriptors and topology preservation within `nodal()`, `cas()` and `cascade()` are implemented. These existing composition APIs are the public network entry points. `network.solveDC()` solves linear and NPN/PNP nonlinear DC models without a second netlist. Networks containing an explicit `V()` supply and nonlinear devices automatically solve DC before RF combination; supported transistor states pass through the internal RF handoff. The result is exposed as `network.operatingPoint`. Standalone constructors and RF-only networks retain their selected fixed Q points. Diode network DC adapters remain unsupported and produce explicit errors. The NPN/PNP linearization fixes are a separate change.
+This is the contract for circuit-derived bias in nP. The shared immutable DC descriptors and topology preservation within `nodal()`, `cas()` and `cascade()` are implemented. These existing composition APIs are the public network entry points. `network.solveDC()` solves linear, NPN/PNP and diode nonlinear DC models without a second netlist. Networks containing an explicit `V()` supply and nonlinear devices automatically solve DC before RF combination; supported transistor and diode states pass through the internal RF handoff. The result is exposed as `network.operatingPoint`. Standalone constructors and RF-only networks retain their selected fixed Q points. Both D() and diode1N4148() retain their own device equations, temperatures and leakage placement. Missing physical DC laws remain explicit errors.
 
 The [constructor audit](np-nport/dcConstructorAudit.md) covers every export from `src/np-nport/src/index.js`, plus `nPort.cas()`, custom nPorts and the source symbols that need numerical constructors. The [constructor catalog](np-nport/constructorCatalog.md) describes the current public API.
 
@@ -10,7 +10,7 @@ The [constructor audit](np-nport/dcConstructorAudit.md) covers every export from
 1. Describe the circuit once, using the component/port/node relationships already expressed by `nodal()` and `cascade()`.
 2. Give every electrical constructor a DC model or an explicit requirement for additional DC information. Missing support is an error, never an implicit open or short.
 3. At DC, external ideal capacitors open and external ideal inductors short. Preserve resistances that remain in composite or physical components.
-4. Estimate transistor bias with a simple device approximation, then refine with the existing nonlinear equations.
+4. Estimate device bias with a simple device approximation, then refine with the existing nonlinear equations.
 5. Build RF, noise and weak nonlinear data from the converged device states, using one consistent final device model.
 6. Preserve fixed-Q constructors and existing RF composition behavior. An explicit DC supply selects circuit-derived bias for nonlinear networks before RF combination.
 
@@ -96,7 +96,7 @@ The common reference in existing RF compositions remains common through nested b
 
 `nodal()` requires RF components with matching frequency rows and evaluates RF immediately. Its internal `_dcModel` preserves the same component rows, output nodes and drawing groups for DC analysis. `cas()` and `cascade()` preserve equivalent connection descriptors. Users construct each network once with these existing APIs.
 
-Each placement has a local `id` such as `p1`; concatenate parent/child IDs to obtain a unique instance path. Internal `dcRequirements()` traverses the retained definitions to report missing models with placement paths, constructor names, terminal counts and reasons. These helpers are internal implementation details, not public network constructors. Node labels are strings or finite numbers, and output nodes remain observations. `solveDC()` solves supported linear and BJT definitions; unsupported diode adapters and missing-model placements produce explicit errors before matrix assembly.
+Each placement has a local `id` such as `p1`; concatenate parent/child IDs to obtain a unique instance path. Internal `dcRequirements()` traverses the retained definitions to report missing models with placement paths, constructor names, terminal counts and reasons. These helpers are internal implementation details, not public network constructors. Node labels are strings or finite numbers, and output nodes remain observations. `solveDC()` solves supported linear, BJT and diode definitions; unsupported definitions and missing-model placements produce explicit errors before matrix assembly.
 
 ## Linear reduction and equations
 
@@ -178,7 +178,7 @@ Device-local temperatures remain fixed. Self-heating, transient switching, harmo
 
 ## Implemented nonlinear bias and automatic ordering
 
-`dcNonlinear.js` implements the NPN/PNP adapter. Package inductors short and package capacitors open at DC. Resolved RB/RC/RE connect each external terminal to a separate intrinsic node. The shared temperature-adjusted Gummel-Poon engine evaluates signed terminal currents and analytic first derivatives at candidate intrinsic VBE/VBC; its fixed-Q current/voltage solver is not called inside the network iteration. All devices in the complete graph solve together.
+`dcNonlinear.js` implements the shared Newton solve for NPN/PNP, NJF/PJF and diode adapters. Package inductors short and package capacitors open at DC. Resolved RB/RC/RE connect each external terminal to a separate intrinsic node. The shared temperature-adjusted Gummel-Poon engine evaluates signed terminal currents and analytic first derivatives at candidate intrinsic VBE/VBC; its fixed-Q current/voltage solver is not called inside the network iteration. All devices in the complete graph solve together.
 
 The first estimate uses 0.7 V forward VBE and the card's temperature-adjusted BF. Up to eight piecewise attempts can select cutoff or saturation (0.55 V BC, 0.15 V CE). A consistent approximation seeds Newton; inconsistent/cycling estimates fall back to an open-device linear state. All-zero sources use the exact zero-current initial state. `initialEstimate` reports the method, selected regions, assumptions and any fallback. These estimates are never labeled final bias.
 
@@ -190,7 +190,16 @@ Nonlinear results include `components[].qPoint` with signed IB/IC, outward IE, t
 
 `dcBias.js` selects automatic bias only when a complete network contains both an explicit voltage-source descriptor and nonlinear devices. It runs before RF combination in `nodal()` and `cas()`/`cascade()`. It rebuilds each affected placement through the handoff and stores the solved plain-data result in `network.operatingPoint`. A larger enclosing network recomputes bias from its complete graph; it does not freeze a nested subcircuit at its earlier operating point. Caller-owned templates, `.dc` curves and global settings remain intact. Captured RF excitations propagate through the rebuilt response.
 
-Purely linear supply networks retain explicit `.solveDC()` analysis, including the resistorDC harness. Fixed-Q RF networks without a DC supply retain their original behavior. Calling `.solveDC()` explicitly on an unpowered transistor solves its zero-source DC network rather than treating the constructor Q point as a hidden source. Diodes, unspecified physical DC laws and unsupported device families are reported before automatic RF analysis; they are never omitted or silently treated as their fixed-Q RF model.
+Purely linear supply networks retain explicit `.solveDC()` analysis, including the resistorDC harness. Fixed-Q RF networks without a DC supply retain their original behavior. Calling `.solveDC()` explicitly on an unpowered transistor solves its zero-source DC network rather than treating the constructor Q point as a hidden source. Unspecified physical DC laws and unsupported device families are reported before automatic RF analysis; they are never omitted or silently treated as their fixed-Q RF model.
+
+### Diode equations and reconstruction
+
+D() stamps its selected temperature-adjusted junction law and series RS, with the source card's leakage resistor outside that series branch. The shared assembly has a direct linear-conductance primitive for parallel leakage; series/contact resistors retain explicit branch-current variables. This avoids a poorly scaled gigaohm voltage equation while retaining accurate terminal-current reporting and tiny intrinsic conductances. No numerical shunt or arbitrary conductance is added.
+
+Legacy diode1N4148() instead evaluates its own Shockley, junction-side leakage and exponential breakdown continuation through legacyDiode.js. Its parameters and noise approximation remain distinct from D(). Capacitance contributes no static current. The piecewise initializer uses forward, off and (where finite) breakdown regions, then the same damped Newton and source-stepping rules refine the actual laws. Mixed diode/BJT networks solve together.
+
+Diode components report qPoint fields vd, id, junctionVoltage, junctionCurrent, va, vk and temperature; id is positive anode to cathode, and absolute va/vk can be null. Each immutable operatingPoints record carries its placement path, terminal difference, intrinsic junction voltage and references. D() and legacy RF builders share their standalone RF/noise/nonlinearity paths, preserving their original curve settings and construction descriptors. Existing legacy forward-capacitance clamping and exponential limiting remain model limitations; these are not new Schottky, Zener, varactor or PIN numerical models.
+
 
 ## Solved state and RF reconstruction
 
@@ -204,7 +213,7 @@ Some circuit solutions can fall outside standalone Q-point option ranges. The in
 
 ## Internal operating-point handoff
 
-The handoff is implemented for NPN/PNP without adding a public constructor, second netlist or required user step. An internal `nPort._withOperatingPoints(records)` entry calls `operatingPointHandoff.js`. It is an implementation seam used by `dcBias.js`, not a user-facing analysis API. `nodal()` and `cas()` capture DC topology, solve supply-driven nonlinear networks, rebuild affected component instances and only then combine RF matrices. Private RF-only recipe functions avoid recursively solving subcircuits after the complete outer network has already supplied their states.
+The handoff is implemented for NPN/PNP, NJF/PJF, D() and diode1N4148() without adding a public constructor, second netlist or required user step. An internal `nPort._withOperatingPoints(records)` entry calls `operatingPointHandoff.js`. It is an implementation seam used by `dcBias.js`, not a user-facing analysis API. `nodal()` and `cas()` capture DC topology, solve supply-driven nonlinear networks, rebuild affected component instances and only then combine RF matrices. Private RF-only recipe functions avoid recursively solving subcircuits after the complete outer network has already supplied their states.
 
 Each record identifies one placement and supplies signed physical intrinsic junction voltages:
 
@@ -218,15 +227,15 @@ Each record identifies one placement and supplies signed physical intrinsic junc
 }
 ```
 
-Use `path: ''` for a standalone transistor. Omitted `ve` selects the standalone emitter-zero reference. PNP records use actual signed voltages, so their forward VBE is negative. The mapped component's immutable descriptor supplies its own card, package, temperature, configuration, curve settings and frequency context; states never override those settings. Every nonlinear placement needs exactly one record, including repeated uses of one JavaScript object. Unknown, duplicate or missing paths and unsupported device adapters are errors. Diode state-to-RF adapters remain future work.
+Use `path: ''` for a standalone transistor. Omitted `ve` selects the standalone emitter-zero reference. PNP records use actual signed voltages, so their forward VBE is negative. The mapped component's immutable descriptor supplies its own card, package, temperature, configuration, curve settings and frequency context; states never override those settings. Every nonlinear placement needs exactly one record, including repeated uses of one JavaScript object. Unknown, duplicate or missing paths and unsupported device adapters are errors. Diode records instead contain `vd`, `junctionVoltage`, `va` and `vk` (volts); floating terminal references are null. Their adapters validate the terminal difference and the model-specific series-resistance law before rebuilding RF.
 
 `junctionOperatingPoint()` in `gummelPoon.js` evaluates a supplied intrinsic state directly. The standalone fixed-IB/VCE (or IE/VCB) solver uses the same evaluator after convergence. `bjtConstructor.js` shares one instance builder between fixed-Q and supplied-state construction, preserving one Gummel-Poon model for currents, charge, derivatives, noise and nonlinear sources. The adapter accepts supported cutoff/reverse states without applying the standalone forward-current option limits. It rejects nonfinite data or nonpositive base charge rather than clipping a solved state or silently falling back to the construction Q point.
 
-`_rfModel` runtime recipes retain component objects and rebuild functions. `nodal()` retains normalized component rows, output order and groups; `cas()` retains both operands. The handoff checks that RF recipes still match the DC construction snapshots, visits placement paths, builds a fresh transistor instance for each state, and rebuilds affected ancestors from those instances. `cascade()` preserves the recipe on its one-operand signal-copy path. Passive subtrees can be reused unchanged. Fresh transistor instances have fresh frequency caches, S/noise rows, `.bias`, `.qPoint`, `.smallSignal` and nonlinear coefficients. Original `.dc` curve settings and constructor seed descriptors remain intact. The returned root retains the supplied records as immutable `_operatingPoints` data.
+`_rfModel` runtime recipes retain component objects and rebuild functions. `nodal()` retains normalized component rows, output order and groups; `cas()` retains both operands. The handoff checks that RF recipes still match the DC construction snapshots, visits placement paths, builds a fresh device instance for each state, and rebuilds affected ancestors from those instances. `cascade()` preserves the recipe on its one-operand signal-copy path. Passive subtrees can be reused unchanged. Fresh device instances have fresh frequency caches, S/noise rows, `.bias`, `.qPoint`, `.smallSignal` and nonlinear coefficients. Original `.dc` curve settings and constructor seed descriptors remain intact. The returned root retains the supplied records as immutable `_operatingPoints` data.
 
 External RF excitations are captured separately in `_rfInputSignals` when attached. Rebuilding propagates component sources through the new RF network and replays each external excitation once through the updated S matrix. Reusing old output waves would retain the old bias response. Captured input frequencies, spectrum and metadata are copied, so later changes to the original transmitter do not change replayed inputs. Manually assigned leaf source waves are retained when there is no recorded external input. Rebuilding rejects changes to frequency/port boundaries and nonfinite S/noise results. Signal data and all runtime hooks stay outside `_dcModel`.
 
-`test/operating-point-handoff.test.js` compares rebuilt 2N3904, BFR93A and 2N3906 devices with independent fixed-Q constructions in all three configurations; it also covers cutoff/reverse states, floating/shifted emitter references, repeated and nested placements, grouped/output-order preservation, two-tone noise/IM, curve/source ownership and signal replay. The restricted plugin worker checks a rebuilt amplifier with DOM/network APIs blocked. `test/dc-bjt-bias.test.js` additionally verifies the complete nonlinear-to-RF path against circuit KCL, archived ngspice operating points, independent fixed-Q RF reconstruction, a coupled current mirror, repeated/nested placements and reported source stepping. Diode DC adapters remain unsupported.
+`test/operating-point-handoff.test.js` compares rebuilt 2N3904, BFR93A and 2N3906 devices with independent fixed-Q constructions in all three configurations; it also covers cutoff/reverse states, floating/shifted emitter references, repeated and nested placements, grouped/output-order preservation, two-tone noise/IM, curve/source ownership and signal replay. The restricted plugin worker checks a rebuilt amplifier with DOM/network APIs blocked. `test/dc-bjt-bias.test.js` additionally verifies the complete nonlinear-to-RF path against circuit KCL, archived ngspice operating points, independent fixed-Q RF reconstruction, a coupled current mirror, repeated/nested placements and reported source stepping. `test/dc-diode-bias.test.js` verifies both diode laws, independent ngspice resistor-bias references, reverse breakdown, temperature, mixed diode/BJT networks, nested/reused placements, floating references, RF/noise/IM rebuilding and curve ownership.
 
 ## Implementation stages and acceptance
 
@@ -242,4 +251,27 @@ Also verify missing-model diagnostics for every affected constructor, measuremen
 
 Finalize public source/analysis option names, result accessors and serialization exposure during implementation. Constructor-wide participation requires tested behavior or an actionable missing-model path for every electrical row. It does not establish physical DC laws for RF hardware whose construction is unspecified.
 
-Stages 1 and 2 and the linear solve for current supported constructors in stage 3 are implemented. Numerical dependent-source constructors and public DC-equivalent overrides remain future work, as do diode adapters in stages 4 and 5. NPN/PNP nonlinear solving and automatic state-to-RF handoff are implemented. `test/dc-models.test.js` checks all n-port exports against the audit, validates every electrical descriptor and checks representative terminal/parameter snapshots. Future constructors must pass the same coverage test; add fixtures for required arguments and update the audit instead of excluding electrical APIs. `test/dc-topology.test.js` exercises internal snapshot ownership, grouped nodal connections, nested/repeated placements, missing-model paths, composition, signal-copy preservation and malformed/cyclic definitions. It also guards against exposing a separate public network constructor. The root `AGENTS.md` requires these contracts for future electrical constructors and composition paths.
+Stages 1 and 2 and the linear solve for current supported constructors in stage 3 are implemented. Numerical dependent-source constructors and public DC-equivalent overrides remain future work. NPN/PNP and both diode adapters implement nonlinear solving and automatic state-to-RF handoff in stages 4 and 5. `test/dc-models.test.js` checks all n-port exports against the audit, validates every electrical descriptor and checks representative terminal/parameter snapshots. Future constructors must pass the same coverage test; add fixtures for required arguments and update the audit instead of excluding electrical APIs. `test/dc-topology.test.js` exercises internal snapshot ownership, grouped nodal connections, nested/repeated placements, missing-model paths, composition, signal-copy preservation and malformed/cyclic definitions. It also guards against exposing a separate public network constructor. The root `AGENTS.md` requires these contracts for future electrical constructors and composition paths.
+
+## JFET network bias
+
+NJF/PJF use the level-1 current law in G/D/S order with explicit RD/RS and gate leakage. An initial zero-gate channel conductance is refined by the same damped Newton/source-stepping solver; mixed JFET/BJT/diode graphs share one assembly. JFET result currents ig/id/is all enter the device. Q-point fields include external vgs/vds, intrinsicVgs/intrinsicVgd, absolute vg/vd/vs (null if floating), region and temperature. Immutable handoff records contain `{path, intrinsicVgs, intrinsicVgd, vs}`; the captured builder regenerates RF/noise/nonlinear data. See [JFET models](jfetModels.md).
+
+Floating voltage translations are proven from topology and inserted as exact null-space modes. Solving combinations with zero group-reference voltage retains independent nongauge modes without enlarging a cleanup threshold. This protects weak gate junctions from apparent nonunique currents caused by gauge roundoff.
+
+## MOSFET network bias
+
+NMOS/PMOS descriptors use modelId mosfet and three G/D/S ports by default; body: external exposes G/D/S/B. The adapter stamps RD/RS and a separate body connection to external S or terminal 4. The cutoff/open-junction initial estimate is refined by the actual level-1 current law and analytic Jacobian in the shared assembly. An insulated floating gate is an explicit DC_FLOATING_BIAS error; qPoint is not a supply. A floating body can acquire a definite voltage from its junction-current balance.
+
+Handoff records contain {path, intrinsicVgs, intrinsicVds, intrinsicVbs, vs}, preserving the captured model/body/temperature/context and curve settings. Result qPoint includes signed terminal currents and bodyCurrent; three-port IS includes the body return, and four-port IB is an independent entering current. See [MOSFET models](mosfetModels.md).
+
+## MESFET network bias
+
+`MESFET()` adds an N-channel Statz/MES1 adapter with G/D/S order, contact RD/RS
+and Schottky gate leakage. Its only profile, SPICE3_REFERENCE, is explicitly a
+published numerical reference rather than a commercial part fit. A zero-gate
+channel-conductance estimate is refined in the shared nonlinear assembly.
+Handoff uses `{path, intrinsicVgs, intrinsicVgd, vs}` and preserves captured
+context and independent curve settings. Electrical parameters stay at the
+MES1 reference temperature of 300.15 K; selected temperature changes thermal
+noise. See [the full model contract](mesfetModels.md).

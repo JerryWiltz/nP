@@ -283,3 +283,7 @@ nP.schematic({transmitter: tx, circuit: circuit, receiver: rx});
 ```
 
 The MOD and DEMOD connectors describe signal flow; they are not RF S-parameter ports. Omit `receiver` when the displayed path ends at the circuit.
+
+### Common-source JFET stage
+
+Current bundles detect `commonSource` for a self-biased NJF/PJF/NMOS/PMOS with a gate return resistor, drain load, AC-coupled ports and source resistance. Source bypass may be separate R/C or `sePaRC`; supply bypass is optional. Shape groups use the same `{commonSource: [component rows]}` syntax as other boards. Divider-biased three-terminal FET stages also use commonSource, with a Tee4 control junction and two divider resistors. The divider board shares measured placement rules with commonEmitter; both supply-rail orders are covered. Independent-body MOSFET amplifier boards and common-gate/common-drain remain future work.

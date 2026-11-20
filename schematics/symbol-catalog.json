@@ -1,5 +1,5 @@
 {
-  "modified": "2026-11-16",
+  "modified": "2026-11-19",
   "schemaVersion": 1,
   "constructors": {
     "cascade": "cascade.svg",
@@ -67,12 +67,23 @@
     "NPN": "npn.svg",
     "PNP": "pnp.svg",
     "D": "diode-1n4148.svg",
-    "V": "voltage-source.svg"
+    "V": "voltage-source.svg",
+    "NJF": "njf.svg",
+    "MESFET": "njf.svg",
+    "PJF": "pjf.svg",
+    "NMOS": "nmos.svg",
+    "PMOS": "pmos.svg"
   },
   "symbolVariants": {
     "mbend": {
       "left": "microstrip-left-bend.svg",
       "right": "microstrip-right-bend.svg"
+    },
+    "NMOS": {
+      "external": "nmos-four-terminal.svg"
+    },
+    "PMOS": {
+      "external": "pmos-four-terminal.svg"
     }
   },
   "sourceSymbols": {
@@ -82,7 +93,18 @@
     "CCVS": "current-controlled-voltage-source.svg",
     "CCCS": "current-controlled-current-source.svg"
   },
-  "deviceSymbols": {},
+  "deviceSymbols": {
+    "NMOS4": "nmos-four-terminal.svg",
+    "PMOS4": "pmos-four-terminal.svg",
+    "NMOSD": "nmos-depletion.svg",
+    "PMOSD": "pmos-depletion.svg",
+    "NMOSD4": "nmos-depletion-four-terminal.svg",
+    "PMOSD4": "pmos-depletion-four-terminal.svg",
+    "HEMT": "njf.svg",
+    "Schottky": "schottky-diode.svg",
+    "Zener": "zener-diode.svg",
+    "Varactor": "varactor-diode.svg"
+  },
   "signalSymbols": [
     "bit-error-rate.svg",
     "demod.svg",

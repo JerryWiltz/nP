@@ -1,0 +1,27 @@
+pjf manufacturer parameter data, independent ngspice reference
+* Modified: 2026-11-19
+.temp 27
+.options gmin=1e-18 abstol=1e-18 reltol=1e-10
+.model device PJF (VTO=-4.25882 BETA=0.00388105 LAMBDA=0.00751457 RD=114.077 RS=42.5978 IS=3.40344e-10 CGS=7.1608e-12 CGD=1.66048e-11 PB=0.757866 FC=0.5 KF=1e-20 AF=0.2)
+J1 d g s device
+VG gb 0 DC 1
+VD db 0 DC -5
+VS sb 0 DC 0
+LG gb g 1e3
+LD db d 1e3
+LS sb s 1e-20
+Rsource input acg 50
+Vsignal input 0 DC 0 AC 1
+CG acg g 1e-3
+CD d load 1e-3
+Gload load 0 load 0 0.02
+.control
+set numdgt=16
+set wr_vecnames
+set wr_singlescale
+noise v(load) Vsignal dec 1 10meg 1g
+setplot noise1
+wrdata pjf-noise.txt inoise_spectrum onoise_spectrum
+quit
+.endc
+.end
