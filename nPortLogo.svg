@@ -1,0 +1,58 @@
+<!-- Modified: 2026-09-07 -->
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 800 800"
+  role="img"
+  aria-labelledby="title description"
+>
+  <title id="title">nPort</title>
+  <desc id="description">The nPort wordmark surrounded by a soft blue and violet glow.</desc>
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="48%" r="58%">
+      <stop offset="0" stop-color="#8b5cf6" stop-opacity=".48" />
+      <stop offset=".42" stop-color="#4f8cff" stop-opacity=".24" />
+      <stop offset=".68" stop-color="#dbeafe" stop-opacity=".18" />
+      <stop offset=".84" stop-color="#ffffff" stop-opacity=".16" />
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="mist" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".72" />
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="bulge" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#a78bfa" stop-opacity=".26" />
+      <stop offset=".45" stop-color="#bfdbfe" stop-opacity=".16" />
+      <stop offset=".76" stop-color="#ffffff" stop-opacity=".1" />
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0" />
+    </radialGradient>
+    <filter id="blur" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="34" />
+    </filter>
+    <linearGradient id="wordmark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4f46e5" />
+      <stop offset=".5" stop-color="#111827" />
+      <stop offset="1" stop-color="#0f172a" />
+    </linearGradient>
+  </defs>
+
+  <circle cx="400" cy="390" r="330" fill="url(#glow)" />
+  <ellipse cx="260" cy="300" rx="190" ry="120" fill="url(#mist)" filter="url(#blur)" opacity=".55" />
+  <path
+    d="M430 520C515 405 665 365 760 455C825 518 770 672 635 730C505 785 385 688 430 520Z"
+    fill="url(#bulge)"
+    filter="url(#blur)"
+  />
+
+  <text
+    x="400"
+    y="470"
+    text-anchor="middle"
+    font-family="Arial, sans-serif"
+    font-size="230"
+    font-weight="700"
+    letter-spacing="-11"
+    fill="url(#wordmark)"
+  >
+    <tspan fill="#6b7280">n</tspan><tspan>Port</tspan>
+  </text>
+</svg>

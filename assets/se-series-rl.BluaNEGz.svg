@@ -1,0 +1,20 @@
+<!-- Modified: 2026-10-24 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 240" role="img" aria-labelledby="title description">
+  <title id="title">seSeRL()</title>
+  <desc id="description">A two-port with internally series R-L elements in the series path.</desc>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <g transform="translate(10 -10)">
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M90 110 H110 M310 110 H330"/>
+    <path d="M110 110 H130 L135 100 L145 120 L155 100 L165 120 L175 100 L185 120 L190 110 H210"/>
+    <path d="M210 110 H230 C230 90 245 90 245 110 C245 90 260 90 260 110 C260 90 275 90 275 110 C275 90 290 90 290 110 H310"/>
+  </g>
+  </g>
+  <g fill="#202020" font-family="Arial, Helvetica, sans-serif" text-anchor="middle">
+    <text x="210" y="28" font-size="13">seSeRL()</text>
+    <text x="210" y="50" font-size="13">internally series R-L</text>
+    <text x="100" y="135" font-size="13">Port 1</text>
+    <text x="340" y="135" font-size="13">Port 2</text>
+    <circle cx="100" cy="100" r="4"/><circle cx="340" cy="100" r="4"/>
+  </g>
+</svg>

@@ -1,0 +1,36 @@
+<!-- Modified: 2026-11-19 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 250" role="img" aria-labelledby="title description">
+  <title id="title">NMOS4 — N-channel enhancement MOSFET</title>
+  <desc id="description">N-channel enhancement MOSFET artwork with 4 external terminals. Terminal 1 is the insulated gate on the left, terminal 2 the drain above right, and terminal 3 the source below right. Terminal 4 is the independent body on the right. The body arrow points toward the broken channel. The independent-body numerical form uses NMOS({body: 'external'}); the NMOS4 drawing name remains an artwork alias. Terminal numbers are not package pin numbers.</desc>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Twenty-unit external pins meet the circular body. -->
+    <path d="M70 120 H90 M170 60 V80 M170 180 V160 M210 120 H190"/>
+    <circle cx="140" cy="120" r="50"/>
+    <!-- The gate is separated from the channel by a visible insulating gap. -->
+    <path d="M90 120 H120 M120 90 V150"/>
+    <!-- Broken enhancement channel, with drain and source branches. -->
+    <path d="M140 90 V100 M140 110 V130 M140 140 V150"/>
+    <path d="M170 80 V90 H140 M170 160 V150 H140"/>
+    <!-- Separate body terminal and polarity arrow. -->
+    <path d="M140 120 H190"/>
+    <path d="M140 120 L160 110 V130 Z" fill="#202020"/>
+  </g>
+  <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
+    <text x="140" y="25">NMOS4</text>
+    <text x="35" y="105">Terminal 1</text>
+    <text x="35" y="135">G</text>
+    <text x="225" y="65">Terminal 2</text>
+    <text x="225" y="85">D</text>
+    <text x="225" y="185">Terminal 3</text>
+    <text x="225" y="205">S</text>
+    <text x="245" y="105">Terminal 4</text>
+    <text x="245" y="135">B</text>
+    <text x="140" y="220">N-channel enhancement</text>
+    <text x="140" y="240">Separate body</text>
+    <circle cx="70" cy="120" r="4"/>
+    <circle cx="170" cy="60" r="4"/>
+    <circle cx="170" cy="180" r="4"/>
+    <circle cx="210" cy="120" r="4"/>
+  </g>
+</svg>

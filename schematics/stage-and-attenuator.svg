@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 780 360"
+     role="img" aria-labelledby="title description">
+  <title id="title">R-L stage with attenuator</title>
+  <desc id="description">Guide REPL example connecting-nports: R-L stage with attenuator.</desc>
+  <metadata id="circuit-description">{&quot;title&quot;:&quot;R-L stage with attenuator&quot;,&quot;description&quot;:&quot;Guide REPL example connecting-nports: R-L stage with attenuator.&quot;,&quot;domain&quot;:&quot;rf&quot;,&quot;source&quot;:{&quot;file&quot;:&quot;docs/connecting-nports.md&quot;,&quot;result&quot;:&quot;complete&quot;,&quot;combination&quot;:&quot;nP.cascade(stage, attenuator), with stage = nP.nodal(r1, l1)&quot;,&quot;exampleId&quot;:&quot;connecting-nports&quot;},&quot;viewBox&quot;:[0,0,780,360],&quot;layout&quot;:{&quot;centerAxisX&quot;:390,&quot;centerReference&quot;:&quot;R-L stage with attenuator signal path&quot;},&quot;components&quot;:[{&quot;id&quot;:&quot;r1&quot;,&quot;symbol&quot;:&quot;resistor.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;r1&quot;,&quot;constructor&quot;:&quot;R&quot;},&quot;at&quot;:[160,180],&quot;sourceAnchor&quot;:[60,80],&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:1,&quot;at&quot;:[160,180],&quot;labelAt&quot;:[160,120]},{&quot;port&quot;:2,&quot;node&quot;:2,&quot;at&quot;:[260,180],&quot;labelAt&quot;:[320,120]}]},{&quot;id&quot;:&quot;l1&quot;,&quot;symbol&quot;:&quot;inductor.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;l1&quot;,&quot;constructor&quot;:&quot;L&quot;},&quot;at&quot;:[360,180],&quot;sourceAnchor&quot;:[60,80],&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:2,&quot;at&quot;:[360,180],&quot;labelAt&quot;:[320,120]},{&quot;port&quot;:2,&quot;node&quot;:3,&quot;at&quot;:[460,180],&quot;labelAt&quot;:[520,120]}]},{&quot;id&quot;:&quot;attenuator&quot;,&quot;symbol&quot;:&quot;attenuator.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;attenuator&quot;,&quot;constructor&quot;:&quot;Attn&quot;},&quot;at&quot;:[560,180],&quot;sourceAnchor&quot;:[100,80],&quot;connections&quot;:[{&quot;port&quot;:1,&quot;node&quot;:3,&quot;at&quot;:[560,180],&quot;labelAt&quot;:[520,120]},{&quot;port&quot;:2,&quot;node&quot;:4,&quot;at&quot;:[620,180],&quot;labelAt&quot;:[620,120]}]}],&quot;wires&quot;:[{&quot;node&quot;:1,&quot;points&quot;:[[100,180],[160,180]]},{&quot;node&quot;:2,&quot;points&quot;:[[260,180],[360,180]]},{&quot;node&quot;:3,&quot;points&quot;:[[460,180],[560,180]]},{&quot;node&quot;:4,&quot;points&quot;:[[620,180],[680,180]]}],&quot;terminals&quot;:[{&quot;node&quot;:1,&quot;at&quot;:[100,180]},{&quot;node&quot;:4,&quot;at&quot;:[680,180]}],&quot;labels&quot;:[{&quot;componentId&quot;:&quot;r1&quot;,&quot;text&quot;:&quot;r1: 25 Ω&quot;,&quot;at&quot;:[210,60],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;l1&quot;,&quot;text&quot;:&quot;l1: 2 nH&quot;,&quot;at&quot;:[410,60],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;attenuator&quot;,&quot;text&quot;:&quot;attenuator: 3 dB&quot;,&quot;at&quot;:[590,60],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;Port 1&quot;,&quot;at&quot;:[100,240],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;Port 2&quot;,&quot;at&quot;:[680,240],&quot;anchor&quot;:&quot;middle&quot;}]}</metadata>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path data-wire="1" data-node="1" d="M100 180 L160 180"/>
+    <path data-wire="2" data-node="2" d="M260 180 L360 180"/>
+    <path data-wire="3" data-node="3" d="M460 180 L560 180"/>
+    <path data-wire="4" data-node="4" d="M620 180 L680 180"/>
+    <circle data-external-terminal="1" cx="100" cy="180" r="4" fill="#202020" data-node="1"/>
+    <circle data-external-terminal="2" cx="680" cy="180" r="4" fill="#202020" data-node="4"/>
+    <!-- r1 from resistor.svg -->
+    <g data-component-id="r1" data-symbol-source="resistor.svg" data-symbol-sha256="d9315abe504556e2e181f3b66d00f1d995216974f0e506e636785c9dbbf4926b" data-symbol-geometry-sha256="03a4d1e2b62f5889e5e4879e43d361f7054157ab860b5a69ed6e786357844eaa" transform="translate(160 180) rotate(0) translate(-60 -80)">
+      <!-- canonical-geometry-start -->
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M60 80 H80 L85 70 L95 90 L105 70 L115 90 L125 70 L135 90 L140 80 H160"/>
+  </g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <!-- l1 from inductor.svg -->
+    <g data-component-id="l1" data-symbol-source="inductor.svg" data-symbol-sha256="0b9f80b79bc24a8bff363cf220227e378bf6f5f5e271f15f777de107ae1c2356" data-symbol-geometry-sha256="de2cb6d1f87dc9e8db63663e093a0a9502c2471f1753447b09aecec228355792" transform="translate(360 180) rotate(0) translate(-60 -80)">
+      <!-- canonical-geometry-start -->
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M60 80 H80 C80 60 95 60 95 80 C95 60 110 60 110 80 C110 60 125 60 125 80 C125 60 140 60 140 80 H160"/>
+  </g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <!-- attenuator from attenuator.svg -->
+    <g data-component-id="attenuator" data-symbol-source="attenuator.svg" data-symbol-sha256="88f81ec7f2e00da29470b539739ed6ec05cd51b9c8d244020e4c37780d55d519" data-symbol-geometry-sha256="4285088fba25feea940b274f5c537efb177c008176acfb1e2618717becf8c10d" transform="translate(560 180) rotate(0) translate(-100 -80)">
+      <!-- canonical-geometry-start -->
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M100 80 H160"/>
+    <path d="M130 50 L140 55 L120 65 L140 75 L120 85 L140 95 L120 105 L130 110"/>
+  </g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <circle data-node-dot="1" cx="160" cy="180" r="4" fill="#202020"/>
+    <circle data-node-dot="2" cx="260" cy="180" r="4" fill="#202020"/>
+    <circle data-node-dot="2" cx="360" cy="180" r="4" fill="#202020"/>
+    <circle data-node-dot="3" cx="460" cy="180" r="4" fill="#202020"/>
+    <circle data-node-dot="3" cx="560" cy="180" r="4" fill="#202020"/>
+    <circle data-node-dot="4" cx="620" cy="180" r="4" fill="#202020"/>
+    <circle data-node-circle="1" cx="160" cy="120" r="12" fill="#ffffff"/>
+    <circle data-node-circle="2" cx="320" cy="120" r="12" fill="#ffffff"/>
+    <circle data-node-circle="3" cx="520" cy="120" r="12" fill="#ffffff"/>
+    <circle data-node-circle="4" cx="620" cy="120" r="12" fill="#ffffff"/>
+  </g>
+  <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    <text x="210" y="60" text-anchor="middle">r1: 25 Ω</text>
+    <text x="410" y="60" text-anchor="middle">l1: 2 nH</text>
+    <text x="590" y="60" text-anchor="middle">attenuator: 3 dB</text>
+    <text x="100" y="240" text-anchor="middle">Port 1</text>
+    <text x="680" y="240" text-anchor="middle">Port 2</text>
+    <text data-node-label="1" x="160" y="125" text-anchor="middle">1</text>
+    <text data-node-label="2" x="320" y="125" text-anchor="middle">2</text>
+    <text data-node-label="3" x="520" y="125" text-anchor="middle">3</text>
+    <text data-node-label="4" x="620" y="125" text-anchor="middle">4</text>
+  </g>
+</svg>

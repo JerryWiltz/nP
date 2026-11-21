@@ -1,0 +1,14 @@
+<!-- Modified: 2026-10-24 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -20 240 200" role="img" aria-labelledby="title description">
+  <title id="title">nP mvia two-port microstrip-via-transition symbol</title>
+  <desc id="description">A two-port physical microstrip via-transition pad with port 1 at the top and port 2 at the bottom.</desc>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <!-- Outlined via pad and bore, with leads to both grid terminals. -->
+  <circle cx="120" cy="90" r="30" fill="#ffffff" stroke="#202020" stroke-width="2"/>
+  <circle cx="120" cy="90" r="10" fill="#ffffff" stroke="#202020" stroke-width="2"/>
+  <path d="M120 40 V60 M120 120 V140" fill="none" stroke="#202020" stroke-width="2"/>
+  <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
+    <text x="120" y="-5">mvia()</text><text x="120" y="25">Port 1</text><text x="120" y="165">Port 2</text><text x="170" y="95">via</text>
+    <circle cx="120" cy="40" r="4"/><circle cx="120" cy="140" r="4"/>
+  </g>
+</svg>
