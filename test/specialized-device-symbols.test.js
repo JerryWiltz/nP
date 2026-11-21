@@ -1,4 +1,4 @@
-// Modified: 2026-11-19
+// Modified: 2026-11-20
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -18,11 +18,12 @@ const drawings = [
     ['Varactor', 'varactor-diode', [11, 22]]
 ];
 
-test('specialized drawing names have no numerical constructors and share canonical geometry where appropriate', () => {
+test('specialized artwork distinguishes implemented constructors from drawing-only device names', () => {
     for (const [name, symbol, nodes] of drawings) {
-        assert.equal(catalog.deviceSymbols[name], symbol + '.svg');
-        assert.equal(Object.hasOwn(catalog.constructors, name), false);
-        assert.equal(name in nP, false);
+        const numerical = name === 'HEMT';
+        assert.equal((numerical ? catalog.constructors : catalog.deviceSymbols)[name], symbol + '.svg');
+        assert.equal(Object.hasOwn(catalog.constructors, name), numerical);
+        assert.equal(name in nP, numerical);
         const canonical = parseSymbol(readFileSync(new URL('../schematics/symbols/' + symbol + '.svg',
             import.meta.url), 'utf8'), symbol + '.svg');
         const runtime = schematicSymbols[symbol];
@@ -36,7 +37,8 @@ test('specialized drawing names have no numerical constructors and share canonic
         }
     }
     assert.equal(catalog.constructors.MESFET, catalog.constructors.NJF);
-    assert.equal(catalog.deviceSymbols.HEMT, catalog.constructors.NJF);
+    assert.equal(catalog.constructors.HEMT, catalog.constructors.NJF);
+    assert.equal(catalog.deviceSymbols.HEMT, undefined);
     assert.equal(catalog.constructors.D, 'diode-1n4148.svg');
     assert.equal(catalog.constructors.diode1N4148, 'diode-1n4148.svg');
 });

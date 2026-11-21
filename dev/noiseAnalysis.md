@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-15 -->
+<!-- Modified: 2026-11-21 -->
 # Gupta connection-scattering noise analysis
 
 The shared section 3 and sections 4–6 work through a matched 3 dB attenuator at 290 K and a semi-ideal amplifier with 0.01 input reflection, output reflection, and reverse transmission. Section 6 reverses their order. The implemented `nP.Amp(20, 4)` is fully matched and unilateral, with $S_{11}=S_{12}=S_{22}=0$; the semi-ideal amplifier is retained in the worked matrices to show the small reflection correction in equation (6.17). Here 3 dB means exactly 3.00 dB, so the voltage-wave transmission is $10^{-3/20}\approx0.708$ and the power transmission is $10^{-3/10}\approx0.501$.
@@ -7,7 +7,7 @@ The [`noiseAnalysis.html`](noiseAnalysis.html) harness instead compares three `A
 
 ## 1–3. Shared connection-scattering derivation
 
-The [Gupta connection-scattering derivation](../developmentDocs/guptaConnectionScattering.md) contains equations (1.1)–(3.8), the eight-variable source example, and the six-position attenuator–amplifier example. Its section 3 defines the port order, connection matrix $\boldsymbol\Gamma$ (3.3), inverse $\mathbf W^{-1}$ (3.5), and transfer matrix $\mathbf T$ (3.6) used below.
+The [Gupta connection-scattering derivation](../developmentDocs/analysis/guptaConnectionScattering.md) contains equations (1.1)–(3.8), the eight-variable source example, and the six-position attenuator–amplifier example. Its section 3 defines the port order, connection matrix $\boldsymbol\Gamma$ (3.3), inverse $\mathbf W^{-1}$ (3.5), and transfer matrix $\mathbf T$ (3.6) used below.
 
 ## 4. Noise sources and covariance
 

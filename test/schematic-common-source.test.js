@@ -1,4 +1,4 @@
-// Modified: 2026-11-19
+// Modified: 2026-11-20
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as nP from '../src/index.js';
@@ -45,7 +45,7 @@ function assertConnected(graph) {
 }
 
 
-for (const [name, symbol] of [['NJF', 'njf'], ['PJF', 'pjf'], ['MESFET', 'njf']]) for (const source of ['split', 'combined', 'resistor']) {
+for (const [name, symbol] of [['NJF', 'njf'], ['PJF', 'pjf'], ['MESFET', 'njf'], ['HEMT', 'njf']]) for (const source of ['split', 'combined', 'resistor']) {
     for (const bypass of [false, true]) for (const common of ['output', 'supply']) {
         test(name + ' commonSource ' + source + ', bypass ' + bypass + ', common ' + common, () => {
             nP.global.fList = [1e6];

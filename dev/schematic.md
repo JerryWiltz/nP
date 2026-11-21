@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-01 -->
+<!-- Modified: 2026-11-21 -->
 
 # Schematic development harness
 
@@ -8,4 +8,4 @@ The page labels each result with its shape hint or network-only mode, followed b
 
 The two-shape case is the fifth section, after “Two resistors in series.” A link at the top of the page jumps to it. Its heading shows the shared node boundary: `series` from 1 to 4, then `ladder` from 4 to 11.
 
-The page is a manual review harness. The node mapping and fallback behavior are checked in `test/schematic-nodal-layout.test.js`; the current network-only renderer and its limits are described in `developmentDocs/schematicSystem.md`.
+The page is a manual review harness. The node mapping and fallback behavior are checked in `test/schematic-nodal-layout.test.js`; the current network-only renderer and its limits are described in `developmentDocs/schematics/schematicSystem.md`.

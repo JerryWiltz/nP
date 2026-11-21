@@ -1,5 +1,5 @@
 {
-  "modified": "2026-11-19",
+  "modified": "2026-11-20",
   "schemaVersion": 1,
   "constructors": {
     "cascade": "cascade.svg",
@@ -72,7 +72,8 @@
     "MESFET": "njf.svg",
     "PJF": "pjf.svg",
     "NMOS": "nmos.svg",
-    "PMOS": "pmos.svg"
+    "PMOS": "pmos.svg",
+    "HEMT": "njf.svg"
   },
   "symbolVariants": {
     "mbend": {
@@ -100,7 +101,6 @@
     "PMOSD": "pmos-depletion.svg",
     "NMOSD4": "nmos-depletion-four-terminal.svg",
     "PMOSD4": "pmos-depletion-four-terminal.svg",
-    "HEMT": "njf.svg",
     "Schottky": "schottky-diode.svg",
     "Zener": "zener-diode.svg",
     "Varactor": "varactor-diode.svg"

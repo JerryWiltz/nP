@@ -1,5 +1,5 @@
 # AGENTS.md
-<!-- Modified: 2026-11-19 -->
+<!-- Modified: 2026-11-21 -->
 
 Instructions for `/home/jerrywiltz/cad-development/nP`. Read this file and any `AGENTS.md` in the directory being changed. Use current source and tests for API behavior; keep detailed engineering explanations in `developmentDocs/`.
 
@@ -27,7 +27,7 @@ Treat these as user-message shorthands when they reach the agent as text; they a
 - `src/np-nport/` owns RF components and networks; `src/np-math/` owns complex, matrix, and FFT math; `src/np-digital/` owns waveform, mod, and demod; `src/np-global/` owns analysis settings; `src/np-chart/` owns charts and tables; `src/np-misc/` owns browser helpers.
 - RF examples should show this order: set frequencies, create components, combine them, call `.out(...)`, then plot or tabulate. Use `nP.nodal()` for arbitrary multiport wiring and `cas()` or `nP.cascade()` for two-port cascades.
 - Set `global.fList` before ordinary RF components. Components may accept an options-level `fList`; all components in one network need matching frequency rows. Digital examples set the required time or frequency grid before `mod()` and create dependent components afterward.
-- Preserve public exports and aliases unless the user requests a breaking change. Update consumers, examples, tests, and `developmentDocs/np-nport/constructorCatalog.md` when changing an n-port constructor, method, public math helper, or low-pass prototype generator.
+- Preserve public exports and aliases unless the user requests a breaking change. Update consumers, examples, tests, and `developmentDocs/components/constructorCatalog.md` when changing an n-port constructor, method, public math helper, or low-pass prototype generator.
 
 ## Shipped nP agents
 
@@ -50,10 +50,10 @@ Treat these as user-message shorthands when they reach the agent as text; they a
 - Ideal constructors use uppercase-first names such as `Tlin()`, `Tclin()`, `Tee()`, `Short()`, and `Open()`. Physical microstrip constructors use lowercase names such as `mlin()` and `mclin()`. Ideal source filenames match public constructor names.
 - RF constructors use `schematicPart(publicName, parameters)` for `_schematic` metadata. The symbol ID comes from the generated map based on `schematics/symbol-catalog.json`; do not duplicate an SVG filename in a constructor. Add a canonical symbol and runtime layout for new drawable constructors.
 - Use `nodal()`, `cas()` and `cascade()` for public network construction and retain their connections for DC analysis. Do not introduce a separate public `circuit()` API or require a second netlist.
-- Every new electrical constructor must also attach a validated immutable `_dcModel` using the shared DC helpers, with the same public terminal order, resolved SI parameters and construction context. Supply its actual DC circuit/device model; when physical DC information is absent, attach an actionable `requiresModel` reason instead of assuming an open or short. Preserve public `.dc` curve settings. New composition paths must retain child DC models and placement identity. Update the DC constructor audit and export-coverage tests; see `developmentDocs/dcAnalysis.md` and `developmentDocs/np-nport/dcConstructorAudit.md`. Synthesis, digital, math and presentation helpers without electrical terminals do not need a DC stamp.
+- Every new electrical constructor must also attach a validated immutable `_dcModel` using the shared DC helpers, with the same public terminal order, resolved SI parameters and construction context. Supply its actual DC circuit/device model; when physical DC information is absent, attach an actionable `requiresModel` reason instead of assuming an open or short. Preserve public `.dc` curve settings. New composition paths must retain child DC models and placement identity. Update the DC constructor audit and export-coverage tests; see `developmentDocs/analysis/dcAnalysis.md` and `developmentDocs/components/dcConstructorAudit.md`. Synthesis, digital, math and presentation helpers without electrical terminals do not need a DC stamp.
 - `Tee()` port 1 is the common/shunt branch. A shunt branch runs from that port through its component to `Short()`. `seriesTee()` inserts a one-port as a floating series branch. Name electrical parts `r1`, `l1`, `c1`, etc., and put each `nodal()` connection on its own line.
 - Coupled-line ports are clockwise from upper left: 1 upper left, 2 upper right, 3 lower right, 4 lower left. From port 1, port 2 is through, port 4 coupled, and port 3 isolated.
-- Reuse constants from `src/np-nport/src/physicalConstants.js`. Physical-model options use canonical lower-camel-case SI names; `resistivity` is absolute ohm-meters. Preserve documented aliases, reject conflicting or unknown properties, and keep `.physicalModel` metadata. See `developmentDocs/physicalModelApi.md`.
+- Reuse constants from `src/np-nport/src/physicalConstants.js`. Physical-model options use canonical lower-camel-case SI names; `resistivity` is absolute ohm-meters. Preserve documented aliases, reject conflicting or unknown properties, and keep `.physicalModel` metadata. See `developmentDocs/components/physicalModelApi.md`.
 - Preserve diode RF and DC behavior together. Biased diode models need their own noise covariance and weak nonlinear source model; see the diode-directory instructions.
 
 ## General solutions; no special-case workarounds

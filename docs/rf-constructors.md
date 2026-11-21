@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-18 -->
+<!-- Modified: 2026-11-21 -->
 # RF Constructors
 
 Set the frequencies first. Then make each part of the circuit. These calls return [nPort objects](./nport-object.md) that you can [connect](./connecting-nports.md).
@@ -252,8 +252,8 @@ var diode2 = nP.diode1N4148({
 });
 ```
 
-The default 1N4148 model includes a 0.568 Ω series resistance, 4 pF zero-bias junction capacitance, 4 ns transit time, and a 100 V breakdown setting. It uses the selected circuit temperature and provides both RF S-parameters and a DC I–V curve. The [constructor catalog](https://github.com/JerryWiltz/nP/blob/master/developmentDocs/np-nport/constructorCatalog.md) records the full model parameters.
+The default 1N4148 model includes a 0.568 Ω series resistance, 4 pF zero-bias junction capacitance, 4 ns transit time, and a 100 V breakdown setting. It uses the selected circuit temperature and provides both RF S-parameters and a DC I–V curve. The [constructor catalog](https://github.com/JerryWiltz/nP/blob/master/developmentDocs/components/constructorCatalog.md) records the full model parameters.
 
 ## More detail
 
-See [Circuit examples](./circuit-examples.md) for complete networks and the [constructor catalog](https://github.com/JerryWiltz/nP/blob/master/developmentDocs/np-nport/constructorCatalog.md) for every argument, option, and model default.
+See [Circuit examples](./circuit-examples.md) for complete networks and the [constructor catalog](https://github.com/JerryWiltz/nP/blob/master/developmentDocs/components/constructorCatalog.md) for every argument, option, and model default.

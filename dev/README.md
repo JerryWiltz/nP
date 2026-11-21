@@ -1,5 +1,12 @@
-<!-- Modified: 2026-11-19 -->
+<!-- Modified: 2026-11-21 -->
 # Development pages
+
+`shapes/hemtCommonSource.html` shows the ATF35143 SC-70 pHEMT adaptation with
+automatic DC bias, RF response and the shared commonSource schematic.
+`shapes/hemtDieCommonSource.html` retains the die-only version.
+
+`shapes/mesfetNe760.html` shows the Intusoft-published commercial-family NE760
+model with automatic DC bias, RF response and the shared commonSource schematic.
 
 The HTML files in this directory are executable browser harnesses. Top-level
 pages load `../dist/nP.js`; individual shape pages under `shapes/` load
@@ -48,7 +55,7 @@ Individual schematic-shape harnesses live in `shapes/`:
 | `shapes/powerDivider.html` | Wilkinson variants and a divider/combiner/ladder in one nodal network with three guided shapes | `shapes/powerDivider.md` |
 | `shapes/powerCombiner.html` | Explicit reflected views, independent divider detection, microstrip symbols and variable arm lengths | `shapes/powerCombiner.md` |
 
-The diode, matrix, nodal, and visualization notes mirror their harness scripts. The time-domain note contains the PN7 signal setup; its harness adds logging and plots. The microstrip note keeps equivalent standalone examples with different chart mount IDs. The noise and intermodulation notes are worked derivations with different example settings from their harnesses; they share the [Gupta connection-scattering derivation](../developmentDocs/guptaConnectionScattering.md).
+The diode, matrix, nodal, and visualization notes mirror their harness scripts. The time-domain note contains the PN7 signal setup; its harness adds logging and plots. The microstrip note keeps equivalent standalone examples with different chart mount IDs. The noise and intermodulation notes are worked derivations with different example settings from their harnesses; they share the [Gupta connection-scattering derivation](../developmentDocs/analysis/guptaConnectionScattering.md).
 
 Run the browser smoke check with:
 

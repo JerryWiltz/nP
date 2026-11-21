@@ -66,6 +66,7 @@ export const schematicDrawingSymbols = {
     "PJF": "pjf",
     "NMOS": "nmos",
     "PMOS": "pmos",
+    "HEMT": "njf",
     "I": "current-source",
     "VCVS": "voltage-controlled-voltage-source",
     "VCCS": "voltage-controlled-current-source",
@@ -77,7 +78,6 @@ export const schematicDrawingSymbols = {
     "PMOSD": "pmos-depletion",
     "NMOSD4": "nmos-depletion-four-terminal",
     "PMOSD4": "pmos-depletion-four-terminal",
-    "HEMT": "njf",
     "Schottky": "schottky-diode",
     "Zener": "zener-diode",
     "Varactor": "varactor-diode"

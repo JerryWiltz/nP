@@ -1,11 +1,11 @@
-<!-- Modified: 2026-11-15 -->
+<!-- Modified: 2026-11-21 -->
 # 1N4148 curve tracer and RF
 
 This matches `dev/diode.html`. `D()` selects the archived NXP SPICE 1N4148 card. The I–V sweep and RF operating point are separate: changing the displayed sweep does not change the 0.6 V Q point. Tables go directly into the charts, in volts and amperes.
 
 Port 1 is the anode and port 2 the cathode. The noise and direct weak nonlinear estimates belong to the fixed Q point. They include neither large-signal switching nor compression. The older `diode1N4148()` remains available with its original datasheet-fit parameters and positional I–V API; its numerical results differ.
 
-See [Diode models](../developmentDocs/diodeModels.md) for equations, provenance, limits and the independent ngspice comparisons.
+See [Diode models](../developmentDocs/semiconductors/diodeModels.md) for equations, provenance, limits and the independent ngspice comparisons.
 
 ```npjs
 // 1N4148 curve tracer and RF at a fixed Q point

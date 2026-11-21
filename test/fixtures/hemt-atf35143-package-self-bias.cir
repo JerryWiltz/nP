@@ -1,0 +1,74 @@
+ATF35143 package nominal Statz and Divekar charge oracle
+* Modified: 2026-11-20
+* Manufacturer p16, W=400um; ADS Nonlinear Devices pp484-495.
+* Full p.16 package with common external source. Delta1 absent -> 1/Alpha=.25.
+* Native NMF supplies channel only (IS=1e-30); explicit Schottky gates.
+.temp 27
+.options gmin=1e-18 abstol=1e-18 reltol=1e-10
+.model channel NMF (VTO=-.95 BETA=.12 B=.8 ALPHA=4 LAMBDA=.09 IS=1e-30 CGS=0 CGD=0)
+.param vt=1.380649e-23*300.15/1.602176634e-19
+* Manufacturer p.16 SC-70 network; both external source pins common.
+Lgate g gp .8n
+Rgate gp gx .1
+Lgatebond gx dieG .1n
+Ca gp sl .15p
+Lsleft s sl .1n
+Rsourceleft sl sx .1
+Lsleftbond sx dieS .1n
+Rbridge sl sr .1
+Lsright s sr .05n
+RsourceR1 sr sy .1
+LsourceR1 sy dieS .1n
+RsourceR2 sr sz .1
+LsourceR2 sz dieS .1n
+Ldrain d dp .6n
+Rdrain dp dx .1
+Ldrainbond dx dieD .1n
+Cb dp sr .15p
+Lg dieG mg 15p
+Ld dieD md 15p
+Ls dieS ms 5p
+Rg mg gi 1
+Rd md di .5
+Rs ms si .25
+Z1 di gi si channel
+Bgs gi si I=1n*(exp(v(gi,si)/vt)-1)
+Bgd gi di I=1n*(exp(v(gi,di)/vt)-1)
+Cds di si .02p
+* Empirical AC conductance correction, no contribution to static bias.
+* Exact isolated state realization of Y=s*CRF/(1+s*RC*CRF).
+* Avoid directly coupling a 0.1 F capacitor into GHz terminal equations.
+Gfilter 0 rf di si 1
+Rfilter rf 0 1
+Cfilter rf 0 25
+Gcorrection di si di si .004
+Gsubtract si di rf 0 .004
+.func root(a,b) {sqrt((a-b)^2+.25^2)}
+.func ve(a,b) {(a+b+root(a,b))/2}
+.func ve2(a,b) {(a+b-root(a,b))/2}
+.func vn(a,b) {(ve(a,b)-.95+sqrt((ve(a,b)+.95)^2+.2^2))/2}
+.func qgs(a,b) {vn(a,b)<.35 ? 2*.4p*.7*(1-sqrt(1-vn(a,b)/.7)) : .4p*(2*.7*(1-sqrt(.5))+(vn(a,b)-.35)/sqrt(.5))}
+.func qgd(a,b) {.08p*ve2(a,b)}
+* Unit capacitors differentiate independent static charges. F sources
+* deliver the charge currents into the electrical terminals.
+Bqgs qgs 0 V=qgs(v(gi,si),v(gi,di))
+Vqgs qgs cqgs 0
+Cqgs cqgs 0 1
+Fqgs gi si Vqgs 1
+Bqgd qgd 0 V=qgd(v(gi,si),v(gi,di))
+Vqgd qgd cqgd 0
+Cqgd cqgd 0 1
+Fqgd gi di Vqgd 1
+VDD rail 0 5
+RDload rail d 150
+RGbias g 0 1meg
+RSbias s 0 47
+.control
+set numdgt=16
+set wr_vecnames
+set wr_singlescale
+op
+wrdata hemt-package-self-bias.txt v(g) v(d) v(s) i(VDD)
+quit
+.endc
+.end

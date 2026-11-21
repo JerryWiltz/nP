@@ -1,4 +1,5 @@
 ---
+# Modified: 2026-11-21
 layout: home
 
 hero:
@@ -75,7 +76,7 @@ The current browser bundle includes `nP.V()` and network DC solving using the sa
 
 For a supported network containing voltage supplies and NPN/PNP transistors, nP solves the external bias network before building its RF response. Read the returned `network.operatingPoint` for the solved state. Fixed-Q transistor construction remains available. Diode network DC adapters are not yet supported.
 
-Start with the [DC bias analysis guide](./dc-bias-analysis.md). See the [DC analysis details](https://github.com/JerryWiltz/nP/blob/master/developmentDocs/dcAnalysis.md) and [active-device guide](./diodes-and-active-components.md). Published npm and Obsidian builds have their own update schedules; use the APIs present in the bundle you supply.
+Start with the [DC bias analysis guide](./dc-bias-analysis.md). See the [DC analysis details](https://github.com/JerryWiltz/nP/blob/master/developmentDocs/analysis/dcAnalysis.md) and [active-device guide](./diodes-and-active-components.md). Published npm and Obsidian builds have their own update schedules; use the APIs present in the bundle you supply.
 
 ## What's new in nP 0.49.0
 

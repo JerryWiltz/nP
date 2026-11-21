@@ -1,8 +1,9 @@
-// Modified: 2026-11-19
+// Modified: 2026-11-20
 import {temperatureParameters, gummelPoon} from './transistors/bjt/gummelPoon';
 import {solveDcLinearSystem, dcLinearError} from './dcLinearSystem';
 import {diodeDcCurrent} from './diodes/diodeDc';
 import {mosfetJunction} from './transistors/fet/mosfetEquations';
+import {hemtJunction} from './transistors/fet/hemtEquations';
 import {mesfetJunction} from './transistors/fet/mesfetEquations';
 import {jfetJunction} from './transistors/fet/jfetEquations';
 
@@ -33,9 +34,9 @@ function evaluate(device, values) {
         return [{current: data.current, derivatives: [data.conductance, -data.conductance]},
             {current: -data.current, derivatives: [-data.conductance, data.conductance]}];
     }
-    if (['jfet', 'mesfet'].includes(device.kind)) {
+    if (['jfet', 'mesfet', 'hemt'].includes(device.kind)) {
         try {
-            const equations = device.kind === 'mesfet' ? mesfetJunction : jfetJunction;
+            const equations = device.kind === 'hemt' ? hemtJunction : device.kind === 'mesfet' ? mesfetJunction : jfetJunction;
             return equations(device.p, ...intrinsic(device, values), device.polarity).currents
                 .map(row => ({current: row[0], derivatives: [row[1] + row[2], -row[2], -row[1]]}));
         } catch (error) { if (error instanceof RangeError) return null; throw error; }
@@ -94,14 +95,14 @@ function residual(assembly, values, sourceScale = 1) {
 }
 function fetEstimateConductance(device) {
     const u = Math.max(0, -device.p.VTO);
-    return device.kind === 'mesfet' ? device.p.ALPHA * device.p.BETA * u * u / (1 + device.p.B * u) : 2 * device.p.BETA * u;
+    return ['mesfet', 'hemt'].includes(device.kind) ? device.p.ALPHA * device.p.BETA * u * u / (1 + device.p.B * u) : 2 * device.p.BETA * u;
 }
 function estimate(assembly) {
     if (assembly.constraints.every(row => !row.source || row.value === 0)) return {
         values: Array(assembly.variables.length).fill(0),
         report: {method: 'zero-source', status: 'used', assumptions: []}
     };
-    const regions = assembly.devices.map(device => ['jfet', 'mesfet'].includes(device.kind) ? 'ohmic' : device.kind === 'mosfet' ? 'cutoff' : 'forward'), attempted = new Set();
+    const regions = assembly.devices.map(device => ['jfet', 'mesfet', 'hemt'].includes(device.kind) ? 'ohmic' : device.kind === 'mosfet' ? 'cutoff' : 'forward'), attempted = new Set();
     const base = baseEquations(assembly), indices = rowIndex(assembly), size = assembly.variables.length;
     for (let attempt = 0; attempt < 8; attempt++) {
         const signature = regions.join(',');
@@ -111,7 +112,7 @@ function estimate(assembly) {
         let count = size;
         assembly.devices.forEach((device, index) => {
             if (device.kind === 'mosfet') return;
-            if (['jfet', 'mesfet'].includes(device.kind)) {
+            if (['jfet', 'mesfet', 'hemt'].includes(device.kind)) {
                 const conductance = fetEstimateConductance(device);
                 for (const [terminal, sign] of [[1, 1], [2, -1]]) {
                     add(rows[indices.get(device.nodes[terminal])].terms, device.nodes[1], sign * conductance);
@@ -134,7 +135,7 @@ function estimate(assembly) {
             const solution = solveDcLinearSystem(rows, count), values = solution.values.slice(0, size);
             let currentIndex = size, changed = false;
             assembly.devices.forEach((device, index) => {
-                if (['jfet', 'mesfet', 'mosfet'].includes(device.kind)) return;
+                if (['jfet', 'mesfet', 'hemt', 'mosfet'].includes(device.kind)) return;
                 if (device.nodes.length === 2) {
                     const voltage = intrinsic(device, values)[0], previous = regions[index];
                     let next = previous;
@@ -164,9 +165,10 @@ function estimate(assembly) {
                 assembly.devices.every(device => device.nodes.length === 2) ? 'piecewise-diode' :
                 assembly.devices.every(device => device.kind === 'jfet') ? 'piecewise-jfet' :
                 assembly.devices.every(device => device.kind === 'mesfet') ? 'piecewise-mesfet' :
+                assembly.devices.every(device => device.kind === 'hemt') ? 'piecewise-hemt' :
                 assembly.devices.every(device => device.kind === 'mosfet') ? 'piecewise-mosfet' : 'piecewise-devices', status: 'used',
                 assumptions: assembly.devices.map((device, index) => ({path: device.path, region: regions[index],
-                    ...(device.kind === 'mosfet' ? {gateCurrent: 0, channelCurrent: 0, bodyJunctions: 'open estimate'} : ['jfet', 'mesfet'].includes(device.kind) ? {gateVoltage: 0, channelConductance: fetEstimateConductance(device)} :
+                    ...(device.kind === 'mosfet' ? {gateCurrent: 0, channelCurrent: 0, bodyJunctions: 'open estimate'} : ['jfet', 'mesfet', 'hemt'].includes(device.kind) ? {gateVoltage: 0, channelConductance: fetEstimateConductance(device)} :
                         {forwardVoltage: 0.7, ...(device.kind === 'bjt' ? {reverseVoltage: 0.55, beta: device.p.BF} :
                             {breakdownVoltage: device.breakdownVoltage})})}))}};
         } catch (error) {

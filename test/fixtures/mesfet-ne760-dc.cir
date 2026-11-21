@@ -1,0 +1,50 @@
+NE760 commercial-family Statz card published by Intusoft
+* Modified: 2026-11-20
+* http://www.intusoft.com/lit/IsSpice4.pdf pp. 193-194
+* KF=0 and AF=1 are Berkeley MES1 defaults; no characterized noise/package.
+.temp 27
+.options gmin=1e-18 abstol=1e-18 reltol=1e-10
+.model device NMF (VTO=-1 BETA=.1275 B=.3 ALPHA=2 LAMBDA=15.5m RD=5.45 RS=4.88 IS=19.8p PB=1 FC=.2 CGS=.34p CGD=.03p)
+Z1 d g s device
+VG g 0 -.5
+VD d 0 2
+VS s 0 0
+.control
+set numdgt=16
+set wr_vecnames
+set wr_singlescale
+alter VG -1.3
+alter VD 3
+op
+wrdata mesfet-ne760-point0.txt v(g) v(d) v(s) i(VG) i(VD) i(VS) @z1[gm] @z1[gds]
+alter VG -0.8
+alter VD 3
+op
+wrdata mesfet-ne760-point1.txt v(g) v(d) v(s) i(VG) i(VD) i(VS) @z1[gm] @z1[gds]
+alter VG -0.5
+alter VD 3
+op
+wrdata mesfet-ne760-point2.txt v(g) v(d) v(s) i(VG) i(VD) i(VS) @z1[gm] @z1[gds]
+alter VG -0.2
+alter VD 3
+op
+wrdata mesfet-ne760-point3.txt v(g) v(d) v(s) i(VG) i(VD) i(VS) @z1[gm] @z1[gds]
+alter VG 0
+alter VD 3
+op
+wrdata mesfet-ne760-point4.txt v(g) v(d) v(s) i(VG) i(VD) i(VS) @z1[gm] @z1[gds]
+alter VG 0.8
+alter VD 2
+op
+wrdata mesfet-ne760-point5.txt v(g) v(d) v(s) i(VG) i(VD) i(VS) @z1[gm] @z1[gds]
+alter VG -0.5
+alter VD 0.1
+op
+wrdata mesfet-ne760-point6.txt v(g) v(d) v(s) i(VG) i(VD) i(VS) @z1[gm] @z1[gds]
+alter VG -2.5
+alter VD -2
+op
+wrdata mesfet-ne760-point7.txt v(g) v(d) v(s) i(VG) i(VD) i(VS) @z1[gm] @z1[gds]
+quit
+.endc
+.end

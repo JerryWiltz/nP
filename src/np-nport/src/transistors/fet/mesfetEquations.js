@@ -1,4 +1,4 @@
-// Modified: 2026-11-19
+// Modified: 2026-11-20
 import {BOLTZMANN, ELEMENTARY_CHARGE} from '../../physicalConstants';
 import {powers, constant, variable, add, subtract, scale, multiply, divide, power, exponential} from '../bjt/taylor';
 import {threeTerminalFetPoint, solveThreeTerminalFet} from './threeTerminalFet';
@@ -12,7 +12,7 @@ function gateCurrent(p, voltage) {
     if (voltage[0] <= -3 * p.VT) return subtract(constant(-p.IS), scale(power(voltage, -3), p.IS * (3 * p.VT / Math.E) ** 3));
     return scale(subtract(exponential(scale(voltage, 1 / p.VT)), constant(1)), p.IS);
 }
-function channelCurrent(p, gs, gd) {
+export function statzChannelCurrent(p, gs, gd) {
     const reverse = gs[0] < gd[0], drain = reverse ? subtract(gd, gs) : subtract(gs, gd);
     const overdrive = subtract(reverse ? gd : gs, constant(p.VTO));
     if (overdrive[0] <= 0) return {current: constant(0), region: 'cutoff'};
@@ -48,7 +48,7 @@ function differentiate(jet, axis) {
     });
 }
 export function mesfetJunction(p, vgs, vgd) {
-    const gs = variable(vgs, 0), gd = variable(vgd, 1), channel = channelCurrent(p, gs, gd);
+    const gs = variable(vgs, 0), gd = variable(vgd, 1), channel = statzChannelCurrent(p, gs, gd);
     const igs = gateCurrent(p, gs), igd = gateCurrent(p, gd), gateCharge = totalGateCharge(p, gs, gd);
     const currents = [add(igs, igd), subtract(channel.current, igd), scale(add(channel.current, igs), -1)];
     const capacitances = [{positive: 0, negative: 2, control: 0, coefficients: differentiate(gateCharge, 0)},

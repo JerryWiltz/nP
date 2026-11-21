@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-19 -->
+<!-- Modified: 2026-11-21 -->
 # NPN constructor
 
 `nP.NPN()` turns a nonlinear bipolar transistor model into an nPort at a selected DC operating point. It returns the three-port S-parameters, the transistor's noise covariance and the model needed for weak nonlinear analysis. The DC state connects these calculations: changing the bias changes the RF model.
@@ -129,7 +129,7 @@ Q_{BC} &= Q_{\mathrm{dep,BC}}+T_R I_R
 \end{aligned}
 $$
 
-Here $A_T$ is the forward transit-time correction controlled by `XTF`, `VTF` and `ITF`. Otherwise the forward storage term is zero; the junction depletion terms remain. `TR` controls reverse storage. The [model details](https://github.com/JerryWiltz/nP/blob/master/developmentDocs/transistorModels.md#stored-charge-equations) give the full correction and continuation equations.
+Here $A_T$ is the forward transit-time correction controlled by `XTF`, `VTF` and `ITF`. Otherwise the forward storage term is zero; the junction depletion terms remain. `TR` controls reverse storage. The [model details](https://github.com/JerryWiltz/nP/blob/master/developmentDocs/semiconductors/transistorModels.md#stored-charge-equations) give the full correction and continuation equations.
 
 The intrinsic terminal charges are $Q_B=Q_{BE}+Q_{BC}$, $Q_C=-Q_{BC}$ and $Q_E=-Q_{BE}$, so their sum is zero. Differentiating them with respect to the junction voltages gives the capacitance terms used in RF analysis. Because forward stored charge depends on both junction voltages, its cross derivative also matters.
 
@@ -272,4 +272,4 @@ The same bias-dependent model supplies base/collector shot noise and terminal-re
 
 With two-tone analysis settings established before component construction, current and charge terms through third order supply weak nonlinear estimates of intermodulation and harmonics. These are direct Taylor-source calculations. The model omits quadratic remixing, large-signal compression and harmonic-balance/transient solving. The supplied cards have no fitted excess low-frequency noise or high-frequency induced-noise correlation model.
 
-For model provenance, equation details and independent SPICE checks, see [Bipolar transistor models](https://github.com/JerryWiltz/nP/blob/master/developmentDocs/transistorModels.md). For supported external DC models and convergence reporting, see [DC analysis](https://github.com/JerryWiltz/nP/blob/master/developmentDocs/dcAnalysis.md). The existing [NPN curve tracer and RF example](./repl.md#example-npn-curve-tracer) remains available in the REPL.
+For model provenance, equation details and independent SPICE checks, see [Bipolar transistor models](https://github.com/JerryWiltz/nP/blob/master/developmentDocs/semiconductors/transistorModels.md). For supported external DC models and convergence reporting, see [DC analysis](https://github.com/JerryWiltz/nP/blob/master/developmentDocs/analysis/dcAnalysis.md). The existing [NPN curve tracer and RF example](./repl.md#example-npn-curve-tracer) remains available in the REPL.

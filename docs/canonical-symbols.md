@@ -2,7 +2,7 @@
 aside: false
 ---
 
-<!-- Modified: 2026-11-19 -->
+<!-- Modified: 2026-11-20 -->
 
 <script setup>
 import CanonicalSymbols from './.vitepress/theme/CanonicalSymbols.vue'
@@ -26,7 +26,7 @@ var drawing = nP.schematic(description);
 
 Use `PJF` for the P-channel symbol. `nP.NJF()` and `nP.PJF()` provide level-1 DC, RF, approximate noise and weak nonlinear analysis. See [JFET models](./diodes-and-active-components#jfet-transistors). Schematic descriptions select artwork without executing a numerical constructor.
 
-`MESFET` and the drawing-only `HEMT` share the N-channel FET artwork and the same **gate/drain/source** terminal order. For example, `'1 right Q1=HEMT(HEMT)[1,2,3] 1 2 3'` labels a HEMT drawing. `nP.MESFET()` supplies a Statz/MES1 SPICE reference profile, not a commercial fit. HEMT has no numerical constructor. Shared geometry does not select device material or a numerical model.
+`MESFET` and `HEMT` share the N-channel FET artwork and the same **gate/drain/source** terminal order. For example, `'1 right Q1=HEMT(HEMT)[1,2,3] 1 2 3'` labels a HEMT drawing. `nP.MESFET()` supplies SPICE reference and NE760 Statz/MES1 records. `nP.HEMT()` supplies the nominal ATF35143_DIE pHEMT adaptation, with distinct static gate charges and correlated noise; `model: 'ATF35143'` adds the SC-70 network with both external source pins common at port 3. Shared geometry does not select device material or a numerical model.
 
 MOSFET artwork uses the same **1 gate, 2 drain, 3 source** order. Four-terminal drawings add **4 body**:
 

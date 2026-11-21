@@ -61,7 +61,8 @@ export const schematicSymbolMap = {
     "mvia": "microstrip-via-transition",
     "NMOS": "nmos",
     "PMOS": "pmos",
-    "MESFET": "njf"
+    "MESFET": "njf",
+    "HEMT": "njf"
 };
 export const schematicSymbolVariants = {
     "mbend": {

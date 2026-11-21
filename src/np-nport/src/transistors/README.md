@@ -1,7 +1,7 @@
-<!-- Modified: 2026-11-19 -->
+<!-- Modified: 2026-11-21 -->
 # Transistor models
 
-`NPN()` implements the **2N3904** (default) and **BFR93A** through a shared modified Gummel–Poon engine. `PNP()` implements the **2N3906**, reusing that engine. `NJF()` and `PJF()` implement onsemi MMBF5457LT1 and MMBFJ175LT1 through a shared level-1 JFET engine. `NMOS()` and `PMOS()` add sourced level-1 MOSFETs with optional independent body. `MESFET()` adds a Statz/MES1 SPICE reference profile; commercial MESFET records, HEMT and advanced MOS families remain future work.
+`NPN()` implements the **2N3904** (default) and **BFR93A** through a shared modified Gummel–Poon engine. `PNP()` implements the **2N3906**, reusing that engine. `NJF()` and `PJF()` implement onsemi MMBF5457LT1 and MMBFJ175LT1 through a shared level-1 JFET engine. `NMOS()` and `PMOS()` add sourced level-1 MOSFETs with optional independent body. `MESFET()` supplies SPICE reference and Intusoft NE760 Statz records. `HEMT()` adds ATF35143_DIE, a nominal-temperature manufacturer Statz pHEMT die adaptation with partitioned static charge, die parasitics and correlated noise. ATF35143 also supplies the p.16 SC-70 network with a common external source; advanced MOS families remain outside current coverage.
 
 ```text
 transistors/
@@ -30,10 +30,12 @@ transistors/
     └── README.md
 ```
 
-Public constructor names follow SPICE device types: `NPN`, `PNP`, `NJF`, `PJF`, `NMOS`, `PMOS`, and `MESFET`. A `model` option selects a supported part parameter set, such as `2N3904`. Material, device structure, equation family, and package coverage belong to that model record.
+Public constructor names follow SPICE device types: `NPN`, `PNP`, `NJF`, `PJF`, `NMOS`, `PMOS`, `MESFET`, and `HEMT`. A `model` option selects a supported part parameter set, such as `2N3904`. Material, device structure, equation family, and package coverage belong to that model record.
 
-`NPN().ivTable()` and `PNP().ivTable()` return DC curve-tracer tables. The explicit `qPoint` supplies frequency-dependent S-parameters, active noise covariance and weak nonlinear coefficients. External `nodal()` connections select common emitter, base or collector for RF; the DC `configuration` does not terminate a port. `V()` and the shared network DC solver determine external bias before RF in supply-driven networks. JFETs use the same ordering with their own current/charge law and G/D/S terminal order. See [MOSFET models](../../../../developmentDocs/mosfetModels.md), [JFET models](../../../../developmentDocs/jfetModels.md) and [the bipolar model note](../../../../developmentDocs/transistorModels.md).
+`NPN().ivTable()` and `PNP().ivTable()` return DC curve-tracer tables. The explicit `qPoint` supplies frequency-dependent S-parameters, active noise covariance and weak nonlinear coefficients. External `nodal()` connections select common emitter, base or collector for RF; the DC `configuration` does not terminate a port. `V()` and the shared network DC solver determine external bias before RF in supply-driven networks. JFETs use the same ordering with their own current/charge law and G/D/S terminal order. See [MOSFET models](../../../../developmentDocs/semiconductors/mosfetModels.md), [JFET models](../../../../developmentDocs/semiconductors/jfetModels.md) and [the bipolar model note](../../../../developmentDocs/semiconductors/transistorModels.md).
 
 See [bjt/README.md](bjt/README.md), [fet/README.md](fet/README.md), and [AGENTS.md](AGENTS.md). Existing diode models remain in [../diodes/](../diodes/). Keep detailed model equations and engineering notes in [developmentDocs/](../../../../developmentDocs/).
 
-MESFET details: [reference profile, differential capacitance and limits](../../../../developmentDocs/mesfetModels.md). No material label or shared drawing geometry selects HEMT physics.
+MESFET details: [reference profile, differential capacitance and limits](../../../../developmentDocs/semiconductors/mesfetModels.md). No material label or shared drawing geometry selects HEMT physics.
+
+HEMT details: [die model, noise and limits](../../../../developmentDocs/semiconductors/hemtModels.md).

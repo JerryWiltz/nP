@@ -1,11 +1,11 @@
 # Raw Technical Notes
-<!-- Modified: 2026-10-15 -->
+<!-- Modified: 2026-11-21 -->
 
 This folder collects raw research material for future RF/microwave model work.
 
 ## Network connection reference
 
-- [gupta_connection_scattering_p345_347.pdf](gupta_connection_scattering_p345_347.pdf) — Gupta source scan, pp. 345–347, covering the connection-scattering method and its worked multiport example. The excerpt does not establish the book title or edition; see [the transcribed derivation](../../developmentDocs/guptaConnectionScattering.md).
+- [gupta_connection_scattering_p345_347.pdf](gupta_connection_scattering_p345_347.pdf) — Gupta source scan, pp. 345–347, covering the connection-scattering method and its worked multiport example. The excerpt does not establish the book title or edition; see [the transcribed derivation](../../developmentDocs/analysis/guptaConnectionScattering.md).
 
 ## Noise analysis references
 
@@ -13,7 +13,7 @@ This folder collects raw research material for future RF/microwave model work.
 - `randa_multiport_noise_2001.pdf` — J. Randa, *Noise Characterization of Multiport Amplifiers*, IEEE Transactions on Microwave Theory and Techniques 49(10), 2001, pp. 1757-1763. See Section II for the multiport noise-matrix definitions and equations. Source: https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=5219
 - `touchstone_ver2_1.pdf` — IBIS Open Forum, *Touchstone File Format Specification*, version 2.1, ratified January 26, 2024. See pp. 24-25 for `[Noise Data]` and the five noise-parameter fields. Source: https://www.ibis.org/touchstone_ver2.1/touchstone_ver2_1.pdf
 
-The physical `nP.mtee()` model is implemented under `src/np-nport/src/mlin/`; its selected equations and limits are summarized in `developmentDocs/microstrip/README.md`. Keep source captures and competing equations here for future model checks.
+The physical `nP.mtee()` model is implemented under `src/np-nport/src/mlin/`; its selected equations and limits are summarized in `developmentDocs/components/microstrip/README.md`. Keep source captures and competing equations here for future model checks.
 
 ## Amplifier references
 

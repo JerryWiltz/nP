@@ -1,7 +1,7 @@
-<!-- Modified: 2026-10-27 -->
+<!-- Modified: 2026-11-21 -->
 # Microstrip Development Examples
 
-This companion to `microstrip.html` keeps five independently runnable `npjs` examples. Each section sets its analysis frequencies before constructing components. The model equations, assumptions, and source references live in `developmentDocs/microstrip/README.md`.
+This companion to `microstrip.html` keeps five independently runnable `npjs` examples. Each section sets its analysis frequencies before constructing components. The model equations, assumptions, and source references live in `developmentDocs/components/microstrip/README.md`.
 
 ## Microstrip Line Development
 

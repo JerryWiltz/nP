@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-08 -->
+<!-- Modified: 2026-11-21 -->
 # Parallel and nested shape composition
 
 Open `parallelComposition.html` after rebuilding `dist/nP.js`. Each example has one `nodal()` network; existing shape names guide its paths, while direct `Tee()` and `Tee4()` junctions use canonical symbols. Component values illustrate layout rather than RF matching.
@@ -16,4 +16,4 @@ The composer measures complete sections before positioning them. Electrical boun
 
 This is the first stage of parallel composition: crossover routing between sections is disabled. Click **Demonstrate crossover error** to run the deliberate failure; normal page loading produces no intentional console errors. The expected inline error is part of the page, and the final drawing demonstrates that subsequent JavaScript continues. A route failure does not prove that the network is mathematically nonplanar. Existing single-board matching coverage is unchanged.
 
-The implementation belongs to the shared `schematicBoardComposition.js` operation and the shared graph router. No coordinates, constructor names or example-specific matching callbacks were added to a shape definition. See `developmentDocs/schematicShapeVocabulary.md` for the signature and limitations.
+The implementation belongs to the shared `schematicBoardComposition.js` operation and the shared graph router. No coordinates, constructor names or example-specific matching callbacks were added to a shape definition. See `developmentDocs/schematics/schematicShapeVocabulary.md` for the signature and limitations.

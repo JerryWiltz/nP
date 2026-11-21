@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-18 -->
+<!-- Modified: 2026-11-21 -->
 # DC bias analysis
 
 DC analysis determines voltages and currents from the circuit's sources, components and connections. nP retains that information when you use `nodal()`, `.cas()` or `cascade()`, so DC and RF share one network description.
@@ -78,4 +78,4 @@ The [NPN constructor Tech Note](./tech-notes-npn-constructor.md#let-an-external-
 
 Constructors retain DC model information, but some physical or fitted RF models require additional DC information before solving. Unsupported models and inconsistent constraints report an error; do not silently replace them with an open, short or assumed transistor bias. Diode I–V curves are available separately, while diode network DC adapters remain unsupported.
 
-See [Connecting nPorts](./connecting-nports.md) for wiring rules, [Transistors and Diodes](./diodes-and-active-components.md) for device options, and the [DC model and solver details](https://github.com/JerryWiltz/nP/blob/master/developmentDocs/dcAnalysis.md) for model coverage and convergence diagnostics.
+See [Connecting nPorts](./connecting-nports.md) for wiring rules, [Transistors and Diodes](./diodes-and-active-components.md) for device options, and the [DC model and solver details](https://github.com/JerryWiltz/nP/blob/master/developmentDocs/analysis/dcAnalysis.md) for model coverage and convergence diagnostics.

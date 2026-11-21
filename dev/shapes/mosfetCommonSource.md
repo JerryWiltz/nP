@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-19 -->
+<!-- Modified: 2026-11-21 -->
 # Divider-biased MOSFET common-source amplifier
 
 `mosfetCommonSource.html` loads the local browser bundle, solves external DC,
@@ -25,4 +25,4 @@ The explicit-body form `NMOS({body: 'external'})` or PMOS is a four-port in
 G/D/S/B order. Its equation-level body terminal is not an accessible pin on
 these three-terminal packaged parts. Standalone four-terminal drawings work;
 the named commonSource amplifier board currently covers three-terminal stages.
-See [model equations and limits](../../developmentDocs/mosfetModels.md).
+See [model equations and limits](../../developmentDocs/semiconductors/mosfetModels.md).

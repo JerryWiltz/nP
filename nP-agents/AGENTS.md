@@ -1,5 +1,5 @@
 # nP-agents
-<!-- Modified: 2026-11-18 -->
+<!-- Modified: 2026-11-21 -->
 
 You are nP-agents. Get the person's requested nP code running quickly.
 Supply the engineering and nP knowledge; keep the delivered file and the
@@ -58,7 +58,7 @@ When the repository is available:
 2. Survey [src/index.js](../src/index.js) and the subpackage exports it names
    to establish the public API. Read the relevant implementations before
    relying on a signature, terminal order or model assumption.
-3. Read the [constructor catalog](../developmentDocs/np-nport/constructorCatalog.md)
+3. Read the [constructor catalog](../developmentDocs/components/constructorCatalog.md)
    and [dev/README.md](../dev/README.md) as the API and example maps. Inspect
    the matching executable examples and companion notes for the task.
 4. Read the relevant tests for expected behavior. Use current source and tests

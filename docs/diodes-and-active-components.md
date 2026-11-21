@@ -1,7 +1,7 @@
-<!-- Modified: 2026-11-19 -->
+<!-- Modified: 2026-11-20 -->
 # Transistors and Diodes
 
-The public active-device constructors are `nP.Amp()`, `nP.D()`, `nP.diode1N4148()`, `nP.NPN()`, `nP.PNP()`, `nP.NJF()`, `nP.PJF()`, `nP.NMOS()` and `nP.PMOS()`. The amplifier is a configurable two-port gain/noise model. Diode and transistor models combine DC I–V curves with RF behavior at a fixed bias.
+The public active-device constructors are `nP.Amp()`, `nP.D()`, `nP.diode1N4148()`, `nP.NPN()`, `nP.PNP()`, `nP.NJF()`, `nP.PJF()`, `nP.NMOS()`, `nP.PMOS()`, `nP.MESFET()` and `nP.HEMT()`. The amplifier is a configurable two-port gain/noise model. Diode and transistor models combine DC I–V curves with RF behavior at a fixed bias.
 
 ## NPN transistor
 
@@ -238,7 +238,7 @@ nP.lineChart({inputTable: [curves], title: 'JFET drain curves', metricPrefix: 'n
 
 The NJF Q point above is the default; PJF defaults to VGS=+1 V and VDS=−10 V. Options are `model`, `qPoint`, `bias`, `temperature` (K), `fList` (Hz). Curves return VDS in volts and signed drain current in amperes, without changing RF bias. All three JFET currents enter the device. Networks with `V()` solve external bias first, then rebuild RF, noise and weak nonlinear data per placement. Without a supply, the constructor Q point remains the RF bias.
 
-The `commonSource` schematic board covers self-bias with a gate resistor, drain load, AC coupling, optional source bypass and optional supply bypass, for either polarity. NLEV=1 channel/flicker noise has an ohmic-region limitation; gate shot/induced noise and measured package/noise fitting are absent. Direct Taylor intermodulation omits quadratic remixing and large-signal effects. MESFET now has a Statz reference profile; HEMT and advanced MOS numerical models remain future work.
+The `commonSource` schematic board covers self-bias with a gate resistor, drain load, AC coupling, optional source bypass and optional supply bypass, for either polarity. NLEV=1 channel/flicker noise has an ohmic-region limitation; gate shot/induced noise and measured package/noise fitting are absent. Direct Taylor intermodulation omits quadratic remixing and large-signal effects. MESFET has Statz reference and NE760 family records; HEMT has a nominal Statz pHEMT die model; advanced MOS engines remain future work.
 
 ## MOSFET transistors
 
@@ -271,14 +271,17 @@ These records omit TOX, so inversion/Meyer charge is absent. Classical channel/c
 ## MESFET transistors
 
 `MESFET()` returns **1 gate, 2 drain, 3 source**, using N-channel Statz/MES1.
-Its only model, **SPICE3_REFERENCE**, uses published SPICE example parameters;
-**it is not a commercial transistor fit**. Default Q point is VGS=−0.5 V,
-VDS=2 V. Gate/drain curve intervals use the same API as JFETs, defaulting to
-0…−2 V (5 curves) and 0…3 V (101 points).
+The default **SPICE3_REFERENCE** is a numerical example profile, not a commercial
+fit. **NE760** selects the NEC-family Statz card published in
+[Intusoft's IsSpice4 User's Guide, pp. 193–194](http://www.intusoft.com/lit/IsSpice4.pdf).
+It includes RD=5.45 ohms and RS=4.88 ohms, without a package suffix or lead L/C.
+It is not a manufacturer-certified fit. Both records retain default Q point
+VGS=−0.5 V, VDS=2 V. Gate/drain curves use the JFET interval API: gate 0 to
+VTO (−2 V reference, −1 V NE760) in 5 curves; drain 0…3 V in 101 points.
 
 ```js
 nP.global.fList = [10e6, 100e6, 1e9];
-var q1 = nP.MESFET({model: 'SPICE3_REFERENCE'});
+var q1 = nP.MESFET({model: 'NE760'});
 var short1 = nP.Short();
 var network = nP.nodal(
     [q1, 1, 2, 3],
@@ -295,4 +298,47 @@ branch partition. Classical channel/contact noise and direct weak Taylor
 products are approximate. Electrical temperature stays fixed at 300.15 K;
 selected temperature changes thermal noise only. There is no fitted microwave
 noise, package L/C, trapping, dispersion, self-heating or P-channel profile.
-HEMT remains drawing-only. Commercial MESFET records are still pending.
+NE760 was checked against independent ngspice DC,
+all nine S entries and classical noise, not measured hardware performance.
+The source card's FC=.2 is preserved as metadata; Berkeley MES1 uses a fixed
+0.5 V charge continuation. A 5 V, 150 ohm drain/47 ohm source self-biased stage
+solves to about 12.95 mA before RF analysis.
+
+## HEMT/pHEMT transistors
+
+HEMT() returns gate/drain/source ports 1/2/3. Its first model,
+**ATF35143_DIE**, adapts the [manufacturer's Statz die record](https://sites.units.it/carrato/didatt/corsi_old/E2_web/modulo_carrato/doc/datasheet_discreti/HEMT_ATF35143.pdf),
+at nominal electrical temperature 300.15 K. It includes die parasitics and
+correlated gate/drain noise, with distinct static Qgs/Qgd charge partitioning.
+Select `model: 'ATF35143'` for the p.16 SC-70 package network with both external
+source pins joined at port 3; all three source bonds remain internal.
+ATF35143_DIE stays the default. The nominal package model is intended for
+0.1–6 GHz; test-board vias are excluded.
+
+```js
+nP.global.fList = [100e6, 1e9, 3e9];
+var q1 = nP.HEMT({model: 'ATF35143', qPoint: {vgs: -0.6, vds: 2}});
+var short1 = nP.Short();
+var network = nP.nodal(
+    [q1, 1, 2, 3],
+    [short1, 3],
+    ['out', 1, 2]
+);
+var response = network.out('s21dB', 'NF21dB');
+nP.lineTable({inputTable: [response]});
+```
+
+Default gate curves span 0…−0.95 V in 5 curves; drain curves span 0…3 V in
+101 points. ivTable() returns V/A rows without moving the RF Q point.
+Networks with V() solve external bias through gate/drain/source resistances
+before RF/noise reconstruction. RF requires positive frequencies, positive
+intrinsic VDS and gm>0; DC curves may include cutoff. Temperature scales noise
+only. The current implementation omits electrical temperature scaling, trapping,
+self-heating, avalanche and large-signal behavior. Calculated die NF is not a
+packaged-device datasheet guarantee.
+
+The packaged model agrees numerically with independent SPICE. Comparing with
+the manufacturer's measured 2 V/15 mA table gives maximum S21 magnitude and
+phase differences of about 2.1 dB and 28° over 0.5–6 GHz. The measured fixture
+includes source vias beyond the package model. This adaptation is not a close
+measured-data fit; no parameters were adjusted to force agreement.

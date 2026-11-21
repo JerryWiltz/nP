@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-19 -->
+<!-- Modified: 2026-11-21 -->
 # Gupta matrices and intermodulation analysis
 
 This note uses a six-variable attenuator-amplifier network to develop nP's
@@ -18,7 +18,7 @@ The [`intermodAnalysis.html`](intermodAnalysis.html) harness sweeps the first to
 
 ## 1–3. Shared connection-scattering derivation
 
-The [Gupta connection-scattering derivation](../developmentDocs/guptaConnectionScattering.md) contains equations (1.1)–(3.8), the eight-variable source example, and the six-position attenuator–amplifier example. Its section 3 defines the port order, connection matrix $\boldsymbol\Gamma$ (3.3), inverse $\mathbf W^{-1}$ (3.5), and transfer matrix $\mathbf T$ (3.6) used below.
+The [Gupta connection-scattering derivation](../developmentDocs/analysis/guptaConnectionScattering.md) contains equations (1.1)–(3.8), the eight-variable source example, and the six-position attenuator–amplifier example. Its section 3 defines the port order, connection matrix $\boldsymbol\Gamma$ (3.3), inverse $\mathbf W^{-1}$ (3.5), and transfer matrix $\mathbf T$ (3.6) used below.
 
 ## 4. Reusing the inverse
 

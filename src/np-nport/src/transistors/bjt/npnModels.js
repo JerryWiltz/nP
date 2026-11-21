@@ -1,6 +1,6 @@
-// Modified: 2026-11-15
+// Modified: 2026-11-21
 // SPICE Gummel–Poon parameters in SI units. Provenance and omissions are
-// documented in developmentDocs/transistorModels.md. No part-wide NF/IP fits.
+// documented in developmentDocs/semiconductors/transistorModels.md. No part-wide NF/IP fits.
 import {bjtModel} from './bjtModel';
 
 const records = {

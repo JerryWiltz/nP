@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-19 -->
+<!-- Modified: 2026-11-21 -->
 # MESFET reference common-source amplifier
 
 Open [the harness](mesfetCommonSource.html) with the current browser bundle. It
@@ -12,7 +12,7 @@ The table displays that solved bias and the chart shows 50 ohm S11/S21 from
 1 to 100 MHz. A low S21 is expected for this reference profile and loading;
 S21 is a power-wave ratio, not unloaded drain/gate voltage gain.
 
-See [the model contract](../../developmentDocs/mesfetModels.md) for the Statz
+See [the model contract](../../developmentDocs/semiconductors/mesfetModels.md) for the Statz
 current law, differential gate-capacitance partition, approximate noise and
 weak nonlinear limits. Electrical temperature scaling, a commercial package
 and fitted microwave device performance are not supplied.

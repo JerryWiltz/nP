@@ -1,0 +1,21 @@
+NE760 commercial-family Statz card published by Intusoft
+* Modified: 2026-11-20
+* http://www.intusoft.com/lit/IsSpice4.pdf pp. 193-194
+* KF=0 and AF=1 are Berkeley MES1 defaults; no characterized noise/package.
+.temp 27
+.options gmin=1e-18 abstol=1e-18 reltol=1e-10
+.model device NMF (VTO=-1 BETA=.1275 B=.3 ALPHA=2 LAMBDA=15.5m RD=5.45 RS=4.88 IS=19.8p PB=1 FC=.2 CGS=.34p CGD=.03p)
+Z1 d g s device
+VDD rail 0 5
+RD rail d 150
+RG g 0 1meg
+RS s 0 47
+.control
+set numdgt=16
+set wr_vecnames
+set wr_singlescale
+op
+wrdata mesfet-ne760-self-bias.txt v(g) v(d) v(s) i(VDD)
+quit
+.endc
+.end

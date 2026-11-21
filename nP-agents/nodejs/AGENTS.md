@@ -1,5 +1,5 @@
 # nP Node.js code-writing agent
-<!-- Modified: 2026-11-19 -->
+<!-- Modified: 2026-11-20 -->
 
 ## Your task
 
@@ -24,7 +24,7 @@ or publication.
 
 ## Load nP in Node
 
-API snapshot: nP 0.49.0 with V(), automatic BJT/JFET/MOSFET/MESFET/diode bias and drawing descriptions
+API snapshot: nP 0.49.0 with V(), automatic BJT/JFET/MOSFET/MESFET/HEMT/diode bias and drawing descriptions
 as of 2026-11-19. nP.version is a string; builds may share the number while
 exposing different features. An npm release need not contain newer local APIs.
 Inspect local exports/bundle text when uncertain; do not invent APIs or upgrade.
@@ -555,7 +555,7 @@ IM2/IM3, omitting quadratic remixing, compression and large-signal switching.
 No gate/drain breakdown, self-heating or trapping is modeled.
 
 Drawing descriptions can use '1 right J1=NJF[1,2,3] 1 2 3' or PJF without
-running a numerical constructor. MESFET has a reference-profile numerical model in updated bundles; HEMT remains drawing-only.
+running a numerical constructor. MESFET has reference and NE760 records in updated bundles; HEMT supports ATF35143_DIE and ATF35143 models in updated bundles.
 Updated renderers detect commonSource or accept {shapes:['commonSource']}.
 It covers self-bias with gate resistor to reference, drain load, V supply,
 AC-coupled ports and source resistance with separate R/C, combined sePaRC,
@@ -637,21 +637,27 @@ one component. Use the three-terminal form for its internal body/source tie;
 report other requested self-connection layout limits without changing the circuit.
 
 
-MESFET numerical support requires a supplied bundle exporting MESFET. The only
-record is SPICE3_REFERENCE: a published SPICE example profile, NOT a fitted
-commercial transistor. Do not assign it a commercial part name or promise
-microwave performance. HEMT has no numerical constructor.
+MESFET supports SPICE3_REFERENCE (the default numerical reference, not a
+commercial fit) and NE760 (NEC family, Intusoft-published Statz card). NE760
+requires a newer bundle than the original MESFET export: verify the supplied
+bundle accepts model: 'NE760' before emitting that option. Never silently
+substitute the reference profile for a requested part. HEMT has a separate constructor with die/package records in updated bundles.
+NE760 is not a manufacturer-certified or package-specific fit; do not infer an
+NE76084 or other suffix. It includes RD=5.45 and RS=4.88 ohms, with no lead L/C
+or measured noise fit. FC=.2 is retained as provenance but inactive in Berkeley
+MES1's total-gate-charge law. Both records use approximate classical noise.
 
 MESFET({model:'SPICE3_REFERENCE', qPoint:{vgs:-0.5,vds:2}}) shows defaults.
 Ports are G/D/S (1/2/3), all ig/id/is currents enter the device. It uses
-N-channel Statz/MES1, Schottky gate currents, RD=RS=100 ohms and differential
+N-channel Statz/MES1, Schottky gate currents, record-specific RD/RS and differential
 voltage-dependent gate capacitances. No P-channel, arbitrary card import or
 area scaling is available. temperature defaults to global.Temp in kelvin,
 fList to global.fList. Electrical temperature stays fixed at 300.15 K in
 this historical primitive; selected temperature changes thermal noise only.
 
 bias and ivTable() accept vgs/vds {start,stop,points} intervals, defaulting
-to gate 0 to -2 V (5 curves), drain 0 to 3 V (101 points). ivTable() returns
+to gate 0 to VTO (5 curves: -2 V reference, -1 V NE760), drain 0 to 3 V
+(101 points). ivTable() returns
 one header followed by numeric voltage/current rows in V/A and leaves Q point
 and .dc curve settings unchanged. qPoint/bias expose external vgs/vds,
 intrinsicVgs/intrinsicVgd, entering ig/id/is, vg/vd/vs and temperature;
@@ -670,11 +676,11 @@ Direct IM2/IM3 includes differential C(V)*dV/dt sources, without quadratic
 remixing. Use the existing commonSource shape for supported self/divider bias;
 there is no MESFET-specific coordinate adjustment.
 
-A minimal fixed-Q MESFET result, when the bundle supports it:
+A minimal fixed-Q MESFET result, when the bundle supports the NE760 record:
 
 ```js
 nP.global.fList = [10e6, 100e6, 1e9];
-var q1 = nP.MESFET({model: 'SPICE3_REFERENCE'});
+var q1 = nP.MESFET({model: 'NE760'});
 var short1 = nP.Short();
 var network = nP.nodal(
     [q1, 1, 2, 3],
@@ -685,14 +691,13 @@ var response = network.out('s21dB', 'NF21dB');
 console.table(response);
 ```
 
-MESFET and the drawing-only HEMT share the N-channel NJF artwork,
+MESFET and HEMT share the N-channel NJF artwork,
 with terminals 1 gate, 2 drain, 3 source. Use an instance caption to identify
 the family, e.g. '1 right Q1=HEMT(HEMT)[1,2,3] 1 2 3'. Shared geometry
 does not select material, operating mode or model equations. Schottky, Zener
 and Varactor are drawing-only diode names with 1 anode, 2 cathode; e.g.
 '1 right D1=Varactor 2'. Their distinct cathode markings provide no DC/RF,
-noise or intermodulation model. Do not invent nP.HEMT(),
-nP.Schottky(), nP.Zener() or nP.Varactor() calls. Check the supplied bundle
+noise or intermodulation model. Do not invent nP.Schottky(), nP.Zener() or nP.Varactor() calls. Check the supplied bundle
 contains this artwork. Existing standalone D()/diode1N4148() models are retained.
 For drawing descriptions, HBTs reuse NPN/PNP with an HBT caption, e.g.
 '1 right Q1=NPN(HBT)[1,2,3] 1 2 3' (base/collector/emitter). PIN diodes
@@ -748,3 +753,68 @@ an ideal through. An open stub needs a finite line. Emitter degeneration and a
 low-impedance load can reduce S21 despite valid bias. These checks are reasoning,
 not executed simulations. Deliver the explicit Node script, its shell run command and a brief
 accurate statement of what was written and whether it was executed.
+
+## HEMT/pHEMT die and package models
+
+Verify the supplied bundle exports HEMT and accepts the requested model.
+The newer ATF35143 package record is not implied by the presence of HEMT.
+HEMT({model:'ATF35143_DIE',qPoint:{vgs:-0.6,vds:2}}) shows defaults.
+Ports 1/2/3 are gate/drain/source, all ig/id/is currents enter. This adapts the
+manufacturer's ATF-35143 nominal Statz die record at W=400 µm. The supported
+device is an N-channel depletion pHEMT (pseudomorphic HEMT). It includes
+RG/RD/RS, die LG/LD/LS, CDS and empirical series RC/CRF output conductance.
+It omits the separate SC-70 package network and individual source leads; do
+not rename it to the packaged part or promise packaged S-parameters/NF.
+
+Static Qgs/Qgd use the Divekar charge partition; they differ from MES1's
+differential capacitance branches. Manufacturer P/R/C drain and induced-gate
+noise, their imaginary correlation, FNC/f flicker and contact thermal noise
+are included. RC/CRF is an empirical AC correction, not a physical contact
+noise source. No gate shot noise, electrical temperature scaling, trapping,
+self-heating, avalanche or large-signal/harmonic-balance behavior is supplied.
+Electrical parameters stay at 300.15 K; temperature (default global.Temp)
+scales noise only. Direct Taylor IM2/IM3 omits quadratic remixing.
+
+RF needs positive frequencies, positive intrinsic VDS and gm>0. Invalid cutoff
+or reverse RF bias raises an actionable error; DC curves may include cutoff
+and zero drain voltage. bias/ivTable() use vgs/vds {start,stop,points}: gate
+0 to -.95 V in 5 curves, drain 0 to 3 V in 101 points. Curves return one header
+then numeric V/A rows, preserving Q point and .dc settings. qPoint reports
+external and intrinsic voltages, signed currents and temperature. smallSignal
+includes gm/gds, ggs/ggd, cgs/cgd and rg/rd/rs; it is not the full terminal Y.
+
+V()-driven nodal/cascade networks solve external bias before RF/noise/weak
+nonlinear rebuilding; inspect network.operatingPoint. Reused templates keep
+independent placement biases. Without a supply, RF uses the selected Q point
+and solveDC() is a separate snapshot. Use the existing commonSource layout.
+
+A minimal fixed-Q HEMT result, when supported by the supplied bundle:
+
+```js
+nP.global.fList = [100e6, 1e9, 3e9];
+var q1 = nP.HEMT({model: 'ATF35143'});
+var short1 = nP.Short();
+var network = nP.nodal(
+    [q1, 1, 2, 3],
+    [short1, 3],
+    ['out', 1, 2]
+);
+var response = network.out('s21dB', 'NF21dB');
+console.table(response);
+```
+
+For the packaged part choose HEMT({model:'ATF35143'}). It adds the manufacturer's
+p.16 SC-70 L/R/C circuit, retaining both source-pin paths and all three source
+bonds. Public G/D/S ports stay 1/2/3, with both external source pins common at
+port 3; independent source-pin termination is unavailable. ATF35143_DIE remains
+the default and keeps die-only behavior. Nominal package range is 0.1–6 GHz.
+DC shorts L, opens C and retains every resistor/current split. Fixed-Q control
+derives effective contacts from that graph: rg=1.1, rd=.6, rs=.283333333333 ohms
+including die contacts. smallSignal rg/rd/rs report these effective contacts;
+model.parameters retains die values, with packageParameters and terminalNetwork
+for the package. All physical package resistors contribute thermal noise.
+The same bias handoff and nonlinear sources apply. The measured source-via
+fixture is excluded. Independent SPICE agreement is tight, but comparison with
+the measured 2 V/15 mA table shows up to about 2.1 dB S21 magnitude and 28° phase
+difference over 0.5–6 GHz. Do not promise a close measured-data fit, packaged
+NF or large-signal behavior. Existing nominal-temperature limitations apply.

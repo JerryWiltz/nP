@@ -1,0 +1,44 @@
+NE760 commercial-family Statz card published by Intusoft
+* Modified: 2026-11-20
+* http://www.intusoft.com/lit/IsSpice4.pdf pp. 193-194; no package-specific fit
+.temp 27
+.options gmin=1e-18 abstol=1e-18 reltol=1e-10
+.model device NMF (VTO=-1 BETA=.1275 B=.3 ALPHA=2 LAMBDA=15.5m RD=5.45 RS=4.88 IS=19.8p PB=1 FC=.2 CGS=.34p CGD=.03p)
+Z1 d g s device
+VG gb 0 DC -.5
+VD db 0 DC 2
+VS sb 0 DC 0
+Lg gb g 1e9
+Rg acg 0 50
+Cg acg g 1e-4
+Ig 0 acg DC 0 AC 1
+Ld db d 1e9
+Rd acd 0 50
+Cd acd d 1e-4
+Id 0 acd DC 0 AC 0
+Ls sb s 1e9
+Rs acs 0 50
+Cs acs s 1e-4
+Is 0 acs DC 0 AC 0
+.control
+set numdgt=16
+set wr_vecnames
+set wr_singlescale
+op
+wrdata mesfet-ne760-op.txt v(g) v(d) v(s) i(VG) i(VD) i(VS) @z1[gm] @z1[gds]
+ac dec 1 10meg 10g
+wrdata mesfet-ne760-port1.txt v(acg) v(acd) v(acs)
+alter @Ig[acmag]=0
+alter @Id[acmag]=1
+ac dec 1 10meg 10g
+wrdata mesfet-ne760-port2.txt v(acg) v(acd) v(acs)
+alter @Id[acmag]=0
+alter @Is[acmag]=1
+ac dec 1 10meg 10g
+wrdata mesfet-ne760-port3.txt v(acg) v(acd) v(acs)
+set temp=65
+op
+wrdata mesfet-ne760-hot.txt v(g) v(d) v(s) i(VG) i(VD) i(VS)
+quit
+.endc
+.end

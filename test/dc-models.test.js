@@ -1,4 +1,4 @@
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -16,7 +16,7 @@ function example(name) {
 }
 
 test('every electrical export, including future constructors, has a valid DC descriptor and an audit entry', () => {
-    const audit = readFileSync(new URL('../developmentDocs/np-nport/dcConstructorAudit.md', import.meta.url), 'utf8');
+    const audit = readFileSync(new URL('../developmentDocs/components/dcConstructorAudit.md', import.meta.url), 'utf8');
     const audited = new Set([...audit.matchAll(/^\| `(\w+)` \|/gm)].map(match => match[1]));
     for (const name of Object.keys(nP)) {
         assert.ok(audited.has(name), name + ' needs a DC audit entry');
@@ -97,6 +97,10 @@ test('nonlinear descriptors retain device laws and independent curve/Q-point sna
     assert.equal(legacy._dcModel.definition.modelId, 'legacy-diode');
     assert.ok(diode._dcModel.definition.record.leakageResistance > 0);
     assert.equal(legacy._dcModel.definition.parameters.leakageResistance, 4e9);
+    const hemt = nP.HEMT();
+    assert.equal(hemt._dcModel.definition.modelId, 'hemt');
+    assert.equal(hemt._dcModel.definition.record.parameters.RG, 1);
+    assert.ok(Object.isFrozen(hemt._dcModel.definition.record.inductors));
 });
 
 test('physical DC definitions retain finite via/film resistance and distinguish lossless lines', () => {

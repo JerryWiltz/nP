@@ -1,0 +1,28 @@
+NE760 commercial-family Statz card published by Intusoft
+* Modified: 2026-11-20
+* http://www.intusoft.com/lit/IsSpice4.pdf pp. 193-194; no package-specific fit
+.temp 27
+.options gmin=1e-18 abstol=1e-18 reltol=1e-10
+.model device NMF (VTO=-1 BETA=.1275 B=.3 ALPHA=2 LAMBDA=15.5m RD=5.45 RS=4.88 IS=19.8p PB=1 FC=.2 CGS=.34p CGD=.03p)
+Z1 d g s device
+VG gb 0 DC -.5
+VD db 0 DC 2
+VS sb 0 DC 0
+LG gb g 1e9
+LD db d 1e9
+LS sb s 1e-20
+Rsource input acg 50
+Vsignal input 0 DC 0 AC 1
+CG acg g 1e-4
+CD d load 1e-4
+Gload load 0 load 0 .02
+.control
+set numdgt=16
+set wr_vecnames
+set wr_singlescale
+noise v(load) Vsignal dec 1 10meg 10g
+setplot noise1
+wrdata mesfet-ne760-noise.txt inoise_spectrum onoise_spectrum
+quit
+.endc
+.end

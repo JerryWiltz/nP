@@ -1,0 +1,318 @@
+ATF35143 package nominal Statz and Divekar charge oracle
+* Modified: 2026-11-20
+* Manufacturer p16, W=400um; ADS Nonlinear Devices pp484-495.
+* Full p.16 package with common external source. Delta1 absent -> 1/Alpha=.25.
+* Native NMF supplies channel only (IS=1e-30); explicit Schottky gates.
+.temp 27
+.options gmin=1e-18 abstol=1e-18 reltol=1e-10
+.model channel NMF (VTO=-.95 BETA=.12 B=.8 ALPHA=4 LAMBDA=.09 IS=1e-30 CGS=0 CGD=0)
+.param vt=1.380649e-23*300.15/1.602176634e-19
+* Manufacturer p.16 SC-70 network; both external source pins common.
+Lgate g gp .8n
+Rgate gp gx .1
+Lgatebond gx dieG .1n
+Ca gp sl .15p
+Lsleft s sl .1n
+Rsourceleft sl sx .1
+Lsleftbond sx dieS .1n
+Rbridge sl sr .1
+Lsright s sr .05n
+RsourceR1 sr sy .1
+LsourceR1 sy dieS .1n
+RsourceR2 sr sz .1
+LsourceR2 sz dieS .1n
+Ldrain d dp .6n
+Rdrain dp dx .1
+Ldrainbond dx dieD .1n
+Cb dp sr .15p
+Lg dieG mg 15p
+Ld dieD md 15p
+Ls dieS ms 5p
+Rg mg gi 1
+Rd md di .5
+Rs ms si .25
+Z1 di gi si channel
+Bgs gi si I=1n*(exp(v(gi,si)/vt)-1)
+Bgd gi di I=1n*(exp(v(gi,di)/vt)-1)
+Cds di si .02p
+* Empirical AC conductance correction, no contribution to static bias.
+* Exact isolated state realization of Y=s*CRF/(1+s*RC*CRF).
+* Avoid directly coupling a 0.1 F capacitor into GHz terminal equations.
+Gfilter 0 rf di si 1
+Rfilter rf 0 1
+Cfilter rf 0 25
+Gcorrection di si di si .004
+Gsubtract si di rf 0 .004
+.func root(a,b) {sqrt((a-b)^2+.25^2)}
+.func ve(a,b) {(a+b+root(a,b))/2}
+.func ve2(a,b) {(a+b-root(a,b))/2}
+.func vn(a,b) {(ve(a,b)-.95+sqrt((ve(a,b)+.95)^2+.2^2))/2}
+.func qgs(a,b) {vn(a,b)<.35 ? 2*.4p*.7*(1-sqrt(1-vn(a,b)/.7)) : .4p*(2*.7*(1-sqrt(.5))+(vn(a,b)-.35)/sqrt(.5))}
+.func qgd(a,b) {.08p*ve2(a,b)}
+* Unit capacitors differentiate independent static charges. F sources
+* deliver the charge currents into the electrical terminals.
+Bqgs qgs 0 V=qgs(v(gi,si),v(gi,di))
+Vqgs qgs cqgs 0
+Cqgs cqgs 0 1
+Fqgs gi si Vqgs 1
+Bqgd qgd 0 V=qgd(v(gi,si),v(gi,di))
+Vqgd qgd cqgd 0
+Cqgd cqgd 0 1
+Fqgd gi di Vqgd 1
+VG gb 0 DC -.5749466006292094
+VD db 0 DC 2
+VS sb 0 DC 0
+Lbiasg gb g 1e9
+Rportg acg 0 50
+Cportg acg g 1e-4
+Ig 0 acg DC 0 AC 1
+Lbiasd db d 1e9
+Rportd acd 0 50
+Cportd acd d 1e-4
+Id 0 acd DC 0 AC 0
+Lbiass sb s 1e9
+Rports acs 0 50
+Cports acs s 1e-4
+Is 0 acs DC 0 AC 0
+Igate_noise gi si DC 0 AC 0
+Idrain_noise di si DC 0 AC 0
+Irg_noise mg gi DC 0 AC 0
+Ird_noise md di DC 0 AC 0
+Irs_noise ms si DC 0 AC 0
+Igatepkg_noise gp gx DC 0 AC 0
+Idrainpkg_noise dp dx DC 0 AC 0
+Isourceleft_noise sl sx DC 0 AC 0
+Isourceright1_noise sr sy DC 0 AC 0
+Isourceright2_noise sr sz DC 0 AC 0
+Ibridge_noise sl sr DC 0 AC 0
+.control
+set numdgt=16
+set wr_vecnames
+set wr_singlescale
+op
+wrdata hemt-package-op.txt v(g) v(d) v(s) i(VG) i(VD) i(VS) @z1[gm] @z1[gds] v(gi,si) v(gi,di)
+ac lin 1 500meg 500meg
+wrdata hemt-package-Ig-500m.txt v(acg) v(acd) v(acs)
+ac lin 1 1g 1g
+wrdata hemt-package-Ig-1g.txt v(acg) v(acd) v(acs)
+ac lin 1 2g 2g
+wrdata hemt-package-Ig-2g.txt v(acg) v(acd) v(acs)
+ac lin 1 3g 3g
+wrdata hemt-package-Ig-3g.txt v(acg) v(acd) v(acs)
+ac lin 1 4g 4g
+wrdata hemt-package-Ig-4g.txt v(acg) v(acd) v(acs)
+ac lin 1 5g 5g
+wrdata hemt-package-Ig-5g.txt v(acg) v(acd) v(acs)
+ac lin 1 6g 6g
+wrdata hemt-package-Ig-6g.txt v(acg) v(acd) v(acs)
+alter @Ig[acmag]=0
+alter @Id[acmag]=1
+ac lin 1 500meg 500meg
+wrdata hemt-package-Id-500m.txt v(acg) v(acd) v(acs)
+ac lin 1 1g 1g
+wrdata hemt-package-Id-1g.txt v(acg) v(acd) v(acs)
+ac lin 1 2g 2g
+wrdata hemt-package-Id-2g.txt v(acg) v(acd) v(acs)
+ac lin 1 3g 3g
+wrdata hemt-package-Id-3g.txt v(acg) v(acd) v(acs)
+ac lin 1 4g 4g
+wrdata hemt-package-Id-4g.txt v(acg) v(acd) v(acs)
+ac lin 1 5g 5g
+wrdata hemt-package-Id-5g.txt v(acg) v(acd) v(acs)
+ac lin 1 6g 6g
+wrdata hemt-package-Id-6g.txt v(acg) v(acd) v(acs)
+alter @Id[acmag]=0
+alter @Is[acmag]=1
+ac lin 1 500meg 500meg
+wrdata hemt-package-Is-500m.txt v(acg) v(acd) v(acs)
+ac lin 1 1g 1g
+wrdata hemt-package-Is-1g.txt v(acg) v(acd) v(acs)
+ac lin 1 2g 2g
+wrdata hemt-package-Is-2g.txt v(acg) v(acd) v(acs)
+ac lin 1 3g 3g
+wrdata hemt-package-Is-3g.txt v(acg) v(acd) v(acs)
+ac lin 1 4g 4g
+wrdata hemt-package-Is-4g.txt v(acg) v(acd) v(acs)
+ac lin 1 5g 5g
+wrdata hemt-package-Is-5g.txt v(acg) v(acd) v(acs)
+ac lin 1 6g 6g
+wrdata hemt-package-Is-6g.txt v(acg) v(acd) v(acs)
+alter @Is[acmag]=0
+alter @Igate_noise[acmag]=1
+ac lin 1 500meg 500meg
+wrdata hemt-package-Igate_noise-500m.txt v(acg) v(acd) v(acs)
+ac lin 1 1g 1g
+wrdata hemt-package-Igate_noise-1g.txt v(acg) v(acd) v(acs)
+ac lin 1 2g 2g
+wrdata hemt-package-Igate_noise-2g.txt v(acg) v(acd) v(acs)
+ac lin 1 3g 3g
+wrdata hemt-package-Igate_noise-3g.txt v(acg) v(acd) v(acs)
+ac lin 1 4g 4g
+wrdata hemt-package-Igate_noise-4g.txt v(acg) v(acd) v(acs)
+ac lin 1 5g 5g
+wrdata hemt-package-Igate_noise-5g.txt v(acg) v(acd) v(acs)
+ac lin 1 6g 6g
+wrdata hemt-package-Igate_noise-6g.txt v(acg) v(acd) v(acs)
+alter @Igate_noise[acmag]=0
+alter @Idrain_noise[acmag]=1
+ac lin 1 500meg 500meg
+wrdata hemt-package-Idrain_noise-500m.txt v(acg) v(acd) v(acs)
+ac lin 1 1g 1g
+wrdata hemt-package-Idrain_noise-1g.txt v(acg) v(acd) v(acs)
+ac lin 1 2g 2g
+wrdata hemt-package-Idrain_noise-2g.txt v(acg) v(acd) v(acs)
+ac lin 1 3g 3g
+wrdata hemt-package-Idrain_noise-3g.txt v(acg) v(acd) v(acs)
+ac lin 1 4g 4g
+wrdata hemt-package-Idrain_noise-4g.txt v(acg) v(acd) v(acs)
+ac lin 1 5g 5g
+wrdata hemt-package-Idrain_noise-5g.txt v(acg) v(acd) v(acs)
+ac lin 1 6g 6g
+wrdata hemt-package-Idrain_noise-6g.txt v(acg) v(acd) v(acs)
+alter @Idrain_noise[acmag]=0
+alter @Irg_noise[acmag]=1
+ac lin 1 500meg 500meg
+wrdata hemt-package-Irg_noise-500m.txt v(acg) v(acd) v(acs)
+ac lin 1 1g 1g
+wrdata hemt-package-Irg_noise-1g.txt v(acg) v(acd) v(acs)
+ac lin 1 2g 2g
+wrdata hemt-package-Irg_noise-2g.txt v(acg) v(acd) v(acs)
+ac lin 1 3g 3g
+wrdata hemt-package-Irg_noise-3g.txt v(acg) v(acd) v(acs)
+ac lin 1 4g 4g
+wrdata hemt-package-Irg_noise-4g.txt v(acg) v(acd) v(acs)
+ac lin 1 5g 5g
+wrdata hemt-package-Irg_noise-5g.txt v(acg) v(acd) v(acs)
+ac lin 1 6g 6g
+wrdata hemt-package-Irg_noise-6g.txt v(acg) v(acd) v(acs)
+alter @Irg_noise[acmag]=0
+alter @Ird_noise[acmag]=1
+ac lin 1 500meg 500meg
+wrdata hemt-package-Ird_noise-500m.txt v(acg) v(acd) v(acs)
+ac lin 1 1g 1g
+wrdata hemt-package-Ird_noise-1g.txt v(acg) v(acd) v(acs)
+ac lin 1 2g 2g
+wrdata hemt-package-Ird_noise-2g.txt v(acg) v(acd) v(acs)
+ac lin 1 3g 3g
+wrdata hemt-package-Ird_noise-3g.txt v(acg) v(acd) v(acs)
+ac lin 1 4g 4g
+wrdata hemt-package-Ird_noise-4g.txt v(acg) v(acd) v(acs)
+ac lin 1 5g 5g
+wrdata hemt-package-Ird_noise-5g.txt v(acg) v(acd) v(acs)
+ac lin 1 6g 6g
+wrdata hemt-package-Ird_noise-6g.txt v(acg) v(acd) v(acs)
+alter @Ird_noise[acmag]=0
+alter @Irs_noise[acmag]=1
+ac lin 1 500meg 500meg
+wrdata hemt-package-Irs_noise-500m.txt v(acg) v(acd) v(acs)
+ac lin 1 1g 1g
+wrdata hemt-package-Irs_noise-1g.txt v(acg) v(acd) v(acs)
+ac lin 1 2g 2g
+wrdata hemt-package-Irs_noise-2g.txt v(acg) v(acd) v(acs)
+ac lin 1 3g 3g
+wrdata hemt-package-Irs_noise-3g.txt v(acg) v(acd) v(acs)
+ac lin 1 4g 4g
+wrdata hemt-package-Irs_noise-4g.txt v(acg) v(acd) v(acs)
+ac lin 1 5g 5g
+wrdata hemt-package-Irs_noise-5g.txt v(acg) v(acd) v(acs)
+ac lin 1 6g 6g
+wrdata hemt-package-Irs_noise-6g.txt v(acg) v(acd) v(acs)
+alter @Irs_noise[acmag]=0
+alter @Igatepkg_noise[acmag]=1
+ac lin 1 500meg 500meg
+wrdata hemt-package-Igatepkg_noise-500m.txt v(acg) v(acd) v(acs)
+ac lin 1 1g 1g
+wrdata hemt-package-Igatepkg_noise-1g.txt v(acg) v(acd) v(acs)
+ac lin 1 2g 2g
+wrdata hemt-package-Igatepkg_noise-2g.txt v(acg) v(acd) v(acs)
+ac lin 1 3g 3g
+wrdata hemt-package-Igatepkg_noise-3g.txt v(acg) v(acd) v(acs)
+ac lin 1 4g 4g
+wrdata hemt-package-Igatepkg_noise-4g.txt v(acg) v(acd) v(acs)
+ac lin 1 5g 5g
+wrdata hemt-package-Igatepkg_noise-5g.txt v(acg) v(acd) v(acs)
+ac lin 1 6g 6g
+wrdata hemt-package-Igatepkg_noise-6g.txt v(acg) v(acd) v(acs)
+alter @Igatepkg_noise[acmag]=0
+alter @Idrainpkg_noise[acmag]=1
+ac lin 1 500meg 500meg
+wrdata hemt-package-Idrainpkg_noise-500m.txt v(acg) v(acd) v(acs)
+ac lin 1 1g 1g
+wrdata hemt-package-Idrainpkg_noise-1g.txt v(acg) v(acd) v(acs)
+ac lin 1 2g 2g
+wrdata hemt-package-Idrainpkg_noise-2g.txt v(acg) v(acd) v(acs)
+ac lin 1 3g 3g
+wrdata hemt-package-Idrainpkg_noise-3g.txt v(acg) v(acd) v(acs)
+ac lin 1 4g 4g
+wrdata hemt-package-Idrainpkg_noise-4g.txt v(acg) v(acd) v(acs)
+ac lin 1 5g 5g
+wrdata hemt-package-Idrainpkg_noise-5g.txt v(acg) v(acd) v(acs)
+ac lin 1 6g 6g
+wrdata hemt-package-Idrainpkg_noise-6g.txt v(acg) v(acd) v(acs)
+alter @Idrainpkg_noise[acmag]=0
+alter @Isourceleft_noise[acmag]=1
+ac lin 1 500meg 500meg
+wrdata hemt-package-Isourceleft_noise-500m.txt v(acg) v(acd) v(acs)
+ac lin 1 1g 1g
+wrdata hemt-package-Isourceleft_noise-1g.txt v(acg) v(acd) v(acs)
+ac lin 1 2g 2g
+wrdata hemt-package-Isourceleft_noise-2g.txt v(acg) v(acd) v(acs)
+ac lin 1 3g 3g
+wrdata hemt-package-Isourceleft_noise-3g.txt v(acg) v(acd) v(acs)
+ac lin 1 4g 4g
+wrdata hemt-package-Isourceleft_noise-4g.txt v(acg) v(acd) v(acs)
+ac lin 1 5g 5g
+wrdata hemt-package-Isourceleft_noise-5g.txt v(acg) v(acd) v(acs)
+ac lin 1 6g 6g
+wrdata hemt-package-Isourceleft_noise-6g.txt v(acg) v(acd) v(acs)
+alter @Isourceleft_noise[acmag]=0
+alter @Isourceright1_noise[acmag]=1
+ac lin 1 500meg 500meg
+wrdata hemt-package-Isourceright1_noise-500m.txt v(acg) v(acd) v(acs)
+ac lin 1 1g 1g
+wrdata hemt-package-Isourceright1_noise-1g.txt v(acg) v(acd) v(acs)
+ac lin 1 2g 2g
+wrdata hemt-package-Isourceright1_noise-2g.txt v(acg) v(acd) v(acs)
+ac lin 1 3g 3g
+wrdata hemt-package-Isourceright1_noise-3g.txt v(acg) v(acd) v(acs)
+ac lin 1 4g 4g
+wrdata hemt-package-Isourceright1_noise-4g.txt v(acg) v(acd) v(acs)
+ac lin 1 5g 5g
+wrdata hemt-package-Isourceright1_noise-5g.txt v(acg) v(acd) v(acs)
+ac lin 1 6g 6g
+wrdata hemt-package-Isourceright1_noise-6g.txt v(acg) v(acd) v(acs)
+alter @Isourceright1_noise[acmag]=0
+alter @Isourceright2_noise[acmag]=1
+ac lin 1 500meg 500meg
+wrdata hemt-package-Isourceright2_noise-500m.txt v(acg) v(acd) v(acs)
+ac lin 1 1g 1g
+wrdata hemt-package-Isourceright2_noise-1g.txt v(acg) v(acd) v(acs)
+ac lin 1 2g 2g
+wrdata hemt-package-Isourceright2_noise-2g.txt v(acg) v(acd) v(acs)
+ac lin 1 3g 3g
+wrdata hemt-package-Isourceright2_noise-3g.txt v(acg) v(acd) v(acs)
+ac lin 1 4g 4g
+wrdata hemt-package-Isourceright2_noise-4g.txt v(acg) v(acd) v(acs)
+ac lin 1 5g 5g
+wrdata hemt-package-Isourceright2_noise-5g.txt v(acg) v(acd) v(acs)
+ac lin 1 6g 6g
+wrdata hemt-package-Isourceright2_noise-6g.txt v(acg) v(acd) v(acs)
+alter @Isourceright2_noise[acmag]=0
+alter @Ibridge_noise[acmag]=1
+ac lin 1 500meg 500meg
+wrdata hemt-package-Ibridge_noise-500m.txt v(acg) v(acd) v(acs)
+ac lin 1 1g 1g
+wrdata hemt-package-Ibridge_noise-1g.txt v(acg) v(acd) v(acs)
+ac lin 1 2g 2g
+wrdata hemt-package-Ibridge_noise-2g.txt v(acg) v(acd) v(acs)
+ac lin 1 3g 3g
+wrdata hemt-package-Ibridge_noise-3g.txt v(acg) v(acd) v(acs)
+ac lin 1 4g 4g
+wrdata hemt-package-Ibridge_noise-4g.txt v(acg) v(acd) v(acs)
+ac lin 1 5g 5g
+wrdata hemt-package-Ibridge_noise-5g.txt v(acg) v(acd) v(acs)
+ac lin 1 6g 6g
+wrdata hemt-package-Ibridge_noise-6g.txt v(acg) v(acd) v(acs)
+quit
+.endc
+.end

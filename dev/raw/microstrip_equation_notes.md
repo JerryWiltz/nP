@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-15 -->
+<!-- Modified: 2026-11-21 -->
 
 # Microstrip Equation Notes
 
@@ -449,7 +449,7 @@ Model notes:
 
 ## Current Maturity Snapshot
 
-The model maturity assessment is maintained in [Microstrip Development Notes](../../developmentDocs/microstrip/README.md#model-maturity-snapshot-2026-10-07). This file retains the equation captures, alternative sources, and reference values behind that assessment.
+The model maturity assessment is maintained in [Microstrip Development Notes](../../developmentDocs/components/microstrip/README.md#model-maturity-snapshot-2026-10-07). This file retains the equation captures, alternative sources, and reference values behind that assessment.
 
 ## Sources
 

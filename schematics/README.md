@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-16 -->
+<!-- Modified: 2026-11-21 -->
 
 # Schematics
 
@@ -59,7 +59,7 @@ The source artwork is bundled independently of the numerical implementation. `V(
 
 Each has two electrical terminals: terminal 1 above terminal 2. Voltage polarity is positive at terminal 1; current arrows point from terminal 2 toward terminal 1. The controlled-source captions identify their control relationship; the model will separately identify the sensed voltage or current. Reference captions are stripped when canonical body geometry is embedded in a circuit; instance labels and annotations will supply actual values and control names.
 
-Open `dev/canonicalSymbols.html#sources` to inspect the family. `V()` carries a DC voltage-source descriptor and the declared incremental S/noise model; it does not yet solve network DC bias. `I` and the controlled sources have no numerical behavior yet. Drawing syntax such as `Vin=V` continues to select geometry directly without executing a constructor; see [Schematic authoring language](../developmentDocs/schematicLanguage.md) and `dev/schematicAuthoring.html`. Future numerical sources must provide DC models and preserve canonical terminal orientation without embedding SVG geometry in their implementation.
+Open `dev/canonicalSymbols.html#sources` to inspect the family. `V()` carries a DC voltage-source descriptor and the declared incremental S/noise model; it does not yet solve network DC bias. `I` and the controlled sources have no numerical behavior yet. Drawing syntax such as `Vin=V` continues to select geometry directly without executing a constructor; see [Schematic authoring language](../developmentDocs/schematics/schematicLanguage.md) and `dev/schematicAuthoring.html`. Future numerical sources must provide DC models and preserve canonical terminal orientation without embedding SVG geometry in their implementation.
 
 ## Device artwork
 
@@ -74,7 +74,7 @@ var transistorSchematic = {
 var transistorDrawing = nP.schematic(transistorSchematic);
 ```
 
-`nP.NPN()` implements the 2N3904 and BFR93A models. Drawing-only paths select artwork without constructing a device or calculating DC/RF data. See [the transistor model note](../developmentDocs/transistorModels.md).
+`nP.NPN()` implements the 2N3904 and BFR93A models. Drawing-only paths select artwork without constructing a device or calculating DC/RF data. See [the transistor model note](../developmentDocs/semiconductors/transistorModels.md).
 
 ## Rebuild static documentation drawings
 

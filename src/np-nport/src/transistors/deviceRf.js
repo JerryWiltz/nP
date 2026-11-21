@@ -1,4 +1,4 @@
-// Modified: 2026-11-19
+// Modified: 2026-11-20
 // Floating nonlinear devices: public ports, intrinsic terminals and independent
 // control-voltage pairs are distinct. This also permits an internal body tie.
 import {complex} from '../../../np-math/src/complex';
@@ -28,13 +28,28 @@ function stampInductor(system, a, b, branch, reactance) {
     system[branch][a] = system[branch][a].add(one); system[branch][b] = system[branch][b].sub(one);
     system[branch][branch] = complex(0, -reactance);
 }
+function sourceResponse(inverse, nodes, a, b, ro, ports) {
+    return ports.map(port => inverse[nodes[port]][nodes[b]].sub(inverse[nodes[port]][nodes[a]])
+        .mul(complex(1 / Math.sqrt(ro), 0)));
+}
 function covarianceSource(covariance, inverse, nodes, a, b, density, ro, ports) {
     if (density === 0) return;
-    const response = ports.map(port => inverse[nodes[port]][nodes[b]].sub(inverse[nodes[port]][nodes[a]])
-        .mul(complex(1 / Math.sqrt(ro), 0)));
+    const response = sourceResponse(inverse, nodes, a, b, ro, ports);
     for (let i = 0; i < ports.length; i++) for (let j = 0; j < ports.length; j++) {
         covariance[i][j] = covariance[i][j].add(response[i].mul(conjugate(response[j])).mul(complex(density, 0)));
     }
+}
+function covarianceCorrelation(covariance, inverse, nodes, intrinsic, correlation, ro, ports) {
+    const [a, b] = correlation.first, [c, d] = correlation.second, density = correlation.density;
+    const first = sourceResponse(inverse, nodes, intrinsic[a], intrinsic[b], ro, ports);
+    const second = sourceResponse(inverse, nodes, intrinsic[c], intrinsic[d], ro, ports);
+    for (let i = 0; i < ports.length; i++) for (let j = 0; j < ports.length; j++) {
+        covariance[i][j] = covariance[i][j].add(first[i].mul(conjugate(second[j])).mul(density))
+            .add(second[i].mul(conjugate(first[j])).mul(conjugate(density)));
+    }
+}
+function seriesRcAdmittance(resistance, capacitance, omega) {
+    return omega === 0 ? zero() : complex(resistance, -1 / (omega * capacitance)).inv();
 }
 export function deviceFrequencyRow(model, frequency) {
     if (model.rows.has(frequency)) return model.rows.get(frequency);
@@ -54,6 +69,9 @@ export function deviceFrequencyRow(model, frequency) {
     for (const [a, b, resistance] of resistors) if (resistance > 0) stampBranch(system, nodes[a], nodes[b], complex(1 / resistance, 0));
     inductors.forEach(([a, b, value], i) => stampInductor(system, nodes[a], nodes[b], indices.size + i, omega * value));
     for (const [a, b, value] of capacitors) stampBranch(system, nodes[a], nodes[b], complex(0, omega * value));
+    for (const [a, b, resistance, capacitance] of network.seriesRC || []) {
+        stampBranch(system, nodes[a], nodes[b], seriesRcAdmittance(resistance, capacitance, omega));
+    }
     intrinsic.forEach((terminal, i) => {
         const current = point.data.currents[i], charge = point.data.charges[i], row = system[nodes[terminal]];
         controls.forEach(([a, b], axis) => {
@@ -75,7 +93,14 @@ export function deviceFrequencyRow(model, frequency) {
     const covariance = Array.from({length: ports.length}, () => zeros(ports.length));
     for (const [a, b, resistance] of resistors) if (resistance > 0) covarianceSource(covariance, inverse, nodes, a, b,
         4 * BOLTZMANN * temperature / resistance, ro, ports);
+    for (const [a, b, resistance, capacitance, thermalNoise = true] of network.seriesRC || []) {
+        if (thermalNoise) covarianceSource(covariance, inverse, nodes, a, b,
+            4 * BOLTZMANN * temperature * seriesRcAdmittance(resistance, capacitance, omega).x, ro, ports);
+    }
     for (const [a, b, density] of model.noiseSources(frequency)) covarianceSource(covariance, inverse, nodes, intrinsic[a], intrinsic[b], density, ro, ports);
+    for (const correlation of model.noiseCorrelations?.(frequency) || []) {
+        covarianceCorrelation(covariance, inverse, nodes, intrinsic, correlation, ro, ports);
+    }
     const result = {spars, noise: {frequency, C: covariance}, inverse, nodes};
     model.rows.set(frequency, result); return result;
 }

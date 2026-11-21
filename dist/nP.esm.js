@@ -1993,7 +1993,7 @@ function* selection_iterator() {
   }
 }
 
-var root$1 = [null];
+var root$2 = [null];
 
 function Selection$1(groups, parents) {
   this._groups = groups;
@@ -2001,7 +2001,7 @@ function Selection$1(groups, parents) {
 }
 
 function selection() {
-  return new Selection$1([[document.documentElement]], root$1);
+  return new Selection$1([[document.documentElement]], root$2);
 }
 
 function selection_selection() {
@@ -2050,7 +2050,7 @@ Selection$1.prototype = selection.prototype = {
 function select(selector) {
   return typeof selector === "string"
       ? new Selection$1([[document.querySelector(selector)]], [document.documentElement])
-      : new Selection$1([[selector]], root$1);
+      : new Selection$1([[selector]], root$2);
 }
 
 function sourceEvent(event) {
@@ -2081,7 +2081,7 @@ function pointer(event, node) {
 function selectAll(selector) {
   return typeof selector === "string"
       ? new Selection$1([document.querySelectorAll(selector)], [document.documentElement])
-      : new Selection$1([array$1(selector)], root$1);
+      : new Selection$1([array$1(selector)], root$2);
 }
 
 function define(constructor, factory, prototype) {
@@ -12203,6 +12203,7 @@ const schematicDrawingSymbols = {
     "PJF": "pjf",
     "NMOS": "nmos",
     "PMOS": "pmos",
+    "HEMT": "njf",
     "I": "current-source",
     "VCVS": "voltage-controlled-voltage-source",
     "VCCS": "voltage-controlled-current-source",
@@ -12214,7 +12215,6 @@ const schematicDrawingSymbols = {
     "PMOSD": "pmos-depletion",
     "NMOSD4": "nmos-depletion-four-terminal",
     "PMOSD4": "pmos-depletion-four-terminal",
-    "HEMT": "njf",
     "Schottky": "schottky-diode",
     "Zener": "zener-diode",
     "Varactor": "varactor-diode"
@@ -17195,9 +17195,9 @@ function variable$1(value, index) {
     result[index + 1] = 1;
     return result;
 }
-function add$3(a, b) { return a.map((value, i) => value + b[i]); }
+function add$4(a, b) { return a.map((value, i) => value + b[i]); }
 function scale$1(a, b) { return a.map(value => value * b); }
-function subtract$1(a, b) { return add$3(a, scale$1(b, -1)); }
+function subtract$1(a, b) { return add$4(a, scale$1(b, -1)); }
 function multiply$1(a, b) {
     const result = constant$1(0);
     for (let i = 0; i < 10; i++) {
@@ -17215,7 +17215,7 @@ function compose$1(a, derivatives) {
     let result = constant$1(derivatives[0]), term = constant$1(1);
     for (let degree = 1; degree <= 3; degree++) {
         term = multiply$1(term, delta);
-        result = add$3(result, scale$1(term, derivatives[degree]));
+        result = add$4(result, scale$1(term, derivatives[degree]));
     }
     return result;
 }
@@ -17231,14 +17231,14 @@ function exponential$1(a) {
     return compose$1(a, [value, value, value / 2, value / 6]);
 }
 
-// Modified: 2026-11-19
+// Modified: 2026-11-20
 // Floating nonlinear devices: public ports, intrinsic terminals and independent
 // control-voltage pairs are distinct. This also permits an internal body tie.
 function zero$1() { return complex(0, 0); }
 function zeros(count) { return Array.from({length: count}, zero$1); }
 function conjugate$4(z) { return complex(z.x, -z.y); }
-function root(parents, node) { while (parents[node] !== node) node = parents[node]; return node; }
-function join(parents, a, b) { parents[root(parents, a)] = root(parents, b); }
+function root$1(parents, node) { while (parents[node] !== node) node = parents[node]; return node; }
+function join$1(parents, a, b) { parents[root$1(parents, a)] = root$1(parents, b); }
 function description(model) {
     if (model.rfTopology) return model.rfTopology;
     // Preserve the established BJT package node convention and JFET adapter.
@@ -17257,23 +17257,38 @@ function stampInductor(system, a, b, branch, reactance) {
     system[branch][a] = system[branch][a].add(one); system[branch][b] = system[branch][b].sub(one);
     system[branch][branch] = complex(0, -reactance);
 }
+function sourceResponse(inverse, nodes, a, b, ro, ports) {
+    return ports.map(port => inverse[nodes[port]][nodes[b]].sub(inverse[nodes[port]][nodes[a]])
+        .mul(complex(1 / Math.sqrt(ro), 0)));
+}
 function covarianceSource(covariance, inverse, nodes, a, b, density, ro, ports) {
     if (density === 0) return;
-    const response = ports.map(port => inverse[nodes[port]][nodes[b]].sub(inverse[nodes[port]][nodes[a]])
-        .mul(complex(1 / Math.sqrt(ro), 0)));
+    const response = sourceResponse(inverse, nodes, a, b, ro, ports);
     for (let i = 0; i < ports.length; i++) for (let j = 0; j < ports.length; j++) {
         covariance[i][j] = covariance[i][j].add(response[i].mul(conjugate$4(response[j])).mul(complex(density, 0)));
     }
+}
+function covarianceCorrelation(covariance, inverse, nodes, intrinsic, correlation, ro, ports) {
+    const [a, b] = correlation.first, [c, d] = correlation.second, density = correlation.density;
+    const first = sourceResponse(inverse, nodes, intrinsic[a], intrinsic[b], ro, ports);
+    const second = sourceResponse(inverse, nodes, intrinsic[c], intrinsic[d], ro, ports);
+    for (let i = 0; i < ports.length; i++) for (let j = 0; j < ports.length; j++) {
+        covariance[i][j] = covariance[i][j].add(first[i].mul(conjugate$4(second[j])).mul(density))
+            .add(second[i].mul(conjugate$4(first[j])).mul(conjugate$4(density)));
+    }
+}
+function seriesRcAdmittance(resistance, capacitance, omega) {
+    return omega === 0 ? zero$1() : complex(resistance, -1 / (omega * capacitance)).inv();
 }
 function deviceFrequencyRow(model, frequency) {
     if (model.rows.has(frequency)) return model.rows.get(frequency);
     const network = description(model), {point, referenceImpedance: ro, temperature} = model;
     const {ports, intrinsic, controls, resistors, inductors, capacitors} = network;
     const parents = Array.from({length: network.nodeCount}, (_, i) => i);
-    for (const [a, b] of network.joins) join(parents, a, b);
-    for (const [a, b, resistance] of resistors) if (resistance === 0) join(parents, a, b);
+    for (const [a, b] of network.joins) join$1(parents, a, b);
+    for (const [a, b, resistance] of resistors) if (resistance === 0) join$1(parents, a, b);
     const indices = new Map(), nodes = parents.map((_, i) => {
-        const group = root(parents, i);
+        const group = root$1(parents, i);
         if (!indices.has(group)) indices.set(group, indices.size);
         return indices.get(group);
     });
@@ -17283,6 +17298,9 @@ function deviceFrequencyRow(model, frequency) {
     for (const [a, b, resistance] of resistors) if (resistance > 0) stampBranch(system, nodes[a], nodes[b], complex(1 / resistance, 0));
     inductors.forEach(([a, b, value], i) => stampInductor(system, nodes[a], nodes[b], indices.size + i, omega * value));
     for (const [a, b, value] of capacitors) stampBranch(system, nodes[a], nodes[b], complex(0, omega * value));
+    for (const [a, b, resistance, capacitance] of network.seriesRC || []) {
+        stampBranch(system, nodes[a], nodes[b], seriesRcAdmittance(resistance, capacitance, omega));
+    }
     intrinsic.forEach((terminal, i) => {
         const current = point.data.currents[i], charge = point.data.charges[i], row = system[nodes[terminal]];
         controls.forEach(([a, b], axis) => {
@@ -17304,7 +17322,14 @@ function deviceFrequencyRow(model, frequency) {
     const covariance = Array.from({length: ports.length}, () => zeros(ports.length));
     for (const [a, b, resistance] of resistors) if (resistance > 0) covarianceSource(covariance, inverse, nodes, a, b,
         4 * BOLTZMANN * temperature / resistance, ro, ports);
+    for (const [a, b, resistance, capacitance, thermalNoise = true] of network.seriesRC || []) {
+        if (thermalNoise) covarianceSource(covariance, inverse, nodes, a, b,
+            4 * BOLTZMANN * temperature * seriesRcAdmittance(resistance, capacitance, omega).x, ro, ports);
+    }
     for (const [a, b, density] of model.noiseSources(frequency)) covarianceSource(covariance, inverse, nodes, intrinsic[a], intrinsic[b], density, ro, ports);
+    for (const correlation of model.noiseCorrelations?.(frequency) || []) {
+        covarianceCorrelation(covariance, inverse, nodes, intrinsic, correlation, ro, ports);
+    }
     const result = {spars, noise: {frequency, C: covariance}, inverse, nodes};
     model.rows.set(frequency, result); return result;
 }
@@ -17377,7 +17402,7 @@ function deviceProducts(model, frequency, context, tones) {
         .mul(currents[i]).mul(complex(1 / Math.sqrt(model.referenceImpedance), 0))), zero$1()));
 }
 
-// Modified: 2026-11-19
+// Modified: 2026-11-20
 
 var zero = function () { return complex(0, 0); };
 var conjugate$3 = function (value) { return complex(value.getR(), -value.getI()); };
@@ -17555,7 +17580,7 @@ var generated = function (nport, frequency, context, tones) {
 	}
 	if (model.type === 'diode') return diodeProducts(nport, frequency, context, tones, model);
 	if (model.type === 'bjt') return deviceProducts(model, frequency, context, tones);
-	if (['mosfet', 'mesfet'].includes(model.type)) return deviceProducts(model, frequency, context, tones);
+	if (['mosfet', 'mesfet', 'hemt'].includes(model.type)) return deviceProducts(model, frequency, context, tones);
 	if (model.type === 'jfet') return deviceProducts(model, frequency, context, tones);
 	if (model.type !== 'amp') return zeroVector(count);
 	var output = zeroVector(count);
@@ -17898,220 +17923,6 @@ function stabilityRows(spars) {
     return spars.map(stabilityAt);
 }
 
-// Modified: 2026-11-19
-// Owned immutable data can be shared across circuit trees without copying each
-// earlier cascade again. Caller-owned objects are always copied before freezing.
-const ownedData = new WeakSet();
-const models = new WeakSet();
-const kinds = ['linear', 'nonlinear', 'connection', 'requiresModel'];
-const qualities = ['ideal', 'physical', 'approximate', 'composite', 'unspecified'];
-
-function modelTerminal(terminal, count) {
-    return terminal === 'g' || (Number.isInteger(terminal) && terminal >= 1 && terminal <= count) ||
-        (typeof terminal === 'string' && /^n[1-9]\d*$/.test(terminal));
-}
-function terminalList(list, count, minimum) {
-    return Array.isArray(list) && list.length >= minimum &&
-        Array.from(list).every(terminal => modelTerminal(terminal, count));
-}
-function validateDefinition(model) {
-    const d = model.definition, count = model.portCount;
-    if (model.kind === 'requiresModel') return;
-    if (model.kind === 'connection') {
-        if (d.modelId !== 'connection') throw new TypeError('A connection needs a connection definition.');
-        return;
-    }
-    if (model.kind === 'nonlinear') {
-        if (d.modelId === 'mosfet' && count === (d.body === 'source' ? 3 : d.body === 'external' ? 4 : 0) &&
-            [1, -1].includes(d.polarity) && d.record?.parameters && Number.isFinite(d.temperature) && d.temperature > 0) return;
-        if (['bjt', 'jfet', 'mesfet'].includes(d.modelId) && count === 3 && [1, -1].includes(d.polarity) && d.record?.parameters &&
-            Number.isFinite(d.temperature) && d.temperature > 0) return;
-        if (d.modelId === 'diode' && count === 2 && d.record?.parameters &&
-            Number.isFinite(d.temperature) && d.temperature > 0) return;
-        if (d.modelId === 'legacy-diode' && count === 2 && d.parameters &&
-            Number.isFinite(d.temperature) && d.temperature > 0) return;
-        throw new TypeError('Unknown or incomplete nonlinear DC definition.');
-    }
-    if (d.modelId === 'lumped') {
-        if (!Array.isArray(d.elements) || !d.elements.length || !Array.isArray(d.joins)) {
-            throw new TypeError('A lumped DC definition needs elements and joins.');
-        }
-        for (const element of d.elements) {
-            const field = {resistor: 'resistance', inductor: 'inductance', capacitor: 'capacitance'}[element?.type];
-            if (!field || !terminalList(element.terminals, count, 2) || element.terminals.length !== 2 ||
-                !Number.isFinite(element[field]) || element[field] < 0) throw new TypeError('Invalid lumped DC element.');
-        }
-    } else if (d.modelId === 'junction') {
-        if (!Array.isArray(d.joins) || !Array.isArray(d.opens) ||
-            d.opens.some(branch => !terminalList(branch, count, 2) || branch.length !== 2)) {
-            throw new TypeError('Invalid DC junction definition.');
-        }
-    } else if (d.modelId === 'voltage-source') {
-        if (count !== 2 || !Number.isFinite(d.voltage) || d.positiveTerminal !== 1 || d.negativeTerminal !== 2) {
-            throw new TypeError('A DC voltage source needs finite volts and oriented terminals 1 and 2.');
-        }
-    } else if (d.modelId === 'attenuator') {
-        if (count !== 2 || !Number.isFinite(d.parameters?.attenuationDb) || d.parameters.attenuationDb < 0 ||
-            !Number.isFinite(d.parameters.referenceImpedance) || d.parameters.referenceImpedance <= 0) {
-            throw new TypeError('Invalid DC attenuator definition.');
-        }
-    } else if (d.modelId === 'series-junction') {
-        if (count !== 3 || [d.voltageConstraint, d.currentRatios].some(row => !Array.isArray(row) ||
-            row.length !== 3 || Array.from(row).some((value, index) => value !== [1, -1, 1][index]))) {
-            throw new TypeError('Invalid oriented DC series junction.');
-        }
-    } else if (d.modelId === 'linear-constraints') {
-        for (const coefficients of [d.voltageCoefficients, d.currentCoefficients]) {
-            if (!Array.isArray(coefficients) || coefficients.length !== count ||
-                Array.from(coefficients).some(row => !Array.isArray(row) || row.length !== count ||
-                    Array.from(row).some(value => !Number.isFinite(value)))) {
-                throw new TypeError('DC linear constraints need square finite real coefficient matrices.');
-            }
-        }
-    } else throw new TypeError('Unknown linear DC model: ' + d.modelId + '.');
-    if (d.joins && d.joins.some(join => !terminalList(join, count, 2))) throw new TypeError('Invalid DC node join.');
-}
-
-function dcSnapshot(value, ancestors = new Set()) {
-    if (value === null || typeof value !== 'object') {
-        if (typeof value === 'function' || typeof value === 'symbol' || typeof value === 'bigint') {
-            throw new TypeError('DC descriptions must contain data, not executable or symbolic values.');
-        }
-        return value;
-    }
-    if (ownedData.has(value)) return value;
-    if (ancestors.has(value)) throw new TypeError('DC descriptions must not contain cycles.');
-    const prototype = Object.getPrototypeOf(value);
-    if (!Array.isArray(value) && prototype !== null && Object.getPrototypeOf(prototype) !== null) {
-        throw new TypeError('DC descriptions must contain plain objects and arrays.');
-    }
-    ancestors.add(value);
-    const result = Array.isArray(value) ? value.map(item => dcSnapshot(item, ancestors)) :
-        Object.fromEntries(Object.entries(value).map(([key, item]) => [key, dcSnapshot(item, ancestors)]));
-    ancestors.delete(value);
-    Object.freeze(result);
-    ownedData.add(result);
-    return result;
-}
-
-function dcContext(settings = {}) {
-    return dcSnapshot({Ro: settings.Ro, Temp: settings.Temp, fList: settings.fList,
-        tList: settings.tList, twoTone: settings.twoTone});
-}
-
-function validateDcModel(input, ancestors = new Set()) {
-    if (models.has(input)) return input;
-    if (!input || input.version !== 1 || typeof input.constructorName !== 'string' || !input.constructorName ||
-        !Number.isInteger(input.portCount) || input.portCount < 1 || !kinds.includes(input.kind) ||
-        !qualities.includes(input.quality) || !input.definition || typeof input.definition.modelId !== 'string' ||
-        !input.definition.modelId || !Array.isArray(input.definition.terminals) ||
-        input.definition.terminals.length !== input.portCount ||
-        Array.from(input.definition.terminals).some((port, index) => port !== index + 1)) {
-        throw new TypeError('Invalid DC model version, kind, quality or ordered terminal mapping.');
-    }
-    if (input.kind === 'requiresModel' && (typeof input.reason !== 'string' || !input.reason.trim())) {
-        throw new TypeError('A missing DC model must explain the required information.');
-    }
-    validateDefinition(input);
-    if (ancestors.has(input)) throw new TypeError('DC descriptions must not contain cycles.');
-    ancestors.add(input);
-    if (input.kind === 'connection') {
-        const {components, externalNodes} = input.definition;
-        if (!Array.isArray(components) || !components.length || !Array.isArray(externalNodes) ||
-            externalNodes.length !== input.portCount) throw new TypeError('Invalid DC connection model.');
-        const ids = new Set();
-        for (const component of components) {
-            if (!component || typeof component.id !== 'string' || !component.id || component.id.includes('/') || ids.has(component.id) ||
-                !Array.isArray(component.nodes)) throw new TypeError('Invalid DC component placement.');
-            ids.add(component.id);
-            const child = validateDcModel(component.model, ancestors);
-            if (child.portCount !== component.nodes.length) throw new RangeError('DC placement terminal count differs from its model.');
-            component.nodes.forEach(validateDcNode);
-        }
-        externalNodes.forEach(validateDcNode);
-    }
-    ancestors.delete(input);
-    const result = dcSnapshot(input);
-    models.add(result);
-    return result;
-}
-
-function dcModel(constructorName, portCount, kind, quality, definition, settings, reason) {
-    return validateDcModel({version: 1, constructorName, portCount, kind, quality,
-        definition: {...definition, terminals: Array.from({length: portCount}, (_, index) => index + 1)},
-        analysis: dcContext(settings), ...(reason ? {reason} : {})});
-}
-
-function requiredDcModel(constructorName, portCount, reason, parameters = {}, settings) {
-    return dcModel(constructorName, portCount, 'requiresModel', 'unspecified',
-        {modelId: 'unspecified', parameters}, settings, reason);
-}
-
-function lumpedDcModel(constructorName, placement, arrangement, parameters, settings, temperature = settings.Temp) {
-    const entries = Object.entries(parameters);
-    if (entries.some(([, value]) => !Number.isFinite(value) || value < 0)) {
-        return requiredDcModel(constructorName, 2, 'Supply finite nonnegative R/L/C values or an explicit active DC equivalent.', parameters, settings);
-    }
-    const end = placement === 'shunt' ? 'g' : 2;
-    const elements = entries.map(([name, value], index) => {
-        const a = arrangement === 'parallel' || index === 0 ? 1 : 'n' + index;
-        const b = arrangement === 'parallel' || index === entries.length - 1 ? end : 'n' + (index + 1);
-        return {type: {resistance: 'resistor', inductance: 'inductor', capacitance: 'capacitor'}[name],
-            terminals: [a, b], [name]: value};
-    });
-    return dcModel(constructorName, 2, 'linear', 'ideal',
-        {modelId: 'lumped', placement, arrangement, parameters, temperature, elements,
-            joins: placement === 'shunt' ? [[1, 2]] : []}, settings);
-}
-
-function connectionDcModel(constructorName, portCount, joins, opens, parameters, settings, quality = 'ideal') {
-    return dcModel(constructorName, portCount, 'linear', quality,
-        {modelId: 'junction', joins, opens, parameters}, settings);
-}
-
-function validateDcNode(node) {
-    if (typeof node !== 'string' && !(typeof node === 'number' && Number.isFinite(node))) {
-        throw new TypeError('Circuit node labels must be strings or finite numbers.');
-    }
-}
-
-function dcModelOf(part) {
-    const input = part && (part._dcModel || (part.version === 1 && part));
-    if (input) {
-        const model = validateDcModel(input);
-        if (part.spars && part.spars.length && Math.sqrt(part.spars[0].length - 1) !== model.portCount) {
-            throw new RangeError('DC model and RF terminal counts differ.');
-        }
-        return model;
-    }
-    const count = part && part.spars && part.spars.length && Math.sqrt(part.spars[0].length - 1);
-    if (!Number.isInteger(count) || count < 1) throw new TypeError('Circuit components need a DC descriptor or a valid nPort boundary.');
-    return requiredDcModel('nPort', count, 'Supply an explicit DC equivalent; S-parameters do not define a physical DC model.', {}, part.global);
-}
-
-function dcConnection(constructorName, placements, externalNodes, groups = [], settings) {
-    if (!Array.isArray(placements) || !placements.length) throw new TypeError('DC connections require component placements.');
-    for (const node of externalNodes) validateDcNode(node);
-    const components = placements.map((placement, index) => {
-        const model = dcModelOf(placement.part);
-        if (placement.nodes.length !== model.portCount) throw new RangeError('Circuit placement needs one node for each component terminal.');
-        placement.nodes.forEach(validateDcNode);
-        return {id: 'p' + (index + 1), nodes: placement.nodes.slice(), model};
-    });
-    return dcModel(constructorName, externalNodes.length, 'connection', 'composite',
-        {modelId: 'connection', components, externalNodes, groups},
-        settings || components[0].model.analysis);
-}
-
-function namedDcModel(constructorName, model, parameters, settings) {
-    return dcModel(constructorName, model.portCount, model.kind, model.quality,
-        {...model.definition, construction: {constructorName, parameters}}, settings || model.analysis, model.reason);
-}
-
-function cascadeDcModel(left, right, settings) {
-    return dcConnection('cascade', [{part: left, nodes: [1, 2]}, {part: right, nodes: [2, 3]}], [1, 3], [], settings);
-}
-
 // Modified: 2026-11-16
 // Rank-revealing real solve. Keep the null space so floating observations and
 // nonunique ideal-wire currents are reported, rather than assigned fake values.
@@ -18210,6 +18021,285 @@ function dcLinearError(code, message) {
     return error;
 }
 
+// Modified: 2026-11-20
+
+function validateTerminalNetwork(network, count) {
+    const node = value => Number.isInteger(value) && value >= 0 && value < network.nodeCount;
+    if (!network || !Number.isInteger(network.nodeCount) || network.nodeCount < count ||
+        !Array.isArray(network.ports) || network.ports.length !== count ||
+        !Array.isArray(network.intrinsic) || network.intrinsic.length !== count ||
+        !network.ports.every(node) || !network.intrinsic.every(node) ||
+        new Set(network.ports).size !== count || new Set(network.intrinsic).size !== count) {
+        throw new TypeError('Invalid nonlinear-device terminal network.');
+    }
+    for (const kind of ['resistors', 'inductors', 'capacitors']) {
+        if (!Array.isArray(network[kind]) || network[kind].some(row => !Array.isArray(row) || row.length !== 3 ||
+            !node(row[0]) || !node(row[1]) || !Number.isFinite(row[2]) || row[2] < 0)) throw new TypeError('Invalid terminal-network ' + kind + '.');
+    }
+    if (!Array.isArray(network.joins) || network.joins.some(row => row.length < 2 || !row.every(node))) throw new TypeError('Invalid terminal-network joins.');
+    if ((network.seriesRC || []).some(row => !Array.isArray(row) || ![4, 5].includes(row.length) || !node(row[0]) || !node(row[1]) ||
+        !Number.isFinite(row[2]) || row[2] <= 0 || !Number.isFinite(row[3]) || row[3] <= 0 || row.length === 5 && typeof row[4] !== 'boolean')) {
+        throw new TypeError('Invalid terminal-network series RC.');
+    }
+    return network;
+}
+function root(parents, node) { while (parents[node] !== node) node = parents[node]; return node; }
+function join(parents, a, b) { parents[root(parents, a)] = root(parents, b); }
+function add$3(row, index, value) { if (index !== undefined) row.set(index, (row.get(index) || 0) + value); }
+
+// Exact DC reduction for fixed-Q voltage control: L short, C open. Grounding
+// intrinsic nodes here is only a resistance measurement; network DC retains
+// the full floating contact graph. Reject cross-terminal DC coupling rather
+// than approximating a general package by three independent resistances.
+function terminalContactResistances(network) {
+    validateTerminalNetwork(network, network.ports.length);
+    const parents = Array.from({length: network.nodeCount}, (_, i) => i);
+    for (const row of network.joins) for (const node of row.slice(1)) join(parents, row[0], node);
+    for (const [a, b] of network.inductors) join(parents, a, b);
+    for (const [a, b, resistance] of network.resistors) if (resistance === 0) join(parents, a, b);
+    const intrinsic = network.intrinsic.map(node => root(parents, node)), ports = network.ports.map(node => root(parents, node));
+    if (new Set(intrinsic).size !== intrinsic.length) throw new RangeError('Contact network shorts intrinsic terminals.');
+    const connected = parents.map((_, node) => root(parents, node));
+    for (const [a, b] of network.resistors) join(connected, a, b);
+    if (new Set(intrinsic.map(node => root(connected, node))).size !== intrinsic.length ||
+        ports.some((node, port) => root(connected, node) !== root(connected, intrinsic[port]))) {
+        throw new RangeError('Fixed-Q contact network needs separate connected paths for each terminal.');
+    }
+    const indices = new Map();
+    parents.forEach((_, node) => { const group = root(parents, node); if (!intrinsic.includes(group) && !indices.has(group)) indices.set(group, indices.size); });
+    const rows = Array.from(indices, () => ({terms: new Map(), value: 0, kind: 'kcl'}));
+    for (const [a, b, resistance] of network.resistors) {
+        if (resistance === 0) continue;
+        const i = indices.get(root(parents, a)), j = indices.get(root(parents, b)), g = 1 / resistance;
+        if (i !== undefined) { add$3(rows[i].terms, i, g); add$3(rows[i].terms, j, -g); }
+        if (j !== undefined) { add$3(rows[j].terms, j, g); add$3(rows[j].terms, i, -g); }
+    }
+    return ports.map((port, currentPort) => {
+        const equations = rows.map(row => ({...row, value: 0})), index = indices.get(port);
+        if (index !== undefined) equations[index].value = 1;
+        const solution = solveDcLinearSystem(equations, rows.length);
+        if (solution.nullSpace.length) throw new RangeError('Contact network has an undefined DC contact voltage.');
+        const voltages = ports.map(node => indices.has(node) ? solution.values[indices.get(node)] : 0);
+        if (voltages.some((voltage, i) => i !== currentPort && Math.abs(voltage) > 1e-12)) throw new RangeError('Fixed-Q contact network couples external terminals; a multi-terminal bias adapter is required.');
+        return voltages[currentPort];
+    });
+}
+
+// Modified: 2026-11-20
+// Owned immutable data can be shared across circuit trees without copying each
+// earlier cascade again. Caller-owned objects are always copied before freezing.
+const ownedData = new WeakSet();
+const models$1 = new WeakSet();
+const kinds = ['linear', 'nonlinear', 'connection', 'requiresModel'];
+const qualities = ['ideal', 'physical', 'approximate', 'composite', 'unspecified'];
+
+function modelTerminal(terminal, count) {
+    return terminal === 'g' || (Number.isInteger(terminal) && terminal >= 1 && terminal <= count) ||
+        (typeof terminal === 'string' && /^n[1-9]\d*$/.test(terminal));
+}
+function terminalList(list, count, minimum) {
+    return Array.isArray(list) && list.length >= minimum &&
+        Array.from(list).every(terminal => modelTerminal(terminal, count));
+}
+function validateDefinition(model) {
+    const d = model.definition, count = model.portCount;
+    if (model.kind === 'requiresModel') return;
+    if (model.kind === 'connection') {
+        if (d.modelId !== 'connection') throw new TypeError('A connection needs a connection definition.');
+        return;
+    }
+    if (model.kind === 'nonlinear') {
+        if (d.terminalNetwork) validateTerminalNetwork(d.terminalNetwork, count);
+        if (d.modelId === 'mosfet' && count === (d.body === 'source' ? 3 : d.body === 'external' ? 4 : 0) &&
+            [1, -1].includes(d.polarity) && d.record?.parameters && Number.isFinite(d.temperature) && d.temperature > 0) return;
+        if (['bjt', 'jfet', 'mesfet', 'hemt'].includes(d.modelId) && count === 3 && [1, -1].includes(d.polarity) && d.record?.parameters &&
+            Number.isFinite(d.temperature) && d.temperature > 0) return;
+        if (d.modelId === 'diode' && count === 2 && d.record?.parameters &&
+            Number.isFinite(d.temperature) && d.temperature > 0) return;
+        if (d.modelId === 'legacy-diode' && count === 2 && d.parameters &&
+            Number.isFinite(d.temperature) && d.temperature > 0) return;
+        throw new TypeError('Unknown or incomplete nonlinear DC definition.');
+    }
+    if (d.modelId === 'lumped') {
+        if (!Array.isArray(d.elements) || !d.elements.length || !Array.isArray(d.joins)) {
+            throw new TypeError('A lumped DC definition needs elements and joins.');
+        }
+        for (const element of d.elements) {
+            const field = {resistor: 'resistance', inductor: 'inductance', capacitor: 'capacitance'}[element?.type];
+            if (!field || !terminalList(element.terminals, count, 2) || element.terminals.length !== 2 ||
+                !Number.isFinite(element[field]) || element[field] < 0) throw new TypeError('Invalid lumped DC element.');
+        }
+    } else if (d.modelId === 'junction') {
+        if (!Array.isArray(d.joins) || !Array.isArray(d.opens) ||
+            d.opens.some(branch => !terminalList(branch, count, 2) || branch.length !== 2)) {
+            throw new TypeError('Invalid DC junction definition.');
+        }
+    } else if (d.modelId === 'voltage-source') {
+        if (count !== 2 || !Number.isFinite(d.voltage) || d.positiveTerminal !== 1 || d.negativeTerminal !== 2) {
+            throw new TypeError('A DC voltage source needs finite volts and oriented terminals 1 and 2.');
+        }
+    } else if (d.modelId === 'attenuator') {
+        if (count !== 2 || !Number.isFinite(d.parameters?.attenuationDb) || d.parameters.attenuationDb < 0 ||
+            !Number.isFinite(d.parameters.referenceImpedance) || d.parameters.referenceImpedance <= 0) {
+            throw new TypeError('Invalid DC attenuator definition.');
+        }
+    } else if (d.modelId === 'series-junction') {
+        if (count !== 3 || [d.voltageConstraint, d.currentRatios].some(row => !Array.isArray(row) ||
+            row.length !== 3 || Array.from(row).some((value, index) => value !== [1, -1, 1][index]))) {
+            throw new TypeError('Invalid oriented DC series junction.');
+        }
+    } else if (d.modelId === 'linear-constraints') {
+        for (const coefficients of [d.voltageCoefficients, d.currentCoefficients]) {
+            if (!Array.isArray(coefficients) || coefficients.length !== count ||
+                Array.from(coefficients).some(row => !Array.isArray(row) || row.length !== count ||
+                    Array.from(row).some(value => !Number.isFinite(value)))) {
+                throw new TypeError('DC linear constraints need square finite real coefficient matrices.');
+            }
+        }
+    } else throw new TypeError('Unknown linear DC model: ' + d.modelId + '.');
+    if (d.joins && d.joins.some(join => !terminalList(join, count, 2))) throw new TypeError('Invalid DC node join.');
+}
+
+function dcSnapshot(value, ancestors = new Set()) {
+    if (value === null || typeof value !== 'object') {
+        if (typeof value === 'function' || typeof value === 'symbol' || typeof value === 'bigint') {
+            throw new TypeError('DC descriptions must contain data, not executable or symbolic values.');
+        }
+        return value;
+    }
+    if (ownedData.has(value)) return value;
+    if (ancestors.has(value)) throw new TypeError('DC descriptions must not contain cycles.');
+    const prototype = Object.getPrototypeOf(value);
+    if (!Array.isArray(value) && prototype !== null && Object.getPrototypeOf(prototype) !== null) {
+        throw new TypeError('DC descriptions must contain plain objects and arrays.');
+    }
+    ancestors.add(value);
+    const result = Array.isArray(value) ? value.map(item => dcSnapshot(item, ancestors)) :
+        Object.fromEntries(Object.entries(value).map(([key, item]) => [key, dcSnapshot(item, ancestors)]));
+    ancestors.delete(value);
+    Object.freeze(result);
+    ownedData.add(result);
+    return result;
+}
+
+function dcContext(settings = {}) {
+    return dcSnapshot({Ro: settings.Ro, Temp: settings.Temp, fList: settings.fList,
+        tList: settings.tList, twoTone: settings.twoTone});
+}
+
+function validateDcModel(input, ancestors = new Set()) {
+    if (models$1.has(input)) return input;
+    if (!input || input.version !== 1 || typeof input.constructorName !== 'string' || !input.constructorName ||
+        !Number.isInteger(input.portCount) || input.portCount < 1 || !kinds.includes(input.kind) ||
+        !qualities.includes(input.quality) || !input.definition || typeof input.definition.modelId !== 'string' ||
+        !input.definition.modelId || !Array.isArray(input.definition.terminals) ||
+        input.definition.terminals.length !== input.portCount ||
+        Array.from(input.definition.terminals).some((port, index) => port !== index + 1)) {
+        throw new TypeError('Invalid DC model version, kind, quality or ordered terminal mapping.');
+    }
+    if (input.kind === 'requiresModel' && (typeof input.reason !== 'string' || !input.reason.trim())) {
+        throw new TypeError('A missing DC model must explain the required information.');
+    }
+    validateDefinition(input);
+    if (ancestors.has(input)) throw new TypeError('DC descriptions must not contain cycles.');
+    ancestors.add(input);
+    if (input.kind === 'connection') {
+        const {components, externalNodes} = input.definition;
+        if (!Array.isArray(components) || !components.length || !Array.isArray(externalNodes) ||
+            externalNodes.length !== input.portCount) throw new TypeError('Invalid DC connection model.');
+        const ids = new Set();
+        for (const component of components) {
+            if (!component || typeof component.id !== 'string' || !component.id || component.id.includes('/') || ids.has(component.id) ||
+                !Array.isArray(component.nodes)) throw new TypeError('Invalid DC component placement.');
+            ids.add(component.id);
+            const child = validateDcModel(component.model, ancestors);
+            if (child.portCount !== component.nodes.length) throw new RangeError('DC placement terminal count differs from its model.');
+            component.nodes.forEach(validateDcNode);
+        }
+        externalNodes.forEach(validateDcNode);
+    }
+    ancestors.delete(input);
+    const result = dcSnapshot(input);
+    models$1.add(result);
+    return result;
+}
+
+function dcModel(constructorName, portCount, kind, quality, definition, settings, reason) {
+    return validateDcModel({version: 1, constructorName, portCount, kind, quality,
+        definition: {...definition, terminals: Array.from({length: portCount}, (_, index) => index + 1)},
+        analysis: dcContext(settings), ...(reason ? {reason} : {})});
+}
+
+function requiredDcModel(constructorName, portCount, reason, parameters = {}, settings) {
+    return dcModel(constructorName, portCount, 'requiresModel', 'unspecified',
+        {modelId: 'unspecified', parameters}, settings, reason);
+}
+
+function lumpedDcModel(constructorName, placement, arrangement, parameters, settings, temperature = settings.Temp) {
+    const entries = Object.entries(parameters);
+    if (entries.some(([, value]) => !Number.isFinite(value) || value < 0)) {
+        return requiredDcModel(constructorName, 2, 'Supply finite nonnegative R/L/C values or an explicit active DC equivalent.', parameters, settings);
+    }
+    const end = placement === 'shunt' ? 'g' : 2;
+    const elements = entries.map(([name, value], index) => {
+        const a = arrangement === 'parallel' || index === 0 ? 1 : 'n' + index;
+        const b = arrangement === 'parallel' || index === entries.length - 1 ? end : 'n' + (index + 1);
+        return {type: {resistance: 'resistor', inductance: 'inductor', capacitance: 'capacitor'}[name],
+            terminals: [a, b], [name]: value};
+    });
+    return dcModel(constructorName, 2, 'linear', 'ideal',
+        {modelId: 'lumped', placement, arrangement, parameters, temperature, elements,
+            joins: placement === 'shunt' ? [[1, 2]] : []}, settings);
+}
+
+function connectionDcModel(constructorName, portCount, joins, opens, parameters, settings, quality = 'ideal') {
+    return dcModel(constructorName, portCount, 'linear', quality,
+        {modelId: 'junction', joins, opens, parameters}, settings);
+}
+
+function validateDcNode(node) {
+    if (typeof node !== 'string' && !(typeof node === 'number' && Number.isFinite(node))) {
+        throw new TypeError('Circuit node labels must be strings or finite numbers.');
+    }
+}
+
+function dcModelOf(part) {
+    const input = part && (part._dcModel || (part.version === 1 && part));
+    if (input) {
+        const model = validateDcModel(input);
+        if (part.spars && part.spars.length && Math.sqrt(part.spars[0].length - 1) !== model.portCount) {
+            throw new RangeError('DC model and RF terminal counts differ.');
+        }
+        return model;
+    }
+    const count = part && part.spars && part.spars.length && Math.sqrt(part.spars[0].length - 1);
+    if (!Number.isInteger(count) || count < 1) throw new TypeError('Circuit components need a DC descriptor or a valid nPort boundary.');
+    return requiredDcModel('nPort', count, 'Supply an explicit DC equivalent; S-parameters do not define a physical DC model.', {}, part.global);
+}
+
+function dcConnection(constructorName, placements, externalNodes, groups = [], settings) {
+    if (!Array.isArray(placements) || !placements.length) throw new TypeError('DC connections require component placements.');
+    for (const node of externalNodes) validateDcNode(node);
+    const components = placements.map((placement, index) => {
+        const model = dcModelOf(placement.part);
+        if (placement.nodes.length !== model.portCount) throw new RangeError('Circuit placement needs one node for each component terminal.');
+        placement.nodes.forEach(validateDcNode);
+        return {id: 'p' + (index + 1), nodes: placement.nodes.slice(), model};
+    });
+    return dcModel(constructorName, externalNodes.length, 'connection', 'composite',
+        {modelId: 'connection', components, externalNodes, groups},
+        settings || components[0].model.analysis);
+}
+
+function namedDcModel(constructorName, model, parameters, settings) {
+    return dcModel(constructorName, model.portCount, model.kind, model.quality,
+        {...model.definition, construction: {constructorName, parameters}}, settings || model.analysis, model.reason);
+}
+
+function cascadeDcModel(left, right, settings) {
+    return dcConnection('cascade', [{part: left, nodes: [1, 2]}, {part: right, nodes: [2, 3]}], [1, 3], [], settings);
+}
+
 // Modified: 2026-11-15
 
 function potentialCorrection(temperature) {
@@ -18259,39 +18349,39 @@ function junctionCharge(voltage, capacitance, potential, grading, fc) {
     const cKnee = capacitance * (1 - fc) ** -grading;
     const slope = cKnee * grading / (potential * (1 - fc));
     const delta = subtract$1(voltage, constant$1(knee));
-    return add$3(constant$1(qKnee), add$3(scale$1(delta, cKnee), scale$1(multiply$1(delta, delta), slope / 2)));
+    return add$4(constant$1(qKnee), add$4(scale$1(delta, cKnee), scale$1(multiply$1(delta, delta), slope / 2)));
 }
 function gummelPoon(p, vbeValue, vbcValue, charges = true) {
     const vbe = variable$1(vbeValue, 0), vbc = variable$1(vbcValue, 1);
     const forward = diodeCurrent(vbe, p.IS, p.NF * p.VT);
     const reverse = diodeCurrent(vbc, p.IS, p.NR * p.VT);
-    const early = power$2(subtract$1(constant$1(1), add$3(scale$1(vbc, 1 / p.VAF), scale$1(vbe, 1 / p.VAR))), -1);
-    const highInjection = add$3(scale$1(forward, 1 / p.IKF), scale$1(reverse, 1 / p.IKR));
-    const qb = scale$1(multiply$1(early, add$3(constant$1(1), power$2(add$3(constant$1(1), scale$1(highInjection, 4)), 0.5))), 0.5);
-    const ibe = add$3(scale$1(forward, 1 / p.BF), diodeCurrent(vbe, p.ISE, p.NE * p.VT));
-    const ibc = add$3(scale$1(reverse, 1 / p.BR), diodeCurrent(vbc, p.ISC, p.NC * p.VT));
+    const early = power$2(subtract$1(constant$1(1), add$4(scale$1(vbc, 1 / p.VAF), scale$1(vbe, 1 / p.VAR))), -1);
+    const highInjection = add$4(scale$1(forward, 1 / p.IKF), scale$1(reverse, 1 / p.IKR));
+    const qb = scale$1(multiply$1(early, add$4(constant$1(1), power$2(add$4(constant$1(1), scale$1(highInjection, 4)), 0.5))), 0.5);
+    const ibe = add$4(scale$1(forward, 1 / p.BF), diodeCurrent(vbe, p.ISE, p.NE * p.VT));
+    const ibc = add$4(scale$1(reverse, 1 / p.BR), diodeCurrent(vbc, p.ISC, p.NC * p.VT));
     const transport = divide(subtract$1(forward, reverse), qb);
-    const ib = add$3(ibe, ibc), ic = subtract$1(transport, ibc), ie = scale$1(add$3(ib, ic), -1);
+    const ib = add$4(ibe, ibc), ic = subtract$1(transport, ibc), ie = scale$1(add$4(ib, ic), -1);
     let qbe = constant$1(0), qbc = constant$1(0);
     if (charges) {
         let storage = constant$1(0);
         if (vbeValue > 0 && p.TF !== 0) {
-            const fraction = divide(forward, add$3(forward, constant$1(p.ITF)));
+            const fraction = divide(forward, add$4(forward, constant$1(p.ITF)));
             const correction = scale$1(multiply$1(exponential$1(scale$1(vbc, 1 / (1.44 * p.VTF))),
                 multiply$1(fraction, fraction)), p.XTF);
-            storage = scale$1(divide(multiply$1(forward, add$3(constant$1(1), correction)), qb), p.TF);
+            storage = scale$1(divide(multiply$1(forward, add$4(constant$1(1), correction)), qb), p.TF);
         }
-        qbe = add$3(junctionCharge(vbe, p.CJE, p.VJE, p.MJE, p.FC), storage);
-        qbc = add$3(junctionCharge(vbc, p.CJC, p.VJC, p.MJC, p.FC), scale$1(reverse, p.TR));
+        qbe = add$4(junctionCharge(vbe, p.CJE, p.VJE, p.MJE, p.FC), storage);
+        qbc = add$4(junctionCharge(vbc, p.CJC, p.VJC, p.MJC, p.FC), scale$1(reverse, p.TR));
     }
-    return {currents: [ib, ic, ie], charges: [add$3(qbe, qbc), scale$1(qbc, -1), scale$1(qbe, -1)],
+    return {currents: [ib, ic, ie], charges: [add$4(qbe, qbc), scale$1(qbc, -1), scale$1(qbe, -1)],
         qbe, qbc, forward: forward[0], reverse: reverse[0], ibe: ibe[0], ibc: ibc[0], qb: qb[0]};
 }
 function biasResidual(p, vbe, vbc, current, voltage, configuration) {
     const data = gummelPoon(p, vbe, vbc, false), [ib, ic, ie] = data.currents;
     const terminalVoltage = configuration === 'commonBase' ?
-        add$3(scale$1(variable$1(vbc, 1), -1), subtract$1(scale$1(ic, p.RC), scale$1(ib, p.RB))) :
-        add$3(subtract$1(variable$1(vbe, 0), variable$1(vbc, 1)), subtract$1(scale$1(ic, p.RC), scale$1(ie, p.RE)));
+        add$4(scale$1(variable$1(vbc, 1), -1), subtract$1(scale$1(ic, p.RC), scale$1(ib, p.RB))) :
+        add$4(subtract$1(variable$1(vbe, 0), variable$1(vbc, 1)), subtract$1(scale$1(ic, p.RC), scale$1(ie, p.RE)));
     const terminalCurrent = configuration === 'commonBase' ? scale$1(ie, -1) : ib;
     return {data, a: subtract$1(terminalCurrent, constant$1(current)), b: subtract$1(terminalVoltage, constant$1(voltage))};
 }
@@ -18538,7 +18628,7 @@ function bodyCharge(p, voltage, capacitance) {
     const q0 = capacitance * p.PB * (1 - (1 - p.FC) ** exponent) / exponent;
     return add$2(constant(q0), add$2(scale(delta, c0), scale(multiply(delta, delta), c0 * p.MJ / (2 * p.PB * (1 - p.FC)))));
 }
-function channelCurrent$2(p, gs, ds, bs) {
+function channelCurrent$1(p, gs, ds, bs) {
     const reverse = ds[0] < 0, drain = reverse ? scale(ds, -1) : ds;
     const gate = reverse ? subtract(gs, ds) : gs, body = reverse ? subtract(bs, ds) : bs;
     let root;
@@ -18563,7 +18653,7 @@ function physical(jet, polarity) {
 // junction capacitance. Neither supplied record specifies TOX/inversion charge.
 function mosfetJunction(p, vgs, vds, vbs, polarity) {
     const gs = variable(polarity * vgs, 0), ds = variable(polarity * vds, 1), bs = variable(polarity * vbs, 2);
-    const bd = subtract(bs, ds), channel = channelCurrent$2(p, gs, ds, bs);
+    const bd = subtract(bs, ds), channel = channelCurrent$1(p, gs, ds, bs);
     const ibs = bodyCurrent(p, bs), ibd = bodyCurrent(p, bd);
     const qbs = bodyCharge(p, bs, p.CBS), qbd = bodyCharge(p, bd, p.CBD);
     const qgs = scale(gs, p.CGSO * p.W), qgd = scale(subtract(gs, ds), p.CGDO * p.W);
@@ -18607,13 +18697,13 @@ function mosfetOperatingPoint(p, vgs, vds, vbs, polarity, body) {
     throw new RangeError('MOSFET fixed-Q solve did not converge.');
 }
 
-// Modified: 2026-11-19
+// Modified: 2026-11-20
 // Shared terminal/contact equations for three-terminal FETs. Intrinsic device
 // laws remain separate; a common pin order does not imply common device physics.
 function threeTerminalFetPoint(equations, p, intrinsicVgs, intrinsicVgd, polarity, vs = 0) {
     const data = equations(p, intrinsicVgs, intrinsicVgd, polarity);
     const [ig, id, source] = data.currents.map(row => row[0]);
-    const vgs = intrinsicVgs - p.RS * source, vds = intrinsicVgs - intrinsicVgd + p.RD * id - p.RS * source;
+    const vgs = intrinsicVgs + (p.RG || 0) * ig - p.RS * source, vds = intrinsicVgs - intrinsicVgd + p.RD * id - p.RS * source;
     return {ig, id, is: source, vgs, vds, intrinsicVgs, intrinsicVgd, vs,
         vg: vs === null ? null : vs + vgs, vd: vs === null ? null : vs + vds, region: data.region, data};
 }
@@ -18623,9 +18713,10 @@ function solveThreeTerminalFet(equations, p, vgs, vds, polarity, initial, label)
         let data;
         try { data = equations(p, ...values, polarity); }
         catch (error) { throw new RangeError(label + ' fixed-Q state exceeds the model domain.', {cause: error}); }
-        const drain = data.currents[1], source = data.currents[2];
-        const f = [values[0] - vgs - p.RS * source[0], values[1] - (vgs - vds) - p.RD * drain[0]];
-        const a = 1 - p.RS * source[1], b = -p.RS * source[2], c = -p.RD * drain[1], d = 1 - p.RD * drain[2];
+        const gate = data.currents[0], drain = data.currents[1], source = data.currents[2], rg = p.RG || 0;
+        const f = [values[0] - vgs + rg * gate[0] - p.RS * source[0], values[1] - (vgs - vds) + rg * gate[0] - p.RD * drain[0]];
+        const a = 1 + rg * gate[1] - p.RS * source[1], b = rg * gate[2] - p.RS * source[2],
+            c = rg * gate[1] - p.RD * drain[1], d = 1 + rg * gate[2] - p.RD * drain[2];
         const determinant = a * d - b * c;
         const delta = [(-d * f[0] + b * f[1]) / determinant, (c * f[0] - a * f[1]) / determinant];
         if (Math.max(...f.map(Math.abs)) < 1e-11 && Math.max(...delta.map(Math.abs)) < 1e-9) return threeTerminalFetPoint(equations, p, ...values, polarity);
@@ -18636,43 +18727,43 @@ function solveThreeTerminalFet(equations, p, vgs, vds, polarity, initial, label)
     throw new RangeError(label + ' fixed-Q solve did not converge.');
 }
 
-// Modified: 2026-11-19
+// Modified: 2026-11-20
 
 function mesfetParameters(parameters) {
     // MES1 is the historical fixed-reference electrical law, not a GaAs
     // temperature fit. Keep the selected noise temperature separate.
     return {...parameters, VT: BOLTZMANN * 300.15 / ELEMENTARY_CHARGE};
 }
-function gateCurrent$1(p, voltage) {
+function gateCurrent$2(p, voltage) {
     if (voltage[0] <= -3 * p.VT) return subtract$1(constant$1(-p.IS), scale$1(power$2(voltage, -3), p.IS * (3 * p.VT / Math.E) ** 3));
     return scale$1(subtract$1(exponential$1(scale$1(voltage, 1 / p.VT)), constant$1(1)), p.IS);
 }
-function channelCurrent$1(p, gs, gd) {
+function statzChannelCurrent(p, gs, gd) {
     const reverse = gs[0] < gd[0], drain = reverse ? subtract$1(gd, gs) : subtract$1(gs, gd);
     const overdrive = subtract$1(reverse ? gd : gs, constant$1(p.VTO));
     if (overdrive[0] <= 0) return {current: constant$1(0), region: 'cutoff'};
-    let current = divide(multiply$1(overdrive, overdrive), add$3(constant$1(1), scale$1(overdrive, p.B)));
+    let current = divide(multiply$1(overdrive, overdrive), add$4(constant$1(1), scale$1(overdrive, p.B)));
     const saturation = drain[0] >= 3 / p.ALPHA;
     if (!saturation) {
         const factor = subtract$1(constant$1(1), scale$1(drain, p.ALPHA / 3));
         current = multiply$1(current, subtract$1(constant$1(1), multiply$1(multiply$1(factor, factor), factor)));
     }
-    return {current: scale$1(multiply$1(current, add$3(constant$1(1), scale$1(drain, p.LAMBDA))), (reverse ? -1 : 1) * p.BETA),
+    return {current: scale$1(multiply$1(current, add$4(constant$1(1), scale$1(drain, p.LAMBDA))), (reverse ? -1 : 1) * p.BETA),
         region: (reverse ? 'inverse-' : '') + (saturation ? 'saturation' : 'linear')};
 }
 function totalGateCharge(p, gs, gd) {
     const difference = subtract$1(gs, gd);
-    const root = power$2(add$3(multiply$1(difference, difference), constant$1(1 / (p.ALPHA * p.ALPHA))), 0.5);
-    const effective = scale$1(add$3(add$3(gs, gd), root), 0.5), other = subtract$1(effective, root);
+    const root = power$2(add$4(multiply$1(difference, difference), constant$1(1 / (p.ALPHA * p.ALPHA))), 0.5);
+    const effective = scale$1(add$4(add$4(gs, gd), root), 0.5), other = subtract$1(effective, root);
     const offset = subtract$1(effective, constant$1(p.VTO));
-    const smoothed = scale$1(add$3(add$3(effective, constant$1(p.VTO)), power$2(add$3(multiply$1(offset, offset), constant$1(0.2 ** 2)), 0.5)), 0.5);
+    const smoothed = scale$1(add$4(add$4(effective, constant$1(p.VTO)), power$2(add$4(multiply$1(offset, offset), constant$1(0.2 ** 2)), 0.5)), 0.5);
     // Statz/MES1 uses a 0.5 V continuation boundary and 0.2 V smoothing.
     // PB must exceed that boundary. These are documented equation constants,
     // not corrections for a particular circuit or transistor.
     const charge = smoothed[0] < 0.5 ? scale$1(subtract$1(constant$1(1),
         power$2(subtract$1(constant$1(1), scale$1(smoothed, 1 / p.PB)), 0.5)), 2 * p.PB) :
-        add$3(constant$1(2 * p.PB * (1 - Math.sqrt(1 - 0.5 / p.PB))), scale$1(subtract$1(smoothed, constant$1(0.5)), 1 / Math.sqrt(1 - 0.5 / p.PB)));
-    return add$3(scale$1(charge, p.CGS), scale$1(other, p.CGD));
+        add$4(constant$1(2 * p.PB * (1 - Math.sqrt(1 - 0.5 / p.PB))), scale$1(subtract$1(smoothed, constant$1(0.5)), 1 / Math.sqrt(1 - 0.5 / p.PB)));
+    return add$4(scale$1(charge, p.CGS), scale$1(other, p.CGD));
 }
 function differentiate(jet, axis) {
     return powers.map((power, index) => {
@@ -18683,9 +18774,9 @@ function differentiate(jet, axis) {
     });
 }
 function mesfetJunction(p, vgs, vgd) {
-    const gs = variable$1(vgs, 0), gd = variable$1(vgd, 1), channel = channelCurrent$1(p, gs, gd);
-    const igs = gateCurrent$1(p, gs), igd = gateCurrent$1(p, gd), gateCharge = totalGateCharge(p, gs, gd);
-    const currents = [add$3(igs, igd), subtract$1(channel.current, igd), scale$1(add$3(channel.current, igs), -1)];
+    const gs = variable$1(vgs, 0), gd = variable$1(vgd, 1), channel = statzChannelCurrent(p, gs, gd);
+    const igs = gateCurrent$2(p, gs), igd = gateCurrent$2(p, gd), gateCharge = totalGateCharge(p, gs, gd);
+    const currents = [add$4(igs, igd), subtract$1(channel.current, igd), scale$1(add$4(channel.current, igs), -1)];
     const capacitances = [{positive: 0, negative: 2, control: 0, coefficients: differentiate(gateCharge, 0)},
         {positive: 0, negative: 1, control: 1, coefficients: differentiate(gateCharge, 1)}];
     if ([...currents.flat(), ...gateCharge, ...capacitances.flatMap(cap => cap.coefficients)].some(value => !Number.isFinite(value))) throw new RangeError('MESFET state exceeds the Statz model domain.');
@@ -18699,6 +18790,40 @@ function mesfetPoint(p, intrinsicVgs, intrinsicVgd, vs = 0) {
 }
 function mesfetOperatingPoint(p, vgs, vds) {
     return solveThreeTerminalFet(mesfetJunction, p, vgs, vds, 1, undefined, 'MESFET');
+}
+
+// Modified: 2026-11-20
+
+function hemtParameters(parameters, contacts) {
+    return {...parameters, ...(contacts ? {RG: contacts[0], RD: contacts[1], RS: contacts[2]} : {}), VT: BOLTZMANN * 300.15 / ELEMENTARY_CHARGE};
+}
+function gateCurrent$1(p, voltage) {
+    return scale$1(subtract$1(exponential$1(scale$1(voltage, 1 / (p.N * p.VT))), constant$1(1)), p.IS);
+}
+function gateCharges(p, gs, gd) {
+    const difference = subtract$1(gs, gd);
+    const root = power$2(add$4(multiply$1(difference, difference), constant$1(p.DELTA1 ** 2)), .5);
+    const effective = scale$1(add$4(add$4(gs, gd), root), .5), other = subtract$1(effective, root);
+    const offset = subtract$1(effective, constant$1(p.VTO));
+    const smoothed = scale$1(add$4(add$4(effective, constant$1(p.VTO)), power$2(add$4(multiply$1(offset, offset), constant$1(p.DELTA2 ** 2)), .5)), .5);
+    const limit = Math.min(p.FC * p.PB, p.VMAX), slope = 1 / Math.sqrt(1 - limit / p.PB);
+    const qgs = smoothed[0] < limit ? scale$1(subtract$1(constant$1(1), power$2(subtract$1(constant$1(1), scale$1(smoothed, 1 / p.PB)), .5)), 2 * p.CGS * p.PB) :
+        scale$1(add$4(constant$1(2 * p.PB * (1 - 1 / slope)), scale$1(subtract$1(smoothed, constant$1(limit)), slope)), p.CGS);
+    return {qgs, qgd: scale$1(other, p.CGD)};
+}
+function hemtJunction(p, vgs, vgd) {
+    const gs = variable$1(vgs, 0), gd = variable$1(vgd, 1), channel = statzChannelCurrent(p, gs, gd);
+    const igs = gateCurrent$1(p, gs), igd = gateCurrent$1(p, gd), {qgs, qgd} = gateCharges(p, gs, gd);
+    const currents = [add$4(igs, igd), subtract$1(channel.current, igd), scale$1(add$4(channel.current, igs), -1)];
+    const charges = [add$4(qgs, qgd), scale$1(qgd, -1), scale$1(qgs, -1)];
+    if ([...currents.flat(), ...charges.flat()].some(value => !Number.isFinite(value))) throw new RangeError('HEMT state exceeds the Statz die model domain.');
+    return {currents, charges, channel: channel.current, igs, igd, qgs, qgd, region: channel.region};
+}
+function hemtPoint(p, intrinsicVgs, intrinsicVgd, vs = 0) {
+    return threeTerminalFetPoint(hemtJunction, p, intrinsicVgs, intrinsicVgd, 1, vs);
+}
+function hemtOperatingPoint(p, vgs, vds) {
+    return solveThreeTerminalFet(hemtJunction, p, vgs, vds, 1, undefined, 'HEMT');
 }
 
 // Modified: 2026-11-19
@@ -18728,7 +18853,7 @@ function gateCharge(p, voltage, capacitance) {
     }
     const c0 = capacitance / Math.sqrt(1 - p.FC), delta = subtract$1(voltage, constant$1(threshold));
     const q0 = 2 * capacitance * p.PB * (1 - Math.sqrt(1 - p.FC));
-    return add$3(constant$1(q0), add$3(scale$1(delta, c0), scale$1(multiply$1(delta, delta), c0 / (4 * p.PB * (1 - p.FC)))));
+    return add$4(constant$1(q0), add$4(scale$1(delta, c0), scale$1(multiply$1(delta, delta), c0 / (4 * p.PB * (1 - p.FC)))));
 }
 
 function channelCurrent(p, gs, gd) {
@@ -18737,7 +18862,7 @@ function channelCurrent(p, gs, gd) {
     if (overdrive[0] <= 0) return {current: constant$1(0), region: 'cutoff'};
     const saturation = vds[0] >= overdrive[0];
     const current = saturation ? multiply$1(overdrive, overdrive) : multiply$1(vds, subtract$1(scale$1(overdrive, 2), vds));
-    return {current: scale$1(multiply$1(current, add$3(constant$1(1), scale$1(vds, p.LAMBDA))), (reverse ? -1 : 1) * p.BETA),
+    return {current: scale$1(multiply$1(current, add$4(constant$1(1), scale$1(vds, p.LAMBDA))), (reverse ? -1 : 1) * p.BETA),
         region: (reverse ? 'inverse-' : '') + (saturation ? 'saturation' : 'linear')};
 }
 
@@ -18752,8 +18877,8 @@ function jfetJunction(p, vgs, vgd, polarity = 1) {
     const gs = variable$1(polarity * vgs, 0), gd = variable$1(polarity * vgd, 1);
     const igs = gateCurrent(p, gs), igd = gateCurrent(p, gd), channel = channelCurrent(p, gs, gd);
     const qgs = gateCharge(p, gs, p.CGS), qgd = gateCharge(p, gd, p.CGD);
-    const currents = [add$3(igs, igd), subtract$1(channel.current, igd), scale$1(add$3(channel.current, igs), -1)];
-    const charges = [add$3(qgs, qgd), scale$1(qgd, -1), scale$1(qgs, -1)];
+    const currents = [add$4(igs, igd), subtract$1(channel.current, igd), scale$1(add$4(channel.current, igs), -1)];
+    const charges = [add$4(qgs, qgd), scale$1(qgd, -1), scale$1(qgs, -1)];
     const data = {currents: currents.map(row => physicalCoefficients(row, polarity)),
         charges: charges.map(row => physicalCoefficients(row, polarity)),
         channel: physicalCoefficients(channel.current, polarity), qgs: physicalCoefficients(qgs, polarity),
@@ -18772,7 +18897,7 @@ function jfetOperatingPoint(p, vgs, vds, polarity, initial) {
     return solveThreeTerminalFet(jfetJunction, p, vgs, vds, polarity, initial, 'JFET');
 }
 
-// Modified: 2026-11-19
+// Modified: 2026-11-20
 
 function bjtDcDevice(model, nodes, path) {
     const d = model.definition;
@@ -18801,9 +18926,9 @@ function evaluate(device, values) {
         return [{current: data.current, derivatives: [data.conductance, -data.conductance]},
             {current: -data.current, derivatives: [-data.conductance, data.conductance]}];
     }
-    if (['jfet', 'mesfet'].includes(device.kind)) {
+    if (['jfet', 'mesfet', 'hemt'].includes(device.kind)) {
         try {
-            const equations = device.kind === 'mesfet' ? mesfetJunction : jfetJunction;
+            const equations = device.kind === 'hemt' ? hemtJunction : device.kind === 'mesfet' ? mesfetJunction : jfetJunction;
             return equations(device.p, ...intrinsic(device, values), device.polarity).currents
                 .map(row => ({current: row[0], derivatives: [row[1] + row[2], -row[2], -row[1]]}));
         } catch (error) { if (error instanceof RangeError) return null; throw error; }
@@ -18862,14 +18987,14 @@ function residual(assembly, values, sourceScale = 1) {
 }
 function fetEstimateConductance(device) {
     const u = Math.max(0, -device.p.VTO);
-    return device.kind === 'mesfet' ? device.p.ALPHA * device.p.BETA * u * u / (1 + device.p.B * u) : 2 * device.p.BETA * u;
+    return ['mesfet', 'hemt'].includes(device.kind) ? device.p.ALPHA * device.p.BETA * u * u / (1 + device.p.B * u) : 2 * device.p.BETA * u;
 }
 function estimate(assembly) {
     if (assembly.constraints.every(row => !row.source || row.value === 0)) return {
         values: Array(assembly.variables.length).fill(0),
         report: {method: 'zero-source', status: 'used', assumptions: []}
     };
-    const regions = assembly.devices.map(device => ['jfet', 'mesfet'].includes(device.kind) ? 'ohmic' : device.kind === 'mosfet' ? 'cutoff' : 'forward'), attempted = new Set();
+    const regions = assembly.devices.map(device => ['jfet', 'mesfet', 'hemt'].includes(device.kind) ? 'ohmic' : device.kind === 'mosfet' ? 'cutoff' : 'forward'), attempted = new Set();
     const base = baseEquations(assembly), indices = rowIndex(assembly), size = assembly.variables.length;
     for (let attempt = 0; attempt < 8; attempt++) {
         const signature = regions.join(',');
@@ -18879,7 +19004,7 @@ function estimate(assembly) {
         let count = size;
         assembly.devices.forEach((device, index) => {
             if (device.kind === 'mosfet') return;
-            if (['jfet', 'mesfet'].includes(device.kind)) {
+            if (['jfet', 'mesfet', 'hemt'].includes(device.kind)) {
                 const conductance = fetEstimateConductance(device);
                 for (const [terminal, sign] of [[1, 1], [2, -1]]) {
                     add$1(rows[indices.get(device.nodes[terminal])].terms, device.nodes[1], sign * conductance);
@@ -18902,7 +19027,7 @@ function estimate(assembly) {
             const solution = solveDcLinearSystem(rows, count), values = solution.values.slice(0, size);
             let currentIndex = size, changed = false;
             assembly.devices.forEach((device, index) => {
-                if (['jfet', 'mesfet', 'mosfet'].includes(device.kind)) return;
+                if (['jfet', 'mesfet', 'hemt', 'mosfet'].includes(device.kind)) return;
                 if (device.nodes.length === 2) {
                     const voltage = intrinsic(device, values)[0], previous = regions[index];
                     let next = previous;
@@ -18932,9 +19057,10 @@ function estimate(assembly) {
                 assembly.devices.every(device => device.nodes.length === 2) ? 'piecewise-diode' :
                 assembly.devices.every(device => device.kind === 'jfet') ? 'piecewise-jfet' :
                 assembly.devices.every(device => device.kind === 'mesfet') ? 'piecewise-mesfet' :
+                assembly.devices.every(device => device.kind === 'hemt') ? 'piecewise-hemt' :
                 assembly.devices.every(device => device.kind === 'mosfet') ? 'piecewise-mosfet' : 'piecewise-devices', status: 'used',
                 assumptions: assembly.devices.map((device, index) => ({path: device.path, region: regions[index],
-                    ...(device.kind === 'mosfet' ? {gateCurrent: 0, channelCurrent: 0, bodyJunctions: 'open estimate'} : ['jfet', 'mesfet'].includes(device.kind) ? {gateVoltage: 0, channelConductance: fetEstimateConductance(device)} :
+                    ...(device.kind === 'mosfet' ? {gateCurrent: 0, channelCurrent: 0, bodyJunctions: 'open estimate'} : ['jfet', 'mesfet', 'hemt'].includes(device.kind) ? {gateVoltage: 0, channelConductance: fetEstimateConductance(device)} :
                         {forwardVoltage: 0.7, ...(device.kind === 'bjt' ? {reverseVoltage: 0.55, beta: device.p.BF} :
                             {breakdownVoltage: device.breakdownVoltage})})}))}};
         } catch (error) {
@@ -19067,6 +19193,12 @@ function mosfetDcDevice(model, nodes, path) {
         p: mosfetTemperature(d.record.parameters, d.temperature, d.polarity), polarity: d.polarity};
 }
 
+// Modified: 2026-11-20
+function hemtDcDevice(model, nodes, path) {
+    const record = model.definition.record;
+    return {kind: 'hemt', path, nodes, p: hemtParameters(record.parameters, record.contactResistances), polarity: 1};
+}
+
 // Modified: 2026-11-19
 
 function mesfetDcDevice(model, nodes, path) {
@@ -19081,7 +19213,7 @@ function jfetDcDevice(model, nodes, path) {
     return {kind: 'jfet', path, nodes, p: jfetTemperature(d.record.parameters, d.temperature), polarity: d.polarity};
 }
 
-// Modified: 2026-11-19
+// Modified: 2026-11-20
 
 function add(terms, index, coefficient) {
     if (index === null || !coefficient) return;
@@ -19097,7 +19229,7 @@ function difference(a, b) {
 function unsupportedModels(model, path = '') {
     if (model.kind === 'connection') return model.definition.components.flatMap(part =>
         unsupportedModels(part.model, path ? path + '/' + part.id : part.id));
-    if (model.kind === 'requiresModel' || (model.kind === 'nonlinear' && !['bjt', 'jfet', 'mesfet', 'mosfet', 'diode', 'legacy-diode'].includes(model.definition.modelId))) return [{path,
+    if (model.kind === 'requiresModel' || (model.kind === 'nonlinear' && !['bjt', 'jfet', 'mesfet', 'hemt', 'mosfet', 'diode', 'legacy-diode'].includes(model.definition.modelId))) return [{path,
         constructorName: model.constructorName, reason: model.reason ||
             'This nonlinear DC adapter is not implemented yet; supply a supported device model.'}];
     return [];
@@ -19197,10 +19329,21 @@ class DcAssembly {
             this.element(component, local, 'resistor', [d.body === 'external' ? 4 : 3, 'n4'], 0);
             device.nodes.push(local.get('n4'));
             component.device = device; this.devices.push(device);
-        } else if (['bjt', 'jfet', 'mesfet'].includes(d.modelId)) {
-            const device = d.modelId === 'bjt' ? bjtDcDevice(model, [], component.path) : d.modelId === 'jfet' ? jfetDcDevice(model, [], component.path) : mesfetDcDevice(model, [], component.path);
-            const resistances = device.kind === 'bjt' ? [device.p.RB, device.p.RC, device.p.RE] : [0, device.p.RD, device.p.RS];
-            for (const [port, resistance] of resistances.entries()) {
+        } else if (['bjt', 'jfet', 'mesfet', 'hemt'].includes(d.modelId)) {
+            const device = d.modelId === 'hemt' ? hemtDcDevice(model, [], component.path) : d.modelId === 'bjt' ? bjtDcDevice(model, [], component.path) : d.modelId === 'jfet' ? jfetDcDevice(model, [], component.path) : mesfetDcDevice(model, [], component.path);
+            const resistances = device.kind === 'bjt' ? [device.p.RB, device.p.RC, device.p.RE] : [device.p.RG || 0, device.p.RD, device.p.RS];
+            if (d.terminalNetwork) {
+                const network = d.terminalNetwork;
+                const terminals = Array.from({length: network.nodeCount}, (_, node) => {
+                    const port = network.ports.indexOf(node); return port < 0 ? 'n' + (node + 1) : port + 1;
+                });
+                for (const nodes of network.joins) for (const node of nodes.slice(1)) this.element(component, local, 'connection', [terminals[nodes[0]], terminals[node]]);
+                for (const [kind, rows] of [['resistor', network.resistors], ['inductor', network.inductors], ['capacitor', network.capacitors]]) {
+                    for (const [a, b, resistance] of rows) this.element(component, local, kind, [terminals[a], terminals[b]], kind === 'resistor' ? resistance : 0);
+                }
+                for (const [a, b] of network.seriesRC || []) this.element(component, local, 'open', [terminals[a], terminals[b]]);
+                device.nodes = network.intrinsic.map(node => this.terminal(local, terminals[node], component.path));
+            } else for (const [port, resistance] of resistances.entries()) {
                 this.element(component, local, 'resistor', [port + 1, 'n' + (port + 1)], resistance);
                 device.nodes.push(local.get('n' + (port + 1)));
             }
@@ -19296,14 +19439,14 @@ function solveDC(part) {
             result.qPoint = {...point, body: component.model.definition.body, temperature: component.model.definition.temperature};
             continue;
         }
-        if (['jfet', 'mesfet'].includes(component.device.kind)) {
+        if (['jfet', 'mesfet', 'hemt'].includes(component.device.kind)) {
             const [g, d, s] = component.device.nodes;
             const intrinsicVgs = dcLinearValue(solution, difference(g, s)), intrinsicVgd = dcLinearValue(solution, difference(g, d));
             const result = components.find(entry => entry.path === component.path);
             const [ig, id, source] = result.terminalCurrents;
             if ([intrinsicVgs, intrinsicVgd, ig, id, source].includes(null)) throw dcLinearError('DC_FLOATING_BIAS', 'DC FET bias is undetermined at ' + (component.path || '(root)') + '.');
             const vs = dcLinearValue(solution, new Map([[component.nodes[2], 1]]));
-            const vgs = intrinsicVgs - component.device.p.RS * source;
+            const vgs = intrinsicVgs + (component.device.p.RG || 0) * ig - component.device.p.RS * source;
             const vds = intrinsicVgs - intrinsicVgd + component.device.p.RD * id - component.device.p.RS * source;
             operatingPoints.push({path: component.path, intrinsicVgs, intrinsicVgd, vs});
             result.qPoint = {ig, id, is: source, vgs, vds, vs, vg: vs === null ? null : vs + vgs,
@@ -19890,7 +20033,8 @@ const schematicSymbolMap = {
     "mvia": "microstrip-via-transition",
     "NMOS": "nmos",
     "PMOS": "pmos",
-    "MESFET": "njf"
+    "MESFET": "njf",
+    "HEMT": "njf"
 };
 const schematicSymbolVariants = {
     "mbend": {
@@ -19973,18 +20117,18 @@ function jfetModel(name, polarity) {
 
 // Modified: 2026-11-19
 
-function curves$2(input, polarity, threshold) {
+function curves$3(input, polarity, threshold) {
     if (input === undefined) input = {};
     properties(input, ['vgs', 'vds'], 'JFET bias');
     return {vgs: interval$1(input.vgs, {start: 0, stop: polarity * threshold, points: 5}, -polarity, 'bias.vgs'),
         vds: interval$1(input.vds, {start: 0, stop: polarity * 10, points: 101}, polarity, 'bias.vds')};
 }
-function ivTable$4(description, input = {}) {
+function ivTable$5(description, input = {}) {
     const {record, polarity, temperature, curveSettings} = description.definition;
     properties(input, ['vgs', 'vds'], 'JFET ivTable');
     if (input.vgs !== undefined) properties(input.vgs, ['start', 'stop', 'points'], 'ivTable.vgs');
     if (input.vds !== undefined) properties(input.vds, ['start', 'stop', 'points'], 'ivTable.vds');
-    const settings = curves$2({vgs: {...curveSettings.vgs, ...input.vgs}, vds: {...curveSettings.vds, ...input.vds}}, polarity, record.parameters.VTO);
+    const settings = curves$3({vgs: {...curveSettings.vgs, ...input.vgs}, vds: {...curveSettings.vds, ...input.vds}}, polarity, record.parameters.VTO);
     const p = jfetTemperature(record.parameters, temperature), table = [['vds (V)']];
     for (let gate = 0; gate < settings.vgs.points; gate++) table[0].push('id (A), vgs=' + Number(atInterval(settings.vgs, gate).toPrecision(6)) + ' V');
     for (let drain = 0; drain < settings.vds.points; drain++) {
@@ -20008,7 +20152,7 @@ function jfetConstructor(options, polarity) {
     properties(input, ['vgs', 'vds'], type + ' qPoint');
     const vgs = input.vgs === undefined ? -polarity : input.vgs, vds = input.vds === undefined ? polarity * 10 : input.vds;
     if (![vgs, vds].every(Number.isFinite)) throw new RangeError('JFET qPoint voltages must be finite.');
-    const curveSettings = curves$2(options.bias, polarity, record.parameters.VTO);
+    const curveSettings = curves$3(options.bias, polarity, record.parameters.VTO);
     const point = jfetOperatingPoint(jfetTemperature(record.parameters, temperature), vgs, vds, polarity);
     const {data, ...initialQPoint} = point;
     const description = dcModel(type, 3, 'nonlinear', 'physical', {modelId: 'jfet', record, polarity, temperature,
@@ -20016,7 +20160,7 @@ function jfetConstructor(options, polarity) {
     return jfetInstance(description, Object.freeze({...settings, ...description.analysis}), point);
 }
 
-function noiseSources$2(p, point, temperature, frequency) {
+function noiseSources$3(p, point, temperature, frequency) {
     // Classical SPICE NLEV=1: channel thermal plus flicker noise. As in that
     // model, induced gate noise/gate shot noise are not added. NLEV=1 has a
     // known limitation in the ohmic region; no measured noise fit is implied.
@@ -20028,7 +20172,7 @@ function noiseSources$2(p, point, temperature, frequency) {
 function jfetInstance(description, settings, point) {
     const {record, polarity, temperature} = description.definition, p = jfetTemperature(record.parameters, temperature);
     const model = {type: 'jfet', p, point, record, referenceImpedance: settings.Ro, temperature, rows: new Map(),
-        seriesResistances: [0, p.RD, p.RS], noiseSources: noiseSources$2.bind(null, p, point, temperature)};
+        seriesResistances: [0, p.RD, p.RS], noiseSources: noiseSources$3.bind(null, p, point, temperature)};
     const spars = [], noise = [];
     for (const frequency of analysisFrequencies(settings)) {
         const row = deviceFrequencyRow(model, frequency); spars.push(row.spars); noise.push(row.noise);
@@ -20042,7 +20186,7 @@ function jfetInstance(description, settings, point) {
     result.smallSignal = {gm: data.channel[1] + data.channel[2], gds: -data.channel[2],
         ggs: data.igs[1], ggd: data.igd[2],
         cgs: data.qgs[1], cgd: data.qgd[2], rd: p.RD, rs: p.RS};
-    result.ivTable = ivTable$4.bind(null, description);
+    result.ivTable = ivTable$5.bind(null, description);
     result._intermod = model;
     result._schematic = schematicPart(polarity === 1 ? 'NJF' : 'PJF', {model: record.name});
     result._dcModel = description;
@@ -20148,7 +20292,7 @@ function sweepValues(interval) {
     }
     return result;
 }
-function ivTable$3(p, configuration, bias, polarity, options = {}) {
+function ivTable$4(p, configuration, bias, polarity, options = {}) {
     knownProperties$1(options, [bias.current, bias.voltage], 'ivTable');
     if (options[bias.current] !== undefined) knownProperties$1(options[bias.current], ['start', 'stop', 'points'], 'ivTable.' + bias.current);
     if (options[bias.voltage] !== undefined) knownProperties$1(options[bias.voltage], ['start', 'stop', 'points'], 'ivTable.' + bias.voltage);
@@ -20259,7 +20403,7 @@ function bjtInstance(description, settings, point) {
         cpi: data.qbe[1], cmu: data.qbc[2], cbeCross: data.qbe[2],
         rb: p.RB, rc: p.RC, re: p.RE
     };
-    result.ivTable = ivTable$3.bind(null, p, configuration, bias, polarity);
+    result.ivTable = ivTable$4.bind(null, p, configuration, bias, polarity);
     result._intermod = model;
     result._schematic = schematicPart(type, {model: record.name});
     result._dcModel = description;
@@ -20311,9 +20455,9 @@ function bjtModel(records, name, fallback, type) {
         capacitors: record.capacitors.map(row => row.slice())};
 }
 
-// Modified: 2026-11-15
+// Modified: 2026-11-21
 // SPICE Gummel–Poon parameters in SI units. Provenance and omissions are
-// documented in developmentDocs/transistorModels.md. No part-wide NF/IP fits.
+// documented in developmentDocs/semiconductors/transistorModels.md. No part-wide NF/IP fits.
 
 const records$3 = {
     '2N3904': {
@@ -20700,7 +20844,7 @@ function sweepSettings(value = {}, defaults = {start: 0, stop: 0.8, points: 201}
     }
     return sweep;
 }
-function ivTable$2(p, resistance, defaults, options = {}) {
+function ivTable$3(p, resistance, defaults, options = {}) {
     const sweep = sweepSettings(options, defaults), table = [['vd (V)', 'id (A)']];
     for (let index = 0; index < sweep.points; index++) {
         const voltage = index === sweep.points - 1 ? sweep.stop :
@@ -20753,7 +20897,7 @@ function diodeInstance(description, settings, point, terminals) {
         seriesResistance: p.RS, leakageResistance: record.leakageResistance,
         junctionCapacitance: point.junctionCapacitance, diffusionCapacitance: point.diffusionCapacitance,
         totalCapacitance: point.totalCapacitance};
-    result.ivTable = ivTable$2.bind(null, p, record.leakageResistance, sweep);
+    result.ivTable = ivTable$3.bind(null, p, record.leakageResistance, sweep);
     result._intermod = {type: 'diode', conductance: point.conductance, capacitance: point.totalCapacitance,
         seriesResistance: p.RS, referenceImpedance: settings.Ro,
         externalConductance: 1 / record.leakageResistance,
@@ -24233,19 +24377,19 @@ function bodyVoltage(value, body, label) {
     if (!Number.isFinite(value) || body === 'source' && value !== 0) throw new RangeError(label + ' needs finite volts; a source-tied body requires vbs=0.');
     return value;
 }
-function curves$1(input, polarity, threshold, body) {
+function curves$2(input, polarity, threshold, body) {
     if (input === undefined) input = {};
     properties(input, ['vgs', 'vds', 'vbs'], 'MOSFET bias');
     return {vgs: interval$1(input.vgs, {start: 0, stop: polarity * (Math.abs(threshold) + 1), points: 5}, polarity, 'bias.vgs'),
         vds: interval$1(input.vds, {start: 0, stop: polarity * 5, points: 101}, polarity, 'bias.vds'),
         vbs: bodyVoltage(input.vbs === undefined ? 0 : input.vbs, body, 'bias.vbs')};
 }
-function ivTable$1(description, input = {}) {
+function ivTable$2(description, input = {}) {
     const {record, polarity, temperature, curveSettings, body} = description.definition;
     properties(input, ['vgs', 'vds', 'vbs'], 'MOSFET ivTable');
     if (input.vgs !== undefined) properties(input.vgs, ['start', 'stop', 'points'], 'ivTable.vgs');
     if (input.vds !== undefined) properties(input.vds, ['start', 'stop', 'points'], 'ivTable.vds');
-    const settings = curves$1({vgs: {...curveSettings.vgs, ...input.vgs}, vds: {...curveSettings.vds, ...input.vds},
+    const settings = curves$2({vgs: {...curveSettings.vgs, ...input.vgs}, vds: {...curveSettings.vds, ...input.vds},
         vbs: input.vbs === undefined ? curveSettings.vbs : input.vbs}, polarity, record.parameters.VTO, body);
     const p = mosfetTemperature(record.parameters, temperature, polarity), table = [['vds (V)']];
     for (let gate = 0; gate < settings.vgs.points; gate++) table[0].push('id (A), vgs=' + Number(atInterval(settings.vgs, gate).toPrecision(6)) + ' V');
@@ -24273,14 +24417,14 @@ function mosfetConstructor(options, polarity) {
     const vds = input.vds === undefined ? polarity * 5 : input.vds;
     const vbs = bodyVoltage(input.vbs === undefined ? 0 : input.vbs, body, 'qPoint.vbs');
     if (![vgs, vds].every(Number.isFinite)) throw new RangeError('MOSFET qPoint voltages must be finite.');
-    const curveSettings = curves$1(options.bias, polarity, record.parameters.VTO, body);
+    const curveSettings = curves$2(options.bias, polarity, record.parameters.VTO, body);
     const point = mosfetOperatingPoint(mosfetTemperature(record.parameters, temperature, polarity), vgs, vds, vbs, polarity, body);
     const {data, ...initialQPoint} = point;
     const descriptor = dcModel(type, body === 'external' ? 4 : 3, 'nonlinear', 'physical',
         {modelId: 'mosfet', record, polarity, temperature, body, curveSettings, initialQPoint}, settings);
     return mosfetInstance(descriptor, Object.freeze({...settings, ...descriptor.analysis}), point);
 }
-function noiseSources$1(p, point, temperature, frequency) {
+function noiseSources$2(p, point, temperature, frequency) {
     const cox = 3.9 * EPSILON0 / 1e-7;
     const flicker = p.KF && frequency > 0 ? p.KF * Math.abs(point.id) ** p.AF / (frequency * p.W * p.L * cox * cox) : 0;
     return [[1, 2, 4 * BOLTZMANN * temperature * (2 / 3) * Math.abs(point.data.channel[1]) + flicker]];
@@ -24297,7 +24441,7 @@ function rfTopology(body, p) {
 function mosfetInstance(description, settings, point) {
     const {record, polarity, body, temperature} = description.definition, p = mosfetTemperature(record.parameters, temperature, polarity);
     const model = {type: 'mosfet', p, point, record, referenceImpedance: settings.Ro, temperature, rows: new Map(),
-        rfTopology: rfTopology(body, p), noiseSources: noiseSources$1.bind(null, p, point, temperature)};
+        rfTopology: rfTopology(body, p), noiseSources: noiseSources$2.bind(null, p, point, temperature)};
     const spars = [], noise = [];
     for (const f of analysisFrequencies(settings)) { const row = deviceFrequencyRow(model, f); spars.push(row.spars); noise.push(row.noise); }
     const result = new nPort(); result.setspars(spars); result.setglobal(settings); result.noise = noise;
@@ -24307,7 +24451,7 @@ function mosfetInstance(description, settings, point) {
     result.dc = {current: 'id', bias: {vgs: {...description.definition.curveSettings.vgs}, vds: {...description.definition.curveSettings.vds}, vbs: description.definition.curveSettings.vbs}};
     result.smallSignal = {gm: data.channel[1], gds: data.channel[2], gmb: data.channel[3],
         cgs: p.CGSO * p.W, cgd: p.CGDO * p.W, cgb: p.CGBO * p.L, cbs: data.qbs[3], cbd: data.qbd[3], rd: p.RD, rs: p.RS};
-    result.ivTable = ivTable$1.bind(null, description); result._intermod = model; result._dcModel = description;
+    result.ivTable = ivTable$2.bind(null, description); result._intermod = model; result._dcModel = description;
     result._schematic = schematicPart(polarity === 1 ? 'NMOS' : 'PMOS', {model: record.name}, body === 'external' ? 'external' : undefined);
     result._rfModel = Object.freeze({atOperatingPoint: atOperatingPoint.bind(null, description, settings)});
     return result;
@@ -24330,7 +24474,7 @@ function NMOS(options = {}) { return mosfetConstructor(options, 1); }
 // Modified: 2026-11-19
 function PMOS(options = {}) { return mosfetConstructor(options, -1); }
 
-// Modified: 2026-11-19
+// Modified: 2026-11-20
 // Published SPICE3 manual example-column values and documented defaults. This
 // is a numerical reference profile, not a fitted commercial transistor card.
 const reference = {
@@ -24348,25 +24492,46 @@ const reference = {
         RD: 100, RS: 100, CGS: 5e-12, CGD: 1e-12, PB: 0.6, IS: 1e-14, KF: 0, AF: 1},
     inductors: [], capacitors: []
 };
+// Intusoft's published NE760 card, not an inferred package-specific model.
+// FC is retained as source data; Berkeley MES1's total-gate-charge law does
+// not use it (its forward continuation is fixed at 0.5 V).
+const ne760 = {
+    name: 'NE760', manufacturer: 'NEC', modelPublisher: 'Intusoft', referenceTemperature: 300.15,
+    material: 'GaAs', structure: 'N-channel depletion MESFET',
+    mathematicalModel: 'SPICE level-1 Statz current and total-gate-charge model',
+    modelVersion: 'IsSpice4 User\'s Guide, chapter 8, pages 193-194, Statz model example',
+    source: 'http://www.intusoft.com/lit/IsSpice4.pdf',
+    deviceSource: 'https://homepages.uc.edu/~ferendam/Courses/EE_711/NE76000_data.pdf',
+    equationSource: 'https://ngspice.sourceforge.io/docs/ngspice-39-manual.pdf',
+    package: 'Published RD/RS only; no package suffix, lead L/C or bond-wire model specified',
+    temperatureModel: 'Electrical law fixed at 300.15 K; temperature changes channel/contact thermal noise only',
+    noiseModel: 'Classical MES1 channel/contact thermal noise, default KF=0/AF=1; no measured noise fit',
+    limitations: 'Simulator-published commercial-family card, not a manufacturer-certified or package-specific fit; no measured microwave noise, dispersion, trapping, self-heating, avalanche, gate shot or induced-gate noise; FC is inactive in Berkeley MES1',
+    parameters: {VTO: -1, BETA: 0.1275, B: 0.3, ALPHA: 2, LAMBDA: 0.0155,
+        RD: 5.45, RS: 4.88, CGS: 0.34e-12, CGD: 0.03e-12, PB: 1, IS: 19.8e-12, FC: 0.2, KF: 0, AF: 1},
+    inductors: [], capacitors: []
+};
+const models = {SPICE3_REFERENCE: reference, NE760: ne760};
 function mesfetModel(name = 'SPICE3_REFERENCE') {
-    if (typeof name !== 'string' || name.toUpperCase() !== reference.name) throw new RangeError('MESFET currently supports model SPICE3_REFERENCE only; commercial part fits are not supplied.');
-    return {...reference, parameters: {...reference.parameters}, inductors: [], capacitors: []};
+    const record = typeof name === 'string' && Object.hasOwn(models, name.toUpperCase()) ? models[name.toUpperCase()] : undefined;
+    if (!record) throw new RangeError('MESFET supports models SPICE3_REFERENCE and NE760.');
+    return {...record, parameters: {...record.parameters}, inductors: [], capacitors: []};
 }
 
 // Modified: 2026-11-19
 
-function curves(input, polarity, threshold) {
+function curves$1(input, polarity, threshold) {
     if (input === undefined) input = {};
     properties(input, ['vgs', 'vds'], 'MESFET bias');
     return {vgs: interval$1(input.vgs, {start: 0, stop: polarity * threshold, points: 5}, -polarity, 'bias.vgs'),
         vds: interval$1(input.vds, {start: 0, stop: polarity * 3, points: 101}, polarity, 'bias.vds')};
 }
-function ivTable(description, input = {}) {
+function ivTable$1(description, input = {}) {
     const {record, polarity, curveSettings} = description.definition;
     properties(input, ['vgs', 'vds'], 'MESFET ivTable');
     if (input.vgs !== undefined) properties(input.vgs, ['start', 'stop', 'points'], 'ivTable.vgs');
     if (input.vds !== undefined) properties(input.vds, ['start', 'stop', 'points'], 'ivTable.vds');
-    const settings = curves({vgs: {...curveSettings.vgs, ...input.vgs}, vds: {...curveSettings.vds, ...input.vds}}, polarity, record.parameters.VTO);
+    const settings = curves$1({vgs: {...curveSettings.vgs, ...input.vgs}, vds: {...curveSettings.vds, ...input.vds}}, polarity, record.parameters.VTO);
     const p = mesfetParameters(record.parameters), table = [['vds (V)']];
     for (let gate = 0; gate < settings.vgs.points; gate++) table[0].push('id (A), vgs=' + Number(atInterval(settings.vgs, gate).toPrecision(6)) + ' V');
     for (let drain = 0; drain < settings.vds.points; drain++) {
@@ -24390,7 +24555,7 @@ function mesfetConstructor(options) {
     properties(input, ['vgs', 'vds'], type + ' qPoint');
     const vgs = input.vgs === undefined ? -0.5 : input.vgs, vds = input.vds === undefined ? 2 : input.vds;
     if (![vgs, vds].every(Number.isFinite)) throw new RangeError('MESFET qPoint voltages must be finite.');
-    const curveSettings = curves(options.bias, polarity, record.parameters.VTO);
+    const curveSettings = curves$1(options.bias, polarity, record.parameters.VTO);
     const point = mesfetOperatingPoint(mesfetParameters(record.parameters), vgs, vds);
     const {data, ...initialQPoint} = point;
     const description = dcModel(type, 3, 'nonlinear', 'approximate', {modelId: 'mesfet', record, polarity, temperature,
@@ -24398,7 +24563,7 @@ function mesfetConstructor(options) {
     return mesfetInstance(description, Object.freeze({...settings, ...description.analysis}), point);
 }
 
-function noiseSources(p, point, temperature, frequency) {
+function noiseSources$1(p, point, temperature, frequency) {
     // Classical SPICE MES1: channel thermal plus flicker noise. As in that
     // model, induced gate noise/gate shot noise are not added. The classical law has a
     // known limitation in the ohmic region; no measured noise fit is implied.
@@ -24410,7 +24575,7 @@ function noiseSources(p, point, temperature, frequency) {
 function mesfetInstance(description, settings, point) {
     const {record, temperature} = description.definition, p = mesfetParameters(record.parameters);
     const model = {type: 'mesfet', p, point, record, referenceImpedance: settings.Ro, temperature, rows: new Map(),
-        seriesResistances: [0, p.RD, p.RS], noiseSources: noiseSources.bind(null, p, point, temperature)};
+        seriesResistances: [0, p.RD, p.RS], noiseSources: noiseSources$1.bind(null, p, point, temperature)};
     const spars = [], noise = [];
     for (const frequency of analysisFrequencies(settings)) {
         const row = deviceFrequencyRow(model, frequency); spars.push(row.spars); noise.push(row.noise);
@@ -24424,7 +24589,7 @@ function mesfetInstance(description, settings, point) {
     result.smallSignal = {gm: data.channel[1] + data.channel[2], gds: -data.channel[2],
         ggs: data.igs[1], ggd: data.igd[2],
         cgs: data.capacitances[0].coefficients[0], cgd: data.capacitances[1].coefficients[0], rd: p.RD, rs: p.RS};
-    result.ivTable = ivTable.bind(null, description);
+    result.ivTable = ivTable$1.bind(null, description);
     result._intermod = model;
     result._schematic = schematicPart('MESFET', {model: record.name, labelPrefix: 'Q', value: record.name});
     result._dcModel = description;
@@ -24444,6 +24609,156 @@ function mesfetAtOperatingPoint(description, settings, state) {
 
 // Modified: 2026-11-19
 function MESFET(options = {}) { return mesfetConstructor(options); }
+
+// Modified: 2026-11-20
+// Manufacturer p.16 topology. Public source joins the two package source pins;
+// all three source bond paths and the inter-pad bridge remain explicit.
+function hemtTopology(p, pkg) {
+    const network = {nodeCount: pkg ? 21 : 9, ports: [0, 1, 2], intrinsic: [6, 7, 8], joins: [],
+        resistors: [[3, 6, p.RG], [4, 7, p.RD], [5, 8, p.RS]],
+        inductors: pkg ? [[9, 3, p.LG], [10, 4, p.LD], [11, 5, p.LS]] : [[0, 3, p.LG], [1, 4, p.LD], [2, 5, p.LS]],
+        capacitors: [[7, 8, p.CDS]], seriesRC: [[7, 8, p.RC, p.CRF, false]]};
+    if (pkg) {
+        network.inductors.push([0, 12, pkg.Lc], [1, 14, pkg.Ld], [2, 13, pkg.La], [2, 15, pkg.La / 2],
+            [16, 9, pkg.Lb], [17, 10, pkg.Lb], [18, 11, pkg.Lb], [19, 11, pkg.Lb], [20, 11, pkg.Lb]);
+        network.resistors.push([12, 16, pkg.Rb], [14, 17, pkg.Rb], [13, 18, pkg.Rb],
+            [15, 19, pkg.Rb], [15, 20, pkg.Rb], [13, 15, pkg.Rbridge]);
+        network.capacitors.push([12, 13, pkg.Ca], [14, 15, pkg.Cb]);
+    }
+    return network;
+}
+
+// Modified: 2026-11-20
+const atf35143 = {
+    name: 'ATF35143_DIE', manufacturer: 'Agilent/Avago', manufacturerPart: 'ATF-35143', material: 'GaAs',
+    structure: 'N-channel depletion pseudomorphic HEMT', referenceTemperature: 300.15,
+    mathematicalModel: 'Manufacturer Statz current and Divekar-partitioned static gate charge; nominal-temperature die model',
+    modelVersion: 'ATF-35143 datasheet p.16, W=400 micrometers; ADS Statz_Model equations',
+    source: 'https://sites.units.it/carrato/didatt/corsi_old/E2_web/modulo_carrato/doc/datasheet_discreti/HEMT_ATF35143.pdf',
+    equationSource: 'https://edadownload.software.keysight.com/eedl/ads/2019update1/pdf/Nonlinear_Devices.pdf',
+    package: 'Die equivalent LG/LD/LS, RG/RD/RS, CDS and empirical RC/CRF only; external SC-70 package network omitted; one common source terminal',
+    temperatureModel: 'Electrical parameters fixed at 300.15 K; selected temperature affects noise only',
+    noiseModel: 'Manufacturer P/R/C correlated drain and induced-gate noise, FNC/f flicker and contact thermal noise; no gate shot noise',
+    limitations: 'Die model, not the packaged part; positive conducting RF bias only; no electrical temperature scaling, trapping, self-heating, avalanche, transit delay or large-signal solution',
+    parameters: {VTO: -0.95, BETA: .12, B: .8, ALPHA: 4, LAMBDA: .09,
+        RG: 1, RD: .5, RS: .25, LG: 15e-12, LD: 15e-12, LS: 5e-12,
+        CGS: .4e-12, CGD: .08e-12, CDS: .02e-12, PB: .7, IS: 1e-9, N: 1,
+        DELTA1: .25, DELTA2: .2, FC: .5, VMAX: .5, RC: 250, CRF: .1,
+        P: .65, R: .17, C: .2, FNC: 1e6, KF: 0, AF: 1, FFE: 1},
+    // The printed legacy DELTA=.2 supplies threshold smoothing. No Delta1
+    // is given: Statz uses 1/ALPHA as its drain transition, here .25 V.
+    inductors: [[0, 3, 15e-12], [1, 4, 15e-12], [2, 5, 5e-12]],
+    capacitors: [[7, 8, .02e-12]]
+};
+function hemtModel(name = 'ATF35143_DIE') {
+    if (typeof name !== 'string' || !['ATF35143_DIE', 'ATF35143'].includes(name.toUpperCase())) {
+        throw new RangeError('HEMT supports ATF35143_DIE and ATF35143 (SC-70 package, common external source).');
+    }
+    const packaged = name.toUpperCase() === 'ATF35143';
+    const packageParameters = packaged ? {La: .1e-9, Lb: .1e-9, Lc: .8e-9, Ld: .6e-9,
+        Rb: .1, Rbridge: .1, Ca: .15e-12, Cb: .15e-12} : null;
+    const parameters = {...atf35143.parameters}, terminalNetwork = hemtTopology(parameters, packageParameters);
+    return {...atf35143, name: packaged ? 'ATF35143' : atf35143.name, parameters, packageParameters, terminalNetwork,
+        contactResistances: terminalContactResistances(terminalNetwork),
+        ...(packaged ? {package: 'Manufacturer p.16 SC-70 network; both external source pins joined at port 3, all three source bond paths retained; test-board vias excluded',
+            modelVersion: atf35143.modelVersion + '; p.16 package network, optimized 0.1-6 GHz',
+            limitations: 'Nominal-temperature Statz adaptation; common external source pins only; test-board vias excluded; positive conducting RF bias only; no electrical temperature scaling, trapping, self-heating, avalanche, transit delay or large-signal solution'} : {}),
+        inductors: terminalNetwork.inductors.map(row => row.slice()), capacitors: terminalNetwork.capacitors.map(row => row.slice())};
+}
+
+// Modified: 2026-11-20
+
+function curves(input = {}, threshold) {
+    properties(input, ['vgs', 'vds'], 'HEMT bias');
+    return {vgs: interval$1(input.vgs, {start: 0, stop: threshold, points: 5}, -1, 'bias.vgs'),
+        vds: interval$1(input.vds, {start: 0, stop: 3, points: 101}, 1, 'bias.vds')};
+}
+function ivTable(description, input = {}) {
+    const {record, curveSettings} = description.definition;
+    properties(input, ['vgs', 'vds'], 'HEMT ivTable');
+    if (input.vgs !== undefined) properties(input.vgs, ['start', 'stop', 'points'], 'ivTable.vgs');
+    if (input.vds !== undefined) properties(input.vds, ['start', 'stop', 'points'], 'ivTable.vds');
+    const settings = curves({vgs: {...curveSettings.vgs, ...input.vgs}, vds: {...curveSettings.vds, ...input.vds}}, record.parameters.VTO);
+    const p = hemtParameters(record.parameters, record.contactResistances), table = [['vds (V)']];
+    for (let gate = 0; gate < settings.vgs.points; gate++) table[0].push('id (A), vgs=' + Number(atInterval(settings.vgs, gate).toPrecision(6)) + ' V');
+    for (let drain = 0; drain < settings.vds.points; drain++) {
+        const voltage = atInterval(settings.vds, drain), row = [voltage];
+        for (let gate = 0; gate < settings.vgs.points; gate++) row.push(hemtOperatingPoint(p, atInterval(settings.vgs, gate), voltage).id);
+        table.push(row);
+    }
+    return table;
+}
+function hemtConstructor(options) {
+    properties(options, ['model', 'bias', 'qPoint', 'temperature', 'fList'], 'HEMT');
+    const record = hemtModel(options.model), temperature = options.temperature === undefined ? global.Temp : options.temperature;
+    if (!Number.isFinite(temperature) || temperature <= 0) throw new RangeError('HEMT temperature must be positive kelvin.');
+    const settings = componentSettings(global, options), frequencies = analysisFrequencies(settings);
+    if (!frequencies.length || frequencies.some(f => !Number.isFinite(f) || f <= 0) || !Number.isFinite(settings.Ro) || settings.Ro <= 0) {
+        throw new RangeError('HEMT requires positive RF frequencies and positive reference impedance; use ivTable/solveDC for DC.');
+    }
+    const input = options.qPoint === undefined ? {} : options.qPoint;
+    properties(input, ['vgs', 'vds'], 'HEMT qPoint');
+    const vgs = input.vgs === undefined ? -0.6 : input.vgs, vds = input.vds === undefined ? 2 : input.vds;
+    if (![vgs, vds].every(Number.isFinite)) throw new RangeError('HEMT qPoint voltages must be finite.');
+    const curveSettings = curves(options.bias, record.parameters.VTO);
+    const point = hemtOperatingPoint(hemtParameters(record.parameters, record.contactResistances), vgs, vds), {data, ...initialQPoint} = point;
+    const description = dcModel('HEMT', 3, 'nonlinear', 'approximate', {modelId: 'hemt', record, polarity: 1,
+        temperature, curveSettings, initialQPoint, terminalNetwork: record.terminalNetwork}, settings);
+    return hemtInstance(description, Object.freeze({...settings, ...description.analysis}), point);
+}
+function noiseDensities(p, point, temperature, frequency) {
+    const gm = point.data.channel[1] + point.data.channel[2], cgs = point.data.charges[0][1], omega = 2 * Math.PI * frequency;
+    const thermal = 4 * BOLTZMANN * temperature;
+    return {drain: thermal * gm * p.P * (1 + p.FNC / frequency) + p.KF * Math.abs(point.id) ** p.AF / frequency ** p.FFE,
+        gate: thermal * cgs ** 2 * omega ** 2 * p.R / gm,
+        cross: complex(0, thermal * cgs * omega * Math.sqrt(p.P * p.R) * p.C)};
+}
+function noiseSources(p, point, temperature, frequency) {
+    const density = noiseDensities(p, point, temperature, frequency);
+    return [[1, 2, density.drain], [0, 2, density.gate]];
+}
+function noiseCorrelations(p, point, temperature, frequency) {
+    return [{first: [0, 2], second: [1, 2], density: noiseDensities(p, point, temperature, frequency).cross}];
+}
+function hemtInstance(description, settings, point) {
+    const {record, temperature} = description.definition, p = hemtParameters(record.parameters, record.contactResistances), gm = point.data.channel[1] + point.data.channel[2];
+    if (point.intrinsicVgs <= point.intrinsicVgd || gm <= 0) {
+        throw new RangeError('HEMT RF/noise requires positive intrinsic Vds and a conducting Q point (gm > 0); DC curves may include cutoff.');
+    }
+    const rfTopology = {...record.terminalNetwork, controls: [[0, 2], [0, 1]], powers};
+    // RC/CRF is the empirical high-frequency output-conductance correction,
+    // not an extra physical contact-noise source in the published model.
+    const model = {type: 'hemt', p, point, record, rfTopology, referenceImpedance: settings.Ro, temperature, rows: new Map(),
+        noiseSources: noiseSources.bind(null, p, point, temperature), noiseCorrelations: noiseCorrelations.bind(null, p, point, temperature)};
+    const spars = [], noise = [];
+    for (const frequency of analysisFrequencies(settings)) {
+        const row = deviceFrequencyRow(model, frequency); spars.push(row.spars); noise.push(row.noise);
+    }
+    const result = new nPort(), {data, ...bias} = point;
+    result.setspars(spars); result.setglobal(settings); result.noise = noise;
+    result.bias = {...bias, temperature, electricalTemperature: record.referenceTemperature}; result.qPoint = {...result.bias};
+    result.model = {...record, parameters: {...record.parameters}, inductors: record.inductors.map(row => row.slice()), capacitors: record.capacitors.map(row => row.slice())};
+    result.dc = {current: 'id', bias: {vgs: {...description.definition.curveSettings.vgs}, vds: {...description.definition.curveSettings.vds}}};
+    result.smallSignal = {gm, gds: -data.channel[2], ggs: data.igs[1], ggd: data.igd[2],
+        cgs: data.charges[0][1], cgd: data.charges[0][2], rg: p.RG, rd: p.RD, rs: p.RS};
+    result.ivTable = ivTable.bind(null, description); result._intermod = model;
+    result._schematic = schematicPart('HEMT', {model: record.name, labelPrefix: 'Q', value: record.name});
+    result._dcModel = description;
+    result._rfModel = Object.freeze({atOperatingPoint: hemtAtOperatingPoint.bind(null, description, settings)});
+    return result;
+}
+function hemtAtOperatingPoint(description, settings, state) {
+    properties(state, ['intrinsicVgs', 'intrinsicVgd', 'vs'], 'solved HEMT state');
+    const vs = state.vs === undefined ? 0 : state.vs;
+    if (![state.intrinsicVgs, state.intrinsicVgd].every(Number.isFinite) || vs !== null && !Number.isFinite(vs)) {
+        throw new RangeError('HEMT solved state needs finite intrinsic voltages and a finite or null source reference.');
+    }
+    const record = description.definition.record;
+    return hemtInstance(description, settings, hemtPoint(hemtParameters(record.parameters, record.contactResistances), state.intrinsicVgs, state.intrinsicVgd, vs));
+}
+
+// Modified: 2026-11-20
+function HEMT(options = {}) { return hemtConstructor(options); }
 
 // Modified: 2026-10-08
 
@@ -26384,4 +26699,4 @@ function bodyWidth () {
 	return width;
 }
 
-export { Amp, Attn, C, Coupler180, D, FFT, L, Load, MESFET, NJF, NMOS, NPN, Open, PJF, PMOS, PN, PNP, R, Shift90, Short, Tclin, Tee, Tee4, Tee5, Thru, Tlin, V, bitErrorRate, bodyWidth, callCodemirror, cascade, chebyLPLCs, chebyLPNsec, chebyLPgk, complex, demod, dim, diode1N4148, dup, editor, getCircuitTitle, global, invFFT, lineChart, lineTable, log, lpfGen, matrix, mbend, mclin, mcross, mlin, mod, mstep, mtee, mtfr, mvgnd, mvia, nodal, paC, paL, paPaLC, paPaRC, paPaRL, paPaRLC, paR, paSeLC, paSeRC, paSeRL, paSeRLC, run, runButton, schematic, seC, seL, sePaLC, sePaRC, sePaRL, sePaRLC, seR, seSeLC, seSeRC, seSeRL, seSeRLC, seriesTee, smithChart, trf, trf4Port, trfAuto, version, waveform };
+export { Amp, Attn, C, Coupler180, D, FFT, HEMT, L, Load, MESFET, NJF, NMOS, NPN, Open, PJF, PMOS, PN, PNP, R, Shift90, Short, Tclin, Tee, Tee4, Tee5, Thru, Tlin, V, bitErrorRate, bodyWidth, callCodemirror, cascade, chebyLPLCs, chebyLPNsec, chebyLPgk, complex, demod, dim, diode1N4148, dup, editor, getCircuitTitle, global, invFFT, lineChart, lineTable, log, lpfGen, matrix, mbend, mclin, mcross, mlin, mod, mstep, mtee, mtfr, mvgnd, mvia, nodal, paC, paL, paPaLC, paPaRC, paPaRL, paPaRLC, paR, paSeLC, paSeRC, paSeRL, paSeRLC, run, runButton, schematic, seC, seL, sePaLC, sePaRC, sePaRL, sePaRLC, seR, seSeLC, seSeRC, seSeRL, seSeRLC, seriesTee, smithChart, trf, trf4Port, trfAuto, version, waveform };

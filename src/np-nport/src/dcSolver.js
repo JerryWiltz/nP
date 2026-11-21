@@ -1,10 +1,11 @@
-// Modified: 2026-11-19
+// Modified: 2026-11-20
 import {dcModelOf, dcSnapshot} from './dcModel';
 import {solveDcLinearSystem, dcLinearValue, dcLinearError} from './dcLinearSystem';
 import {bjtDcDevice, solveDcNonlinear} from './dcNonlinear';
 import {diodeDcDevice, diodeDcCurrent} from './diodes/diodeDc';
 import {mosfetDcDevice} from './transistors/fet/mosfetDc';
 import {mosfetPoint} from './transistors/fet/mosfetEquations';
+import {hemtDcDevice} from './transistors/fet/hemtDc';
 import {mesfetDcDevice} from './transistors/fet/mesfetDc';
 import {jfetDcDevice} from './transistors/fet/jfetDc';
 
@@ -22,7 +23,7 @@ function difference(a, b) {
 function unsupportedModels(model, path = '') {
     if (model.kind === 'connection') return model.definition.components.flatMap(part =>
         unsupportedModels(part.model, path ? path + '/' + part.id : part.id));
-    if (model.kind === 'requiresModel' || (model.kind === 'nonlinear' && !['bjt', 'jfet', 'mesfet', 'mosfet', 'diode', 'legacy-diode'].includes(model.definition.modelId))) return [{path,
+    if (model.kind === 'requiresModel' || (model.kind === 'nonlinear' && !['bjt', 'jfet', 'mesfet', 'hemt', 'mosfet', 'diode', 'legacy-diode'].includes(model.definition.modelId))) return [{path,
         constructorName: model.constructorName, reason: model.reason ||
             'This nonlinear DC adapter is not implemented yet; supply a supported device model.'}];
     return [];
@@ -122,10 +123,21 @@ class DcAssembly {
             this.element(component, local, 'resistor', [d.body === 'external' ? 4 : 3, 'n4'], 0);
             device.nodes.push(local.get('n4'));
             component.device = device; this.devices.push(device);
-        } else if (['bjt', 'jfet', 'mesfet'].includes(d.modelId)) {
-            const device = d.modelId === 'bjt' ? bjtDcDevice(model, [], component.path) : d.modelId === 'jfet' ? jfetDcDevice(model, [], component.path) : mesfetDcDevice(model, [], component.path);
-            const resistances = device.kind === 'bjt' ? [device.p.RB, device.p.RC, device.p.RE] : [0, device.p.RD, device.p.RS];
-            for (const [port, resistance] of resistances.entries()) {
+        } else if (['bjt', 'jfet', 'mesfet', 'hemt'].includes(d.modelId)) {
+            const device = d.modelId === 'hemt' ? hemtDcDevice(model, [], component.path) : d.modelId === 'bjt' ? bjtDcDevice(model, [], component.path) : d.modelId === 'jfet' ? jfetDcDevice(model, [], component.path) : mesfetDcDevice(model, [], component.path);
+            const resistances = device.kind === 'bjt' ? [device.p.RB, device.p.RC, device.p.RE] : [device.p.RG || 0, device.p.RD, device.p.RS];
+            if (d.terminalNetwork) {
+                const network = d.terminalNetwork;
+                const terminals = Array.from({length: network.nodeCount}, (_, node) => {
+                    const port = network.ports.indexOf(node); return port < 0 ? 'n' + (node + 1) : port + 1;
+                });
+                for (const nodes of network.joins) for (const node of nodes.slice(1)) this.element(component, local, 'connection', [terminals[nodes[0]], terminals[node]]);
+                for (const [kind, rows] of [['resistor', network.resistors], ['inductor', network.inductors], ['capacitor', network.capacitors]]) {
+                    for (const [a, b, resistance] of rows) this.element(component, local, kind, [terminals[a], terminals[b]], kind === 'resistor' ? resistance : 0);
+                }
+                for (const [a, b] of network.seriesRC || []) this.element(component, local, 'open', [terminals[a], terminals[b]]);
+                device.nodes = network.intrinsic.map(node => this.terminal(local, terminals[node], component.path));
+            } else for (const [port, resistance] of resistances.entries()) {
                 this.element(component, local, 'resistor', [port + 1, 'n' + (port + 1)], resistance);
                 device.nodes.push(local.get('n' + (port + 1)));
             }
@@ -221,14 +233,14 @@ export function solveDC(part) {
             result.qPoint = {...point, body: component.model.definition.body, temperature: component.model.definition.temperature};
             continue;
         }
-        if (['jfet', 'mesfet'].includes(component.device.kind)) {
+        if (['jfet', 'mesfet', 'hemt'].includes(component.device.kind)) {
             const [g, d, s] = component.device.nodes;
             const intrinsicVgs = dcLinearValue(solution, difference(g, s)), intrinsicVgd = dcLinearValue(solution, difference(g, d));
             const result = components.find(entry => entry.path === component.path);
             const [ig, id, source] = result.terminalCurrents;
             if ([intrinsicVgs, intrinsicVgd, ig, id, source].includes(null)) throw dcLinearError('DC_FLOATING_BIAS', 'DC FET bias is undetermined at ' + (component.path || '(root)') + '.');
             const vs = dcLinearValue(solution, new Map([[component.nodes[2], 1]]));
-            const vgs = intrinsicVgs - component.device.p.RS * source;
+            const vgs = intrinsicVgs + (component.device.p.RG || 0) * ig - component.device.p.RS * source;
             const vds = intrinsicVgs - intrinsicVgd + component.device.p.RD * id - component.device.p.RS * source;
             operatingPoints.push({path: component.path, intrinsicVgs, intrinsicVgd, vs});
             result.qPoint = {ig, id, is: source, vgs, vds, vs, vg: vs === null ? null : vs + vgs,

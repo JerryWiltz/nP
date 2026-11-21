@@ -1,0 +1,57 @@
+<!doctype html>
+<!-- Modified: 2026-11-20 -->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Self-biased pHEMT die common-source amplifier</title>
+    <script src="../../dist/nP.js"></script>
+</head>
+<body>
+    <script>
+        nP.global.fList = nP.global.fGen(100e6, 3e9, 51);
+        nP.global.Temp = 300.15;
+        // Manufacturer Statz die model; external SC-70 package network omitted.
+        var q1 = nP.HEMT({model: 'ATF35143_DIE'});
+        var v1 = nP.V(5);
+        var r1 = nP.R(1e6);
+        var r2 = nP.R(150);
+        var r3 = nP.R(47);
+        var c1 = nP.C(10e-9);
+        var c2 = nP.C(10e-9);
+        var c3 = nP.C(10e-9);
+        var c4 = nP.C(10e-9);
+        var t1 = nP.Tee();
+        var t2 = nP.Tee();
+        var t3 = nP.Tee();
+        var t4 = nP.Tee();
+        var short1 = nP.Short();
+        var network = nP.nodal(
+            [c1, 100, 1],
+            [t1, 3, 1, 2],
+            [r1, 3, 4],
+            [short1, 4],
+            [q1, 2, 5, 6],
+            [t2, 8, 5, 7],
+            [r2, 9, 7],
+            [v1, 15, 10],
+            [short1, 10],
+            [c4, 8, 101],
+            [t3, 16, 9, 15],
+            [c2, 16, 17],
+            [short1, 17],
+            [t4, 6, 11, 13],
+            [r3, 11, 12],
+            [short1, 12],
+            [c3, 13, 14],
+            [short1, 14],
+            ['out', 100, 101]
+        );
+        var point = network.operatingPoint.components[4].qPoint;
+        var dcTable = [['Vgs (V)', 'Vds (V)', 'Id (mA)'], [point.vgs, point.vds, 1000 * point.id]];
+        nP.lineTable({inputTable: [dcTable], metricPrefix: 'none'});
+        var response = network.out('s11dB', 's21dB');
+        nP.lineChart({inputTable: [response], title: 'Self-biased ATF35143_DIE: 50 ohm S-parameters', xAxisTitle: 'Frequency (GHz)', metricPrefix: 'G'});
+        var drawing = nP.schematic(network);
+    </script>
+</body>
+</html>

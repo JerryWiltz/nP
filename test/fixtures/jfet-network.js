@@ -1,7 +1,7 @@
-// Modified: 2026-11-19
+// Modified: 2026-11-20
 import * as nP from '../../src/index.js';
 
-export function jfetNetwork({name = 'NJF', source = 'split', bypass = true, common = 'output', reordered = false, grouped = false, q, supply, resistance = 2200} = {}) {
+export function jfetNetwork({name = 'NJF', source = 'split', bypass = true, common = 'output', reordered = false, grouped = false, q, supply, resistance = 2200, drainResistance = 2200} = {}) {
     const device = q || nP[name](), sign = name === 'PJF' ? -1 : 1;
     const tee = nP.Tee(), short = nP.Short(), cap = nP.C(10e-9);
     let rows = [
@@ -11,7 +11,7 @@ export function jfetNetwork({name = 'NJF', source = 'split', bypass = true, comm
         [short, 4],
         [device, 2, 5, 6],
         common === 'output' ? [tee, 8, 5, 7] : [tee, 7, 5, 8],
-        [nP.R(2200), 9, 7],
+        [nP.R(drainResistance), 9, 7],
         [nP.V(supply === undefined ? 12 * sign : supply), bypass ? 15 : 9, 10],
         [short, 10],
         [cap, 8, 101]

@@ -1,4 +1,4 @@
-// Modified: 2026-11-19
+// Modified: 2026-11-20
 export {NJF} from './transistors/fet/NJF';
 export {PJF} from './transistors/fet/PJF';
 export {V} from './sources/V';
@@ -76,3 +76,5 @@ export {NMOS} from './transistors/fet/NMOS';
 export {PMOS} from './transistors/fet/PMOS';
 
 export {MESFET} from './transistors/fet/MESFET';
+
+export {HEMT} from './transistors/fet/HEMT';
