@@ -9,7 +9,7 @@ import {solveDC} from './dcSolver';
 import {rfConnection, withOperatingPoints} from './operatingPointHandoff';
 import {prepareDcBias, retainDcBias} from './dcBias';
 
-// Modified: 2026-11-17
+// Modified: 2026-11-21
 var conjugate = function (value) { return complex(value.getR(), -value.getI()); };
 
 export function nPort() { this._noise = undefined; this._signal = undefined; }; // base class for nPort objects
@@ -49,7 +49,7 @@ var normalizeNoise = function (noiseData, spars) {
 };
 
 function cascadeRf(n2, description) { // cascade two 2-ports along with method chaining since it returns an nPort
-		var freqCount = 0, one = complex(1,0),
+		var freqCount, one = complex(1,0),
 			sparsA = this.getspars(),
 			sparsB = n2.getspars(),
 			s11, s12, s21, s22, s11a, s12a, s21a, s22a, s11b, s12b, s21b, s22b, sparsArray = [];
@@ -75,7 +75,7 @@ function cascadeRf(n2, description) { // cascade two 2-ports along with method c
 		var signalTemplate = compatibleSignals(signalA, signalB);
 		var signalRows = signalTemplate ? [] : undefined;
 		for (freqCount = 0; freqCount < this.spars.length; freqCount++) {
-			var a11 = sparsA[freqCount][1], a12 = sparsA[freqCount][2], a21 = sparsA[freqCount][3], a22 = sparsA[freqCount][4];
+			var a12 = sparsA[freqCount][2], a22 = sparsA[freqCount][4];
 			var b11 = sparsB[freqCount][1], b21 = sparsB[freqCount][3];
 			var denominator = one.sub(a22.mul(b11));
 			var transferA = [
@@ -310,12 +310,11 @@ nPort.prototype = {
 		return output;
 	},
 	outTable : function out (...sparsArguments) {
-		var table = [];
 		var spars = this.getspars();
 		var n = Math.sqrt(spars[0].length - 1); 
-		var copy = spars.map(function (element,index,spars) {
+		var copy = spars.map(function (element) {
 			var inner = [element[0]];
-			sparsArguments.forEach(function (sparsArgument,index1,array) {
+			sparsArguments.forEach(function (sparsArgument) {
 				var row = parseInt(sparsArgument.match(/\d/g)[0]);
 				var col = parseInt(sparsArgument.match(/\d/g)[1]);
 				var sparIndex = (row - 1) * n + col;
@@ -330,6 +329,6 @@ nPort.prototype = {
 		}); // end of map
 		sparsArguments.unshift('Freq');
 		copy.unshift(sparsArguments);
-		return table = copy.map(function(element) {return element;});
+		return copy.map(function(element) {return element;});
 	},
 };

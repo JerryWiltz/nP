@@ -1,11 +1,74 @@
-<!-- Modified: 2026-11-20 -->
+<!-- Modified: 2026-11-21 -->
 # Transistors and Diodes
 
 The public active-device constructors are `nP.Amp()`, `nP.D()`, `nP.diode1N4148()`, `nP.NPN()`, `nP.PNP()`, `nP.NJF()`, `nP.PJF()`, `nP.NMOS()`, `nP.PMOS()`, `nP.MESFET()` and `nP.HEMT()`. The amplifier is a configurable two-port gain/noise model. Diode and transistor models combine DC I–V curves with RF behavior at a fixed bias.
 
+## Your own device parameters
+
+NPN, PNP, NJF, PJF, NMOS, PMOS, MESFET, HEMT and D accept a model name or a
+user-supplied record. A new part needs no catalog registration or library rebuild:
+
+```js
+var myModel = {
+    name: 'My JFET',
+    parameters: {VTO: -3, BETA: .001, RD: 10, RS: 10,
+        CGS: 2e-12, CGD: 1e-12}
+};
+var q1 = nP.NJF({model: myModel});
+```
+
+These are illustrative parameters, not a measured part fit. A plain `parameters`
+object is required. Omitted optional values receive generic family defaults;
+they do not inherit a built-in part's fit. Optional `name` and provenance are
+preserved. Source links are never fetched. Named and supplied records share the
+same DC, RF, noise and weak nonlinear equations.
+
+Use A, V, Ω, H, F, seconds and meters; TNOM is kelvin, EG eV and MOS overlap
+capacitances F/m. Parameter names are case-sensitive. Unknown parameters and
+conflicting polarity are errors. JFET/MOSFET/MESFET/D reject nonempty package
+L/C arrays. HEMT derives its existing die/SC-70 network from parameters and
+packageParameters; supplied derived fields must agree.
+
+| Constructor | Custom record behavior |
+| --- | --- |
+| NPN / PNP | Generic Gummel–Poon defaults and existing BJT package mapping; see below. |
+| NJF / PJF | Generic level-1 defaults: VTO=−2 V, BETA=1e-4 A/V², PB=1 V, IS=1e-14 A; zero RD/RS/CGS/CGD. VTO is negative in normalized coordinates for either polarity. |
+| NMOS / PMOS | MOS1 defaults: VTO=0 V, KP=2e-5 A/V², PHI=.6 V, PB=.8 V, IS=1e-14 A, L=W=100 µm; zero parasitic capacitance/contact resistance. Body remains an options-level choice. |
+| MESFET | Generic Statz/MES1 defaults: VTO=−2 V, BETA=1e-4 A/V², B=.3/V, ALPHA=2/V, PB=1 V; zero contact resistance/capacitance. Electrical temperature remains 300.15 K. |
+| HEMT | Supply VTO, BETA, ALPHA, PB, DELTA1, DELTA2, VMAX, RC and CRF. Optional correlated noise P/R/C defaults to zero rather than borrowing a manufacturer fit. Existing conducting-Q and nominal-temperature limits apply. |
+| D | Classical diode defaults: IS=1e-14 A, N=1, VJ=1 V, M=FC=.5, BV=Infinity; zero RS/CJO/TT. Optional leakageResistance defaults to Infinity; schematicVariant selects Schottky/varactor artwork. Optional fixed-topology LS/CP package values are described below. |
+
+Read resolved values from `device.model.parameters`. Complete records from
+`device.model` can be reused; when reusing MOS records keep the matching body
+option. Changing the public metadata does not rebuild a device: construct a new
+device with changed parameters. Legacy `diode1N4148()` retains its existing flat
+parameter options. This API requires a current bundle with object support.
+
 ## NPN transistor
 
 `nP.NPN()` supports **2N3904** (default) and **BFR93A**. It returns a three-port: **1 base, 2 collector, 3 emitter**.
+
+You can also supply a model record without adding it to the library:
+
+```js
+var myModel = {
+    name: 'My NPN',
+    parameters: {IS: 1e-15, BF: 150, VAF: 80, CJE: 4e-12, CJC: 3e-12}
+};
+var q1 = nP.NPN({model: myModel});
+```
+
+These are illustrative parameters, not a measured part fit. `parameters` is
+required; omitted values use generic defaults rather than the 2N3904 values.
+Metadata is optional; name defaults to `'custom'`, package L/C arrays to empty.
+No source links are fetched. Both input forms use the same DC, RF, noise and
+weak nonlinear equations. Names are case-sensitive inside `parameters`; unknown
+keys and invalid values are rejected. Use A, V, Ω, F and seconds, with `TNOM`
+in kelvin and `EG` in eV. Generic defaults include IS=1e-16 A, BF=100, BR=1;
+omitted terminal resistances, junction capacitances and transit times are zero.
+VAF/VAR/IKF/IKR/VTF default to Infinity. nP retains ITF=Infinity for compatibility;
+supply ITF explicitly when reproducing a SPICE card. `q1.model` reports resolved
+defaults. Object input requires a current bundle supporting this feature.
 
 ```js
 // NPN curve tracer and RF at a selected Q point
@@ -44,13 +107,18 @@ For `commonBase`, use `bias: {ie: {...}, vcb: {...}}` and `qPoint: {ie: 2e-3, vc
 
 Completed two-ports provide `.stability` and `.out('K', 'deltaMag')`. Unconditional small-signal stability requires K > 1 and |Δ| < 1. K comes from the final S-parameters; intermediate K < 1 is allowed. Bare three-port NPNs have no two-port K value.
 
-BFR93A includes its published SOT23 L/C network. The 2N3904 card includes terminal resistances but no explicit package L/C model. Noise uses classical shot/thermal sources, without fitted excess-noise or high-frequency induced-noise behavior. With `global.twoTone` set before construction, IM/OIP selectors use direct Taylor current and charge terms; they omit quadratic remixing, compression and harmonic balance. Neither card models avalanche or self-heating. External DC bias-network solving remains future work.
+BFR93A includes its published SOT23 L/C network. The 2N3904 card includes terminal resistances but no explicit package L/C model. Noise uses classical shot/thermal sources, without fitted excess-noise or high-frequency induced-noise behavior. With `global.twoTone` set before construction, IM/OIP selectors use direct Taylor current and charge terms; they omit quadratic remixing, compression and harmonic balance. Neither card models avalanche or self-heating. Networks containing an explicit `V()` supply solve their DC bias before RF analysis, for named and supplied model records alike.
 
 Try [NPN curve tracer and RF in the REPL](/repl#example-npn-curve-tracer).
 
 ## PNP transistor
 
-`nP.PNP()` supports **2N3906** using the same model engine and APIs as NPN. Its ports remain **1 base, 2 collector, 3 emitter**. Use physical signed PNP values:
+`nP.PNP()` supports **2N3906** using the same model engine and APIs as NPN. Its ports remain **1 base, 2 collector, 3 emitter**.
+
+It also accepts `nP.PNP({model: myPnpModel})` with the same record structure and
+generic defaults described above; supply the parameters of the desired PNP.
+
+Use physical signed PNP values:
 
 ```js
 // PNP curve tracer and RF
@@ -116,7 +184,7 @@ The full options include `spars`, `fMinDb`, `gammaOpt`, `noiseResistanceOhms`, a
 
 ## SPICE-style diode
 
-`nP.D()` currently selects **1N4148**, a silicon signal diode. Like the transistor constructors, it keeps the displayed DC sweep separate from an explicit RF Q point. Port **1 is the anode**; port **2 is the cathode**.
+`nP.D()` selects **1N4148**, a silicon signal diode, or the Skyworks **SMS7621/SMS7630** per-junction Schottky records, or the SMV1231-079LF varactor. Like the transistor constructors, it keeps the displayed DC sweep separate from an explicit RF Q point. Port **1 is the anode**; port **2 is the cathode**.
 
 ```js
 // 1N4148 curves and RF at a fixed operating point
@@ -161,7 +229,63 @@ These are also the defaults for `D()`, except that its frequency grid follows th
 
 The archived NXP SPICE card includes series resistance, leakage, junction charge and transit-time charge. It is a different parameter set from `diode1N4148()` below. It has no explicit package L/C network or large-signal transient simulation. Its noise follows classical SPICE junction shot noise plus resistor thermal noise; it does not model calibrated avalanche or excess noise. Weak nonlinear products use local current/charge derivatives and the existing two-tone analysis, with the same direct-source approximation described in [Intermodulation](./intermodulation.md#diode-intermodulation).
 
-Try [1N4148 DC and RF in the REPL](/repl#example-diode-dc-rf). Other diode families and part numbers are not implemented in `D()` yet.
+Try [1N4148 DC and RF in the REPL](/repl#example-diode-dc-rf).
+
+### Schottky records
+
+```js
+nP.global.fList = nP.global.fGen(10e6, 3e9, 51);
+var d1 = nP.D({model: 'SMS7630', qPoint: {vd: 0.05}, temperature: 300.15});
+var curves = d1.ivTable({vd: {start: -0.1, stop: 0.35, points: 101}});
+var response = d1.out('s11dB', 's21dB');
+nP.lineChart({inputTable: [curves], metricPrefix: 'none'});
+nP.lineChart({inputTable: [response], metricPrefix: 'giga'});
+nP.schematic(d1);
+```
+
+Select `model: 'SMS7621'` for the other published card. Terminal order, units, curve methods and external-network bias handoff are the same as for 1N4148. Defaults remain VD=0.6 V and a 0–0.8 V curve; choose a lower bias explicitly for detector studies. Both Schottky records include the printed RS and select the canonical hooked-cathode symbol. They exclude package L/C, multi-junction package wiring and measured detector/noise fits. Small-signal RF and weak IM do not compute finite-power rectified detector output. See the [model sources and independent checks](https://github.com/JerryWiltz/nP/blob/master/developmentDocs/semiconductors/schottkyModels.md).
+
+### Varactor record and C–V curves
+
+```js
+nP.global.fList = nP.global.fGen(10e6, 2e9, 51);
+
+var d1 = nP.D({model: 'SMV1231-079LF', qPoint: {vd: -3}, temperature: 300.15});
+var capacitance = d1.cvTable({vr: {start: 0, stop: 15, points: 31}});
+var capacitancePf = [['vr (V)', 'cj (pF)', 'ct (pF)']];
+for (var row = 1; row < capacitance.length; row++) {
+    capacitancePf.push([capacitance[row][0], capacitance[row][1] * 1e12, capacitance[row][2] * 1e12]);
+}
+var response = d1.out('s11dB', 's21dB');
+
+nP.schematic(d1);
+nP.lineChart({inputTable: [capacitancePf], metricPrefix: 'none',
+    title: 'SMV1231-079LF C-V', xAxisTitle: 'Reverse voltage (V)', yAxisTitle: 'Capacitance (pF)'});
+nP.lineChart({inputTable: [response], metricPrefix: 'giga', title: 'Varactor at VR = 3 V'});
+```
+
+This Skyworks record includes the fitted hyperabrupt junction, RS=2.5 Ω,
+CP=.44 pF and SC-79 LS=.7 nH. The varactor symbol is selected automatically.
+The package is LS in series with CP parallel to the RS-plus-junction branch.
+DC shorts LS and opens CP; RF, noise and weak products include their loading.
+
+`cvTable()` returns `[vr (V), cj (F), ct (F)]` after a header row. VR is positive
+reverse voltage, so VD is negative. CJ is depletion capacitance; CT is effective
+low-frequency terminal capacitance, including package effects. It defaults to
+0–10 V with 201 points, accepts a nonnegative increasing VR interval, and does
+not move the RF Q point or change I–V settings. The fitted C–V law covers 0–15 V;
+the measured-data comparison has about 4.4% maximum deviation from typical CT.
+
+Custom records work through `D({model: myModel})`. M can now be any finite
+nonnegative value, including the logarithmic M=1 case. Optional
+`packageParameters: {seriesInductance, parallelCapacitance}` uses H/F values,
+both default zero. This supports the fixed package topology above, with unknown
+keys and arbitrary L/C arrays rejected. Source links are never fetched.
+
+D still defaults to VD=.6 V; select reverse bias explicitly or let an external
+`V()` network set it. Classical noise/temperature laws and constant RS are not
+measured varactor fits. Weak products do not model VCO oscillation, compression,
+phase noise or rectified bias shifts. See the [model source and independent checks](https://github.com/JerryWiltz/nP/blob/master/developmentDocs/semiconductors/varactorModels.md).
 
 ## Legacy 1N4148 diode: RF and DC
 

@@ -1,11 +1,11 @@
-// Modified: 2026-09-16
+// Modified: 2026-11-21
 'use strict';
 import { complex } from './complex';
 
 function Matrix() { }
 
 export function dim(rows, cols, initial) { // used by nodal()
-	var row = 0, col = 0, a = [], A = [];
+	var row, col, a, A = [];
 	for (row = 0; row < rows; row++) {
 		a = [];
 		for (col = 0; col < cols; col++) {
@@ -30,8 +30,8 @@ export function dup(copied) { // used by nodal()
 function pivotSort(array, pivot) {
 
 	function maxKey(array, pivot) {
-		var key = 0, i = 0;
-		var current = 0, maximum = 0;
+		var key = 0, i;
+		var current, maximum = 0;
 		for (i = pivot; i < array.length; i++) {
 			current = Math.abs(array[i][pivot]);
 			if (current > maximum) {
@@ -49,8 +49,7 @@ function pivotSort(array, pivot) {
 		var temp0 = array[pivot];
 		var temp1 = array[key];
 
-		if (key === pivot) { }
-		else {
+		if (key !== pivot) {
 			array[pivot] = temp1;
 			array[key] = temp0;
 		}
@@ -64,8 +63,8 @@ function pivotSort(array, pivot) {
 function pivotSortCplx(array, pivot) {
 
 	function maxKey(array, pivot) {
-		var key = 0, i = 0;
-		var current = 0, maximum = 0;
+		var key = 0, i;
+		var current, maximum = 0;
 		for (i = pivot; i < array.length; i++) {
 			current = array[i][pivot].mag();
 			if (current > maximum) {
@@ -83,8 +82,7 @@ function pivotSortCplx(array, pivot) {
 		var temp0 = array[pivot];
 		var temp1 = array[key];
 
-		if (key === pivot) { }
-		else {
+		if (key !== pivot) {
 			array[pivot] = temp1;
 			array[key] = temp0;
 		}
@@ -109,7 +107,7 @@ Matrix.prototype = {
 			numRows = A.length,
 			numCols = A[0].length,
 			T = dim(numCols, numRows, 0),
-			row = 0, col = 0;
+			row, col;
 		for (row = 0; row < numRows; row++) {
 			for (col = 0; col < numCols; col++) {
 				T[col][row] = A[row][col];
@@ -123,7 +121,7 @@ Matrix.prototype = {
 			numRows = A.length,
 			numCols = A[0].length,
 			T = dim(numCols, numRows, complex(0, 0)),
-			row = 0, col = 0;
+			row, col;
 		for (row = 0; row < numRows; row++) {
 			for (col = 0; col < numCols; col++) {
 				T[col][row] = complex(A[row][col].getR(), -A[row][col].getI());
@@ -138,7 +136,7 @@ Matrix.prototype = {
 			C = dim(A.length, A[0].length, 0),
 			numRows = A.length,
 			numCols = A[0].length,
-			row = 0, col = 0;
+			row, col;
 		for (row = 0; row < numRows; row++) {
 			for (col = 0; col < numCols; col++) {
 				C[row][col] = A[row][col] + B[row][col];
@@ -153,7 +151,7 @@ Matrix.prototype = {
 			C = dim(A.length, A[0].length, complex(0, 0)),
 			numRows = A.length,
 			numCols = A[0].length,
-			row = 0, col = 0;
+			row, col;
 		for (row = 0; row < numRows; row++) {
 			for (col = 0; col < numCols; col++) {
 				C[row][col] = A[row][col].add(B[row][col]);
@@ -168,7 +166,7 @@ Matrix.prototype = {
 			C = dim(A.length, A[0].length, 0),
 			numRows = A.length,
 			numCols = A[0].length,
-			row = 0, col = 0;
+			row, col;
 		for (row = 0; row < numRows; row++) {
 			for (col = 0; col < numCols; col++) {
 				C[row][col] = A[row][col] - B[row][col];
@@ -183,7 +181,7 @@ Matrix.prototype = {
 			C = dim(A.length, A[0].length, complex(0, 0)),
 			numRows = A.length,
 			numCols = A[0].length,
-			row = 0, col = 0;
+			row, col;
 		for (row = 0; row < numRows; row++) {
 			for (col = 0; col < numCols; col++) {
 				C[row][col] = A[row][col].sub(B[row][col]);
@@ -196,9 +194,7 @@ Matrix.prototype = {
 		var A = this.m,
 			B = matrixB.m,
 			C = dim(A.length, B[0].length, 0),
-			numRows = A[0].length,
-			numCols = B.length,
-			row = 0, col = 0, n = 0;
+			row, col, n;
 		for (row = 0; row < A.length; row++) {
 			for (col = 0; col < B[0].length; col++) {
 				for (n = 0; n < B.length; n++) {
@@ -213,9 +209,7 @@ Matrix.prototype = {
 		var A = this.m,
 			B = matrixB.m,
 			C = dim(A.length, B[0].length, complex(0, 0)),
-			numRows = A[0].length,
-			numCols = B.length,
-			row = 0, col = 0, n = 0;
+			row, col, n;
 		for (row = 0; row < A.length; row++) {
 			for (col = 0; col < B[0].length; col++) {
 				for (n = 0; n < B.length; n++) {
@@ -229,8 +223,8 @@ Matrix.prototype = {
 
 	solveGaussFB: function solveGaussFB() {
 		var A = dup(this.m),
-			a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
-			row = 0, col = 0, accum = 0;
+			a, numRows = A.length, numCols = A[0].length, constRow,
+			row, col, accum;
 
 		for (constRow = 0; constRow < numRows; constRow++) { // FORWARD ELIMINATION - this row stays the same
 			pivotSort(A, constRow);
@@ -261,8 +255,8 @@ Matrix.prototype = {
 
 	solveGaussFBCplx: function solveGaussFBCplx() {
 		var A = dup(this.m),
-			a = complex(0, 0), numRows = A.length, numCols = A[0].length, constRow = 0,
-			row = 0, col = 0, accum = complex(0, 0);
+			a, numRows = A.length, numCols = A[0].length, constRow,
+			row, col, accum;
 
 		for (constRow = 0; constRow < numRows; constRow++) { // FORWARD ELIMINATION - this row stays the same
 			pivotSortCplx(A, constRow);
@@ -293,8 +287,8 @@ Matrix.prototype = {
 
 	invert: function invert() {
 		var A = dup(this.m),
-			a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
-			row = 0, col = 0;
+			a, numRows = A.length, numCols, constRow,
+			row, col;
 		//append a 0 Matrix to Matrix, A
 		for (row = 0; row < numRows; row++) {
 			for (col = numRows; col < 2 * numRows; col++) {
@@ -345,8 +339,8 @@ Matrix.prototype = {
 
 	invertCplx: function invertCplx() {
 		var A = dup(this.m),
-			a = complex(0, 0), numRows = A.length, numCols = A[0].length, constRow = 0,
-			row = 0, col = 0;
+			a, numRows = A.length, numCols, constRow,
+			row, col;
 		//append a 0 Matrix to Matrix, A
 		for (row = 0; row < numRows; row++) {
 			for (col = numRows; col < 2 * numRows; col++) {

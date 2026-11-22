@@ -1,4 +1,4 @@
-// Modified: 2026-10-21
+// Modified: 2026-11-21
 import {fftBins, invFFT} from '../../np-math/src/fft';
 import {complex} from '../../np-math/src/complex';
 import {global} from '../../np-global/src/global';
@@ -110,11 +110,11 @@ export function modulateAdvanced(tx, options, carrierHz) {
 		tx.referenceSymbols = 1;
 		extras.referenceSymbols = 1;
 	} else if (mode === 'QPSK' || mode === 'QAM') {
-		var order = mode === 'QPSK' ? 4 : (options.order === undefined ? 16 : options.order);
+		let order = mode === 'QPSK' ? 4 : (options.order === undefined ? 16 : options.order);
 		if (!powerOfTwo(order) || !Number.isInteger(Math.sqrt(order)) || order < 4 || order > 256) {
 			throw new RangeError('QAM order must be 4, 16, 64, or 256.');
 		}
-		var bitsPerSymbol = Math.log2(order);
+		let bitsPerSymbol = Math.log2(order);
 		var symbolCount = Math.ceil(tx.bits.length / bitsPerSymbol);
 		var pilot = complex((Math.sqrt(order) - 1) / Math.sqrt(2 * (order - 1) / 3),
 			(Math.sqrt(order) - 1) / Math.sqrt(2 * (order - 1) / 3));
@@ -166,7 +166,7 @@ export function modulateAdvanced(tx, options, carrierHz) {
 		var fftSize = options.fftSize === undefined ? 4 * subcarrierCount : options.fftSize;
 		var symbolRate = options.symbolRate === undefined ? 5e6 : options.symbolRate;
 		var subcarrierMode = options.subcarrierMode === undefined ? 'QPSK' : options.subcarrierMode;
-		var order = subcarrierMode === 'QPSK' ? 4 : subcarrierMode === 'QAM' ?
+		let order = subcarrierMode === 'QPSK' ? 4 : subcarrierMode === 'QAM' ?
 			(options.order === undefined ? 16 : options.order) : 0;
 		if (!powerOfTwo(subcarrierCount) || subcarrierCount < 2 ||
 			!powerOfTwo(fftSize) || fftSize < 2 * subcarrierCount + 2 ||
@@ -174,7 +174,7 @@ export function modulateAdvanced(tx, options, carrierHz) {
 			!powerOfTwo(order) || !Number.isInteger(Math.sqrt(order)) || order > 256) {
 			throw new RangeError('OFDM needs power-of-two subcarrierCount and fftSize, positive symbolRate, and QPSK or square QAM symbols.');
 		}
-		var bitsPerSymbol = Math.log2(order);
+		let bitsPerSymbol = Math.log2(order);
 		if (carrierHz <= subcarrierCount * symbolRate / 2 ||
 			carrierHz + subcarrierCount * symbolRate / 2 >= symbolRate * fftSize / 2 ||
 			Math.abs(carrierHz / symbolRate - Math.round(carrierHz / symbolRate)) > 1e-9) {
@@ -274,14 +274,14 @@ export function demodulateAdvanced(receiver, signal) {
 		var symbolBits = mode === 'DPSK' ? 1 : signal.bitsPerSymbol;
 		var samplesPerSymbol = signal.samplesPerBit * symbolBits;
 		var observed = [];
-		for (var start = 0; start < signal.sampleCount; start += samplesPerSymbol) {
+		for (let start = 0; start < signal.sampleCount; start += samplesPerSymbol) {
 			var value = correlator(passband, start, samplesPerSymbol,
 				signal.carrierHz, sampleRateHz);
 			observed.push(value);
 			symbols.push([observed.length - 1, value.getR(), value.getI()]);
 		}
 		if (mode === 'DPSK') {
-			for (var index = 1; index < observed.length; index++) {
+			for (let index = 1; index < observed.length; index++) {
 				var previous = observed[index - 1], current = observed[index];
 				bits.push(previous.getR() * current.getR() +
 					previous.getI() * current.getI() < 0 ? 1 : 0);
@@ -291,14 +291,14 @@ export function demodulateAdvanced(receiver, signal) {
 				(Math.sqrt(signal.order) - 1) / Math.sqrt(2 * (signal.order - 1) / 3),
 				(Math.sqrt(signal.order) - 1) / Math.sqrt(2 * (signal.order - 1) / 3))) : null;
 			if (gain && gain.mag() < 1e-12) throw new RangeError('QAM reference symbol has no received energy.');
-			for (var index = signal.referenceSymbols || 0; index < observed.length; index++) {
+			for (let index = signal.referenceSymbols || 0; index < observed.length; index++) {
 				bits.push(...bitsFromSymbol(gain ? observed[index].div(gain) : observed[index], signal.order));
 			}
 		}
 	} else if (mode === 'MSK' || mode === 'GMSK') {
 		var analytic = analyticSamples(receiver, signal);
 		var samplesPerBit = signal.samplesPerBit;
-		for (var start = 0; start < signal.sampleCount; start += samplesPerBit) {
+		for (let start = 0; start < signal.sampleCount; start += samplesPerBit) {
 			var left = start + Math.floor(samplesPerBit / 4);
 			var right = start + Math.floor(3 * samplesPerBit / 4);
 			var first = analytic[left], last = analytic[right];

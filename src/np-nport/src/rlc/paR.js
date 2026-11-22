@@ -1,4 +1,4 @@
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 import {lumpedDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
@@ -18,7 +18,7 @@ export function paR(R = 75, temperature = global.Temp, options = {}) { // parall
 	var paR = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [], noiseArray = [];
+	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [], noiseArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(R, 0);
 		Y[freqCount] = Z[freqCount].inv();

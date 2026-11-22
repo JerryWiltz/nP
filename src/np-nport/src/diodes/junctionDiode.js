@@ -1,4 +1,4 @@
-// Modified: 2026-11-19
+// Modified: 2026-11-21
 import {BOLTZMANN, ELEMENTARY_CHARGE} from '../physicalConstants';
 import {temperatureJunction} from '../junctionTemperature';
 
@@ -42,16 +42,22 @@ export function junctionCurrent(p, voltage) {
 
 // Charge is integrated before differentiation. The continuation at FC*VJ
 // keeps Q and C continuous instead of clamping a singular forward-bias law.
+function depletionIntegral(p, voltage) {
+    const logarithm = Math.log1p(-voltage / p.VJ), exponent = 1 - p.M;
+    // M=1 is the logarithmic limit; expm1 also avoids cancellation near it.
+    return -p.CJO * p.VJ * (exponent === 0 ? logarithm : Math.expm1(exponent * logarithm) / exponent);
+}
+
 export function depletionCharge(p, voltage) {
     const threshold = p.FC * p.VJ;
     if (voltage < threshold) {
         const remaining = 1 - voltage / p.VJ;
         const capacitance = p.CJO * remaining ** -p.M;
-        return {charge: p.CJO * p.VJ * (1 - remaining ** (1 - p.M)) / (1 - p.M),
+        return {charge: depletionIntegral(p, voltage),
             capacitance, derivative: capacitance * p.M / (p.VJ - voltage),
             second: capacitance * p.M * (p.M + 1) / (p.VJ - voltage) ** 2};
     }
-    const q0 = p.CJO * p.VJ * (1 - (1 - p.FC) ** (1 - p.M)) / (1 - p.M);
+    const q0 = depletionIntegral(p, threshold);
     const c0 = p.CJO * (1 - p.FC) ** -p.M;
     const slope = c0 * p.M / (p.VJ * (1 - p.FC)), delta = voltage - threshold;
     return {charge: q0 + c0 * delta + slope * delta ** 2 / 2,

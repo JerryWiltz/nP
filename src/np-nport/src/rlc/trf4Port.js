@@ -1,4 +1,4 @@
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 import {requiredDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
@@ -10,8 +10,8 @@ import {componentSettings} from '../componentSettings';
 export function trf4Port(N = 0.5, options = {}) { // parallel resistor nPort object
 	var trf4Port = new nPort;
 	var settings = componentSettings(global, options);
-	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var freqCount = 0, sparsArray = [];
+	var frequencyList = analysisFrequencies(settings);
+	var freqCount, sparsArray = [];
 	var s11, s12, s13, s14,
 		s21, s22, s23, s24,
 		s31, s32, s33, s34,

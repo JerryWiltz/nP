@@ -1,4 +1,4 @@
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 import {physicalDcModel} from '../physicalDcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
@@ -244,14 +244,14 @@ export function mclin(input = {}) {
 	var ctlin = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro, 0), two = complex(2, 0), freqCount = 0, Zoemclin = [], Zoomclin = [];
+	var Zo = complex(Ro, 0), two = complex(2, 0), freqCount, Zoemclin, Zoomclin;
 	var s11oe, s12oe, s21oe, s22oe;
 	var s11oo, s12oo, s21oo, s22oo;
 	var s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44;
 	var sparsArray = [], noiseArray = [];
-	var Aoe = {}, Boe = {}, Coe = {}, Dsoe = {};
-	var Aoo = {}, Boo = {}, Coo = {}, Dsoo = {};
-	var alphaOe = 0, alphaOo = 0, betaOe = 0, betaOo = 0, gammaOe = {}, gammaOo = {};
+	var Aoe, Boe, Coe, Dsoe;
+	var Aoo, Boo, Coo, Dsoo;
+	var alphaOe, alphaOo, betaOe, betaOo, gammaOe, gammaOo;
 
 	// Kirschning/Jansen equal-width coupled microstrip model, using Qucs as
 	// a cross-check and the published equation family as the implementation basis.

@@ -1,0 +1,74 @@
+SMV1231-079LF independent current/charge/package reference
+* Modified: 2026-11-21
+* Skyworks 200058AB Tables 1/5, Figure 5: SMV1231-079LF.
+* ngspice 39.3 clamps primitive diode M/VJ; use the published charge
+* explicitly in a behavioral capacitor and the primitive for conduction only.
+.temp 27
+.options gmin=1e-24 abstol=1e-18 reltol=1e-10
+.model junction D (IS=1e-14 N=1 RS=0 TT=0 CJO=0 BV=1e30 TNOM=27)
+Lpkg a p .7n
+Rseries p j 2.5
+Djunction j k junction
+Cjunction j k Q={-1.88p*10.13*((1-(v(j)-v(k))/10.13)^(1-4.999)-1)/(1-4.999)}
+Cpackage p k .44p
+Vbias supply 0 DC -3
+Lbias supply a 1e3
+Lreturn k 0 1e3
+Ra aca 0 50
+Rk ack 0 50
+Ca aca a 1e-3
+Ck ack k 1e-3
+Ia 0 aca DC 0 AC 1
+Ik 0 ack DC 0 AC 0
+.control
+set numdgt=15
+set wr_vecnames
+set wr_singlescale
+alter Vbias = -0.5
+alter @Ia[acmag] = 1
+alter @Ik[acmag] = 0
+op
+wrdata varactor-0.5-op.txt v(a) v(k) v(j) @djunction[id] @djunction[gd]
+ac dec 1 10meg 1g
+wrdata varactor-0.5-port1.txt v(aca) v(ack)
+ac lin 1 2g 2g
+wrdata varactor-0.5-port1-2g.txt v(aca) v(ack)
+alter @Ia[acmag] = 0
+alter @Ik[acmag] = 1
+ac dec 1 10meg 1g
+wrdata varactor-0.5-port2.txt v(aca) v(ack)
+ac lin 1 2g 2g
+wrdata varactor-0.5-port2-2g.txt v(aca) v(ack)
+alter Vbias = -3
+alter @Ia[acmag] = 1
+alter @Ik[acmag] = 0
+op
+wrdata varactor-3-op.txt v(a) v(k) v(j) @djunction[id] @djunction[gd]
+ac dec 1 10meg 1g
+wrdata varactor-3-port1.txt v(aca) v(ack)
+ac lin 1 2g 2g
+wrdata varactor-3-port1-2g.txt v(aca) v(ack)
+alter @Ia[acmag] = 0
+alter @Ik[acmag] = 1
+ac dec 1 10meg 1g
+wrdata varactor-3-port2.txt v(aca) v(ack)
+ac lin 1 2g 2g
+wrdata varactor-3-port2-2g.txt v(aca) v(ack)
+alter Vbias = -10
+alter @Ia[acmag] = 1
+alter @Ik[acmag] = 0
+op
+wrdata varactor-10-op.txt v(a) v(k) v(j) @djunction[id] @djunction[gd]
+ac dec 1 10meg 1g
+wrdata varactor-10-port1.txt v(aca) v(ack)
+ac lin 1 2g 2g
+wrdata varactor-10-port1-2g.txt v(aca) v(ack)
+alter @Ia[acmag] = 0
+alter @Ik[acmag] = 1
+ac dec 1 10meg 1g
+wrdata varactor-10-port2.txt v(aca) v(ack)
+ac lin 1 2g 2g
+wrdata varactor-10-port2-2g.txt v(aca) v(ack)
+quit
+.endc
+.end

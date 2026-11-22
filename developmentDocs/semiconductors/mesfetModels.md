@@ -11,6 +11,13 @@ card published by Intusoft, described below. HEMT has its own
 package/microwave noise fits remain pending. Both immutable DC descriptors
 have `quality: 'approximate'`.
 
+## User-supplied records
+
+`MESFET({model: myRecord})` accepts a supplied Statz/MES1 record, with
+[generic defaults and supported ranges](customModels.md#mesfet). It does not
+inherit the SPICE3_REFERENCE example values or NE760 fit. Electrical temperature
+remains fixed at 300.15 K; FC remains retained but inactive source data.
+
 ## API, terminals and defaults
 
 ```js

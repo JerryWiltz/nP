@@ -1,0 +1,34 @@
+<!doctype html>
+<!-- Modified: 2026-11-21 -->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SMS7630 Schottky DC and RF</title>
+    <script src="../dist/nP.js"></script>
+</head>
+<body>
+    <script>
+        nP.global.fList = nP.global.fGen(10e6, 3e9, 51);
+
+        var d1 = nP.D({
+            model: 'SMS7630',
+            qPoint: {vd: 0.05},
+            bias: {vd: {start: -0.1, stop: 0.35, points: 101}},
+            temperature: 300.15
+        });
+        var curves = d1.ivTable();
+        var response = d1.out('s11dB', 's21dB');
+        var bias = d1.qPoint;
+
+        nP.log(bias);
+        nP.schematic(d1);
+        nP.lineChart({inputTable: [curves], metricPrefix: 'none',
+            title: 'SMS7630 per-junction I-V',
+            xAxisTitle: 'Anode-to-cathode voltage (V)', yAxisTitle: 'Current (A)'});
+        nP.lineChart({inputTable: [response], metricPrefix: 'giga',
+            title: 'SMS7630 per-junction RF at VD = 0.05 V',
+            xAxisTitle: 'Frequency (GHz)', yAxisTitle: 'S-parameters (dB)'});
+    </script>
+</body>
+</html>

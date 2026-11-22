@@ -127,7 +127,7 @@ nP.lineChart({inputTable: [frequencyTable], title: 'Square-wave spectrum', metri
 | S-parameters and output tables | `nPort.out()` | [nPort object](docs/nport-object.md) |
 | Noise and intermodulation | `NF21dB`, `noiseFloor`, IM and OIP selectors | [Noise](docs/noise.md), [Intermodulation](docs/intermodulation.md) |
 | Physical microstrip | `mlin()`, `mclin()`, `mtee()`, and related models | [Microstrip](docs/microstrip.md) |
-| Diodes | `diode1N4148()` | [Diodes and active components](docs/diodes-and-active-components.md) |
+| Diodes | `D()` with signal/Schottky records; legacy `diode1N4148()` | [Diodes and active components](docs/diodes-and-active-components.md) |
 | Digital signals | `waveform()`, `PN()`, `mod()`, `demod()`, `bitErrorRate()` | [Digital signals](docs/digital-signals.md) |
 | Math | `complex()`, `matrix()`, `FFT()`, `invFFT()` | [Math](docs/math.md), [FFT in nPort](docs/tech-notes-fft-in-nport.md) |
 | Visualization | `lineChart()`, `lineTable()`, `smithChart()`, `log()` | [Charts, tables, and logs](docs/charts-tables-and-logs.md) |
@@ -149,9 +149,14 @@ Use Node.js 22 and npm to match CI. For a cloned repository, `npm ci` installs t
 git clone https://github.com/JerryWiltz/nP.git
 cd nP
 npm ci
+npm run lint
 npm test
 npm run build
 ```
+
+`npm run lint` checks hand-maintained JavaScript in `src/`, `scripts/`, `test/`, and root build configurations for likely bugs, unused variables and overwritten assignments. It runs in CI before tests and builds; it does not rewrite files or enforce formatting. Generated bundles and symbol maps are excluded. Destructuring that intentionally excludes a field from the remaining object is allowed.
+
+`npm run check:equations` runs the separate math.js algebra, derivative and SI-dimension audit. The Taylor polynomial issue is fixed; it still reports the legacy diode's exponential-clamp derivatives and exits with failure. See its [coverage and findings](developmentDocs/analysis/equationAudit.md). It is not yet a CI gate.
 
 `src/index.js` is the public source entry point. `npm run docs:dev` starts the local documentation site; `npm run docs:build` verifies it. `npm run build:plugin` creates `dist/nP.plugin.esm.js` for an intentional update of the separately maintained Obsidian plugin; that bundle is not included in the npm package.
 

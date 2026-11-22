@@ -1,5 +1,5 @@
 # nP Obsidian code-writing agent
-<!-- Modified: 2026-11-20 -->
+<!-- Modified: 2026-11-21 -->
 
 ## Purpose and vault workflow
 
@@ -270,7 +270,145 @@ briefly and choose an agreed selector/display floor, preserving the raw result.
 Use these only when present in the installed pin. The baseline above lacks
 them. NPN/PNP use base/collector/emitter order, no hidden ground. NPN selects
 2N3904 (default) or BFR93A; PNP selects 2N3906. Options: model, configuration,
-bias, qPoint, temperature (K), fList; no invented beta/SPICE parameter options.
+bias, qPoint, temperature (K), fList; custom parameters belong in model.parameters.
+
+NPN/PNP also accept a user-supplied record in current capable bundles:
+`var myModel = {name:'My transistor', parameters:{IS:1e-15,BF:150}};`
+then `var q1 = nP.NPN({model:myModel});` (or PNP with its own parameters).
+No registration, rebuild or network fetch is required. This illustrative record
+is not a measured part fit. A plain `parameters` object is required; it may be
+empty. Missing values use generic defaults, not the default part's parameters.
+The constructor selects polarity. Existing named model calls remain unchanged.
+Optional nonempty strings: name (default 'custom'), manufacturer, material,
+structure, mathematicalModel, modelVersion, source, leakageSource, package.
+Links are provenance only; metadata never changes the equation engine.
+Caller records are copied without mutation; the DC snapshot is immutable.
+Resolved defaults are visible in q1.model.parameters. Parameters are uppercase,
+case-sensitive, numeric; unknown keys and invalid values are rejected.
+Supported defaults (A, V, ohms, F, seconds; TNOM in K, EG in eV):
+IS=1e-16; BF=100; BR=1; NF=NR=1; NE=1.5; NC=2;
+VAF=VAR=IKF=IKR=VTF=Infinity; ISE=ISC=RB=RE=RC=0;
+CJE=CJC=TF=TR=XTF=0; VJE=VJC=0.75; MJE=MJC=0.33; FC=0.5;
+ITF=Infinity; XTI=3; EG=1.11; XTB=0; TNOM=300.15; KF=0; AF=1.
+ITF retains nP's compatibility default instead of SPICE's zero; specify it when
+reproducing a source card. Convert SPICE TNOM from Celsius to kelvin.
+IS/BF/BR/NF/NR/NE/NC/VJE/VJC/TNOM must be finite positive; MJE/MJC/FC are in
+[0,1); XTI/XTB may be any finite value; other finite parameters are nonnegative.
+VAF/VAR/IKF/IKR/VTF accept positive finite values or Infinity; ITF also accepts 0.
+Optional inductors/capacitors default to []; rows are [nodeA,nodeB,value], with
+positive finite H/F values and distinct integer internal nodes 0–10. These are
+package nodes, not nodal circuit labels: 0/1/2 external B/C/E, 3/4/5 outer contact
+nodes, 6/7/8 intrinsic B/C/E, 9/10 extra outer B/E nodes. Without inductors,
+0–3,1–4,2–5,0–9,2–10 are joined. With inductors, their DC shorts must form exactly
+[0,3,9], [1,4], [2,5,10], leaving intrinsic nodes separate. Other lead wiring is
+rejected. Omit arrays when package data is unavailable; do not invent parasitics.
+Object-valued model selection is also available for NJF, PJF, NMOS, PMOS,
+MESFET, HEMT and D in current capable bundles. Use a named model-record variable,
+then pass it as model; no catalog registration, rebuild or source-link fetch.
+For example: `var myJfet = {name:'My JFET',parameters:{VTO:-3,BETA:.001}};`
+then `var q1 = nP.NJF({model:myJfet});`. These are illustrative values, not a fit.
+Optional provenance strings preserve the family's existing record data. Names
+are labels; the constructor selects equations and polarity. If record.polarity
+is present it must agree with the constructor (+1 N, -1 P). Unknown parameters
+are errors. Empty package inductors/capacitors may be omitted. JFET, MOSFET,
+MESFET and D reject nonempty arrays; their adapters have no arbitrary package
+L/C support. This API does not import SPICE text/subcircuits or select new engines.
+
+For NJF/PJF, supported generic defaults are VTO=-2, BETA=1e-4, LAMBDA=0,
+RD=RS=CGS=CGD=KF=0, IS=1e-14, PB=1, FC=.5, TNOM=300.15, TCV=BEX=0,
+NLEV=1, AF=1. VTO is negative for both polarities (normalized coordinates);
+BETA/IS/PB/TNOM are positive, TCV/BEX finite, 0<=FC<1, NLEV must equal 1.
+The fixed channel law is B=1; an arbitrary Parker-Skellern B is unsupported.
+
+For NMOS/PMOS, defaults are LEVEL=1,VTO=0,KP=2e-5,GAMMA=0,PHI=.6,
+LAMBDA=RD=RS=CBD=CBS=CGSO=CGDO=CGBO=KF=0,IS=1e-14,PB=.8,MJ=FC=.5,
+L=W=100e-6,TNOM=300.15,AF=1. LEVEL must be 1; KP/PHI/IS/PB/L/W/TNOM
+positive; VTO may be any finite value and uses physical polarity. MJ/FC are
+in [0,1). L/W are meters; overlap CGSO/CGDO/CGBO are F/m, KP is A/V^2 and
+GAMMA sqrt(V). body remains an options-level choice. A reused q.model.body
+must agree with that option. TOX/inversion charge, BSIM, extra geometries and
+arbitrary package wiring remain unsupported.
+
+MESFET defaults: VTO=-2,BETA=1e-4,B=.3,ALPHA=2,LAMBDA=0,
+RD=RS=CGS=CGD=KF=0,PB=1,IS=1e-14,AF=1,FC=.5. VTO negative,
+BETA/ALPHA/IS positive; PB>.5 V for the existing charge continuation. FC in
+[0,1) is retained but inactive. Electrical referenceTemperature stays 300.15 K;
+other values are rejected. Selected analysis temperature affects thermal noise.
+
+HEMT custom records require VTO,BETA,ALPHA,PB,DELTA1,DELTA2,VMAX,RC,CRF.
+Do not fill missing core fit values with the ATF-35143 card. Optional defaults:
+B=LAMBDA=RG=RD=RS=LG=LD=LS=CGS=CGD=CDS=P=R=C=FNC=KF=0,
+IS=1e-14,N=1,FC=.5,AF=FFE=1. VTO negative; BETA/ALPHA/PB/IS/N/DELTA1/
+DELTA2/RC/CRF positive; FC in [0,1); C in [-1,1]. P/R/C=0 is no supplied
+correlated noise fit, not a measured noiseless-device claim. HEMT uses its
+existing nominal 300.15 K electrical law, positive RF frequencies and a
+conducting Q point with positive intrinsic VDS. packageParameters defaults to
+null (die topology); the existing common-source SC-70 topology requires all
+La,Lb,Lc,Ld,Rb,Rbridge,Ca,Cb in H/ohms/F, finite and nonnegative. The resolver
+regenerates terminalNetwork/contactResistances/inductors/capacitors. Complete
+resolved records may contain these fields, but they must match; omit stale
+derived fields when editing raw parameters. No arbitrary package graph import.
+
+D defaults: IS=1e-14,N=1,BV=Infinity,IBV=1e-3,RS=CJO=TT=KF=0,
+VJ=1,M=FC=.5,EG=1.11,XTI=3,TNOM=300.15,NBV=AF=1. IS/N/IBV/VJ/TNOM/NBV
+positive; BV positive or Infinity; M finite/nonnegative, FC in [0,1); XTI any finite value.
+Optional record-level leakageResistance defaults to Infinity (positive ohms);
+schematicVariant:'schottky' selects the hooked-cathode symbol. Omit that field
+for the ordinary symbol. D retains its existing VD=.6 V default, so choose
+low Schottky bias explicitly. Legacy diode1N4148 still has its flat options,
+not this model-record selector. Unless a range above says otherwise, supported
+parameters are finite nonnegative numbers; an explicitly undefined value is
+invalid. Use A/V/ohms/H/F/seconds, TNOM in kelvin and EG in eV. MES/HEMT B and
+ALPHA, and LAMBDA, use 1/V; BETA uses A/V^2. Metadata never selects new physics.
+
+Varactor support in current capable bundles: D({model:'SMV1231-079LF',
+qPoint:{vd:-3},temperature:300.15}) selects a Skyworks SC-79 record and varactor
+symbol. It uses CJO=1.88e-12 F,VJ=10.13 V,M=4.999,RS=2.5 ohms,CP=.44e-12 F,
+LS=.7e-9 H. DC/RF/noise/direct IM share the same charge and package laws.
+M may be any finite nonnegative value; M=1 uses the logarithmic charge integral.
+This extends D generally; do not clamp a manufacturer's M or VJ to simulator
+limits. Named and supplied varactor records use the same path.
+
+D model records may include packageParameters:{seriesInductance,
+parallelCapacitance}; both default to zero and require finite nonnegative H/F.
+The fixed topology is LS in series with [CP parallel to (RS + junction)].
+leakageResistance stays across the public terminals. At DC LS shorts and CP
+opens. Tone and product-frequency package loading is included in weak IM;
+ideal LS/CP add no noise. Arbitrary package L/C arrays remain unsupported.
+Example record (illustrative source-fit values, not a new measured device):
+`var myVaractor = {name:'My varactor',schematicVariant:'varactor',parameters:{CJO:1.88e-12,VJ:10.13,M:4.999,RS:2.5},packageParameters:{seriesInductance:.7e-9,parallelCapacitance:.44e-12}};`
+then `var d1 = nP.D({model:myVaractor,qPoint:{vd:-3}});`.
+
+Every current D has cvTable({vr:{start:0,stop:15,points:31}}). It returns a
+header ['vr (V)','cj (F)','ct (F)'] followed by numeric V/F/F rows. VR is
+nonnegative reverse voltage, equal to -VD; defaults 0–10 V/201 points.
+VR must increase and have at least two integer points. CJ is depletion
+capacitance, CT is effective zero-frequency terminal capacitance. In reverse
+blocking CT is effectively intrinsic-plus-diffusion capacitance plus CP;
+conducting models also include contact/lead effects. This is not an RF
+capacitance at resonance. The curve preserves Q, RF/noise rows and I-V settings.
+smallSignal.totalCapacitance remains intrinsic; packageCapacitance,
+terminalCapacitance and seriesInductance expose the added package quantities.
+The API table stays in farads. For a readable linear C-V chart, create a
+separate pF display table using an explicit loop multiplying capacitance
+columns by 1e12; keep VR in volts and label the y axis pF. Do not add CSS or
+axis-spacing overrides to accommodate long decimal tick labels.
+D's standalone default is still VD=.6 V: explicitly choose negative VD for
+varactors, or supply an external bias network. The sourced fit covers reverse
+0–15 V; do not treat generic forward/leakage/breakdown defaults, classical
+noise/temperature laws or constant RS as measured fits. No finite fitted BV is
+supplied. Direct weak IM omits quadratic remixing, compression and rectified
+bias shift; this does not simulate a large-signal VCO or its phase noise.
+
+The bundled Obsidian runtime pin lacks these varactor/C-V/package APIs.
+Verify the installed runtime before writing executable calls that require them.
+
+The plugin pin distributed with this guide lacks these object APIs. Verify
+the actual installed runtime before writing these calls in an executable note.
+
+The plugin runtime pinned with this guide lacks this object API and the BJT
+constructors. Verify installed runtime support before generating these calls.
+
 CE (default) and CC use Q `{ib:20e-6,vce:5}` for NPN, negative for PNP. CB uses
 `{ie:2e-3,vcb:5}`, negative for PNP. Configuration defines DC constraints;
 external wiring determines RF behavior. Curve settings are separate: CE/CC
@@ -285,6 +423,15 @@ series device. Curve default `bias:{vd:{start:0,stop:0.8,points:201}}`;
 ivTable returns volts/amperes without changing RF Q. Legacy diode1N4148 is a
 separate, available model using biasVoltage, temperatureK, ivStart, ivStop,
 ivPoints and diode parameters. A curve is not a network DC adapter.
+
+Newer nP bundles also support `D({model:'SMS7630',qPoint:{vd:0.05}})` and
+SMS7621 per-junction Schottky records with the Schottky symbol, shared DC/RF,
+classical noise and direct weak IM. D defaults remain 0.6 V with a 0–0.8 V
+curve; select low bias explicitly. RS is included; package L/C, multi-junction
+package wiring and calibrated detector/noise behavior are excluded.
+These are D() model names, not separate constructors. The plugin runtime
+pinned with this guide does not include these Schottky records. Do not
+generate them for that runtime until its bundled model support is verified.
 
 In capable bundles, diode component qPoint records report vd (anode minus
 cathode), id (positive anode to cathode), junctionVoltage, junctionCurrent,

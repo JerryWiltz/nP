@@ -1,4 +1,4 @@
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 import {schematicPart} from '../schematicPart';
 import {connectionDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
@@ -12,8 +12,8 @@ export function Tlin(Z = 60, Length = 0.5 * 0.0254, options = {}) { // Z is in o
 	var Tlin = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0), Yo = Zo.inv(), one = complex(1,0), two = complex(2,0), freqCount = 0, Ztlin = [], s11, s12, s21, s22, sparsArray = [];
-	var Atlin = {}, Btlin = {}, Ctlin = {}, Ds = {}, alpha = 0, beta = 0, gamma = {};
+	var Zo = complex(Ro,0), two = complex(2,0), freqCount, Ztlin, s11, s12, s21, s22, sparsArray = [];
+	var Atlin, Btlin, Ctlin, Ds, alpha, beta, gamma;
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Ztlin = complex(Z, 0);
 	

@@ -1,7 +1,7 @@
-// Modified: 2026-10-07
+// Modified: 2026-11-21
 // Computes the number of sections in a Chebyshev low-pass filter
 export function chebyLPNsec (passFreq = .2, rejFreq = 1.5, ripple = 0.1, rejection = 30) { // Formula 4.03-4 for n on page 86 of MYJ
-	var chebyLPNsecout = 0;
+	var chebyLPNsecout;
 	function normalizedBandwidth() { return rejFreq/passFreq; }// Computes the w/w1 in MYJ on page 86 of MYJ
 	function epsilon() { return Math.pow(10,(ripple/10))-1;} // Formula 4.03-5 on page 87 on MYJ
 	function arcCosh(x) {return Math.log(x + Math.sqrt((x * x)-1));}

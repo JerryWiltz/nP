@@ -65,6 +65,10 @@ export const schematicSymbolMap = {
     "HEMT": "njf"
 };
 export const schematicSymbolVariants = {
+    "D": {
+        "schottky": "schottky-diode",
+        "varactor": "varactor-diode"
+    },
     "mbend": {
         "left": "microstrip-left-bend",
         "right": "microstrip-right-bend"

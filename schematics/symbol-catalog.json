@@ -1,5 +1,5 @@
 {
-  "modified": "2026-11-20",
+  "modified": "2026-11-21",
   "schemaVersion": 1,
   "constructors": {
     "cascade": "cascade.svg",
@@ -76,6 +76,10 @@
     "HEMT": "njf.svg"
   },
   "symbolVariants": {
+    "D": {
+      "schottky": "schottky-diode.svg",
+      "varactor": "varactor-diode.svg"
+    },
     "mbend": {
       "left": "microstrip-left-bend.svg",
       "right": "microstrip-right-bend.svg"

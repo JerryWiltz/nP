@@ -2,7 +2,7 @@
 aside: false
 ---
 
-<!-- Modified: 2026-11-20 -->
+<!-- Modified: 2026-11-21 -->
 
 <script setup>
 import CanonicalSymbols from './.vitepress/theme/CanonicalSymbols.vue'
@@ -49,7 +49,7 @@ Specialized diode artwork uses **1 anode, 2 cathode**:
 | `Zener` | Angled cathode-bar ends |
 | `Varactor` | Two parallel cathode plates |
 
-A description path such as `'1 right D1=Varactor 2'` draws the symbol. These names have no numerical constructors and do not supply DC, RF, noise or intermodulation behavior. Existing `D()` and `diode1N4148()` models retain their ordinary diode artwork and behavior.
+A description path such as `'1 right D1=Varactor 2'` draws the symbol. These drawing aliases do not select numerical models. `D({model: 'SMS7621'})` and `D({model: 'SMS7630'})` now supply Schottky DC/RF/noise/weak nonlinear behavior and select the hooked-cathode artwork automatically. `D({model: 'SMV1231-079LF', qPoint: {vd: -3}})` supplies the varactor model and selects its artwork. Zener numerical support remains pending. The 1N4148 and legacy records retain ordinary diode artwork.
 
 HBT and PIN drawings reuse existing geometry with an instance caption: `'1 right Q1=NPN(HBT)[1,2,3] 1 2 3'` (or `PNP`) and `'1 right D1=D(PIN) 2'`. HBT terminal order remains **base, collector, emitter**. These description captions do not select an HBT or PIN numerical model.
 

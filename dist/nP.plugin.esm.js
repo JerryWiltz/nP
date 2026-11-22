@@ -42,12 +42,12 @@ function complex(real, imaginary) {
 	return complexNumber;
 }
 
-// Modified: 2026-09-16
+// Modified: 2026-11-21
 
 function Matrix() { }
 
 function dim(rows, cols, initial) { // used by nodal()
-	var row = 0, col = 0, a = [], A = [];
+	var row, col, a, A = [];
 	for (row = 0; row < rows; row++) {
 		a = [];
 		for (col = 0; col < cols; col++) {
@@ -66,8 +66,8 @@ function dup(copied) { // used by nodal()
 function pivotSort(array, pivot) {
 
 	function maxKey(array, pivot) {
-		var key = 0, i = 0;
-		var current = 0, maximum = 0;
+		var key = 0, i;
+		var current, maximum = 0;
 		for (i = pivot; i < array.length; i++) {
 			current = Math.abs(array[i][pivot]);
 			if (current > maximum) {
@@ -85,8 +85,7 @@ function pivotSort(array, pivot) {
 		var temp0 = array[pivot];
 		var temp1 = array[key];
 
-		if (key === pivot) ;
-		else {
+		if (key !== pivot) {
 			array[pivot] = temp1;
 			array[key] = temp0;
 		}
@@ -99,8 +98,8 @@ function pivotSort(array, pivot) {
 function pivotSortCplx(array, pivot) {
 
 	function maxKey(array, pivot) {
-		var key = 0, i = 0;
-		var current = 0, maximum = 0;
+		var key = 0, i;
+		var current, maximum = 0;
 		for (i = pivot; i < array.length; i++) {
 			current = array[i][pivot].mag();
 			if (current > maximum) {
@@ -118,8 +117,7 @@ function pivotSortCplx(array, pivot) {
 		var temp0 = array[pivot];
 		var temp1 = array[key];
 
-		if (key === pivot) ;
-		else {
+		if (key !== pivot) {
 			array[pivot] = temp1;
 			array[key] = temp0;
 		}
@@ -143,7 +141,7 @@ Matrix.prototype = {
 			numRows = A.length,
 			numCols = A[0].length,
 			T = dim(numCols, numRows, 0),
-			row = 0, col = 0;
+			row, col;
 		for (row = 0; row < numRows; row++) {
 			for (col = 0; col < numCols; col++) {
 				T[col][row] = A[row][col];
@@ -155,7 +153,7 @@ Matrix.prototype = {
 			numRows = A.length,
 			numCols = A[0].length,
 			T = dim(numCols, numRows, complex(0, 0)),
-			row = 0, col = 0;
+			row, col;
 		for (row = 0; row < numRows; row++) {
 			for (col = 0; col < numCols; col++) {
 				T[col][row] = complex(A[row][col].getR(), -A[row][col].getI());
@@ -168,7 +166,7 @@ Matrix.prototype = {
 			C = dim(A.length, A[0].length, 0),
 			numRows = A.length,
 			numCols = A[0].length,
-			row = 0, col = 0;
+			row, col;
 		for (row = 0; row < numRows; row++) {
 			for (col = 0; col < numCols; col++) {
 				C[row][col] = A[row][col] + B[row][col];
@@ -181,7 +179,7 @@ Matrix.prototype = {
 			C = dim(A.length, A[0].length, complex(0, 0)),
 			numRows = A.length,
 			numCols = A[0].length,
-			row = 0, col = 0;
+			row, col;
 		for (row = 0; row < numRows; row++) {
 			for (col = 0; col < numCols; col++) {
 				C[row][col] = A[row][col].add(B[row][col]);
@@ -194,7 +192,7 @@ Matrix.prototype = {
 			C = dim(A.length, A[0].length, 0),
 			numRows = A.length,
 			numCols = A[0].length,
-			row = 0, col = 0;
+			row, col;
 		for (row = 0; row < numRows; row++) {
 			for (col = 0; col < numCols; col++) {
 				C[row][col] = A[row][col] - B[row][col];
@@ -207,7 +205,7 @@ Matrix.prototype = {
 			C = dim(A.length, A[0].length, complex(0, 0)),
 			numRows = A.length,
 			numCols = A[0].length,
-			row = 0, col = 0;
+			row, col;
 		for (row = 0; row < numRows; row++) {
 			for (col = 0; col < numCols; col++) {
 				C[row][col] = A[row][col].sub(B[row][col]);
@@ -217,10 +215,8 @@ Matrix.prototype = {
 	mul: function mul(matrixB) {
 		var A = this.m,
 			B = matrixB.m,
-			C = dim(A.length, B[0].length, 0);
-			A[0].length;
-			B.length;
-			var row = 0, col = 0, n = 0;
+			C = dim(A.length, B[0].length, 0),
+			row, col, n;
 		for (row = 0; row < A.length; row++) {
 			for (col = 0; col < B[0].length; col++) {
 				for (n = 0; n < B.length; n++) {
@@ -231,10 +227,8 @@ Matrix.prototype = {
 	mulCplx: function mulCplx(matrixB) {
 		var A = this.m,
 			B = matrixB.m,
-			C = dim(A.length, B[0].length, complex(0, 0));
-			A[0].length;
-			B.length;
-			var row = 0, col = 0, n = 0;
+			C = dim(A.length, B[0].length, complex(0, 0)),
+			row, col, n;
 		for (row = 0; row < A.length; row++) {
 			for (col = 0; col < B[0].length; col++) {
 				for (n = 0; n < B.length; n++) {
@@ -245,8 +239,8 @@ Matrix.prototype = {
 
 	solveGaussFB: function solveGaussFB() {
 		var A = dup(this.m),
-			a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
-			row = 0, col = 0, accum = 0;
+			a, numRows = A.length, numCols = A[0].length, constRow,
+			row, col, accum;
 
 		for (constRow = 0; constRow < numRows; constRow++) { // FORWARD ELIMINATION - this row stays the same
 			pivotSort(A, constRow);
@@ -272,8 +266,8 @@ Matrix.prototype = {
 
 	solveGaussFBCplx: function solveGaussFBCplx() {
 		var A = dup(this.m),
-			a = complex(0, 0), numRows = A.length, numCols = A[0].length, constRow = 0,
-			row = 0, col = 0, accum = complex(0, 0);
+			a, numRows = A.length, numCols = A[0].length, constRow,
+			row, col, accum;
 
 		for (constRow = 0; constRow < numRows; constRow++) { // FORWARD ELIMINATION - this row stays the same
 			pivotSortCplx(A, constRow);
@@ -297,8 +291,8 @@ Matrix.prototype = {
 
 	invert: function invert() {
 		var A = dup(this.m),
-			a = 0, numRows = A.length, numCols = A[0].length, constRow = 0,
-			row = 0, col = 0;
+			a, numRows = A.length, numCols, constRow,
+			row, col;
 		//append a 0 Matrix to Matrix, A
 		for (row = 0; row < numRows; row++) {
 			for (col = numRows; col < 2 * numRows; col++) {
@@ -335,8 +329,8 @@ Matrix.prototype = {
 
 	invertCplx: function invertCplx() {
 		var A = dup(this.m),
-			a = complex(0, 0), numRows = A.length, numCols = A[0].length, constRow = 0,
-			row = 0, col = 0;
+			a, numRows = A.length, numCols, constRow,
+			row, col;
 		//append a 0 Matrix to Matrix, A
 		for (row = 0; row < numRows; row++) {
 			for (col = numRows; col < 2 * numRows; col++) {
@@ -10944,7 +10938,7 @@ const schematicShapeBoards = {
     }
 };
 
-// Modified: 2026-11-19
+// Modified: 2026-11-21
 // General graph operations for ORI's automatic board. No RF circuit patterns.
 const AXES = [[1, 0], [0, 1], [-1, 0], [0, -1]];
 
@@ -11296,7 +11290,7 @@ function automaticRoute(start, finish, bounds, obstacles, occupied, node, board)
     const key = (point, direction) => `${point[0]},${point[1]},${direction}`;
     const initialDirection = board.startDirection ? AXES.findIndex(axis => same(axis, board.startDirection)) : -1;
     const finishDirection = board.finishDirection ? AXES.findIndex(axis => same(axis, board.finishDirection)) : -1;
-    const startKey = key(start, initialDirection); finish.join(','); const queue = [];
+    const startKey = key(start, initialDirection), queue = [];
     const best = new Map([[startKey, 0]]), previous = new Map();
     heapPush(queue, {point: start, cost: 0, score: 0, direction: initialDirection, key: startKey});
     while (queue.length) {
@@ -14738,7 +14732,7 @@ function captionPackingBounds(body, caption, escapes = []) {
         Math.max(body[3], caption.bounds[3], ...escapes.map(point => point[1]))];
 }
 
-// Modified: 2026-11-19
+// Modified: 2026-11-21
 
 const GRID = 10;
 // Keep annotation search coverage tied to text size, independently of placement resolution.
@@ -15922,7 +15916,7 @@ function saveSchematicSvg(markup) {
 function schematicErrorMount(options) {
     if (typeof options.mount !== 'string') return options.mount || document.body;
     try { return document.querySelector(options.mount) || document.body; }
-    catch (error) { return document.body; }
+    catch { return document.body; }
 }
 
 function reportSchematicFailure(error, options, detected) {
@@ -16424,7 +16418,7 @@ function smithChart(options = {}) {
 // Modified: 2026-11-09
 const version = '0.49.0';
 
-// Modified: 2026-10-26
+// Modified: 2026-11-21
 
 function isComplex(value) {
 	return value !== null && typeof value === 'object' &&
@@ -16510,7 +16504,7 @@ function log(input, options = {}) {
 	} else if (isPlainRecord(input)) {
 		try {
 			pre.textContent = JSON.stringify(input, null, 2);
-		} catch (error) {
+		} catch {
 			pre.textContent = "nP.log can't read this input";
 		}
 	} else {
@@ -16533,7 +16527,7 @@ function log(input, options = {}) {
 	return pre;
 }
 
-// Modified: 2026-10-22
+// Modified: 2026-11-21
 
 function lineTable(options = {}) {
 		// ======== Options & defaults ========
@@ -16652,7 +16646,6 @@ function lineTable(options = {}) {
 		const outerHeight = layoutTop + tableHeight + margin.bottom;
 
 		if (showWHAlert) {
-			// eslint-disable-next-line no-alert
 			alert(`The table dimensions: Width is ${outerWidth}, Height is ${outerHeight}`);
 		}
 
@@ -16777,8 +16770,8 @@ function lineTable(options = {}) {
 				//console.log("copied to clipboard");
 
 
-			} catch (err) {
-				//console.error("Failed to copy image:", err);
+			} catch {
+				// Clipboard access can be unavailable in the host environment.
 			}
 		}
 
@@ -17179,6 +17172,33 @@ function noiseAnalysis(sparsRow, covariance, inputPort, outputPort, options = {}
 	};
 }
 
+// Modified: 2026-11-21
+
+function diodeTerminalCapacitance(point, seriesResistance, packageParameters) {
+    const contact = 1 + seriesResistance * point.conductance;
+    const conductance = point.conductance / contact;
+    // lim Im(Yport)/omega includes contact voltage division and the lead
+    // contribution when appreciable DC conductance flows through it.
+    return point.totalCapacitance / contact ** 2 + packageParameters.parallelCapacitance -
+        packageParameters.seriesInductance * conductance ** 2;
+}
+
+// Floating two-terminal package: L in series with [CP || (RS + junction)].
+// Leakage remains across the public terminals. The same transfer factors
+// propagate RF, internal noise and nonlinear sources at each frequency.
+function diodeLinearResponse(model, frequency) {
+    const omega = 2 * Math.PI * frequency, pkg = model.packageParameters;
+    const junction = complex(model.conductance, omega * model.capacitance);
+    const contact = complex(1, 0).add(junction.mul(complex(model.seriesResistance, 0)));
+    const middle = junction.div(contact).add(complex(0, omega * (pkg?.parallelCapacitance ?? 0)));
+    const lead = complex(1, 0).add(middle.mul(complex(0, omega * (pkg?.seriesInductance ?? 0))));
+    const port = middle.div(lead).add(complex(model.externalConductance, 0));
+    const junctionFactor = contact.mul(lead);
+    const productDenominator = junctionFactor.mul(complex(1 + 2 * model.referenceImpedance * model.externalConductance, 0))
+        .add(contact.mul(middle).mul(complex(2 * model.referenceImpedance, 0)));
+    return {junction, port, junctionFactor, productDenominator};
+}
+
 // Modified: 2026-11-15
 
 const INCH_TO_METER = 0.0254;
@@ -17193,7 +17213,7 @@ const COPPER_RESISTIVITY = 1.72e-8;
 const BOLTZMANN = 1.380649e-23;
 const ELEMENTARY_CHARGE = 1.602176634e-19;
 
-// Modified: 2026-11-15
+// Modified: 2026-11-21
 // Two-variable Taylor coefficients, normalized by i! j!, through degree three.
 // The same current/charge equations supply DC, RF and weak nonlinear analysis.
 const powers = [[0, 0], [1, 0], [0, 1], [2, 0], [1, 1], [0, 2],
@@ -17232,6 +17252,11 @@ function compose$1(a, derivatives) {
     return result;
 }
 function power$2(a, exponent) {
+    // Polynomial powers remain defined at zero; avoid 0 * x^negative in
+    // the generic derivative formula. Match the three-control Taylor algebra.
+    if (exponent === 0) return constant$1(1);
+    if (exponent === 1) return a.slice();
+    if (exponent === 2) return multiply$1(a, a);
     const x = a[0];
     return compose$1(a, [x ** exponent, exponent * x ** (exponent - 1),
         exponent * (exponent - 1) * x ** (exponent - 2) / 2,
@@ -17414,7 +17439,7 @@ function deviceProducts(model, frequency, context, tones) {
         .mul(currents[i]).mul(complex(1 / Math.sqrt(model.referenceImpedance), 0))), zero$1()));
 }
 
-// Modified: 2026-11-20
+// Modified: 2026-11-21
 
 var zero = function () { return complex(0, 0); };
 var conjugate$3 = function (value) { return complex(value.getR(), -value.getI()); };
@@ -17525,8 +17550,8 @@ var diodeJunctionVoltage = function (nport, frequency, incident, model) {
 	if (model.externalConductance !== undefined) {
 		var terminalVoltage = incident[0].add(reflected[0]).sub(incident[1].add(reflected[1]))
 			.mul(complex(Math.sqrt(model.referenceImpedance), 0));
-		var junctionAdmittance = complex(model.conductance, 2 * Math.PI * frequency * model.capacitance);
-		return terminalVoltage.div(complex(1, 0).add(junctionAdmittance.mul(complex(model.seriesResistance, 0))));
+		var response = diodeLinearResponse(model, frequency);
+		return terminalVoltage.div(response.junctionFactor);
 	}
 	var current = incident[0].sub(reflected[0]).div(complex(Math.sqrt(model.referenceImpedance), 0));
 	var junctionImpedance = complex(model.conductance, 2 * Math.PI * frequency * model.capacitance).inv();
@@ -17561,10 +17586,7 @@ var diodeProducts = function (nport, frequency, context, tones, model) {
 	}
 	if (power$1(productCurrent) === 0) return output;
 	if (model.externalConductance !== undefined) {
-		var admittance = complex(model.conductance, 2 * Math.PI * frequency * model.capacitance);
-		var denominator = complex(1, 0).add(admittance.mul(complex(model.seriesResistance, 0)))
-			.mul(complex(1 + 2 * model.referenceImpedance * model.externalConductance, 0))
-			.add(admittance.mul(complex(2 * model.referenceImpedance, 0)));
+		var denominator = diodeLinearResponse(model, frequency).productDenominator;
 		var generatedWave = productCurrent.mul(complex(Math.sqrt(model.referenceImpedance), 0)).div(denominator);
 		return [generatedWave.neg(), generatedWave];
 	}
@@ -18434,7 +18456,7 @@ function operatingPoint(p, current, voltage, configuration, initial) {
     throw new RangeError('BJT bias did not converge at ' + current + ' A, ' + voltage + ' V (' + configuration + ').');
 }
 
-// Modified: 2026-11-19
+// Modified: 2026-11-21
 
 function diodeTemperature(parameters, temperature) {
     const p = {...parameters}, ratio = temperature / p.TNOM;
@@ -18476,16 +18498,22 @@ function junctionCurrent(p, voltage) {
 
 // Charge is integrated before differentiation. The continuation at FC*VJ
 // keeps Q and C continuous instead of clamping a singular forward-bias law.
+function depletionIntegral(p, voltage) {
+    const logarithm = Math.log1p(-voltage / p.VJ), exponent = 1 - p.M;
+    // M=1 is the logarithmic limit; expm1 also avoids cancellation near it.
+    return -p.CJO * p.VJ * (exponent === 0 ? logarithm : Math.expm1(exponent * logarithm) / exponent);
+}
+
 function depletionCharge(p, voltage) {
     const threshold = p.FC * p.VJ;
     if (voltage < threshold) {
         const remaining = 1 - voltage / p.VJ;
         const capacitance = p.CJO * remaining ** -p.M;
-        return {charge: p.CJO * p.VJ * (1 - remaining ** (1 - p.M)) / (1 - p.M),
+        return {charge: depletionIntegral(p, voltage),
             capacitance, derivative: capacitance * p.M / (p.VJ - voltage),
             second: capacitance * p.M * (p.M + 1) / (p.VJ - voltage) ** 2};
     }
-    const q0 = p.CJO * p.VJ * (1 - (1 - p.FC) ** (1 - p.M)) / (1 - p.M);
+    const q0 = depletionIntegral(p, threshold);
     const c0 = p.CJO * (1 - p.FC) ** -p.M;
     const slope = c0 * p.M / (p.VJ * (1 - p.FC)), delta = voltage - threshold;
     return {charge: q0 + c0 * delta + slope * delta ** 2 / 2,
@@ -18739,7 +18767,7 @@ function solveThreeTerminalFet(equations, p, vgs, vds, polarity, initial, label)
     throw new RangeError(label + ' fixed-Q solve did not converge.');
 }
 
-// Modified: 2026-11-20
+// Modified: 2026-11-21
 
 function mesfetParameters(parameters) {
     // MES1 is the historical fixed-reference electrical law, not a GaAs
@@ -18778,7 +18806,7 @@ function totalGateCharge(p, gs, gd) {
     return add$4(scale$1(charge, p.CGS), scale$1(other, p.CGD));
 }
 function differentiate(jet, axis) {
-    return powers.map((power, index) => {
+    return powers.map(power => {
         if (power[0] + power[1] >= 3) return 0;
         const target = power.map((degree, i) => degree + (i === axis ? 1 : 0));
         const term = powers.findIndex(candidate => candidate.every((degree, i) => degree === target[i]));
@@ -19626,7 +19654,7 @@ function retainDcBias(network, prepared) {
     return network;
 }
 
-// Modified: 2026-11-17
+// Modified: 2026-11-21
 var conjugate$2 = function (value) { return complex(value.getR(), -value.getI()); };
 
 function nPort() { this._noise = undefined; this._signal = undefined; }
@@ -19665,7 +19693,7 @@ var normalizeNoise = function (noiseData, spars) {
 };
 
 function cascadeRf(n2, description) { // cascade two 2-ports along with method chaining since it returns an nPort
-		var freqCount = 0, one = complex(1,0),
+		var freqCount, one = complex(1,0),
 			sparsA = this.getspars(),
 			sparsB = n2.getspars(),
 			s11, s12, s21, s22, s11a, s12a, s21a, s22a, s11b, s12b, s21b, s22b, sparsArray = [];
@@ -19690,7 +19718,7 @@ function cascadeRf(n2, description) { // cascade two 2-ports along with method c
 		var signalTemplate = compatibleSignals(signalA, signalB);
 		var signalRows = signalTemplate ? [] : undefined;
 		for (freqCount = 0; freqCount < this.spars.length; freqCount++) {
-			sparsA[freqCount][1]; var a12 = sparsA[freqCount][2]; sparsA[freqCount][3]; var a22 = sparsA[freqCount][4];
+			var a12 = sparsA[freqCount][2], a22 = sparsA[freqCount][4];
 			var b11 = sparsB[freqCount][1], b21 = sparsB[freqCount][3];
 			var denominator = one.sub(a22.mul(b11));
 			var transferA = [
@@ -19927,9 +19955,9 @@ nPort.prototype = {
 	outTable : function out (...sparsArguments) {
 		var spars = this.getspars();
 		var n = Math.sqrt(spars[0].length - 1);
-		var copy = spars.map(function (element,index,spars) {
+		var copy = spars.map(function (element) {
 			var inner = [element[0]];
-			sparsArguments.forEach(function (sparsArgument,index1,array) {
+			sparsArguments.forEach(function (sparsArgument) {
 				var row = parseInt(sparsArgument.match(/\d/g)[0]);
 				var col = parseInt(sparsArgument.match(/\d/g)[1]);
 				var sparIndex = (row - 1) * n + col;
@@ -20049,6 +20077,10 @@ const schematicSymbolMap = {
     "HEMT": "njf"
 };
 const schematicSymbolVariants = {
+    "D": {
+        "schottky": "schottky-diode",
+        "varactor": "varactor-diode"
+    },
     "mbend": {
         "left": "microstrip-left-bend",
         "right": "microstrip-right-bend"
@@ -20090,11 +20122,103 @@ function atInterval(interval, index) {
     return index === interval.points - 1 ? interval.stop : interval.start + index * (interval.stop - interval.start) / (interval.points - 1);
 }
 
-// Modified: 2026-11-19
+// Modified: 2026-11-21
+// Data-only named/custom record selection; each equation family owns its defaults.
+
+function plainObject$1(value) {
+    if (value === null || typeof value !== 'object') return false;
+    const prototype = Object.getPrototypeOf(value);
+    // REPLs/iframes have their own Object.prototype. Match the data-only
+    // DC snapshot contract rather than requiring this module's realm.
+    return prototype === null || Object.getPrototypeOf(prototype) === null;
+}
+
+function selectModelRecord(input, records, fallback, type, extra = [], polarity) {
+    const selected = input === undefined ? fallback : input;
+    let record;
+    if (typeof selected === 'string') {
+        const name = selected.toUpperCase();
+        if (!Object.hasOwn(records, name)) throw new RangeError(type + ' model must be ' + Object.keys(records).join(' or ') + ', or a model record object.');
+        record = {...records[name], name};
+    } else {
+        if (!plainObject$1(selected)) throw new TypeError(type + ' model must be a name or a plain record object.');
+        const metadata = ['name', 'manufacturer', 'material', 'structure', 'mathematicalModel', 'modelVersion',
+            'source', 'originalSource', 'equationSource', 'deviceSource', 'modelPublisher', 'manufacturerPart',
+            'package', 'temperatureModel', 'noiseModel', 'limitations', 'pinning', 'family', 'schematicVariant',
+            'leakageNote', 'defaultsNote'];
+        for (const key of Object.keys(selected)) {
+            if (!metadata.includes(key) && !['parameters', 'polarity', 'referenceTemperature', 'inductors', 'capacitors', ...extra].includes(key)) {
+                throw new TypeError('Unknown ' + type + ' model record property: ' + key + '.');
+            }
+            if (metadata.includes(key) && !(key === 'manufacturer' && selected[key] === null) &&
+                (typeof selected[key] !== 'string' || !selected[key].trim())) throw new TypeError(type + ' model.' + key + ' must be a nonempty string.');
+        }
+        record = {...dcSnapshot(selected), name: selected.name ?? 'custom'};
+    }
+    if (!plainObject$1(record.parameters)) throw new TypeError(type + ' model.parameters must be a plain object.');
+    if (record.polarity !== undefined && record.polarity !== polarity) throw new RangeError(type + ' model polarity conflicts with the constructor.');
+    if (record.referenceTemperature !== undefined && (!Number.isFinite(record.referenceTemperature) || record.referenceTemperature <= 0)) {
+        throw new RangeError(type + ' model.referenceTemperature must be positive kelvin.');
+    }
+    return record;
+}
+
+function validParameter(value, rule) {
+    if (rule === 'unlimited') return value > 0 && (Number.isFinite(value) || value === Infinity);
+    if (!Number.isFinite(value)) return false;
+    if (typeof rule === 'number') return value === rule;
+    if (rule === 'finite') return true;
+    if (rule === 'positive') return value > 0;
+    if (rule === 'negative') return value < 0;
+    if (rule === 'fraction') return value >= 0 && value < 1;
+    if (rule === 'correlation') return Math.abs(value) <= 1;
+    if (rule === 'aboveHalf') return value > 0.5;
+    return value >= 0;
+}
+
+function modelParameters$1(input, defaults, type, rules = {}) {
+    if (!plainObject$1(input)) throw new TypeError(type + ' model.parameters must be a plain object.');
+    for (const key of Object.keys(input)) {
+        if (!Object.hasOwn(defaults, key)) throw new TypeError('Unsupported ' + type + ' model parameter: ' + key + '.');
+    }
+    const parameters = {...defaults, ...input};
+    for (const [key, value] of Object.entries(parameters)) {
+        if (value === undefined) throw new TypeError(type + ' model requires parameter ' + key + '.');
+        if (!validParameter(value, rules[key])) throw new RangeError('Invalid ' + type + ' model parameter ' + key + '.');
+    }
+    return parameters;
+}
+
+function noPackageBranches(record, type) {
+    for (const key of ['inductors', 'capacitors']) {
+        if (record[key] !== undefined && (!Array.isArray(record[key]) || record[key].length)) {
+            throw new RangeError(type + ' model.' + key + ' must be empty; this adapter has no explicit package L/C model.');
+        }
+    }
+}
+
+function checkDerivedModelData(input, derived, type) {
+    for (const [key, value] of Object.entries(derived)) {
+        if (input[key] !== undefined && !sameData(input[key], value)) {
+            throw new RangeError(type + ' model.' + key + ' conflicts with the network derived from parameters/packageParameters.');
+        }
+    }
+}
+
+function sameData(a, b) {
+    if (a === b) return true;
+    if (!a || !b || typeof a !== 'object' || typeof b !== 'object' || Array.isArray(a) !== Array.isArray(b)) return false;
+    const keys = Object.keys(a);
+    return keys.length === Object.keys(b).length && keys.every(key => Object.hasOwn(b, key) && sameData(a[key], b[key]));
+}
+
+// Modified: 2026-11-21
 // Resolved parameter data from the cited manufacturer records. No downloaded
 // model text is executed or bundled; package parasitics are not inferred.
 const common = {TNOM: 300.15, TCV: 0, BEX: 0, NLEV: 1};
-const records$4 = {
+const defaults$5 = {...common, VTO: -2, BETA: 1e-4, LAMBDA: 0, RD: 0, RS: 0,
+    IS: 1e-14, CGS: 0, CGD: 0, PB: 1, FC: 0.5, KF: 0, AF: 1};
+const records$5 = {
     MMBF5457LT1: {
         polarity: 1, manufacturer: 'onsemi', material: 'silicon', structure: 'N-channel junction FET',
         mathematicalModel: 'SPICE level-1 JFET (Shichman-Hodges, B=1)', modelVersion: 'Manufacturer record dated 2002-12-06',
@@ -20119,12 +20243,13 @@ const records$4 = {
 };
 
 function jfetModel(name, polarity) {
-    const selected = name === undefined ? polarity === 1 ? 'MMBF5457LT1' : 'MMBFJ175LT1' : name;
-    if (typeof selected !== 'string' || !Object.hasOwn(records$4, selected.toUpperCase()) || records$4[selected.toUpperCase()].polarity !== polarity) {
-        throw new RangeError((polarity === 1 ? 'NJF' : 'PJF') + ' model must be ' + (polarity === 1 ? 'MMBF5457LT1' : 'MMBFJ175LT1') + '.');
-    }
-    const record = records$4[selected.toUpperCase()];
-    return {...record, name: selected.toUpperCase(), parameters: {...record.parameters}, inductors: [], capacitors: []};
+    const type = polarity === 1 ? 'NJF' : 'PJF';
+    const record = selectModelRecord(name, records$5, polarity === 1 ? 'MMBF5457LT1' : 'MMBFJ175LT1', type, [], polarity);
+    const parameters = modelParameters$1(record.parameters, defaults$5, type, {VTO: 'negative', BETA: 'positive',
+        IS: 'positive', PB: 'positive', TNOM: 'positive', TCV: 'finite', BEX: 'finite', FC: 'fraction', NLEV: 1});
+    noPackageBranches(record, type);
+    return {mathematicalModel: 'SPICE level-1 JFET (Shichman-Hodges, B=1)',
+        ...record, polarity, parameters, inductors: [], capacitors: []};
 }
 
 // Modified: 2026-11-19
@@ -20448,30 +20573,102 @@ function bjtAtOperatingPoint(description, settings, state) {
     return bjtInstance(description, settings, point);
 }
 
-// Modified: 2026-11-15
+// Modified: 2026-11-21
 // Standard SPICE defaults shared by the supported NPN and PNP cards.
-const defaults$1 = {NF: 1, NR: 1, ISE: 0, ISC: 0, NE: 1.5, NC: 2,
-    VAR: Infinity, IKR: Infinity, RB: 0, RE: 0, RC: 0,
+// ITF retains nP's established disabled-correction default for compatibility.
+const defaults$4 = {IS: 1e-16, BF: 100, BR: 1, NF: 1, NR: 1, ISE: 0, ISC: 0, NE: 1.5, NC: 2,
+    VAF: Infinity, IKF: Infinity, VAR: Infinity, IKR: Infinity, RB: 0, RE: 0, RC: 0,
     CJE: 0, VJE: 0.75, MJE: 0.33, CJC: 0, VJC: 0.75, MJC: 0.33,
     FC: 0.5, TF: 0, TR: 0, XTF: 0, VTF: Infinity, ITF: Infinity,
     XTI: 3, EG: 1.11, XTB: 0, TNOM: 300.15, KF: 0, AF: 1};
 
+function plainObject(value) {
+    if (value === null || typeof value !== 'object') return false;
+    const prototype = Object.getPrototypeOf(value);
+    return prototype === null || Object.getPrototypeOf(prototype) === null;
+}
+
+function modelParameters(input, type) {
+    if (!plainObject(input)) throw new TypeError(type + ' model.parameters must be a plain object.');
+    for (const key of Object.keys(input)) {
+        if (!Object.hasOwn(defaults$4, key)) throw new TypeError('Unsupported ' + type + ' model parameter: ' + key + '.');
+    }
+    const parameters = {...defaults$4, ...input};
+    const unlimited = ['VAF', 'VAR', 'IKF', 'IKR', 'VTF'];
+    const positive = ['IS', 'BF', 'BR', 'NF', 'NR', 'NE', 'NC', 'VJE', 'VJC', 'TNOM'];
+    for (const [key, value] of Object.entries(parameters)) {
+        const valid = key === 'ITF' ? value >= 0 && (Number.isFinite(value) || value === Infinity) :
+            unlimited.includes(key) ? value > 0 && (Number.isFinite(value) || value === Infinity) :
+            Number.isFinite(value) && (positive.includes(key) ? value > 0 :
+                ['XTI', 'XTB'].includes(key) ? true : ['MJE', 'MJC', 'FC'].includes(key) ? value >= 0 && value < 1 : value >= 0);
+        if (!valid) throw new RangeError('Invalid ' + type + ' model parameter ' + key + '.');
+    }
+    return parameters;
+}
+
+function packageBranches(input, kind, type) {
+    if (input === undefined) return [];
+    if (!Array.isArray(input)) throw new TypeError(type + ' model.' + kind + ' must be an array.');
+    return Array.from(input, row => {
+        if (!Array.isArray(row) || row.length !== 3 || ![row[0], row[1]].every(node => Number.isInteger(node) && node >= 0 && node <= 10) ||
+            row[0] === row[1] || !Number.isFinite(row[2]) || row[2] <= 0) {
+            throw new RangeError(type + ' model.' + kind + ' needs [node, node, positive SI value] rows using nodes 0–10.');
+        }
+        return row.slice();
+    });
+}
+
+function validatePackage(inductors, type) {
+    if (!inductors.length) return;
+    // The established BJT adapter assumes three independent DC lead paths.
+    // Preserve that assumption instead of accepting RF wiring that changes DC.
+    const groups = Array.from({length: 11}, (_, i) => i);
+    for (const [a, b] of inductors) {
+        const from = groups[b], to = groups[a];
+        for (let i = 0; i < groups.length; i++) if (groups[i] === from) groups[i] = to;
+    }
+    const expected = [0, 1, 2, 0, 1, 2, 6, 7, 8, 0, 2];
+    if (groups.some((group, i) => groups.some((other, j) => (group === other) !== (expected[i] === expected[j])))) {
+        throw new RangeError(type + ' package inductors must retain separate B/C/E lead paths: [0,3,9], [1,4], [2,5,10].');
+    }
+}
+
 function bjtModel(records, name, fallback, type) {
     const selected = name === undefined ? fallback : name;
-    if (typeof selected !== 'string' || !Object.hasOwn(records, selected.toUpperCase())) {
-        throw new RangeError(type + ' model must be ' + Object.keys(records).join(' or ') + '.');
+    let key, record;
+    if (typeof selected === 'string') {
+        key = selected.toUpperCase();
+        if (!Object.hasOwn(records, key)) {
+            throw new RangeError(type + ' model must be ' + Object.keys(records).join(' or ') + ', or a model record object.');
+        }
+        record = records[key];
+    } else {
+        if (!plainObject(selected)) throw new TypeError(type + ' model must be a model name or a plain record object.');
+        record = selected;
+        const metadata = ['name', 'manufacturer', 'material', 'structure', 'mathematicalModel', 'modelVersion', 'source', 'leakageSource', 'package'];
+        for (const property of Object.keys(record)) {
+            if (!metadata.includes(property) && !['parameters', 'inductors', 'capacitors'].includes(property)) {
+                throw new TypeError('Unknown ' + type + ' model record property: ' + property + '.');
+            }
+            if (metadata.includes(property) && (typeof record[property] !== 'string' || !record[property].trim())) {
+                throw new TypeError(type + ' model.' + property + ' must be a nonempty string.');
+            }
+        }
+        key = record.name ?? 'custom';
     }
-    const key = selected.toUpperCase(), record = records[key];
-    return {...record, name: key, parameters: {...defaults$1, ...record.parameters},
-        inductors: record.inductors.map(row => row.slice()),
-        capacitors: record.capacitors.map(row => row.slice())};
+    const parameters = modelParameters(record.parameters, type);
+    const inductors = packageBranches(record.inductors, 'inductors', type);
+    const capacitors = packageBranches(record.capacitors, 'capacitors', type);
+    validatePackage(inductors, type);
+    return {mathematicalModel: 'SPICE modified Gummel–Poon', modelVersion: 'SPICE level 1',
+        ...record, name: key, parameters, inductors, capacitors};
 }
 
 // Modified: 2026-11-21
 // SPICE Gummel–Poon parameters in SI units. Provenance and omissions are
 // documented in developmentDocs/semiconductors/transistorModels.md. No part-wide NF/IP fits.
 
-const records$3 = {
+const records$4 = {
     '2N3904': {
         manufacturer: 'Fairchild Semiconductor', material: 'silicon', structure: 'NPN bipolar',
         mathematicalModel: 'SPICE modified Gummel–Poon', modelVersion: 'SPICE level 1',
@@ -20505,7 +20702,7 @@ const records$3 = {
 };
 
 function npnModel(name) {
-    return bjtModel(records$3, name, '2N3904', 'NPN');
+    return bjtModel(records$4, name, '2N3904', 'NPN');
 }
 
 // Modified: 2026-11-15
@@ -20516,7 +20713,7 @@ function NPN(options = {}) {
 
 // Modified: 2026-11-15
 
-const records$2 = {
+const records$3 = {
     '2N3906': {
         manufacturer: 'Fairchild Semiconductor', material: 'silicon', structure: 'PNP bipolar',
         mathematicalModel: 'SPICE modified Gummel–Poon', modelVersion: 'SPICE level 1',
@@ -20532,7 +20729,7 @@ const records$2 = {
 };
 
 function pnpModel(name) {
-    return bjtModel(records$2, name, '2N3906', 'PNP');
+    return bjtModel(records$3, name, '2N3906', 'PNP');
 }
 
 // Modified: 2026-11-15
@@ -20541,12 +20738,12 @@ function PNP(options = {}) {
     return bjtConstructor(options, 'PNP', pnpModel, -1);
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-11-21
 // Generates an array of Chebyshev values based on the number of sections and ripple
 function chebyLPgk (n = 3, ripple = 0.1) { // Returns gk's shown in formula 4.05-2 on page 99 of MYJ
 	var	chebyLPgkin = new Array(1 + 1 + n + 1),  // Table title row, go row, gk's (n rows), and g(k+1)
 		chebyLPgkout = [],
-		i = 0, row = 0;
+		i, row;
 
 	// The function, gk() Fills in the variable table above called "chebyLPgkin" to hold ak, bk, and gk's based on the n
 	for(i = 0; i < chebyLPgkin.length; i++) {chebyLPgkin[i] = new Array(4); }
@@ -20573,11 +20770,11 @@ function chebyLPgk (n = 3, ripple = 0.1) { // Returns gk's shown in formula 4.05
 	return chebyLPgkout;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-11-21
 // Generates an array of parallel capacitors and series inductors based on Chebyshev values
 function chebyLPLCs ( cheby = [1, 1.0315851425078764, 1.1474003299537219, 1.0315851425078761, 1], maxPassFrequency = 0.2e9, zo = 50) {
 	var	chebyLPLCsout = new Array(cheby.length),
-		i = 0;
+		i;
 
 	chebyLPLCsout[0] = cheby[0] * zo; // Populate the first resistor in the array
 
@@ -20589,10 +20786,10 @@ function chebyLPLCs ( cheby = [1, 1.0315851425078764, 1.1474003299537219, 1.0315
 	return chebyLPLCsout;
 }
 
-// Modified: 2026-10-07
+// Modified: 2026-11-21
 // Computes the number of sections in a Chebyshev low-pass filter
 function chebyLPNsec (passFreq = .2, rejFreq = 1.5, ripple = 0.1, rejection = 30) { // Formula 4.03-4 for n on page 86 of MYJ
-	var chebyLPNsecout = 0;
+	var chebyLPNsecout;
 	function normalizedBandwidth() { return rejFreq/passFreq; }// Computes the w/w1 in MYJ on page 86 of MYJ
 	function epsilon() { return Math.pow(10,(ripple/10))-1;} // Formula 4.03-5 on page 87 on MYJ
 	function arcCosh(x) {return Math.log(x + Math.sqrt((x * x)-1));}
@@ -20600,7 +20797,7 @@ function chebyLPNsec (passFreq = .2, rejFreq = 1.5, ripple = 0.1, rejection = 30
 	return chebyLPNsecout;
 }
 
-// Modified: 2026-11-15
+// Modified: 2026-11-21
 
 function seriesTwoPortFromImpedance(frequency, impedance, ro) {
     const denominator = impedance.add(complex(2 * ro, 0));
@@ -20609,21 +20806,16 @@ function seriesTwoPortFromImpedance(frequency, impedance, ro) {
     return [frequency, reflection, transmission, transmission, reflection];
 }
 
-function diodeFrequencyRow(p, point, frequency, ro, temperature, leakageResistance) {
-    const admittance = complex(point.conductance, 2 * Math.PI * frequency * point.totalCapacitance);
-    const junctionImpedance = admittance.inv();
-    const seriesImpedance = junctionImpedance.add(complex(p.RS, 0));
+function diodeFrequencyRow(p, point, frequency, ro, temperature, leakageResistance, packageParameters) {
     const externalConductance = 1 / leakageResistance;
-    const portAdmittance = admittance.div(complex(1, 0).add(admittance.mul(complex(p.RS, 0))))
-        .add(complex(externalConductance, 0));
-    const spars = seriesTwoPortFromImpedance(frequency, portAdmittance.inv(), ro);
-    const denominator = seriesImpedance.mul(complex(1 + 2 * ro * externalConductance, 0))
-        .add(complex(2 * ro, 0));
+    const response = diodeLinearResponse({conductance: point.conductance, capacitance: point.totalCapacitance,
+        seriesResistance: p.RS, externalConductance, referenceImpedance: ro, packageParameters}, frequency);
+    const spars = seriesTwoPortFromImpedance(frequency, response.port.inv(), ro);
     const shotDensity = 2 * ELEMENTARY_CHARGE * Math.abs(point.junctionCurrent);
     const flickerDensity = p.KF && frequency > 0 ? p.KF * Math.abs(point.junctionCurrent) ** p.AF / frequency : 0;
-    let noise = (4 * BOLTZMANN * temperature * p.RS +
-        (shotDensity + flickerDensity) * junctionImpedance.mag() ** 2) * ro / denominator.mag() ** 2;
-    const externalTransfer = complex(1, 0).add(portAdmittance.mul(complex(2 * ro, 0)));
+    let noise = (4 * BOLTZMANN * temperature * p.RS * response.junction.mag() ** 2 +
+        shotDensity + flickerDensity) * ro / response.productDenominator.mag() ** 2;
+    const externalTransfer = complex(1, 0).add(response.port.mul(complex(2 * ro, 0)));
     noise += 4 * BOLTZMANN * temperature * externalConductance * ro / externalTransfer.mag() ** 2;
     return {spars, noise: {frequency, C: [[complex(noise, 0), complex(-noise, 0)],
         [complex(-noise, 0), complex(noise, 0)]]}};
@@ -20811,10 +21003,13 @@ function legacyAtOperatingPoint(description, settings, input) {
     return legacyDiodeInstance(p, settings, state, description);
 }
 
-// Modified: 2026-11-15
+// Modified: 2026-11-21
 // Model parameters, not a SPICE text interpreter. More families need their own
 // validated records/equations; selecting a name never executes downloaded code.
-const records$1 = {
+const defaults$3 = {IS: 1e-14, N: 1, BV: Infinity, IBV: 1e-3, RS: 0,
+    CJO: 0, VJ: 1, M: 0.5, FC: 0.5, TT: 0, EG: 1.11, XTI: 3,
+    TNOM: 300.15, NBV: 1, KF: 0, AF: 1};
+const records$2 = {
     '1N4148': {
         manufacturer: 'NXP Semiconductors (archived model)', material: 'silicon', family: 'signal',
         mathematicalModel: 'SPICE junction diode with external reverse-leakage resistor',
@@ -20828,33 +21023,104 @@ const records$1 = {
             EG: 1.11, XTI: 3, TNOM: 300.15, NBV: 1, KF: 0, AF: 1},
         leakageResistance: 5.827e9,
         leakageNote: 'The source explicitly describes this external resistor as a reverse-modeling element, not a physical resistor'
+    },
+    SMS7621: {
+        manufacturer: 'Skyworks Solutions', material: 'silicon', family: 'schottky',
+        mathematicalModel: 'SPICE junction diode, per-junction Schottky parameter card',
+        modelVersion: 'Skyworks 200041AH, June 13, 2024, Table 5',
+        source: 'https://www.skyworksinc.com/-/media/SkyWorks/Documents/Products/201-300/Surface-Mount-Schottky-Diodes_200041AH.pdf',
+        package: 'Per junction including RS; package inductance/capacitance and multi-diode package configurations excluded',
+        pinning: 'nP port 1 anode, port 2 cathode; not package pin numbers',
+        schematicVariant: 'schottky',
+        parameters: {IS: 4e-8, RS: 12, N: 1.05, TT: 1e-11, CJO: .1e-12, M: .35,
+            EG: .69, XTI: 2, FC: .5, BV: 3, IBV: 1e-5, VJ: .51,
+            TNOM: 300.15, NBV: 1, KF: 0, AF: 1},
+        defaultsNote: 'TNOM=27 C, NBV=1, KF=0 and AF=1 are classical SPICE defaults; not supplied fits',
+        leakageResistance: Infinity,
+        leakageNote: 'No external leakage resistor is specified; reverse current belongs to the junction law',
+        limitations: 'No packaged RF fit, calibrated detector sensitivity, zero-bias/excess/avalanche noise or large-signal rectification; temperature follows classical SPICE laws'
+    },
+    SMS7630: {
+        manufacturer: 'Skyworks Solutions', material: 'silicon', family: 'schottky',
+        mathematicalModel: 'SPICE junction diode, per-junction Schottky parameter card',
+        modelVersion: 'Skyworks 200041AH, June 13, 2024, Table 5',
+        source: 'https://www.skyworksinc.com/-/media/SkyWorks/Documents/Products/201-300/Surface-Mount-Schottky-Diodes_200041AH.pdf',
+        package: 'Per junction including RS; package inductance/capacitance and multi-diode package configurations excluded',
+        pinning: 'nP port 1 anode, port 2 cathode; not package pin numbers',
+        schematicVariant: 'schottky',
+        parameters: {IS: 5e-6, RS: 20, N: 1.05, TT: 1e-11, CJO: .14e-12, M: .40,
+            EG: .69, XTI: 2, FC: .5, BV: 2, IBV: 1e-4, VJ: .34,
+            TNOM: 300.15, NBV: 1, KF: 0, AF: 1},
+        defaultsNote: 'TNOM=27 C, NBV=1, KF=0 and AF=1 are classical SPICE defaults; not supplied fits',
+        leakageResistance: Infinity,
+        leakageNote: 'No external leakage resistor is specified; reverse current belongs to the junction law',
+        limitations: 'No packaged RF fit, calibrated detector sensitivity, zero-bias/excess/avalanche noise or large-signal rectification; temperature follows classical SPICE laws'
+    },
+    'SMV1231-079LF': {
+        manufacturer: 'Skyworks Solutions', material: 'silicon', family: 'varactor',
+        mathematicalModel: 'SPICE junction current and integrated hyperabrupt depletion charge',
+        modelVersion: 'Skyworks 200058AB, May 7, 2026, Figure 5 and Tables 1/5',
+        source: 'https://www.skyworksinc.com/-/media/F9C9BC1315644EB890723BD8C726746E.pdf',
+        equationSource: 'https://www.skyworksinc.com/-/media/SkyWorks/Documents/Products/1-100/Varactor_SPICE_Model_AN_200315C.pdf',
+        package: 'Single SC-79: 0.7 nH lead before parallel CP and RS-plus-junction branches',
+        pinning: 'nP port 1 anode, port 2 cathode', schematicVariant: 'varactor',
+        parameters: {IS: 1e-14, RS: 2.5, N: 1, TT: 0, CJO: 1.88e-12,
+            M: 4.999, VJ: 10.13, EG: 1.11, XTI: 3, TNOM: 300.15,
+            FC: 0.5, BV: Infinity, IBV: 1e-3, NBV: 1, KF: 0, AF: 1},
+        packageParameters: {seriesInductance: 0.7e-9, parallelCapacitance: 0.44e-12},
+        leakageResistance: Infinity,
+        defaultsNote: 'Current parameters are manufacturer generic defaults, not measured leakage/breakdown fits; no finite BV supplied',
+        limitations: 'Reverse-bias C-V fit over 0-15 V; nominal RS is constant; classical noise and temperature laws are not measured varactor fits; no large-signal VCO/transient model or distributed package fit'
     }
 };
 
 function diodeModel(name = '1N4148') {
-    if (typeof name !== 'string' || !Object.hasOwn(records$1, name.toUpperCase())) {
-        throw new RangeError('D model must be 1N4148.');
+    const record = selectModelRecord(name, records$2, '1N4148', 'D', ['leakageResistance', 'packageParameters']);
+    const parameters = modelParameters$1(record.parameters, defaults$3, 'D', {IS: 'positive', N: 'positive',
+        BV: 'unlimited', IBV: 'positive', VJ: 'positive', FC: 'fraction',
+        TNOM: 'positive', NBV: 'positive', XTI: 'finite'});
+    const leakageResistance = record.leakageResistance === undefined ? Infinity : record.leakageResistance;
+    if (!(leakageResistance > 0 && (Number.isFinite(leakageResistance) || leakageResistance === Infinity))) {
+        throw new RangeError('D model.leakageResistance must be positive ohms or Infinity.');
     }
-    const key = name.toUpperCase(), record = records$1[key];
-    return {...record, name: key, parameters: {...record.parameters}};
+    if (record.schematicVariant !== undefined && !['schottky', 'varactor'].includes(record.schematicVariant)) {
+        throw new RangeError('D model.schematicVariant must be schottky, varactor or omitted.');
+    }
+    const packageParameters = modelParameters$1(record.packageParameters === undefined ? {} : record.packageParameters,
+        {seriesInductance: 0, parallelCapacitance: 0}, 'D packageParameters');
+    noPackageBranches(record, 'D');
+    return {mathematicalModel: 'SPICE junction diode', ...record, parameters, leakageResistance, packageParameters};
 }
 
-// Modified: 2026-11-19
+// Modified: 2026-11-21
 
 function knownProperties(value, fields, label) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) throw new TypeError(label + ' must be an object.');
     for (const name of Object.keys(value)) if (!fields.includes(name)) throw new TypeError('Unknown ' + label + ' property: ' + name + '.');
 }
-function sweepSettings(value = {}, defaults = {start: 0, stop: 0.8, points: 201}) {
-    knownProperties(value, ['vd'], 'D bias');
-    const vd = value.vd === undefined ? {} : value.vd;
-    knownProperties(vd, ['start', 'stop', 'points'], 'bias.vd');
+function sweepSettings(value = {}, defaults = {start: 0, stop: 0.8, points: 201}, key = 'vd') {
+    knownProperties(value, [key], 'D bias');
+    const vd = value[key] === undefined ? {} : value[key];
+    knownProperties(vd, ['start', 'stop', 'points'], 'bias.' + key);
     const sweep = {...defaults, ...vd};
     if (!Number.isFinite(sweep.start) || !Number.isFinite(sweep.stop) || sweep.stop <= sweep.start ||
         !Number.isInteger(sweep.points) || sweep.points < 2) {
-        throw new RangeError('bias.vd needs an increasing finite interval and at least two points.');
+        throw new RangeError('bias.' + key + ' needs an increasing finite interval and at least two points.');
     }
     return sweep;
+}
+
+function cvTable(p, resistance, packageParameters, options = {}) {
+    const sweep = sweepSettings(options, {start: 0, stop: 10, points: 201}, 'vr');
+    if (sweep.start < 0) throw new RangeError('cvTable vr must be nonnegative reverse voltage.');
+    const table = [['vr (V)', 'cj (F)', 'ct (F)']];
+    for (let index = 0; index < sweep.points; index++) {
+        const voltage = index === sweep.points - 1 ? sweep.stop :
+            sweep.start + index * (sweep.stop - sweep.start) / (sweep.points - 1);
+        const point = diodeOperatingPoint(p, -voltage, resistance);
+        table.push([voltage, point.junctionCapacitance, diodeTerminalCapacitance(point, p.RS, packageParameters)]);
+    }
+    return table;
 }
 function ivTable$3(p, resistance, defaults, options = {}) {
     const sweep = sweepSettings(options, defaults), table = [['vd (V)', 'id (A)']];
@@ -20895,11 +21161,11 @@ function diodeInstance(description, settings, point, terminals) {
     const frequencies = analysisFrequencies(settings);
     const result = new nPort(), spars = [], noise = [];
     for (const frequency of frequencies) {
-        const row = diodeFrequencyRow(p, point, frequency, settings.Ro, temperature, record.leakageResistance);
+        const row = diodeFrequencyRow(p, point, frequency, settings.Ro, temperature, record.leakageResistance, record.packageParameters);
         spars.push(row.spars); noise.push(row.noise);
     }
     result.setspars(spars); result.setglobal(settings); result.noise = noise;
-    result.model = {...record, parameters: {...record.parameters}};
+    result.model = {...record, parameters: {...record.parameters}, packageParameters: {...record.packageParameters}};
     result.bias = {vd: point.vd, id: point.id, junctionVoltage: point.junctionVoltage,
         junctionCurrent: point.junctionCurrent, temperature, ...(terminals ? {va: terminals.va, vk: terminals.vk} : {})};
     result.qPoint = {...result.bias};
@@ -20908,15 +21174,20 @@ function diodeInstance(description, settings, point, terminals) {
         dynamicResistance: 1 / (point.conductance / (1 + p.RS * point.conductance) + 1 / record.leakageResistance),
         seriesResistance: p.RS, leakageResistance: record.leakageResistance,
         junctionCapacitance: point.junctionCapacitance, diffusionCapacitance: point.diffusionCapacitance,
-        totalCapacitance: point.totalCapacitance};
+        totalCapacitance: point.totalCapacitance,
+        packageCapacitance: record.packageParameters.parallelCapacitance,
+        terminalCapacitance: diodeTerminalCapacitance(point, p.RS, record.packageParameters),
+        seriesInductance: record.packageParameters.seriesInductance};
     result.ivTable = ivTable$3.bind(null, p, record.leakageResistance, sweep);
+    result.cvTable = cvTable.bind(null, p, record.leakageResistance, record.packageParameters);
     result._intermod = {type: 'diode', conductance: point.conductance, capacitance: point.totalCapacitance,
         seriesResistance: p.RS, referenceImpedance: settings.Ro,
         externalConductance: 1 / record.leakageResistance,
+        packageParameters: record.packageParameters,
         secondDerivative: point.secondDerivative, thirdDerivative: point.thirdDerivative,
         capacitanceDerivative: point.capacitanceDerivative,
         capacitanceSecondDerivative: point.capacitanceSecondDerivative};
-    result._schematic = schematicPart('D', {model: record.name});
+    result._schematic = schematicPart('D', {labelPrefix: 'D', value: record.name, model: record.name}, record.schematicVariant);
     result._dcModel = description;
     result._rfModel = Object.freeze({atOperatingPoint: diodeAtOperatingPoint.bind(null, description, settings)});
     return result;
@@ -20931,7 +21202,7 @@ function diodeAtOperatingPoint(description, settings, input) {
     return diodeInstance(description, settings, point, state);
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 const kB$4 = 1.380649e-23;
 
@@ -20944,7 +21215,7 @@ function seR(R = 75, temperature = global.Temp, options = {}) { // series resist
 	var seR = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [], noiseArray = [];
+	var Zo = complex(Ro,0), two = complex(2,0), freqCount, Z = [], s11, s12, s21, s22, sparsArray = [], noiseArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(R, 0);
 		s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
@@ -20969,7 +21240,7 @@ function seR(R = 75, temperature = global.Temp, options = {}) { // series resist
 	return seR;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 const kB$3 = 1.380649e-23;
 
@@ -20982,7 +21253,7 @@ function R(R = 75, temperature = global.Temp, options = {}) { // series resistor
 	var rPort = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [], noiseArray = [];
+	var Zo = complex(Ro,0), two = complex(2,0), freqCount, Z = [], s11, s12, s21, s22, sparsArray = [], noiseArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(R, 0);
 		s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
@@ -21007,7 +21278,7 @@ function R(R = 75, temperature = global.Temp, options = {}) { // series resistor
 	return rPort;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 const kB$2 = 1.380649e-23;
 
@@ -21020,7 +21291,7 @@ function paR(R = 75, temperature = global.Temp, options = {}) { // parallel resi
 	var paR = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [], noiseArray = [];
+	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [], noiseArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(R, 0);
 		Y[freqCount] = Z[freqCount].inv();
@@ -21046,13 +21317,13 @@ function paR(R = 75, temperature = global.Temp, options = {}) { // parallel resi
 	return paR;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function seL(L = 5e-9, options = {}) { // series inductor nPort object
 	var seL = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+	var Zo = complex(Ro,0), two = complex(2,0), freqCount, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount]);
 		s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
@@ -21067,13 +21338,13 @@ function seL(L = 5e-9, options = {}) { // series inductor nPort object
 	return seL;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function L(L = 5e-9, options = {}) { // series inductor nPort object
 	var lPort = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+	var Zo = complex(Ro,0), two = complex(2,0), freqCount, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(0, 2*Math.PI*L*frequencyList[freqCount]);
 		s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
@@ -21116,13 +21387,13 @@ function dcTwoPort(mode, resistance, referenceImpedance) {
 		complex(transmission, 0), complex(reflection, 0)];
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function paL(L = 5e-9, options = {}) { // parallel capacitor nPort object
 	var paL = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		if (frequencyList[freqCount] === 0) {
 			sparsArray[freqCount] = [0].concat(dcTwoPort('shuntShort', 0, Ro));
@@ -21143,13 +21414,13 @@ function paL(L = 5e-9, options = {}) { // parallel capacitor nPort object
 	return paL;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function seC(C = 1e-12, options = {}) { // series capacitor nPort object
 	var seC = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+	var Zo = complex(Ro,0), two = complex(2,0), freqCount, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		if (frequencyList[freqCount] === 0) {
 			sparsArray[freqCount] = [0].concat(dcTwoPort('open', 0, Ro));
@@ -21168,13 +21439,13 @@ function seC(C = 1e-12, options = {}) { // series capacitor nPort object
 	return seC;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function C(C = 1e-12, options = {}) { // series capacitor nPort object
 	var cPort = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+	var Zo = complex(Ro,0), two = complex(2,0), freqCount, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		if (frequencyList[freqCount] === 0) {
 			sparsArray[freqCount] = [0].concat(dcTwoPort('open', 0, Ro));
@@ -21193,13 +21464,13 @@ function C(C = 1e-12, options = {}) { // series capacitor nPort object
 	return cPort;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function paC(C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var paC = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		if (frequencyList[freqCount] === 0) {
 			sparsArray[freqCount] = [0].concat(dcTwoPort('short', 0, Ro));
@@ -21220,13 +21491,13 @@ function paC(C = 1e-12, options = {}) { // parallel capacitor nPort object
 	return paC;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function trf(N = 0.5, options = {}) { // ideal transformer nPort object
 	var trf = new nPort;
 	var settings = componentSettings(global, options);
-	var frequencyList = analysisFrequencies(settings); global.Ro;
-	var freqCount = 0, s11, s12, s21, s22, sparsArray = [];
+	var frequencyList = analysisFrequencies(settings);
+	var freqCount, s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		s11 = complex((N ** 2 - 1) / (N ** 2 + 1), 0);
 		s12 = complex(2 * N / (N ** 2 + 1), 0);
@@ -21241,13 +21512,13 @@ function trf(N = 0.5, options = {}) { // ideal transformer nPort object
 	return trf;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function trf4Port(N = 0.5, options = {}) { // parallel resistor nPort object
 	var trf4Port = new nPort;
 	var settings = componentSettings(global, options);
-	var frequencyList = analysisFrequencies(settings); global.Ro;
-	var freqCount = 0, sparsArray = [];
+	var frequencyList = analysisFrequencies(settings);
+	var freqCount, sparsArray = [];
 	var s11, s12, s13, s14,
 		s21, s22, s23, s24,
 		s31, s32, s33, s34,
@@ -21298,13 +21569,13 @@ function trfAuto(options = {}) {
 	return transformer;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function seSeRL(R = 75, L = 5e-9, options = {}) { // series inductor nPort object
 	var seSeRL = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+	var Zo = complex(Ro,0), two = complex(2,0), freqCount, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(R, 2*Math.PI*L*frequencyList[freqCount]);
 		s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
@@ -21319,13 +21590,13 @@ function seSeRL(R = 75, L = 5e-9, options = {}) { // series inductor nPort objec
 	return seSeRL;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function paSeRL(R = 75, L = 5e-9, options = {}) { // parallel capacitor nPort object
 	var paSeRL = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Z[freqCount] = complex(R, 2*Math.PI*L*frequencyList[freqCount]);
 		Y[freqCount] = Z[freqCount].inv();
@@ -21342,13 +21613,13 @@ function paSeRL(R = 75, L = 5e-9, options = {}) { // parallel capacitor nPort ob
 	return paSeRL;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function seSeRC(R = 75, C = 1e-12, options = {}) { // series inductor nPort object
 	var seSeRC = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+	var Zo = complex(Ro,0), two = complex(2,0), freqCount, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		if (frequencyList[freqCount] === 0) {
 			sparsArray[freqCount] = [0].concat(dcTwoPort('open', 0, Ro));
@@ -21367,13 +21638,13 @@ function seSeRC(R = 75, C = 1e-12, options = {}) { // series inductor nPort obje
 	return seSeRC;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function paSeRC(R = 75, C = 1e-12, options = {}) { // parallel series-RC nPort object
 	var paSeRC = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		if (frequencyList[freqCount] === 0) {
 			sparsArray[freqCount] = [0].concat(dcTwoPort('short', 0, Ro));
@@ -21394,13 +21665,13 @@ function paSeRC(R = 75, C = 1e-12, options = {}) { // parallel series-RC nPort o
 	return paSeRC;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function seSeLC(L = 5e-9, C = 1e-12, options = {}) { // series inductor nPort object
 	var seSeLC = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+	var Zo = complex(Ro,0), two = complex(2,0), freqCount, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		if (frequencyList[freqCount] === 0) {
 			sparsArray[freqCount] = [0].concat(dcTwoPort('open', 0, Ro));
@@ -21419,13 +21690,13 @@ function seSeLC(L = 5e-9, C = 1e-12, options = {}) { // series inductor nPort ob
 	return seSeLC;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function paSeLC(L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var paSeLC = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		if (frequencyList[freqCount] === 0) {
 			sparsArray[freqCount] = [0].concat(dcTwoPort('short', 0, Ro));
@@ -21446,13 +21717,13 @@ function paSeLC(L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort
 	return paSeLC;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function seSeRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // series inductor nPort object
 	var seSeRLC = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+	var Zo = complex(Ro,0), two = complex(2,0), freqCount, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		if (frequencyList[freqCount] === 0) {
 			sparsArray[freqCount] = [0].concat(dcTwoPort('open', 0, Ro));
@@ -21471,13 +21742,13 @@ function seSeRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // series inductor
 	return seSeRLC;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function paSeRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var paSeRLC = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		if (frequencyList[freqCount] === 0) {
 			sparsArray[freqCount] = [0].concat(dcTwoPort('short', 0, Ro));
@@ -21498,13 +21769,13 @@ function paSeRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // parallel capaci
 	return paSeRLC;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function paPaRL(R = 75, L = 5e-9, options = {}) { // parallel capacitor nPort object
 	var paPaRL = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		if (frequencyList[freqCount] === 0) {
 			sparsArray[freqCount] = [0].concat(dcTwoPort('shuntShort', 0, Ro));
@@ -21525,13 +21796,13 @@ function paPaRL(R = 75, L = 5e-9, options = {}) { // parallel capacitor nPort ob
 	return paPaRL;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function sePaRL(R = 75, L = 5e-9, options = {}) { // parallel capacitor nPort object
 	var sePaRL = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+	var Zo = complex(Ro,0), two = complex(2,0), freqCount, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		if (frequencyList[freqCount] === 0) {
 			sparsArray[freqCount] = [0].concat(dcTwoPort('short', 0, Ro));
@@ -21551,13 +21822,13 @@ function sePaRL(R = 75, L = 5e-9, options = {}) { // parallel capacitor nPort ob
 	return sePaRL;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function paPaRC(R = 75, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var paPaRC = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		if (frequencyList[freqCount] === 0) {
 			sparsArray[freqCount] = [0].concat(dcTwoPort('shuntR', R, Ro));
@@ -21578,13 +21849,13 @@ function paPaRC(R = 75, C = 1e-12, options = {}) { // parallel capacitor nPort o
 	return paPaRC;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function sePaRC(R = 75, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var sePaRC = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+	var Zo = complex(Ro,0), two = complex(2,0), freqCount, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		if (frequencyList[freqCount] === 0) {
 			sparsArray[freqCount] = [0].concat(dcTwoPort('seriesR', R, Ro));
@@ -21604,13 +21875,13 @@ function sePaRC(R = 75, C = 1e-12, options = {}) { // parallel capacitor nPort o
 	return sePaRC;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function paPaLC(L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var paPaLC = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		if (frequencyList[freqCount] === 0) {
 			sparsArray[freqCount] = [0].concat(dcTwoPort('shuntShort', 0, Ro));
@@ -21631,13 +21902,13 @@ function paPaLC(L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort
 	return paPaLC;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function sePaLC(L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var sePaLC = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+	var Zo = complex(Ro,0), two = complex(2,0), freqCount, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		if (frequencyList[freqCount] === 0) {
 			sparsArray[freqCount] = [0].concat(dcTwoPort('short', 0, Ro));
@@ -21657,13 +21928,13 @@ function sePaLC(L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort
 	return sePaLC;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function paPaRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var paPaRLC = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		if (frequencyList[freqCount] === 0) {
 			sparsArray[freqCount] = [0].concat(dcTwoPort('shuntShort', 0, Ro));
@@ -21684,13 +21955,13 @@ function paPaRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // parallel capaci
 	return paPaRLC;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function sePaRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // parallel capacitor nPort object
 	var sePaRLC = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0); Zo.inv(); var two = complex(2,0), freqCount = 0, Z = [], s11, s12, s21, s22, sparsArray = [];
+	var Zo = complex(Ro,0), two = complex(2,0), freqCount, Z = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		if (frequencyList[freqCount] === 0) {
 			sparsArray[freqCount] = [0].concat(dcTwoPort('short', 0, Ro));
@@ -21710,7 +21981,7 @@ function sePaRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // parallel capaci
 	return sePaRLC;
 }
 
-// Modified: 2026-11-18
+// Modified: 2026-11-21
 
 function validatedFilterValues(filt) {
 	if (!Array.isArray(filt)) {
@@ -21731,7 +22002,7 @@ function validatedFilterValues(filt) {
 }
 
 function lpfGen( filt =[50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50], options = {}) { // returns a low-pass filter nPort
-	var i = 0;
+	var i;
 	var filtTable = [];
 	var filterValues = validatedFilterValues(filt);
 	var elements = filterValues.slice(1, -1);
@@ -22001,13 +22272,13 @@ function Thru(options = {}) {
 	return thru;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function Tee(options = {}) { // a 3port dummy connection
 	var Tee = new nPort;
 	var settings = componentSettings(global, options);
-	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0); Zo.inv(); complex(2,0); var freqCount = 0, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [];
+	var frequencyList = analysisFrequencies(settings);
+	var freqCount, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		s11 = complex(-1/3,0);
 		s12 = complex(2/3,0);
@@ -22027,13 +22298,13 @@ function Tee(options = {}) { // a 3port dummy connection
 	return Tee;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function Tee4(options = {}) { // a 4-port dummy connection
 	var Tee4 = new nPort;
 	var settings = componentSettings(global, options);
-	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0); Zo.inv(); complex(2,0); var freqCount = 0, s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44, sparsArray = [];
+	var frequencyList = analysisFrequencies(settings);
+	var freqCount, s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		s11 = s22 = s33 = s44 = complex(-1/2,0);
 		s12 = s13 = s14 = s21 = s23 = s24 = s31 = s32 = s34 = s41 = s42 = s43 = complex(1/2,0);
@@ -22047,13 +22318,13 @@ function Tee4(options = {}) { // a 4-port dummy connection
 	return Tee4;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function Tee5(options = {}) { // an ideal five-port junction
 	var Tee5 = new nPort;
 	var settings = componentSettings(global, options);
-	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0); Zo.inv(); complex(2,0); var freqCount = 0, s11, s12, s13, s14, s15, s21, s22, s23, s24, s25, s31, s32, s33, s34, s35, s41, s42, s43, s44, s45, s51, s52, s53, s54, s55, sparsArray = [];
+	var frequencyList = analysisFrequencies(settings);
+	var freqCount, s11, s12, s13, s14, s15, s21, s22, s23, s24, s25, s31, s32, s33, s34, s35, s41, s42, s43, s44, s45, s51, s52, s53, s54, s55, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		s11 = s22 = s33 = s44 = s55 = complex(-0.6,0);
 		s12 = s13 = s14 = s15 = s21 = s23 = s24 = s25 = s31 = s32 = s34 = s35 = s41 = s42 = s43 = s45 = s51 = s52 = s53 = s54 = complex(0.4,0);
@@ -22141,7 +22412,7 @@ function nodalConnections(input) {
     return {connections, groups, signalOptions};
 }
 
-// Modified: 2026-11-17
+// Modified: 2026-11-21
 var conjugate = function (value) { return complex(value.getR(), -value.getI()); };
 
 
@@ -22170,7 +22441,7 @@ function rebuildNodal(normalized, components) {
 function nodalNetwork(normalized) {
 	var componentConnections = normalized.connections;
 	var signalOptions = normalized.signalOptions;
-	var i = 0, j = 0, k = 0, row = 0, col = 0, offset = 0, base = 0;
+	var i = 0, j, k, row = 0, col = 0, offset = 0, base = 0;
 	var networkSpars = componentConnections[0][0].spars.map(function (row) {
 		return [row[0]];
 	});
@@ -22348,13 +22619,13 @@ function cascade(...nPorts) {
 	return applyInputSignal(combined, signalOptions);
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function Open(options = {}) { // one port, open
 	var Open = new nPort;
 	var settings = componentSettings(global, options);
-	var frequencyList = analysisFrequencies(settings); global.Ro;
-	var freqCount = 0, s11, sparsArray = [];
+	var frequencyList = analysisFrequencies(settings);
+	var freqCount, s11, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		s11 = complex(1,0);
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11];
@@ -22366,13 +22637,13 @@ function Open(options = {}) { // one port, open
 	return Open;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function Short(options = {}) { //  one port, Short
 	var Short = new nPort;
 	var settings = componentSettings(global, options);
-	var frequencyList = analysisFrequencies(settings); global.Ro;
-	var freqCount = 0, s11, sparsArray = [];
+	var frequencyList = analysisFrequencies(settings);
+	var freqCount, s11, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		s11 = complex(-1,0);
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11];
@@ -22384,13 +22655,13 @@ function Short(options = {}) { //  one port, Short
 	return Short;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function Load(options = {}) { // one port, load
 	var Load = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var freqCount = 0, s11, sparsArray = [];
+	var freqCount, s11, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		s11 = complex(0,0);
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11];
@@ -22402,13 +22673,13 @@ function Load(options = {}) { // one port, load
 	return Load;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function Shift90(options = {}) { // lossless matched two-port with +90 degree through phase
 	var Shift90 = new nPort;
 	var settings = componentSettings(global, options);
-	var frequencyList = analysisFrequencies(settings); global.Ro;
-	var freqCount = 0, s11, s12, s21, s22, sparsArray = [];
+	var frequencyList = analysisFrequencies(settings);
+	var freqCount, s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		s11 = complex(0,0);
 		s12 = complex(0,1);
@@ -22423,14 +22694,14 @@ function Shift90(options = {}) { // lossless matched two-port with +90 degree th
 	return Shift90;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function Tlin(Z = 60, Length = 0.5 * 0.0254, options = {}) { // Z is in ohms and Length is in meters, sparameters of a physical transmission line
 	var Tlin = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0); Zo.inv(); complex(1,0); var two = complex(2,0), freqCount = 0, Ztlin = [], s11, s12, s21, s22, sparsArray = [];
-	var Atlin = {}, Btlin = {}, Ctlin = {}, Ds = {}, alpha = 0, beta = 0, gamma = {};
+	var Zo = complex(Ro,0), two = complex(2,0), freqCount, Ztlin, s11, s12, s21, s22, sparsArray = [];
+	var Atlin, Btlin, Ctlin, Ds, alpha, beta, gamma;
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		Ztlin = complex(Z, 0);
 
@@ -22456,20 +22727,20 @@ function Tlin(Z = 60, Length = 0.5 * 0.0254, options = {}) { // Z is in ohms and
 	return Tlin;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 function Tclin(Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254, options = {}) { // 1.4732 is the quarter wavelength at 2GHz, (1.3412 at 2.2 GHz)
 	var ctlin = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0); Zo.inv(); complex(1,0); var two = complex(2,0), freqCount = 0, Zoetclin = [], Zootclin = [];
+	var Zo = complex(Ro,0), two = complex(2,0), freqCount, Zoetclin, Zootclin;
 	var s11oe, s12oe, s21oe, s22oe;
 	var s11oo, s12oo, s21oo, s22oo;
 	var s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44;
 	var sparsArray = [];
-	var Aoe = {}, Boe = {}, Coe = {}, Dsoe = {};
-	var Aoo = {}, Boo = {}, Coo = {}, Dsoo = {};
-	var alpha = 0, beta = 0, gamma = {};
+	var Aoe, Boe, Coe, Dsoe;
+	var Aoo, Boo, Coo, Dsoo;
+	var alpha, beta, gamma;
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		// alpha beta gamma section
 		alpha = 0;
@@ -22670,7 +22941,7 @@ var physicalModelMetadata = function (family, model, geometry, material, analysi
 	};
 };
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 var pi$7 = Math.PI;
 
@@ -22770,8 +23041,8 @@ function mlin(input = {}) {
 	var mlin = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro, 0), two = complex(2, 0), freqCount = 0, s11, s12, s21, s22, sparsArray = [], noiseArray = [];
-	var Atlin = {}, Btlin = {}, Ctlin = {}, Zmlin = {}, Ds = {}, alpha = 0, beta = 0, gamma = {};
+	var Zo = complex(Ro, 0), two = complex(2, 0), freqCount, s11, s12, s21, s22, sparsArray = [], noiseArray = [];
+	var Atlin, Btlin, Ctlin, Zmlin, Ds, alpha, beta, gamma;
 
 	var wOverH = Width / Height;
 	var thicknessOverHeight = Thickness / Height;
@@ -22780,8 +23051,8 @@ function mlin(input = {}) {
 	var quasiStatic = singleLine$1(effectiveWOverH, er);
 	var Z = quasiStatic.z0;
 	var ere = quasiStatic.erEff;
-	var Zf = 0;
-	var eref = 0;
+	var Zf;
+	var eref;
 	var analysis = [];
 
 	// compute conductor loss terms
@@ -22862,7 +23133,7 @@ function mlin(input = {}) {
 	return mlin;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 var pi$6 = Math.PI;
 
@@ -23098,14 +23369,14 @@ function mclin(input = {}) {
 	var ctlin = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro, 0), two = complex(2, 0), freqCount = 0, Zoemclin = [], Zoomclin = [];
+	var Zo = complex(Ro, 0), two = complex(2, 0), freqCount, Zoemclin, Zoomclin;
 	var s11oe, s12oe, s21oe, s22oe;
 	var s11oo, s12oo, s21oo, s22oo;
 	var s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44;
 	var sparsArray = [], noiseArray = [];
-	var Aoe = {}, Boe = {}, Coe = {}, Dsoe = {};
-	var Aoo = {}, Boo = {}, Coo = {}, Dsoo = {};
-	var alphaOe = 0, alphaOo = 0, betaOe = 0, betaOo = 0, gammaOe = {}, gammaOo = {};
+	var Aoe, Boe, Coe, Dsoe;
+	var Aoo, Boo, Coo, Dsoo;
+	var alphaOe, alphaOo, betaOe, betaOo, gammaOe, gammaOo;
 
 	// Kirschning/Jansen equal-width coupled microstrip model, using Qucs as
 	// a cross-check and the published equation family as the implementation basis.
@@ -23214,7 +23485,7 @@ function mclin(input = {}) {
 	return ctlin;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 var pi$5 = Math.PI;
 var DEFAULT_WIDTH = 0.023 * INCH_TO_METER;
@@ -23297,7 +23568,7 @@ function mtee(input = {}) { // microstrip tee nPort object
 	var mtee = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var freqCount = 0, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [], noiseArray = [];
+	var freqCount, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [], noiseArray = [];
 	var WidthA = branch1Width, WidthB = branch2Width, WidthSide = commonWidth;
 	var analysis = [];
 
@@ -24191,7 +24462,7 @@ function mvgnd(input = {}) {
 	return via;
 }
 
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 
 var pi = Math.PI;
 
@@ -24352,38 +24623,46 @@ function mvia(input = {}) {
 	return via;
 }
 
-// Modified: 2026-11-19
+// Modified: 2026-11-21
 // Manufacturer parameter facts, not executable model text. Geometry is part of
 // each discrete-device fit; these are not scalable foundry/process models.
-const defaults = {LEVEL: 1, TNOM: 300.15, L: 100e-6, W: 100e-6, FC: 0.5, KF: 0, AF: 1};
-const records = {
-    DMN55D0UT: {polarity: 1, structure: 'N-channel enhancement MOSFET',
+const defaults$2 = {LEVEL: 1, TNOM: 300.15, L: 100e-6, W: 100e-6, FC: 0.5, KF: 0, AF: 1};
+const generic = {...defaults$2, VTO: 0, KP: 2e-5, GAMMA: 0, PHI: 0.6, LAMBDA: 0,
+    RD: 0, RS: 0, IS: 1e-14, PB: 0.8, MJ: 0.5, CBD: 0, CBS: 0, CGSO: 0, CGDO: 0, CGBO: 0};
+const diodesMetadata = {manufacturer: 'Diodes Incorporated', material: 'silicon',
+    mathematicalModel: 'SPICE level-1 Shichman-Hodges; overlap and body junction charge',
+    modelVersion: 'Manufacturer discrete-device record, retrieved 2026-11-19',
+    package: 'RD/RS included; no explicit package L/C or gate resistance; single channel only',
+    limitations: 'No TOX/inversion charge, ESD clamp, avalanche, self-heating, measured noise fit or inter-channel coupling',
+    noiseModel: 'Classical MOS1 channel thermal and contact thermal noise; vendor KF defaults to zero'};
+const records$1 = {
+    DMN55D0UT: {...diodesMetadata, polarity: 1, structure: 'N-channel enhancement MOSFET',
         source: 'https://www.diodes.com/spice/download/1842/DMN55D0UT.spice.txt',
-        parameters: {...defaults, VTO: 1, KP: 0.324, GAMMA: 1.24, PHI: 0.75, LAMBDA: 133e-6,
+        parameters: {...defaults$2, VTO: 1, KP: 0.324, GAMMA: 1.24, PHI: 0.75, LAMBDA: 133e-6,
             RD: 0.560, RS: 0.560, IS: 80e-15, PB: 0.800, MJ: 0.460,
             CBD: 9.60e-12, CBS: 11.5e-12, CGSO: 25.2e-9, CGDO: 21.0e-9, CGBO: 204e-9}},
-    DMP58D0SV: {polarity: -1, structure: 'P-channel enhancement MOSFET, one channel of the dual device',
+    DMP58D0SV: {...diodesMetadata, polarity: -1, structure: 'P-channel enhancement MOSFET, one channel of the dual device',
         source: 'https://www.diodes.com/spice/download/2329/DMP58D0SV.spice.txt',
-        parameters: {...defaults, VTO: -2.1, KP: 25e-3, GAMMA: 2.60, PHI: 0.75, LAMBDA: 133e-6,
+        parameters: {...defaults$2, VTO: -2.1, KP: 25e-3, GAMMA: 2.60, PHI: 0.75, LAMBDA: 133e-6,
             RD: 1.12, RS: 1.12, IS: 80e-15, PB: 0.800, MJ: 0.460,
             CBD: 12.8e-12, CBS: 15.4e-12, CGSO: 16.8e-9, CGDO: 14.0e-9, CGBO: 239e-9}}
 };
-function mosfetModel(name, polarity) {
-    const selected = name === undefined ? polarity === 1 ? 'DMN55D0UT' : 'DMP58D0SV' : name;
-    if (typeof selected !== 'string' || !Object.hasOwn(records, selected.toUpperCase()) || records[selected.toUpperCase()].polarity !== polarity) {
-        throw new RangeError((polarity === 1 ? 'NMOS' : 'PMOS') + ' model must be ' + (polarity === 1 ? 'DMN55D0UT' : 'DMP58D0SV') + '.');
+function mosfetModel(name, polarity, body = 'source') {
+    const type = polarity === 1 ? 'NMOS' : 'PMOS';
+    const record = selectModelRecord(name, records$1, polarity === 1 ? 'DMN55D0UT' : 'DMP58D0SV', type, ['body'], polarity);
+    if (record.body !== undefined && record.body !== body) {
+        throw new RangeError(type + ' model.body conflicts with the constructor body option.');
     }
-    const record = records[selected.toUpperCase()];
-    return {...record, name: selected.toUpperCase(), parameters: {...record.parameters}, manufacturer: 'Diodes Incorporated', material: 'silicon',
-        mathematicalModel: 'SPICE level-1 Shichman-Hodges; overlap and body junction charge',
-        modelVersion: 'Manufacturer discrete-device record, retrieved 2026-11-19',
-        package: 'RD/RS included; no explicit package L/C or gate resistance; single channel only',
-        limitations: 'No TOX/inversion charge, ESD clamp, avalanche, self-heating, measured noise fit or inter-channel coupling',
-        noiseModel: 'Classical MOS1 channel thermal and contact thermal noise; vendor KF defaults to zero',
-        inductors: [], capacitors: []};
+    const parameters = modelParameters$1(record.parameters, generic, type, {LEVEL: 1, TNOM: 'positive',
+        L: 'positive', W: 'positive', VTO: 'finite', KP: 'positive', PHI: 'positive', IS: 'positive',
+        PB: 'positive', MJ: 'fraction', FC: 'fraction'});
+    noPackageBranches(record, type);
+    const {body: modelBody, ...data} = record;
+    return {mathematicalModel: 'SPICE level-1 Shichman-Hodges; overlap and body junction charge',
+        ...data, polarity, parameters, inductors: [], capacitors: []};
 }
 
-// Modified: 2026-11-19
+// Modified: 2026-11-21
 
 function bodyVoltage(value, body, label) {
     if (!Number.isFinite(value) || body === 'source' && value !== 0) throw new RangeError(label + ' needs finite volts; a source-tied body requires vbs=0.');
@@ -24417,7 +24696,7 @@ function mosfetConstructor(options, polarity) {
     properties(options, ['model', 'body', 'qPoint', 'bias', 'temperature', 'fList'], type);
     const body = options.body === undefined ? 'source' : options.body;
     if (!['source', 'external'].includes(body)) throw new RangeError(type + ' body must be source or external.');
-    const record = mosfetModel(options.model, polarity), temperature = options.temperature === undefined ? global.Temp : options.temperature;
+    const record = mosfetModel(options.model, polarity, body), temperature = options.temperature === undefined ? global.Temp : options.temperature;
     if (!Number.isFinite(temperature) || temperature <= 0) throw new RangeError(type + ' temperature must be positive kelvin.');
     const settings = componentSettings(global, options), frequencies = analysisFrequencies(settings);
     if (!frequencies.length || frequencies.some(f => !Number.isFinite(f) || f < 0) || !Number.isFinite(settings.Ro) || settings.Ro <= 0) {
@@ -24486,7 +24765,9 @@ function NMOS(options = {}) { return mosfetConstructor(options, 1); }
 // Modified: 2026-11-19
 function PMOS(options = {}) { return mosfetConstructor(options, -1); }
 
-// Modified: 2026-11-20
+// Modified: 2026-11-21
+const defaults$1 = {VTO: -2, BETA: 1e-4, B: 0.3, ALPHA: 2, LAMBDA: 0,
+    RD: 0, RS: 0, CGS: 0, CGD: 0, PB: 1, IS: 1e-14, KF: 0, AF: 1, FC: 0.5};
 // Published SPICE3 manual example-column values and documented defaults. This
 // is a numerical reference profile, not a fitted commercial transistor card.
 const reference = {
@@ -24525,9 +24806,15 @@ const ne760 = {
 };
 const models = {SPICE3_REFERENCE: reference, NE760: ne760};
 function mesfetModel(name = 'SPICE3_REFERENCE') {
-    const record = typeof name === 'string' && Object.hasOwn(models, name.toUpperCase()) ? models[name.toUpperCase()] : undefined;
-    if (!record) throw new RangeError('MESFET supports models SPICE3_REFERENCE and NE760.');
-    return {...record, parameters: {...record.parameters}, inductors: [], capacitors: []};
+    const record = selectModelRecord(name, models, 'SPICE3_REFERENCE', 'MESFET', [], 1);
+    const parameters = modelParameters$1(record.parameters, defaults$1, 'MESFET', {VTO: 'negative',
+        BETA: 'positive', ALPHA: 'positive', PB: 'aboveHalf', IS: 'positive', FC: 'fraction'});
+    if (record.referenceTemperature !== undefined && record.referenceTemperature !== 300.15) {
+        throw new RangeError('MESFET model electrical referenceTemperature is fixed at 300.15 K.');
+    }
+    noPackageBranches(record, 'MESFET');
+    return {mathematicalModel: 'SPICE level-1 Statz current and total-gate-charge model', referenceTemperature: 300.15,
+        ...record, parameters, inductors: [], capacitors: []};
 }
 
 // Modified: 2026-11-19
@@ -24640,7 +24927,16 @@ function hemtTopology(p, pkg) {
     return network;
 }
 
-// Modified: 2026-11-20
+// Modified: 2026-11-21
+// Core Statz/charge and empirical RC values require supplied data; generic
+// defaults must not silently import a manufacturer's fitted die parameters.
+const defaults = {VTO: undefined, BETA: undefined, ALPHA: undefined, B: 0, LAMBDA: 0,
+    RG: 0, RD: 0, RS: 0, LG: 0, LD: 0, LS: 0, CGS: 0, CGD: 0, CDS: 0,
+    PB: undefined, IS: 1e-14, N: 1, DELTA1: undefined, DELTA2: undefined,
+    FC: 0.5, VMAX: undefined, RC: undefined, CRF: undefined,
+    P: 0, R: 0, C: 0, FNC: 0, KF: 0, AF: 1, FFE: 1};
+const packageDefaults = {La: undefined, Lb: undefined, Lc: undefined, Ld: undefined,
+    Rb: undefined, Rbridge: undefined, Ca: undefined, Cb: undefined};
 const atf35143 = {
     name: 'ATF35143_DIE', manufacturer: 'Agilent/Avago', manufacturerPart: 'ATF-35143', material: 'GaAs',
     structure: 'N-channel depletion pseudomorphic HEMT', referenceTemperature: 300.15,
@@ -24656,26 +24952,33 @@ const atf35143 = {
         RG: 1, RD: .5, RS: .25, LG: 15e-12, LD: 15e-12, LS: 5e-12,
         CGS: .4e-12, CGD: .08e-12, CDS: .02e-12, PB: .7, IS: 1e-9, N: 1,
         DELTA1: .25, DELTA2: .2, FC: .5, VMAX: .5, RC: 250, CRF: .1,
-        P: .65, R: .17, C: .2, FNC: 1e6, KF: 0, AF: 1, FFE: 1},
+        P: .65, R: .17, C: .2, FNC: 1e6, KF: 0, AF: 1, FFE: 1}
     // The printed legacy DELTA=.2 supplies threshold smoothing. No Delta1
     // is given: Statz uses 1/ALPHA as its drain transition, here .25 V.
-    inductors: [[0, 3, 15e-12], [1, 4, 15e-12], [2, 5, 5e-12]],
-    capacitors: [[7, 8, .02e-12]]
 };
+const records = {ATF35143_DIE: atf35143, ATF35143: {...atf35143,
+    packageParameters: {La: .1e-9, Lb: .1e-9, Lc: .8e-9, Ld: .6e-9, Rb: .1, Rbridge: .1, Ca: .15e-12, Cb: .15e-12},
+    package: 'Manufacturer p.16 SC-70 network; both external source pins joined at port 3, all three source bond paths retained; test-board vias excluded',
+    modelVersion: atf35143.modelVersion + '; p.16 package network, optimized 0.1-6 GHz',
+    limitations: 'Nominal-temperature Statz adaptation; common external source pins only; test-board vias excluded; positive conducting RF bias only; no electrical temperature scaling, trapping, self-heating, avalanche, transit delay or large-signal solution'}};
 function hemtModel(name = 'ATF35143_DIE') {
-    if (typeof name !== 'string' || !['ATF35143_DIE', 'ATF35143'].includes(name.toUpperCase())) {
-        throw new RangeError('HEMT supports ATF35143_DIE and ATF35143 (SC-70 package, common external source).');
+    const record = selectModelRecord(name, records, 'ATF35143_DIE', 'HEMT',
+        ['packageParameters', 'terminalNetwork', 'contactResistances'], 1);
+    const parameters = modelParameters$1(record.parameters, defaults, 'HEMT', {VTO: 'negative',
+        BETA: 'positive', ALPHA: 'positive', PB: 'positive', IS: 'positive', N: 'positive',
+        DELTA1: 'positive', DELTA2: 'positive', FC: 'fraction', RC: 'positive', CRF: 'positive', C: 'correlation'});
+    if (record.referenceTemperature !== undefined && record.referenceTemperature !== 300.15) {
+        throw new RangeError('HEMT model electrical referenceTemperature is fixed at 300.15 K.');
     }
-    const packaged = name.toUpperCase() === 'ATF35143';
-    const packageParameters = packaged ? {La: .1e-9, Lb: .1e-9, Lc: .8e-9, Ld: .6e-9,
-        Rb: .1, Rbridge: .1, Ca: .15e-12, Cb: .15e-12} : null;
-    const parameters = {...atf35143.parameters}, terminalNetwork = hemtTopology(parameters, packageParameters);
-    return {...atf35143, name: packaged ? 'ATF35143' : atf35143.name, parameters, packageParameters, terminalNetwork,
+    const packageParameters = record.packageParameters == null ? null :
+        modelParameters$1(record.packageParameters, packageDefaults, 'HEMT packageParameters');
+    const terminalNetwork = hemtTopology(parameters, packageParameters);
+    const derived = {terminalNetwork,
         contactResistances: terminalContactResistances(terminalNetwork),
-        ...(packaged ? {package: 'Manufacturer p.16 SC-70 network; both external source pins joined at port 3, all three source bond paths retained; test-board vias excluded',
-            modelVersion: atf35143.modelVersion + '; p.16 package network, optimized 0.1-6 GHz',
-            limitations: 'Nominal-temperature Statz adaptation; common external source pins only; test-board vias excluded; positive conducting RF bias only; no electrical temperature scaling, trapping, self-heating, avalanche, transit delay or large-signal solution'} : {}),
         inductors: terminalNetwork.inductors.map(row => row.slice()), capacitors: terminalNetwork.capacitors.map(row => row.slice())};
+    checkDerivedModelData(record, derived, 'HEMT');
+    return {mathematicalModel: 'Statz current and Divekar-partitioned static gate charge', referenceTemperature: 300.15,
+        ...record, parameters, packageParameters, ...derived};
 }
 
 // Modified: 2026-11-20
@@ -25088,7 +25391,7 @@ function receiveVnaFrequency(stage, options = {}) {
 	};
 }
 
-// Modified: 2026-10-21
+// Modified: 2026-11-21
 
 function powerOfTwo(value) {
 	return Number.isInteger(value) && value > 0 && (value & (value - 1)) === 0;
@@ -25197,11 +25500,11 @@ function modulateAdvanced(tx, options, carrierHz) {
 		tx.referenceSymbols = 1;
 		extras.referenceSymbols = 1;
 	} else if (mode === 'QPSK' || mode === 'QAM') {
-		var order = mode === 'QPSK' ? 4 : (options.order === undefined ? 16 : options.order);
+		let order = mode === 'QPSK' ? 4 : (options.order === undefined ? 16 : options.order);
 		if (!powerOfTwo(order) || !Number.isInteger(Math.sqrt(order)) || order < 4 || order > 256) {
 			throw new RangeError('QAM order must be 4, 16, 64, or 256.');
 		}
-		var bitsPerSymbol = Math.log2(order);
+		let bitsPerSymbol = Math.log2(order);
 		var symbolCount = Math.ceil(tx.bits.length / bitsPerSymbol);
 		var pilot = complex((Math.sqrt(order) - 1) / Math.sqrt(2 * (order - 1) / 3),
 			(Math.sqrt(order) - 1) / Math.sqrt(2 * (order - 1) / 3));
@@ -25253,7 +25556,7 @@ function modulateAdvanced(tx, options, carrierHz) {
 		var fftSize = options.fftSize === undefined ? 4 * subcarrierCount : options.fftSize;
 		var symbolRate = options.symbolRate === undefined ? 5e6 : options.symbolRate;
 		var subcarrierMode = options.subcarrierMode === undefined ? 'QPSK' : options.subcarrierMode;
-		var order = subcarrierMode === 'QPSK' ? 4 : subcarrierMode === 'QAM' ?
+		let order = subcarrierMode === 'QPSK' ? 4 : subcarrierMode === 'QAM' ?
 			(options.order === undefined ? 16 : options.order) : 0;
 		if (!powerOfTwo(subcarrierCount) || subcarrierCount < 2 ||
 			!powerOfTwo(fftSize) || fftSize < 2 * subcarrierCount + 2 ||
@@ -25261,7 +25564,7 @@ function modulateAdvanced(tx, options, carrierHz) {
 			!powerOfTwo(order) || !Number.isInteger(Math.sqrt(order)) || order > 256) {
 			throw new RangeError('OFDM needs power-of-two subcarrierCount and fftSize, positive symbolRate, and QPSK or square QAM symbols.');
 		}
-		var bitsPerSymbol = Math.log2(order);
+		let bitsPerSymbol = Math.log2(order);
 		if (carrierHz <= subcarrierCount * symbolRate / 2 ||
 			carrierHz + subcarrierCount * symbolRate / 2 >= symbolRate * fftSize / 2 ||
 			Math.abs(carrierHz / symbolRate - Math.round(carrierHz / symbolRate)) > 1e-9) {
@@ -25361,14 +25664,14 @@ function demodulateAdvanced(receiver, signal) {
 		var symbolBits = mode === 'DPSK' ? 1 : signal.bitsPerSymbol;
 		var samplesPerSymbol = signal.samplesPerBit * symbolBits;
 		var observed = [];
-		for (var start = 0; start < signal.sampleCount; start += samplesPerSymbol) {
+		for (let start = 0; start < signal.sampleCount; start += samplesPerSymbol) {
 			var value = correlator(passband, start, samplesPerSymbol,
 				signal.carrierHz, sampleRateHz);
 			observed.push(value);
 			symbols.push([observed.length - 1, value.getR(), value.getI()]);
 		}
 		if (mode === 'DPSK') {
-			for (var index = 1; index < observed.length; index++) {
+			for (let index = 1; index < observed.length; index++) {
 				var previous = observed[index - 1], current = observed[index];
 				bits.push(previous.getR() * current.getR() +
 					previous.getI() * current.getI() < 0 ? 1 : 0);
@@ -25378,14 +25681,14 @@ function demodulateAdvanced(receiver, signal) {
 				(Math.sqrt(signal.order) - 1) / Math.sqrt(2 * (signal.order - 1) / 3),
 				(Math.sqrt(signal.order) - 1) / Math.sqrt(2 * (signal.order - 1) / 3))) : null;
 			if (gain && gain.mag() < 1e-12) throw new RangeError('QAM reference symbol has no received energy.');
-			for (var index = signal.referenceSymbols || 0; index < observed.length; index++) {
+			for (let index = signal.referenceSymbols || 0; index < observed.length; index++) {
 				bits.push(...bitsFromSymbol(gain ? observed[index].div(gain) : observed[index], signal.order));
 			}
 		}
 	} else if (mode === 'MSK' || mode === 'GMSK') {
 		var analytic = analyticSamples(receiver, signal);
 		var samplesPerBit = signal.samplesPerBit;
-		for (var start = 0; start < signal.sampleCount; start += samplesPerBit) {
+		for (let start = 0; start < signal.sampleCount; start += samplesPerBit) {
 			var left = start + Math.floor(samplesPerBit / 4);
 			var right = start + Math.floor(3 * samplesPerBit / 4);
 			var first = analytic[left], last = analytic[right];

@@ -1,4 +1,4 @@
-// Modified: 2026-11-20
+// Modified: 2026-11-21
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as nP from '../src/index.js';
@@ -33,7 +33,7 @@ test('NE760 preserves the published commercial-family card and immutable model i
     assert.equal(q._dcModel.definition.record.parameters.BETA, .1275);
     assert.equal(nP.MESFET({fList: [1e9]}).model.name, 'SPICE3_REFERENCE');
     for (const model of ['NE76084', '__proto__', 'constructor', null, 7]) {
-        assert.throws(() => nP.MESFET({model, fList: [1e9]}), /SPICE3_REFERENCE and NE760/);
+        assert.throws(() => nP.MESFET({model, fList: [1e9]}), /MESFET model/);
     }
 });
 

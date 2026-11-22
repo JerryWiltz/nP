@@ -1,4 +1,7 @@
-// Modified: 2026-11-20
+// Modified: 2026-11-21
+import {selectModelRecord, modelParameters, noPackageBranches} from '../../semiconductorModel';
+const defaults = {VTO: -2, BETA: 1e-4, B: 0.3, ALPHA: 2, LAMBDA: 0,
+    RD: 0, RS: 0, CGS: 0, CGD: 0, PB: 1, IS: 1e-14, KF: 0, AF: 1, FC: 0.5};
 // Published SPICE3 manual example-column values and documented defaults. This
 // is a numerical reference profile, not a fitted commercial transistor card.
 const reference = {
@@ -37,7 +40,13 @@ const ne760 = {
 };
 const models = {SPICE3_REFERENCE: reference, NE760: ne760};
 export function mesfetModel(name = 'SPICE3_REFERENCE') {
-    const record = typeof name === 'string' && Object.hasOwn(models, name.toUpperCase()) ? models[name.toUpperCase()] : undefined;
-    if (!record) throw new RangeError('MESFET supports models SPICE3_REFERENCE and NE760.');
-    return {...record, parameters: {...record.parameters}, inductors: [], capacitors: []};
+    const record = selectModelRecord(name, models, 'SPICE3_REFERENCE', 'MESFET', [], 1);
+    const parameters = modelParameters(record.parameters, defaults, 'MESFET', {VTO: 'negative',
+        BETA: 'positive', ALPHA: 'positive', PB: 'aboveHalf', IS: 'positive', FC: 'fraction'});
+    if (record.referenceTemperature !== undefined && record.referenceTemperature !== 300.15) {
+        throw new RangeError('MESFET model electrical referenceTemperature is fixed at 300.15 K.');
+    }
+    noPackageBranches(record, 'MESFET');
+    return {mathematicalModel: 'SPICE level-1 Statz current and total-gate-charge model', referenceTemperature: 300.15,
+        ...record, parameters, inductors: [], capacitors: []};
 }

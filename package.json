@@ -1,5 +1,5 @@
 {
-  "_modified": "2026-11-09",
+  "_modified": "2026-11-21",
   "name": "@jerrywiltz/np",
   "version": "0.49.0",
   "main": "./dist/nP.cjs",
@@ -27,6 +27,8 @@
     "access": "public"
   },
   "scripts": {
+    "lint": "eslint src scripts test *.config.js --max-warnings=0",
+    "check:equations": "node --no-warnings --loader ./scripts/extensionless-loader.mjs scripts/check-equations.mjs",
     "build": "node schematics/tools/generate-runtime-symbols.js && node --no-warnings --loader ./scripts/extensionless-loader.mjs schematics/tools/check-constructor-symbols.mjs && rollup -c",
     "build:plugin": "node schematics/tools/generate-runtime-symbols.js && node --no-warnings --loader ./scripts/extensionless-loader.mjs schematics/tools/check-constructor-symbols.mjs && rollup -c rollup.plugin.config.js",
     "test": "node --loader ./scripts/extensionless-loader.mjs --test",
@@ -46,11 +48,15 @@
     "schematics:check": "node schematics/tools/check-example-schematics.js"
   },
   "devDependencies": {
+    "@eslint/js": "10.0.1",
     "@rollup/plugin-node-resolve": "^16.0.1",
     "@xmldom/xmldom": "0.9.12",
     "d3": "^7.9.0",
+    "eslint": "10.15.0",
     "eslint-linter-browserify": "^10.13.0",
+    "globals": "17.14.0",
     "markdown-it-mathjax3": "^4.3.2",
+    "mathjs": "15.2.0",
     "playwright": "^1.61.1",
     "rollup": "^4.61.1",
     "vitepress": "^1.6.4"

@@ -1,7 +1,33 @@
-<!-- Modified: 2026-11-15 -->
+<!-- Modified: 2026-11-21 -->
 # SPICE-style diode models
 
-`nP.D()` returns a two-port diode with DC curves and RF data at a separate fixed operating point. Its first supported part is **1N4148**, a silicon signal diode. Port 1 is the anode and port 2 the cathode. Voltage VD is anode minus cathode; positive ID flows from anode to cathode. These are electrical/SPICE terminal assignments, not a claim about the package's physical pin numbering.
+`nP.D()` returns a two-port diode with DC curves and RF data at a separate fixed operating point. Supported records are **1N4148**, a silicon signal diode, and **SMS7621/SMS7630**, Skyworks per-junction Schottky cards. See [Schottky sources, parameters and verification](schottkyModels.md). Port 1 is the anode and port 2 the cathode. Voltage VD is anode minus cathode; positive ID flows from anode to cathode. These are electrical/SPICE terminal assignments, not a claim about the package's physical pin numbering.
+
+## User-supplied records
+
+`D({model: myRecord})` accepts supplied junction/Schottky records with
+[generic diode defaults](customModels.md#d-junction-and-schottky-diodes), optional
+record-level leakageResistance and schematicVariant. It uses the same current,
+charge, DC/RF/noise/Taylor equations as a named record. No catalog registration
+or source-link download is needed. The legacy flat-parameter diode is unchanged.
+
+## Varactor and C–V support
+
+`D({model:'SMV1231-079LF',qPoint:{vd:-3}})` adds the Skyworks SC-79
+varactor, its canonical symbol, M=4.999 charge law and explicit LS/CP package.
+Any finite nonnegative M is supported, including the logarithmic M=1 limit.
+Optional record.packageParameters uses seriesInductance in H and
+parallelCapacitance in F; both default to zero. LS precedes CP in parallel
+with RS-plus-junction; DC shorts LS and opens CP. RF/noise/direct IM share the
+same package transfer. Arbitrary package arrays remain unsupported.
+
+`d1.cvTable({vr:{start:0,stop:15,points:31}})` returns header plus
+`[vr (V), cj (F), ct (F)]` rows without moving Q or altering I–V defaults.
+VR defaults to 0–10 V/201 points and is nonnegative/increasing; CJ is depletion
+capacitance and CT is the low-frequency terminal-admittance slope. The existing
+smallSignal.totalCapacitance remains intrinsic. Added metadata reports
+packageCapacitance, terminalCapacitance and seriesInductance. See the
+[varactor model and independent verification](varactorModels.md).
 
 ## Use and defaults
 
@@ -39,7 +65,7 @@ These are the constructor defaults except for the frequency sweep: `D()` uses th
 | `._intermod` | Internal current/charge derivatives for weak nonlinear products |
 | `._schematic` | Catalog-backed diode symbol selection |
 
-The terminal dynamic resistance includes RS and external leakage. `.smallSignal.conductance` and capacitances describe the internal junction, so its conductance is not simply the inverse of that terminal resistance. `nodal()` and `cascade()` combine the RF/noise/nonlinear models at the selected Q point; they do not re-bias the diode from a DC source network.
+The terminal dynamic resistance includes RS and external leakage. `.smallSignal.conductance` and capacitances describe the internal junction, so its conductance is not simply the inverse of that terminal resistance. With an explicit `V()` supply, `nodal()` and `cascade()` solve DC and rebuild each diode placement before RF/noise/nonlinear analysis. Standalone and RF-only networks retain their selected construction Q point.
 
 ## Parameter provenance and compatibility
 
@@ -62,7 +88,7 @@ The record is the [archived NXP PSPICE 1N4148 subcircuit](https://raw.githubuser
 
 The source explicitly calls the external leakage resistor a reverse-characteristic modeling aid, rather than a physical resistor. It is placed **outside** the RS-plus-junction branch. Its Johnson noise is retained to match the reference SPICE subcircuit. BV is a model parameter, not a recommended operating voltage or a device rating.
 
-`diode1N4148()` remains available, including its original 0 V Q point, datasheet-fit parameters, positional `ivTable(start, stop, points)`, `.diode` metadata and equilibrium-noise treatment. It does not silently select the new card. Numerical differences between the two constructors are expected. Both use the existing canonical diode SVG; no new artwork is needed.
+`diode1N4148()` remains available, including its original 0 V Q point, datasheet-fit parameters, positional `ivTable(start, stop, points)`, `.diode` metadata and equilibrium-noise treatment. It does not silently select the new card. Numerical differences between the two constructors are expected. The signal and legacy records retain ordinary diode artwork. Schottky records select the existing canonical Schottky variant.
 
 ## DC and charge equations
 
@@ -101,7 +127,7 @@ Noise uses resistor thermal noise and the classical SPICE junction shot-noise de
 
 For two-tone work, set `global.twoTone` before constructing the diode. Current and charge derivatives supply direct second-/third-order sources to the existing intermodulation engine. It accounts for RS, the external leakage branch, and the RF network. Output product slopes are 20/30 dB for a 10 dB change of equal input tones. Intercepts are extrapolated estimates, not compression or switching predictions. Quadratic remixing into third order, full Volterra analysis, harmonic balance and large-signal bias movement are not included.
 
-There is no explicit package inductance/capacitance network, electrothermal/self-heating solver, or manufacturer-validated wideband noise/IP fit. Future PIN, Schottky, Zener, varactor and other cards require their own supported behavior and verification; they cannot be inferred from their family names alone.
+The 1N4148 and Schottky records have no explicit package L/C; SMV1231-079LF uses the shared fixed LS/CP network described above. There is no electrothermal/self-heating solver or manufacturer-validated wideband noise/IP fit. Future PIN, Zener and other cards require their own supported behavior and verification; they cannot be inferred from their family names alone.
 
 ## Implementation and independent checks
 

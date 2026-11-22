@@ -7,9 +7,17 @@ current/charge Taylor coefficients, fixed-Q solving, network DC and floating RF.
 These are enhancement MOSFETs; depletion artwork does not select a numerical
 model. MOS2/MOS3, BSIM, EKV and general model-text import remain unsupported.
 
+## User-supplied records
+
+`NMOS({model: myRecord})` and `PMOS({model: myRecord})` also accept supplied
+level-1 records, with [documented generic defaults](customModels.md#nmos--pmos).
+The body option still selects terminal connectivity. A reused device.model body
+field must agree with that option. No TOX, BSIM or arbitrary package import is
+implied; unknown parameters and conflicting polarity are rejected.
+
 ## Records, geometry and provenance
 
-| Constructor | Default and only supported record | Default terminal Q point |
+| Constructor | Default built-in record | Default terminal Q point |
 | --- | --- | --- |
 | NMOS | Diodes DMN55D0UT | VGS=1.5 V, VDS=5 V, VBS=0 V |
 | PMOS | Diodes DMP58D0SV, **one channel** of the dual part | VGS=−2.6 V, VDS=−5 V, VBS=0 V |

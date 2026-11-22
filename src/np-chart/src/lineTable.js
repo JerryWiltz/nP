@@ -1,4 +1,4 @@
-// Modified: 2026-10-22
+// Modified: 2026-11-21
 import * as d3 from 'd3';
 import {normalizeInputTables} from './inputTables';
 import {CHART_FONT_FAMILY, CHART_FONT_SIZE} from './chartTypography';
@@ -120,7 +120,6 @@ export function lineTable(options = {}) {
 		const outerHeight = layoutTop + tableHeight + margin.bottom;
 
 		if (showWHAlert) {
-			// eslint-disable-next-line no-alert
 			alert(`The table dimensions: Width is ${outerWidth}, Height is ${outerHeight}`);
 		}
 
@@ -245,8 +244,8 @@ export function lineTable(options = {}) {
 				//console.log("copied to clipboard");
 
 
-			} catch (err) {
-				//console.error("Failed to copy image:", err);
+			} catch {
+				// Clipboard access can be unavailable in the host environment.
 			}
 		}
 

@@ -7,6 +7,15 @@ specific commercial pHEMT, not a universal HEMT material model or a packaged
 ATF-35143 replacement. The additional ATF35143 record includes the p.16 SC-70
 network with both external source pins common. The DC descriptor is approximate.
 
+## User-supplied records
+
+`HEMT({model: myRecord})` accepts a supplied record for this equation engine.
+[Required core parameters and optional defaults](customModels.md#hemt) are
+explicit; no missing manufacturer fit is borrowed. Raw packageParameters rebuild
+the existing die/SC-70 topology and contact resistances. Complete resolved records
+are accepted when their derived fields match. Omit stale derived fields when
+changing parameters. Nominal-temperature and conducting-Q limits still apply.
+
 ## API and terminal order
 
 ```js

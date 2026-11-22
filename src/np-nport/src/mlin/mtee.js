@@ -1,4 +1,4 @@
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 import {physicalDcModel} from '../physicalDcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
@@ -91,7 +91,7 @@ export function mtee(input = {}) { // microstrip tee nPort object
 	var mtee = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var freqCount = 0, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [], noiseArray = [];
+	var freqCount, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [], noiseArray = [];
 	var WidthA = branch1Width, WidthB = branch2Width, WidthSide = commonWidth;
 	var analysis = [];
 

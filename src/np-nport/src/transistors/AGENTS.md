@@ -1,5 +1,5 @@
 # AGENTS.md
-<!-- Modified: 2026-11-20 -->
+<!-- Modified: 2026-11-21 -->
 
 Instructions for `src/np-nport/src/transistors/` and its subdirectories. Follow the repository root `AGENTS.md` as well.
 
@@ -7,6 +7,7 @@ Instructions for `src/np-nport/src/transistors/` and its subdirectories. Follow 
 
 - `bjt/NPN.js` and `bjt/PNP.js` implement the supported bipolar parameter sets. `fet/NJF.js` and `fet/PJF.js` implement level-1 JFETs. `fet/NMOS.js` and `fet/PMOS.js` implement level-1 MOSFETs. `fet/MESFET.js` implements N-channel Statz/MES1 with a SPICE reference profile and an Intusoft-published NE760 commercial-family card (no package-specific or measured noise fit). `fet/HEMT.js` implements ATF35143_DIE, a nominal-temperature manufacturer Statz pHEMT die adaptation with separate static charge partition and correlated noise; ATF35143 additionally retains the manufacturer p.16 SC-70 network with both external source pins joined at port 3. Preserve explicit package resistance paths for DC and noise. Other HEMT families remain future work; distinguish implemented behavior from proposals.
 - Use SPICE device-type names for public constructors: `NPN`, `PNP`, `NJF`, `PJF`, `NMOS`, `PMOS`, `MESFET`, and `HEMT`. Select a supported part parameter set through `model`; do not add a public constructor for each part number. Public filenames must match the exported constructor names.
+- All transistor constructors accept either a built-in model name or `model: {name, parameters, ...provenance}`. Preserve family defaults/required parameters and package limits in `developmentDocs/semiconductors/customModels.md`. Named and supplied records must share resolution, validation, equations and DC/RF/noise/nonlinear construction. New semiconductor selectors must support this same approach. Never silently ignore unsupported parameters or substitute a built-in part for a custom record. HEMT derives its contact/package network from parameters/packageParameters and checks supplied derived fields; it does not import arbitrary package wiring.
 - Keep BJT implementations in `bjt/` and FET implementations in `fet/`. Share equation engines across compatible part parameter sets. Keep independent sources and a general DC network solver outside these device directories.
 - Record each parameter set's part/model name, manufacturer, semiconductor material, device structure, mathematical model and version, temperature reference, source provenance, and package coverage. Distinguish intrinsic die parameters from package parasitics; do not claim package coverage without checking it.
 

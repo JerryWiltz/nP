@@ -1,4 +1,4 @@
-// Modified: 2026-10-26
+// Modified: 2026-11-21
 
 function isComplex(value) {
 	return value !== null && typeof value === 'object' &&
@@ -84,7 +84,7 @@ export function log(input, options = {}) {
 	} else if (isPlainRecord(input)) {
 		try {
 			pre.textContent = JSON.stringify(input, null, 2);
-		} catch (error) {
+		} catch {
 			pre.textContent = "nP.log can't read this input";
 		}
 	} else {

@@ -1,4 +1,4 @@
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 import {dcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
@@ -11,7 +11,7 @@ export function Load(options = {}) { // one port, load
 	var Load = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var freqCount = 0, s11, sparsArray = [];
+	var freqCount, s11, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		s11 = complex(0,0);
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11];

@@ -6,6 +6,13 @@ drain, source** order. SPICE J instances use drain/gate/source; translate explic
 They share a SPICE level-1 Shichman–Hodges engine with B=1. These are silicon
 junction FETs; shared artwork does not turn them into MESFETs or HEMTs.
 
+## User-supplied records
+
+`NJF({model: myRecord})` and `PJF({model: myRecord})` also accept supplied
+parameter records. Generic defaults, polarity validation and package restrictions
+are listed in [custom models](customModels.md#njf--pjf). New names need no
+registration; named and supplied records share the same DC/RF/noise/Taylor path.
+
 ## API and records
 
 Options are `model`, `qPoint`, `bias`, `temperature` (kelvin) and `fList` (hertz).
@@ -13,7 +20,7 @@ Unknown properties, a model from the other polarity, invalid grids and invalid
 sweep directions are errors. The default frequency list is the captured global
 list; set it before construction. Default temperature is `global.Temp`.
 
-| Constructor | Default and only supported record | Default terminal Q point |
+| Constructor | Default built-in record | Default terminal Q point |
 | --- | --- | --- |
 | `NJF` | onsemi MMBF5457LT1, record 2002-12-06 | `{vgs: -1, vds: 10}` V |
 | `PJF` | onsemi MMBFJ175LT1, record 1998-04-14 | `{vgs: 1, vds: -10}` V |

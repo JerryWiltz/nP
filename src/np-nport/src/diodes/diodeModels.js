@@ -1,6 +1,10 @@
-// Modified: 2026-11-15
+// Modified: 2026-11-21
 // Model parameters, not a SPICE text interpreter. More families need their own
 // validated records/equations; selecting a name never executes downloaded code.
+import {selectModelRecord, modelParameters, noPackageBranches} from '../semiconductorModel';
+const defaults = {IS: 1e-14, N: 1, BV: Infinity, IBV: 1e-3, RS: 0,
+    CJO: 0, VJ: 1, M: 0.5, FC: 0.5, TT: 0, EG: 1.11, XTI: 3,
+    TNOM: 300.15, NBV: 1, KF: 0, AF: 1};
 const records = {
     '1N4148': {
         manufacturer: 'NXP Semiconductors (archived model)', material: 'silicon', family: 'signal',
@@ -15,13 +19,71 @@ const records = {
             EG: 1.11, XTI: 3, TNOM: 300.15, NBV: 1, KF: 0, AF: 1},
         leakageResistance: 5.827e9,
         leakageNote: 'The source explicitly describes this external resistor as a reverse-modeling element, not a physical resistor'
+    },
+    SMS7621: {
+        manufacturer: 'Skyworks Solutions', material: 'silicon', family: 'schottky',
+        mathematicalModel: 'SPICE junction diode, per-junction Schottky parameter card',
+        modelVersion: 'Skyworks 200041AH, June 13, 2024, Table 5',
+        source: 'https://www.skyworksinc.com/-/media/SkyWorks/Documents/Products/201-300/Surface-Mount-Schottky-Diodes_200041AH.pdf',
+        package: 'Per junction including RS; package inductance/capacitance and multi-diode package configurations excluded',
+        pinning: 'nP port 1 anode, port 2 cathode; not package pin numbers',
+        schematicVariant: 'schottky',
+        parameters: {IS: 4e-8, RS: 12, N: 1.05, TT: 1e-11, CJO: .1e-12, M: .35,
+            EG: .69, XTI: 2, FC: .5, BV: 3, IBV: 1e-5, VJ: .51,
+            TNOM: 300.15, NBV: 1, KF: 0, AF: 1},
+        defaultsNote: 'TNOM=27 C, NBV=1, KF=0 and AF=1 are classical SPICE defaults; not supplied fits',
+        leakageResistance: Infinity,
+        leakageNote: 'No external leakage resistor is specified; reverse current belongs to the junction law',
+        limitations: 'No packaged RF fit, calibrated detector sensitivity, zero-bias/excess/avalanche noise or large-signal rectification; temperature follows classical SPICE laws'
+    },
+    SMS7630: {
+        manufacturer: 'Skyworks Solutions', material: 'silicon', family: 'schottky',
+        mathematicalModel: 'SPICE junction diode, per-junction Schottky parameter card',
+        modelVersion: 'Skyworks 200041AH, June 13, 2024, Table 5',
+        source: 'https://www.skyworksinc.com/-/media/SkyWorks/Documents/Products/201-300/Surface-Mount-Schottky-Diodes_200041AH.pdf',
+        package: 'Per junction including RS; package inductance/capacitance and multi-diode package configurations excluded',
+        pinning: 'nP port 1 anode, port 2 cathode; not package pin numbers',
+        schematicVariant: 'schottky',
+        parameters: {IS: 5e-6, RS: 20, N: 1.05, TT: 1e-11, CJO: .14e-12, M: .40,
+            EG: .69, XTI: 2, FC: .5, BV: 2, IBV: 1e-4, VJ: .34,
+            TNOM: 300.15, NBV: 1, KF: 0, AF: 1},
+        defaultsNote: 'TNOM=27 C, NBV=1, KF=0 and AF=1 are classical SPICE defaults; not supplied fits',
+        leakageResistance: Infinity,
+        leakageNote: 'No external leakage resistor is specified; reverse current belongs to the junction law',
+        limitations: 'No packaged RF fit, calibrated detector sensitivity, zero-bias/excess/avalanche noise or large-signal rectification; temperature follows classical SPICE laws'
+    },
+    'SMV1231-079LF': {
+        manufacturer: 'Skyworks Solutions', material: 'silicon', family: 'varactor',
+        mathematicalModel: 'SPICE junction current and integrated hyperabrupt depletion charge',
+        modelVersion: 'Skyworks 200058AB, May 7, 2026, Figure 5 and Tables 1/5',
+        source: 'https://www.skyworksinc.com/-/media/F9C9BC1315644EB890723BD8C726746E.pdf',
+        equationSource: 'https://www.skyworksinc.com/-/media/SkyWorks/Documents/Products/1-100/Varactor_SPICE_Model_AN_200315C.pdf',
+        package: 'Single SC-79: 0.7 nH lead before parallel CP and RS-plus-junction branches',
+        pinning: 'nP port 1 anode, port 2 cathode', schematicVariant: 'varactor',
+        parameters: {IS: 1e-14, RS: 2.5, N: 1, TT: 0, CJO: 1.88e-12,
+            M: 4.999, VJ: 10.13, EG: 1.11, XTI: 3, TNOM: 300.15,
+            FC: 0.5, BV: Infinity, IBV: 1e-3, NBV: 1, KF: 0, AF: 1},
+        packageParameters: {seriesInductance: 0.7e-9, parallelCapacitance: 0.44e-12},
+        leakageResistance: Infinity,
+        defaultsNote: 'Current parameters are manufacturer generic defaults, not measured leakage/breakdown fits; no finite BV supplied',
+        limitations: 'Reverse-bias C-V fit over 0-15 V; nominal RS is constant; classical noise and temperature laws are not measured varactor fits; no large-signal VCO/transient model or distributed package fit'
     }
 };
 
 export function diodeModel(name = '1N4148') {
-    if (typeof name !== 'string' || !Object.hasOwn(records, name.toUpperCase())) {
-        throw new RangeError('D model must be 1N4148.');
+    const record = selectModelRecord(name, records, '1N4148', 'D', ['leakageResistance', 'packageParameters']);
+    const parameters = modelParameters(record.parameters, defaults, 'D', {IS: 'positive', N: 'positive',
+        BV: 'unlimited', IBV: 'positive', VJ: 'positive', FC: 'fraction',
+        TNOM: 'positive', NBV: 'positive', XTI: 'finite'});
+    const leakageResistance = record.leakageResistance === undefined ? Infinity : record.leakageResistance;
+    if (!(leakageResistance > 0 && (Number.isFinite(leakageResistance) || leakageResistance === Infinity))) {
+        throw new RangeError('D model.leakageResistance must be positive ohms or Infinity.');
     }
-    const key = name.toUpperCase(), record = records[key];
-    return {...record, name: key, parameters: {...record.parameters}};
+    if (record.schematicVariant !== undefined && !['schottky', 'varactor'].includes(record.schematicVariant)) {
+        throw new RangeError('D model.schematicVariant must be schottky, varactor or omitted.');
+    }
+    const packageParameters = modelParameters(record.packageParameters === undefined ? {} : record.packageParameters,
+        {seriesInductance: 0, parallelCapacitance: 0}, 'D packageParameters');
+    noPackageBranches(record, 'D');
+    return {mathematicalModel: 'SPICE junction diode', ...record, parameters, leakageResistance, packageParameters};
 }

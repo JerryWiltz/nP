@@ -1,4 +1,4 @@
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 import {lumpedDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
@@ -12,7 +12,7 @@ export function paSeRC(R = 75, C = 1e-12, options = {}) { // parallel series-RC 
 	var paSeRC = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
+	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		if (frequencyList[freqCount] === 0) {
 			sparsArray[freqCount] = [0].concat(dcTwoPort('short', 0, Ro));

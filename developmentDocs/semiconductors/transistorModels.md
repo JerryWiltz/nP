@@ -3,6 +3,90 @@
 
 `nP.NPN()` and `nP.PNP()` return three-port RF networks and DC curve-tracer tables from one shared bias-dependent model. NPN supports **2N3904** (default) and **BFR93A**; PNP supports **2N3906** (default). Ports are **1 base, 2 collector, 3 emitter**, each referenced to the selected context's `Ro` (normally 50 Ω). SPICE Q-instance order is collector, base, emitter; the implementation translates it explicitly.
 
+## User-supplied model records
+
+Both constructors accept a built-in model name or a plain model record:
+
+```js
+var myModel = {
+    name: 'My NPN',
+    parameters: {IS: 6.734e-15, BF: 416.4, VAF: 74.03, IKF: 0.06678,
+        NE: 1.259, ISE: 6.734e-15, XTB: 1.5, BR: 0.7371,
+        RC: 1, RB: 10, CJC: 3.638e-12, MJC: 0.3085,
+        CJE: 4.493e-12, MJE: 0.2593, TR: 239.5e-9, TF: 301.2e-12,
+        ITF: 0.4, VTF: 4, XTF: 2}
+};
+var q1 = nP.NPN({model: myModel});
+```
+
+This example uses the built-in 2N3904 parameters and produces the same electrical
+results at the same settings. `parameters` is required but may be empty. Omitted
+parameters use the generic defaults below, rather than values from a built-in
+part. `PNP({model: myPnpModel})` uses the same schema; the constructor establishes
+polarity and signed bias conventions. No registration, rebuild or network access
+is needed to use a new part record with a bundle supporting object input.
+
+Optional string fields are `name` (default `'custom'`), `manufacturer`, `material`,
+`structure`, `mathematicalModel`, `modelVersion`, `source`, `leakageSource` and
+`package`. Provenance links are metadata and are never fetched. The equation
+engine remains modified Gummel–Poon; metadata does not select another engine.
+If absent, mathematicalModel/modelVersion report SPICE modified Gummel–Poon /
+SPICE level 1. Missing provenance remains unspecified. `.model` reports resolved
+parameters and copied package rows; the internal DC record is immutable. Caller
+records are neither modified nor frozen. The same record can later become a
+built-in catalog entry with identical electrical behavior.
+
+### Supported parameters and defaults
+
+Parameter names are case-sensitive. Values use A, V, Ω, F and seconds, except
+`TNOM` in **kelvin** and `EG` in eV. SPICE text cards generally use Celsius for
+TNOM: convert to kelvin before passing a record. Unknown keys, nonnumeric values
+and values outside the supported ranges are rejected rather than ignored.
+
+| Parameters | Defaults | Supported range |
+| --- | --- | --- |
+| `IS`, `BF`, `BR` | 1e-16 A, 100, 1 | Finite, > 0 |
+| `NF`, `NR`, `NE`, `NC` | 1, 1, 1.5, 2 | Finite, > 0 |
+| `VAF`, `VAR`, `IKF`, `IKR`, `VTF` | Infinity | > 0; Infinity disables the corresponding effect |
+| `ISE`, `ISC`, `RB`, `RE`, `RC` | 0 | Finite, ≥ 0 |
+| `CJE`, `CJC`, `TF`, `TR`, `XTF` | 0 | Finite, ≥ 0 |
+| `VJE`, `VJC` | 0.75 V | Finite, > 0 |
+| `MJE`, `MJC`, `FC` | 0.33, 0.33, 0.5 | Finite, 0 ≤ value < 1 |
+| `ITF` | Infinity | ≥ 0, including Infinity |
+| `XTI`, `XTB` | 3, 0 | Finite |
+| `EG`, `TNOM` | 1.11 eV, 300.15 K | EG ≥ 0; TNOM > 0; both finite |
+| `KF`, `AF` | 0, 1 | Finite, ≥ 0 |
+
+These follow the supported [SPICE parameter definitions][gp-parameters], with
+one retained nP default: ITF is Infinity rather than SPICE's zero. This preserves
+existing named-device RF behavior by disabling the XTF correction when ITF is
+omitted. Supply ITF explicitly to reproduce a source card's intended behavior.
+Generic defaults allow evaluation; they do not establish a measured part fit.
+Additional simulator extensions such as variable RB, excess phase, substrate
+terminals or alternative BJT equations are not enabled by supplying extra keys.
+
+### Optional package rows
+
+`inductors` and `capacitors` default to `[]`. Each row is `[nodeA, nodeB, value]`
+with distinct integer nodes 0–10 and a finite positive value in H or F. These use
+the existing BJT adapter's internal node convention, **not circuit node labels**:
+0/1/2 are external B/C/E, 3/4/5 are the outer RB/RC/RE contacts, 6/7/8 are intrinsic
+B/C/E, and 9/10 are additional outer base/emitter package nodes. Without lead
+inductors, 0–3, 1–4, 2–5, 0–9 and 2–10 are joined. With lead inductors, their DC
+shorts must instead form exactly the independent groups `[0,3,9]`, `[1,4]`,
+`[2,5,10]`, leaving intrinsic nodes separate; incompatible lead networks are
+rejected. Capacitors open for DC. This schema preserves the existing BFR93A
+package model; it is not a general SPICE subcircuit importer.
+
+`test/bjt-model-record.test.js` compares all three built-in records with supplied
+objects at two temperatures and all three DC configurations: exact operating
+points, curve tables, S-parameters, noise covariance and direct IM products. It
+also checks external divider bias and RF handoff, raw/partial parameters,
+immutable snapshots, package copying and invalid inputs. Existing independent
+ngspice comparisons continue to validate the unchanged named models.
+
+[gp-parameters]: https://nmg.gitlab.io/ngspice-manual/bjts/bjtmodels_npn_pnp/gummel-poonbjtparameters_incl_modelextensions.html
+
 ## Curve tracer and fixed RF operating point
 
 ```js

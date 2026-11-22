@@ -1,5 +1,5 @@
 # AGENTS.md
-<!-- Modified: 2026-10-13 -->
+<!-- Modified: 2026-11-21 -->
 
 Instructions for diode and nonlinear-device models in `src/np-nport/src/diodes/`.
 
@@ -13,6 +13,8 @@ Diode components should be practical RF circuit models, not only isolated ideal 
 
 - Use lumped parasitic elements where appropriate, such as series resistance, package inductance, junction capacitance, and shunt leakage.
 - Use diode equations for DC and nonlinear behavior.
+- D accepts named or supplied model records through the same resolver/equations. Preserve generic defaults, immutable DC snapshots, optional leakageResistance and the Schottky schematicVariant. Reject unsupported parameters/package arrays explicitly; never borrow a named part's fit for a custom record. See developmentDocs/semiconductors/customModels.md. Legacy diode1N4148 retains its existing flat options until its separately planned removal.
+- Varactors use D with schematicVariant: varactor, finite nonnegative M including the logarithmic M=1 integral, and optional packageParameters.seriesInductance/parallelCapacitance (H/F, default 0). Preserve LS in series with [CP parallel to (RS + junction)], common RF/noise/IM transfer factors and its exact DC reduction. cvTable uses positive reverse VR and returns CJ/CT without changing Q. See developmentDocs/semiconductors/varactorModels.md; do not clamp manufacturer parameters to a simulator's primitive limits or describe generic noise/temperature laws as measured fits.
 - Emit RF S-parameters as nPort-compatible objects when used in frequency-domain analysis.
 - Expose DC I-V curve data as table data that can be displayed with `nP.lineChart()` or `nP.lineTable()`.
 - Build S and noise rows at `analysisFrequencies(componentSettings(global, options))` so the diode can use an explicit `fList` and join two-tone networks.

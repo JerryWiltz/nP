@@ -3,6 +3,11 @@
 
 Set the frequencies first. Then make each part of the circuit. These calls return [nPort objects](./nport-object.md) that you can [connect](./connecting-nports.md).
 
+Semiconductor constructors also accept a supplied parameter record in `model`,
+alongside built-in part names. See [custom device parameters](./diodes-and-active-components.md#your-own-device-parameters)
+for the record shape, defaults and family limits. A new part record needs no
+catalog registration or rebuild with a bundle supporting this API.
+
 ```js
 nP.global.fList = nP.global.fGen(1e9, 3e9, 21); // 1–3 GHz, 21 points
 ```
@@ -244,6 +249,17 @@ var rlc5 = nP.seSeRLC(430, 12e-9, 2.2e-12);
 For new circuits, separate parts plus `nP.nodal()` make the electrical connections easier to see.
 
 ## Diode
+
+`D()` selects the SPICE-style 1N4148 model (default) or Skyworks per-junction Schottky cards:
+
+```js
+var signalDiode = nP.D({model: '1N4148', qPoint: {vd: 0.6}});
+var schottkyDiode = nP.D({model: 'SMS7630', qPoint: {vd: 0.05}});
+```
+
+`SMS7621` is also supported. Ports are anode/cathode, voltages are V, temperature is K, and all records use the same curve, DC-bias, RF/noise and weak-IM APIs. Schottky records exclude package L/C and calibrated detector/noise behavior. See [Transistors and Diodes](./diodes-and-active-components.md#schottky-records).
+
+The older datasheet-fit constructor remains available:
 
 ```js
 var diode1 = nP.diode1N4148(); // default: zero DC bias

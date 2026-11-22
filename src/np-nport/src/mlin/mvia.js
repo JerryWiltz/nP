@@ -1,4 +1,4 @@
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 import {physicalDcModel} from '../physicalDcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
@@ -6,7 +6,7 @@ import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
 import {componentSettings} from '../componentSettings';
-import {C0, COPPER_RESISTIVITY, EPSILON0, INCH_TO_METER, MU0} from '../physicalConstants';
+import {COPPER_RESISTIVITY, EPSILON0, INCH_TO_METER, MU0} from '../physicalConstants';
 import {absoluteResistivity, normalizePhysicalModelOptions, physicalModelMetadata, requireNonnegative, requirePositive} from '../physicalModels/options';
 
 var pi = Math.PI;

@@ -1,4 +1,4 @@
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 import {requiredDcModel} from '../dcModel';
 import { complex } from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
@@ -10,8 +10,8 @@ import {componentSettings} from '../componentSettings';
 export function trf(N = 0.5, options = {}) { // ideal transformer nPort object
 	var trf = new nPort;
 	var settings = componentSettings(global, options);
-	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var freqCount = 0, s11, s12, s21, s22, sparsArray = [];
+	var frequencyList = analysisFrequencies(settings);
+	var freqCount, s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		s11 = complex((N ** 2 - 1) / (N ** 2 + 1), 0);
 		s12 = complex(2 * N / (N ** 2 + 1), 0);

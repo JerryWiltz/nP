@@ -1,4 +1,4 @@
-// Modified: 2026-11-19
+// Modified: 2026-11-21
 import {readFileSync} from 'node:fs';
 import {dirname, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -32,7 +32,7 @@ for (const name of names) {
     }
     checkPart(name, nP[name](), expected);
 }
-const variantOptions = {mbend: {left: {turn: 'left'}, right: {turn: 'right'}},
+const variantOptions = {D: {schottky: {model: 'SMS7630'}, varactor: {model: 'SMV1231-079LF', qPoint: {vd: -3}}}, mbend: {left: {turn: 'left'}, right: {turn: 'right'}},
     NMOS: {external: {body: 'external'}}, PMOS: {external: {body: 'external'}}};
 for (const [name, variants] of Object.entries(catalog.symbolVariants)) for (const [variant, filename] of Object.entries(variants)) {
     const expected = filename.replace(/\.svg$/, ''), options = variantOptions[name]?.[variant];

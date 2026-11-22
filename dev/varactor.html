@@ -1,0 +1,54 @@
+<!doctype html>
+<!-- Modified: 2026-11-21 -->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>SMV1231-079LF varactor</title>
+    <script src="../dist/nP.js"></script>
+</head>
+<body>
+    <script>
+        nP.global.fList = nP.global.fGen(10e6, 2e9, 51);
+        nP.global.Temp = 300.15;
+
+        var d1 = nP.D({model: 'SMV1231-079LF'});
+        var c1 = nP.C(10e-9);
+        var c2 = nP.C(10e-9);
+        var r1 = nP.R(100e3);
+        var r2 = nP.R(100e3);
+        var t1 = nP.Tee();
+        var t2 = nP.Tee();
+        var v1 = nP.V(-3);
+        var short = nP.Short();
+
+        var network = nP.nodal(
+            [c1, 100, 1],
+            [t1, 3, 1, 2],
+            [r1, 4, 3],
+            [v1, 4, 5],
+            [short, 5],
+            [d1, 2, 6],
+            [t2, 8, 6, 7],
+            [r2, 8, 9],
+            [short, 9],
+            [c2, 7, 101],
+            ['out', 100, 101]
+        );
+        var bias = network.operatingPoint.components[5].qPoint;
+        var capacitance = d1.cvTable({vr: {start: 0, stop: 15, points: 31}});
+        var capacitancePf = [['vr (V)', 'cj (pF)', 'ct (pF)']];
+        for (var row = 1; row < capacitance.length; row++) {
+            capacitancePf.push([capacitance[row][0], capacitance[row][1] * 1e12, capacitance[row][2] * 1e12]);
+        }
+        var response = network.out('s11dB', 's21dB');
+
+        nP.log(bias);
+        nP.schematic(network);
+        nP.lineChart({inputTable: [capacitancePf], metricPrefix: 'none',
+            title: 'SMV1231-079LF capacitance versus reverse voltage',
+            xAxisTitle: 'Reverse voltage (V)', yAxisTitle: 'Capacitance (pF)'});
+        nP.lineChart({inputTable: [response], metricPrefix: 'giga',
+            title: 'Varactor RF at externally solved VR = 3 V'});
+    </script>
+</body>
+</html>

@@ -55,6 +55,7 @@ Treat these as user-message shorthands when they reach the agent as text; they a
 - Coupled-line ports are clockwise from upper left: 1 upper left, 2 upper right, 3 lower right, 4 lower left. From port 1, port 2 is through, port 4 coupled, and port 3 isolated.
 - Reuse constants from `src/np-nport/src/physicalConstants.js`. Physical-model options use canonical lower-camel-case SI names; `resistivity` is absolute ohm-meters. Preserve documented aliases, reject conflicting or unknown properties, and keep `.physicalModel` metadata. See `developmentDocs/components/physicalModelApi.md`.
 - Preserve diode RF and DC behavior together. Biased diode models need their own noise covariance and weak nonlinear source model; see the diode-directory instructions.
+- Every new semiconductor constructor with a model catalog must accept both a built-in model name and a user-supplied record through `model`. A new part using the constructor's equations must work from supplied data without registration, a rebuild or fetching provenance links. Named and supplied records must share defaults, validation and the DC/RF/noise/nonlinear construction path. Document supported parameters, units, required values, defaults and package limits; never silently borrow a built-in part's fit or ignore unsupported data. Verify equivalent records produce identical DC, RF, noise and intermodulation results, including network bias handoff, and accept plain records created in Node REPL/browser contexts. Keep existing named calls compatible. See `developmentDocs/semiconductors/customModels.md`.
 
 ## General solutions; no special-case workarounds
 
@@ -82,6 +83,8 @@ Treat these as user-message shorthands when they reach the agent as text; they a
 
 ## Build, verification, and deployment
 
+- `npm run lint` checks hand-maintained source, scripts, tests and root build configurations for likely JavaScript bugs, unused bindings and overwritten assignments. Run it when changing those files; CI runs it before tests and builds. Keep formatting changes separate, and resolve findings rather than adding corrective exceptions. Rest-object destructuring may intentionally exclude fields; preserve that behavior when reviewing unused bindings.
+- `npm run check:equations` separately audits selected semiconductor expressions, Taylor derivatives and explicit SI dimensions with math.js. The Taylor polynomial issue is fixed; legacy diode clamp derivatives still fail. See `developmentDocs/analysis/equationAudit.md`. Preserve failing evidence, and update paired expressions, units and sampled domains when equations change. This audit is not a measured-device validation or a CI gate.
 - `npm test` runs Node tests. `npm run build` updates tracked browser, ESM, and CommonJS bundles after exported source changes. `npm run build:plugin` updates the separately maintained plugin bundle only when needed.
 - `npm run docs:build` verifies documentation. `docs/.vitepress/dist/` is generated and ignored; do not add it to the source branch. `npm run docs:dev` is the user's local viewer.
 - Use the narrowest meaningful test. For chart or DOM changes, check a browser harness under `dev/` when visual behavior matters, respecting the Chromium preference above. For RF/math changes, compare known values. For docs examples, verify changed runnable snippets.

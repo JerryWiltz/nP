@@ -1,0 +1,49 @@
+SMV1231-079LF independent classical noise reference
+* Modified: 2026-11-21
+* Skyworks 200058AB Tables 1/5, Figure 5: SMV1231-079LF.
+* ngspice 39.3 clamps primitive diode M/VJ; use the published charge
+* explicitly in a behavioral capacitor and the primitive for conduction only.
+.temp 27
+.options gmin=1e-24 abstol=1e-18 reltol=1e-10
+.model junction D (IS=1e-14 N=1 RS=0 TT=0 CJO=0 BV=1e30 TNOM=27)
+Lpkg a p .7n
+Rseries p j 2.5
+Djunction j k junction
+Cjunction j k Q={-1.88p*10.13*((1-(v(j)-v(k))/10.13)^(1-4.999)-1)/(1-4.999)}
+Cpackage p k .44p
+Vbias supply 0 DC -3
+Lbias supply a 1e3
+Lreturn k 0 1e3
+Rsource input aca 50
+Vsignal input 0 DC 0 AC 1
+Ca aca a 1e-3
+Ck k load 1e-3
+Gload load 0 load 0 0.02
+.control
+set numdgt=15
+set wr_vecnames
+set wr_singlescale
+alter Vbias = -0.5
+noise v(load) Vsignal dec 1 10meg 1g
+setplot noise1
+wrdata varactor-0.5-noise.txt inoise_spectrum onoise_spectrum
+noise v(load) Vsignal lin 1 2g 2g
+setplot noise3
+wrdata varactor-0.5-noise-2g.txt inoise_spectrum onoise_spectrum
+alter Vbias = -3
+noise v(load) Vsignal dec 1 10meg 1g
+setplot noise4
+wrdata varactor-3-noise.txt inoise_spectrum onoise_spectrum
+noise v(load) Vsignal lin 1 2g 2g
+setplot noise6
+wrdata varactor-3-noise-2g.txt inoise_spectrum onoise_spectrum
+alter Vbias = -10
+noise v(load) Vsignal dec 1 10meg 1g
+setplot noise7
+wrdata varactor-10-noise.txt inoise_spectrum onoise_spectrum
+noise v(load) Vsignal lin 1 2g 2g
+setplot noise9
+wrdata varactor-10-noise-2g.txt inoise_spectrum onoise_spectrum
+quit
+.endc
+.end

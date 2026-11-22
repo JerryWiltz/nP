@@ -859,6 +859,8 @@ Every physical microstrip options object also accepts `fList`, an array of frequ
 
 `NPN()` returns a three-port: **1 base, 2 collector, 3 emitter**. Select `2N3904` (default) or `BFR93A`. It uses the current `global.fList`, initially `[2e9]`, or an options-level `fList`.
 
+`model` also accepts a plain record: `var myModel = {name: 'My NPN', parameters: {IS: 1e-15, BF: 150}}; var q1 = nP.NPN({model: myModel});`. No catalog registration or rebuild is required. `parameters` is required; omitted values use generic defaults, not a built-in part. Optional provenance strings and `inductors`/`capacitors` follow the existing catalog record shape; omitted arrays are empty and omitted name is `'custom'`. Links are metadata, never fetched. Unknown or invalid parameters are rejected; inputs are copied. See [supported parameters, units, defaults and package node mapping](../semiconductors/transistorModels.md#user-supplied-model-records). Named calls and their results are unchanged.
+
 ```js
 // NPN: defaults for DC curves and the fixed RF operating point
 nP.NPN({
@@ -894,6 +896,8 @@ Every completed **two-port** now has `.stability` rows `{frequency, K, deltaMag,
 
 `PNP()` selects **2N3906** and exposes the same **1 base, 2 collector, 3 emitter** RF port order and methods as `NPN()`. Its physical signed defaults are:
 
+`PNP({model: myPnpModel})` also accepts the same user-supplied record schema and generic parameter defaults as NPN. The PNP constructor supplies polarity; use physical negative Q-point currents/voltages as below.
+
 ```js
 // PNP: DC curve family and fixed RF Q point
 nP.PNP({
@@ -925,6 +929,8 @@ The returned `.bias`, `.qPoint`, `.smallSignal`, `.model`, `.dc`, `.noise` and n
 
 ## JFET transistors
 
+`NJF({model: myRecord})` and `PJF({model: myRecord})` accept supplied records with `parameters`, optional name/provenance and generic defaults. The constructor supplies polarity; conflicting record polarity is an error. See [supported parameters and defaults](../semiconductors/customModels.md#njf--pjf). No catalog registration or rebuild is required.
+
 ### `NJF`
 
 `NJF({model: 'MMBF5457LT1', qPoint: {vgs: -1, vds: 10}, temperature: global.Temp, fList: global.fList})` returns a three-port in **gate, drain, source** order. These shown values are defaults. `PJF` selects `MMBFJ175LT1` with default `qPoint: {vgs: 1, vds: -10}`. Both use onsemi silicon parameter records and SPICE level-1 Shichman–Hodges equations, contact RD/RS and gate junction charge. No explicit package L/C is supplied.
@@ -937,6 +943,8 @@ Both accept only `model`, `qPoint`, `bias`, `temperature` (K), `fList` (Hz). `bi
 
 ## MESFET transistors
 
+`MESFET({model: myRecord})` accepts supplied Statz/MES1 records. Omitted values use [generic defaults](../semiconductors/customModels.md#mesfet), not the reference example or NE760 fit. Electrical temperature stays fixed at 300.15 K.
+
 ### `MESFET`
 
 `MESFET({model: 'SPICE3_REFERENCE', qPoint: {vgs: -0.5, vds: 2}, temperature: global.Temp, fList: global.fList})` shows defaults. It returns G/D/S ports 1/2/3. The N-channel Statz/MES1 current and differential gate-capacitance law includes RD/RS and gate leakage. This published SPICE reference profile is **not a commercial part fit**. An additional `model: 'NE760'` selects Intusoft's published NEC commercial-family Statz card, with RD=5.45 ohms and RS=4.88 ohms. It is not manufacturer-certified or package-specific and supplies no lead L/C or measured noise fit. Verify model selection in older bundles; the presence of MESFET alone does not imply NE760 support.
@@ -945,15 +953,19 @@ Both accept only `model`, `qPoint`, `bias`, `temperature` (K), `fList` (Hz). `bi
 
 ## HEMT/pHEMT transistors
 
+`HEMT({model: myRecord})` accepts supplied Statz/Divekar records. Supply the [required core values](../semiconductors/customModels.md#hemt); optional values receive generic defaults. Raw packageParameters regenerate the existing die/SC-70 topology. Derived terminal/contact/L/C fields in a complete record must match; omit stale derived fields when editing raw values. This does not select arbitrary HEMT equations or package wiring.
+
 ### `HEMT`
 
-`HEMT({model: 'ATF35143_DIE', qPoint: {vgs: -0.6, vds: 2}, temperature: global.Temp, fList: global.fList})` shows defaults. Ports are **1 gate, 2 drain, 3 source**, with all currents entering. This is a nominal-temperature die adaptation of the manufacturer's ATF-35143 Statz record at W=400 µm. It includes RG/RD/RS, die LG/LD/LS, CDS and empirical RC/CRF output conductance; the separate `model: 'ATF35143'` adds the complete p.16 SC-70 circuit, with both external source pins joined at port 3 and all three source bonds retained. ATF35143_DIE stays the default. Unsupported model names, arbitrary parameter import and unknown options are rejected.
+`HEMT({model: 'ATF35143_DIE', qPoint: {vgs: -0.6, vds: 2}, temperature: global.Temp, fList: global.fList})` shows defaults. Ports are **1 gate, 2 drain, 3 source**, with all currents entering. This is a nominal-temperature die adaptation of the manufacturer's ATF-35143 Statz record at W=400 µm. It includes RG/RD/RS, die LG/LD/LS, CDS and empirical RC/CRF output conductance; the separate `model: 'ATF35143'` adds the complete p.16 SC-70 circuit, with both external source pins joined at port 3 and all three source bonds retained. ATF35143_DIE stays the default. Unknown built-in names, unsupported parameters and unknown options are rejected; new part names belong in supplied records.
 
 `bias` and `ivTable()` accept the same vgs/vds intervals as JFETs: gate 0…−0.95 V, 5 curves; drain 0…3 V, 101 points. Tables contain numeric V/A rows after one header; curves do not change Q point or RF settings. The public metadata follows MESFET's signed-current and intrinsic-voltage conventions, adding rg. Distinct static Qgs/Qgd and manufacturer P/R/C correlated gate/drain noise are retained; this is not MES1's differential capacitance partition. Positive RF frequencies and a conducting Q point with positive intrinsic VDS are required; DC curves may include cutoff and zero drain voltage. Electrical parameters stay at 300.15 K; selected temperature scales noise only. Package nominal range is 0.1–6 GHz; independent SPICE checks do not establish a measured-device bandwidth/NF guarantee. No electrical temperature fit, trapping, self-heating or avalanche is implied. Direct weak Taylor products omit quadratic remixing and large-signal behavior.
 
 Networks with V() solve bias through all three contact resistances before RF reconstruction. `network.operatingPoint` reports the solved state, and reused templates retain separate placement biases. Packaged contact metadata comes from a shared graph reduction (1.1/0.6/0.283333 ohms); network DC retains every branch. Against the published 2 V/15 mA table, S21 differs by up to about 2.1 dB/28° over 0.5–6 GHz; fixture source vias are excluded. See [HEMT contract](../semiconductors/hemtModels.md).
 
 ## MOSFET transistors
+
+`NMOS({model: myRecord})` and `PMOS({model: myRecord})` accept supplied level-1 records. Omitted values use [generic MOS1 defaults](../semiconductors/customModels.md#nmos--pmos), including L/W=100 µm. Keep body at constructor options level; a supplied device record body field must agree. No registration/rebuild is needed; other MOS equations and arbitrary package L/C remain unsupported.
 
 ### `NMOS`
 
@@ -973,7 +985,7 @@ Noise is classical channel/contact thermal noise, without a measured fit (vendor
 
 ### `D`
 
-The generic SPICE-style diode constructor currently supports **1N4148**. It returns a two-port series branch: **1 anode, 2 cathode**. Defaults are:
+The generic SPICE-style diode constructor supports **1N4148** and the Skyworks per-junction Schottky records **SMS7621/SMS7630**, plus the **SMV1231-079LF** varactor. It returns a two-port series branch: **1 anode, 2 cathode**. Defaults are:
 
 ```js
 // D: DC sweep and a separate fixed RF Q point
@@ -996,9 +1008,17 @@ nP.D({
 
 `ivTable()` returns `['vd (V)', 'id (A)']` followed by numeric rows. An optional `ivTable({vd: {start, stop, points}})` overrides the curve range without changing RF data. Partial nested options retain omitted defaults. Voltage is anode minus cathode; positive current flows from anode to cathode.
 
-`.bias` and `.qPoint` contain the solved terminal voltage/current, internal junction voltage/current and temperature. `.smallSignal` reports junction conductance, terminal dynamic resistance, series/leakage resistance and junction/diffusion/total capacitance. `.model` identifies the archived card and provenance; `.dc.bias` holds the curve settings. S-parameters, noise covariance and weak nonlinear sources use the fixed Q point. `nodal()`/`cascade()` preserve that RF/noise behavior; they do not solve a new DC bias circuit.
+`.bias` and `.qPoint` contain the solved terminal voltage/current, internal junction voltage/current and temperature. `.smallSignal` reports junction conductance, terminal dynamic resistance, series/leakage resistance and junction/diffusion/total capacitance. `.model` identifies the selected card and provenance; `.dc.bias` holds the curve settings. S-parameters, noise covariance and weak nonlinear sources use the fixed Q point. With an explicit `V()` supply, `nodal()`/`cascade()` solve DC before RF composition and rebuild each diode placement independently. RF-only networks preserve the selected construction bias.
 
-This uses the archived NXP SPICE card, including RS and its external leakage resistor, continuous junction charge and temperature scaling. It differs numerically from the older datasheet-fit `diode1N4148()`, which remains unchanged. The model does not include an explicit package L/C network, self-heating, large-signal transients or calibrated avalanche/excess noise. Intercepts use direct Taylor sources. See [diodeModels.md](../semiconductors/diodeModels.md).
+The default 1N4148 record uses the archived NXP SPICE card, including RS and its external leakage resistor, continuous junction charge and temperature scaling. It differs numerically from the older datasheet-fit `diode1N4148()`, which remains unchanged. The model does not include an explicit package L/C network, self-heating, large-signal transients or calibrated avalanche/excess noise. Intercepts use direct Taylor sources. See [diodeModels.md](../semiconductors/diodeModels.md).
+
+`D({model: myRecord})` accepts supplied junction/Schottky records. A parameters object is required; [documented generic defaults](../semiconductors/customModels.md#d-junction-and-schottky-diodes) fill omissions. Optional record-level leakageResistance defaults to Infinity; schematicVariant: schottky selects the symbol. Source links are provenance only and never fetched. Nonempty package L/C arrays are rejected.
+
+For Schottky records, use `D({model: 'SMS7630', qPoint: {vd: 0.05}})` or `model: 'SMS7621'`. Defaults remain VD=0.6 V and the 0–0.8 V/201-point curve. The records select the hooked-cathode Schottky symbol; they include RS, no external leakage resistor, and no package L/C network. Temperature is kelvin; noise and weak IM follow the shared SPICE diode law, not a calibrated detector fit. See [Schottky model details](../semiconductors/schottkyModels.md).
+
+`D({model: 'SMV1231-079LF', qPoint: {vd: -3}})` selects the sourced varactor and symbol. Hyperabrupt M values, including M=1, are supported. Optional model.packageParameters contains finite nonnegative seriesInductance (H) and parallelCapacitance (F), both default 0, with LS in series with [CP parallel to (RS + junction)]. RF/noise/IM share this package transfer; at DC LS shorts and CP opens. Arbitrary package arrays remain unsupported.
+
+`d1.cvTable({vr: {start: 0, stop: 15, points: 31}})` returns a header plus numeric `[VR, CJ, CT]` rows in V/F/F. VR defaults to 0–10 V/201 points, must be nonnegative and increasing. CJ is depletion capacitance; CT is the zero-frequency port-admittance slope. In reverse blocking CT is effectively intrinsic-plus-diffusion capacitance plus CP. The sweep preserves fixed Q, RF data and I–V settings. smallSignal adds packageCapacitance, terminalCapacitance and seriesInductance; its existing totalCapacitance stays intrinsic. See [varactor models, package law and validation](../semiconductors/varactorModels.md).
 
 `diode1N4148` takes one options object. Its scalar properties are JavaScript numbers; `ivPoints` is an integer. It also accepts `fList`, an array of frequencies in hertz, defaulting to `nP.global.fList`.
 

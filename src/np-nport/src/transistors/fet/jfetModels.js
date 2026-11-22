@@ -1,7 +1,10 @@
-// Modified: 2026-11-19
+// Modified: 2026-11-21
+import {selectModelRecord, modelParameters, noPackageBranches} from '../../semiconductorModel';
 // Resolved parameter data from the cited manufacturer records. No downloaded
 // model text is executed or bundled; package parasitics are not inferred.
 const common = {TNOM: 300.15, TCV: 0, BEX: 0, NLEV: 1};
+const defaults = {...common, VTO: -2, BETA: 1e-4, LAMBDA: 0, RD: 0, RS: 0,
+    IS: 1e-14, CGS: 0, CGD: 0, PB: 1, FC: 0.5, KF: 0, AF: 1};
 const records = {
     MMBF5457LT1: {
         polarity: 1, manufacturer: 'onsemi', material: 'silicon', structure: 'N-channel junction FET',
@@ -27,10 +30,11 @@ const records = {
 };
 
 export function jfetModel(name, polarity) {
-    const selected = name === undefined ? polarity === 1 ? 'MMBF5457LT1' : 'MMBFJ175LT1' : name;
-    if (typeof selected !== 'string' || !Object.hasOwn(records, selected.toUpperCase()) || records[selected.toUpperCase()].polarity !== polarity) {
-        throw new RangeError((polarity === 1 ? 'NJF' : 'PJF') + ' model must be ' + (polarity === 1 ? 'MMBF5457LT1' : 'MMBFJ175LT1') + '.');
-    }
-    const record = records[selected.toUpperCase()];
-    return {...record, name: selected.toUpperCase(), parameters: {...record.parameters}, inductors: [], capacitors: []};
+    const type = polarity === 1 ? 'NJF' : 'PJF';
+    const record = selectModelRecord(name, records, polarity === 1 ? 'MMBF5457LT1' : 'MMBFJ175LT1', type, [], polarity);
+    const parameters = modelParameters(record.parameters, defaults, type, {VTO: 'negative', BETA: 'positive',
+        IS: 'positive', PB: 'positive', TNOM: 'positive', TCV: 'finite', BEX: 'finite', FC: 'fraction', NLEV: 1});
+    noPackageBranches(record, type);
+    return {mathematicalModel: 'SPICE level-1 JFET (Shichman-Hodges, B=1)',
+        ...record, polarity, parameters, inductors: [], capacitors: []};
 }

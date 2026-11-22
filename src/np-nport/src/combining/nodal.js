@@ -10,7 +10,7 @@ import {dcConnection} from '../dcModel';
 import {rfConnection} from '../operatingPointHandoff';
 import {prepareDcBias, retainDcBias} from '../dcBias';
 
-// Modified: 2026-11-17
+// Modified: 2026-11-21
 var conjugate = function (value) { return complex(value.getR(), -value.getI()); };
 
 
@@ -39,7 +39,7 @@ function rebuildNodal(normalized, components) {
 function nodalNetwork(normalized) {
 	var componentConnections = normalized.connections;
 	var signalOptions = normalized.signalOptions;
-	var i = 0, j = 0, k = 0, row = 0, col = 0, offset = 0, base = 0;
+	var i = 0, j, k, row = 0, col = 0, offset = 0, base = 0;
 	var networkSpars = componentConnections[0][0].spars.map(function (row) {
 		return [row[0]];
 	});

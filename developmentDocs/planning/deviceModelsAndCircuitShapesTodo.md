@@ -6,10 +6,30 @@ Planning note for the remaining SPICE-style device families, canonical symbols a
 ## Current foundation
 
 - NPN and PNP share a modified Gummel–Poon engine. Supported records are 2N3904, BFR93A and 2N3906.
-- `D()` supports the SPICE-style 1N4148 model. Its external-network DC adapter and the separate legacy diode adapter are implemented.
+- `D()` supports the SPICE-style 1N4148 model and Skyworks SMS7621/SMS7630 per-junction Schottky records. Its external-network DC adapter and the separate legacy diode adapter are implemented.
 - Networks retain their connections for DC analysis; supported supply-driven BJT, JFET, MOSFET, MESFET, HEMT and diode networks solve bias before RF.
 - Named circuit shapes are `series`, `ladder`, `bridgedT`, `branchline`, `edgeCoupledFilter`, `powerDivider`, `powerCombiner`, `commonEmitter` and `commonSource`. The first transistor board covers a divider-biased NPN/PNP stage with separate or combined emitter bypass and optional supply bypass; other bias topologies remain to be added.
 - Voltage, current and four controlled-source symbols already exist. Only `V()` currently has a numerical source constructor.
+
+## Version 0.50.0: remove the legacy diode
+
+The planned removal is `diode1N4148()`, including its empirical current, noise
+and capacitance model. Retain the SPICE-style `D()` constructor. The current
+0.49.0 release retains the legacy API and behavior; do not add a replacement
+alias or silently reinterpret old options as the different SPICE model.
+
+- [ ] Migrate legacy examples to `D()`, reviewing bias options, result metadata
+  and numerical differences. Preserve example filenames, REPL IDs and URLs
+  used by the Obsidian plugin.
+- [ ] Remove the legacy export, constructor, device-specific RF/DC adapters,
+  metadata and tests after checking which helpers are shared with `D()`.
+- [ ] Update the constructor/DC catalogs, Guide, engineering notes, source
+  index and all four shipped agent guides; refresh managed copies.
+- [ ] Remove the legacy case from the equation audit with the implementation,
+  preserving its historical finding in the audit note. Until removal, continue
+  reporting its exponential-clamp derivative mismatch.
+- [ ] Document the migration and breaking API removal in the 0.50.0 release
+  notes, then verify exports, DC/RF/noise/intermodulation, schematics and bundles.
 
 ## Recommended order
 
@@ -33,7 +53,9 @@ Planning note for the remaining SPICE-style device families, canonical symbols a
 - [x] **HEMT accuracy audit:** package wiring and modern charge expressions checked; residual conductance/capacitance and sensitivity results recorded in [audit](../semiconductors/hemtAccuracyAudit.md). No verified correction identified; legacy MDS mapping and measured characterization remain unresolved.
 - [ ] **Further HEMT work:** improve measured-data agreement, support separate external source pins and electrical temperature behavior, additional GaAs/GaN records and suitable TOM/Angelov/ASM engines; assess trapping, self-heating and dispersion explicitly.
 - [ ] **HBT and advanced bipolar:** add validated HBT records where the existing engine is adequate; assess VBIC/HICUM when additional physics is needed. A material label alone must not select the equations.
-- [ ] **Specialized diodes:** add Schottky, Zener and varactor records/equations where validated; implement suitable charge-storage behavior for PIN diodes.
+- [x] **First Schottky records:** `D({model: 'SMS7621'})` / `SMS7630` select Skyworks Table 5 per-junction cards with DC/RF/noise/direct IM, external bias, symbolic derivatives/units and independent ngspice checks. Package L/C and calibrated detector/noise fits remain outside these records.
+- [x] **First varactor record:** D selects SMV1231-079LF, with hyperabrupt/M=1 charge support, explicit LS/CP package, C–V tables, symbol, supplied-record equivalence and external bias. Independent SPICE charge/network checks and datasheet C–V comparison are documented in [varactor models](../semiconductors/varactorModels.md).
+- [ ] **Additional diode families:** add validated Zener records and suitable charge-storage behavior for PIN diodes; extend characterized varactor/package/noise fits.
 - [x] **Diode DC adapter:** both constructors reuse their own current laws, resistances, temperature and breakdown behavior in external-network bias solving.
 
 For every device family:
@@ -54,7 +76,7 @@ For every device family:
 - [x] N-channel and P-channel JFET: `NJF`/`PJF` drawing names, gate/drain/source terminal order, runtime geometry and Symbol library entries. Numerical NJF/PJF constructors are implemented.
 - [x] N-channel and P-channel MOSFET: enhancement/depletion artwork, three-terminal body-to-source versions and four-terminal independent-body versions. Drawing order is gate/drain/source/body. Enhancement numerical constructors and body handling are implemented; depletion numerical records remain future work.
 - [x] MESFET/HEMT drawing names share the existing N-channel FET geometry and gate/drain/source terminal order. MESFET has Statz/MES1 records; HEMT has ATF35143_DIE and common-source ATF35143 SC-70 records.
-- [x] Schottky, Zener and varactor diode artwork, with anode/cathode terminal order, runtime metadata and Symbol library entries. Specialized numerical models remain to be implemented.
+- [x] Schottky, Zener and varactor diode artwork, with anode/cathode terminal order, runtime metadata and Symbol library entries. Schottky and SMV1231-079LF varactor records are available through `D()`; Zener numerical models remain to be implemented.
 - [x] Reuse NPN/PNP artwork for HBT drawings and ordinary diode artwork for PIN drawings, identifying the family through an instance caption. Captions select no numerical model; HBT records/advanced bipolar engines and PIN charge-storage behavior remain future work.
 - [x] Register the new drawing-only artwork under `deviceSymbols`, supply runtime terminal/layout metadata and regenerate the symbol gallery and bundles. Move individual mappings to `constructors` when numerical implementations arrive.
 

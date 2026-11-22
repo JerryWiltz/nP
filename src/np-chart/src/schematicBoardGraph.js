@@ -1,4 +1,4 @@
-// Modified: 2026-11-19
+// Modified: 2026-11-21
 // General graph operations for ORI's automatic board. No RF circuit patterns.
 const AXES = [[1, 0], [0, 1], [-1, 0], [0, -1]];
 
@@ -350,7 +350,7 @@ export function automaticRoute(start, finish, bounds, obstacles, occupied, node,
     const key = (point, direction) => `${point[0]},${point[1]},${direction}`;
     const initialDirection = board.startDirection ? AXES.findIndex(axis => same(axis, board.startDirection)) : -1;
     const finishDirection = board.finishDirection ? AXES.findIndex(axis => same(axis, board.finishDirection)) : -1;
-    const startKey = key(start, initialDirection), target = finish.join(','), queue = [];
+    const startKey = key(start, initialDirection), queue = [];
     const best = new Map([[startKey, 0]]), previous = new Map();
     heapPush(queue, {point: start, cost: 0, score: 0, direction: initialDirection, key: startKey});
     while (queue.length) {

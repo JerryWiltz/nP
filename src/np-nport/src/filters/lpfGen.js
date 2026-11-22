@@ -1,4 +1,4 @@
-// Modified: 2026-11-18
+// Modified: 2026-11-21
 import {seL} from '../rlc/seL';
 import {paC} from '../rlc/paC';
 import {namedDcModel} from '../dcModel';
@@ -22,7 +22,7 @@ function validatedFilterValues(filt) {
 }
 
 export function lpfGen( filt =[50, 1.641818746502858e-11, 4.565360855435164e-8, 1.6418187465028578e-11, 50], options = {}) { // returns a low-pass filter nPort
-	var i = 0;
+	var i;
 	var filtTable = [];
 	var filterValues = validatedFilterValues(filt);
 	var elements = filterValues.slice(1, -1);

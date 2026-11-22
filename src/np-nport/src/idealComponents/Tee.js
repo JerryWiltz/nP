@@ -1,4 +1,4 @@
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 import {connectionDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
@@ -10,8 +10,8 @@ import {componentSettings} from '../componentSettings';
 export function Tee(options = {}) { // a 3port dummy connection
 	var Tee = new nPort;
 	var settings = componentSettings(global, options);
-	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount = 0, Z = [], Y = [], s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [];
+	var frequencyList = analysisFrequencies(settings);
+	var freqCount, s11, s12, s13, s21, s22, s23, s31, s32, s33, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
 		s11 = complex(-1/3,0);
 		s12 = complex(2/3,0);

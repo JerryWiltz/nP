@@ -1,4 +1,4 @@
-// Modified: 2026-11-16
+// Modified: 2026-11-21
 import {physicalDcModel} from '../physicalDcModel';
 import { complex } from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
@@ -108,8 +108,8 @@ export function mlin(input = {}) {
 	var mlin = new nPort;
 	var settings = componentSettings(global, options);
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro, 0), two = complex(2, 0), freqCount = 0, s11, s12, s21, s22, sparsArray = [], noiseArray = [];
-	var Atlin = {}, Btlin = {}, Ctlin = {}, Zmlin = {}, Ds = {}, alpha = 0, beta = 0, gamma = {};
+	var Zo = complex(Ro, 0), two = complex(2, 0), freqCount, s11, s12, s21, s22, sparsArray = [], noiseArray = [];
+	var Atlin, Btlin, Ctlin, Zmlin, Ds, alpha, beta, gamma;
 
 	var wOverH = Width / Height;
 	var thicknessOverHeight = Thickness / Height;
@@ -118,8 +118,8 @@ export function mlin(input = {}) {
 	var quasiStatic = singleLine(effectiveWOverH, er);
 	var Z = quasiStatic.z0;
 	var ere = quasiStatic.erEff;
-	var Zf = 0;
-	var eref = 0;
+	var Zf;
+	var eref;
 	var analysis = [];
 
 	// compute conductor loss terms

@@ -1,0 +1,20 @@
+Two different Skyworks Schottky junctions with shared external bias
+* Modified: 2026-11-21
+* Same Table 5 cards as the individual reference decks; no package L/C.
+.temp 27
+.options gmin=1e-18 abstol=1e-15 reltol=1e-10
+.model sms7630 D (IS=5e-6 RS=20 N=1.05 TT=1e-11 CJO=.14p M=.40 EG=.69 XTI=2 FC=.5 BV=2 IBV=1e-4 VJ=.34 TNOM=27 NBV=1 KF=0 AF=1)
+.model sms7621 D (IS=4e-8 RS=12 N=1.05 TT=1e-11 CJO=.1p M=.35 EG=.69 XTI=2 FC=.5 BV=3 IBV=1e-5 VJ=.51 TNOM=27 NBV=1 KF=0 AF=1)
+Vfeed feed 0 1
+Rfeed feed a 1000
+D1 a b sms7630
+D2 b 0 sms7621
+.control
+set numdgt=15
+set wr_vecnames
+set wr_singlescale
+op
+wrdata schottky-dual-dc.txt v(a) v(b) i(Vfeed) @d1[id] @d2[id]
+quit
+.endc
+.end

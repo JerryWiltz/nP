@@ -1,4 +1,4 @@
-// Modified: 2026-11-15
+// Modified: 2026-11-21
 // Two-variable Taylor coefficients, normalized by i! j!, through degree three.
 // The same current/charge equations supply DC, RF and weak nonlinear analysis.
 export const powers = [[0, 0], [1, 0], [0, 1], [2, 0], [1, 1], [0, 2],
@@ -37,6 +37,11 @@ function compose(a, derivatives) {
     return result;
 }
 export function power(a, exponent) {
+    // Polynomial powers remain defined at zero; avoid 0 * x^negative in
+    // the generic derivative formula. Match the three-control Taylor algebra.
+    if (exponent === 0) return constant(1);
+    if (exponent === 1) return a.slice();
+    if (exponent === 2) return multiply(a, a);
     const x = a[0];
     return compose(a, [x ** exponent, exponent * x ** (exponent - 1),
         exponent * (exponent - 1) * x ** (exponent - 2) / 2,

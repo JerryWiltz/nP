@@ -1,4 +1,4 @@
-// Modified: 2026-11-19
+// Modified: 2026-11-21
 import {schematicSymbols} from './schematicSymbols';
 import {nodalBlockSymbol, symbolForSchematicEntry} from './nodalBlockSymbol';
 import {schematicShapeBoards} from './schematicShapeBoards';
@@ -1194,7 +1194,7 @@ function saveSchematicSvg(markup) {
 function schematicErrorMount(options) {
     if (typeof options.mount !== 'string') return options.mount || document.body;
     try { return document.querySelector(options.mount) || document.body; }
-    catch (error) { return document.body; }
+    catch { return document.body; }
 }
 
 function reportSchematicFailure(error, options, detected) {

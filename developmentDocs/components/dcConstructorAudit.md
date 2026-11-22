@@ -100,19 +100,24 @@ Source directory: `src/np-nport/src/mlin/`. Preserve `.physicalModel` options/ma
 
 ## Nonlinear devices
 
-Sources: `src/np-nport/src/transistors/bjt/` and `src/np-nport/src/diodes/`. Preserve model-local temperature/parameters independently of any previous Q point.
+Sources: `src/np-nport/src/transistors/` and `src/np-nport/src/diodes/`. Preserve model-local temperature/parameters independently of any previous Q point.
+
+All nine catalog-based semiconductor constructors also accept supplied records.
+Named and supplied records retain the same immutable DC definition and automatic
+RF handoff; see [custom defaults, required values and package limits](../semiconductors/customModels.md).
+The legacy diode keeps its existing flat custom-parameter options.
 
 | Constructor | Ports | Class | Planned DC behavior |
 | --- | --- | --- | --- |
-| `NPN` | 3 | Nonlinear | B/C/E = 1/2/3. Fixed-VBE/constant-beta estimate, then shared Gummel–Poon currents/Jacobian. Retain RB/RC/RE and the selected package, with internal package L shorted and C opened. Repeated placements get independent states. |
-| `PNP` | 3 | Nonlinear | Same B/C/E order/engine, with signed physical voltages/currents. Entering emitter terminal current differs in sign from legacy outward `.bias.ie`. |
+| `NPN` | 3 | Nonlinear | B/C/E = 1/2/3. Fixed-VBE/constant-beta estimate, then shared Gummel–Poon currents/Jacobian. Retain RB/RC/RE and the selected package, with internal package L shorted and C opened. Named and supplied model records use the same validated immutable definition and RF handoff. Repeated placements get independent states. |
+| `PNP` | 3 | Nonlinear | Same B/C/E order/engine and named-or-record model support, with signed physical voltages/currents. Entering emitter terminal current differs in sign from legacy outward `.bias.ie`. |
 | `HEMT` | 3 | Nonlinear | ATF35143_DIE and ATF35143 SC-70 nominal Statz pHEMT adaptations, G/D/S with common package source pins; full contact graph retained, inductors short and capacitors/RC-CRF open for DC. Shared solve and placement handoff rebuild partitioned charge, RF and correlated noise. Positive conducting RF bias required. |
 | `MESFET` | 3 | Nonlinear | N-channel Statz/MES1 SPICE reference plus Intusoft NE760 family card (no package-specific fit), G/D/S currents, RD/RS, Schottky gates; shared DC solve and intrinsic-voltage RF/noise/nonlinear handoff. Electrical temperature fixed at 300.15 K. |
 | `NJF` | 3 | Nonlinear | Level-1 G/D/S JFET, signed entering currents, gate leakage and RD/RS; shared Newton solve and intrinsic-voltage RF handoff. |
 | `PJF` | 3 | Nonlinear | P-channel signed counterpart with its own onsemi record; same G/D/S order and DC/RF reconstruction. |
 | `NMOS` | 3 or 4 | Nonlinear | Level-1 G/D/S plus optional B. Default ties B to external S; RD/RS and body junctions remain. Shared Newton solve and three intrinsic-voltage RF handoff. A floating gate gives DC_FLOATING_BIAS. |
 | `PMOS` | 3 or 4 | Nonlinear | P-channel signed counterpart, one DMP58D0SV channel. Same body contract; external body uses the equation-level primitive, not an accessible package pin. |
-| `D` | 2 | Nonlinear | Anode/cathode = 1/2. Selected SPICE-style junction law and RS; leakage resistor outside the RS-plus-junction branch. Retain supported temperature/breakdown behavior. |
+| `D` | 2 | Nonlinear | Anode/cathode = 1/2. Selected SPICE-style junction law and RS: 1N4148, Skyworks SMS7621/SMS7630 Schottky records or SMV1231-079LF varactor. The varactor package LS shorts and CP opens; supplied package values stay in the immutable record. The 1N4148 leakage resistor is outside the RS-plus-junction branch; Schottky cards specify no extra resistor. Retain supported temperature/breakdown behavior. |
 | `diode1N4148` | 2 | Nonlinear | Reuse legacy current law/parameters: leakage inside the junction branch, series resistance and its own breakdown continuation. The reusable legacyDiode.js evaluator serves DC and RF without substituting the D() card or noise treatment. |
 
 ## Composition and synthesis

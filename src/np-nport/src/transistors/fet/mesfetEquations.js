@@ -1,4 +1,4 @@
-// Modified: 2026-11-20
+// Modified: 2026-11-21
 import {BOLTZMANN, ELEMENTARY_CHARGE} from '../../physicalConstants';
 import {powers, constant, variable, add, subtract, scale, multiply, divide, power, exponential} from '../bjt/taylor';
 import {threeTerminalFetPoint, solveThreeTerminalFet} from './threeTerminalFet';
@@ -40,7 +40,7 @@ function totalGateCharge(p, gs, gd) {
     return add(scale(charge, p.CGS), scale(other, p.CGD));
 }
 function differentiate(jet, axis) {
-    return powers.map((power, index) => {
+    return powers.map(power => {
         if (power[0] + power[1] >= 3) return 0;
         const target = power.map((degree, i) => degree + (i === axis ? 1 : 0));
         const term = powers.findIndex(candidate => candidate.every((degree, i) => degree === target[i]));

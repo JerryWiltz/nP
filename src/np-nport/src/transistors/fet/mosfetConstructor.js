@@ -1,4 +1,4 @@
-// Modified: 2026-11-19
+// Modified: 2026-11-21
 import {global} from '../../../../np-global/src/global';
 import {nPort} from '../../nPort';
 import {componentSettings} from '../../componentSettings';
@@ -44,7 +44,7 @@ export function mosfetConstructor(options, polarity) {
     properties(options, ['model', 'body', 'qPoint', 'bias', 'temperature', 'fList'], type);
     const body = options.body === undefined ? 'source' : options.body;
     if (!['source', 'external'].includes(body)) throw new RangeError(type + ' body must be source or external.');
-    const record = mosfetModel(options.model, polarity), temperature = options.temperature === undefined ? global.Temp : options.temperature;
+    const record = mosfetModel(options.model, polarity, body), temperature = options.temperature === undefined ? global.Temp : options.temperature;
     if (!Number.isFinite(temperature) || temperature <= 0) throw new RangeError(type + ' temperature must be positive kelvin.');
     const settings = componentSettings(global, options), frequencies = analysisFrequencies(settings);
     if (!frequencies.length || frequencies.some(f => !Number.isFinite(f) || f < 0) || !Number.isFinite(settings.Ro) || settings.Ro <= 0) {

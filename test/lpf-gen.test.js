@@ -1,4 +1,4 @@
-// Modified: 2026-11-18
+// Modified: 2026-11-21
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as nP from '../src/index.js';
@@ -48,6 +48,8 @@ test('lpfGen validates shape and each value without changing rejected inputs', (
             assert.throws(() => nP.lpfGen(values), {name: 'RangeError', message: /at least one shunt capacitor/});
             assert.deepEqual(values, before);
         }
+        const sparse = [50, 1e-12, 50];
+        delete sparse[1]; // Deliberately invalid input: a missing capacitance entry.
         const cases = [
             [[0, 1e-12, 50], /filt\[0\].*source resistance/],
             [[50, 1e-12, Infinity], /filt\[2\].*load resistance/],
@@ -58,7 +60,7 @@ test('lpfGen validates shape and each value without changing rejected inputs', (
             [[50, 1e-12, -5e-9, 50], /filt\[2\].*series inductance/],
             [[50, 1e-12, 0, 50], /filt\[2\].*series inductance/],
             [[50, 1e-12, 5e-9, undefined, 50], /filt\[3\].*shunt capacitance/],
-            [[50, , 50], /filt\[1\].*shunt capacitance/]
+            [sparse, /filt\[1\].*shunt capacitance/]
         ];
         for (const [values, message] of cases) {
             const before = values.slice();

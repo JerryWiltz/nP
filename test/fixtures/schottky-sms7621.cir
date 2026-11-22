@@ -1,0 +1,47 @@
+Skyworks SMS7621 per-junction independent reference
+* Modified: 2026-11-21
+* Skyworks 200041AH Table 5; package L/C excluded. Classical SPICE defaults explicit.
+.temp 27
+.options gmin=1e-18 abstol=1e-15 reltol=1e-10
+.model device D (IS=4e-8 RS=12 N=1.05 TT=1e-11 CJO=.1p M=.35 EG=.69 XTI=2 FC=.5 BV=3 IBV=1e-5 VJ=.51 TNOM=27 NBV=1 KF=0 AF=1)
+D1 a k device
+Vbias supply 0 DC 0.2
+Lbias supply a 1e3
+Lreturn k 0 1e3
+Ra aca 0 50
+Rk ack 0 50
+Ca aca a 1e-3
+Ck ack k 1e-3
+Ia 0 aca DC 0 AC 1
+Ik 0 ack DC 0 AC 0
+Vfeed feed 0 1
+Rnet feed net 1000
+Dnet net 0 device
+.control
+set numdgt=15
+set wr_vecnames
+set wr_singlescale
+op
+wrdata schottky-sms7621-op.txt v(a) v(k) @d1[id] @d1[gd] v(net) @dnet[id]
+ac dec 1 10meg 1g
+wrdata schottky-sms7621-port1.txt v(aca) v(ack)
+alter @Ia[acmag] = 0
+alter @Ik[acmag] = 1
+ac dec 1 10meg 1g
+wrdata schottky-sms7621-port2.txt v(aca) v(ack)
+alter Vbias = -0.2
+op
+wrdata schottky-sms7621-reverse.txt v(a) v(k) @d1[id] @d1[gd]
+alter Vbias = -3.05
+op
+wrdata schottky-sms7621-breakdown.txt v(a) v(k) @d1[id] @d1[gd]
+alter Vbias = 0.35
+op
+wrdata schottky-sms7621-forward.txt v(a) v(k) @d1[id] @d1[gd]
+alter Vbias = 0.2
+set temp=65
+op
+wrdata schottky-sms7621-hot.txt v(a) v(k) @d1[id] @d1[gd] v(net) @dnet[id]
+quit
+.endc
+.end

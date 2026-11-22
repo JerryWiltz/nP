@@ -1,4 +1,5 @@
-// Modified: 2026-11-20
+// Modified: 2026-11-21
+import {diodeLinearResponse} from './diodes/diodeLinear';
 import {deviceProducts} from './transistors/deviceRf';
 import {bjtProducts} from './transistors/bjt/bjtRf';
 import {threeTerminalProducts} from './transistors/threeTerminalRf';
@@ -114,8 +115,8 @@ var diodeJunctionVoltage = function (nport, frequency, incident, model) {
 	if (model.externalConductance !== undefined) {
 		var terminalVoltage = incident[0].add(reflected[0]).sub(incident[1].add(reflected[1]))
 			.mul(complex(Math.sqrt(model.referenceImpedance), 0));
-		var junctionAdmittance = complex(model.conductance, 2 * Math.PI * frequency * model.capacitance);
-		return terminalVoltage.div(complex(1, 0).add(junctionAdmittance.mul(complex(model.seriesResistance, 0))));
+		var response = diodeLinearResponse(model, frequency);
+		return terminalVoltage.div(response.junctionFactor);
 	}
 	var current = incident[0].sub(reflected[0]).div(complex(Math.sqrt(model.referenceImpedance), 0));
 	var junctionImpedance = complex(model.conductance, 2 * Math.PI * frequency * model.capacitance).inv();
@@ -150,10 +151,7 @@ var diodeProducts = function (nport, frequency, context, tones, model) {
 	}
 	if (power(productCurrent) === 0) return output;
 	if (model.externalConductance !== undefined) {
-		var admittance = complex(model.conductance, 2 * Math.PI * frequency * model.capacitance);
-		var denominator = complex(1, 0).add(admittance.mul(complex(model.seriesResistance, 0)))
-			.mul(complex(1 + 2 * model.referenceImpedance * model.externalConductance, 0))
-			.add(admittance.mul(complex(2 * model.referenceImpedance, 0)));
+		var denominator = diodeLinearResponse(model, frequency).productDenominator;
 		var generatedWave = productCurrent.mul(complex(Math.sqrt(model.referenceImpedance), 0)).div(denominator);
 		return [generatedWave.neg(), generatedWave];
 	}

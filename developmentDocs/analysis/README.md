@@ -13,6 +13,7 @@ Network solvers, wave conventions and general noise propagation. Device-specific
 | [Thermal noise and S-parameters](thermalNoiseSParameters.md) | Resistor noise through nodal and cascade networks. |
 | [Resistor source model](seriesParallelResistorSourceModel.md) | Physical noise sources and outgoing-wave covariance. |
 | [RF math coding](rfMathCoding.md) | Equation-to-code practices, units and verification. |
+| [Equation audit](equationAudit.md) | math.js symbolic derivative and explicit SI-dimension checks, coverage and findings. |
 | [Math implementation](math/README.md) | Complex numbers, matrices, FFT and numerical checks. |
 
 [Development documentation](../README.md)

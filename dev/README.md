@@ -1,6 +1,9 @@
 <!-- Modified: 2026-11-21 -->
 # Development pages
 
+`schottky.html` shows SMS7630 per-junction DC curves, fixed-bias RF and the
+Schottky symbol using `D({model: 'SMS7630'})`.
+
 `shapes/hemtCommonSource.html` shows the ATF35143 SC-70 pHEMT adaptation with
 automatic DC bias, RF response and the shared commonSource schematic.
 `shapes/hemtDieCommonSource.html` retains the die-only version.
@@ -83,3 +86,5 @@ name exactly as given.
 
 - [shapes/mosfetCommonSource.html](shapes/mosfetCommonSource.html): sourced MOSFET divider bias, DC-before-RF and shared amplifier layout; [notes](shapes/mosfetCommonSource.md).
 - [shapes/mesfetCommonSource.html](shapes/mesfetCommonSource.html): MES1 reference-profile self-bias, DC-before-RF and shared common-source drawing; [notes](shapes/mesfetCommonSource.md).
+
+- [varactor.html](varactor.html) — SMV1231-079LF C–V, externally solved reverse bias, RF and schematic; [notes](varactor.md).
