@@ -1,0 +1,72 @@
+BZX384-B4V7 archived single-junction reference
+* Modified: 2026-11-22
+* Archived NXP/Philips card; see zenerModels.md for provenance and limitations.
+.temp 27
+.options gmin=1e-24 abstol=1e-18 reltol=1e-10
+.model device D(IS=1.033e-15 N=1.001 BV=4.7 IBV=.005 RS=.387 CJO=2.589e-10 VJ=.8029 M=.3636 FC=.5 TT=0 EG=1.11 XTI=3 TNOM=27 NBV=1 KF=0 AF=1)
+D1 a k device
+Vbias supply 0 DC -4.7
+Lbias supply a 1e3
+Lreturn k 0 1e3
+Rsource input aca 50
+Vsignal input 0 DC 0 AC 1
+Ca aca a 1e-3
+Ck k load 1e-3
+Gload load 0 load 0 .02
+.control
+set numdgt=15
+set wr_vecnames
+set wr_singlescale
+set temp=27
+alter Vbias = -2
+noise v(load) Vsignal dec 1 1meg 1g
+setplot noise1
+wrdata /tmp/zener-27-0-noise.txt inoise_spectrum onoise_spectrum
+set temp=27
+alter Vbias = -4.6
+noise v(load) Vsignal dec 1 1meg 1g
+setplot noise3
+wrdata /tmp/zener-27-1-noise.txt inoise_spectrum onoise_spectrum
+set temp=27
+alter Vbias = -4.7
+noise v(load) Vsignal dec 1 1meg 1g
+setplot noise5
+wrdata /tmp/zener-27-2-noise.txt inoise_spectrum onoise_spectrum
+set temp=27
+alter Vbias = -4.8
+noise v(load) Vsignal dec 1 1meg 1g
+setplot noise7
+wrdata /tmp/zener-27-3-noise.txt inoise_spectrum onoise_spectrum
+set temp=27
+alter Vbias = 0.6
+noise v(load) Vsignal dec 1 1meg 1g
+setplot noise9
+wrdata /tmp/zener-27-4-noise.txt inoise_spectrum onoise_spectrum
+set temp=65
+alter Vbias = -2
+noise v(load) Vsignal dec 1 1meg 1g
+setplot noise11
+wrdata /tmp/zener-65-0-noise.txt inoise_spectrum onoise_spectrum
+set temp=65
+alter Vbias = -4.6
+noise v(load) Vsignal dec 1 1meg 1g
+setplot noise13
+wrdata /tmp/zener-65-1-noise.txt inoise_spectrum onoise_spectrum
+set temp=65
+alter Vbias = -4.7
+noise v(load) Vsignal dec 1 1meg 1g
+setplot noise15
+wrdata /tmp/zener-65-2-noise.txt inoise_spectrum onoise_spectrum
+set temp=65
+alter Vbias = -4.8
+noise v(load) Vsignal dec 1 1meg 1g
+setplot noise17
+wrdata /tmp/zener-65-3-noise.txt inoise_spectrum onoise_spectrum
+set temp=65
+alter Vbias = 0.6
+noise v(load) Vsignal dec 1 1meg 1g
+setplot noise19
+wrdata /tmp/zener-65-4-noise.txt inoise_spectrum onoise_spectrum
+quit
+.endc
+.end

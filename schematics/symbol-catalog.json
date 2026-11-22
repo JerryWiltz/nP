@@ -1,5 +1,5 @@
 {
-  "modified": "2026-11-21",
+  "modified": "2026-11-22",
   "schemaVersion": 1,
   "constructors": {
     "cascade": "cascade.svg",
@@ -73,12 +73,15 @@
     "PJF": "pjf.svg",
     "NMOS": "nmos.svg",
     "PMOS": "pmos.svg",
-    "HEMT": "njf.svg"
+    "HEMT": "njf.svg",
+    "NoiseDiode": "noise-diode.svg",
+    "PIN": "pin-diode.svg"
   },
   "symbolVariants": {
     "D": {
       "schottky": "schottky-diode.svg",
-      "varactor": "varactor-diode.svg"
+      "varactor": "varactor-diode.svg",
+      "zener": "zener-diode.svg"
     },
     "mbend": {
       "left": "microstrip-left-bend.svg",

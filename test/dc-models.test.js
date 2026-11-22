@@ -1,4 +1,4 @@
-// Modified: 2026-11-21
+// Modified: 2026-11-22
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -7,7 +7,7 @@ import {global} from '../src/np-global/src/global';
 import {dcRequirements, validateDcModel} from '../src/np-nport/src/dcModel';
 
 const synthesisHelpers = new Set(['chebyLPgk', 'chebyLPLCs', 'chebyLPNsec']);
-const missingPhysicalModels = new Set(['Amp', 'Shift90', 'Coupler180', 'trf', 'trf4Port', 'trfAuto', 'mlin', 'mclin']);
+const missingPhysicalModels = new Set(['Amp', 'NoiseDiode', 'Shift90', 'Coupler180', 'trf', 'trf4Port', 'trfAuto', 'mlin', 'mclin']);
 
 function example(name) {
     if (name === 'nodal') return nP.nodal([nP.R(), 1, 2], ['out', 1, 2]);

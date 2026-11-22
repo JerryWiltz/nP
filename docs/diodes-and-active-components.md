@@ -1,11 +1,11 @@
-<!-- Modified: 2026-11-21 -->
+<!-- Modified: 2026-11-22 -->
 # Transistors and Diodes
 
-The public active-device constructors are `nP.Amp()`, `nP.D()`, `nP.diode1N4148()`, `nP.NPN()`, `nP.PNP()`, `nP.NJF()`, `nP.PJF()`, `nP.NMOS()`, `nP.PMOS()`, `nP.MESFET()` and `nP.HEMT()`. The amplifier is a configurable two-port gain/noise model. Diode and transistor models combine DC I–V curves with RF behavior at a fixed bias.
+The public active-device constructors are `nP.Amp()`, `nP.NoiseDiode()`, `nP.PIN()`, `nP.D()`, `nP.diode1N4148()`, `nP.NPN()`, `nP.PNP()`, `nP.NJF()`, `nP.PJF()`, `nP.NMOS()`, `nP.PMOS()`, `nP.MESFET()` and `nP.HEMT()`. The amplifier is a configurable two-port gain/noise model. Diode and transistor models combine DC I–V curves with RF behavior at a fixed bias.
 
 ## Your own device parameters
 
-NPN, PNP, NJF, PJF, NMOS, PMOS, MESFET, HEMT and D accept a model name or a
+NPN, PNP, NJF, PJF, NMOS, PMOS, MESFET, HEMT, D, NoiseDiode and PIN accept a model name or a
 user-supplied record. A new part needs no catalog registration or library rebuild:
 
 ```js
@@ -23,6 +23,12 @@ they do not inherit a built-in part's fit. Optional `name` and provenance are
 preserved. Source links are never fetched. Named and supplied records share the
 same DC, RF, noise and weak nonlinear equations.
 
+NoiseDiode is the fixed-bias RF/noise exception: it explicitly lacks DC I-V
+and deterministic nonlinear equations. Its named and supplied records share
+those same limitations. PIN defaults to a five-section charge-storage model
+with automatic DC/RF/noise and cubic weak IM. Its older selected-region
+SMP1307-011LF equivalent retains its separate limitations.
+
 Use A, V, Ω, H, F, seconds and meters; TNOM is kelvin, EG eV and MOS overlap
 capacitances F/m. Parameter names are case-sensitive. Unknown parameters and
 conflicting polarity are errors. JFET/MOSFET/MESFET/D reject nonempty package
@@ -36,7 +42,9 @@ packageParameters; supplied derived fields must agree.
 | NMOS / PMOS | MOS1 defaults: VTO=0 V, KP=2e-5 A/V², PHI=.6 V, PB=.8 V, IS=1e-14 A, L=W=100 µm; zero parasitic capacitance/contact resistance. Body remains an options-level choice. |
 | MESFET | Generic Statz/MES1 defaults: VTO=−2 V, BETA=1e-4 A/V², B=.3/V, ALPHA=2/V, PB=1 V; zero contact resistance/capacitance. Electrical temperature remains 300.15 K. |
 | HEMT | Supply VTO, BETA, ALPHA, PB, DELTA1, DELTA2, VMAX, RC and CRF. Optional correlated noise P/R/C defaults to zero rather than borrowing a manufacturer fit. Existing conducting-Q and nominal-temperature limits apply. |
-| D | Classical diode defaults: IS=1e-14 A, N=1, VJ=1 V, M=FC=.5, BV=Infinity; zero RS/CJO/TT. Optional leakageResistance defaults to Infinity; schematicVariant selects Schottky/varactor artwork. Optional fixed-topology LS/CP package values are described below. |
+| D | Classical diode defaults: IS=1e-14 A, N=1, VJ=1 V, M=FC=.5, BV=Infinity; zero RS/CJO/TT. Optional leakageResistance defaults to Infinity; schematicVariant selects Schottky/varactor/Zener artwork. Optional fixed-topology LS/CP package values are described below. |
+| PIN | Charge-storage records use modelType:'charge-storage', required W/TAU/REPI/RLIM (SI), generic PN/storage/noise defaults and optional L/CP. Automatic bias with cubic weak IM. The older selected-region schema requires VI/RR/TAU and operatingRange and has no IM. |
+| NoiseDiode | Required avalanche/drift SI parameters and noiseFit; zero optional package/contact parasitics, length ratio .5, custom reference temperature 300.15 K. No default manufacturer fit, DC law or off-state model. |
 
 Read resolved values from `device.model.parameters`. Complete records from
 `device.model` can be reused; when reusing MOS records keep the matching body
@@ -184,7 +192,7 @@ The full options include `spars`, `fMinDb`, `gammaOpt`, `noiseResistanceOhms`, a
 
 ## SPICE-style diode
 
-`nP.D()` selects **1N4148**, a silicon signal diode, or the Skyworks **SMS7621/SMS7630** per-junction Schottky records, or the SMV1231-079LF varactor. Like the transistor constructors, it keeps the displayed DC sweep separate from an explicit RF Q point. Port **1 is the anode**; port **2 is the cathode**.
+`nP.D()` selects **1N4148**, a silicon signal diode, or the Skyworks **SMS7621/SMS7630** per-junction Schottky records, or the SMV1231-079LF varactor or archived BZX384-B4V7 Zener. Like the transistor constructors, it keeps the displayed DC sweep separate from an explicit RF Q point. Port **1 is the anode**; port **2 is the cathode**.
 
 ```js
 // 1N4148 curves and RF at a fixed operating point
@@ -230,6 +238,121 @@ These are also the defaults for `D()`, except that its frequency grid follows th
 The archived NXP SPICE card includes series resistance, leakage, junction charge and transit-time charge. It is a different parameter set from `diode1N4148()` below. It has no explicit package L/C network or large-signal transient simulation. Its noise follows classical SPICE junction shot noise plus resistor thermal noise; it does not model calibrated avalanche or excess noise. Weak nonlinear products use local current/charge derivatives and the existing two-tone analysis, with the same direct-source approximation described in [Intermodulation](./intermodulation.md#diode-intermodulation).
 
 Try [1N4148 DC and RF in the REPL](/repl#example-diode-dc-rf).
+
+### PIN diode
+
+`PIN()` defaults to `CHARGE_STORAGE_REFERENCE`: a generic numerical reference
+for the published five-section charge-storage equivalent, not a fitted part.
+Two PN junctions and a dynamic storage ladder determine conductivity from the
+bias. The same equations supply DC, frequency-dependent RF, compact-model
+shot/flicker/thermal noise and cubic weak intermodulation.
+
+```js
+nP.global.fList = [1e3, 1e6, 10e6, 100e6, 1e9];
+var d1 = nP.PIN({qPoint: {vd: 1.4}});
+var response = d1.out('s21dB', 'NF21dB');
+nP.lineTable({inputTable: response});
+```
+
+Forward, zero and reverse bias use one continuous model. Omit region or use
+'automatic'; external V/R networks set an independent bias for every placement
+before RF/noise/IM rebuilding. Default VD=.8 V and reference temperature
+298.15 K; I–V sweeps default to −5…1.2 V, 201 points.
+A supplied full record uses modelType:'charge-storage', with positive W (m),
+TAU (s), REPI/RLIM (ohms, RLIM<REPI). Other parameters receive generic defaults;
+no fitted part data are borrowed. The full parameter contract documents both
+SPICE high-injection conventions, lifetime knee, depletion, noise, package
+and temperature assumptions.
+
+This is a reduced dynamic model with weak Volterra analysis, not a general
+network transient or harmonic-balance solver. Local quadratic feedback is
+included; quadratic remixing between separate nonlinear devices is not.
+The reference is not manufacturer-calibrated noise, distortion or switching
+data. See [equations, parameters and independent SPICE checks](https://github.com/JerryWiltz/nP/blob/master/developmentDocs/semiconductors/pinModels.md).
+
+The older Skyworks selected-region equivalent remains available explicitly:
+
+```js
+nP.global.fList = [10e6, 100e6, 1e9, 2e9, 3e9];
+var d1 = nP.PIN({model: 'SMP1307-011LF', region: 'forward', qPoint: {vd: .8}});
+var response = d1.out('s21dB');
+nP.lineChart({inputTable: [response], title: 'PIN diode at selected forward bias'});
+```
+
+PIN is a floating two-port: **1 anode, 2 cathode**. It accepts a name or a
+complete supplied model record. Its own pin-diode.svg artwork is distinct
+from ordinary D's symbol identity.
+
+Select `region:'forward'` (default VD=.8 V) or `region:'reverse'` (default VD=0)
+before analysis. External V/R networks determine current and rebuild each
+placement's RF impedance within that region. A conflicting solved bias is an
+error; this model does not switch regions automatically. For the named record,
+RF uses 10 MHz–3 GHz and forward current 20 µA–100 mA, at fixed 300.15 K.
+`ivTable()` returns VD/ID in V/A. `.smallSignal` reports RF R/C and the steady
+stored-charge diagnostic. At 1 mA the intrinsic plus residual RF resistance is
+82.2 Ω; at 10 mA, 10.2 Ω, before package effects.
+
+This is the source's selected-bias linear RF equivalent, with an approximate
+RF-resistance thermal-noise covariance. It supplies no carrier-storage
+transient, automatic switching, calibrated noise or deterministic IM model;
+IM requests reject explicitly. See [full parameter/default/package contract
+and independent checks](https://github.com/JerryWiltz/nP/blob/master/developmentDocs/semiconductors/pinModels.md).
+
+### Avalanche noise source
+
+`NoiseDiode()` supplies the separate avalanche/drift equivalent circuit:
+
+```js
+nP.global.fList = [2e9, 10e9, 20e9, 40e9];
+var nd1 = nP.NoiseDiode({model: 'NC406_REFERENCE'});
+var noise = nd1.noiseTable();
+nP.lineTable({inputTable: noise});
+```
+
+Ports are 1 anode, 2 cathode. This is a plot-derived research reference at
+16.7 mA reverse current and 300 K, valid 2–40 GHz; it is not calibrated ENR.
+The table contains Hz, ENR dB, available temperature K, available/delivered noise
+dBm/Hz and source reflection magnitude. ENR defaults to an assumed 290 K cold
+reference and 290 K normalization; there is no modeled off state.
+
+Ground one terminal with `Short()` through `nodal()` to form a one-port source.
+The covariance then propagates source noise and mismatch through the network.
+The paper's Figure 6 includes a transition, so its fitted ENR is not imposed
+on the diode-plane model. A discrepancy remains documented.
+
+There is no DC I-V or deterministic nonlinear current/charge fit: `solveDC()`
+and IM requests reject those missing models. The fixed RF/noise bias cannot
+be rebuilt from an external bias network. Named or supplied compatible records
+use the same path; a new record must provide core RF data and `noiseFit`, not
+only a part name. Temperature must equal its reference temperature; no bias,
+temperature or frequency extrapolation is supplied. See [parameters, fits,
+equations and validation limits](https://github.com/JerryWiltz/nP/blob/master/developmentDocs/semiconductors/noiseDiodeModels.md).
+
+### Zener record
+
+```js
+nP.global.fList = nP.global.fGen(1e6, 1e9, 51);
+var d1 = nP.D({model: 'BZX384-B4V7', qPoint: {vd: -4.7}, temperature: 300.15});
+var response = d1.out('s11dB', 's21dB');
+nP.lineChart({inputTable: [response], title: 'Zener at VD = -4.7 V'});
+nP.schematic(d1);
+```
+
+VD is anode minus cathode; current is negative in reverse breakdown. The
+standalone default remains +0.6 V, so select reverse bias explicitly or let an
+external supply/resistor network determine it before RF. Use
+`d1.ivTable({vd:{start:-4.8,stop:-4.4,points:81}})` for a separate reverse
+curve in V/A. Convert a display copy to mA if needed; the sweep does not move Q.
+
+This is an archived NXP/Philips-attributed single-junction card. Its original
+manufacturer-hosted model could not be retrieved. SPICE checks verify the
+implemented equations; they do not certify measured-device behavior. The card
+includes RS and depletion capacitance, with no explicit package L/C or fitted
+breakdown temperature coefficient. Classical shot/thermal noise omits avalanche
+excess noise. Direct weak IM does not calculate large-signal clipping or
+rectified bias shifts. A supplied record works through the same path: choose
+`schematicVariant:'zener'` and compatible BV/IBV/NBV parameters. See
+[provenance and independent checks](https://github.com/JerryWiltz/nP/blob/master/developmentDocs/semiconductors/zenerModels.md).
 
 ### Schottky records
 

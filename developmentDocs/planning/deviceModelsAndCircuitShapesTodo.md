@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-21 -->
+<!-- Modified: 2026-11-22 -->
 # Device models and circuit shapes: to-do
 
 Planning note for the remaining SPICE-style device families, canonical symbols and reusable circuit layouts. Proposed constructor and shape names are not available APIs until implemented.
@@ -6,7 +6,7 @@ Planning note for the remaining SPICE-style device families, canonical symbols a
 ## Current foundation
 
 - NPN and PNP share a modified Gummel–Poon engine. Supported records are 2N3904, BFR93A and 2N3906.
-- `D()` supports the SPICE-style 1N4148 model and Skyworks SMS7621/SMS7630 per-junction Schottky records. Its external-network DC adapter and the separate legacy diode adapter are implemented.
+- `D()` supports the SPICE-style 1N4148 model and Skyworks SMS7621/SMS7630 per-junction Schottky records. SMV1231-079LF varactor and archived BZX384-B4V7 Zener records are also implemented. Its external-network DC adapter and the separate legacy diode adapter are implemented.
 - Networks retain their connections for DC analysis; supported supply-driven BJT, JFET, MOSFET, MESFET, HEMT and diode networks solve bias before RF.
 - Named circuit shapes are `series`, `ladder`, `bridgedT`, `branchline`, `edgeCoupledFilter`, `powerDivider`, `powerCombiner`, `commonEmitter` and `commonSource`. The first transistor board covers a divider-biased NPN/PNP stage with separate or combined emitter bypass and optional supply bypass; other bias topologies remain to be added.
 - Voltage, current and four controlled-source symbols already exist. Only `V()` currently has a numerical source constructor.
@@ -55,7 +55,13 @@ alias or silently reinterpret old options as the different SPICE model.
 - [ ] **HBT and advanced bipolar:** add validated HBT records where the existing engine is adequate; assess VBIC/HICUM when additional physics is needed. A material label alone must not select the equations.
 - [x] **First Schottky records:** `D({model: 'SMS7621'})` / `SMS7630` select Skyworks Table 5 per-junction cards with DC/RF/noise/direct IM, external bias, symbolic derivatives/units and independent ngspice checks. Package L/C and calibrated detector/noise fits remain outside these records.
 - [x] **First varactor record:** D selects SMV1231-079LF, with hyperabrupt/M=1 charge support, explicit LS/CP package, C–V tables, symbol, supplied-record equivalence and external bias. Independent SPICE charge/network checks and datasheet C–V comparison are documented in [varactor models](../semiconductors/varactorModels.md).
-- [ ] **Additional diode families:** add validated Zener records and suitable charge-storage behavior for PIN diodes; extend characterized varactor/package/noise fits.
+- [x] **First Zener record:** D selects the archived NXP/Philips-attributed BZX384-B4V7 single-junction card, with Zener symbol, external breakdown bias, supplied-record equivalence and independent SPICE DC/RF/classical-noise checks. The original manufacturer-hosted model is unavailable; avalanche excess noise and fitted breakdown temperature behavior remain absent. See [sources and limits](../semiconductors/zenerModels.md).
+- [x] **Dedicated avalanche research reference:** NoiseDiode implements the separate Maya avalanche/drift RF/noise circuit, named/supplied records and reproducible 16.7 mA plot fits. Independent equivalent-circuit checks, mismatch/pad propagation and synthetic Y-factor tests pass. See [fits and limits](../semiconductors/noiseDiodeModels.md).
+- [ ] **Calibrated avalanche source:** obtain consistent measured impedance/noise at a common plane, transition data, actual hot/cold states, DC I-V and bias/temperature coverage. Resolve the remaining equation/ENR discrepancy before claiming physical calibration or adding DC handoff/nonlinear IM. Ordinary D/Zener noise remains classical.
+- [x] **First PIN constructor:** selected-region SMP1307-011LF DC/linear RF equivalent, own symbol, supplied records and per-placement bias handoff; independent SPICE package/thermal checks. [PIN contract](../semiconductors/pinModels.md) discloses model/table discrepancies and thermal-noise approximation.
+- [x] **PIN charge storage:** automatic bias state, five-section dynamic storage, conductivity modulation, high injection and lifetime knee, PN/physical-resistor noise and cubic Volterra IM, supplied records and independent SPICE DC/RF/noise/transient-distortion checks. Generic numerical reference; old Skyworks equivalent retained.
+- [ ] **Further PIN validation/analysis:** manufacturer-calibrated full records and measured noise/IM, network switching transients/harmonic balance, cross-device quadratic remixing, unequal junctions and advanced depletion/moving-boundary models.
+- [ ] **Additional diode characterization:** extend authenticated Zener, characterized varactor/package/noise and temperature fits.
 - [x] **Diode DC adapter:** both constructors reuse their own current laws, resistances, temperature and breakdown behavior in external-network bias solving.
 
 For every device family:
@@ -76,8 +82,8 @@ For every device family:
 - [x] N-channel and P-channel JFET: `NJF`/`PJF` drawing names, gate/drain/source terminal order, runtime geometry and Symbol library entries. Numerical NJF/PJF constructors are implemented.
 - [x] N-channel and P-channel MOSFET: enhancement/depletion artwork, three-terminal body-to-source versions and four-terminal independent-body versions. Drawing order is gate/drain/source/body. Enhancement numerical constructors and body handling are implemented; depletion numerical records remain future work.
 - [x] MESFET/HEMT drawing names share the existing N-channel FET geometry and gate/drain/source terminal order. MESFET has Statz/MES1 records; HEMT has ATF35143_DIE and common-source ATF35143 SC-70 records.
-- [x] Schottky, Zener and varactor diode artwork, with anode/cathode terminal order, runtime metadata and Symbol library entries. Schottky and SMV1231-079LF varactor records are available through `D()`; Zener numerical models remain to be implemented.
-- [x] Reuse NPN/PNP artwork for HBT drawings and ordinary diode artwork for PIN drawings, identifying the family through an instance caption. Captions select no numerical model; HBT records/advanced bipolar engines and PIN charge-storage behavior remain future work.
+- [x] Schottky, Zener and varactor diode artwork, with anode/cathode terminal order, runtime metadata and Symbol library entries. Schottky, SMV1231-079LF varactor and archived BZX384-B4V7 Zener records are available through `D()`; artwork alone still selects no equations.
+- [x] Reuse NPN/PNP artwork for HBT drawings and the dedicated PIN symbol for PIN drawings, identifying the family through an instance caption. Captions select no numerical model; HBT records/advanced bipolar engines remain future work; PIN() now provides charge-storage and selected-region numerical models.
 - [x] Register the new drawing-only artwork under `deviceSymbols`, supply runtime terminal/layout metadata and regenerate the symbol gallery and bundles. Move individual mappings to `constructors` when numerical implementations arrive.
 
 ## Reusable circuit shapes

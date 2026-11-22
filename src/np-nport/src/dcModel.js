@@ -1,4 +1,4 @@
-// Modified: 2026-11-20
+// Modified: 2026-11-22
 import {validateTerminalNetwork} from './transistors/contactNetwork';
 // Owned immutable data can be shared across circuit trees without copying each
 // earlier cascade again. Caller-owned objects are always copied before freezing.
@@ -28,7 +28,7 @@ function validateDefinition(model) {
             [1, -1].includes(d.polarity) && d.record?.parameters && Number.isFinite(d.temperature) && d.temperature > 0) return;
         if (['bjt', 'jfet', 'mesfet', 'hemt'].includes(d.modelId) && count === 3 && [1, -1].includes(d.polarity) && d.record?.parameters &&
             Number.isFinite(d.temperature) && d.temperature > 0) return;
-        if (d.modelId === 'diode' && count === 2 && d.record?.parameters &&
+        if (['diode', 'pin', 'pin-charge'].includes(d.modelId) && (d.modelId !== 'pin' || ['forward', 'reverse'].includes(d.region)) && count === 2 && d.record?.parameters &&
             Number.isFinite(d.temperature) && d.temperature > 0) return;
         if (d.modelId === 'legacy-diode' && count === 2 && d.parameters &&
             Number.isFinite(d.temperature) && d.temperature > 0) return;

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-21 -->
+<!-- Modified: 2026-11-22 -->
 # Symbolic equation and dimension audit
 
 Run `npm run check:equations` from the repository root. The command reports
@@ -23,7 +23,9 @@ partials and MES1 differential-capacitance coefficients through degree two.
 | JFET | Both polarities, channel/gate current and gate charge; forward, inverse, cutoff, ohmic and forward-gate states. |
 | MOS1 | Both polarities, channel/body current, body charge and overlap gate charge; saturation, ohmic, cutoff, inverse and forward-body states. |
 | Statz | MES1 reference and NE760; HEMT die current and partitioned charge; normal/inverse, ohmic, cutoff and forward-gate states. MES1 keeps differential capacitances distinct from HEMT static charge partition. |
-| Diodes | 1N4148 plus SMS7621/SMS7630 current/depletion charge; SMV1231-079LF reverse charge, M=1 logarithmic and nearby/hyperabrupt grading, package low-frequency capacitance with contact/lead terms; legacy diode leakage, avalanche and exponential-clamp branches. |
+| Diodes | 1N4148 plus SMS7621/SMS7630 current/depletion charge; BZX384-B4V7 blocking/breakdown/forward current and charge; SMV1231-079LF reverse charge, M=1 logarithmic and nearby/hyperabrupt grading, package low-frequency capacitance with contact/lead terms; legacy diode leakage, avalanche and exponential-clamp branches. |
+| PIN | Selected-region PN derivatives plus charge-storage conductivity, lifetime-knee and both high-injection current laws through cubic order. Current-coordinate derivative units and high-precision evaluation cover smooth-branch cancellation. Independent SPICE RF/noise and transient-IM comparisons are separate checks. |
+| Avalanche noise | Common-pole RF/source-transfer cancellation identities and explicit multiplier current-PSD, voltage-PSD, available temperature and power dimensions. The regression itself is checked separately against digitized plots, not symbolically established as device physics. |
 | Dimensions | Sampled expressions and derivatives have A, C, A/Vⁿ and C/Vⁿ dimensions; additional thermal voltage, R/L/C, transit charge, thermal/shot/induced-gate noise density and SI-prefix checks. |
 
 The same mathematical expressions are evaluated with numbers and with math.js
@@ -49,6 +51,19 @@ eliminates zero factors to avoid spurious `0 × Infinity` evaluations in the
 reference calculation. Negative probes verify that incompatible dimensions,
 dimensioned exponential arguments and an incorrect algebraic identity are
 rejected.
+
+The avalanche rational identities instead reduce the residual to a zero
+numerator on the original nonsingular domain. Numerical continuity tests
+separately check the cancelled avalanche pole. With the Zener, avalanche and PIN
+additions, the November 22 audit passes 6 algebra checks, 3,777 coefficient
+comparisons, 3,472 dimension/conversion checks and 120 capacitance comparisons;
+the same three legacy derivative failures remain.
+
+The charge-storage PIN audit uses each differentiation variable’s own SI unit,
+including current coordinates. Smooth positive-part expressions use math.js
+BigNumber evaluation to avoid cancellation at very small smoothing scales.
+The implementation uses equivalent analytic derivatives; this changes numerical
+evaluation, not the physical equations.
 
 The reference expressions describe current nP assumptions. This checks algebra,
 derivatives, SI annotations and transcription consistency; it does not establish

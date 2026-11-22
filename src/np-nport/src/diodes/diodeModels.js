@@ -1,4 +1,4 @@
-// Modified: 2026-11-21
+// Modified: 2026-11-22
 // Model parameters, not a SPICE text interpreter. More families need their own
 // validated records/equations; selecting a name never executes downloaded code.
 import {selectModelRecord, modelParameters, noPackageBranches} from '../semiconductorModel';
@@ -6,6 +6,19 @@ const defaults = {IS: 1e-14, N: 1, BV: Infinity, IBV: 1e-3, RS: 0,
     CJO: 0, VJ: 1, M: 0.5, FC: 0.5, TT: 0, EG: 1.11, XTI: 3,
     TNOM: 300.15, NBV: 1, KF: 0, AF: 1};
 const records = {
+    'BZX384-B4V7': {
+        manufacturer: 'NXP/Philips (archived model attribution)', material: 'silicon', family: 'zener',
+        mathematicalModel: 'SPICE junction diode with exponential reverse breakdown',
+        modelVersion: 'Archived BZX384B4V7 / PH_BZX384-B4V7 single-junction card',
+        source: 'https://raw.githubusercontent.com/kicad-spice-library/KiCad-Spice-Library/a8688952bcaab19f567bc4db237b60bde03ef310/Models/Diode/DIODE2.lib',
+        deviceSource: 'https://assets.nexperia.com/documents/data-sheet/BZX384_SER.pdf',
+        package: 'RS included; no explicit SOD323 lead inductance or package capacitance',
+        pinning: 'nP port 1 anode, port 2 cathode; SOD323 physical pin 1 is cathode and pin 2 anode', schematicVariant: 'zener',
+        parameters: {IS: 1.033e-15, N: 1.001, BV: 4.7, IBV: .005, RS: .387,
+            CJO: 2.589e-10, VJ: .8029, M: .3636, FC: .5},
+        defaultsNote: 'TT=0, EG=1.11, XTI=3, TNOM=300.15 K, NBV=1, KF=0 and AF=1 are generic SPICE defaults, not supplied fits',
+        limitations: 'Archived manufacturer attribution; original hosted card unavailable at verification. Simulator agreement is not measured-device validation. No fitted breakdown temperature coefficient, avalanche excess noise, self-heating or large-signal switching model'
+    },
     '1N4148': {
         manufacturer: 'NXP Semiconductors (archived model)', material: 'silicon', family: 'signal',
         mathematicalModel: 'SPICE junction diode with external reverse-leakage resistor',
@@ -79,8 +92,8 @@ export function diodeModel(name = '1N4148') {
     if (!(leakageResistance > 0 && (Number.isFinite(leakageResistance) || leakageResistance === Infinity))) {
         throw new RangeError('D model.leakageResistance must be positive ohms or Infinity.');
     }
-    if (record.schematicVariant !== undefined && !['schottky', 'varactor'].includes(record.schematicVariant)) {
-        throw new RangeError('D model.schematicVariant must be schottky, varactor or omitted.');
+    if (record.schematicVariant !== undefined && !['schottky', 'varactor', 'zener'].includes(record.schematicVariant)) {
+        throw new RangeError('D model.schematicVariant must be schottky, varactor, zener or omitted.');
     }
     const packageParameters = modelParameters(record.packageParameters === undefined ? {} : record.packageParameters,
         {seriesInductance: 0, parallelCapacitance: 0}, 'D packageParameters');

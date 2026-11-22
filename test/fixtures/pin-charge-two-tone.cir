@@ -1,0 +1,56 @@
+Full charge-storage PIN independent reference
+* Modified: 2026-11-22
+* ADS Nonlinear Devices 2019 pp 361-367, five-section RC storage, level 1.
+* Numerical supplied record, not a manufacturer-fit device.
+* Two-tone reference: repeat with both SIN amplitudes .01 V for the low row.
+* Uniform 1 ns samples, 20-60 us (exclude repeated end point), RMS Fourier coefficients.
+.temp 25
+.options reltol=1e-8 abstol=1e-14 vntol=1e-9 gmin=1e-18 itl1=1000 gshunt=1e-14 tnom=25
+.model junction D(IS=1e-10 N=1 RS=1 IKF=0.01)
+.subckt pin a k
+Cpack a k 8e-14
+Lbond a core 1e-9
+Rp core k 100000000.0
+Cj core k 2e-13
+Repi core j 1000
+Rlim core m 2
+Bmod m j I=(v(x0,x1)+sqrt(v(x0,x1)^2+4e-24))*v(m,j)/0.040000000000000015
+Fpin j k Vlad 1
+Ej drive 0 j k 1
+Vpn drive dj1 0
+Dpi dj1 dj2 junction
+Din dj2 0 junction
+Hdrive sx 0 Vpn 1
+Vlad sx x0 0
+Bge x0 0 I=0.25*(v(x0)+sqrt(v(x0)^2+4e-24))^2/0.02
+RP1 x0 x1 1 noisy=0
+CP1 x0 x1 1e-07
+RS1 x1 0 2.756244616709733 noisy=0
+RP2 x1 x2 5 noisy=0
+CP2 x1 x2 2e-08
+RS2 x2 0 1.1812476928756 noisy=0
+RP3 x2 x3 9 noisy=0
+CP3 x2 x3 1.111111111111111e-08
+RS3 x3 0 0.7517030772844727 noisy=0
+RP4 x3 x4 13 noisy=0
+CP4 x3 x4 7.692307692307693e-09
+RS4 x4 0 0.5512489233419466 noisy=0
+RP5 x4 x5 17 noisy=0
+CP5 x4 x5 5.88235294117647e-09
+RS5 x5 0 0.4351965184278526 noisy=0
+.ends
+Vsource mid 0 SIN(1.5 0.02 1e6)
+Vtone src mid SIN(0 0.02 1.1e6)
+Rsource src a 50
+Gload k 0 k 0 .02
+Xpin a k pin
+.control
+set numdgt=15
+set wr_singlescale
+set wr_vecnames
+tran 1n 60u 20u .5n
+linearize v(k)
+wrdata /tmp/pin-charge-two-tone.txt v(k)
+quit
+.endc
+.end

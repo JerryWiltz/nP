@@ -1,0 +1,48 @@
+<!doctype html>
+<!-- Modified: 2026-11-22 -->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>PIN diode with external forward bias</title>
+    <script src="../dist/nP.js"></script>
+</head>
+<body>
+    <script>
+        nP.global.fList = nP.global.fGen(1e6, 3e9, 101);
+
+        var d1 = nP.PIN();
+        var t1 = nP.Tee();
+        var t2 = nP.Tee();
+        var r1 = nP.R(1000);
+        var r2 = nP.R(1000);
+        var v1 = nP.V(2);
+        var short1 = nP.Short();
+        var short2 = nP.Short();
+
+        var network = nP.nodal(
+            [t1, 10, 1, 2],
+            [d1, 2, 3],
+            [t2, 11, 3, 4],
+            [r1, 10, 12],
+            [v1, 12, 13],
+            [short1, 13],
+            [r2, 11, 14],
+            [short2, 14],
+            ['out', 1, 4]
+        );
+        var point;
+        for (var component of network.operatingPoint.components) {
+            if (component.constructorName === 'PIN') point = component.qPoint;
+        }
+        var solvedDiode = nP.PIN({qPoint: {vd: point.vd}});
+        var bias = [['VD (V)', 'ID (mA)', 'Rbulk (ohm)'],
+            [point.vd, point.id * 1000, solvedDiode.smallSignal.bulkResistance]];
+        var response = network.out('s11dB', 's21dB');
+
+        nP.log('Charge-storage reference: external DC bias solved before dynamic RF/noise. Generic numerical data; no calibrated manufacturer part or network transient solver.');
+        nP.lineTable({inputTable: bias, metricPrefix: 'none'});
+        nP.schematic(network);
+        nP.lineChart({inputTable: [response], title: 'Externally biased series PIN diode'});
+    </script>
+</body>
+</html>

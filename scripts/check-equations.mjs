@@ -1,7 +1,7 @@
-// Modified: 2026-11-21
+// Modified: 2026-11-22
 // Development-only audit: math.js never enters the nP runtime bundles.
 import assert from 'node:assert/strict';
-import {parse, derivative, unit, evaluate, symbolicEqual, simplify, simplifyCore, rationalize, ConstantNode} from 'mathjs';
+import {parse, derivative, unit, evaluate, symbolicEqual, simplify, simplifyCore, rationalize, ConstantNode, bignumber} from 'mathjs';
 import {semiconductorCases, taylorCases, parameterUnits} from './equation-cases.mjs';
 
 const expressions = new Map(), differentials = new Map(), compiled = new WeakMap();
@@ -73,8 +73,10 @@ function scopeWithUnits(scope, dimensionless) {
 function requireDimension(value, expected, node) {
     // A derivative that simplifies to literal zero has no remaining unit factors.
     if (value === 0 && node.isConstantNode) return;
-    if (expected === '') {
-        if (typeof value !== 'number') value.toNumber('');
+    if (expected === '' || unit(1, expected).dimensions.every(power => power === 0)) {
+        if (typeof value !== 'number' && (!value?.isUnit || value.dimensions.some(power => power !== 0))) {
+            throw new Error(`expected dimensionless value, received ${value?.toString()}`);
+        }
     } else {
         if (!value?.isUnit || !value.equalBase(unit(1, expected))) {
             throw new Error(`expected ${expected}, received ${value?.toString()}`);
@@ -93,9 +95,19 @@ for (const [left, right, polynomial] of [
     ['(x-y)^2', 'x^2-2*x*y+y^2', true],
     ['1-(1-a*d/3)^3', 'a*d-a^2*d^2/3+a^3*d^3/27', true],
     [derivative('IS*(exp(x/vt)-1)', 'x'), 'IS*exp(x/vt)/vt'],
-    [derivative('2*c*p*(1-sqrt(1-x/p))', 'x'), 'c/sqrt(1-x/p)']
+    [derivative('2*c*p*(1-sqrt(1-x/p))', 'x'), 'c/sqrt(1-x/p)'],
+    // Avalanche common-pole cancellation: N is the Zd numerator; e=1-r².
+    ['R*(N/e)/(R+N/e)', 'R*N/(R*e+N)', 'rational'],
+    ['(B/e)*R/(R+N/e)', 'B*R/(R*e+N)', 'rational']
 ]) {
     check(`algebra ${left}`, 'algebra', () => {
+        if (polynomial === 'rational') {
+            // Establish a zero residual numerator on the original nonsingular
+            // domain. Continuity at the cancelled pole is tested numerically.
+            const residual = rationalize(`(${left})-(${right})`, {}, true);
+            assert.equal(simplify(residual.numerator).toString(), '0');
+            return;
+        }
         // symbolicEqual alone does not expand arbitrary polynomial powers.
         const a = polynomial ? rationalize(left) : left, b = polynomial ? rationalize(right) : right;
         assert.ok(symbolicEqual(a, b, simplify.realContext), 'math.js could not establish this identity');
@@ -118,12 +130,14 @@ for (const item of [...taylorCases(), ...semiconductorCases()]) {
             let node;
             check(label, 'coefficients', () => {
                 node = differential(text, item.variables, powers);
-                const expected = valueAt(node, item.scope) / denominator(powers);
+                const scope = item.highPrecision ? Object.fromEntries(Object.entries(item.scope).map(([key, value]) =>
+                    [key, typeof value === 'number' && Number.isFinite(value) ? bignumber(value) : value])) : item.scope;
+                const expected = valueAt(node, scope) / denominator(powers);
                 close(item.actual[name][index], expected, baseUnit, label);
             });
             if (node && !dimensionless) check(label, 'dimensions', () => {
-                const degree = powers.reduce((sum, value) => sum + value, 0);
-                const expected = degree ? `${baseUnit} / V^${degree}` : baseUnit;
+                const factors = powers.flatMap((degree, axis) => degree ? [`${parameterUnits[item.variables[axis]] || 'V'}^${degree}`] : []);
+                const expected = factors.length ? `${baseUnit} / (${factors.join(' * ')})` : baseUnit;
                 requireDimension(valueAt(node, unitScope), expected, node);
             });
         }
@@ -147,13 +161,16 @@ const physicalScope = {
     k: unit(1.380649e-23, 'J / K'), T: unit(300, 'K'), q: unit(1.602176634e-19, 'C'),
     R: unit(50, 'ohm'), V: unit(1, 'V'), I: unit(.01, 'A'),
     c: unit(1e-12, 'F'), L: unit(1e-9, 'H'), f: unit(1e9, 'Hz'),
-    gm: unit(.05, 'S'), omega: unit(2 * Math.PI * 1e9, '1 / s'), transit: unit(1e-9, 's')
+    gm: unit(.05, 'S'), omega: unit(2 * Math.PI * 1e9, '1 / s'), transit: unit(1e-9, 's'),
+    M2: 100, Sv: unit(1e-15, 'V^2 / Hz')
 };
 for (const [text, expected] of [
-    ['k*T/q', 'V'], ['V/R', 'A'], ['c*V', 'C'], ['transit*I', 'C'],
+    ['k*T/q', 'V'], ['V/I', 'ohm'], ['V/R', 'A'], ['c*V', 'C'], ['transit*I', 'C'],
     ['omega*L', 'ohm'], ['1/(omega*c)', 'ohm'], ['gm*V', 'A'],
     ['4*k*T*R', 'V^2 / Hz'], ['4*k*T/R', 'A^2 / Hz'], ['2*q*I', 'A^2 / Hz'],
-    ['4*k*T*gm', 'A^2 / Hz'], ['4*k*T*c^2*omega^2/gm', 'A^2 / Hz']
+    ['4*k*T*gm', 'A^2 / Hz'], ['4*k*T*c^2*omega^2/gm', 'A^2 / Hz'],
+    ['2*q*I*M2', 'A^2 / Hz'], ['Sv/(4*k*R)', 'K'], ['Sv/R', 'W / Hz'],
+    ['omega*transit', ''], ['f/f', '']
 ]) check(`SI ${text}`, 'dimensions', () => requireDimension(evaluate(text, physicalScope), expected, parse(text)));
 for (const [text, expected] of [['1 pF', 1e-12], ['1 nH', 1e-9], ['1 mA', 1e-3], ['1 GHz', 1e9]]) {
     check(`SI conversion ${text}`, 'dimensions', () => assert.equal(evaluate(text).value, expected));

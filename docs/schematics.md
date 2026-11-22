@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-19 -->
+<!-- Modified: 2026-11-22 -->
 # Schematics
 
 `nP.schematic(network)` draws an RF network using its component symbols and electrical connections. You can draw a component, a network returned by `nP.nodal()` or `nP.cascade()`, or a transmitter–circuit–receiver path. Each call adds a drawing to the page; in the REPL, it appears in Output.
@@ -175,7 +175,7 @@ directions instead of using network shape detection.
 
 ## Existing flat syntax and blind detection
 
-The ordinary `nP.nodal([part, ...nodes], ..., ['out', ...nodes])` syntax remains supported. Without groups or a schematic shape option, detection tries the registered whole-network boards, then uses the generic layout if no complete match is found. Automatic decomposition of an entirely ungrouped network is not implemented.
+The ordinary `nP.nodal([part, ...nodes], ..., ['out', ...nodes])` syntax remains supported. Without groups or a schematic shape option, detection tries the registered whole-network boards, then uses the generic layout if no complete match is found. In its automatic graph layout, uniquely opposed connected terminals define straight runs. Shared constraints align those electrical axes and reserve measured symbol/label space before routing; longer labels can increase spacing without adding a jog. Measured compaction then removes unused initial gaps while reserving symbol, label, terminal and external-port clearance; existing loop embeddings remain intact. Branches and intentional turns retain their own directions. Automatic decomposition of an entirely ungrouped network is not implemented.
 
 `drawing.detected` reports an independent shape-options object. With grouped input, detection examines the component membership of each group without reading its declared shape name, and returns recognized sections with inferred boundaries. A single group covering the complete network can return a single shape name. A declared group shape controls rendering unless an explicit `schematic()` shape option overrides it. A mismatch is reported rather than quietly changing the requested engineering arrangement.
 

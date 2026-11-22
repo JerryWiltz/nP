@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-21 -->
+<!-- Modified: 2026-11-22 -->
 # Shared circuit description and DC operating-point analysis
 
 This is the contract for circuit-derived bias in nP. The shared immutable DC descriptors and topology preservation within `nodal()`, `cas()` and `cascade()` are implemented. These existing composition APIs are the public network entry points. `network.solveDC()` solves linear, NPN/PNP and diode nonlinear DC models without a second netlist. Networks containing an explicit `V()` supply and nonlinear devices automatically solve DC before RF combination; supported transistor and diode states pass through the internal RF handoff. The result is exposed as `network.operatingPoint`. Standalone constructors and RF-only networks retain their selected fixed Q points. Both D() and diode1N4148() retain their own device equations, temperatures and leakage placement. Missing physical DC laws remain explicit errors.
@@ -198,7 +198,7 @@ D() stamps its selected temperature-adjusted junction law and series RS, with th
 
 Legacy diode1N4148() instead evaluates its own Shockley, junction-side leakage and exponential breakdown continuation through legacyDiode.js. Its parameters and noise approximation remain distinct from D(). Capacitance contributes no static current. The piecewise initializer uses forward, off and (where finite) breakdown regions, then the same damped Newton and source-stepping rules refine the actual laws. Mixed diode/BJT networks solve together.
 
-Diode components report qPoint fields vd, id, junctionVoltage, junctionCurrent, va, vk and temperature; id is positive anode to cathode, and absolute va/vk can be null. Each immutable operatingPoints record carries its placement path, terminal difference, intrinsic junction voltage and references. D() and legacy RF builders share their standalone RF/noise/nonlinearity paths, preserving their original curve settings and construction descriptors. Existing legacy forward-capacitance clamping and exponential limiting remain model limitations; these are not new Schottky, Zener, varactor or PIN numerical models.
+Diode components report qPoint fields vd, id, junctionVoltage, junctionCurrent, va, vk and temperature; id is positive anode to cathode, and absolute va/vk can be null. Each immutable operatingPoints record carries its placement path, terminal difference, intrinsic junction voltage and references. D() and legacy RF builders share their standalone RF/noise/nonlinearity paths, preserving their original curve settings and construction descriptors. Existing legacy forward-capacitance clamping and exponential limiting remain model limitations; those legacy limitations do not describe the separate catalog device models.
 
 
 ## Solved state and RF reconstruction
@@ -293,3 +293,16 @@ source pins share port 3, with three source bond paths and the source-pad
 bridge retained. RF and DC use the same validated immutable topology. The
 fixed-Q adapter derives effective contacts through exact resistor-network
 reduction; network DC preserves every branch and current split.
+
+
+### Charge-storage PIN bias handoff
+
+PIN's default charge-storage model stamps its complete steady-state terminal
+law, including the storage ladder's DC reduction, two PN junctions and controlled
+bulk resistance. It automatically handles forward, zero and reverse bias.
+The internal sensed junction-pair voltage and pair driving current differ from
+terminal VD/ID. The solver retains those distinctions and rebuilds each device
+placement's dynamic RF, source noise and cubic weak-IM model. Zero-ohm terminal
+connections retain branch-current identity without introducing a second netlist.
+The older named SMP1307-011LF selected-region equivalent remains separate.
+See [PIN model equations and limitations](../semiconductors/pinModels.md).

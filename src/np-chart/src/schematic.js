@@ -1,4 +1,4 @@
-// Modified: 2026-11-21
+// Modified: 2026-11-22
 import {schematicSymbols} from './schematicSymbols';
 import {nodalBlockSymbol, symbolForSchematicEntry} from './nodalBlockSymbol';
 import {schematicShapeBoards} from './schematicShapeBoards';
@@ -693,6 +693,23 @@ function placementFootprint(caption, placement) {
     return captionPackingBounds(treeLayoutBounds(placement), caption(placement));
 }
 
+function placementOccupiedBounds(caption, placement) {
+    const body = treeLayoutBounds(placement);
+    const pins = placement.ports.map(port => port.at);
+    const ink = [Math.min(body[0], ...pins.map(p => p[0])), Math.min(body[1], ...pins.map(p => p[1])),
+        Math.max(body[2], ...pins.map(p => p[0])), Math.max(body[3], ...pins.map(p => p[1]))];
+    return [ink, caption(placement).bounds];
+}
+
+function placementClearanceEnvelopes(caption, placement) {
+    const symbol = symbolForSchematicEntry({part: placement.part, nodes: placement.ports});
+    const normals = componentLeadDirections(placement, symbol);
+    return [...placementOccupiedBounds(caption, placement), ...placement.ports.map(({at: point}, index) => {
+        const end = point.map((value, axis) => value + normals[index][axis] * 40);
+        return [Math.min(point[0], end[0]), Math.min(point[1], end[1]), Math.max(point[0], end[0]), Math.max(point[1], end[1])];
+    })];
+}
+
 function buildInterpretedBoardModel(root, shapeDefinition, digits, flipVertical = false) {
     if (flipVertical) shapeDefinition = {...shapeDefinition,
         transform: {...shapeDefinition.transform, mirrorY: !shapeDefinition.transform?.mirrorY}};
@@ -702,6 +719,8 @@ function buildInterpretedBoardModel(root, shapeDefinition, digits, flipVertical 
         boards: schematicShapeBoards,
         bounds: treeLayoutBounds,
         packingBounds: placementPackingBounds.bind(null, caption),
+        clearanceEnvelopes: placementClearanceEnvelopes.bind(null, caption),
+        occupiedBounds: placementOccupiedBounds.bind(null, caption),
         footprintBounds: placementFootprint.bind(null, caption),
         captionBounds: placement => caption(placement).bounds,
         preview: nodalPlacement.bind(null, ''),

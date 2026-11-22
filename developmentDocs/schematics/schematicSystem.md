@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-21 -->
+<!-- Modified: 2026-11-22 -->
 # Schematic system
 
 This note explains how an nP network or a drawing description becomes a recognizable RF schematic. It starts with two series resistors, follows their data through the one reusable interpreter (ORI), and then explains the board language and graph algorithms behind the drawing.
@@ -1079,7 +1079,8 @@ schematic() → mountSchematic() → buildSchematicModel() → buildNodalModel()
             → unbranched two-port chain: repeated component/wire tiles
             → otherwise: layoutAutomaticBoard()
                 → incidence graph → cyclic regions → region positions
-                → component orientation → outward terminal escapes
+                → component orientation → terminal-axis constraints + measured separation
+                → local terminations → outward terminal escapes
                 → grid routes → wire/corner boxes + junctions/crossovers
         → annotations → drawing graph + topology
     → SVG renderer → mount drawing and toolbar
@@ -1087,7 +1088,40 @@ schematic() → mountSchematic() → buildSchematicModel() → buildNodalModel()
 
 The chain case uses `bindBoardPaths()` and `placeBoardPaths()`, which already interpret the repeated tiles and symbol bend directions. For other connections, `graphIncidence()` records every numbered component port as an incidence edge. `graphBlocks()` uses depth and low-link values in an iterative Tarjan traversal to separate biconnected blocks. `automaticRegions()` extracts cyclic regions and merges those sharing a component. A shared electrical node alone does not become an artificial clique of cycles. `automaticPositions()` orders the resulting regions by BFS and places loop members on rectangular perimeters according to the board policy.
 
-`automaticPlacement()` scores the allowed orientations against neighboring regions and external-port flow. `automaticRoute()` uses a priority queue, stored best costs, predecessor links and a Manhattan-distance heuristic to search around symbol bounds. It includes a bend cost as well as step distance. Its implementation retains best records per coordinate and incoming direction; sequential net ordering still makes it a practical heuristic rather than a global planarity solver. `recordBoardRoute()` tracks occupancy, allowing perpendicular crossings while preventing different nets from sharing the same wire segment.
+`automaticPlacement()` scores the allowed orientations against neighboring regions and external-port flow.
+`alignAutomaticRuns()` then identifies uniquely opposed terminals on each shared
+node. Terminals facing toward each other define a straight electrical run:
+perpendicular coordinates become equality constraints, while along-run minima
+reserve terminal escapes and measured body/caption space. Horizontal and vertical
+runs use the same rule. Perpendicular branches, ambiguous same-direction fanouts
+and genuine return routes do not acquire an invented straight-run constraint.
+
+The constraint-based measured separator is shared in `schematicPlacementConstraints.js`
+by drawing descriptions, relation-based shapes and the automatic graph path.
+Initial packing retains its ordering/orientation role; its per-component box
+centers cannot override an inferred terminal axis. Clearance solving can expand
+the layout while keeping those axes equal. A subsequent orthogonal compaction pass removes unused coarse-packing gaps.
+It uses separate envelopes for symbol ink, captions, terminal escapes and external
+port departures, rather than treating their entire enclosing rectangle as filled.
+Routing uses the same occupied ink/caption geometry. Each axis pass preserves
+projection order, terminal equalities and measured clearance. BFS region order
+is retained; cyclic regions remain rigid internally so their established loop
+embedding and routing corridors are preserved. This compacts straight runs and
+space between regions, not the interiors of arbitrary loops. Local one-port
+attachments use those same separate clearance envelopes.
+Routing and node markers use the resulting placements. This addresses the general failure in which a longer
+label introduced a jog into a simple run, without adding per-symbol opt-ins,
+shape offsets or example coordinates.
+
+The rule does not infer arbitrary engineering intent or replace the generic
+orientation/loop/fanout heuristics with a globally optimal layout. Uniquely
+facing runs align; genuine bends and branching structures still use their
+existing topology and routing policies. Regression checks cover long/short
+labels, unequal R/L/C/attenuator symbols, all four board-flow directions,
+reordered rows, renamed nodes, perpendicular branches and reused nodal/cascade
+blocks. The existing shape, composition and connectivity tests remain applicable.
+
+ `automaticRoute()` uses a priority queue, stored best costs, predecessor links and a Manhattan-distance heuristic to search around symbol bounds. It includes a bend cost as well as step distance. Its implementation retains best records per coordinate and incoming direction; sequential net ordering still makes it a practical heuristic rather than a global planarity solver. `recordBoardRoute()` tracks occupancy, allowing perpendicular crossings while preventing different nets from sharing the same wire segment.
 
 `graphWireBoxes()` records straight and corner pieces, and `automaticJunctions()` identifies true same-node branches. The result returns to `buildInterpretedBoardModel()` for common annotations, board inspection records and topology. If annotation beam search fails, `chooseSpacedAnnotations()` searches additional clear positions for the generic board. Failures still propagate to the browser API's error boundary described below.
 

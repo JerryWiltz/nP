@@ -1,5 +1,6 @@
-// Modified: 2026-11-19
+// Modified: 2026-11-22
 // Captions reserve measured space on a side without a canonical terminal lead.
+import {terminalLeadPoint} from './schematicTerminalGeometry';
 const SIDES = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 
 // Conservative glyph advances for the renderer's 16-unit sans-serif font.
@@ -25,7 +26,8 @@ function rotate(vector, placement) {
 
 export function componentLeadDirections(placement, symbol) {
     return symbol.ports.map((port, index) => {
-        const inside = symbol.leads[index].find(point => point.some((value, axis) => value !== port[axis]));
+        const inside = terminalLeadPoint(symbol, index + 1);
+        if (!inside) throw new RangeError('Canonical terminal needs connected lead geometry for caption placement.');
         return rotate(port.map((value, axis) => Math.sign(value - inside[axis])), placement);
     });
 }

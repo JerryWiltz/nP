@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-21 -->
+<!-- Modified: 2026-11-22 -->
 # Semiconductor models
 
 Current and charge laws, parameter records, RF/noise/nonlinearity assumptions and device validation. Start with the sources index to distinguish published equations, fitted parameters and numerical checks.
@@ -15,6 +15,10 @@ Current and charge laws, parameter records, RF/noise/nonlinearity assumptions an
 | [HEMTs](hemtModels.md) | ATF35143 die/package adaptation, static charges and correlated noise. |
 | [HEMT accuracy audit](hemtAccuracyAudit.md) | Measured-data discrepancies, sensitivity checks and unresolved reference questions. |
 | [SPICE-style diodes](diodeModels.md) | D() records, current/charge equations and verification. |
+| [Zener diodes](zenerModels.md) | Archived BZX384-B4V7 record, breakdown, independent SPICE checks and noise limits. |
+| [PIN diodes](pinModels.md) | Charge-storage DC/RF/noise/Volterra IM, supplied records and independent SPICE evidence; retained selected-region equivalent. |
+| [Avalanche noise diode](noiseDiodeModels.md) | NoiseDiode research reference, digitized multiplier/ENR fits, noise loading and missing DC/off-state characterization. |
+| [Zener breakdown noise](zenerNoise.md) | Research findings, excess-noise data requirements, ENR/reference planes and proposed validation. |
 | [Varactor models](varactorModels.md) | Hyperabrupt/M=1 charge, SMV1231-079LF package, C–V output and independent checks. |
 | [Schottky diodes](schottkyModels.md) | SMS7621/SMS7630 per-junction cards, package limits and independent checks. |
 | [Legacy diode](diodes/README.md) | diode1N4148() empirical model, datasheet anchors and limitations. |

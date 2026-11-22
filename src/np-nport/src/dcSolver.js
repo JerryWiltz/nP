@@ -1,4 +1,4 @@
-// Modified: 2026-11-20
+// Modified: 2026-11-22
 import {dcModelOf, dcSnapshot} from './dcModel';
 import {solveDcLinearSystem, dcLinearValue, dcLinearError} from './dcLinearSystem';
 import {bjtDcDevice, solveDcNonlinear} from './dcNonlinear';
@@ -23,7 +23,7 @@ function difference(a, b) {
 function unsupportedModels(model, path = '') {
     if (model.kind === 'connection') return model.definition.components.flatMap(part =>
         unsupportedModels(part.model, path ? path + '/' + part.id : part.id));
-    if (model.kind === 'requiresModel' || (model.kind === 'nonlinear' && !['bjt', 'jfet', 'mesfet', 'hemt', 'mosfet', 'diode', 'legacy-diode'].includes(model.definition.modelId))) return [{path,
+    if (model.kind === 'requiresModel' || (model.kind === 'nonlinear' && !['bjt', 'jfet', 'mesfet', 'hemt', 'mosfet', 'diode', 'pin', 'pin-charge', 'legacy-diode'].includes(model.definition.modelId))) return [{path,
         constructorName: model.constructorName, reason: model.reason ||
             'This nonlinear DC adapter is not implemented yet; supply a supported device model.'}];
     return [];
@@ -143,9 +143,17 @@ class DcAssembly {
             }
             component.device = device;
             this.devices.push(device);
-        } else if (d.modelId === 'diode' || d.modelId === 'legacy-diode') {
+        } else if (d.modelId === 'pin-charge') {
+            this.element(component, local, 'connection', [1, 'n1']);
+            this.element(component, local, 'connection', [2, 'n2']);
+            const device = diodeDcDevice(model, [local.get('n1'), local.get('n2')], component.path);
+            component.device = device; this.devices.push(device);
+        } else if (['diode', 'pin', 'legacy-diode'].includes(d.modelId)) {
             const device = diodeDcDevice(model, [], component.path), legacy = d.modelId === 'legacy-diode';
-            this.element(component, local, 'resistor', [1, 'n1'], legacy ? device.p.rs : device.p.RS);
+            if (d.modelId === 'pin' && d.region === 'forward') {
+                this.element(component, local, 'resistor', [1, 'n3'], device.p.RS);
+                this.element(component, local, 'voltage-source', ['n3', 'n1'], 0, device.p.VI);
+            } else this.element(component, local, 'resistor', [1, 'n1'], legacy ? device.p.rs : device.p.RS);
             this.element(component, local, 'resistor', [2, 'n2'], 0);
             device.nodes = [local.get('n1'), local.get('n2')];
             // D's leakage is outside RS; the legacy current law contains its
@@ -249,14 +257,17 @@ export function solveDC(part) {
         }
         if (component.device.kind !== 'bjt') {
             const [a, k] = component.device.nodes;
-            const junctionVoltage = dcLinearValue(solution, difference(a, k));
+            const deviceVoltage = dcLinearValue(solution, difference(a, k));
+            const junctionVoltage = component.device.kind === 'pin-charge' && deviceVoltage !== null ?
+                diodeDcCurrent(component.device, deviceVoltage).point.junctionVoltage : deviceVoltage;
             const vd = dcLinearValue(solution, difference(...component.nodes));
             const result = components.find(entry => entry.path === component.path), id = result.terminalCurrents[0];
             if ([vd, junctionVoltage, id].includes(null)) throw dcLinearError('DC_FLOATING_BIAS', 'DC diode bias is undetermined at ' + (component.path || '(root)') + '.');
             const va = dcLinearValue(solution, new Map([[component.nodes[0], 1]]));
             const vk = dcLinearValue(solution, new Map([[component.nodes[1], 1]]));
             operatingPoints.push({path: component.path, vd, junctionVoltage, va, vk});
-            result.qPoint = {vd, id, junctionVoltage, junctionCurrent: diodeDcCurrent(component.device, junctionVoltage).current,
+            result.qPoint = {vd, id, junctionVoltage, junctionCurrent: component.device.kind === 'pin-charge' ?
+                diodeDcCurrent(component.device, deviceVoltage).point.junctionCurrent : diodeDcCurrent(component.device, junctionVoltage).current,
                 va, vk, temperature: component.model.definition.temperature};
             continue;
         }

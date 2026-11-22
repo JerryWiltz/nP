@@ -1,4 +1,4 @@
-// Modified: 2026-11-20
+// Modified: 2026-11-22
 export {NJF} from './transistors/fet/NJF';
 export {PJF} from './transistors/fet/PJF';
 export {V} from './sources/V';
@@ -9,6 +9,7 @@ export {chebyLPLCs} from './filters/chebyLPLCs';
 export {chebyLPNsec} from './filters/chebyLPNsec';
 export {diode1N4148} from './diodes/diode1N4148';
 export {D} from './diodes/D';
+export {NoiseDiode} from './diodes/NoiseDiode';
 export {seR} from './rlc/seR';
 export {R} from './rlc/R';
 export {paR} from './rlc/paR';
@@ -78,3 +79,5 @@ export {PMOS} from './transistors/fet/PMOS';
 export {MESFET} from './transistors/fet/MESFET';
 
 export {HEMT} from './transistors/fet/HEMT';
+
+export {PIN} from './diodes/PIN';

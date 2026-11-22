@@ -1,4 +1,4 @@
-// Modified: 2026-11-20
+// Modified: 2026-11-22
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as nP from '../src/index.js';
@@ -40,7 +40,7 @@ function drive(part, volts = 1) {
 
 function pendingModel(model) {
     if (model.kind === 'connection') return model.definition.components.some(part => pendingModel(part.model));
-    return model.kind === 'requiresModel' || (model.kind === 'nonlinear' && !['bjt', 'jfet', 'mesfet', 'hemt', 'mosfet', 'diode', 'legacy-diode'].includes(model.definition.modelId));
+    return model.kind === 'requiresModel' || (model.kind === 'nonlinear' && !['bjt', 'jfet', 'mesfet', 'hemt', 'mosfet', 'diode', 'pin', 'pin-charge', 'legacy-diode'].includes(model.definition.modelId));
 }
 
 function parallelSources(first, second) {

@@ -8,6 +8,7 @@ export const schematicSymbolMap = {
     "PNP": "pnp",
     "diode1N4148": "diode-1n4148",
     "D": "diode-1n4148",
+    "NoiseDiode": "noise-diode",
     "seR": "resistor",
     "R": "resistor",
     "paR": "parallel-resistor",
@@ -62,12 +63,14 @@ export const schematicSymbolMap = {
     "NMOS": "nmos",
     "PMOS": "pmos",
     "MESFET": "njf",
-    "HEMT": "njf"
+    "HEMT": "njf",
+    "PIN": "pin-diode"
 };
 export const schematicSymbolVariants = {
     "D": {
         "schottky": "schottky-diode",
-        "varactor": "varactor-diode"
+        "varactor": "varactor-diode",
+        "zener": "zener-diode"
     },
     "mbend": {
         "left": "microstrip-left-bend",

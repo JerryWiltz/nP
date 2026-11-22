@@ -2,7 +2,7 @@
 aside: false
 ---
 
-<!-- Modified: 2026-11-21 -->
+<!-- Modified: 2026-11-22 -->
 
 <script setup>
 import CanonicalSymbols from './.vitepress/theme/CanonicalSymbols.vue'
@@ -49,9 +49,19 @@ Specialized diode artwork uses **1 anode, 2 cathode**:
 | `Zener` | Angled cathode-bar ends |
 | `Varactor` | Two parallel cathode plates |
 
-A description path such as `'1 right D1=Varactor 2'` draws the symbol. These drawing aliases do not select numerical models. `D({model: 'SMS7621'})` and `D({model: 'SMS7630'})` now supply Schottky DC/RF/noise/weak nonlinear behavior and select the hooked-cathode artwork automatically. `D({model: 'SMV1231-079LF', qPoint: {vd: -3}})` supplies the varactor model and selects its artwork. Zener numerical support remains pending. The 1N4148 and legacy records retain ordinary diode artwork.
+A description path such as `'1 right D1=Varactor 2'` draws the symbol. These drawing aliases do not select numerical models. `D({model: 'SMS7621'})` and `D({model: 'SMS7630'})` now supply Schottky DC/RF/noise/weak nonlinear behavior and select the hooked-cathode artwork automatically. `D({model: 'SMV1231-079LF', qPoint: {vd: -3}})` supplies the varactor model and selects its artwork. `D({model: 'BZX384-B4V7', qPoint: {vd: -4.7}})` supplies the archived single-junction Zener record and selects its artwork; it excludes avalanche excess-noise and fitted breakdown-temperature behavior. The 1N4148 and legacy records retain ordinary diode artwork.
 
-HBT and PIN drawings reuse existing geometry with an instance caption: `'1 right Q1=NPN(HBT)[1,2,3] 1 2 3'` (or `PNP`) and `'1 right D1=D(PIN) 2'`. HBT terminal order remains **base, collector, emitter**. These description captions do not select an HBT or PIN numerical model.
+`NoiseDiode()` has its own **noise-diode.svg** symbol and gallery entry, with
+**1 anode, 2 cathode**. Its geometry matches the Zener drawing, but the files
+and symbol identities are independent. Its separate
+avalanche/drift RF/noise research model does not change the ordinary `D()`
+Zener equations and supplies no DC I-V or deterministic nonlinear fit.
+
+`PIN()` has its own **pin-diode.svg** symbol and gallery entry, using ordinary
+diode geometry with **1 anode, 2 cathode**. Its numerical model is a selected-region
+DC/small-signal RF equivalent; see [PIN diode](./diodes-and-active-components#pin-diode).
+
+HBT drawings reuse existing geometry with an instance caption; older PIN captions remain valid: `'1 right Q1=NPN(HBT)[1,2,3] 1 2 3'` (or `PNP`) and `'1 right D1=D(PIN) 2'`. HBT terminal order remains **base, collector, emitter**. These description captions do not select an HBT or PIN numerical model.
 
 See [Schematics](./schematics.md) for drawing circuits and [RF constructors](./rf-constructors.md) for numerical component behavior.
 

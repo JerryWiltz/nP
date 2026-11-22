@@ -1,0 +1,361 @@
+PIN selected-region independent references
+* Modified: 2026-11-22
+* Skyworks 200313B Figure 8: PN DC branch and frozen-bias RF equivalent.
+* Implementation checks, not measured PIN noise validation.
+.temp 27
+.options reltol=1e-11 abstol=1e-16 gmin=1e-20
+.model pn D(IS=1e-8 N=2.2 RS=1.48)
+Ib0 0 a0 DC 0.0001
+Vpin0 a0 j0 .08
+Dpn0 j0 0 pn
+Ib1 0 a1 DC 0.001
+Vpin1 a1 j1 .08
+Dpn1 j1 0 pn
+Ib2 0 a2 DC 0.01
+Vpin2 a2 j2 .08
+Dpn2 j2 0 pn
+Ib3 0 a3 DC 0.05
+Vpin3 a3 j3 .08
+Dpn3 j3 0 pn
+Vcal ci 0 DC 0 AC 1
+Rcal ci co 50
+Gcal co 0 co 0 .02
+Voff ao 0 -5
+Roff ao jo 4e6
+Doff jo 0 pn
+
+* RF forward, bias current 0.001 A, 10000000.0 Hz
+Vs0 src0 0 DC 0 AC 0
+Rs0 src0 aRF0 50
+Gl0 kRF0 0 kRF0 0 .02
+Ia0 0 aRF0 DC 0 AC 1
+Ik0 0 kRF0 DC 0 AC 0
+Cp0 aRF0 kRF0 8e-14
+Ll0 kRF0 m0 1.5e-9
+Cg0 aRF0 m0 1e-13
+Rc0 aRF0 x0 2.2
+Ri0 x0 m0 80.0
+Ci0 x0 m0 1.958153798759996e-15
+
+* RF forward, bias current 0.001 A, 100000000.0 Hz
+Vs1 src1 0 DC 0 AC 0
+Rs1 src1 aRF1 50
+Gl1 kRF1 0 kRF1 0 .02
+Ia1 0 aRF1 DC 0 AC 1
+Ik1 0 kRF1 DC 0 AC 0
+Cp1 aRF1 kRF1 8e-14
+Ll1 kRF1 m1 1.5e-9
+Cg1 aRF1 m1 1e-13
+Rc1 aRF1 x1 2.2
+Ri1 x1 m1 80.0
+Ci1 x1 m1 1.958153798759996e-15
+
+* RF forward, bias current 0.001 A, 1000000000.0 Hz
+Vs2 src2 0 DC 0 AC 0
+Rs2 src2 aRF2 50
+Gl2 kRF2 0 kRF2 0 .02
+Ia2 0 aRF2 DC 0 AC 1
+Ik2 0 kRF2 DC 0 AC 0
+Cp2 aRF2 kRF2 8e-14
+Ll2 kRF2 m2 1.5e-9
+Cg2 aRF2 m2 1e-13
+Rc2 aRF2 x2 2.2
+Ri2 x2 m2 80.0
+Ci2 x2 m2 1.958153798759996e-15
+
+* RF forward, bias current 0.001 A, 2000000000.0 Hz
+Vs3 src3 0 DC 0 AC 0
+Rs3 src3 aRF3 50
+Gl3 kRF3 0 kRF3 0 .02
+Ia3 0 aRF3 DC 0 AC 1
+Ik3 0 kRF3 DC 0 AC 0
+Cp3 aRF3 kRF3 8e-14
+Ll3 kRF3 m3 1.5e-9
+Cg3 aRF3 m3 1e-13
+Rc3 aRF3 x3 2.2
+Ri3 x3 m3 80.0
+Ci3 x3 m3 1.958153798759996e-15
+
+* RF forward, bias current 0.001 A, 3000000000.0 Hz
+Vs4 src4 0 DC 0 AC 0
+Rs4 src4 aRF4 50
+Gl4 kRF4 0 kRF4 0 .02
+Ia4 0 aRF4 DC 0 AC 1
+Ik4 0 kRF4 DC 0 AC 0
+Cp4 aRF4 kRF4 8e-14
+Ll4 kRF4 m4 1.5e-9
+Cg4 aRF4 m4 1e-13
+Rc4 aRF4 x4 2.2
+Ri4 x4 m4 80.0
+Ci4 x4 m4 1.958153798759996e-15
+
+* RF forward, bias current 0.01 A, 10000000.0 Hz
+Vs5 src5 0 DC 0 AC 0
+Rs5 src5 aRF5 50
+Gl5 kRF5 0 kRF5 0 .02
+Ia5 0 aRF5 DC 0 AC 1
+Ik5 0 kRF5 DC 0 AC 0
+Cp5 aRF5 kRF5 8e-14
+Ll5 kRF5 m5 1.5e-9
+Cg5 aRF5 m5 1e-13
+Rc5 aRF5 x5 2.2
+Ri5 x5 m5 8.0
+Ci5 x5 m5 1.958153798759996e-15
+
+* RF forward, bias current 0.01 A, 100000000.0 Hz
+Vs6 src6 0 DC 0 AC 0
+Rs6 src6 aRF6 50
+Gl6 kRF6 0 kRF6 0 .02
+Ia6 0 aRF6 DC 0 AC 1
+Ik6 0 kRF6 DC 0 AC 0
+Cp6 aRF6 kRF6 8e-14
+Ll6 kRF6 m6 1.5e-9
+Cg6 aRF6 m6 1e-13
+Rc6 aRF6 x6 2.2
+Ri6 x6 m6 8.0
+Ci6 x6 m6 1.958153798759996e-15
+
+* RF forward, bias current 0.01 A, 1000000000.0 Hz
+Vs7 src7 0 DC 0 AC 0
+Rs7 src7 aRF7 50
+Gl7 kRF7 0 kRF7 0 .02
+Ia7 0 aRF7 DC 0 AC 1
+Ik7 0 kRF7 DC 0 AC 0
+Cp7 aRF7 kRF7 8e-14
+Ll7 kRF7 m7 1.5e-9
+Cg7 aRF7 m7 1e-13
+Rc7 aRF7 x7 2.2
+Ri7 x7 m7 8.0
+Ci7 x7 m7 1.958153798759996e-15
+
+* RF forward, bias current 0.01 A, 2000000000.0 Hz
+Vs8 src8 0 DC 0 AC 0
+Rs8 src8 aRF8 50
+Gl8 kRF8 0 kRF8 0 .02
+Ia8 0 aRF8 DC 0 AC 1
+Ik8 0 kRF8 DC 0 AC 0
+Cp8 aRF8 kRF8 8e-14
+Ll8 kRF8 m8 1.5e-9
+Cg8 aRF8 m8 1e-13
+Rc8 aRF8 x8 2.2
+Ri8 x8 m8 8.0
+Ci8 x8 m8 1.958153798759996e-15
+
+* RF forward, bias current 0.01 A, 3000000000.0 Hz
+Vs9 src9 0 DC 0 AC 0
+Rs9 src9 aRF9 50
+Gl9 kRF9 0 kRF9 0 .02
+Ia9 0 aRF9 DC 0 AC 1
+Ik9 0 kRF9 DC 0 AC 0
+Cp9 aRF9 kRF9 8e-14
+Ll9 kRF9 m9 1.5e-9
+Cg9 aRF9 m9 1e-13
+Rc9 aRF9 x9 2.2
+Ri9 x9 m9 8.0
+Ci9 x9 m9 1.958153798759996e-15
+
+* RF reverse, bias current 0 A, 10000000.0 Hz
+Vs10 src10 0 DC 0 AC 0
+Rs10 src10 aRF10 50
+Gl10 kRF10 0 kRF10 0 .02
+Ia10 0 aRF10 DC 0 AC 1
+Ik10 0 kRF10 DC 0 AC 0
+Cp10 aRF10 kRF10 8e-14
+Ll10 kRF10 m10 1.5e-9
+Cg10 aRF10 m10 1e-13
+Rc10 aRF10 x10 2.2
+Ri10 x10 m10 4000000.0
+
+* RF reverse, bias current 0 A, 100000000.0 Hz
+Vs11 src11 0 DC 0 AC 0
+Rs11 src11 aRF11 50
+Gl11 kRF11 0 kRF11 0 .02
+Ia11 0 aRF11 DC 0 AC 1
+Ik11 0 kRF11 DC 0 AC 0
+Cp11 aRF11 kRF11 8e-14
+Ll11 kRF11 m11 1.5e-9
+Cg11 aRF11 m11 1e-13
+Rc11 aRF11 x11 2.2
+Ri11 x11 m11 4000000.0
+
+* RF reverse, bias current 0 A, 1000000000.0 Hz
+Vs12 src12 0 DC 0 AC 0
+Rs12 src12 aRF12 50
+Gl12 kRF12 0 kRF12 0 .02
+Ia12 0 aRF12 DC 0 AC 1
+Ik12 0 kRF12 DC 0 AC 0
+Cp12 aRF12 kRF12 8e-14
+Ll12 kRF12 m12 1.5e-9
+Cg12 aRF12 m12 1e-13
+Rc12 aRF12 x12 2.2
+Ri12 x12 m12 4000000.0
+
+* RF reverse, bias current 0 A, 2000000000.0 Hz
+Vs13 src13 0 DC 0 AC 0
+Rs13 src13 aRF13 50
+Gl13 kRF13 0 kRF13 0 .02
+Ia13 0 aRF13 DC 0 AC 1
+Ik13 0 kRF13 DC 0 AC 0
+Cp13 aRF13 kRF13 8e-14
+Ll13 kRF13 m13 1.5e-9
+Cg13 aRF13 m13 1e-13
+Rc13 aRF13 x13 2.2
+Ri13 x13 m13 4000000.0
+
+* RF reverse, bias current 0 A, 3000000000.0 Hz
+Vs14 src14 0 DC 0 AC 0
+Rs14 src14 aRF14 50
+Gl14 kRF14 0 kRF14 0 .02
+Ia14 0 aRF14 DC 0 AC 1
+Ik14 0 kRF14 DC 0 AC 0
+Cp14 aRF14 kRF14 8e-14
+Ll14 kRF14 m14 1.5e-9
+Cg14 aRF14 m14 1e-13
+Rc14 aRF14 x14 2.2
+Ri14 x14 m14 4000000.0
+.control
+set numdgt=15
+set wr_singlescale
+set wr_vecnames
+op
+wrdata /tmp/pin-dc.txt v(a0) v(a1) v(a2) v(a3) i(Voff)
+ac lin 1 10000000.0 10000000.0
+wrdata /tmp/pin-rf-0-p1.txt v(aRF0) v(kRF0)
+alter @Ia0[acmag] = 0
+alter @Ik0[acmag] = 1
+ac lin 1 10000000.0 10000000.0
+wrdata /tmp/pin-rf-0-p2.txt v(aRF0) v(kRF0)
+alter @Ik0[acmag] = 0
+noise v(kRF0) Vs0 lin 1 10000000.0 10000000.0
+wrdata /tmp/pin-rf-0-noise.txt onoise_spectrum
+ac lin 1 100000000.0 100000000.0
+wrdata /tmp/pin-rf-1-p1.txt v(aRF1) v(kRF1)
+alter @Ia1[acmag] = 0
+alter @Ik1[acmag] = 1
+ac lin 1 100000000.0 100000000.0
+wrdata /tmp/pin-rf-1-p2.txt v(aRF1) v(kRF1)
+alter @Ik1[acmag] = 0
+noise v(kRF1) Vs1 lin 1 100000000.0 100000000.0
+wrdata /tmp/pin-rf-1-noise.txt onoise_spectrum
+ac lin 1 1000000000.0 1000000000.0
+wrdata /tmp/pin-rf-2-p1.txt v(aRF2) v(kRF2)
+alter @Ia2[acmag] = 0
+alter @Ik2[acmag] = 1
+ac lin 1 1000000000.0 1000000000.0
+wrdata /tmp/pin-rf-2-p2.txt v(aRF2) v(kRF2)
+alter @Ik2[acmag] = 0
+noise v(kRF2) Vs2 lin 1 1000000000.0 1000000000.0
+wrdata /tmp/pin-rf-2-noise.txt onoise_spectrum
+ac lin 1 2000000000.0 2000000000.0
+wrdata /tmp/pin-rf-3-p1.txt v(aRF3) v(kRF3)
+alter @Ia3[acmag] = 0
+alter @Ik3[acmag] = 1
+ac lin 1 2000000000.0 2000000000.0
+wrdata /tmp/pin-rf-3-p2.txt v(aRF3) v(kRF3)
+alter @Ik3[acmag] = 0
+noise v(kRF3) Vs3 lin 1 2000000000.0 2000000000.0
+wrdata /tmp/pin-rf-3-noise.txt onoise_spectrum
+ac lin 1 3000000000.0 3000000000.0
+wrdata /tmp/pin-rf-4-p1.txt v(aRF4) v(kRF4)
+alter @Ia4[acmag] = 0
+alter @Ik4[acmag] = 1
+ac lin 1 3000000000.0 3000000000.0
+wrdata /tmp/pin-rf-4-p2.txt v(aRF4) v(kRF4)
+alter @Ik4[acmag] = 0
+noise v(kRF4) Vs4 lin 1 3000000000.0 3000000000.0
+wrdata /tmp/pin-rf-4-noise.txt onoise_spectrum
+ac lin 1 10000000.0 10000000.0
+wrdata /tmp/pin-rf-5-p1.txt v(aRF5) v(kRF5)
+alter @Ia5[acmag] = 0
+alter @Ik5[acmag] = 1
+ac lin 1 10000000.0 10000000.0
+wrdata /tmp/pin-rf-5-p2.txt v(aRF5) v(kRF5)
+alter @Ik5[acmag] = 0
+noise v(kRF5) Vs5 lin 1 10000000.0 10000000.0
+wrdata /tmp/pin-rf-5-noise.txt onoise_spectrum
+ac lin 1 100000000.0 100000000.0
+wrdata /tmp/pin-rf-6-p1.txt v(aRF6) v(kRF6)
+alter @Ia6[acmag] = 0
+alter @Ik6[acmag] = 1
+ac lin 1 100000000.0 100000000.0
+wrdata /tmp/pin-rf-6-p2.txt v(aRF6) v(kRF6)
+alter @Ik6[acmag] = 0
+noise v(kRF6) Vs6 lin 1 100000000.0 100000000.0
+wrdata /tmp/pin-rf-6-noise.txt onoise_spectrum
+ac lin 1 1000000000.0 1000000000.0
+wrdata /tmp/pin-rf-7-p1.txt v(aRF7) v(kRF7)
+alter @Ia7[acmag] = 0
+alter @Ik7[acmag] = 1
+ac lin 1 1000000000.0 1000000000.0
+wrdata /tmp/pin-rf-7-p2.txt v(aRF7) v(kRF7)
+alter @Ik7[acmag] = 0
+noise v(kRF7) Vs7 lin 1 1000000000.0 1000000000.0
+wrdata /tmp/pin-rf-7-noise.txt onoise_spectrum
+ac lin 1 2000000000.0 2000000000.0
+wrdata /tmp/pin-rf-8-p1.txt v(aRF8) v(kRF8)
+alter @Ia8[acmag] = 0
+alter @Ik8[acmag] = 1
+ac lin 1 2000000000.0 2000000000.0
+wrdata /tmp/pin-rf-8-p2.txt v(aRF8) v(kRF8)
+alter @Ik8[acmag] = 0
+noise v(kRF8) Vs8 lin 1 2000000000.0 2000000000.0
+wrdata /tmp/pin-rf-8-noise.txt onoise_spectrum
+ac lin 1 3000000000.0 3000000000.0
+wrdata /tmp/pin-rf-9-p1.txt v(aRF9) v(kRF9)
+alter @Ia9[acmag] = 0
+alter @Ik9[acmag] = 1
+ac lin 1 3000000000.0 3000000000.0
+wrdata /tmp/pin-rf-9-p2.txt v(aRF9) v(kRF9)
+alter @Ik9[acmag] = 0
+noise v(kRF9) Vs9 lin 1 3000000000.0 3000000000.0
+wrdata /tmp/pin-rf-9-noise.txt onoise_spectrum
+ac lin 1 10000000.0 10000000.0
+wrdata /tmp/pin-rf-10-p1.txt v(aRF10) v(kRF10)
+alter @Ia10[acmag] = 0
+alter @Ik10[acmag] = 1
+ac lin 1 10000000.0 10000000.0
+wrdata /tmp/pin-rf-10-p2.txt v(aRF10) v(kRF10)
+alter @Ik10[acmag] = 0
+noise v(kRF10) Vs10 lin 1 10000000.0 10000000.0
+wrdata /tmp/pin-rf-10-noise.txt onoise_spectrum
+ac lin 1 100000000.0 100000000.0
+wrdata /tmp/pin-rf-11-p1.txt v(aRF11) v(kRF11)
+alter @Ia11[acmag] = 0
+alter @Ik11[acmag] = 1
+ac lin 1 100000000.0 100000000.0
+wrdata /tmp/pin-rf-11-p2.txt v(aRF11) v(kRF11)
+alter @Ik11[acmag] = 0
+noise v(kRF11) Vs11 lin 1 100000000.0 100000000.0
+wrdata /tmp/pin-rf-11-noise.txt onoise_spectrum
+ac lin 1 1000000000.0 1000000000.0
+wrdata /tmp/pin-rf-12-p1.txt v(aRF12) v(kRF12)
+alter @Ia12[acmag] = 0
+alter @Ik12[acmag] = 1
+ac lin 1 1000000000.0 1000000000.0
+wrdata /tmp/pin-rf-12-p2.txt v(aRF12) v(kRF12)
+alter @Ik12[acmag] = 0
+noise v(kRF12) Vs12 lin 1 1000000000.0 1000000000.0
+wrdata /tmp/pin-rf-12-noise.txt onoise_spectrum
+ac lin 1 2000000000.0 2000000000.0
+wrdata /tmp/pin-rf-13-p1.txt v(aRF13) v(kRF13)
+alter @Ia13[acmag] = 0
+alter @Ik13[acmag] = 1
+ac lin 1 2000000000.0 2000000000.0
+wrdata /tmp/pin-rf-13-p2.txt v(aRF13) v(kRF13)
+alter @Ik13[acmag] = 0
+noise v(kRF13) Vs13 lin 1 2000000000.0 2000000000.0
+wrdata /tmp/pin-rf-13-noise.txt onoise_spectrum
+ac lin 1 3000000000.0 3000000000.0
+wrdata /tmp/pin-rf-14-p1.txt v(aRF14) v(kRF14)
+alter @Ia14[acmag] = 0
+alter @Ik14[acmag] = 1
+ac lin 1 3000000000.0 3000000000.0
+wrdata /tmp/pin-rf-14-p2.txt v(aRF14) v(kRF14)
+alter @Ik14[acmag] = 0
+noise v(kRF14) Vs14 lin 1 3000000000.0 3000000000.0
+wrdata /tmp/pin-rf-14-noise.txt onoise_spectrum
+noise v(co) Vcal lin 1 1e6 1e6
+wrdata /tmp/pin-thermal-cal.txt onoise_spectrum
+quit
+.endc
+.end

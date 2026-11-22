@@ -1,6 +1,7 @@
-// Modified: 2026-11-19
+// Modified: 2026-11-22
 // Compose measured boards and direct junction symbols through their electrical boundaries.
 import {automaticRoute, recordBoardRoute, graphWireBoxes} from './schematicBoardGraph';
+import {terminalLeadPoint} from './schematicTerminalGeometry';
 
 function compositionError(message) {
     throw new RangeError(`Schematic board composition: ${message}`);
@@ -246,7 +247,7 @@ function sectionGraph(root, items) {
 
 function leadDirection(entry, placement, port, geometry) {
     const symbol = geometry.symbol(entry), at = symbol.ports[port - 1];
-    const inner = symbol.leads?.[port - 1]?.find(point => point[0] !== at[0] || point[1] !== at[1]);
+    const inner = terminalLeadPoint(symbol, port);
     if (!inner) compositionError('direct components need canonical terminal lead directions.');
     let [x, y] = at.map((value, axis) => Math.sign(value - inner[axis]));
     if (placement.mirrorX) x = -x;

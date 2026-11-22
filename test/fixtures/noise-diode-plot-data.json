@@ -1,0 +1,247 @@
+{
+  "modified": "2026-11-22",
+  "source": "https://upcommons.upc.edu/server/api/core/bitstreams/01200fd7-3902-48b4-a987-161b9dd9a521/content",
+  "sha256": "502f69a22b8e2880ebeb0314066f83d0543f50116d35b46b43f32ecedf1a3d27",
+  "biasCurrentA": 0.0167,
+  "method": "Manual samples from triangular 16.7 mA markers and their intervening/overlapping trace in the PDF embedded raster images; ambiguous overlaps estimated with larger pixel bounds. Original measurement uncertainties unavailable. Pixel bounds are digitization assumptions, not calibrated uncertainties.",
+  "figure5": {
+    "imageSize": [
+      997,
+      846
+    ],
+    "axes": {
+      "x0": 159,
+      "x40": 978,
+      "yLog10M2_4": 71,
+      "yLog10M2_1": 727
+    },
+    "plane": "avalanche-zone multiplier of Eq. 8",
+    "pixelColumns": [
+      "x",
+      "y",
+      "estimatedYBoundPixels"
+    ],
+    "pixelPoints": [
+      [
+        200,
+        133,
+        6
+      ],
+      [
+        262,
+        320,
+        3
+      ],
+      [
+        321,
+        405,
+        4
+      ],
+      [
+        362,
+        432,
+        4
+      ],
+      [
+        386,
+        450,
+        4
+      ],
+      [
+        403,
+        473,
+        3
+      ],
+      [
+        425,
+        487,
+        3
+      ],
+      [
+        465,
+        512,
+        3
+      ],
+      [
+        507,
+        531,
+        3
+      ],
+      [
+        569,
+        548,
+        4
+      ],
+      [
+        610,
+        582,
+        4
+      ],
+      [
+        712,
+        614,
+        4
+      ],
+      [
+        753,
+        637,
+        3
+      ],
+      [
+        794,
+        665,
+        3
+      ],
+      [
+        835,
+        658,
+        3
+      ],
+      [
+        876,
+        643,
+        3
+      ],
+      [
+        917,
+        641,
+        3
+      ],
+      [
+        958,
+        641,
+        3
+      ],
+      [
+        978,
+        627,
+        4
+      ]
+    ]
+  },
+  "figure6": {
+    "imageSize": [
+      838,
+      734
+    ],
+    "axes": {
+      "x0": 117,
+      "x40": 820,
+      "yEnr34": 69,
+      "yEnr20": 631
+    },
+    "plane": "on-wafer reference plane including the JMICRO transition; not intrinsic diode ENR",
+    "pixelColumns": [
+      "x",
+      "y",
+      "estimatedYBoundPixels"
+    ],
+    "pixelPoints": [
+      [
+        152,
+        195,
+        2
+      ],
+      [
+        187,
+        202,
+        2
+      ],
+      [
+        222,
+        221,
+        2
+      ],
+      [
+        258,
+        224,
+        2
+      ],
+      [
+        293,
+        202,
+        2
+      ],
+      [
+        328,
+        200,
+        3
+      ],
+      [
+        363,
+        204,
+        3
+      ],
+      [
+        398,
+        203,
+        3
+      ],
+      [
+        433,
+        185,
+        3
+      ],
+      [
+        451,
+        174,
+        3
+      ],
+      [
+        469,
+        182,
+        3
+      ],
+      [
+        504,
+        214,
+        3
+      ],
+      [
+        592,
+        237,
+        3
+      ],
+      [
+        627,
+        256,
+        3
+      ],
+      [
+        662,
+        301,
+        3
+      ],
+      [
+        680,
+        307,
+        3
+      ],
+      [
+        715,
+        340,
+        3
+      ],
+      [
+        750,
+        367,
+        3
+      ],
+      [
+        768,
+        405,
+        3
+      ],
+      [
+        785,
+        435,
+        3
+      ],
+      [
+        820,
+        445,
+        3
+      ]
+    ]
+  }
+}

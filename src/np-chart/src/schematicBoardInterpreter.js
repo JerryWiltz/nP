@@ -1,8 +1,9 @@
-// Modified: 2026-11-19
+// Modified: 2026-11-22
 import {layoutAutomaticBoard} from './schematicBoardGraph';
 import {composeSchematicBoards} from './schematicBoardComposition';
 import {schematicBranchFamilies, measuredBranchAlignment} from './schematicBranches';
 import {layoutSchematicRelations} from './schematicRelations';
+import {terminalLeadPoint} from './schematicTerminalGeometry';
 
 // Shared board operations. This module never selects a layout by shape name.
 const DIRECTIONS = {right: [1, 0], down: [0, 1], left: [-1, 0], up: [0, -1]};
@@ -871,9 +872,7 @@ function bindBoardSlots(root, slots, board, geometry, bindings = new Map(), used
 
 function symbolTerminalDirection(symbol, port) {
     const at = symbol.ports[port - 1];
-    const lead = symbol.leads?.[port - 1];
-    if (!lead) return null;
-    const inside = lead.find(point => point[0] !== at[0] || point[1] !== at[1]);
+    const inside = terminalLeadPoint(symbol, port);
     return inside ? [at[0] - inside[0], at[1] - inside[1]] : null;
 }
 

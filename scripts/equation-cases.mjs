@@ -1,4 +1,4 @@
-// Modified: 2026-11-21
+// Modified: 2026-11-22
 // Mathematical descriptions for the audit, evaluated/differentiated by math.js.
 // They intentionally do not use nP's Taylor operations. These describe the
 // implemented model assumptions; they are not independent manufacturer fits.
@@ -14,6 +14,9 @@ import {mesfetJunction, mesfetParameters} from '../src/np-nport/src/transistors/
 import {hemtModel} from '../src/np-nport/src/transistors/fet/hemtModels';
 import {hemtJunction, hemtParameters} from '../src/np-nport/src/transistors/fet/hemtEquations';
 import {diodeModel} from '../src/np-nport/src/diodes/diodeModels';
+import {pinModel} from '../src/np-nport/src/diodes/pinModels';
+import {pinDcParameters} from '../src/np-nport/src/diodes/pinEquations';
+import {pinBulkResistance, pinLifetimeCurrent, pinChargeParameters, pinPair} from '../src/np-nport/src/diodes/pinChargeEquations';
 import {diodeTemperature, junctionCurrent, depletionCharge} from '../src/np-nport/src/diodes/junctionDiode';
 import {diodeTerminalCapacitance} from '../src/np-nport/src/diodes/diodeLinear';
 import {diode1N4148} from '../src/np-nport/src/diodes/diode1N4148';
@@ -33,6 +36,7 @@ export const parameterUnits = {
     CJE: 'F', CJC: 'F', CGS: 'F', CGD: 'F', CJO: 'F', CBS: 'F', CBD: 'F',
     CGSO: 'F / m', CGDO: 'F / m', CGBO: 'F / m', W: 'm', L: 'm',
     RS: 'ohm', CP: 'F', LS: 'H', g: 'S',
+    controlCurrent: 'A', driveCurrent: 'A', pinEps: 'A', pinWm: 'V', REPI: 'ohm', RLIM: 'ohm', IKNEE: 'A',
     TF: 's', TR: 's', TT: 's', knee: 'V', smooth: 'V', limit: 'V',
     is: 'A', vt: 'V', leakageResistance: 'ohm', breakdownCurrent: 'A',
     breakdownVoltage: 'V', breakdownSoftness: 'V'
@@ -172,9 +176,10 @@ function statzCases() {
 }
 function diodeCases() {
     const cases = [];
-    for (const name of ['1N4148', 'SMS7621', 'SMS7630', 'SMV1231-079LF']) {
+    for (const name of ['1N4148', 'SMS7621', 'SMS7630', 'SMV1231-079LF', 'BZX384-B4V7']) {
         const p = diodeTemperature(diodeModel(name).parameters, 300.15);
-        const voltages = name === 'SMV1231-079LF' ? [-10, -3, -.5, 0, .1] :
+        const voltages = name === 'BZX384-B4V7' ? [-4.8, -4.7, -4.6, -2, .6] :
+            name === 'SMV1231-079LF' ? [-10, -3, -.5, 0, .1] :
             name === '1N4148' ? [-p.breakdownKnee - .03, -2, -.02, .3, .6] :
             [-p.breakdownKnee - .03, -.2, 0, .1, .25];
         for (const x of voltages) {
@@ -213,8 +218,38 @@ function diodeCases() {
     return cases;
 }
 
+function pinCases() {
+    const record = pinModel('SMP1307-011LF'), p = pinDcParameters(record, record.referenceTemperature, 'forward');
+    const cases = [-5, -.5, 0, .5, .7].map(x => {
+        const current = junctionCurrent(p, x);
+        const text = x >= -3 * p.N * p.VT ? 'IS*(exp(x/(N*VT))-1)' : '-IS-IS*(3*N*VT/exp(1))^3/x^3';
+        return entry(`PIN PN (${x})`, {...p, x}, ['x'], {current: text},
+            {current: [current.current, current.conductance, current.second / 2, current.third / 6]}, {current: 'A'});
+    });
+    const charge = pinModel(), pp = {...charge.parameters, IKNEE: .01};
+    for (const value of [-1e-7, 0, 1e-6, .001, .02]) {
+        const positive = name => value < 0 ? `2*pinEps^2/(sqrt(${name}^2+4*pinEps^2)-${name})` : `(${name}+sqrt(${name}^2+4*pinEps^2))/2`;
+        const actualR = pinBulkResistance(pp, taylor.variable(value, 0));
+        const g = `(2*(${positive('controlCurrent')})/pinWm)`;
+        cases.push({...entry(`PIN storage resistance (${value})`, {controlCurrent: value, pinEps: 1e-12,
+            pinWm: 10 * pp.W ** 2 / pp.TAU, REPI: pp.REPI, RLIM: pp.RLIM}, ['controlCurrent'],
+        {resistance: `1/(1/REPI+${g}/(1+RLIM*${g}))`}, {resistance: [actualR[0], actualR[1], actualR[3], actualR[6]]}, {resistance: 'ohm'}), highPrecision: true});
+        const actualI = pinLifetimeCurrent(pp, taylor.variable(value, 0));
+        cases.push({...entry(`PIN lifetime current (${value})`, {driveCurrent: value, pinEps: 1e-12, IKNEE: pp.IKNEE}, ['driveCurrent'],
+            {current: `(${positive('driveCurrent')})^2/IKNEE`}, {current: [actualI[0], actualI[1], actualI[3], actualI[6]]}, {current: 'A'}), highPrecision: true});
+    }
+    for (const IKMODEL of [1, 2]) for (const x of [.4, .8, 1.1]) {
+        const p = pinChargeParameters({...charge, parameters: {...charge.parameters, IKF: .01, IKMODEL, RS: 0}}, charge.referenceTemperature);
+        const exponential = '(IS*(exp(x/(2*N*VT))-1))', denominator = IKMODEL === 1 ? `sqrt(1+${exponential}/IKF)` : `(1+sqrt(${exponential}/IKF))`;
+        const actual = pinPair(p, x).data;
+        cases.push(entry(`PIN pair injection ${IKMODEL} (${x})`, {...p, x}, ['x'], {current: `${exponential}/${denominator}`},
+            {current: [actual[0], actual[1], actual[3], actual[6]]}, {current: 'A'}));
+    }
+    return cases;
+}
+
 export function semiconductorCases() {
-    return [...bjtCases(), ...jfetCases(), ...mosfetCases(), ...statzCases(), ...diodeCases()];
+    return [...bjtCases(), ...jfetCases(), ...mosfetCases(), ...statzCases(), ...diodeCases(), ...pinCases()];
 }
 export function taylorCases() {
     const cases = [];

@@ -1,9 +1,37 @@
-// Modified: 2026-11-19
+// Modified: 2026-11-22
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as nP from '../src/index.js';
 import {schematicGraph} from '../src/np-chart/src/schematic';
 import {schematicShapeBoards} from '../src/np-chart/src/schematicShapeBoards';
+import {schematicSymbols} from '../src/np-chart/src/schematicSymbols';
+import {componentLeadDirections} from '../src/np-chart/src/schematicCaptions';
+
+test('terminal directions use connected geometry regardless of lead-array order or shared paths', () => {
+    const placement = {rotation: 0, mirrorX: false, mirrorY: false};
+    for (const [name, symbol] of Object.entries(schematicSymbols)) {
+        const before = JSON.stringify(symbol);
+        const directions = componentLeadDirections(placement, symbol);
+        const reordered = {...symbol, leads: symbol.leads.slice().reverse().map(lead => lead.slice().reverse())};
+        assert.deepEqual(componentLeadDirections(placement, reordered), directions, name);
+        assert.ok(directions.every(([x, y]) => Math.abs(x) + Math.abs(y) === 1), name);
+        assert.equal(JSON.stringify(symbol), before);
+    }
+    assert.deepEqual(componentLeadDirections(placement, schematicSymbols.attenuator), [[-1, 0], [1, 0]]);
+});
+
+for (const reordered of [false, true]) test(`continuous-lead components render in connected circuits; reordered ${reordered}`, () => {
+    nP.global.fList = [10e9];
+    const diode = nP.NoiseDiode(), short = nP.Short(), pad = nP.Attn(10), resistor = nP.R(1200);
+    const rows = [[diode, 70, 90], [short, 70], [pad, 90, 110], [resistor, 110, 130]];
+    const network = nP.nodal(...(reordered ? rows.reverse() : rows), ['out', 130]);
+    const before = JSON.stringify(network), graph = schematicGraph(network);
+    assert.equal(graph.components.length, 4);
+    assertReadableCaptions(graph);
+    assert.equal(JSON.stringify(network), before);
+    const description = {paths: ['7 right A1=Attn(10 dB) 8', '8 right R1=R(1200 ohm) 9']};
+    assertReadableCaptions(schematicGraph(description));
+});
 
 function overlaps(a, b) {
     return a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-21 -->
+<!-- Modified: 2026-11-22 -->
 # Development pages
 
 `schottky.html` shows SMS7630 per-junction DC curves, fixed-bias RF and the
@@ -20,8 +20,10 @@ aligned.
 
 | Harness | Focus | Companion note |
 | --- | --- | --- |
-| `canonicalSymbols.html` | All 81 canonical SVG symbols, including semiconductor and source artwork | — |
+| `canonicalSymbols.html` | All 83 canonical SVG symbols, including semiconductor and source artwork | — |
 | `chartDefaults.html` | Built-in line chart, line table, and Smith chart defaults | — |
+| `pin.html` | PIN charge-storage external DC bias, dynamic RF/noise and own symbol | `pin.md` |
+| `noiseDiode.html` | Dedicated avalanche source, plot-derived reference and ENR/mismatch through a pad | `noiseDiode.md` |
 | `diode.html` | D(): 1N4148 DC curves, fixed-Q RF, noise and weak nonlinear estimates | `diode.md` |
 | `diodeBias.html` | External diode network DC bias before RF analysis | `diodeBias.md` |
 | `edgeCoupledFilter.html` | Coupled-line filter with amplifier cascade | — |
@@ -88,3 +90,5 @@ name exactly as given.
 - [shapes/mesfetCommonSource.html](shapes/mesfetCommonSource.html): MES1 reference-profile self-bias, DC-before-RF and shared common-source drawing; [notes](shapes/mesfetCommonSource.md).
 
 - [varactor.html](varactor.html) — SMV1231-079LF C–V, externally solved reverse bias, RF and schematic; [notes](varactor.md).
+
+- [zener.html](zener.html): archived BZX384-B4V7, external reverse bias, I–V and S-parameters.

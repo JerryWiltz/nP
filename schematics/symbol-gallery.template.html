@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Modified: 2026-11-19 -->
+<!-- Modified: 2026-11-22 -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -14,7 +14,7 @@
     p { line-height: 1.5; }
     nav a { margin-right: 1.5rem; }
     main { overflow-x: auto; }
-    .symbol-sheet { display: block; width: 520px; height: 24900px; }
+    .symbol-sheet { display: block; width: 520px; height: 25500px; }
     a { color: #13558d; }
     a:focus-visible { outline: 3px solid #13558d; outline-offset: 2px; }
   </style>
@@ -22,13 +22,13 @@
 <body>
   <header>
     <h1>Canonical symbols</h1>
-    <p>All 81 canonical SVGs, ordered like the Guide API. Select a symbol to open its editable source drawing.</p>
+    <p>All 83 canonical SVGs, ordered like the Guide API. Select a symbol to open its editable source drawing.</p>
     <nav aria-label="Symbol groups"><a href="#rf">RF constructors</a><a href="#digital">Digital signals</a><a href="#math">Math</a><a href="#combining">Circuit combining</a><a href="#sources">Source primitives</a><a href="#devices">Transistors</a><a href="#specialized-diodes">Specialized diodes</a></nav>
   </header>
   <main>
-    <svg class="symbol-sheet" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 24900" role="img" aria-labelledby="sheet-title sheet-description">
+    <svg class="symbol-sheet" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 25500" role="img" aria-labelledby="sheet-title sheet-description">
       <title id="sheet-title">Canonical nPort symbols</title>
-      <desc id="sheet-description">All 81 canonical symbols in Guide API order on one shared SVG canvas.</desc>
+      <desc id="sheet-description">All 83 canonical symbols in Guide API order on one shared SVG canvas.</desc>
       <rect width="100%" height="100%" fill="#ffffff"/>
       <g fill="#202020" font-family="Arial, Helvetica, sans-serif">
     <text id="rf" x="40" y="50" font-size="22" font-weight="bold">RF constructors (51)</text>
@@ -591,7 +591,7 @@
 {{SYMBOL:pmos-depletion-four-terminal.svg}}
       </g>
     </a>
-    <text id="specialized-diodes" x="40" y="23900" font-size="22" font-weight="bold">Specialized diodes (3)</text>
+    <text id="specialized-diodes" x="40" y="23900" font-size="22" font-weight="bold">Specialized diodes (5)</text>
     <text x="40" y="23950" font-size="16">Schottky — symbol only</text>
     <text x="480" y="23970" font-size="13" text-anchor="end">schottky-diode.svg</text>
     <a href="../schematics/symbols/schottky-diode.svg" aria-label="Open schottky-diode.svg">
@@ -611,6 +611,20 @@
     <a href="../schematics/symbols/varactor-diode.svg" aria-label="Open varactor-diode.svg">
       <g data-symbol-source="varactor-diode.svg" transform="translate(150 24590)">
 {{SYMBOL:varactor-diode.svg}}
+      </g>
+    </a>
+    <text x="40" y="24850" font-size="16">NoiseDiode() — avalanche noise diode</text>
+    <text x="480" y="24870" font-size="13" text-anchor="end">noise-diode.svg</text>
+    <a href="../schematics/symbols/noise-diode.svg" aria-label="Open noise-diode.svg">
+      <g data-symbol-source="noise-diode.svg" transform="translate(150 24890)">
+{{SYMBOL:noise-diode.svg}}
+      </g>
+    </a>
+    <text x="40" y="25150" font-size="16">PIN() — PIN diode</text>
+    <text x="480" y="25170" font-size="13" text-anchor="end">pin-diode.svg</text>
+    <a href="../schematics/symbols/pin-diode.svg" aria-label="Open pin-diode.svg">
+      <g data-symbol-source="pin-diode.svg" transform="translate(150 25190)">
+{{SYMBOL:pin-diode.svg}}
       </g>
     </a>
       </g>

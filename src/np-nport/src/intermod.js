@@ -1,8 +1,9 @@
-// Modified: 2026-11-21
+// Modified: 2026-11-22
 import {diodeLinearResponse} from './diodes/diodeLinear';
 import {deviceProducts} from './transistors/deviceRf';
 import {bjtProducts} from './transistors/bjt/bjtRf';
 import {threeTerminalProducts} from './transistors/threeTerminalRf';
+import {pinChargeProducts} from './diodes/pinChargeIntermod';
 import {complex} from '../../np-math/src/complex';
 import {matrix, dim} from '../../np-math/src/matrix';
 
@@ -178,6 +179,7 @@ var generated = function (nport, frequency, context, tones) {
 		return solveConnection(model, frequency, zeroVector(count), childSources).outgoing;
 	}
 	if (model.type === 'diode') return diodeProducts(nport, frequency, context, tones, model);
+	if (model.type === 'pin-charge') return pinChargeProducts(nport, frequency, context, tones, model);
 	if (model.type === 'bjt') return bjtProducts(model, frequency, context, tones);
 	if (['mosfet', 'mesfet', 'hemt'].includes(model.type)) return deviceProducts(model, frequency, context, tones);
 	if (model.type === 'jfet') return threeTerminalProducts(model, frequency, context, tones);
@@ -214,11 +216,18 @@ var sourceWave = function (dBm, phaseDegrees) {
 	return complex(magnitude * Math.cos(radians), magnitude * Math.sin(radians));
 };
 
+function requireIntermodModels(nport) {
+	var model = nport._intermod;
+	if (model?.type === 'requiresModel') throw new RangeError(model.reason);
+	if (model?.type === 'connection') model.components.forEach(requireIntermodModels);
+}
+
 export function intermodAt(nport, f1, inputPort, settings) {
 	var tone = settings.twoTone;
 	if (!tone || !Number.isFinite(tone.spacingHz) || tone.spacingHz <= 0) {
 		throw new RangeError('Set global.twoTone.spacingHz before intermod analysis.');
 	}
+	requireIntermodModels(nport);
 	var f2 = f1 + tone.spacingHz;
 	var count = portCount(nport);
 	var input1 = zeroVector(count);

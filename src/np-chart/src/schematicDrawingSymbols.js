@@ -67,6 +67,8 @@ export const schematicDrawingSymbols = {
     "NMOS": "nmos",
     "PMOS": "pmos",
     "HEMT": "njf",
+    "NoiseDiode": "noise-diode",
+    "PIN": "pin-diode",
     "I": "current-source",
     "VCVS": "voltage-controlled-voltage-source",
     "VCCS": "voltage-controlled-current-source",

@@ -1,0 +1,54 @@
+<!doctype html>
+<!-- Modified: 2026-11-22 -->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>BZX384-B4V7 Zener</title>
+    <script src="../dist/nP.js"></script>
+</head>
+<body>
+    <script>
+        nP.global.fList = nP.global.fGen(1e6, 1e9, 51);
+        nP.global.Temp = 300.15;
+
+        var d1 = nP.D({model: 'BZX384-B4V7'});
+        var c1 = nP.C(10e-9);
+        var c2 = nP.C(10e-9);
+        var r1 = nP.R(1000);
+        var r2 = nP.R(1000);
+        var t1 = nP.Tee();
+        var t2 = nP.Tee();
+        var v1 = nP.V(-8);
+        var short = nP.Short();
+
+        var network = nP.nodal(
+            [c1, 100, 1],
+            [t1, 3, 1, 2],
+            [r1, 4, 3],
+            [v1, 4, 5],
+            [short, 5],
+            [d1, 2, 6],
+            [t2, 8, 6, 7],
+            [r2, 8, 9],
+            [short, 9],
+            [c2, 7, 101],
+            ['out', 100, 101]
+        );
+        var bias = network.operatingPoint.components[5].qPoint;
+        var current = d1.ivTable({vd: {start: -4.8, stop: -4.4, points: 81}});
+        var currentMa = [['vd (V)', 'id (mA)']];
+        for (var row = 1; row < current.length; row++) {
+            currentMa.push([current[row][0], current[row][1] * 1000]);
+        }
+        var response = network.out('s11dB', 's21dB');
+
+        nP.log(bias);
+        nP.schematic(network);
+        nP.lineChart({inputTable: [currentMa], metricPrefix: 'none',
+            title: 'BZX384-B4V7 reverse breakdown',
+            xAxisTitle: 'Anode minus cathode (V)', yAxisTitle: 'Current (mA)'});
+        nP.lineChart({inputTable: [response], metricPrefix: 'mega',
+            title: 'Zener RF at externally solved bias'});
+    </script>
+</body>
+</html>

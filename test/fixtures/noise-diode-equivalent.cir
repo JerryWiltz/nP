@@ -1,0 +1,182 @@
+Avalanche noise diode independent linear equivalent
+* Modified: 2026-11-22
+* Original paper Eq. 4 impedance branches; Figure 4/5 research-fit inputs.
+* Rj/Rd are effective noiseless elements, RS has thermal noise.
+* Thermal Rnoise plus unit VCCS supplies prescribed avalanche current PSD.
+.temp 26.85
+.options gmin=1e-24 reltol=1e-11
+
+* 2000000000 Hz, current PSD=2.62186897253294e-17 A^2/Hz, multiplierSquared=4899.52664194954
+Vsig0 input0 0 DC 0 AC 0
+Rsource0 input0 a0 50
+Gload0 k0 0 k0 0 .02
+Ia0 0 a0 DC 0 AC 1
+Ik0 0 k0 DC 0 AC 0
+Lpkg0 a0 p0 165.5p
+Cpkg0 p0 k0 160f
+Rcontact0 p0 j0 5.43
+Gdepletion0 j0 k0 j0 k0 0.00974848898420745
+Gdrift0 j0 x0 j0 x0 0.2053398061737
+La0 x0 k0 2.01586042944904e-10
+Rnoise0 n0 0 1582.50997208133
+Gnoise0 k0 x0 n0 0 1
+
+* 5000000000 Hz, current PSD=4.38213844946596e-18 A^2/Hz, multiplierSquared=818.896913110335
+Vsig1 input1 0 DC 0 AC 0
+Rsource1 input1 a1 50
+Gload1 k1 0 k1 0 .02
+Ia1 0 a1 DC 0 AC 1
+Ik1 0 k1 DC 0 AC 0
+Lpkg1 a1 p1 165.5p
+Cpkg1 p1 k1 160f
+Rcontact1 p1 j1 5.43
+Gdepletion1 j1 k1 j1 k1 0.00974848898420745
+Gdrift1 j1 x1 j1 x1 0.200849300791901
+La1 x1 k1 2.08387289278821e-10
+Rnoise1 n1 0 264.497496555724
+Gnoise1 k1 x1 n1 0 1
+
+* 10000000000 Hz, current PSD=1.13230937705041e-18 A^2/Hz, multiplierSquared=211.596384789136
+Vsig2 input2 0 DC 0 AC 0
+Rsource2 input2 a2 50
+Gload2 k2 0 k2 0 .02
+Ia2 0 a2 DC 0 AC 1
+Ik2 0 k2 DC 0 AC 0
+Lpkg2 a2 p2 165.5p
+Cpkg2 p2 k2 160f
+Rcontact2 p2 j2 5.43
+Gdepletion2 j2 k2 j2 k2 0.00974848898420745
+Gdrift2 j2 x2 j2 x2 0.184105369170712
+La2 x2 k2 2.36493458110879e-10
+Rnoise2 n2 0 68.3440286084304
+Gnoise2 k2 x2 n2 0 1
+
+* 20000000000 Hz, current PSD=2.92579648073999e-19 A^2/Hz, multiplierSquared=54.6748062412095
+Vsig3 input3 0 DC 0 AC 0
+Rsource3 input3 a3 50
+Gload3 k3 0 k3 0 .02
+Ia3 0 a3 DC 0 AC 1
+Ik3 0 k3 DC 0 AC 0
+Lpkg3 a3 p3 165.5p
+Cpkg3 p3 k3 160f
+Rcontact3 p3 j3 5.43
+Gdepletion3 j3 k3 j3 k3 0.00974848898420745
+Gdrift3 j3 x3 j3 x3 0.104947089114078
+La3 x3 k3 4.85466610234099e-10
+Rnoise3 n3 0 17.6595480382776
+Gnoise3 k3 x3 n3 0 1
+
+* 25000000000 Hz, current PSD=1.89251885195079e-19 A^2/Hz, multiplierSquared=35.3657891857453
+Vsig4 input4 0 DC 0 AC 0
+Rsource4 input4 a4 50
+Gload4 k4 0 k4 0 .02
+Ia4 0 a4 DC 0 AC 1
+Ik4 0 k4 DC 0 AC 0
+Lpkg4 a4 p4 165.5p
+Cpkg4 p4 k4 160f
+Rcontact4 p4 j4 5.43
+Gdepletion4 j4 k4 j4 k4 0.00974848898420745
+Gdrift4 j4 x4 j4 x4 0.0307297978053694
+La4 x4 k4 1.86442076779609e-09
+Rnoise4 n4 0 11.4228818714411
+Gnoise4 k4 x4 n4 0 1
+
+* 30000000000 Hz, current PSD=1.32571256573359e-19 A^2/Hz, multiplierSquared=24.7737934405774
+Vsig5 input5 0 DC 0 AC 0
+Rsource5 input5 a5 50
+Gload5 k5 0 k5 0 .02
+Ia5 0 a5 DC 0 AC 1
+Ik5 0 k5 DC 0 AC 0
+Lpkg5 a5 p5 165.5p
+Cpkg5 p5 k5 160f
+Rcontact5 p5 j5 5.43
+Gdepletion5 j5 k5 j5 k5 0.00974848898420745
+Gdrift5 j5 x5 j5 x5 -0.0810588818424135
+Ca5 x5 k5 3.45012856829528e-14
+Rnoise5 n5 0 8.00174752196003
+Gnoise5 k5 x5 n5 0 1
+
+* 40000000000 Hz, current PSD=1.50549769947303e-19 A^2/Hz, multiplierSquared=28.133465727068
+Vsig6 input6 0 DC 0 AC 0
+Rsource6 input6 a6 50
+Gload6 k6 0 k6 0 .02
+Ia6 0 a6 DC 0 AC 1
+Ik6 0 k6 DC 0 AC 0
+Lpkg6 a6 p6 165.5p
+Cpkg6 p6 k6 160f
+Rcontact6 p6 j6 5.43
+Gdepletion6 j6 k6 j6 k6 0.00974848898420745
+Gdrift6 j6 x6 j6 x6 -0.508742974096344
+Ca6 x6 k6 8.43342216178488e-14
+Rnoise6 n6 0 9.08689620770757
+Gnoise6 k6 x6 n6 0 1
+.control
+set numdgt=15
+set wr_singlescale
+set wr_vecnames
+ac lin 1 2000000000 2000000000
+wrdata /tmp/noise-diode-0-p1.txt v(a0) v(k0)
+alter @Ia0[acmag] = 0
+alter @Ik0[acmag] = 1
+ac lin 1 2000000000 2000000000
+wrdata /tmp/noise-diode-0-p2.txt v(a0) v(k0)
+alter @Ik0[acmag] = 0
+noise v(k0) Vsig0 lin 1 2000000000 2000000000
+wrdata /tmp/noise-diode-0-noise.txt onoise_spectrum
+ac lin 1 5000000000 5000000000
+wrdata /tmp/noise-diode-1-p1.txt v(a1) v(k1)
+alter @Ia1[acmag] = 0
+alter @Ik1[acmag] = 1
+ac lin 1 5000000000 5000000000
+wrdata /tmp/noise-diode-1-p2.txt v(a1) v(k1)
+alter @Ik1[acmag] = 0
+noise v(k1) Vsig1 lin 1 5000000000 5000000000
+wrdata /tmp/noise-diode-1-noise.txt onoise_spectrum
+ac lin 1 10000000000 10000000000
+wrdata /tmp/noise-diode-2-p1.txt v(a2) v(k2)
+alter @Ia2[acmag] = 0
+alter @Ik2[acmag] = 1
+ac lin 1 10000000000 10000000000
+wrdata /tmp/noise-diode-2-p2.txt v(a2) v(k2)
+alter @Ik2[acmag] = 0
+noise v(k2) Vsig2 lin 1 10000000000 10000000000
+wrdata /tmp/noise-diode-2-noise.txt onoise_spectrum
+ac lin 1 20000000000 20000000000
+wrdata /tmp/noise-diode-3-p1.txt v(a3) v(k3)
+alter @Ia3[acmag] = 0
+alter @Ik3[acmag] = 1
+ac lin 1 20000000000 20000000000
+wrdata /tmp/noise-diode-3-p2.txt v(a3) v(k3)
+alter @Ik3[acmag] = 0
+noise v(k3) Vsig3 lin 1 20000000000 20000000000
+wrdata /tmp/noise-diode-3-noise.txt onoise_spectrum
+ac lin 1 25000000000 25000000000
+wrdata /tmp/noise-diode-4-p1.txt v(a4) v(k4)
+alter @Ia4[acmag] = 0
+alter @Ik4[acmag] = 1
+ac lin 1 25000000000 25000000000
+wrdata /tmp/noise-diode-4-p2.txt v(a4) v(k4)
+alter @Ik4[acmag] = 0
+noise v(k4) Vsig4 lin 1 25000000000 25000000000
+wrdata /tmp/noise-diode-4-noise.txt onoise_spectrum
+ac lin 1 30000000000 30000000000
+wrdata /tmp/noise-diode-5-p1.txt v(a5) v(k5)
+alter @Ia5[acmag] = 0
+alter @Ik5[acmag] = 1
+ac lin 1 30000000000 30000000000
+wrdata /tmp/noise-diode-5-p2.txt v(a5) v(k5)
+alter @Ik5[acmag] = 0
+noise v(k5) Vsig5 lin 1 30000000000 30000000000
+wrdata /tmp/noise-diode-5-noise.txt onoise_spectrum
+ac lin 1 40000000000 40000000000
+wrdata /tmp/noise-diode-6-p1.txt v(a6) v(k6)
+alter @Ia6[acmag] = 0
+alter @Ik6[acmag] = 1
+ac lin 1 40000000000 40000000000
+wrdata /tmp/noise-diode-6-p2.txt v(a6) v(k6)
+alter @Ik6[acmag] = 0
+noise v(k6) Vsig6 lin 1 40000000000 40000000000
+wrdata /tmp/noise-diode-6-noise.txt onoise_spectrum
+quit
+.endc
+.end

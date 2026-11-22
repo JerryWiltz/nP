@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-21 -->
+<!-- Modified: 2026-11-22 -->
 # DC constructor audit
 
 This source-inspected inventory supports the [shared DC analysis contract](../analysis/dcAnalysis.md). Electrical constructors attach validated immutable `_dcModel` descriptors. Existing `nodal()`, `cas()` and `cascade()` preserve their component connections and child DC models. `nPort.solveDC()` implements the linear reductions/equations below. NPN/PNP, NJF/PJF, NMOS/PMOS, MESFET, HEMT and both diode adapters implement nonlinear solving and automatic DC-before-RF handoff for networks with explicit `V()` supplies. Missing physical DC laws and unsupported definitions are reported with placement paths before assembly. Existing I–V methods and 0 Hz S rows remain separate from network DC solving.
@@ -102,9 +102,9 @@ Source directory: `src/np-nport/src/mlin/`. Preserve `.physicalModel` options/ma
 
 Sources: `src/np-nport/src/transistors/` and `src/np-nport/src/diodes/`. Preserve model-local temperature/parameters independently of any previous Q point.
 
-All nine catalog-based semiconductor constructors also accept supplied records.
-Named and supplied records retain the same immutable DC definition and automatic
-RF handoff; see [custom defaults, required values and package limits](../semiconductors/customModels.md).
+All eleven catalog-based semiconductor constructors also accept supplied records.
+Named and supplied records retain the same immutable DC definition and supported
+RF handoff (NoiseDiode explicitly lacks a DC law); see [custom defaults, required values and package limits](../semiconductors/customModels.md).
 The legacy diode keeps its existing flat custom-parameter options.
 
 | Constructor | Ports | Class | Planned DC behavior |
@@ -117,8 +117,10 @@ The legacy diode keeps its existing flat custom-parameter options.
 | `PJF` | 3 | Nonlinear | P-channel signed counterpart with its own onsemi record; same G/D/S order and DC/RF reconstruction. |
 | `NMOS` | 3 or 4 | Nonlinear | Level-1 G/D/S plus optional B. Default ties B to external S; RD/RS and body junctions remain. Shared Newton solve and three intrinsic-voltage RF handoff. A floating gate gives DC_FLOATING_BIAS. |
 | `PMOS` | 3 or 4 | Nonlinear | P-channel signed counterpart, one DMP58D0SV channel. Same body contract; external body uses the equation-level primitive, not an accessible package pin. |
-| `D` | 2 | Nonlinear | Anode/cathode = 1/2. Selected SPICE-style junction law and RS: 1N4148, Skyworks SMS7621/SMS7630 Schottky records or SMV1231-079LF varactor. The varactor package LS shorts and CP opens; supplied package values stay in the immutable record. The 1N4148 leakage resistor is outside the RS-plus-junction branch; Schottky cards specify no extra resistor. Retain supported temperature/breakdown behavior. |
+| `D` | 2 | Nonlinear | Anode/cathode = 1/2. Selected SPICE-style junction law and RS: 1N4148, Skyworks SMS7621/SMS7630 Schottky records, SMV1231-079LF varactor or archived BZX384-B4V7 Zener. Zener reverse breakdown reuses BV/IBV/NBV and the common per-placement handoff. The varactor package LS shorts and CP opens; supplied package values stay in the immutable record. The 1N4148 leakage resistor is outside the RS-plus-junction branch; Schottky cards specify no extra resistor. Retain supported temperature/breakdown behavior. |
 | `diode1N4148` | 2 | Nonlinear | Reuse legacy current law/parameters: leakage inside the junction branch, series resistance and its own breakdown continuation. The reusable legacyDiode.js evaluator serves DC and RF without substituting the D() card or noise treatment. |
+| `PIN` | 2 | Nonlinear | Default charge-storage reference: automatic bias, two PN junctions, five-section steady storage reduction, conductivity modulation, independent DC/RF/noise/IM handoff. Older SMP1307-011LF selected-region Libra-style equivalent: Anode/cathode 1/2. Forward DC: PN junction and RS plus constant VI drop; reverse DC: PN junction plus RS+RR. The region is selected before solving; RF rebuild checks its solved bias domain. Each placement retains an immutable record and independent current/RF resistance. No automatic region switching or transient storage model. |
+| `NoiseDiode` | 2 | Needs model | Anode/cathode = 1/2. Fixed-bias avalanche RF/noise reference; no DC I-V law is supplied. Named and supplied records retain an immutable `requiresModel` definition. `solveDC()` rejects it with an actionable request for validated DC data; no bias voltage or per-placement RF rebuild is invented. |
 
 ## Composition and synthesis
 

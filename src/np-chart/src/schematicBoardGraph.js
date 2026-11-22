@@ -1,5 +1,7 @@
-// Modified: 2026-11-21
+// Modified: 2026-11-22
 // General graph operations for ORI's automatic board. No RF circuit patterns.
+import {terminalLeadPoint} from './schematicTerminalGeometry';
+import {separateComponents, compactComponents} from './schematicPlacementConstraints';
 const AXES = [[1, 0], [0, 1], [-1, 0], [0, -1]];
 
 function snap(value, grid) {
@@ -191,12 +193,12 @@ function automaticPositions(root, board, graph, geometry) {
         positions.set(index, [board.origin[0] + x * flow[0] + y * branch[0],
             board.origin[1] + x * flow[1] + y * branch[1]]);
     }
+    regions.forEach((region, index) => { region.level = levels.get(index); });
     return {positions, regions};
 }
 
 function terminalDirection(symbol, port) {
-    const point = symbol.ports[port - 1], lead = symbol.leads?.[port - 1];
-    const inside = lead?.find(at => !same(at, point));
+    const point = symbol.ports[port - 1], inside = terminalLeadPoint(symbol, port);
     if (inside) return [Math.sign(point[0] - inside[0]), Math.sign(point[1] - inside[1])];
     const center = [(symbol.bodyBounds[0] + symbol.bodyBounds[2]) / 2,
         (symbol.bodyBounds[1] + symbol.bodyBounds[3]) / 2];
@@ -258,6 +260,68 @@ function boundsOverlap(a, b, clearance) {
         a[1] < b[3] + clearance && a[3] > b[1] - clearance;
 }
 
+function placedTerminalDirection(placement, symbol, port) {
+    return rotate(terminalDirection(symbol, port), placement.rotation, placement.mirrorX, placement.mirrorY);
+}
+
+// Packing supplies initial ordering and orientation. Connected, uniquely opposed
+// terminals supply electrical axes; their label widths cannot break those axes.
+function alignAutomaticRuns(root, placements, graph, board, geometry, regions) {
+    const entries = placements.map((placement, index) => ({part: root.components[index].part,
+        preview: {...placement, at: [0, 0], ports: placement.ports.map(port => ({...port,
+            at: port.at.map((value, axis) => value - placement.at[axis])}))}}));
+    const anchor = entries.length;
+    const state = {count: anchor + 1, equalities: [[], []], minima: [[], []]};
+    const bounds = entries.map(entry => geometry.bounds(entry.preview));
+    let aligned = false;
+    for (const terminals of graph.byNode.values()) {
+        const ends = terminals.map(terminal => ({...terminal,
+            direction: placedTerminalDirection(placements[terminal.index], geometry.symbol(root.components[terminal.index]), terminal.port)}));
+        for (const axis of [0, 1]) {
+            const forward = ends.filter(end => end.direction[axis] === 1);
+            const backward = ends.filter(end => end.direction[axis] === -1);
+            // Multiple leads leaving in the same direction describe a fanout,
+            // not a unique straight run. Perpendicular branches remain free.
+            if (forward.length !== 1 || backward.length !== 1) continue;
+            const a = forward[0], b = backward[0];
+            if (a.index === b.index) continue;
+            const pa = placements[a.index].ports[a.port - 1], pb = placements[b.index].ports[b.port - 1];
+            if (pb.at[axis] <= pa.at[axis]) continue; // Preserve genuine returns/turns.
+            const across = 1 - axis;
+            const la = entries[a.index].preview.ports[a.port - 1].at;
+            const lb = entries[b.index].preview.ports[b.port - 1].at;
+            state.equalities[across].push({a: a.index, b: b.index, gap: la[across] - lb[across]});
+            state.minima[axis].push({a: a.index, b: b.index, gap: Math.ceil(Math.max(
+                bounds[a.index][axis + 2] - bounds[b.index][axis] + board.clearance,
+                la[axis] - lb[axis] + 2 * board.wireBoxLength) / board.grid) * board.grid});
+            aligned = true;
+        }
+    }
+    if (!aligned) return placements;
+    const initial = {...state, minima: state.minima.map((rows, axis) => rows.concat(
+        placements.map((part, index) => ({a: anchor, b: index, gap: part.at[axis]}))))};
+    const separated = separateComponents(initial, entries, geometry).placements;
+    // A loop is a previously arranged biconnected region, not free whitespace.
+    // Compact between regions while retaining each loop's internal embedding.
+    const membership = new Map();
+    for (const region of regions) {
+        region.members.forEach(index => membership.set(index, region));
+        if (!region.cyclic) continue;
+        const a = region.members[0];
+        for (const b of region.members.slice(1)) for (const axis of [0, 1]) {
+            state.equalities[axis].push({a, b, gap: separated[b].at[axis] - separated[a].at[axis]});
+        }
+    }
+    const flow = automaticDirections(board).flow, axis = flow[0] ? 0 : 1;
+    for (const terminals of graph.byNode.values()) for (const a of terminals) for (const b of terminals) {
+        if (membership.get(a.index).level >= membership.get(b.index).level) continue;
+        const [from, to] = flow[axis] > 0 ? [a.index, b.index] : [b.index, a.index];
+        state.minima[axis].push({a: from, b: to,
+            gap: Math.ceil((bounds[from][axis + 2] - bounds[to][axis] + board.clearance) / board.grid) * board.grid});
+    }
+    return compactComponents(state, entries, geometry, separated, board.origin, board.grid);
+}
+
 // A terminal attachment is a local relation, not the next signal-flow column.
 // Use canonical lead vectors and bounds, independent of device or node names.
 function placeLocalTerminations(root, placements, graph, board, geometry) {
@@ -273,8 +337,8 @@ function placeLocalTerminations(root, placements, graph, board, geometry) {
             if (!other || moved.has(other.index) || root.components[other.index].nodes.length !== 1) continue;
             const childEntry = root.components[other.index], childSymbol = geometry.symbol(childEntry);
             const direction = rotate(terminalDirection(symbol, port.port), parent.rotation, parent.mirrorX, parent.mirrorY);
-            const obstacles = placements.flatMap((placement, obstacle) => obstacle === other.index ? [] :
-                [(geometry.packingBounds || geometry.bounds)(placement)]);
+            const envelopes = geometry.clearanceEnvelopes || (part => [(geometry.packingBounds || geometry.bounds)(part)]);
+            const obstacles = placements.flatMap((placement, obstacle) => obstacle === other.index ? [] : envelopes(placement));
             let selected = null;
             for (let distance = 2 * board.wireBoxLength; distance <= board.routingMargin + board.componentGap && !selected;
                 distance += board.grid) {
@@ -282,8 +346,7 @@ function placeLocalTerminations(root, placements, graph, board, geometry) {
                 for (const angle of [0, 90, 180, 270]) {
                     if (!same(rotate(terminalDirection(childSymbol, 1), angle, false, false), direction.map(value => -value))) continue;
                     const candidate = (geometry.preview || geometry.placement)(childEntry, 1, at, angle);
-                    const bounds = (geometry.packingBounds || geometry.bounds)(candidate);
-                    if (!obstacles.some(obstacle => boundsOverlap(bounds, obstacle, board.clearance))) {
+                    if (!envelopes(candidate).some(bounds => obstacles.some(obstacle => boundsOverlap(bounds, obstacle, board.clearance)))) {
                         candidate.boardTile = placements[other.index].boardTile;
                         candidate.id = placements[other.index].id;
                         selected = candidate; break;
@@ -303,6 +366,23 @@ function automaticExternalPort(owner, index, board) {
     const start = same(direction, outward) ? owner.at : owner.escape;
     return {port: index + 1, node: owner.node,
         at: start.map((value, axis) => value + direction[axis] * board.externalPortLead)};
+}
+
+function automaticClearanceEnvelopes(root, board, geometry, placement) {
+    const boxes = geometry.clearanceEnvelopes ? geometry.clearanceEnvelopes(placement) :
+        [(geometry.packingBounds || geometry.bounds)(placement)];
+    const symbol = geometry.symbol({part: placement.part, nodes: placement.ports});
+    for (const port of placement.ports) {
+        const index = root.externalNodes.indexOf(port.node);
+        if (index === -1) continue;
+        const normal = placedTerminalDirection(placement, symbol, port.port);
+        const escape = port.at.map((value, axis) => value + normal[axis] * board.wireBoxLength);
+        const external = automaticExternalPort({...port, escape, externalPorts: symbol.automatic?.externalPorts}, index, board);
+        for (const [a, b] of [[port.at, escape], [escape, external.at]]) {
+            boxes.push([Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])]);
+        }
+    }
+    return boxes;
 }
 
 function heapPush(heap, item) {
@@ -457,9 +537,11 @@ export function layoutAutomaticBoard(root, definition, geometry) {
         positions.get(a)[1] - positions.get(b)[1] || a - b);
     const byIndex = new Map(ordered.map(index => [index,
         automaticPlacement(root, index, positions, graph, board, geometry)]));
-    const placements = root.components.map((_, index) => byIndex.get(index));
-    placeLocalTerminations(root, placements, graph, board, geometry);
-    const bounds = placements.flatMap((placement, index) =>
+    const packingGeometry = {...geometry, clearanceEnvelopes: automaticClearanceEnvelopes.bind(null, root, board, geometry)};
+    const placements = alignAutomaticRuns(root, root.components.map((_, index) => byIndex.get(index)),
+        graph, board, packingGeometry, regions);
+    placeLocalTerminations(root, placements, graph, board, packingGeometry);
+    const bounds = placements.flatMap((placement, index) => geometry.occupiedBounds ? geometry.occupiedBounds(placement) :
         [placementBounds(placement, geometry.symbol(root.components[index])),
             ...(geometry.captionBounds ? [geometry.captionBounds(placement)] : [])]);
     const result = {grid: board.grid, placements, wires: [], nodePoints: new Map(), externalPorts: [],

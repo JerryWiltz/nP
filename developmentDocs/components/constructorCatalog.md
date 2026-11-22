@@ -1,7 +1,7 @@
-<!-- Modified: 2026-11-21 -->
+<!-- Modified: 2026-11-22 -->
 # nP constructor catalog
 
-This catalog covers the 65 public functions that produce n-port objects from `src/np-nport/src/index.js`, the digital waveform functions from `src/np-digital`, and the exported math and low-pass prototype functions. Each JS call below spells out the **current defaults** where they exist. Each argument or property appears on its own line. Units are in comments. Each constructor has its own heading and code block.
+This catalog covers the 67 public functions that produce n-port objects from `src/np-nport/src/index.js`, the digital waveform functions from `src/np-digital`, and the exported math and low-pass prototype functions. Each JS call below spells out the **current defaults** where they exist. Each argument or property appears on its own line. Units are in comments. Each constructor has its own heading and code block.
 
 Parameter spelling follows the public API. Legacy positional names such as `R`, `N`, `Z`, and `Length` retain their source capitalization; physical options use `lowerCamelCase` property names. Positional argument order matters. Named object properties follow one presentation order: geometry, material and loss, then temperature.
 
@@ -39,7 +39,16 @@ var filter = nP.lpfGen(undefined, {fList: frequencies});
 
 Each nPort stores a copy of its selected frequency list and analysis settings. Components in one `nodal()` or `cascade()` circuit must have matching frequency rows. Call `nP.global()` to create and select an independent circuit context. It holds its own `fList`, `tList`, `twoTone`, `Ro`, and `Temp`; `nP.global(g)` selects an earlier context `g` again. Existing `nP.global.fList` and related property calls use the selected context. `nP.global.tGen(start, stop, points)` returns a uniformly spaced time list in seconds, including both endpoints. Two-tone analysis still requires positive first-tone frequencies and a positive spacing.
 
-The 56 symbol-backed direct RF component constructors record internal schematic metadata and have bundled runtime symbols. Composite RLC parts retain their resistance, inductance, and capacitance values in schematic metadata; transformers retain their turns ratio. `lpfGen()` inherits a cascade tree from the components it constructs. `mbend({turn: 'left'})` selects a left-turn drawing; the default is a right turn. The turn changes only the drawing, not the bend S-parameters. `cas()` and `cascade()` preserve their construction tree. `nodal()` records each component placement's port-to-node assignments and the external port order. When a completed nodal nPort is used as a component, the renderer gives it a `nodal` block with the matching number of ports. Two-port circuits with a series path and simple shunt branches are laid out from their port-to-node connections; tree-shaped multiport circuits use their node connections for placement. Nodal circuits with loops use ORI's generic board or explicit shape guidance.
+The 64 symbol-backed direct RF component constructors record internal schematic metadata and have bundled runtime symbols. Composite RLC parts retain their resistance, inductance, and capacitance values in schematic metadata; transformers retain their turns ratio. `lpfGen()` inherits a cascade tree from the components it constructs. `mbend({turn: 'left'})` selects a left-turn drawing; the default is a right turn. The turn changes only the drawing, not the bend S-parameters. `cas()` and `cascade()` preserve their construction tree. `nodal()` records each component placement's port-to-node assignments and the external port order. When a completed nodal nPort is used as a component, the renderer gives it a `nodal` block with the matching number of ports. Two-port circuits with a series path and simple shunt branches are laid out from their port-to-node connections; tree-shaped multiport circuits use their node connections for placement. Nodal circuits with loops use ORI's generic board or explicit shape guidance.
+
+The automatic graph layout infers straight runs from uniquely opposed, connected
+terminal directions. It constrains their electrical axes before routing and uses
+shared measured body/caption separation, so label width can expand spacing without
+introducing a jog. Genuine turns and ambiguous fanouts retain their topology.
+Measured compaction removes unused initial gaps, with separate ink, caption,
+terminal-escape and external-port envelopes. Branch-region order and existing
+loop embeddings are retained; loop interiors are not compacted.
+No new options or symbol-specific alignment settings are required.
 
 Constructor source calls `schematicPart(publicName, parameters)` instead of naming an SVG. The generated constructor map reads `schematics/symbol-catalog.json`, and the symbol check verifies that the selected runtime symbol has the same port count as the returned nPort.
 
@@ -985,7 +994,7 @@ Noise is classical channel/contact thermal noise, without a measured fit (vendor
 
 ### `D`
 
-The generic SPICE-style diode constructor supports **1N4148** and the Skyworks per-junction Schottky records **SMS7621/SMS7630**, plus the **SMV1231-079LF** varactor. It returns a two-port series branch: **1 anode, 2 cathode**. Defaults are:
+The generic SPICE-style diode constructor supports **1N4148** and the Skyworks per-junction Schottky records **SMS7621/SMS7630**, plus the **SMV1231-079LF** varactor and archived **BZX384-B4V7** Zener. It returns a two-port series branch: **1 anode, 2 cathode**. Defaults are:
 
 ```js
 // D: DC sweep and a separate fixed RF Q point
@@ -1012,7 +1021,9 @@ nP.D({
 
 The default 1N4148 record uses the archived NXP SPICE card, including RS and its external leakage resistor, continuous junction charge and temperature scaling. It differs numerically from the older datasheet-fit `diode1N4148()`, which remains unchanged. The model does not include an explicit package L/C network, self-heating, large-signal transients or calibrated avalanche/excess noise. Intercepts use direct Taylor sources. See [diodeModels.md](../semiconductors/diodeModels.md).
 
-`D({model: myRecord})` accepts supplied junction/Schottky records. A parameters object is required; [documented generic defaults](../semiconductors/customModels.md#d-junction-and-schottky-diodes) fill omissions. Optional record-level leakageResistance defaults to Infinity; schematicVariant: schottky selects the symbol. Source links are provenance only and never fetched. Nonempty package L/C arrays are rejected.
+`D({model: myRecord})` accepts supplied junction/Schottky/Zener/varactor records. A parameters object is required; [documented generic defaults](../semiconductors/customModels.md#d-junction-and-schottky-diodes) fill omissions. Optional record-level leakageResistance defaults to Infinity; schematicVariant: schottky selects the symbol. Source links are provenance only and never fetched. Nonempty package L/C arrays are rejected.
+
+For Zener behavior, use `D({model: 'BZX384-B4V7', qPoint: {vd: -4.7}})` or a supplied record with `schematicVariant: 'zener'` and compatible BV/IBV/NBV parameters. Current is negative A-to-K in reverse breakdown; the canonical Zener symbol is selected. Defaults remain forward-biased, so explicitly choose negative VD or an external supply. The archived card has no calibrated avalanche excess noise, breakdown temperature coefficient or package L/C. See [Zener provenance and checks](../semiconductors/zenerModels.md).
 
 For Schottky records, use `D({model: 'SMS7630', qPoint: {vd: 0.05}})` or `model: 'SMS7621'`. Defaults remain VD=0.6 V and the 0–0.8 V/201-point curve. The records select the hooked-cathode Schottky symbol; they include RS, no external leakage resistor, and no package L/C network. Temperature is kelvin; noise and weak IM follow the shared SPICE diode law, not a calibrated detector fit. See [Schottky model details](../semiconductors/schottkyModels.md).
 
@@ -1023,6 +1034,65 @@ For Schottky records, use `D({model: 'SMS7630', qPoint: {vd: 0.05}})` or `model:
 `diode1N4148` takes one options object. Its scalar properties are JavaScript numbers; `ivPoints` is an integer. It also accepts `fList`, an array of frequencies in hertz, defaulting to `nP.global.fList`.
 
 Both D() and diode1N4148() now participate in network DC solving. With an explicit V() supply, nodal()/cas()/cascade() solve before RF combination and expose network.operatingPoint. Diode component qPoint records contain vd, id, junctionVoltage, junctionCurrent, va, vk and temperature. Absolute va/vk may be null. RF/noise/nonlinearity rebuild independently per placement, leaving original objects and I–V settings unchanged. Standalone/RF-only devices retain their selected construction bias. See [diode network bias](../../dev/diodeBias.html) and [DC analysis](../analysis/dcAnalysis.md).
+
+### `PIN`
+
+Default: `nP.PIN({model:'CHARGE_STORAGE_REFERENCE',qPoint:{vd:.8}})`.
+This generic reference implements five-section charge storage, automatic bias
+state, two PN junctions, conductivity modulation, current-dependent lifetime,
+SPICE depletion charge, coupled shot/flicker/thermal noise and cubic Volterra
+IM including local quadratic feedback. It is not a fitted manufacturer part.
+`region` is omitted or 'automatic'; temperature defaults to 298.15 K and uses
+nominal PN scaling. Default I–V sweep −5 to 1.2 V, 201 points.
+smallSignal reports conductance, bulkResistance, storedCharge,
+carrierLifetime and junctionCapacitance. Complete supplied records use
+modelType:'charge-storage' and require positive W/TAU/REPI/RLIM (SI).
+No general network transient or harmonic-balance solver is added; cross-device
+quadratic remixing remains outside the shared IM engine. See the full contract
+below for parameter defaults, supported noise assumptions and independent tests.
+
+The older named manufacturer equivalent remains available:
+
+```js
+nP.PIN({
+    model: 'SMP1307-011LF', // or compatible supplied record
+    region: 'forward',     // 'forward' or 'reverse'; selected before DC/RF
+    qPoint: {vd: .8},      // V; reverse default is 0 V
+    temperature: 300.15,   // K; must equal record.referenceTemperature
+    fList: nP.global.fList // Hz
+});
+```
+
+Floating two-port: 1 anode, 2 cathode. External V/R networks solve current
+before per-placement RF rebuilding, within the selected region. This named model
+band is 10 MHz–3 GHz, forward current 20 µA–100 mA. No automatic region
+switching, temperature scaling, transient-storage or deterministic IM model.
+Noise is an explicit RF-resistance thermal approximation. `ivTable()` returns
+VD/ID in V/A; `.smallSignal` reports intrinsic RF R/C, residual RF resistance
+and steady stored charge. Defaults: forward sweep VI–1.1 V, reverse −20–0 V,
+201 points. Own pin-diode.svg symbol. [Parameters, equations and evidence](../semiconductors/pinModels.md).
+
+### `NoiseDiode`
+
+```js
+nP.NoiseDiode({
+    model: 'NC406_REFERENCE', // or a complete compatible record
+    fList: nP.global.fList,   // Hz, within the fit interval
+    temperature: 300         // K, must equal the record referenceTemperature
+});
+// returns a floating two-port: 1 anode, 2 cathode
+```
+
+Fixed 16.7 mA, 300 K, 2–40 GHz plot-derived avalanche/drift research reference.
+`noiseTable({coldTemperature:290,referenceTemperature:290})` returns frequency,
+ENR dB, available noise temperature K, available/delivered noise dBm/Hz and
+one-port reflection magnitude. Cold temperature is an assumption, not a fitted
+off state. RF and noise are implemented; DC I-V and deterministic IM are
+explicitly unsupported. No external bias handoff or interpolation is supplied.
+Custom records require core RF parameters and a spectral multiplier fit;
+[parameters, equations, fit residuals and reference-plane limits](../semiconductors/noiseDiodeModels.md).
+NoiseDiode has its own noise-diode.svg symbol and gallery entry, using the
+same avalanche/Zener geometry without sharing the ordinary D model.
 
 ### `diode1N4148`
 

@@ -1,5 +1,5 @@
 # nP website code-writing agent
-<!-- Modified: 2026-11-21 -->
+<!-- Modified: 2026-11-22 -->
 
 ## Your task
 
@@ -374,13 +374,172 @@ D defaults: IS=1e-14,N=1,BV=Infinity,IBV=1e-3,RS=CJO=TT=KF=0,
 VJ=1,M=FC=.5,EG=1.11,XTI=3,TNOM=300.15,NBV=AF=1. IS/N/IBV/VJ/TNOM/NBV
 positive; BV positive or Infinity; M finite/nonnegative, FC in [0,1); XTI any finite value.
 Optional record-level leakageResistance defaults to Infinity (positive ohms);
-schematicVariant:'schottky' selects the hooked-cathode symbol. Omit that field
+schematicVariant:'schottky' selects the hooked-cathode symbol; 'zener' selects
+the angled-cathode symbol. Omit that field
 for the ordinary symbol. D retains its existing VD=.6 V default, so choose
 low Schottky bias explicitly. Legacy diode1N4148 still has its flat options,
 not this model-record selector. Unless a range above says otherwise, supported
 parameters are finite nonnegative numbers; an explicitly undefined value is
 invalid. Use A/V/ohms/H/F/seconds, TNOM in kelvin and EG in eV. MES/HEMT B and
 ALPHA, and LAMBDA, use 1/V; BETA uses A/V^2. Metadata never selects new physics.
+
+PIN in a current capable bundle defaults to the fuller charge-storage model:
+`PIN({model:'CHARGE_STORAGE_REFERENCE',qPoint:{vd:.8}})`. The built-in reference
+is generic numerical data, not a manufacturer-calibrated PIN. Floating terminals
+are 1 anode/2 cathode; its own pin-diode.svg symbol is used automatically.
+The five-section ambipolar storage ladder, two equal PN junctions, controlled
+bulk conductivity and optional high-injection/lifetime knees share their DC,
+RF, noise and cubic Volterra equations. External V/R networks set each
+placement's bias before RF/IM rebuilding, including reused templates.
+Omit region or use 'automatic'; this engine does not require manual on/off
+selection. qPoint uses vd in V; default .8 V. temperature is positive K,
+default record.referenceTemperature (298.15 K for the numerical reference).
+Nominal PN/depletion temperature scaling is included; W/TAU/resistances stay
+fixed and self-heating is not solved. Frequencies are finite, nonnegative Hz;
+use positive frequencies when KF is nonzero. No accepted point implies a real
+part's safe operating rating or measured calibration.
+
+For a supplied full record use `model:{modelType:'charge-storage',
+parameters:{W:20e-6,TAU:100e-9,REPI:1000,RLIM:2}}`, optionally name and
+referenceTemperature. W (m), TAU (s), REPI and RLIM (ohms) are required,
+positive; RLIM<REPI. Generic optional defaults: IS=1e-14 A,N=1,RS=0 ohms
+per junction,IKF=IKNEE=BV=Infinity,IBV=.001 A,RP=1e9 ohms,CJO=0 F,VJ=1 V,
+M=0,FC=.5,EG=1.11 eV,XTI=3,KF=0,AF=FFE=1,IKMODEL=1. IKF/IKNEE are positive
+A or Infinity; BV positive V or Infinity. IS/N/IBV/RP/VJ are positive;
+RS/CJO/M/EG/XTI/KF/AF/FFE nonnegative; 0<=FC<1. IKMODEL=1 is ADS/PSpice
+I0/sqrt(1+I0/IKF); 2 is HSPICE/ngspice I0/(1+sqrt(I0/IKF)). Fixed package
+fields seriesInductance (H) and parallelCapacitance (F) default zero, with CP
+across the terminals and L in series with the intrinsic model. Unknown keys,
+legacy VI/RR/RRF, operatingRange, middleCapacitance and nonempty L/C arrays
+reject. New compatible parts need no registration, build or provenance fetch.
+Complete device.model records work through the same construction/bias path.
+modelType may be omitted for new full records; the legacy VI/RR/RRF schema
+retains selected-region interpretation. Mixed/unknown parameters reject.
+
+ivTable({vd:{start,stop,points}}) returns VD/ID in V/A; default -5 to1.2 V,
+201 points. dc.bias.vd retains that sweep. qPoint.junctionVoltage drives the
+pair; junctionCurrent drives its storage ladder and differs from terminal id.
+smallSignal reports conductance, bulkResistance, storedCharge (C),
+carrierLifetime (s) and junctionCapacitance (F). storedCharge uses the smooth
+nonnegative first-section coordinate; it is not simply TAU*terminalCurrent.
+Noise propagates independent PN shot/flicker and physical-resistor thermal
+sources; the storage ladder and controlled conductivity are noiseless. This
+is compact-model noise, not measured excess noise for a commercial part.
+Cubic Volterra IM retains local quadratic feedback at real Ro terminations;
+finite IKF rejects cubic IM at exactly zero pair current (the branchwise
+high-injection correction has no unique cubic expansion there).
+The shared network engine omits quadratic remixing between separate nonlinear
+devices. No general electrical transient/HB, compression, advanced level-2
+depletion, unequal junctions, moving-boundary recovery or self-heating solver
+is supplied. For switching waveforms, report that missing network capability.
+Verify the exact loaded bundle: earlier bundles may have only the selected-
+region PIN; the pinned Obsidian 0.3.3 runtime has neither PIN engine.
+
+The retained Skyworks selected-region record has a separate contract:
+`PIN({model:'SMP1307-011LF',
+region:'forward',qPoint:{vd:.8}})` is a floating two-port, 1 anode/2 cathode,
+with its own pin-diode.svg symbol. Region is selected before DC/RF: forward
+(default VD=.8 V) or reverse (default VD=0). The named reference uses fixed
+300.15 K, 10 MHz–3 GHz, forward current 20 uA–100 mA. Reverse VD must be <=0.
+External V/R networks solve current before independent placement RF rebuilding
+within that region; conflicting solved bias fails. It does not automatically
+switch regions. Reused templates retain separate placement states.
+
+Forward DC is a PN junction with RS plus constant VI drop; reverse adds RR to
+PN RS. RF uses Ri=VI/ID (forward) or RR (reverse), separate residual RRF, Cg
+parallel to the inner RF branch, L in series and Cp across the terminals.
+The named record's DC RS=1.48 ohms differs from RF RRF=2.2 ohms.
+`ivTable({vd:{start,stop,points}})` returns V/A; defaults forward VI–1.1 V,
+reverse -20–0 V, 201 points. Forward sweeps start >=VI, reverse end <=0.
+smallSignal reports intrinsicResistance/intrinsicCapacitance, rfSeriesResistance
+and storedCharge=TAU*max(ID,0). This is a steady diagnostic, not a transient
+charge solver. Noise is explicitly equivalent RF-resistance thermal noise,
+not measured excess/shot noise. IM requests reject the absent nonlinear
+carrier-storage model; no switching speed, automatic transition, compression,
+self-heating or calibrated NF/OIP3 is implied.
+
+A supplied `model` needs positive VI (V), RR (ohms), TAU (s). Generic defaults:
+IS=1e-14 A,N=1,RS=RRF=0 ohms,CJO=0 F,VJ=1 V,M=FC=.5; IS/N/VJ positive,
+M nonnegative, 0<=FC<1, all values finite. Optional packageParameters:
+seriesInductance (H), middleCapacitance (F), parallelCapacitance (F), each 0
+by default and nonnegative. All operatingRange fields are required: positive
+minFrequency/maxFrequency (Hz), minForwardCurrent/maxForwardCurrent (A), with
+increasing bounds. Custom referenceTemperature defaults to 300.15 K; the
+options.temperature must equal it. Unknown parameters (including TT), unknown
+keys and nonempty L/C arrays fail. No manufacturer fit is borrowed or URL
+fetched. A complete device.model can be supplied directly without registration
+or rebuilding, including plain browser/Node records. The named model uses
+Figure 8 values IS=1e-8 A and RR=4e6 ohms; source tables differ. It is a
+selected-region equivalent, not a general PIN SPICE or large-signal engine.
+Verify PIN in the actual runtime. The pinned Obsidian 0.3.3 bundle lacks PIN;
+updating this guide alone does not upgrade it.
+
+Avalanche noise in current capable bundles uses a separate constructor:
+`NoiseDiode({model:'NC406_REFERENCE',fList,temperature:300})`, with floating
+ports 1 anode, 2 cathode and its own noise-diode.svg symbol/gallery entry.
+The geometry matches Zener artwork; the symbol identity and file are independent. This research
+reference is plot-derived at 16.7 mA reverse current, 300 K, 2–40 GHz, not a
+calibrated noise source. Set a matching frequency grid before all components.
+There is no DC I-V, off-state fit, bias/temperature interpolation or deterministic
+nonlinear current/charge fit. solveDC and IM requests reject missing models;
+external bias cannot rebuild this fixed-Q device. qPoint has negative id and
+vd:null because voltage is unknown. Do not substitute an ordinary D Zener.
+
+`var table = nd1.noiseTable({coldTemperature:290,referenceTemperature:290});`
+returns a header then rows of Hz, ENR dB, available noise temperature K,
+available noise dBm/Hz, delivered noise dBm/Hz, source reflection magnitude.
+The cold temperature is an assumption, not a modeled off state. Available
+power is k*Thot; delivered power includes mismatch to global.Ro. Reflection
+means (Z-Ro)/(Z+Ro) with the opposite terminal grounded, not the bare two-port
+S11. Ground one terminal with Short through nodal to make a source; its
+covariance propagates through connected components. NF/noiseFloor are not
+standalone-source ENR. The paper's on-wafer ENR curve includes an unspecified
+transition and differs from the diode-plane equations; no correction is hidden.
+
+A supplied record needs `parameters` with positive depletionResistance (ohms),
+driftCapacitance (F), driftResistance (ohms), avalancheFrequency (Hz), transitTime
+(s), biasCurrent (A, reverse magnitude). Generic optional leadInductance (H),
+packageCapacitance (F), seriesResistance (ohms) default to 0; nonnegative
+avalancheLengthRatio defaults to .5. All values must be finite. Record-level
+referenceTemperature defaults to 300.15 K, positive; options.temperature must
+equal it. No custom record borrows the named part's fit.
+Required noiseFit fields: positive referenceFrequency/kneeFrequency/minFrequency/
+maxFrequency in Hz, increasing bounds, in-band knee, coefficientsDb:[c0,c1,c2]
+finite. The exact law is 10log10(M²)=c0+c1*ln(f/referenceFrequency)+
+c2*max(ln(f/kneeFrequency),0)^2. Every analysis frequency must lie in the band.
+Unknown keys and nonempty package arrays are rejected. Use
+`var nd1 = nP.NoiseDiode({model:myModel});` with named intermediate data; a
+complete nd1.model can also be reused. No URL fetch, registration or rebuild is
+needed for compatible supplied data. A different bias needs corresponding RF
+and noise data, not a current change alone. Verify NoiseDiode exists in the
+actual supplied/pinned runtime before writing code; updating this guide does
+not upgrade it. The pinned Obsidian 0.3.3 runtime does not export NoiseDiode.
+
+Zener support in current capable bundles: `D({model:'BZX384-B4V7',qPoint:{vd:-4.7},temperature:300.15})`
+selects an archived NXP/Philips-attributed single-junction card and the canonical
+Zener symbol. The original manufacturer-hosted model was unavailable at
+verification; independent SPICE agreement is not measured-device certification.
+Ports are 1 anode, 2 cathode (not SOD323 physical pin numbering). VD=VA−VK and
+ID flows A-to-K, so both are negative in reverse breakdown. Standalone defaults
+remain VD=+.6 V and a 0–.8 V curve; choose negative Q explicitly or use external
+V/R bias before RF. `ivTable({vd:{start:-4.8,stop:-4.4,points:81}})` returns
+V/A rows without changing Q. Convert a separate current display column to mA
+if needed. The named card has IS=1.033e-15 A,N=1.001,BV=4.7 V,IBV=.005 A,
+RS=.387 ohms,CJO=258.9e-12 F,VJ=.8029 V,M=.3636,FC=.5. Omitted TT=0,EG=1.11,
+XTI=3,TNOM=300.15,NBV=1,KF=0,AF=1 are generic defaults, not fitted data.
+No explicit package L/C, fitted breakdown temperature coefficient, self-heating
+or avalanche excess-noise model is supplied. Classical shot/thermal noise and
+direct weak IM are available; no large-signal clipping, quadratic remixing or
+rectified bias-shift calculation. A model symbol never changes the equations.
+
+A supplied Zener works without registration, rebuilding or fetching URLs:
+`var myZener = {name:'My Zener',schematicVariant:'zener',parameters:{IS:1.033e-15,N:1.001,BV:4.7,IBV:.005,RS:.387,CJO:258.9e-12,VJ:.8029,M:.3636,FC:.5}};`
+then `var d1 = nP.D({model:myZener,qPoint:{vd:-4.7}});`.
+This reproduces the named card through the same DC/RF/noise/weak nonlinear path;
+change the parameters for another compatible part. Raw SPICE multi-diode or
+controlled-source subcircuits are not single-junction records. For pinned or
+older bundles, verify D and this model selector before using them; updating
+this guide alone does not upgrade the supplied runtime.
 
 Varactor support in current capable bundles: D({model:'SMV1231-079LF',
 qPoint:{vd:-3},temperature:300.15}) selects a Skyworks SC-79 record and varactor
@@ -828,9 +987,9 @@ and Varactor are drawing-only diode names with 1 anode, 2 cathode; e.g.
 noise or intermodulation model. Do not invent nP.Schottky(), nP.Zener() or nP.Varactor() calls. Check the supplied bundle
 contains this artwork. Existing standalone D()/diode1N4148() models are retained.
 For drawing descriptions, HBTs reuse NPN/PNP with an HBT caption, e.g.
-'1 right Q1=NPN(HBT)[1,2,3] 1 2 3' (base/collector/emitter). PIN diodes
-reuse D artwork, e.g. '1 right D1=D(PIN) 2' (anode/cathode). Captions
-select no HBT/PIN numerical behavior. Confirm even the reused artwork exists
+'1 right Q1=NPN(HBT)[1,2,3] 1 2 3' (base/collector/emitter). PIN uses its own symbol, e.g. '1 right PIN1=PIN 2' (anode/cathode).
+The older D(PIN) caption remains drawing-only and selects no PIN numerical
+behavior. HBT captions select no new numerical behavior. Confirm even the reused artwork exists
 in the supplied renderer; the drawing grammar never invokes constructors.
 
 A drawing returns `.svg` (DOM), `.svgText` (self-contained SVG), `.graph`,
@@ -861,6 +1020,21 @@ solve amplifier/transformer placement from terminal directions and ordering.
 Use supported shape guidance or drawing-language directions/alignment to express
 engineering intent. Confirm these capabilities in older supplied renderers;
 report a layout limitation without disguising it or invalidating the analysis.
+
+Current capable renderers also infer straight runs from uniquely opposed
+connected terminal directions in the automatic graph layout. Shared constraints
+align their terminal axes and reserve measured body/label space before routing.
+A longer label can require more space without introducing a jog. Branches,
+bends and ambiguous fanouts retain their topology. This needs no per-symbol
+alignment opt-in or compensating coordinates; confirm the supplied renderer
+supports it. The existing Obsidian 0.3.3 pin does not promise this improvement.
+
+Measured straight-run compaction also removes unused coarse-packing gaps.
+It reserves separate symbol, caption, terminal-escape and external-port spaces,
+preserves branch order and retains existing loop interiors. Do not shorten
+canonical pins or add per-part wire-length overrides to compensate for layout.
+Verify this behavior in the supplied renderer; the pinned Obsidian runtime has
+not been upgraded by these instructions.
 
 ## Math and diagnosing code
 

@@ -1,0 +1,42 @@
+<!doctype html>
+<!-- Modified: 2026-11-22 -->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Avalanche noise diode — research reference</title>
+    <script src="../dist/nP.js"></script>
+</head>
+<body>
+    <script>
+        nP.global.fList = nP.global.fGen(2e9, 40e9, 77);
+        nP.global.Temp = 290;
+
+        var nd1 = nP.NoiseDiode();
+        var short1 = nP.Short();
+        var pad1 = nP.Attn(10, 290);
+        var source = nP.nodal(
+            [nd1, 1, 2],
+            [short1, 1],
+            [pad1, 2, 3],
+            ['out', 3]
+        );
+
+        var bare = nd1.noiseTable();
+        var comparison = [['Freq', 'Diode ENR (dB)', 'With 10 dB pad (dB)']];
+        for (var i = 0; i < source.spars.length; i++) {
+            var reflection = source.spars[i][1].mag();
+            var emitted = source.noise[i].C[0][0].x;
+            var temperature = emitted / (1.380649e-23 * (1 - reflection * reflection));
+            var enr = 10 * Math.log10((temperature - 290) / 290);
+            comparison.push([source.spars[i][0], bare[i + 1][1], enr]);
+        }
+        var response = source.out('s11dB');
+
+        nP.log('NC406_REFERENCE: plot-derived 16.7 mA, 300 K research fit; not calibrated ENR. No DC I-V or cold-state model.');
+        nP.schematic(source);
+        nP.lineChart({inputTable: [comparison], title: 'Diode-plane ENR and attenuated source; cold reference 290 K'});
+        nP.lineChart({inputTable: [response], title: 'Source reflection after 10 dB pad'});
+        nP.lineTable({inputTable: bare});
+    </script>
+</body>
+</html>

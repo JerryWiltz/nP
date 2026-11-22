@@ -1,11 +1,15 @@
-<!-- Modified: 2026-11-21 -->
+<!-- Modified: 2026-11-22 -->
 # User-supplied semiconductor models
 
 All catalog-based semiconductor constructors accept either a built-in name or
-a plain record in `model`: **NPN, PNP, NJF, PJF, NMOS, PMOS, MESFET, HEMT and D**.
+a plain record in `model`: **NPN, PNP, NJF, PJF, NMOS, PMOS, MESFET, HEMT, D, NoiseDiode and PIN**.
 A new part number needs no catalog registration, rebuild, downloaded source or
 network access. It uses the same resolution, validation, equations, DC bias,
-RF, noise and direct weak nonlinear construction as a built-in record.
+RF, noise and supported weak nonlinear construction as a built-in record.
+NoiseDiode uses the separate [avalanche/drift RF/noise record](noiseDiodeModels.md):
+core SI parameters and a noiseFit are required, with no borrowed part fit.
+Its immutable DC requirement and deterministic-IM rejection remain identical
+for named and supplied records; no missing DC or cold-state physics is implied.
 
 ```js
 var myModel = {
@@ -149,8 +153,8 @@ IS/N/IBV/VJ/TNOM/NBV are positive; BV positive or Infinity (no breakdown);
 M is finite and nonnegative (including 1 and hyperabrupt values); 0 ≤ FC < 1; XTI any finite value. These are the supported classical diode
 defaults; see [ngspice diode parameters][diode]. `leakageResistance` is an
 optional record-level positive resistance in Ω, default Infinity. It is outside
-RS. Set `schematicVariant: 'schottky'` or `'varactor'` for the corresponding symbol; omit for the
-ordinary junction symbol. Symbols do not change the diode equations.
+RS. Set `schematicVariant: 'schottky'`, `'varactor'` or `'zener'` for the corresponding symbol; omit for the
+ordinary junction symbol. Symbols do not change the diode equations. Zener records use BV/IBV/NBV for the existing exponential breakdown law; select negative VD explicitly. This does not add avalanche excess noise or a breakdown temperature coefficient. See [Zener records](zenerModels.md).
 
 ```js
 var myDiode = {
@@ -174,6 +178,28 @@ charge support with SMV1231-079LF, through the same named-or-record path.
 The legacy `diode1N4148()` keeps its existing flat custom-parameter options; it
 has no catalog record selector. Its planned removal is separate from this work.
 
+### PIN
+
+The default charge-storage engine accepts `modelType:'charge-storage'`, with
+required positive W (m), TAU (s), REPI and RLIM (ohms, RLIM < REPI).
+Optional IS/N/RS, high-injection IKF/IKMODEL, lifetime IKNEE, BV/IBV,
+RP, depletion CJO/VJ/M/FC, EG/XTI and KF/AF/FFE use generic defaults.
+Package seriesInductance/parallelCapacitance default to zero H/F.
+referenceTemperature defaults to 298.15 K. Named and supplied records share
+automatic DC bias, dynamic RF/noise and cubic IM paths. The built-in reference
+is generic, not a manufacturer fit; see the full units/defaults/limitations in
+[PIN models](pinModels.md). No provenance URL is fetched.
+
+The retained selected-region engine (SMP1307-011LF, or its supplied schema)
+requires positive VI (V), RR (Ω), TAU (s) and an operatingRange with positive
+minFrequency/maxFrequency (Hz) and minForwardCurrent/maxForwardCurrent (A),
+with increasing intervals. Generic IS=1e-14 A, N=1, RS=RRF=CJO=0, VJ=1 V,
+M=FC=.5 do not borrow a named part's fit. Optional packageParameters are
+seriesInductance (H), middleCapacitance and parallelCapacitance (F), each default
+0. Custom referenceTemperature defaults to 300.15 K; temperature must equal it.
+Select forward/reverse region before DC/RF; named and supplied records retain
+independent network handoff and reject unsupported IM. See [full contract](pinModels.md).
+
 ## Verification
 
 `test/semiconductor-model-record.test.js` checks all eleven built-in records
@@ -182,8 +208,10 @@ two temperatures, including source-tied/external MOS bodies, fixed-Q curves,
 S/noise/Taylor data, computed weak products, external DC networks and automatic
 RF handoff. BJT has its separate equivalent tests. Generic defaults, immutable
 copies, no registration, polarity errors and stale HEMT package data are checked.
-Plain records created in separate REPL/iframe contexts are checked across all
-nine constructors; their prototypes need not come from the library's context.
+Plain records created in separate REPL/iframe contexts are checked across the
+original nine constructors; their prototypes need not come from the library's context.
+`test/pin-charge.test.js` verifies charge-storage supplied records and weak IM against SPICE; `test/pin.test.js` separately checks named/supplied/foreign-context PIN records,
+independent per-placement DC/RF handoff, and explicit unsupported IM behavior.
 Existing independent simulator-reference tests remain the numerical evidence
 for the unchanged equations; equivalence alone is not measured-device validation.
 

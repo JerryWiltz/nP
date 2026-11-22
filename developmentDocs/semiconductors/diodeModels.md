@@ -1,11 +1,11 @@
-<!-- Modified: 2026-11-21 -->
+<!-- Modified: 2026-11-22 -->
 # SPICE-style diode models
 
-`nP.D()` returns a two-port diode with DC curves and RF data at a separate fixed operating point. Supported records are **1N4148**, a silicon signal diode, and **SMS7621/SMS7630**, Skyworks per-junction Schottky cards. See [Schottky sources, parameters and verification](schottkyModels.md). Port 1 is the anode and port 2 the cathode. Voltage VD is anode minus cathode; positive ID flows from anode to cathode. These are electrical/SPICE terminal assignments, not a claim about the package's physical pin numbering.
+`nP.D()` returns a two-port diode with DC curves and RF data at a separate fixed operating point. Supported records include **BZX384-B4V7**, an archived NXP/Philips-attributed Zener card ([sources and limits](zenerModels.md)), **SMV1231-079LF**, a packaged varactor, **1N4148**, a silicon signal diode, and **SMS7621/SMS7630**, Skyworks per-junction Schottky cards. See [Schottky sources, parameters and verification](schottkyModels.md). Port 1 is the anode and port 2 the cathode. Voltage VD is anode minus cathode; positive ID flows from anode to cathode. These are electrical/SPICE terminal assignments, not a claim about the package's physical pin numbering.
 
 ## User-supplied records
 
-`D({model: myRecord})` accepts supplied junction/Schottky records with
+`D({model: myRecord})` accepts supplied junction/Schottky/Zener/varactor records with
 [generic diode defaults](customModels.md#d-junction-and-schottky-diodes), optional
 record-level leakageResistance and schematicVariant. It uses the same current,
 charge, DC/RF/noise/Taylor equations as a named record. No catalog registration
@@ -88,7 +88,7 @@ The record is the [archived NXP PSPICE 1N4148 subcircuit](https://raw.githubuser
 
 The source explicitly calls the external leakage resistor a reverse-characteristic modeling aid, rather than a physical resistor. It is placed **outside** the RS-plus-junction branch. Its Johnson noise is retained to match the reference SPICE subcircuit. BV is a model parameter, not a recommended operating voltage or a device rating.
 
-`diode1N4148()` remains available, including its original 0 V Q point, datasheet-fit parameters, positional `ivTable(start, stop, points)`, `.diode` metadata and equilibrium-noise treatment. It does not silently select the new card. Numerical differences between the two constructors are expected. The signal and legacy records retain ordinary diode artwork. Schottky records select the existing canonical Schottky variant.
+`diode1N4148()` remains available, including its original 0 V Q point, datasheet-fit parameters, positional `ivTable(start, stop, points)`, `.diode` metadata and equilibrium-noise treatment. It does not silently select the new card. Numerical differences between the two constructors are expected. The signal and legacy records retain ordinary diode artwork. Schottky records select the existing canonical Schottky variant; BZX384-B4V7 selects the Zener variant. The latter shares the existing BV/IBV/NBV breakdown law, classical noise and direct weak IM; it does not add avalanche excess noise or a fitted breakdown temperature coefficient.
 
 ## DC and charge equations
 
@@ -127,7 +127,7 @@ Noise uses resistor thermal noise and the classical SPICE junction shot-noise de
 
 For two-tone work, set `global.twoTone` before constructing the diode. Current and charge derivatives supply direct second-/third-order sources to the existing intermodulation engine. It accounts for RS, the external leakage branch, and the RF network. Output product slopes are 20/30 dB for a 10 dB change of equal input tones. Intercepts are extrapolated estimates, not compression or switching predictions. Quadratic remixing into third order, full Volterra analysis, harmonic balance and large-signal bias movement are not included.
 
-The 1N4148 and Schottky records have no explicit package L/C; SMV1231-079LF uses the shared fixed LS/CP network described above. There is no electrothermal/self-heating solver or manufacturer-validated wideband noise/IP fit. Future PIN, Zener and other cards require their own supported behavior and verification; they cannot be inferred from their family names alone.
+The 1N4148 and Schottky records have no explicit package L/C; SMV1231-079LF uses the shared fixed LS/CP network described above. There is no electrothermal/self-heating solver or manufacturer-validated wideband noise/IP fit. Future PIN and other cards require their own supported behavior and verification; they cannot be inferred from their family names alone.
 
 ## Implementation and independent checks
 
