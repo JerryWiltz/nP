@@ -1,0 +1,15 @@
+<!-- Modified: 2026-10-24 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-60 -60 240 240" role="img" aria-labelledby="title description">
+  <title id="title">nP mbend left-turn physical microstrip bend symbol</title>
+  <desc id="description">A two-port 90-degree physical microstrip bend with port 1 entering from the left and turning left to port 2 at the top.</desc>
+  <rect width="100%" height="100%" x="-60" y="-60" fill="#ffffff"/>
+  <!-- Center both port faces on the conductor arms. -->
+  <g transform="translate(-60 -60) scale(2)">
+    <path d="M40 53 H53 V40 H67 V60 L60 67 H40 Z" fill="#ffffff" stroke="#202020" stroke-width="1"/>
+  </g>
+  <path d="M0 60 H20 M60 0 V20" fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round"/>
+  <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
+    <text x="60" y="-35">mbend() left turn</text><text x="-30" y="65">Port 1</text><text x="60" y="-15">Port 2</text>
+    <circle cx="0" cy="60" r="4"/><circle cx="60" cy="0" r="4"/>
+  </g>
+</svg>

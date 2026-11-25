@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 760 560"
+     role="img" aria-labelledby="title description">
+  <title id="title">VNA source and three receiver channels</title>
+  <desc id="description">The modulated source feeds RF fixture port 1. Separate demodulators receive R, A, and B from the fixture output ports.</desc>
+  <metadata id="circuit-description">{&quot;title&quot;:&quot;VNA source and three receiver channels&quot;,&quot;description&quot;:&quot;The modulated source feeds RF fixture port 1. Separate demodulators receive R, A, and B from the fixture output ports.&quot;,&quot;domain&quot;:&quot;signal&quot;,&quot;source&quot;:{&quot;file&quot;:&quot;docs/.vitepress/theme/replExamples.js&quot;,&quot;result&quot;:&quot;referenceRx, reflectionRx, transmissionRx&quot;,&quot;combination&quot;:&quot;mod -&gt; RF fixture -&gt; demod(R), demod(A), demod(B)&quot;,&quot;exampleId&quot;:&quot;vna-port1&quot;},&quot;viewBox&quot;:[0,0,760,560],&quot;layout&quot;:{&quot;centerAxisX&quot;:380,&quot;centerReference&quot;:&quot;RF fixture interface&quot;},&quot;components&quot;:[{&quot;id&quot;:&quot;tx&quot;,&quot;symbol&quot;:&quot;mod.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;tx&quot;,&quot;constructor&quot;:&quot;mod&quot;},&quot;at&quot;:[160,220],&quot;sourceAnchor&quot;:[80,80],&quot;connections&quot;:[{&quot;port&quot;:1,&quot;signal&quot;:&quot;grid&quot;,&quot;at&quot;:[160,220]},{&quot;port&quot;:2,&quot;signal&quot;:&quot;tx&quot;,&quot;at&quot;:[280,220]}]},{&quot;id&quot;:&quot;referenceRx&quot;,&quot;symbol&quot;:&quot;demod.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;referenceRx&quot;,&quot;constructor&quot;:&quot;demod&quot;},&quot;at&quot;:[460,180],&quot;sourceAnchor&quot;:[80,80],&quot;connections&quot;:[{&quot;port&quot;:1,&quot;signal&quot;:&quot;R&quot;,&quot;at&quot;:[460,180]},{&quot;port&quot;:2,&quot;signal&quot;:&quot;reference&quot;,&quot;at&quot;:[580,180]}]},{&quot;id&quot;:&quot;reflectionRx&quot;,&quot;symbol&quot;:&quot;demod.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;reflectionRx&quot;,&quot;constructor&quot;:&quot;demod&quot;},&quot;at&quot;:[460,300],&quot;sourceAnchor&quot;:[80,80],&quot;connections&quot;:[{&quot;port&quot;:1,&quot;signal&quot;:&quot;A&quot;,&quot;at&quot;:[460,300]},{&quot;port&quot;:2,&quot;signal&quot;:&quot;reflection&quot;,&quot;at&quot;:[580,300]}]},{&quot;id&quot;:&quot;transmissionRx&quot;,&quot;symbol&quot;:&quot;demod.svg&quot;,&quot;source&quot;:{&quot;variable&quot;:&quot;transmissionRx&quot;,&quot;constructor&quot;:&quot;demod&quot;},&quot;at&quot;:[460,420],&quot;sourceAnchor&quot;:[80,80],&quot;connections&quot;:[{&quot;port&quot;:1,&quot;signal&quot;:&quot;B&quot;,&quot;at&quot;:[460,420]},{&quot;port&quot;:2,&quot;signal&quot;:&quot;transmission&quot;,&quot;at&quot;:[580,420]}]}],&quot;wires&quot;:[{&quot;signal&quot;:&quot;grid&quot;,&quot;points&quot;:[[100,220],[160,220]]},{&quot;signal&quot;:&quot;tx&quot;,&quot;points&quot;:[[280,220],[340,220]]},{&quot;signal&quot;:&quot;R&quot;,&quot;points&quot;:[[400,180],[460,180]]},{&quot;signal&quot;:&quot;reference&quot;,&quot;points&quot;:[[580,180],[640,180]]},{&quot;signal&quot;:&quot;A&quot;,&quot;points&quot;:[[400,300],[460,300]]},{&quot;signal&quot;:&quot;reflection&quot;,&quot;points&quot;:[[580,300],[640,300]]},{&quot;signal&quot;:&quot;B&quot;,&quot;points&quot;:[[400,420],[460,420]]},{&quot;signal&quot;:&quot;transmission&quot;,&quot;points&quot;:[[580,420],[640,420]]}],&quot;terminals&quot;:[{&quot;signal&quot;:&quot;grid&quot;,&quot;at&quot;:[100,220]},{&quot;signal&quot;:&quot;tx&quot;,&quot;at&quot;:[340,220]},{&quot;signal&quot;:&quot;R&quot;,&quot;at&quot;:[400,180]},{&quot;signal&quot;:&quot;reference&quot;,&quot;at&quot;:[640,180]},{&quot;signal&quot;:&quot;A&quot;,&quot;at&quot;:[400,300]},{&quot;signal&quot;:&quot;reflection&quot;,&quot;at&quot;:[640,300]},{&quot;signal&quot;:&quot;B&quot;,&quot;at&quot;:[400,420]},{&quot;signal&quot;:&quot;transmission&quot;,&quot;at&quot;:[640,420]}],&quot;labels&quot;:[{&quot;componentId&quot;:&quot;tx&quot;,&quot;text&quot;:&quot;VNA mod&quot;,&quot;at&quot;:[220,100],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;referenceRx&quot;,&quot;text&quot;:&quot;referenceRx&quot;,&quot;at&quot;:[520,100],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;reflectionRx&quot;,&quot;text&quot;:&quot;reflectionRx&quot;,&quot;at&quot;:[520,260],&quot;anchor&quot;:&quot;middle&quot;},{&quot;componentId&quot;:&quot;transmissionRx&quot;,&quot;text&quot;:&quot;transmissionRx&quot;,&quot;at&quot;:[520,380],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;fList or tList&quot;,&quot;at&quot;:[100,180],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;to RF port 1&quot;,&quot;at&quot;:[280,260],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;R&quot;,&quot;at&quot;:[400,140],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;A&quot;,&quot;at&quot;:[400,260],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;B&quot;,&quot;at&quot;:[400,380],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;reference&quot;,&quot;at&quot;:[640,140],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;reflection&quot;,&quot;at&quot;:[640,260],&quot;anchor&quot;:&quot;middle&quot;},{&quot;text&quot;:&quot;transmission&quot;,&quot;at&quot;:[640,380],&quot;anchor&quot;:&quot;middle&quot;}]}</metadata>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path data-wire="1" data-signal="grid" d="M100 220 L160 220"/>
+    <path data-wire="2" data-signal="tx" d="M280 220 L340 220"/>
+    <path data-wire="3" data-signal="R" d="M400 180 L460 180"/>
+    <path data-wire="4" data-signal="reference" d="M580 180 L640 180"/>
+    <path data-wire="5" data-signal="A" d="M400 300 L460 300"/>
+    <path data-wire="6" data-signal="reflection" d="M580 300 L640 300"/>
+    <path data-wire="7" data-signal="B" d="M400 420 L460 420"/>
+    <path data-wire="8" data-signal="transmission" d="M580 420 L640 420"/>
+    <circle data-external-terminal="1" cx="100" cy="220" r="4" fill="#202020" data-signal="grid"/>
+    <circle data-external-terminal="2" cx="340" cy="220" r="4" fill="#202020" data-signal="tx"/>
+    <circle data-external-terminal="3" cx="400" cy="180" r="4" fill="#202020" data-signal="R"/>
+    <circle data-external-terminal="4" cx="640" cy="180" r="4" fill="#202020" data-signal="reference"/>
+    <circle data-external-terminal="5" cx="400" cy="300" r="4" fill="#202020" data-signal="A"/>
+    <circle data-external-terminal="6" cx="640" cy="300" r="4" fill="#202020" data-signal="reflection"/>
+    <circle data-external-terminal="7" cx="400" cy="420" r="4" fill="#202020" data-signal="B"/>
+    <circle data-external-terminal="8" cx="640" cy="420" r="4" fill="#202020" data-signal="transmission"/>
+    <!-- tx from mod.svg -->
+    <g data-component-id="tx" data-symbol-source="mod.svg" data-symbol-sha256="ab82fbf7f4d083f0b3f275188229ac659dd2c799d4989197c40f4081ee7032fb" data-symbol-geometry-sha256="0417b29f0ec21b432981ba42d062fbe5ad4cd448fa5fc0dca12456cd578105ae" transform="translate(160 220) rotate(0) translate(-80 -80)">
+      <!-- canonical-geometry-start -->
+<g transform="translate(0 -10)">
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M80 90 H100 M180 90 H200"/><rect x="100" y="55" width="80" height="70"/><text x="140" y="90" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#202020" stroke="none" text-anchor="middle" dominant-baseline="middle">MOD</text>
+  </g>
+  </g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <!-- referenceRx from demod.svg -->
+    <g data-component-id="referenceRx" data-symbol-source="demod.svg" data-symbol-sha256="e7095a7049a2c6de581c64b634f2f2cb40a54c7ebb12e4456c7546883f67a879" data-symbol-geometry-sha256="ee0ca900e9f166d79a95f6943df593cf32a0ccda52d4585e0ef495d1d6cc56ea" transform="translate(460 180) rotate(0) translate(-80 -80)">
+      <!-- canonical-geometry-start -->
+<g transform="translate(0 -10)">
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M80 90 H100 M180 90 H200"/><rect x="100" y="55" width="80" height="70"/><text x="140" y="90" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#202020" stroke="none" text-anchor="middle" dominant-baseline="middle">DEMOD</text>
+  </g>
+  </g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <!-- reflectionRx from demod.svg -->
+    <g data-component-id="reflectionRx" data-symbol-source="demod.svg" data-symbol-sha256="e7095a7049a2c6de581c64b634f2f2cb40a54c7ebb12e4456c7546883f67a879" data-symbol-geometry-sha256="ee0ca900e9f166d79a95f6943df593cf32a0ccda52d4585e0ef495d1d6cc56ea" transform="translate(460 300) rotate(0) translate(-80 -80)">
+      <!-- canonical-geometry-start -->
+<g transform="translate(0 -10)">
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M80 90 H100 M180 90 H200"/><rect x="100" y="55" width="80" height="70"/><text x="140" y="90" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#202020" stroke="none" text-anchor="middle" dominant-baseline="middle">DEMOD</text>
+  </g>
+  </g>
+      <!-- canonical-geometry-end -->
+    </g>
+    <!-- transmissionRx from demod.svg -->
+    <g data-component-id="transmissionRx" data-symbol-source="demod.svg" data-symbol-sha256="e7095a7049a2c6de581c64b634f2f2cb40a54c7ebb12e4456c7546883f67a879" data-symbol-geometry-sha256="ee0ca900e9f166d79a95f6943df593cf32a0ccda52d4585e0ef495d1d6cc56ea" transform="translate(460 420) rotate(0) translate(-80 -80)">
+      <!-- canonical-geometry-start -->
+<g transform="translate(0 -10)">
+<g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M80 90 H100 M180 90 H200"/><rect x="100" y="55" width="80" height="70"/><text x="140" y="90" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#202020" stroke="none" text-anchor="middle" dominant-baseline="middle">DEMOD</text>
+  </g>
+  </g>
+      <!-- canonical-geometry-end -->
+    </g>
+
+  </g>
+  <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="16">
+    <text x="220" y="100" text-anchor="middle">VNA mod</text>
+    <text x="520" y="100" text-anchor="middle">referenceRx</text>
+    <text x="520" y="260" text-anchor="middle">reflectionRx</text>
+    <text x="520" y="380" text-anchor="middle">transmissionRx</text>
+    <text x="100" y="180" text-anchor="middle">fList or tList</text>
+    <text x="280" y="260" text-anchor="middle">to RF port 1</text>
+    <text x="400" y="140" text-anchor="middle">R</text>
+    <text x="400" y="260" text-anchor="middle">A</text>
+    <text x="400" y="380" text-anchor="middle">B</text>
+    <text x="640" y="140" text-anchor="middle">reference</text>
+    <text x="640" y="260" text-anchor="middle">reflection</text>
+    <text x="640" y="380" text-anchor="middle">transmission</text>
+
+  </g>
+</svg>

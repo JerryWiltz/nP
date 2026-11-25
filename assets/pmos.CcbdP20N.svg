@@ -1,0 +1,34 @@
+<!-- Modified: 2026-11-19 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 250" role="img" aria-labelledby="title description">
+  <title id="title">PMOS — P-channel enhancement MOSFET</title>
+  <desc id="description">P-channel enhancement MOSFET artwork with 3 external terminals. Terminal 1 is the insulated gate on the left, terminal 2 the drain above right, and terminal 3 the source below right. The body is internally tied to terminal 3, the source. The body arrow points away from the broken channel. PMOS is an implemented three-port level-1 numerical constructor. Terminal numbers are not package pin numbers.</desc>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <g fill="none" stroke="#202020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Twenty-unit external pins meet the circular body. -->
+    <path d="M70 120 H90 M170 60 V80 M170 180 V160"/>
+    <circle cx="140" cy="120" r="50"/>
+    <!-- The gate is separated from the channel by a visible insulating gap. -->
+    <path d="M90 120 H120 M120 90 V150"/>
+    <!-- Broken enhancement channel, with drain and source branches. -->
+    <path d="M140 90 V100 M140 110 V130 M140 140 V150"/>
+    <path d="M170 80 V90 H140 M170 160 V150 H140"/>
+    <!-- Internal body-to-source connection and polarity arrow. -->
+    <path d="M140 120 H170 V150"/>
+    <path d="M170 120 L150 110 V130 Z" fill="#202020"/>
+    <circle cx="170" cy="150" r="3" fill="#202020"/>
+  </g>
+  <g fill="#202020" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle">
+    <text x="140" y="25">PMOS</text>
+    <text x="35" y="105">Terminal 1</text>
+    <text x="35" y="135">G</text>
+    <text x="225" y="65">Terminal 2</text>
+    <text x="225" y="85">D</text>
+    <text x="225" y="185">Terminal 3</text>
+    <text x="225" y="205">S</text>
+    <text x="140" y="220">P-channel enhancement</text>
+    <text x="140" y="240">Body to source</text>
+    <circle cx="70" cy="120" r="4"/>
+    <circle cx="170" cy="60" r="4"/>
+    <circle cx="170" cy="180" r="4"/>
+  </g>
+</svg>
