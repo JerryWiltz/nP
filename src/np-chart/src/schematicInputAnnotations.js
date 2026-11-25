@@ -1,5 +1,6 @@
-// Modified: 2026-11-14
+// Modified: 2026-11-25
 import {drawingError} from './schematicInputParser';
+import {nodeLabelBounds, nodeLabelPosition} from './schematicNodeLabels';
 
 function union(boxes) {
     return [Math.min(...boxes.map(box => box[0])), Math.min(...boxes.map(box => box[1])),
@@ -79,14 +80,14 @@ function wireAxis(graph, node) {
     return horizontal ? 1 : 0;
 }
 
-function nodeCandidates(at, axis) {
+function nodeCandidates(at, axis, id) {
     const choices = [];
     for (let distance = 40; distance <= 1200; distance += 20) {
         const offsets = axis === 1 ? [[0, -distance], [0, distance], [distance, 0], [-distance, 0]] :
             [[distance, 0], [-distance, 0], [0, -distance], [0, distance]];
         offsets.forEach(([dx, dy], rank) => {
-            const x = at[0] + dx, y = at[1] + dy;
-            choices.push({x, y, bounds: [x - 12, y - 12, x + 12, y + 12], cost: distance + rank * 20});
+            const [x, y] = nodeLabelPosition(id, at, [dx, dy]);
+            choices.push({x, y, bounds: nodeLabelBounds(id, x, y), cost: distance + rank * 20});
         });
     }
     return choices;
@@ -162,7 +163,7 @@ export function annotateSchematicInput(model, parsed, geometry) {
     const nodeTasks = graph.nodes.map(node => {
         const axis = wireAxis(graph, node);
         return {role: 'node', family: '', axis, anchor: node.at, node,
-            candidates: nodeCandidates(node.at, axis)};
+            candidates: nodeCandidates(node.at, axis, node.id)};
     });
     const portTasks = graph.externalPorts.map((port, index) => {
         const side = port.side, axis = side === 'top' || side === 'bottom' ? 0 : 1;
@@ -202,7 +203,7 @@ export function annotateSchematicInput(model, parsed, geometry) {
     graph.annotations = annotations;
     const extra = annotations.map(item => item.bounds)
         .concat(graph.labels.map(label => geometry.textBounds(label.text, ...label.at)),
-            graph.nodes.map(node => [node.numberAt[0] - 12, node.numberAt[1] - 12, node.numberAt[0] + 12, node.numberAt[1] + 12]))
+            graph.nodes.map(node => nodeLabelBounds(node.id, ...node.numberAt)))
         .map(box => [box[0] - 40, box[1] - 40, box[2] + 40, box[3] + 40]);
     const [x, y, width, height] = graph.viewBox;
     const extent = union([[x, y, x + width, y + height], ...extra]);

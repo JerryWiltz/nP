@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-22 -->
+<!-- Modified: 2026-11-25 -->
 # Shared circuit description and DC operating-point analysis
 
 This is the contract for circuit-derived bias in nP. The shared immutable DC descriptors and topology preservation within `nodal()`, `cas()` and `cascade()` are implemented. These existing composition APIs are the public network entry points. `network.solveDC()` solves linear, NPN/PNP and diode nonlinear DC models without a second netlist. Networks containing an explicit `V()` supply and nonlinear devices automatically solve DC before RF combination; supported transistor and diode states pass through the internal RF handoff. The result is exposed as `network.operatingPoint`. Standalone constructors and RF-only networks retain their selected fixed Q points. Both D() and diode1N4148() retain their own device equations, temperatures and leakage placement. Missing physical DC laws remain explicit errors.
@@ -94,7 +94,7 @@ Allocate a unique instance path for every placement, including repeated use of o
 
 The common reference in existing RF compositions remains common through nested blocks; do not make a separate floating reference inside every child. Additional floating returns must be real public terminals or require a richer boundary, never a hidden extra connection behind a two-port label.
 
-`nodal()` requires RF components with matching frequency rows and evaluates RF immediately. Its internal `_dcModel` preserves the same component rows, output nodes and drawing groups for DC analysis. `cas()` and `cascade()` preserve equivalent connection descriptors. Users construct each network once with these existing APIs.
+`nodal()` requires RF components with matching frequency rows and the same positive, finite reference impedance. Wire labels must occur exactly twice, with each output label paired to one component terminal. Connection validation runs before DC inspection, automatic bias solving and RF assembly; `cas()` and `cascade()` also validate construction contexts before bias solving. Its internal `_dcModel` preserves the same component rows, output nodes and drawing groups for DC analysis. `cas()` and `cascade()` preserve equivalent connection descriptors. Users construct each network once with these existing APIs.
 
 Each placement has a local `id` such as `p1`; concatenate parent/child IDs to obtain a unique instance path. Internal `dcRequirements()` traverses the retained definitions to report missing models with placement paths, constructor names, terminal counts and reasons. These helpers are internal implementation details, not public network constructors. Node labels are strings or finite numbers, and output nodes remain observations. `solveDC()` solves supported linear, BJT and diode definitions; unsupported definitions and missing-model placements produce explicit errors before matrix assembly.
 
@@ -306,3 +306,14 @@ placement's dynamic RF, source noise and cubic weak-IM model. Zero-ohm terminal
 connections retain branch-current identity without introducing a second netlist.
 The older named SMP1307-011LF selected-region equivalent remains separate.
 See [PIN model equations and limitations](../semiconductors/pinModels.md).
+
+## RF-induced DC output
+
+`solveDC()` remains an RF-off static analysis. Current standalone networks also
+provide `rectify({frequencyHz,inputPowerDbm,outputNodes:[positive,negative]})`
+for weak single-CW detection with D() devices. It independently establishes
+RF-off bias, including passive zero-bias networks, and solves a second-order
+DC increment with the actual loads and shared bias network.
+See [weak-signal power detection](../analysis/rectification.md) for its matched-port convention,
+result fields, validation and limits. It does not add a nonlinear transient or
+harmonic-balance solver.

@@ -10454,7 +10454,7 @@ function symbolForSchematicEntry(entry) {
         schematicSymbols[entry.part?.symbol];
 }
 
-// Modified: 2026-11-19
+// Modified: 2026-11-25
 // Declarative board settings consumed by the schematic layout interpreter.
 
 function twoTerminalSlot(name, symbols) {
@@ -10682,7 +10682,122 @@ const commonEmitterVariants = ['split', 'combined', 'resistor'].flatMap(emitter 
         (bypass ? ['collectorFirst', 'sourceFirst'] : ['sourceFirst'])
             .map(order => dividerBiasedAmplifierBoard(emitter, bypass, common, order)))));
 
+const detectorDiodes = ['schottky-diode', 'diode-1n4148', 'zener-diode', 'varactor-diode'];
+
+function detectorOutput(prefix) {
+    const slot = suffix => prefix + suffix;
+    return {
+        slots: [{name: slot('Output'), symbols: ['tee'], portCount: 3,
+            ports: {device: [1], load: [2, 3], bypass: [2, 3]}},
+        twoTerminalSlot(slot('Load'), ['resistor']), twoTerminalSlot(slot('Bypass'), ['capacitor']),
+        groundSlot(slot('LoadGround')), groundSlot(slot('BypassGround'))],
+        components: [
+            {slot: slot('Output'), anchor: 'device', directions: {device: 'up', load: 'left', bypass: 'right'}},
+            {slot: slot('Load'), anchor: 'in', directions: {in: 'up', out: 'down'}},
+            {slot: slot('Bypass'), anchor: 'in', directions: {in: 'up', out: 'down'}},
+            {slot: slot('LoadGround'), anchor: 'in', directions: {in: 'up'}},
+            {slot: slot('BypassGround'), anchor: 'in', directions: {in: 'up'}}],
+        wires: [
+            {from: {slot: slot('Diode'), port: 'cathode'}, to: {slot: slot('Output'), port: 'device'}},
+            {from: {slot: slot('Output'), port: 'load'}, to: {slot: slot('Load'), port: 'in'}},
+            {from: {slot: slot('Output'), port: 'bypass'}, to: {slot: slot('Bypass'), port: 'in'}},
+            {from: {slot: slot('Load'), port: 'out'}, to: {slot: slot('LoadGround'), port: 'in'}},
+            {from: {slot: slot('Bypass'), port: 'out'}, to: {slot: slot('BypassGround'), port: 'in'}}]
+    };
+}
+
+function diodeDetectorBoard(coupled) {
+    const output = detectorOutput('detector');
+    const slots = [{name: 'detectorDiode', symbols: detectorDiodes, portCount: 2, ports: {anode: [1], cathode: [2]}},
+        {name: 'inputJunction', symbols: ['tee'], portCount: 3, ports: {input: [2, 3], device: [2, 3], return: [1]}},
+        twoTerminalSlot('return', ['inductor', 'resistor']), groundSlot('returnGround'), ...output.slots];
+    const components = [
+        {slot: 'detectorDiode', anchor: 'anode', directions: {anode: 'left', cathode: 'right'}},
+        {slot: 'inputJunction', anchor: 'device', directions: {input: 'left', device: 'right', return: 'down'}},
+        {slot: 'return', anchor: 'in', directions: {in: 'up', out: 'down'}},
+        {slot: 'returnGround', anchor: 'in', directions: {in: 'up'}}, ...output.components];
+    const wires = [
+        {from: {slot: 'inputJunction', port: 'device'}, to: {slot: 'detectorDiode', port: 'anode'}},
+        {from: {slot: 'inputJunction', port: 'return'}, to: {slot: 'return', port: 'in'}},
+        {from: {slot: 'return', port: 'out'}, to: {slot: 'returnGround', port: 'in'}}, ...output.wires];
+    if (coupled) {
+        slots.push(twoTerminalSlot('input', ['capacitor']));
+        components.unshift({slot: 'input', anchor: 'out', directions: {in: 'left', out: 'right'}});
+        wires.push({from: {externalPort: 1}, to: {slot: 'input', port: 'in'}},
+            {from: {slot: 'input', port: 'out'}, to: {slot: 'inputJunction', port: 'input'}});
+    } else wires.push({from: {externalPort: 1}, to: {slot: 'inputJunction', port: 'input'}});
+    return {name: 'diodeDetector', version: 1, variant: coupled ? 'coupled' : 'direct',
+        match: {externalPortCount: 1, slots}, board: {grid: 10, layout: 'relations', components, wires,
+            order: [{axis: 'x', slots: [...(coupled ? ['input'] : []), 'inputJunction', 'detectorDiode', 'detectorOutput']}],
+            centerlines: [{axis: 'y', reference: {slot: 'returnGround', port: 'in'},
+                align: [{slot: 'detectorLoadGround', port: 'in'}, {slot: 'detectorBypassGround', port: 'in'}]}],
+            externalPorts: [{port: 1, from: coupled ? {slot: 'input', port: 'in'} :
+                {slot: 'inputJunction', port: 'input'}, side: 'left'}]}};
+}
+
+function differentialDetectorBoard(supplyBypass) {
+    const outputs = [detectorOutput('detector'), detectorOutput('reference')];
+    const slots = [twoTerminalSlot('input', ['capacitor']),
+        {name: 'inputJunction', symbols: ['tee'], portCount: 3, ports: {bias: [1], input: [2, 3], device: [2, 3]}},
+        ...['detector', 'reference'].flatMap(prefix => [
+            {name: prefix + 'Diode', symbols: detectorDiodes, portCount: 2, ports: {anode: [1], cathode: [2]}},
+            twoTerminalSlot(prefix + 'Choke', ['inductor'])]),
+        {name: 'biasJunction', symbols: ['tee'], portCount: 3, ports: {supply: [1], detector: [2, 3], reference: [2, 3]}},
+        twoTerminalSlot('biasResistor', ['resistor']),
+        {name: 'source', symbols: ['voltage-source'], portCount: 2, ports: {in: [1], out: [2]}},
+        groundSlot('sourceGround'), ...outputs.flatMap(output => output.slots)];
+    const components = [
+        {slot: 'input', anchor: 'out', directions: {in: 'left', out: 'right'}},
+        {slot: 'inputJunction', anchor: 'device', directions: {input: 'left', device: 'right', bias: 'up'}},
+        ...['detector', 'reference'].flatMap(prefix => [
+            {slot: prefix + 'Diode', anchor: 'anode', directions: {anode: 'left', cathode: 'right'}},
+            {slot: prefix + 'Choke', anchor: 'out', directions: {in: 'up', out: 'down'}}]),
+        {slot: 'biasJunction', anchor: 'supply', directions: {supply: 'up', detector: 'left', reference: 'right'}},
+        {slot: 'biasResistor', anchor: 'out', directions: {in: 'up', out: 'down'}},
+        {slot: 'source', anchor: 'in', directions: {in: 'up', out: 'down'}},
+        {slot: 'sourceGround', anchor: 'in', directions: {in: 'up'}}, ...outputs.flatMap(output => output.components)];
+    const wires = [
+        {from: {externalPort: 1}, to: {slot: 'input', port: 'in'}},
+        {from: {slot: 'input', port: 'out'}, to: {slot: 'inputJunction', port: 'input'}},
+        {from: {slot: 'inputJunction', port: 'device'}, to: {slot: 'detectorDiode', port: 'anode'}},
+        {from: {slot: 'detectorChoke', port: 'out'}, to: {slot: 'inputJunction', port: 'bias'}},
+        {from: {slot: 'referenceChoke', port: 'out'}, to: {slot: 'referenceDiode', port: 'anode'}},
+        {from: {slot: 'biasResistor', port: 'out'}, to: {slot: 'biasJunction', port: 'supply'}},
+        {from: {slot: 'biasJunction', port: 'detector'}, to: {slot: 'detectorChoke', port: 'in'}},
+        {from: {slot: 'biasJunction', port: 'reference'}, to: {slot: 'referenceChoke', port: 'in'}},
+        {from: {slot: 'source', port: 'out'}, to: {slot: 'sourceGround', port: 'in'}},
+        ...outputs.flatMap(output => output.wires)];
+    if (supplyBypass) {
+        slots.push({name: 'supplyJunction', symbols: ['tee'], portCount: 3, ports: {source: [1], bias: [2, 3], bypass: [2, 3]}},
+            twoTerminalSlot('supplyBypass', ['capacitor']), groundSlot('supplyBypassGround'));
+        components.push({slot: 'supplyJunction', anchor: 'source', directions: {source: 'right', bias: 'up', bypass: 'down'}},
+            {slot: 'supplyBypass', anchor: 'in', directions: {in: 'up', out: 'down'}},
+            {slot: 'supplyBypassGround', anchor: 'in', directions: {in: 'up'}});
+        wires.push({from: {slot: 'supplyJunction', port: 'source'}, to: {slot: 'source', port: 'in'}},
+            {from: {slot: 'supplyJunction', port: 'bias'}, to: {slot: 'biasResistor', port: 'in'}},
+            {from: {slot: 'supplyJunction', port: 'bypass'}, to: {slot: 'supplyBypass', port: 'in'}},
+            {from: {slot: 'supplyBypass', port: 'out'}, to: {slot: 'supplyBypassGround', port: 'in'}});
+    } else wires.push({from: {slot: 'source', port: 'in'}, to: {slot: 'biasResistor', port: 'in'}});
+    return {name: 'differentialDetector', version: 1, variant: supplyBypass ? 'supply-bypass' : 'basic',
+        match: {externalPortCount: 1, slots}, board: {grid: 10, layout: 'relations', components, wires,
+            order: [{axis: 'x', slots: ['input', 'inputJunction', 'detectorDiode', 'detectorOutput', 'referenceChoke', 'referenceDiode', 'referenceOutput']},
+                {axis: 'x', slots: ['biasResistor', ...(supplyBypass ? ['supplyBypass'] : []), 'source']},
+                {axis: 'y', slots: [['sourceGround', ...(supplyBypass ? ['supplyBypassGround'] : [])], 'biasJunction', ['detectorChoke', 'referenceChoke'], 'inputJunction']},
+                {axis: 'y', slots: ['biasResistor', 'biasJunction']}],
+            centerlines: [
+                {axis: 'y', reference: {slot: 'detectorDiode', port: 'anode'}, align: [{slot: 'referenceDiode', port: 'anode'}]},
+                {axis: 'y', reference: {slot: 'detectorOutput', port: 'device'}, align: [{slot: 'referenceOutput', port: 'device'}]},
+                {axis: 'y', reference: {slot: 'detectorLoadGround', port: 'in'}, align: [
+                    {slot: 'detectorBypassGround', port: 'in'}, {slot: 'referenceLoadGround', port: 'in'}, {slot: 'referenceBypassGround', port: 'in'}]}],
+            externalPorts: [{port: 1, from: {slot: 'input', port: 'in'}, side: 'left'}]}};
+}
+
+const diodeDetectorVariants = [true, false].map(diodeDetectorBoard);
+const differentialDetectorVariants = [true, false].map(differentialDetectorBoard);
+
 const schematicShapeBoards = {
+    diodeDetector: {...diodeDetectorVariants[0], detect: true, interface: {from: [1], to: []}, alternatives: diodeDetectorVariants.slice(1)},
+    differentialDetector: {...differentialDetectorVariants[0], detect: true, interface: {from: [1], to: []}, alternatives: differentialDetectorVariants.slice(1)},
     commonSource: {...commonSourceVariants[0], detect: true, interface: {from: [1], to: [2]}, alternatives: commonSourceVariants.slice(1)},
     commonEmitter: {...commonEmitterVariants[0], detect: true, interface: {from: [1], to: [2]},
         alternatives: commonEmitterVariants.slice(1)},
@@ -14399,7 +14514,7 @@ function interpretSchematicBoard(root, definition, geometry, references = []) {
     return bindings ? placeBoardPaths(root, definition, bindings, geometry) : null;
 }
 
-// Modified: 2026-11-13
+// Modified: 2026-11-25
 
 function groupError(message) {
     throw new RangeError(`Schematic shape groups: ${message}`);
@@ -14480,10 +14595,11 @@ function interfaceCandidates(root, region, definitions, boards, geometry, depths
             if (region.boundaries.includes(root.externalNodes[0]) && !from.includes(root.externalNodes[0]) ||
                 root.externalNodes.slice(1).some(node => region.boundaries.includes(node) && !to.includes(node))) continue;
             if (!matchSchematicBoard({components, externalNodes}, definition, {...geometry, boards})) continue;
-            const meanFrom = from.reduce((sum, node) => sum + (depths.get(node) ?? 0), 0) / from.length;
-            const meanTo = to.reduce((sum, node) => sum + (depths.get(node) ?? 0), 0) / to.length;
+            const meanFrom = from.reduce((sum, node) => sum + (depths.get(node) ?? 0), 0) / (from.length || 1);
+            const meanTo = to.reduce((sum, node) => sum + (depths.get(node) ?? 0), 0) / (to.length || 1);
             candidates.push({section: {name, from: nodesValue(from), to: nodesValue(to)},
-                cost: meanFrom - meanTo, priority: definition.detectionPriority ?? 0});
+                cost: from.length && to.length ? meanFrom - meanTo : 0,
+                priority: definition.detectionPriority ?? 0});
         }
     }
     return candidates.sort((a, b) => a.cost - b.cost || b.priority - a.priority);
@@ -14684,7 +14800,87 @@ function placeBoardNodeMarkers(result) {
     return nodePoints;
 }
 
-// Modified: 2026-11-14
+// Modified: 2026-11-22
+// Captions reserve measured space on a side without a canonical terminal lead.
+const SIDES = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+
+// Conservative glyph advances for the renderer's 16-unit sans-serif font.
+// Pure/worker rendering cannot query a browser's font metrics. A single average
+// character width under-reserves long uppercase references and wide glyphs.
+function schematicTextWidth(text) {
+    return Math.ceil(Array.from(text).reduce((width, character) => width +
+        (/^[mwMW@]$/.test(character) || character.codePointAt(0) > 127 ? 16 :
+            /^[ilI.,:;!'|]$/.test(character) ? 5 : character === ' ' ? 5 :
+                /^[frt()[\]]$/.test(character) ? 7 : /^[A-Z]$/.test(character) ? 12 : 10), 0));
+}
+
+function captionBounds(text, x, y) {
+    const half = Math.ceil(schematicTextWidth(text) / 2);
+    return [x - half, y - 16, x + half, y + 4];
+}
+
+function rotate(vector, placement) {
+    const x = vector[0] * (placement.mirrorX ? -1 : 1), y = vector[1] * (placement.mirrorY ? -1 : 1);
+    return placement.rotation === 0 ? [x, y] : placement.rotation === 90 ? [-y, x] :
+        placement.rotation === 180 ? [-x, -y] : [y, -x];
+}
+
+function componentLeadDirections(placement, symbol) {
+    return symbol.ports.map((port, index) => {
+        const inside = terminalLeadPoint(symbol, index + 1);
+        if (!inside) throw new RangeError('Canonical terminal needs connected lead geometry for caption placement.');
+        return rotate(port.map((value, axis) => Math.sign(value - inside[axis])), placement);
+    });
+}
+
+function componentCaption(text, placement, symbol, bounds, distance = 20) {
+    const normals = componentLeadDirections(placement, symbol);
+    const sides = SIDES.filter(side => !normals.some(normal => side.every((value, axis) => value === normal[axis])));
+    if (normals.length === 1) sides.sort((a, b) =>
+        a[0] * normals[0][0] + a[1] * normals[0][1] - b[0] * normals[0][0] - b[1] * normals[0][1]);
+    const side = sides[0] || [1, -1];
+    const half = Math.ceil(schematicTextWidth(text) / 2);
+    const x = side[0] > 0 ? Math.ceil((bounds[2] + distance + half) / 10) * 10 :
+        side[0] < 0 ? Math.floor((bounds[0] - distance - half) / 10) * 10 : Math.round((bounds[0] + bounds[2]) / 20) * 10;
+    const y = side[1] > 0 ? Math.ceil((bounds[3] + distance + 16) / 10) * 10 :
+        side[1] < 0 ? Math.floor((bounds[1] - distance - 4) / 10) * 10 : Math.round((bounds[1] + bounds[3] + 12) / 20) * 10;
+    return {x, y, bounds: captionBounds(text, x, y), cost: distance - 20};
+}
+
+function captionPackingBounds(body, caption, escapes = []) {
+    return [Math.min(body[0], caption.bounds[0], ...escapes.map(point => point[0])),
+        Math.min(body[1], caption.bounds[1], ...escapes.map(point => point[1])),
+        Math.max(body[2], caption.bounds[2], ...escapes.map(point => point[0])),
+        Math.max(body[3], caption.bounds[3], ...escapes.map(point => point[1]))];
+}
+
+// Modified: 2026-11-25
+// One measured enclosure contract for board, cascade and drawing-input labels.
+const HORIZONTAL_PADDING = 8;
+
+function nodeLabelMetrics(id) {
+    const text = String(id), numeric = /^[-+]?\d+(?:\.\d+)?$/.test(text);
+    const fontSize = numeric && text.length > 2 ? 10 : 16;
+    const width = numeric && text.length <= 3 ? 24 :
+        Math.max(24, Math.ceil((schematicTextWidth(text) * fontSize / 16 + 2 * HORIZONTAL_PADDING) / 10) * 10);
+    return {width, fontSize};
+}
+
+function nodeLabelBounds(id, x, y) {
+    const {width} = nodeLabelMetrics(id);
+    return [x - width / 2, y - 12, x + width / 2, y + 12];
+}
+
+// Preserve the ordinary circle-to-wire clearance when a wider enclosure is
+// placed beside a vertical wire. Move candidates by measured half-width, not
+// by a node-specific offset or by shrinking the text.
+function nodeLabelPosition(id, point, offset) {
+    const {width} = nodeLabelMetrics(id);
+    const extra = Math.ceil((width - 24) / 20) * 10;
+    return [point[0] + offset[0] + Math.sign(offset[0]) * extra, point[1] + offset[1]];
+}
+
+// Modified: 2026-11-25
 
 function union(boxes) {
     return [Math.min(...boxes.map(box => box[0])), Math.min(...boxes.map(box => box[1])),
@@ -14764,14 +14960,14 @@ function wireAxis(graph, node) {
     return horizontal ? 1 : 0;
 }
 
-function nodeCandidates(at, axis) {
+function nodeCandidates(at, axis, id) {
     const choices = [];
     for (let distance = 40; distance <= 1200; distance += 20) {
         const offsets = axis === 1 ? [[0, -distance], [0, distance], [distance, 0], [-distance, 0]] :
             [[distance, 0], [-distance, 0], [0, -distance], [0, distance]];
         offsets.forEach(([dx, dy], rank) => {
-            const x = at[0] + dx, y = at[1] + dy;
-            choices.push({x, y, bounds: [x - 12, y - 12, x + 12, y + 12], cost: distance + rank * 20});
+            const [x, y] = nodeLabelPosition(id, at, [dx, dy]);
+            choices.push({x, y, bounds: nodeLabelBounds(id, x, y), cost: distance + rank * 20});
         });
     }
     return choices;
@@ -14847,7 +15043,7 @@ function annotateSchematicInput(model, parsed, geometry) {
     const nodeTasks = graph.nodes.map(node => {
         const axis = wireAxis(graph, node);
         return {role: 'node', family: '', axis, anchor: node.at, node,
-            candidates: nodeCandidates(node.at, axis)};
+            candidates: nodeCandidates(node.at, axis, node.id)};
     });
     const portTasks = graph.externalPorts.map((port, index) => {
         const side = port.side, axis = side === 'top' || side === 'bottom' ? 0 : 1;
@@ -14887,7 +15083,7 @@ function annotateSchematicInput(model, parsed, geometry) {
     graph.annotations = annotations;
     const extra = annotations.map(item => item.bounds)
         .concat(graph.labels.map(label => geometry.textBounds(label.text, ...label.at)),
-            graph.nodes.map(node => [node.numberAt[0] - 12, node.numberAt[1] - 12, node.numberAt[0] + 12, node.numberAt[1] + 12]))
+            graph.nodes.map(node => nodeLabelBounds(node.id, ...node.numberAt)))
         .map(box => [box[0] - 40, box[1] - 40, box[2] + 40, box[3] + 40]);
     const [x, y, width, height] = graph.viewBox;
     const extent = union([[x, y, x + width, y + height], ...extra]);
@@ -14913,61 +15109,7 @@ function renderSchematicInputAnnotations(annotations, escapeXml) {
     }).join('');
 }
 
-// Modified: 2026-11-22
-// Captions reserve measured space on a side without a canonical terminal lead.
-const SIDES = [[0, -1], [1, 0], [0, 1], [-1, 0]];
-
-// Conservative glyph advances for the renderer's 16-unit sans-serif font.
-// Pure/worker rendering cannot query a browser's font metrics. A single average
-// character width under-reserves long uppercase references and wide glyphs.
-function schematicTextWidth(text) {
-    return Math.ceil(Array.from(text).reduce((width, character) => width +
-        (/^[mwMW@]$/.test(character) || character.codePointAt(0) > 127 ? 16 :
-            /^[ilI.,:;!'|]$/.test(character) ? 5 : character === ' ' ? 5 :
-                /^[frt()[\]]$/.test(character) ? 7 : /^[A-Z]$/.test(character) ? 12 : 10), 0));
-}
-
-function captionBounds(text, x, y) {
-    const half = Math.ceil(schematicTextWidth(text) / 2);
-    return [x - half, y - 16, x + half, y + 4];
-}
-
-function rotate(vector, placement) {
-    const x = vector[0] * (placement.mirrorX ? -1 : 1), y = vector[1] * (placement.mirrorY ? -1 : 1);
-    return placement.rotation === 0 ? [x, y] : placement.rotation === 90 ? [-y, x] :
-        placement.rotation === 180 ? [-x, -y] : [y, -x];
-}
-
-function componentLeadDirections(placement, symbol) {
-    return symbol.ports.map((port, index) => {
-        const inside = terminalLeadPoint(symbol, index + 1);
-        if (!inside) throw new RangeError('Canonical terminal needs connected lead geometry for caption placement.');
-        return rotate(port.map((value, axis) => Math.sign(value - inside[axis])), placement);
-    });
-}
-
-function componentCaption(text, placement, symbol, bounds, distance = 20) {
-    const normals = componentLeadDirections(placement, symbol);
-    const sides = SIDES.filter(side => !normals.some(normal => side.every((value, axis) => value === normal[axis])));
-    if (normals.length === 1) sides.sort((a, b) =>
-        a[0] * normals[0][0] + a[1] * normals[0][1] - b[0] * normals[0][0] - b[1] * normals[0][1]);
-    const side = sides[0] || [1, -1];
-    const half = Math.ceil(schematicTextWidth(text) / 2);
-    const x = side[0] > 0 ? Math.ceil((bounds[2] + distance + half) / 10) * 10 :
-        side[0] < 0 ? Math.floor((bounds[0] - distance - half) / 10) * 10 : Math.round((bounds[0] + bounds[2]) / 20) * 10;
-    const y = side[1] > 0 ? Math.ceil((bounds[3] + distance + 16) / 10) * 10 :
-        side[1] < 0 ? Math.floor((bounds[1] - distance - 4) / 10) * 10 : Math.round((bounds[1] + bounds[3] + 12) / 20) * 10;
-    return {x, y, bounds: captionBounds(text, x, y), cost: distance - 20};
-}
-
-function captionPackingBounds(body, caption, escapes = []) {
-    return [Math.min(body[0], caption.bounds[0], ...escapes.map(point => point[0])),
-        Math.min(body[1], caption.bounds[1], ...escapes.map(point => point[1])),
-        Math.max(body[2], caption.bounds[2], ...escapes.map(point => point[0])),
-        Math.max(body[3], caption.bounds[3], ...escapes.map(point => point[1]))];
-}
-
-// Modified: 2026-11-22
+// Modified: 2026-11-25
 
 const GRID = 10;
 // Keep annotation search coverage tied to text size, independently of placement resolution.
@@ -15005,6 +15147,15 @@ function formatSchematicNumber(value, digits) {
         String(Number(value.toPrecision(digits))) : String(value);
 }
 
+function engineeringValue(value, unit, digits) {
+    if (!Number.isFinite(value) || value === 0) return `${formatSchematicNumber(value, digits)} ${unit}`;
+    const prefixes = ['f', 'p', 'n', 'µ', 'm', '', 'k', 'M', 'G', 'T'];
+    let power = Math.max(-15, Math.min(12, 3 * Math.floor(Math.log10(Math.abs(value)) / 3)));
+    let scaled = Number((value / 10 ** power).toPrecision(digits));
+    if (Math.abs(scaled) >= 1000 && power < 12) { power += 3; scaled /= 1000; }
+    return `${formatSchematicNumber(scaled, digits)} ${prefixes[power / 3 + 5]}${unit}`;
+}
+
 function componentLabel(part, id, digits) {
     if (part.displayValue !== undefined) return `${part.displayName || id} = ${part.displayValue
         .replace(/\bohms?\b/gi, 'Ω').replace(/\bVrms\b/g, 'V RMS').replace(/\s\*\s/g, ' × ')}`;
@@ -15013,7 +15164,9 @@ function componentLabel(part, id, digits) {
         ['capacitor', 'parallel-capacitor'].includes(part.symbol) ? ' F' :
         ['inductor', 'parallel-inductor'].includes(part.symbol) ? ' H' : part.symbol === 'attenuator' ||
         part.symbol === 'amplifier' ? ' dB' : '';
-    return `${id} = ${formatSchematicNumber(part.value, digits)}${unit}`;
+    const value = typeof part.value === 'number' && [' Ω', ' F', ' H'].includes(unit) ?
+        engineeringValue(part.value, unit.trim(), digits) : `${formatSchematicNumber(part.value, digits)}${unit}`;
+    return `${id} = ${value}`;
 }
 
 function escapeXml(value) {
@@ -15142,7 +15295,7 @@ function nodeGroupCandidates(group) {
         const members = group.nodes.map(node => {
             const x = group.axis === 'horizontal' ? node.point[0] : group.baseline + distance;
             const y = group.axis === 'horizontal' ? group.baseline - distance : node.point[1];
-            return {id: node.id, x, y, bounds: circleBounds(x, y)};
+            return {id: node.id, x, y, bounds: nodeLabelBounds(node.id, x, y)};
         });
         candidates.push({members, cost: distance * members.length});
     }
@@ -15373,7 +15526,7 @@ function renderNodes(layout, dots) {
         const number = layout.nodeNumbers[index];
         const external = index === 0 || index === layout.nodes.length - 1;
         const dot = (external ? dots.ports : dots.nodes) ? schematicDot(node, external ? 'port' : 'node') : '';
-        return `${dot}<circle cx="${number.x}" cy="${number.y}" r="12" fill="#ffffff" stroke="#202020" stroke-width="2"/><text x="${number.x}" y="${number.y + 5}" text-anchor="middle">${number.id}</text>`;
+        return dot + nodeLabelSvg({id: number.id, numberAt: [number.x, number.y]});
     }).join('');
 }
 
@@ -15463,6 +15616,12 @@ function hasShapeBoard(name) {
     return Object.prototype.hasOwnProperty.call(schematicShapeBoards, name);
 }
 
+function schematicNodeBoundary(boundary) {
+    const nodes = Array.isArray(boundary) ? boundary : [boundary];
+    return nodes.every(node => typeof node === 'string' || typeof node === 'number' && Number.isFinite(node)) &&
+        new Set(nodes).size === nodes.length;
+}
+
 function requestedShape(options) {
     if (options.shapes === undefined) return null;
     const shapes = options.shapes;
@@ -15470,9 +15629,7 @@ function requestedShape(options) {
         (['series', 'ladder', 'powerDivider'].includes(shapes[0]) ||
             hasShapeBoard(shapes[0]))) return shapes[0];
     if (Array.isArray(shapes) && shapes.length && shapes.every(shape => shape &&
-        hasShapeBoard(shape.name) && [shape.from, shape.to].every(boundary =>
-            Number.isInteger(boundary) || Array.isArray(boundary) && boundary.length &&
-            boundary.every(Number.isInteger) && new Set(boundary).size === boundary.length))) {
+        hasShapeBoard(shape.name) && [shape.from, shape.to].every(schematicNodeBoundary))) {
         return shapes.map(shape => ({name: shape.name, from: shape.from, to: shape.to}));
     }
     const boardShapes = Object.keys(schematicShapeBoards).map(name => `"${name}"`);
@@ -15579,14 +15736,16 @@ function treeLayoutBounds(placement) {
         placement.at, placement.rotation, placement.mirrorY, placement.mirrorX);
 }
 
-function treeNodeCandidates(point, reach = 60) {
+function treeNodeCandidates(point, reach = 60, id = '') {
     const offsets = [[0, -40], [0, 40], [40, 0], [-40, 0],
         [0, -60], [0, 60], [60, 0], [-60, 0]];
     for (let distance = 80; distance <= reach; distance += 20) {
         offsets.push([0, -distance], [0, distance], [distance, 0], [-distance, 0]);
     }
-    return offsets.map(([dx, dy], index) => ({x: point[0] + dx, y: point[1] + dy,
-        bounds: circleBounds(point[0] + dx, point[1] + dy), cost: 40 + index * 4}));
+    return offsets.map((offset, index) => {
+        const [x, y] = nodeLabelPosition(id, point, offset);
+        return {x, y, bounds: nodeLabelBounds(id, x, y), cost: 40 + index * 4};
+    });
 }
 
 function portLabelCandidates(port, board) {
@@ -15708,7 +15867,7 @@ function finishNodalModel(root, result, shapeDefinition, digits) {
     const nodeIds = [...new Set(root.components.flatMap(entry => entry.nodes)
         .concat(root.externalNodes))];
     if (nodeIds.some(node => !nodePoints.has(node))) return null;
-    const nodeTasks = nodeIds.map(node => ({candidates: treeNodeCandidates(nodePoints.get(node), shapeDefinition.automatic ? 240 : 60)}));
+    const nodeTasks = nodeIds.map(node => ({candidates: treeNodeCandidates(nodePoints.get(node), shapeDefinition.automatic ? 240 : 60, node)}));
     const portTasks = externalPorts.map(port => ({text: `Port ${port.port}`, candidates: portLabelCandidates(port, board)}));
     const placementsBounds = placements.map(treeLayoutBounds);
     if (placementsBounds.some((bounds, index) => placementsBounds.slice(index + 1)
@@ -15731,6 +15890,8 @@ function finishNodalModel(root, result, shapeDefinition, digits) {
     if (!boxes) return null;
     const allPoints = placements.flatMap(placement => placement.ports.map(port => port.at))
         .concat(wires.flatMap(wire => wire.points), nodes.flatMap(node => [node.at, node.numberAt]),
+            choices.slice(labelTasks.length, labelTasks.length + nodeIds.length).flatMap(label =>
+                [[label.bounds[0], label.bounds[1]], [label.bounds[2], label.bounds[3]]]),
             annotationChoices.flatMap(label => [[label.bounds[0], label.bounds[1]], [label.bounds[2], label.bounds[3]]]), placementsBounds.flatMap(bounds =>
                 [[bounds[0], bounds[1]], [bounds[2], bounds[3]]]));
     const minX = Math.floor((Math.min(...allPoints.map(point => point[0])) - 100) / GRID) * GRID;
@@ -15943,6 +16104,14 @@ function buildSchematicModel(circuit, options = {}, detected = detectedShapes(ci
     return {layout, graph, topology: buildSchematicTopology(graph), detected, dots};
 }
 
+function nodeLabelSvg(node) {
+    const [x, y] = node.numberAt, {width, fontSize} = nodeLabelMetrics(node.id);
+    const enclosure = width === 24 ? `<circle cx="${x}" cy="${y}" r="12"` :
+        `<rect x="${x - width / 2}" y="${y - 12}" width="${width}" height="24" rx="12"`;
+    return `${enclosure} fill="#ffffff" stroke="#202020" stroke-width="2"/>` +
+        `<text x="${x}" y="${y + 5}" text-anchor="middle" font-size="${fontSize}">${escapeXml(node.id)}</text>`;
+}
+
 function renderNodalSvg(model) {
     const {graph, dots} = model;
     const [minX, minY, width, height] = graph.viewBox;
@@ -15969,9 +16138,7 @@ function renderNodalSvg(model) {
     }).join('');
     const nodes = graph.nodes.map(node => (!dots.nodes || graph.showNodeDots === false ? '' :
         schematicDot(node.at, 'node')) +
-        `<circle cx="${node.numberAt[0]}" cy="${node.numberAt[1]}" r="12" fill="#ffffff" stroke="#202020" stroke-width="2"/>` +
-        `<text x="${node.numberAt[0]}" y="${node.numberAt[1] + 5}" text-anchor="middle"` +
-        `${String(node.id).length > 2 ? ' font-size="10"' : ''}>${escapeXml(node.id)}</text>`).join('');
+        nodeLabelSvg(node)).join('');
     const labels = graph.labels.map(label => `<text x="${label.at[0]}" y="${label.at[1]}" text-anchor="middle">${escapeXml(label.text)}</text>`).join('');
     const extra = renderSchematicInputAnnotations(graph.annotations, escapeXml);
     const name = graph.kind === 'schematic-input' ? 'Authored schematic' : 'Nodal nPort schematic';
@@ -18085,7 +18252,7 @@ function pinChargeProducts(nport, frequency, context, tone, model) {
     return [wave.neg(), wave];
 }
 
-// Modified: 2026-11-22
+// Modified: 2026-11-25
 
 var zero = function () { return complex(0, 0); };
 var conjugate$3 = function (value) { return complex(value.getR(), -value.getI()); };
@@ -18122,7 +18289,7 @@ function connectionModel(components, connectionMap) {
 	return {type: 'connection', components: components, connectionMap: connectionMap};
 }
 
-var solveConnection = function (model, frequency, externalIncident, componentSources) {
+function solveConnection(model, frequency, externalIncident, componentSources) {
 	var componentPorts = model.components.reduce(function (total, component) {
 		return total + portCount(component);
 	}, 0);
@@ -18175,7 +18342,7 @@ var solveConnection = function (model, frequency, externalIncident, componentSou
 		offset += childPorts;
 	}
 	return {outgoing: incident.slice(componentPorts), childIncidents: childIncidents};
-};
+}
 
 var prepare = function (nport, f1, f2, input1, input2) {
 	var model = nport._intermod;
@@ -18191,7 +18358,7 @@ var prepare = function (nport, f1, f2, input1, input2) {
 	return {children: children};
 };
 
-var diodeJunctionVoltage = function (nport, frequency, incident, model) {
+function diodeJunctionVoltage(nport, frequency, incident, model) {
 	var reflected = linearOutput(nport, frequency, incident);
 	if (model.externalConductance !== undefined) {
 		var terminalVoltage = incident[0].add(reflected[0]).sub(incident[1].add(reflected[1]))
@@ -18202,7 +18369,7 @@ var diodeJunctionVoltage = function (nport, frequency, incident, model) {
 	var current = incident[0].sub(reflected[0]).div(complex(Math.sqrt(model.referenceImpedance), 0));
 	var junctionImpedance = complex(model.conductance, 2 * Math.PI * frequency * model.capacitance).inv();
 	return current.mul(junctionImpedance);
-};
+}
 
 var diodeProducts = function (nport, frequency, context, tones, model) {
 	var output = zeroVector(2);
@@ -19529,7 +19696,7 @@ function jfetOperatingPoint(p, vgs, vds, polarity, initial) {
     return solveThreeTerminalFet(jfetJunction, p, vgs, vds, polarity, initial, 'JFET');
 }
 
-// Modified: 2026-11-20
+// Modified: 2026-11-25
 
 function bjtDcDevice(model, nodes, path) {
     const d = model.definition;
@@ -19818,6 +19985,26 @@ function solveDcNonlinear(assembly) {
         sourceStepping: history.some(entry => entry.sourceScale !== 1), iterations: history.reduce((sum, entry) => sum + entry.iterations, 0)}};
 }
 
+// Second-order DC forcing acts on the first-order Jacobian at RF-off bias.
+// Independent DC supplies have zero increments; generated junction currents
+// enter at intrinsic device nodes, so contact drops and shared bias are solved.
+function solveDcIncrement(assembly, values, sources) {
+    const rows = linearization(assembly, values, 1), indices = rowIndex(assembly);
+    if (!rows) throw dcLinearError('DC_NUMERICAL_FAILURE', 'Cannot linearize the DC operating point.');
+    for (const row of rows) row.value = 0;
+    for (const source of sources) {
+        const device = assembly.devices.find(entry => entry.path === source.path);
+        if (!device || device.nodes.length !== 2 || !Number.isFinite(source.currentAmps)) {
+            throw new TypeError('DC increment needs a finite two-terminal junction current at a known placement.');
+        }
+        rows[indices.get(device.nodes[0])].value -= source.currentAmps;
+        rows[indices.get(device.nodes[1])].value += source.currentAmps;
+    }
+    const solution = solveDcLinearSystem(rows, assembly.variables.length);
+    cleanGaugeModes(assembly, solution);
+    return solution;
+}
+
 // Modified: 2026-11-19
 function mosfetDcDevice(model, nodes, path) {
     const d = model.definition;
@@ -19845,7 +20032,7 @@ function jfetDcDevice(model, nodes, path) {
     return {kind: 'jfet', path, nodes, p: jfetTemperature(d.record.parameters, d.temperature), polarity: d.polarity};
 }
 
-// Modified: 2026-11-22
+// Modified: 2026-11-25
 
 function add(terms, index, coefficient) {
     if (index === null || !coefficient) return;
@@ -20043,7 +20230,7 @@ function componentResult(component, solution) {
             ...(element.reduction ? {reduction: element.reduction} : {})}))};
 }
 
-function solveDC(part) {
+function dcOperatingState(part) {
     const model = dcModelOf(part), issues = unsupportedModels(model);
     if (issues.length) {
         const error = dcLinearError('DC_UNSUPPORTED_MODELS', 'DC solve needs additional model support:\n' +
@@ -20055,6 +20242,14 @@ function solveDC(part) {
     const equations = [...assembly.kcl.values()].map(terms => ({terms, value: 0, kind: 'kcl'})).concat(assembly.constraints);
     const nonlinear = assembly.devices.length ? solveDcNonlinear(assembly) : undefined;
     const solution = nonlinear ? nonlinear.solution : solveDcLinearSystem(equations, assembly.variables.length);
+    const state = {model, assembly, root, nonlinear, solution};
+    state.operatingPoint = operatingPointResult(state);
+    return state;
+}
+
+function solveDC(part) { return dcOperatingState(part).operatingPoint; }
+
+function operatingPointResult({model, assembly, root, nonlinear, solution}) {
     const nodes = assembly.nodes.map(node => ({path: node.path, node: node.node, internal: node.internal,
         voltage: dcLinearValue(solution, new Map([[node.index, 1]]))}));
     const components = assembly.components.map(component => componentResult(component, solution));
@@ -20135,6 +20330,30 @@ function solveDC(part) {
             maxNormalizedResidual: nonlinear.residuals.norm} : solution.residuals,
         ...(nonlinear ? {operatingPoints, initialEstimate: nonlinear.initialEstimate, convergence: nonlinear.convergence} : {}),
         linearSystem: {rank: solution.rank, unknownCount: assembly.variables.length}});
+}
+
+// Internal perturbation result retains the same placement/node namespaces as
+// solveDC. Differential measurements remain meaningful in a floating gauge.
+function dcIncrement(state, sources, outputNodes, outputPath) {
+    const {assembly, solution} = state;
+    const increment = solveDcIncrement(assembly, solution.values, sources);
+    const indices = outputNodes.map(label => {
+        const node = assembly.nodes.find(entry => !entry.internal && entry.path === outputPath && entry.node === label);
+        if (!node) throw new RangeError('rectify() output node ' + JSON.stringify(label) + ' was not found at ' + (outputPath || '(root)') + '.');
+        return node.index;
+    });
+    const terms = difference(...indices);
+    const baselineVoltage = dcLinearValue(solution, terms), deltaVoltage = dcLinearValue(increment, terms);
+    if (baselineVoltage === null || deltaVoltage === null) {
+        throw dcLinearError('DC_FLOATING_OUTPUT', 'rectify() output voltage is undetermined; connect a defined DC load/return.');
+    }
+    return {baselineVoltage, deltaVoltage, voltage: baselineVoltage + deltaVoltage,
+        nodes: assembly.nodes.map(node => ({path: node.path, node: node.node, internal: node.internal,
+            deltaVoltage: dcLinearValue(increment, new Map([[node.index, 1]]))})),
+        components: assembly.components.map(component => componentResult(component, increment)),
+        junctionShifts: assembly.devices.map(device => ({path: device.path,
+            voltage: device.nodes.length === 2 ? dcLinearValue(increment, difference(...device.nodes)) : null})),
+        residuals: increment.residuals};
 }
 
 // Modified: 2026-11-19
@@ -20257,7 +20476,118 @@ function retainDcBias(network, prepared) {
     return network;
 }
 
-// Modified: 2026-11-21
+// Modified: 2026-11-24
+
+// Power-wave connections require one common construction reference and grid.
+// Check every component before any DC inspection or partial composition.
+function validateNetworkComponents(components, caller) {
+    const reference = components[0]?.global?.Ro;
+    const frequencies = components[0]?.spars;
+    for (const [index, component] of components.entries()) {
+        if (!Number.isFinite(component?.global?.Ro) || component.global.Ro <= 0) {
+            throw new RangeError(caller + ' component ' + (index + 1) + ' needs a positive finite reference impedance Ro.');
+        }
+        if (component.global.Ro !== reference) {
+            throw new RangeError(caller + ' components must have the same reference impedance Ro; component ' +
+                (index + 1) + ' uses ' + component.global.Ro + ' ohms instead of ' + reference + ' ohms.');
+        }
+        if (!Array.isArray(component.spars) || !Array.isArray(frequencies) ||
+            component.spars.length !== frequencies.length ||
+            component.spars.some((row, rowIndex) => row[0] !== frequencies[rowIndex][0])) {
+            throw new RangeError(caller + ' components must have matching frequency rows.');
+        }
+    }
+}
+
+// Modified: 2026-11-25
+
+const weakLimit = 0.1;
+
+function optionsFor(part, options) {
+    validateNetworkComponents([part], 'rectify()');
+    const fields = ['frequencyHz', 'inputPowerDbm', 'inputPort', 'outputNodes', 'outputPath'];
+    if (!options || typeof options !== 'object' || Array.isArray(options)) throw new TypeError('rectify() needs an options object.');
+    for (const key of Object.keys(options)) if (!fields.includes(key)) throw new TypeError('Unknown rectify() option: ' + key + '.');
+    const {frequencyHz, inputPowerDbm, outputNodes, outputPath = '', inputPort = 1} = options;
+    if (!Number.isFinite(frequencyHz) || frequencyHz <= 0 || !part.spars.some(row => row[0] === frequencyHz)) {
+        throw new RangeError('rectify() frequencyHz must be positive and present in the constructed frequency grid.');
+    }
+    if (!(Number.isFinite(inputPowerDbm) || inputPowerDbm === -Infinity)) throw new RangeError('rectify() inputPowerDbm must be finite, or -Infinity for RF off.');
+    const inputPowerWatts = 10 ** ((inputPowerDbm - 30) / 10);
+    if (!Number.isFinite(inputPowerWatts) || (inputPowerWatts === 0 && inputPowerDbm !== -Infinity)) throw new RangeError('rectify() input power is outside the numeric range.');
+    if (!Number.isInteger(inputPort) || inputPort < 1 || inputPort > Math.sqrt(part.spars[0].length - 1)) throw new RangeError('rectify() inputPort is outside the network boundary.');
+    if (!Array.isArray(outputNodes) || outputNodes.length !== 2 || typeof outputPath !== 'string') throw new TypeError('rectify() needs two outputNodes and an optional string outputPath.');
+    outputNodes.forEach(validateDcNode);
+    return {frequencyHz, inputPowerDbm, inputPowerWatts, inputPort, outputNodes, outputPath};
+}
+
+function validateDevices(part, model, path = '') {
+    if (part.signal) throw new RangeError('rectify() accepts its explicit single CW excitation; construct the network without attached mod()/signal data.');
+    if (model.kind === 'requiresModel') throw new RangeError('rectify() needs a physical DC model at ' + (path || '(root)') + ': ' + model.reason);
+    if (model.kind === 'connection') {
+        const children = part._rfModel?.components;
+        if (!children || children.length !== model.definition.components.length || part._intermod?.type !== 'connection') {
+            throw new TypeError('rectify() needs retained RF/DC connection recipes.');
+        }
+        model.definition.components.forEach((child, index) => validateDevices(children[index], child.model, path ? path + '/' + child.id : child.id));
+    } else if (model.kind === 'nonlinear' && model.definition.modelId !== 'diode') {
+        throw new RangeError('rectify() currently supports D() nonlinear devices; no rectification adapter for ' + model.constructorName + ' at ' + (path || '(root)') + '.');
+    }
+}
+
+function collectSources(part, model, path, frequency, incident, records) {
+    if (model.kind === 'connection') {
+        const response = solveConnection(part._intermod, frequency, incident);
+        model.definition.components.forEach((child, index) => collectSources(part._rfModel.components[index], child.model,
+            path ? path + '/' + child.id : child.id, frequency, response.childIncidents[index], records));
+        return;
+    }
+    if (model.kind !== 'nonlinear') return;
+    const diode = part._intermod;
+    if (diode?.type !== 'diode') throw new TypeError('rectify() is missing D() nonlinear coefficients at ' + path + '.');
+    const rms = diodeJunctionVoltage(part, frequency, incident, diode).mag();
+    const {record, temperature} = model.definition;
+    const voltageScale = Math.min(record.parameters.N, record.parameters.NBV) * BOLTZMANN * temperature / ELEMENTARY_CHARGE;
+    const currentRatio = Math.SQRT2 * rms / voltageScale;
+    const chargeRatio = diode.capacitance > 0 ? Math.SQRT2 * rms * Math.abs(diode.capacitanceDerivative) / diode.capacitance : 0;
+    const ratio = Math.max(currentRatio, chargeRatio);
+    if (!Number.isFinite(ratio) || ratio > weakLimit) throw new RangeError('rectify() exceeds the weak-signal junction limit at ' + (path || '(root)') + '; reduce input power. Large-signal detection needs a periodic nonlinear solver.');
+    // RMS phasors: <(1/2) I'' v(t)^2> = (1/2) I'' Vrms^2.
+    // A periodic charge has zero mean dQ/dt; charge still loads the RF solve.
+    const currentAmps = 0.5 * diode.secondDerivative * rms ** 2;
+    if (!Number.isFinite(currentAmps)) throw new RangeError('rectify() generated a nonfinite junction current.');
+    records.push({path, model: record.name, junctionRmsVolts: rms, currentAmps, voltageScale, junctionRatio: ratio});
+}
+
+function rectify(part, options) {
+    const settings = optionsFor(part, options), model = dcModelOf(part);
+    validateDevices(part, model);
+    const state = dcOperatingState(part);
+    const biased = state.operatingPoint.operatingPoints?.length ? withOperatingPoints(part, state.operatingPoint.operatingPoints) : part;
+    const incident = Array.from({length: model.portCount}, () => complex(0, 0));
+    incident[settings.inputPort - 1] = complex(Math.sqrt(settings.inputPowerWatts), 0);
+    const sources = [];
+    collectSources(biased, model, '', settings.frequencyHz, incident, sources);
+    const response = dcIncrement(state, sources, settings.outputNodes, settings.outputPath);
+    for (const source of sources) {
+        source.junctionBiasShiftVolts = response.junctionShifts.find(entry => entry.path === source.path).voltage;
+        if (source.junctionBiasShiftVolts === null || Math.abs(source.junctionBiasShiftVolts) / source.voltageScale > weakLimit) {
+            throw new RangeError('rectify() DC bias shift exceeds the weak-signal limit at ' + (source.path || '(root)') + '; reduce input power.');
+        }
+    }
+    return dcSnapshot({kind: 'weak-signal-rectification', method: 'second-order-dc', ...settings,
+        referenceImpedanceOhms: part.global.Ro, baselineVoltage: response.baselineVoltage,
+        deltaVoltage: response.deltaVoltage, voltage: response.voltage,
+        sensitivityVoltsPerWatt: settings.inputPowerWatts > 0 ? response.deltaVoltage / settings.inputPowerWatts : null,
+        operatingPoint: state.operatingPoint, sources, dcResponse: response,
+        limits: {maxJunctionRatio: weakLimit, maxBiasShiftRatio: weakLimit,
+            assumptions: ['Single CW input; matched RF source and all other external RF ports.',
+                'External ports add no DC source/load; include physical DC loads and returns.',
+                'Second-order steady DC correction at RF-off bias; no compression, transient, self-heating or detector-noise prediction.',
+                'Weak-signal screens are not a measured accuracy guarantee.']}});
+}
+
+// Modified: 2026-11-25
 var conjugate$2 = function (value) { return complex(value.getR(), -value.getI()); };
 
 function nPort() { this._noise = undefined; this._signal = undefined; }
@@ -20300,10 +20630,6 @@ function cascadeRf(n2, description) { // cascade two 2-ports along with method c
 			sparsA = this.getspars(),
 			sparsB = n2.getspars(),
 			s11, s12, s21, s22, s11a, s12a, s21a, s22a, s11b, s12b, s21b, s22b, sparsArray = [];
-		if (sparsA.length !== sparsB.length ||
-			sparsA.some(function (row, index) { return row[0] !== sparsB[index][0]; })) {
-			throw new RangeError('Cascaded nPorts must have matching frequency rows.');
-		}
 		for (freqCount = 0; freqCount < this.spars.length; freqCount++) {
 			s11a = sparsA[freqCount][1]; s12a = sparsA[freqCount][2]; s21a = sparsA[freqCount][3]; s22a = sparsA[freqCount][4];			
 			s11b = sparsB[freqCount][1]; s12b = sparsB[freqCount][2]; s21b = sparsB[freqCount][3]; s22b = sparsB[freqCount][4];
@@ -20378,7 +20704,10 @@ function cascadeRf(n2, description) { // cascade two 2-ports along with method c
 		return casOut;
 }
 
-function rebuildCascade(components) { return cascadeRf.call(components[0], components[1]); }
+function rebuildCascade(components) {
+	validateNetworkComponents(components, 'cas()');
+	return cascadeRf.call(components[0], components[1]);
+}
 
 nPort.prototype = {
 	constructor: nPort,
@@ -20400,6 +20729,7 @@ nPort.prototype = {
 		if (options.length) throw new TypeError('nPort.solveDC() currently takes no arguments.');
 		return solveDC(this);
 	},
+	rectify: function (options) { return rectify(this, options); },
 	_withOperatingPoints: function (records) { return withOperatingPoints(this, records); },
 	get stability() { return stabilityRows(this.spars); },
 	get noise() {
@@ -20412,6 +20742,7 @@ nPort.prototype = {
 	get signal() { return this._signal; },
 	set signal(signalData) { this._signal = validateSignal(signalData, this.spars); },
 	cas: function cas(n2) {
+		validateNetworkComponents([this, n2], 'cas()');
 		var description = cascadeDcModel(this, n2, this.global);
 		var prepared = prepareDcBias(description, [this, n2]);
 		var components = prepared ? prepared.components : [this, n2];
@@ -23130,14 +23461,38 @@ function seriesTee(options = {}) {
 	return junction;
 }
 
-// Modified: 2026-11-08
+// Modified: 2026-11-24
 // Normalize once, before nodal builds Gamma and the frequency-dependent W matrices.
+
 function connectionRow(row) {
     if (!Array.isArray(row) || row.length < 2 || row[0] === 'out' ||
         !row[0] || !Array.isArray(row[0].spars)) {
         throw new TypeError('nodal() needs component rows [nPort, node, ...]; shape groups contain only component rows.');
     }
     return row.slice();
+}
+
+function validateConnectionLabels(connections) {
+    const labels = new Map();
+    connections.forEach((row, rowIndex) => {
+        for (const node of row.slice(1)) {
+            validateDcNode(node);
+            const entry = labels.get(node) || {count: 0, outputs: 0};
+            entry.count++;
+            if (rowIndex === connections.length - 1) entry.outputs++;
+            labels.set(node, entry);
+        }
+    });
+    for (const [node, entry] of labels) {
+        const label = JSON.stringify(node);
+        if (entry.count !== 2) {
+            throw new RangeError('nodal() label ' + label + ' appears ' + entry.count +
+                ' times; each label must appear exactly twice. Use an explicit Tee(), Tee4() or Tee5() for branches.');
+        }
+        if (entry.outputs > 1) {
+            throw new RangeError('nodal() output label ' + label + ' must connect one component terminal to one output port.');
+        }
+    }
 }
 
 function nodalConnections(input) {
@@ -23171,16 +23526,18 @@ function nodalConnections(input) {
     }
     if (!connections.length) throw new TypeError('nodal() requires at least one component row.');
     connections.push(output.slice());
+    validateConnectionLabels(connections);
     return {connections, groups, signalOptions};
 }
 
-// Modified: 2026-11-21
+// Modified: 2026-11-24
 var conjugate = function (value) { return complex(value.getR(), -value.getI()); };
 
 
 function nodal( ... componentConnections) { // componentConnections = [[nPort1, n1, n2 ...], ... ['out', n1, n2, ...] ]
 	var normalized = nodalConnections(componentConnections);
 	var rows = normalized.connections, parts = rows.slice(0, -1).map(function (row) { return row[0]; });
+	validateNetworkComponents(parts, 'nodal()');
 	var description = dcConnection('nodal', rows.slice(0, -1).map(function (row) {
 		return {part: row[0], nodes: row.slice(1)};
 	}), rows.at(-1).slice(1), normalized.groups, parts[0].global);
@@ -23194,6 +23551,7 @@ function nodal( ... componentConnections) { // componentConnections = [[nPort1, 
 }
 
 function rebuildNodal(normalized, components) {
+	validateNetworkComponents(components, 'nodal()');
 	var connections = normalized.connections.map(function (row, index) {
 		return index < components.length ? [components[index], ...row.slice(1)] : row.slice();
 	});
@@ -23210,13 +23568,6 @@ function nodalNetwork(normalized) {
 	var numOfFreqs = componentConnections[0][0].spars.length; // determine the number of frequency points
 	var networkEntryCount = componentConnections.length;
 	var m = networkEntryCount - 1; // Gupta's m: number of multiport components
-	for (var componentIndex = 1; componentIndex < m; componentIndex++) {
-		var componentSpars = componentConnections[componentIndex][0].spars;
-		if (componentSpars.length !== numOfFreqs ||
-			componentSpars.some(function (row, index) { return row[0] !== networkSpars[index][0]; })) {
-			throw new RangeError('nodal components must have matching frequency rows.');
-		}
-	}
 	var totalPortCount = function (connections) { // total component and external ports
 		var size = 0;
 		for (i = 0; i < networkEntryCount; i++) {
@@ -23352,11 +23703,12 @@ function nodalNetwork(normalized) {
 	return applyInputSignal(network, signalOptions);
 }
 
-// Modified: 2026-11-17
+// Modified: 2026-11-24
 
 function cascade(...nPorts) {
 	var signalOptions = nPorts.length && !nPorts[nPorts.length - 1].getspars ? nPorts.pop() : undefined;
 	if (nPorts.length === 0) throw new TypeError('cascade() requires at least one nPort.');
+	validateNetworkComponents(nPorts, 'cascade()');
 	var combined = nPorts[0];
 	for (var i = 1; i < nPorts.length; i++) {
 		// cas() combines S-parameters and noise, and keeps both nonlinear stages.

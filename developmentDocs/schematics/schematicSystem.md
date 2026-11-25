@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-22 -->
+<!-- Modified: 2026-11-25 -->
 # Schematic system
 
 This note explains how an nP network or a drawing description becomes a recognizable RF schematic. It starts with two series resistors, follows their data through the one reusable interpreter (ORI), and then explains the board language and graph algorithms behind the drawing.
@@ -1174,3 +1174,17 @@ Useful checks are `npm run symbols:gallery`, `npm run symbols:bundle`, `npm run 
 The `commonSource` declarative board covers self-biased NJF/PJF stages with AC coupling, gate return, drain load, source resistance with optional split/combined bypass and optional supply bypass. It uses shared measured relations. For equally directed parallel outward leads, `schematicRelations.js` tries both transverse U-route directions and prunes inconsistent difference constraints. Branch baselines and composition use existing shared operations. Tests exercise both polarities, all 12 arrangements, reversed relation traversal, node renumbering, row reorder, reflection and composition; no example-coordinate compensation is added.
 
 The divider-amplifier board generator is shared by BJT commonEmitter and three-terminal FET commonSource stages. Declarative terminal-role data supplies control/output/common names, allowed symbols and return-branch vocabulary. Existing BJT board identities are preserved. No layout offsets, symbol-name placement conditionals or spacing overrides are added. Independent-body MOSFETs have their canonical four-terminal symbol but no named amplifier-board variant yet.
+
+## Loaded detector boards and measured labels
+
+`diodeDetector` and `differentialDetector` use the existing named-slot matcher
+and relations interpreter. Their definitions specify connectivity, terminal
+roles, qualitative ordering and shared termination baselines, not placement
+coordinates. They are one-port RF terminations and can finish a grouped path
+through `{from:[1],to:[]}` interfaces. See [contracts and verification](detectorShapes.md).
+
+`schematicNodeLabels.js` owns node-enclosure metrics used by board annotations,
+cascade annotations and drawing-input annotations. The renderer uses those same
+metrics, and view bounds include complete label extents. Numeric R/L/C captions
+use engineering prefixes before their text is measured for placement. These
+shared presentation rules do not change the circuit or numerical component data.

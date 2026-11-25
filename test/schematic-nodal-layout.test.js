@@ -1,10 +1,11 @@
-// Modified: 2026-11-08
+// Modified: 2026-11-24
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as nP from '../src/index.js';
 import {schematicGraph, schematicSvg, schematicTopology} from '../src/np-chart/src/schematic.js';
 import {buildSchematicStressCases} from '../dev/schematicStressCases.js';
 import {buildSchematicCases} from '../dev/schematicCases.js';
+import {drawingNetwork} from './fixtures/schematic-topology';
 
 function onSegment(point, start, end) {
     return (start[0] === end[0] && point[0] === start[0] &&
@@ -143,9 +144,9 @@ test('a loop connects both branches between its tee junctions', () => {
     assert.match(schematicSvg(circuit), /TEE1/);
 });
 
-test('loop analysis finds multiple cycles through shared nodes without needing tees', () => {
+test('drawing-only loop analysis finds multiple cycles through shared nodes without needing tees', () => {
     nP.global.fList = [2e9];
-    const circuit = nP.nodal(
+    const circuit = drawingNetwork(
         [nP.R(50), 45, 37],
         [nP.R(75), 45, 37],
         [nP.R(100), 45, 37],

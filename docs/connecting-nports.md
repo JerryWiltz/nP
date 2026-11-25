@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-08 -->
+<!-- Modified: 2026-11-25 -->
 # Connecting nPorts
 
 Constructors such as `nP.R()`, `nP.L()`, and `nP.Tee()` return [nPort objects](./nport-object.md). Connect those objects to make a larger circuit, then call `.out()` on the result. Set the [analysis frequencies](./global-settings.md#frequency-list) before creating the components.
@@ -64,6 +64,8 @@ nP.lineChart({inputTable: [response], title: 'Series R-L response'});
 Here, label `2` joins port 2 of `r1` to port 1 of `l1`. Labels `1` and `3` become the circuit's external ports 1 and 2. The labels are identifiers, not voltages; their numeric size has no electrical meaning.
 
 **Use each label exactly twice** across the component entries and the `out` entry. An internal label joins two component ports. An external label joins one component port to one `out` port. To join three or more branches, add an explicit junction such as `nP.Tee()` rather than putting the same label on three component ports.
+
+`nodal()` checks this rule before automatic DC bias solving or RF analysis. Unpaired or multiply used labels raise an error identifying the label and its count. Each output label must connect to one component terminal; duplicate output labels are rejected.
 
 ## Add a shunt branch
 
@@ -151,6 +153,17 @@ var complete = nP.cascade(stage, attenuator);
 
 ## Keep analysis settings aligned
 
-Components in the same connection must have the **same frequency rows in the same order**. `nodal()` and `cascade()` reject mismatched rows; they do not interpolate. Build connected components with matching `fList` values and the same reference impedance `Ro`. Set two-tone analysis before constructing all stages if the network needs intermodulation products.
+Components in the same connection must have the **same frequency rows in the same order** and the **same positive, finite reference impedance `Ro`**. `nodal()`, `cascade()` and `.cas()` reject mismatches before automatic DC bias solving or RF analysis; they do not interpolate or renormalize. `cascade()` validates all stages before combining any of them. Independent construction contexts are compatible when their captured frequencies and `Ro` agree. Set two-tone analysis before constructing all stages if the network needs intermodulation products.
 
 For a sampled digital source or `VNA-time`, select a valid `nP.global.tList` before `nP.mod()`; sampled modes need one time per generated waveform sample. The analog modes also currently require a valid time list, although they construct sparse tone frequencies. `VNA-frequency` uses `fList` and requires no `tList`. Create the source before its frequency-dependent components, then attach `{signal: tx}` as the final argument to `nodal()` or `cascade()`. The [Tutorial](./tutorial.md#send-a-digital-signal-through-a-circuit) shows the sampled-signal sequence.
+
+## RF-induced DC output
+
+`solveDC()` remains an RF-off static analysis. Current standalone networks also
+provide `rectify({frequencyHz,inputPowerDbm,outputNodes:[positive,negative]})`
+for weak single-CW detection with D() devices. It independently establishes
+RF-off bias, including passive zero-bias networks, and solves a second-order
+DC increment with the actual loads and shared bias network.
+See [weak-signal power detection](./rf-constructors.md#weak-signal-power-detection) for its matched-port convention,
+result fields, validation and limits. It does not add a nonlinear transient or
+harmonic-balance solver.

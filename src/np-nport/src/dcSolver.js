@@ -1,7 +1,7 @@
-// Modified: 2026-11-22
+// Modified: 2026-11-25
 import {dcModelOf, dcSnapshot} from './dcModel';
 import {solveDcLinearSystem, dcLinearValue, dcLinearError} from './dcLinearSystem';
-import {bjtDcDevice, solveDcNonlinear} from './dcNonlinear';
+import {bjtDcDevice, solveDcNonlinear, solveDcIncrement} from './dcNonlinear';
 import {diodeDcDevice, diodeDcCurrent} from './diodes/diodeDc';
 import {mosfetDcDevice} from './transistors/fet/mosfetDc';
 import {mosfetPoint} from './transistors/fet/mosfetEquations';
@@ -205,7 +205,7 @@ function componentResult(component, solution) {
             ...(element.reduction ? {reduction: element.reduction} : {})}))};
 }
 
-export function solveDC(part) {
+export function dcOperatingState(part) {
     const model = dcModelOf(part), issues = unsupportedModels(model);
     if (issues.length) {
         const error = dcLinearError('DC_UNSUPPORTED_MODELS', 'DC solve needs additional model support:\n' +
@@ -217,6 +217,14 @@ export function solveDC(part) {
     const equations = [...assembly.kcl.values()].map(terms => ({terms, value: 0, kind: 'kcl'})).concat(assembly.constraints);
     const nonlinear = assembly.devices.length ? solveDcNonlinear(assembly) : undefined;
     const solution = nonlinear ? nonlinear.solution : solveDcLinearSystem(equations, assembly.variables.length);
+    const state = {model, assembly, root, nonlinear, solution};
+    state.operatingPoint = operatingPointResult(state);
+    return state;
+}
+
+export function solveDC(part) { return dcOperatingState(part).operatingPoint; }
+
+function operatingPointResult({model, assembly, root, nonlinear, solution}) {
     const nodes = assembly.nodes.map(node => ({path: node.path, node: node.node, internal: node.internal,
         voltage: dcLinearValue(solution, new Map([[node.index, 1]]))}));
     const components = assembly.components.map(component => componentResult(component, solution));
@@ -297,4 +305,28 @@ export function solveDC(part) {
             maxNormalizedResidual: nonlinear.residuals.norm} : solution.residuals,
         ...(nonlinear ? {operatingPoints, initialEstimate: nonlinear.initialEstimate, convergence: nonlinear.convergence} : {}),
         linearSystem: {rank: solution.rank, unknownCount: assembly.variables.length}});
+}
+
+// Internal perturbation result retains the same placement/node namespaces as
+// solveDC. Differential measurements remain meaningful in a floating gauge.
+export function dcIncrement(state, sources, outputNodes, outputPath) {
+    const {assembly, solution} = state;
+    const increment = solveDcIncrement(assembly, solution.values, sources);
+    const indices = outputNodes.map(label => {
+        const node = assembly.nodes.find(entry => !entry.internal && entry.path === outputPath && entry.node === label);
+        if (!node) throw new RangeError('rectify() output node ' + JSON.stringify(label) + ' was not found at ' + (outputPath || '(root)') + '.');
+        return node.index;
+    });
+    const terms = difference(...indices);
+    const baselineVoltage = dcLinearValue(solution, terms), deltaVoltage = dcLinearValue(increment, terms);
+    if (baselineVoltage === null || deltaVoltage === null) {
+        throw dcLinearError('DC_FLOATING_OUTPUT', 'rectify() output voltage is undetermined; connect a defined DC load/return.');
+    }
+    return {baselineVoltage, deltaVoltage, voltage: baselineVoltage + deltaVoltage,
+        nodes: assembly.nodes.map(node => ({path: node.path, node: node.node, internal: node.internal,
+            deltaVoltage: dcLinearValue(increment, new Map([[node.index, 1]]))})),
+        components: assembly.components.map(component => componentResult(component, increment)),
+        junctionShifts: assembly.devices.map(device => ({path: device.path,
+            voltage: device.nodes.length === 2 ? dcLinearValue(increment, difference(...device.nodes)) : null})),
+        residuals: increment.residuals};
 }

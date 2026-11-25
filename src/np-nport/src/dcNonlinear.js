@@ -1,4 +1,4 @@
-// Modified: 2026-11-20
+// Modified: 2026-11-25
 import {temperatureParameters, gummelPoon} from './transistors/bjt/gummelPoon';
 import {solveDcLinearSystem, dcLinearError} from './dcLinearSystem';
 import {diodeDcCurrent} from './diodes/diodeDc';
@@ -292,4 +292,24 @@ export function solveDcNonlinear(assembly) {
     cleanGaugeModes(assembly, result.solution);
     return {...result, initialEstimate: initial.report, convergence: {method: 'damped-newton', history,
         sourceStepping: history.some(entry => entry.sourceScale !== 1), iterations: history.reduce((sum, entry) => sum + entry.iterations, 0)}};
+}
+
+// Second-order DC forcing acts on the first-order Jacobian at RF-off bias.
+// Independent DC supplies have zero increments; generated junction currents
+// enter at intrinsic device nodes, so contact drops and shared bias are solved.
+export function solveDcIncrement(assembly, values, sources) {
+    const rows = linearization(assembly, values, 1), indices = rowIndex(assembly);
+    if (!rows) throw dcLinearError('DC_NUMERICAL_FAILURE', 'Cannot linearize the DC operating point.');
+    for (const row of rows) row.value = 0;
+    for (const source of sources) {
+        const device = assembly.devices.find(entry => entry.path === source.path);
+        if (!device || device.nodes.length !== 2 || !Number.isFinite(source.currentAmps)) {
+            throw new TypeError('DC increment needs a finite two-terminal junction current at a known placement.');
+        }
+        rows[indices.get(device.nodes[0])].value -= source.currentAmps;
+        rows[indices.get(device.nodes[1])].value += source.currentAmps;
+    }
+    const solution = solveDcLinearSystem(rows, assembly.variables.length);
+    cleanGaugeModes(assembly, solution);
+    return solution;
 }

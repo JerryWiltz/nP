@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-21 -->
+<!-- Modified: 2026-11-25 -->
 # RF Constructors
 
 Set the frequencies first. Then make each part of the circuit. These calls return [nPort objects](./nport-object.md) that you can [connect](./connecting-nports.md).
@@ -273,3 +273,39 @@ The default 1N4148 model includes a 0.568 Ω series resistance, 4 pF zero-bias j
 ## More detail
 
 See [Circuit examples](./circuit-examples.md) for complete networks and the [constructor catalog](https://github.com/JerryWiltz/nP/blob/master/developmentDocs/components/constructorCatalog.md) for every argument, option, and model default.
+
+## Weak-signal power detection
+
+A completed network with D() diodes can calculate a single CW input's
+second-order DC output using `network.rectify()`:
+
+```js
+var detected = network.rectify({
+  frequencyHz: 1e9,
+  inputPowerDbm: -70,
+  outputNodes: ['detector', 'reference']
+});
+var dcVolts = detected.voltage;
+var changeVolts = detected.deltaVoltage;
+var voltsPerWatt = detected.sensitivityVoltsPerWatt;
+```
+
+The node labels must exist in the network; they can be internal measurement
+nodes. `inputPort` defaults to 1 and `outputPath` to the root namespace `''`.
+Frequency must already exist in the component grid. Input power is available
+source dBm; the RF source and unused external RF ports are matched to captured
+Ro. They add no DC source/load: include actual return paths, loads, bias and
+bypass components. `-Infinity` power selects RF off; sensitivity is then null.
+
+The result separates `baselineVoltage`, `deltaVoltage` and their sum `voltage`.
+It retains RF-off operating points and generated-source/DC-increment details.
+It solves passive zero-bias circuits and coupled detector/reference pairs
+without changing the network's existing S-parameters or bias records.
+
+This supports named and supplied D() models. Other nonlinear families, attached
+mod()/signal data, absent physical DC models and excessive weak-signal drive
+reject explicitly. Junction peak/thermal-voltage and charge-curvature ratios,
+and DC-shift/thermal-voltage ratios, must stay at or below 0.1. This is no
+accuracy guarantee near model boundaries. No compression, high-power peak
+detection, capacitor-charging transient, self-heating or detector-noise analysis
+is provided. Obsidian's pinned runtime may not expose this new method.

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-22 -->
+<!-- Modified: 2026-11-25 -->
 # Schematics
 
 `nP.schematic(network)` draws an RF network using its component symbols and electrical connections. You can draw a component, a network returned by `nP.nodal()` or `nP.cascade()`, or a transmitter–circuit–receiver path. Each call adds a drawing to the page; in the REPL, it appears in Output.
@@ -221,6 +221,40 @@ nP.schematic(network, {
 
 For runnable examples, choose [Schematic shape detection](./repl.md#example-schematic-shape-detection) or [Schematic groups and dots](./repl.md#example-schematic-groups-and-dots) in the REPL.
 
+## Diode detector shapes
+
+Current standalone renderers recognize `diodeDetector` and
+`differentialDetector` from complete networks, or accept explicit guidance:
+
+```js
+nP.schematic(detector, {shapes: ['diodeDetector']});
+nP.schematic(differentialDetector, {shapes: ['differentialDetector']});
+```
+
+Both have one external RF input. Measure DC at internal node labels with
+`rectify()`; an extra RF output would add another RF termination.
+
+`diodeDetector` matches an input Tee with a grounded L or R return, a diode and
+an output Tee feeding separate grounded load-resistor and bypass-capacitor
+branches. A series input capacitor is optional. `differentialDetector` matches
+two such output networks and diodes, with individual bias chokes, one shared
+bias resistor and a V()/Short supply. It requires the detector input coupling
+capacitor/Tee; a supply Tee/C/Short bypass is optional. Supported diode artwork
+is ordinary junction, Schottky, Zener or varactor, with anode/cathode port order
+preserved. Combined RC parts or other bias topologies do not match these boards.
+
+The boards state engineering organization: RF left, common bias above, related
+diodes and output junctions aligned, and load/bypass branches below on common
+termination baselines. Placement, branch balance, spacing and routing use the
+shared measured layout tools. Row order, component object reuse, values and
+node spellings do not select a different layout rule.
+
+They can also terminate a grouped/composed RF path. A one-port section uses
+`from: inputNode, to: []`; the board's declared interface validates the empty
+output. Scalar/array boundaries accept strings or finite numbers, with typed
+node identity preserved. Do not use an empty output on a two-port board.
+These newer shapes may be absent from older/pinned bundles.
+
 ## Returned API, labels and controls
 
 The return object contains `{svg, graph, topology, detected, error}`. `svg` is the displayed SVG element; `graph` contains drawing geometry and `topology` summarizes electrical connections. The detected object has the same form as the existing shape options and can be reused. On failure, the function displays an inline error and returns null drawing properties with an `Error` in `error`; its independent detected result is retained and later JavaScript continues. A drawing error does not change the already-computed network's electrical results.
@@ -263,7 +297,17 @@ var l1 = nP.L(45.65360855435164e-9);
 nP.schematic(l1, {significantDigits: 4});
 ```
 
+Numeric resistor, inductor and capacitor captions use engineering prefixes,
+for example 10 kΩ, 1 µH and 100 pF, with the requested significant digits.
+
 The precision option changes only printed numeric nPort labels. Drawing-input captions remain display text. The circuit calculation and numeric values in `graph` and `topology` keep their original precision. The drawing opens at its natural scale and grows to its full height; wide drawings scroll horizontally. **Fit drawing** scales to the available width, and **Actual size** restores the natural scale. **Copy as png** copies the whole drawing. **Save SVG** downloads the same vector geometry, available as `drawing.svgText`, for editing or publication.
+
+Named-node labels use measured rounded enclosures at normal text size rather
+than shrinking a long name into a fixed circle. Ordinary short numeric node IDs
+retain their circled style. The same measured enclosure is reserved for labels
+in named boards, generic layouts, cascades and drawing-language input; bounds
+and exported SVG include the full label. Node identities and wiring are unchanged.
+
 
 ## Transmitter, RF circuit and receiver
 

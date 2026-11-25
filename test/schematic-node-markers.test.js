@@ -1,9 +1,10 @@
-// Modified: 2026-11-14
+// Modified: 2026-11-24
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DOMParser} from '@xmldom/xmldom';
 import * as nP from '../src/index.js';
 import {schematicGraph, schematicSvg, schematicTopology} from '../src/np-chart/src/schematic';
+import {drawingNetwork} from './fixtures/schematic-topology';
 import {placeBoardNodeMarkers} from '../src/np-chart/src/schematicNodeMarkers';
 
 function markerCircles(svg, kind) {
@@ -107,7 +108,7 @@ test('composed sections retain one marker for each shared node', () => {
 test('corners introduce no junction dots while true branches retain them', () => {
     nP.global.fList = [2e9];
     const r = nP.R(50);
-    const cases = [genericDivider(), nP.nodal(
+    const cases = [genericDivider(), drawingNetwork(
         [r, 1, 2], [r, 2, 3], [r, 2, 4], ['out', 1, 3, 4]
     )];
     for (const [index, circuit] of cases.entries()) {

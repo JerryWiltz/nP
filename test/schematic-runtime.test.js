@@ -1,4 +1,4 @@
-// Modified: 2026-11-06
+// Modified: 2026-11-25
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -306,8 +306,8 @@ test('schematic labels default to three significant digits without changing circ
     const defaultGraph = schematicGraph(inductor);
     const detailedGraph = schematicGraph(inductor, {significantDigits: 5});
 
-    assert.ok(defaultGraph.labels.some(label => label.text === 'L1 = 4.57e-8 H'));
-    assert.ok(detailedGraph.labels.some(label => label.text === 'L1 = 4.5654e-8 H'));
+    assert.ok(defaultGraph.labels.some(label => label.text === 'L1 = 45.7 nH'));
+    assert.ok(detailedGraph.labels.some(label => label.text === 'L1 = 45.654 nH'));
     assert.equal(defaultGraph.components[0].value, 4.565360855435164e-8);
     assert.throws(() => schematicSvg(inductor, {significantDigits: 0}), /significantDigits/);
 });

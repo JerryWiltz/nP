@@ -1,4 +1,4 @@
-// Modified: 2026-11-21
+// Modified: 2026-11-24
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as nP from '../src/index.js';
@@ -73,14 +73,16 @@ function selfBias(q, resistance = 47) {
     const fList = q.global.fList, short = nP.Short({fList});
     return nP.nodal(
         [q, 1, 2, 3],
-        [nP.R({resistance: 1e6, fList}), 1, 4],
+        [nP.R({resistance: 1e6, fList}), 11, 4],
         [short, 4],
-        [nP.R({resistance: 150, fList}), 2, 5],
+        [nP.R({resistance: 150, fList}), 12, 5],
         [nP.V(5, {fList}), 5, 6],
         [short, 6],
         [nP.R({resistance, fList}), 3, 7],
         [short, 7],
-        ['out', 1, 2]
+        [nP.Tee({fList}), 1, 11, 21],
+        [nP.Tee({fList}), 2, 12, 22],
+        ['out', 21, 22]
     );
 }
 

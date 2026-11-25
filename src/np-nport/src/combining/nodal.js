@@ -9,14 +9,16 @@ import {nodalConnections} from './nodalConnections';
 import {dcConnection} from '../dcModel';
 import {rfConnection} from '../operatingPointHandoff';
 import {prepareDcBias, retainDcBias} from '../dcBias';
+import {validateNetworkComponents} from './connectionValidation';
 
-// Modified: 2026-11-21
+// Modified: 2026-11-24
 var conjugate = function (value) { return complex(value.getR(), -value.getI()); };
 
 
 export function nodal( ... componentConnections) { // componentConnections = [[nPort1, n1, n2 ...], ... ['out', n1, n2, ...] ]
 	var normalized = nodalConnections(componentConnections);
 	var rows = normalized.connections, parts = rows.slice(0, -1).map(function (row) { return row[0]; });
+	validateNetworkComponents(parts, 'nodal()');
 	var description = dcConnection('nodal', rows.slice(0, -1).map(function (row) {
 		return {part: row[0], nodes: row.slice(1)};
 	}), rows.at(-1).slice(1), normalized.groups, parts[0].global);
@@ -30,6 +32,7 @@ export function nodal( ... componentConnections) { // componentConnections = [[n
 }
 
 function rebuildNodal(normalized, components) {
+	validateNetworkComponents(components, 'nodal()');
 	var connections = normalized.connections.map(function (row, index) {
 		return index < components.length ? [components[index], ...row.slice(1)] : row.slice();
 	});
@@ -46,13 +49,6 @@ function nodalNetwork(normalized) {
 	var numOfFreqs = componentConnections[0][0].spars.length; // determine the number of frequency points
 	var networkEntryCount = componentConnections.length;
 	var m = networkEntryCount - 1; // Gupta's m: number of multiport components
-	for (var componentIndex = 1; componentIndex < m; componentIndex++) {
-		var componentSpars = componentConnections[componentIndex][0].spars;
-		if (componentSpars.length !== numOfFreqs ||
-			componentSpars.some(function (row, index) { return row[0] !== networkSpars[index][0]; })) {
-			throw new RangeError('nodal components must have matching frequency rows.');
-		}
-	}
 	var totalPortCount = function (connections) { // total component and external ports
 		var size = 0;
 		for (i = 0; i < networkEntryCount; i++) {

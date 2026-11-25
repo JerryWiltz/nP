@@ -1,0 +1,38 @@
+SMS7630 dual diode detector, shared bias and differential DC reference
+* Modified: 2026-11-25
+* Independent ngspice transient; same per-junction card/plane as nP.
+* Available -60 dBm at 1 GHz; change .temp for tracking comparisons.
+* nP V() is RF open. Both circuits include 10 nF supply decoupling;
+* its 0.0159 ohm carrier impedance versus SPICE's ideal RF short is
+* negligible through the 10 kohm bias resistor (below 2 ppm loading bound).
+.temp 27
+.options gmin=1e-18 abstol=1e-17 reltol=1e-9 chgtol=1e-22 vntol=1e-12 method=trap
+.model device D (IS=5e-6 RS=20 N=1.05 TT=1e-11 CJO=.14p M=.40 EG=.69 XTI=2 FC=.5 BV=2 IBV=1e-4 VJ=.34 TNOM=27 NBV=1 KF=0 AF=1)
+Vbias supply 0 1
+Csupply supply 0 10n
+Rbias supply rail 10k
+Lfeed1 rail anode1 1u
+Lfeed2 rail anode2 1u
+Vrf source 0 DC 0 SIN(0 0.0006324555320336759 1g)
+Rsource source rf 50
+Ccouple rf anode1 1n
+D1 anode1 detector device
+D2 anode2 reference device
+Rload1 detector 0 1k
+Rload2 reference 0 1k
+Cbypass1 detector 0 100p
+Cbypass2 reference 0 100p
+.control
+set numdgt=15
+set measdgt=15
+op
+print v(detector) v(reference)
+tran 10p 8u 0 5p
+meas tran detectorMean AVG v(detector) from=7u to=8u
+meas tran referenceMean AVG v(reference) from=7u to=8u
+let differential = v(detector) - v(reference)
+meas tran differentialMean AVG differential from=7u to=8u
+meas tran differentialEarly AVG differential from=6u to=7u
+quit
+.endc
+.end

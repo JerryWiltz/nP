@@ -1,4 +1,4 @@
-// Modified: 2026-11-13
+// Modified: 2026-11-24
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -8,6 +8,7 @@ import {detectSchematicShapes} from '../src/np-chart/src/schematicShapeDetector'
 import {matchSchematicBoard} from '../src/np-chart/src/schematicBoardInterpreter';
 import {schematicShapeBoards} from '../src/np-chart/src/schematicShapeBoards';
 import {symbolForSchematicEntry} from '../src/np-chart/src/nodalBlockSymbol';
+import {drawingNetwork} from './fixtures/schematic-topology';
 
 function element(tagName) {
     const result = {tagName, style: {}, dataset: {}, children: [], attributes: {},
@@ -96,9 +97,9 @@ test('matching is shared with ORI and follows the board data rather than a serie
 
 test('loops, branches and disconnected extra components cannot be mistaken for a complete series path', () => {
     const r1 = nP.R(50);
-    const loop = nP.nodal([r1, 1, 2], [r1, 1, 2], ['out', 1, 2]);
+    const loop = drawingNetwork([r1, 1, 2], [r1, 1, 2], ['out', 1, 2]);
     const branch = nP.nodal([nP.Tee(), 3, 1, 2], [r1, 3, 4], [nP.Short(), 4], ['out', 1, 2]);
-    const extra = nP.nodal([r1, 1, 2], [r1, 10, 20], ['out', 1, 2]);
+    const extra = drawingNetwork([r1, 1, 2], [r1, 10, 20], ['out', 1, 2]);
     for (const circuit of [loop, extra]) assert.equal(detectSchematicShapes(circuit, schematicShapeBoards, geometry), null);
     assert.deepEqual(detectSchematicShapes(branch, schematicShapeBoards, geometry), {shapes: ['ladder']});
     withDocument(() => {

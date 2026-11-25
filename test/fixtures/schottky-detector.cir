@@ -1,0 +1,24 @@
+SMS7630 zero-bias RF detector, independent transient reference
+* Modified: 2026-11-25
+* nP matched input: available -60 dBm, Ro=50 ohms, 1 GHz.
+* Thevenin peak = 2*sqrt(2*50*1e-9) = 0.0006324555320336759 V.
+* Ccouple blocks the source's DC return; Lreturn supplies the actual DC return.
+.temp 27
+.options gmin=1e-18 abstol=1e-17 reltol=1e-9 chgtol=1e-22 method=gear
+.model device D (IS=5e-6 RS=20 N=1.05 TT=1e-11 CJO=.14p M=.40 EG=.69 XTI=2 FC=.5 BV=2 IBV=1e-4 VJ=.34 TNOM=27 NBV=1 KF=0 AF=1)
+Vrf source 0 DC 0 SIN(0 0.0006324555320336759 1g)
+Rsource source rf 50
+Ccouple rf anode 1n
+Lreturn anode 0 1u
+D1 anode detector device
+Rload detector 0 10k
+Cbypass detector 0 100p
+.control
+set numdgt=15
+set measdgt=15
+tran 20p 8u
+meas tran detectorMean AVG v(detector) from=7u to=8u
+meas tran detectorEarly AVG v(detector) from=6u to=7u
+quit
+.endc
+.end

@@ -1,7 +1,14 @@
 # AGENTS.md
-<!-- Modified: 2026-11-21 -->
+<!-- Modified: 2026-11-24 -->
 
-Instructions for `/home/jerrywiltz/cad-development/nP`. Read this file and any `AGENTS.md` in the directory being changed. Use current source and tests for API behavior; keep detailed engineering explanations in `developmentDocs/`.
+Instructions for `/home/jerrywiltz/cad-development/nP`. Use current source and tests for API behavior; keep detailed engineering explanations in `developmentDocs/`.
+
+## Instruction scope and discovery
+
+- Before working on a target, read the applicable instruction file in every ancestor directory from the repository root through the target's directory, in that order. Include intermediate directories even when there is no instruction file beside the target. For example, `src/np-nport/src/transistors/bjt/NPN.js` inherits this file and `src/np-nport/src/transistors/AGENTS.md`.
+- In each directory, use `AGENTS.override.md` when present; otherwise use `AGENTS.md`. More specific instructions refine ancestor instructions within their subtree. Explicit user instructions and tool permissions still take precedence.
+- Repeat this discovery when work moves to another subtree or an instruction file changes. A session started at the repository root must not assume deeper instructions were automatically loaded. Read explicitly referenced instructions outside the target's ancestor chain when the task requires them.
+- Automatic instruction loading may truncate large files or a combined instruction chain. Explicitly read any incomplete instruction file in consecutive, bounded ranges until its end; retrieve omitted ranges when tool output is truncated. Reuse a complete reading while the file remains unchanged.
 
 ## Repo shorthands
 
@@ -29,11 +36,20 @@ Treat these as user-message shorthands when they reach the agent as text; they a
 - Set `global.fList` before ordinary RF components. Components may accept an options-level `fList`; all components in one network need matching frequency rows. Digital examples set the required time or frequency grid before `mod()` and create dependent components afterward.
 - Preserve public exports and aliases unless the user requests a breaking change. Update consumers, examples, tests, and `developmentDocs/components/constructorCatalog.md` when changing an n-port constructor, method, public math helper, or low-pass prototype generator.
 
+## Repository skills
+
+- Use [add-semiconductor](.agents/skills/add-semiconductor/SKILL.md) for semiconductor constructor, equation-family and model-record implementation work. Invoke it as `$add-semiconductor`; it complements the applicable directory instructions and does not change task authorization.
+- Use [validate-device-model](.agents/skills/validate-device-model/SKILL.md) for semiconductor equation, parameter, simulator and measured-data accuracy investigations.
+- Use [develop-schematics](.agents/skills/develop-schematics/SKILL.md) for canonical symbols, reusable circuit shapes, static schematics and shared layout/rendering work.
+- Use [maintain-np-agents](.agents/skills/maintain-np-agents/SKILL.md) for shipped environment-guide maintenance and managed-copy synchronization.
+- Use [check-javascript](.agents/skills/check-javascript/SKILL.md) for JavaScript correctness audits and requested bug fixes. Audits remain read-only unless fixes are requested. Invoke any skill with `$` followed by its name; all preserve the applicable task scope and authorization.
+
 ## Shipped nP agents
 
 - Agent maintenance is required for every new feature or change to public nP behavior. Update all applicable `nP-agents/html/AGENTS.md`, `nP-agents/obsidian/AGENTS.md`, `nP-agents/nodejs/AGENTS.md` and `nP-agents/websites/AGENTS.md` in the same work as the implementation.
 - Keep signatures, defaults, units, terminal order, result formats, model assumptions and limitations aligned with current behavior. Update affected embedded examples and verify runnable snippets in the relevant environment. Distinguish capabilities of each environment and its supplied or pinned bundle; do not promise unavailable APIs.
 - Each shipped agent must remain self-contained for use outside this repository, without repository links or required parent/shared instructions. Preserve minimal deliverables and explicit, named nP steps; the primary task is code writing, with explanation and execution only when requested.
+- When maintaining shipped guides, follow `nP-agents/AGENTS.md` and the contributor verification requirements. The shipped guides' execution restrictions describe ordinary circuit-writing tasks, not verification of requested guide maintenance. Keep the complete-reading instruction near the beginning of every shipped guide so it survives automatic loading limits; retain each guide's end marker.
 - Update canonical agent files first, then refresh their managed distribution copies without overwriting user edits. For Obsidian, run `npm run agent:sync` and `npm run agent:check` in the `np-rf-analysis` plugin repository, then build and verify the plugin so its embedded agent matches. This does not authorize a commit, publication or deployment.
 - Leave `nP-agents/online-repl/` empty until the user explicitly requests its agent.
 

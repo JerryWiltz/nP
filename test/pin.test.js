@@ -1,4 +1,4 @@
-// Modified: 2026-11-22
+// Modified: 2026-11-24
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
@@ -19,7 +19,15 @@ function voltageAtCurrent(current) {
 }
 function biased(record, voltage, region = 'forward') {
     const d = selectedPin({model: record, region}), v = nP.V(voltage), r = nP.R(1000), ground = nP.Short();
-    return nP.nodal([v, 1, 0], [r, 1, 2], [d, 2, 0], [ground, 0], ['out', 2]);
+    return nP.nodal(
+        [v, 1, 0],
+        [r, 1, 2],
+        [d, 3, 4],
+        [ground, 5],
+        [nP.Tee(), 2, 3, 6],
+        [nP.Tee(), 0, 4, 5],
+        ['out', 6]
+    );
 }
 
 test('PIN retains sourced DC/RF parameters, selected region, own symbol and immutable DC definition', () => {
@@ -77,12 +85,37 @@ test('named/supplied/foreign-context records match through direct construction a
 test('one template gets separate solved states and RF resistance in two forward bias branches', () => {
     const d = selectedPin(), v = nP.V(2), r1 = nP.R(1000), r2 = nP.R(2000), ground = nP.Short();
     const before = JSON.stringify(d);
-    const circuit = nP.nodal([v, 1, 0], [r1, 1, 2], [r2, 1, 3], [d, 2, 0], [d, 3, 0], [ground, 0], ['out', 2, 3]);
+    const circuit = nP.nodal(
+        [v, 1, 10],
+        [nP.Tee(), 1, 11, 12],
+        [r1, 11, 2],
+        [r2, 12, 3],
+        [nP.Tee(), 2, 21, 22],
+        [nP.Tee(), 3, 23, 24],
+        [d, 21, 31],
+        [d, 23, 32],
+        [nP.Tee4(), 0, 10, 31, 32],
+        [ground, 0],
+        ['out', 22, 24]
+    );
     const points = circuit.operatingPoint.components.filter(c => c.constructorName === 'PIN').map(c => c.qPoint);
     assert.equal(points.length, 2); assert.ok(points[0].id > points[1].id);
     for (const q of points) close(q.vd, voltageAtCurrent(q.id), 1e-7);
     const a = selectedPin({qPoint: {vd: points[0].vd}}), b = selectedPin({qPoint: {vd: points[1].vd}}), open = nP.Open();
-    const fixed = nP.nodal([open, 1], [r1, 1, 2], [r2, 1, 3], [a, 2, 0], [b, 3, 0], [ground, 0], ['out', 2, 3]);
+    const fixed = nP.nodal(
+        [open, 1],
+        [open, 10],
+        [nP.Tee(), 1, 11, 12],
+        [r1, 11, 2],
+        [r2, 12, 3],
+        [nP.Tee(), 2, 21, 22],
+        [nP.Tee(), 3, 23, 24],
+        [a, 21, 31],
+        [b, 23, 32],
+        [nP.Tee4(), 0, 10, 31, 32],
+        [ground, 0],
+        ['out', 22, 24]
+    );
     circuit.spars.forEach((row, index) => row.slice(1).forEach((s, port) => {
         close(s.x, fixed.spars[index][port + 1].x, 1e-8);
         close(s.y, fixed.spars[index][port + 1].y, 1e-8);

@@ -1,5 +1,5 @@
 # nP agents
-<!-- Modified: 2026-11-18 -->
+<!-- Modified: 2026-11-24 -->
 
 ## Purpose
 
@@ -66,6 +66,16 @@ Shipped agent files must have no repository links, required parent instructions
 or shared-file dependencies. They must not require online documentation or
 downloads to write code against an already supplied library. This README
 records the project requirements; each shipped agent must stand on its own.
+
+These complete guides can exceed a coding assistant's automatic instruction
+loading limit. Each begins with a requirement to read the whole local file in
+bounded ranges and finishes with a matching end marker. Automatic discovery of
+the beginning is not a complete reading. This preserves the single-file,
+offline distribution; it does not increase the host's loading limit.
+
+The parent `AGENTS.md` governs maintenance of these guides. A guide's instructions
+to write circuits without executing them apply when using it for user circuits;
+contributors updating the guide still perform the required maintenance checks.
 
 For example, an HTML agent can be placed outside this repository in a working
 directory containing only its `AGENTS.md` and `nP.js`. Generated HTML can load

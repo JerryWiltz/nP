@@ -1,5 +1,52 @@
 # nP website code-writing agent
-<!-- Modified: 2026-11-22 -->
+<!-- Modified: 2026-11-25 -->
+
+## Read this complete file first
+
+Automatic instruction loading may supply only a prefix of this file. Before
+using this guide to write or change a circuit, explicitly read its complete
+local text in consecutive, bounded ranges through the final end marker:
+`### Detector shapes and measured schematic labels (newer renderer)
+
+Current standalone browser renderers detect diodeDetector and differentialDetector,
+or accept `nP.schematic(network,{shapes:['diodeDetector']})` and the corresponding
+differentialDetector name. They have one RF input; the DC measurement uses
+internal nodes and does not need another RF port.
+
+Single diode: optional series input C, Tee with L/R-to-Short input return,
+anode-to-cathode diode and output Tee with separate R-to-Short and C-to-Short
+load/bypass branches. Pair: coupled RF input to one diode, separate bias chokes,
+a common bias Tee/R and V/Short supply, and separate R/C output branches for
+both diodes. A supply Tee/C/Short bypass is optional. Junction, Schottky, Zener
+and varactor symbols preserve their numbered anode/cathode terminals. Other
+bias circuits or combined RC parts need another supported layout; do not alter
+the circuit to make this shape match.
+
+The shared engine places RF left, common bias above and related output/load
+branches on aligned baselines. Do not supply tuned coordinates, compensating
+spacing or graph/SVG corrections. Grouped/composed paths may end in these
+one-port boards: their interface is from:[1],to:[], so explicit sections use
+from:inputNode,to:[]. Boundaries accept string/finite-number labels; numeric
+and string IDs remain distinct. Two-port boards still require their output.
+
+Numeric R/L/C captions use engineering units such as 10 kΩ, 1 µH and 100 pF
+at the selected significantDigits. Named/wide node IDs use measured rounded
+enclosures; ordinary short numeric IDs keep circles. These presentation rules
+preserve the analysis and node identities. Verify availability in the supplied
+bundle.
+
+<!-- End of nP websites agent instructions -->`. A mention of that marker here is not the end.
+Retrieve missing ranges if output is truncated; a preview or search is not a
+complete reading. Reuse a complete reading while this file remains unchanged.
+Reading instructions is allowed during `--stop` and does not authorize running
+code, installing tools or modifying files. This guide needs no additional files
+or downloads to supply its instructions.
+
+When asked to maintain this guide itself, follow the contributor instructions
+applying to its location, including required verification and managed-copy
+updates. The circuit-writing persona and execution restrictions below apply to
+using the guide for user circuits, not to requested maintenance of the guide.
+Respect applicable workspace instructions and explicit user directions.
 
 ## Your task
 
@@ -160,6 +207,12 @@ Use `nP.cascade(first, second, ...)` for two-port stages in signal-flow order.
 result before another `.cas()` call. A completed network may be used as a
 component in a larger network with its declared external port order.
 There is no public `circuit()` constructor and no second DC netlist to write.
+
+Current standalone builds validate connections before automatic DC bias or RF:
+frequency rows and positive finite Ro must match across all components. nodal()
+rejects wire labels that do not appear exactly twice and duplicate output labels;
+each output label must pair with one component terminal. Older or pinned bundles
+may not enforce these errors; always follow the connection rules below.
 
 - A nodal component row is `[component, nodeForPort1, nodeForPort2, ...]`.
   Supply exactly one node label per actual port. Labels are finite numbers
@@ -530,7 +583,9 @@ XTI=3,TNOM=300.15,NBV=1,KF=0,AF=1 are generic defaults, not fitted data.
 No explicit package L/C, fitted breakdown temperature coefficient, self-heating
 or avalanche excess-noise model is supplied. Classical shot/thermal noise and
 direct weak IM are available; no large-signal clipping, quadratic remixing or
-rectified bias-shift calculation. A model symbol never changes the equations.
+rectified bias-shift calculation within the IM path. The separate rectify()
+method below supplies a weak DC correction in capable runtimes. A model symbol
+never changes the equations.
 
 A supplied Zener works without registration, rebuilding or fetching URLs:
 `var myZener = {name:'My Zener',schematicVariant:'zener',parameters:{IS:1.033e-15,N:1.001,BV:4.7,IBV:.005,RS:.387,CJO:258.9e-12,VJ:.8029,M:.3636,FC:.5}};`
@@ -607,9 +662,52 @@ VD=0.6 V and the 0–0.8 V/201-point sweep, so select low bias explicitly.
 The same external DC/RF/noise/direct-IM handoff applies. RS is included;
 package L/C and multi-junction package wiring are absent. No extra leakage
 resistor is added. The classical noise/direct Taylor law is not a measured
-detector fit or finite-power rectification simulation. Older bundles may
+detector fit or large-signal rectification simulation. Older bundles may
 export D() without these records; verify the supplied bundle supports the
 requested model.
+
+
+### Weak-signal RF-to-DC detection
+
+Current standalone bundles provide
+`network.rectify({frequencyHz,inputPowerDbm,inputPort:1,outputNodes:[positive,negative],outputPath:''})`.
+Verify the supplied runtime exposes rectify; older bundles and the pinned
+Obsidian worker may not. Do not emulate this API with a diode I-V lookup or
+AM demodulation when it is absent.
+
+Frequency is required positive Hz already in the constructed grid. Input power
+is available source dBm; `-Infinity` means RF off. inputPort is one-based and
+defaults to 1. The source and all unused external RF ports are matched to captured
+Ro. They add no DC source/load. Explicitly include DC returns, loads, bias and
+RF bypass/isolation components. outputNodes are positive/negative wire labels
+in outputPath (root default ''); nested namespaces use solveDC placement IDs.
+Numbers and strings are different node labels. Internal nodes can be measured
+without adding an external RF output port or its matched RF load.
+
+The method independently solves RF-off DC, including passive zero-bias circuits,
+and rebuilds each D() placement at that bias. It calculates loaded junction RMS
+RF voltages, their average quadratic currents and the coupled DC Jacobian
+response. Both diodes of a detector/reference pair and their shared bias network
+participate; reference RF leakage is calculated from the actual network. Use
+matching records and specified temperatures to study tracking; no package
+thermal coupling, mismatch or guaranteed sensitivity compensation is implied.
+
+Immutable outputs: baselineVoltage (RF off), deltaVoltage (RF-induced change),
+voltage (their sum), sensitivityVoltsPerWatt (delta/input watts, null at RF off),
+operatingPoint (RF-off nodes/placements), sources (per-placement junctionRmsVolts,
+currentAmps equivalent generated current, junctionBiasShiftVolts and junctionRatio),
+and dcResponse. Its node deltaVoltage and component terminalVoltages/currents are
+increments, not totals. RF-off output polarity and finite DC return matter.
+Existing template Q, spars, ivTable and ordinary solveDC semantics stay unchanged.
+
+Named/supplied D() records share the same rectification path. Other nonlinear
+families, missing physical DC models and attached mod()/signal data reject.
+RF peak/thermal-voltage and charge-curvature ratios, and DC-shift/thermal-voltage
+ratio, must each be at most 0.1; excessive drive rejects. This is second-order
+single-CW square-law detection, with no guaranteed error bound near model
+boundaries, high-power peak detection, compression, charging/envelope transient,
+self-heating, harmonic balance or detector-noise/TSS calculation. This new method
+is separate from the existing two-tone IM results.
 
 Legacy `diode1N4148({...})` is a different datasheet-fit model, with options
 `biasVoltage`, `temperatureK`, `ivStart`, `ivStop`, `ivPoints` and diode parameters;
@@ -1123,3 +1221,5 @@ fixture is excluded. Independent SPICE agreement is tight, but comparison with
 the measured 2 V/15 mA table shows up to about 2.1 dB S21 magnitude and 28° phase
 difference over 0.5–6 GHz. Do not promise a close measured-data fit, packaged
 NF or large-signal behavior. Existing nominal-temperature limitations apply.
+
+<!-- End of nP websites agent instructions -->

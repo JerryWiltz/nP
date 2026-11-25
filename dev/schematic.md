@@ -1,6 +1,11 @@
-<!-- Modified: 2026-11-21 -->
+<!-- Modified: 2026-11-24 -->
 
 # Schematic development harness
+
+Analyzed circuits use paired wire labels and explicit junction components for
+branches. The parallel-resistor case includes its input/output tees. Renderer
+tests of implicit multiway wires use drawing-only topology fixtures; they do
+not claim RF or DC analysis of those descriptions.
 
 Open `dev/schematic.html` with a local server. It draws 32 single-network circuits with the public synchronous `nP.schematic(network, options)` API. Three series, eight ladder, and five branchline cases pass one shape name; one more case passes node-bounded series and ladder sections. The other cases use network-only layout. The cases in `schematicCases.js` cover direct component arrangements, cascades, split/rejoin networks, filters, attenuators, splitters, a Wilkinson divider, a coupled line, and coupler fixtures. The nine circuits in `schematicStressCases.js` include one-cell and two-cell branchlines, a microstrip branchline, a rat-race, a bridge, a ladder, and reordered nodal rows.
 

@@ -1,4 +1,4 @@
-// Modified: 2026-11-22
+// Modified: 2026-11-25
 import {diodeLinearResponse} from './diodes/diodeLinear';
 import {deviceProducts} from './transistors/deviceRf';
 import {bjtProducts} from './transistors/bjt/bjtRf';
@@ -42,7 +42,7 @@ export function connectionModel(components, connectionMap) {
 	return {type: 'connection', components: components, connectionMap: connectionMap};
 }
 
-var solveConnection = function (model, frequency, externalIncident, componentSources) {
+export function solveConnection(model, frequency, externalIncident, componentSources) {
 	var componentPorts = model.components.reduce(function (total, component) {
 		return total + portCount(component);
 	}, 0);
@@ -95,7 +95,7 @@ var solveConnection = function (model, frequency, externalIncident, componentSou
 		offset += childPorts;
 	}
 	return {outgoing: incident.slice(componentPorts), childIncidents: childIncidents};
-};
+}
 
 var prepare = function (nport, f1, f2, input1, input2) {
 	var model = nport._intermod;
@@ -111,7 +111,7 @@ var prepare = function (nport, f1, f2, input1, input2) {
 	return {children: children};
 };
 
-var diodeJunctionVoltage = function (nport, frequency, incident, model) {
+export function diodeJunctionVoltage(nport, frequency, incident, model) {
 	var reflected = linearOutput(nport, frequency, incident);
 	if (model.externalConductance !== undefined) {
 		var terminalVoltage = incident[0].add(reflected[0]).sub(incident[1].add(reflected[1]))
@@ -122,7 +122,7 @@ var diodeJunctionVoltage = function (nport, frequency, incident, model) {
 	var current = incident[0].sub(reflected[0]).div(complex(Math.sqrt(model.referenceImpedance), 0));
 	var junctionImpedance = complex(model.conductance, 2 * Math.PI * frequency * model.capacitance).inv();
 	return current.mul(junctionImpedance);
-};
+}
 
 var diodeProducts = function (nport, frequency, context, tones, model) {
 	var output = zeroVector(2);

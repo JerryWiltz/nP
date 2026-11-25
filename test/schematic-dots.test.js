@@ -1,10 +1,11 @@
-// Modified: 2026-11-08
+// Modified: 2026-11-24
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DOMParser} from '@xmldom/xmldom';
 import * as nP from '../src/index.js';
 import {schematicGraph, schematicTopology, schematicSvg} from '../src/np-chart/src/schematic';
 import {schematicSymbols} from '../src/np-chart/src/schematicSymbols';
+import {drawingNetwork} from './fixtures/schematic-topology';
 
 function circles(svg, kind) {
     const document = new DOMParser().parseFromString(svg, 'image/svg+xml');
@@ -58,7 +59,7 @@ test('partial dot options keep defaults and are not retained by subsequent calls
 
 test('real wire junctions remain visible when optional dot categories are hidden', () => {
     const r1 = nP.R(50);
-    const circuit = nP.nodal([r1, 1, 2], [r1, 2, 3], [r1, 2, 4], ['out', 1, 3, 4]);
+    const circuit = drawingNetwork([r1, 1, 2], [r1, 2, 3], [r1, 2, 4], ['out', 1, 3, 4]);
     const graph = schematicGraph(circuit);
     assert.ok(graph.junctions.length > 0);
     const svg = schematicSvg(circuit, {dots: {ports: false, nodes: false, terminals: false}});

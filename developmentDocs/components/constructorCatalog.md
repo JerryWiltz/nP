@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-22 -->
+<!-- Modified: 2026-11-25 -->
 # nP constructor catalog
 
 This catalog covers the 67 public functions that produce n-port objects from `src/np-nport/src/index.js`, the digital waveform functions from `src/np-digital`, and the exported math and low-pass prototype functions. Each JS call below spells out the **current defaults** where they exist. Each argument or property appears on its own line. Units are in comments. Each constructor has its own heading and code block.
@@ -53,6 +53,17 @@ No new options or symbol-specific alignment settings are required.
 Constructor source calls `schematicPart(publicName, parameters)` instead of naming an SVG. The generated constructor map reads `schematics/symbol-catalog.json`, and the symbol check verifies that the selected runtime symbol has the same port count as the returned nPort.
 
 `nP.schematic(circuit)` mounts the drawing and returns `{svg, graph, topology, detected, error}`. `detected` independently reports a reusable shape-options object or null; the detector recognizes complete networks fitting the named boards, including ideal and microstrip ladder, bridge, branchline, edge-coupled and divider arrangements. Explicit shapes control layout without influencing detection, while an omitted shape uses the detected board or falls back to the generic board when no whole-network shape matches. Passive divider and combiner connections are indistinguishable, so the automatic default is powerDivider; explicit powerCombiner still selects the reflected view. Grouped nodal rows provide section membership; the renderer recognizes those groups and infers boundaries. Automatic grouping of entirely unannotated networks remains future work. `error` is null on success; on failure the drawing properties are null and the error is returned so later JavaScript can continue. The `svg` property is the displayed SVG element. `graph` contains component placements, nodes, wires, port coordinates, and the viewBox; cascades also include their construction tree. `topology` contains parts and their connections: port-to-port for cascades, and node membership for the supported nodal layout. Both objects are plain, JSON-serializable snapshots; editing them does not change the circuit or drawing.
+
+The newer one-RF-port `diodeDetector` and `differentialDetector` boards recognize
+loaded single junctions and shared-bias detector/reference pairs. Optional input
+coupling (single diode), L/R input return, and optional supply bypass (pair) are
+structural variants; separate load R and bypass C branches are required. They
+use existing canonical junction/Schottky/Zener/varactor symbols and measured
+relation layout. A terminal shape declares `{from:[1],to:[]}`; composed sections
+can use string/finite-number boundaries and `to:[]` when the interface permits.
+Simple R/L/C captions now use engineering SI prefixes, preserving significant
+digits and numerical data. Named/long node IDs use measured rounded enclosures
+rather than overflowing fixed circles. See [detector shapes](../schematics/detectorShapes.md).
 
 `nP.schematic(network)` defaults to `dots: {ports: true, nodes: true, terminals: false}`. Set `dots: {terminals: true}` to add dots where wires meet component leads; fields omitted from `dots` keep their defaults. These boolean options change presentation only and work with nodal, grouped, cascade and signal-path drawings. Circled node-number labels, actual wire-junction dots and intrinsic canonical-symbol artwork remain visible. See [Dot options](../../docs/schematics.md#dot-options).
 
@@ -1578,7 +1589,7 @@ var chain = amp.cas(
 );
 ```
 
-`cas()` returns a **new** two-port. It combines the S matrices, noise covariance, deterministic signal waves when present, and known internal intermodulation sources without changing either input object. Both inputs must have the same frequency rows. `nP.cascade(amp, attenuator)` performs the same two-port operation; `nP.nodal()` handles arbitrary multiport connections.
+`cas()` returns a **new** two-port. It combines the S matrices, noise covariance, deterministic signal waves when present, and known internal intermodulation sources without changing either input object. Both inputs must have matching frequency rows and the same positive, finite captured `Ro`. `nP.cascade(amp, attenuator)` performs the same two-port operation and checks all stages before any partial composition; `nP.nodal()` handles arbitrary multiport connections. All three reject incompatible contexts before automatic DC bias solving or RF analysis, without interpolation or renormalization. `nodal()` additionally rejects labels that do not occur exactly twice and duplicate output labels; each output must pair with one component terminal. Use explicit junctions for branches.
 
 Here, `stage` is the single attenuator used in the earlier data examples. `chain` is the amplifier followed by the attenuator. The `.out()` calls below measure `chain`; the noise options example changes its measurement conditions.
 
@@ -1645,6 +1656,21 @@ var measured = chain.out(
 ```
 
 By default, the source and all terminations are matched. The source and unused-port terminations are at 290 K; the selected output termination is at 0 K. `noiseFloor` is a 1 Hz output noise density. For intermodulation, the final options object can also contain `twoTone` to override the object's configured two-tone settings for that call.
+
+### Weak-signal RF-to-DC analysis
+
+`network.rectify({frequencyHz,inputPowerDbm,inputPort:1,outputNodes:[positive,negative],outputPath:''})`
+solves RF-off DC, junction RF voltages and a second-order DC correction on the
+retained network. It supports named/supplied `D()` records; other nonlinear
+families reject. Source power is available dBm into matched RF ports at captured
+Ro; explicit DC loads/returns are required. The frequency must already exist.
+`inputPowerDbm:-Infinity` means RF off. Outputs are signed `baselineVoltage`,
+`deltaVoltage`, `voltage` and `sensitivityVoltsPerWatt` (null at RF off), plus
+immutable operating-point/source/increment records. Nested outputPath uses DC
+placement IDs. Excessive junction RF voltage or DC shift rejects. No attached
+mod()/signal, compression, charging transient or detector-noise analysis.
+See [rectification](../analysis/rectification.md) for the complete contract and
+[the browser example](../../dev/schottkyDetector.html).
 
 ### Older output methods
 

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-19 -->
+<!-- Modified: 2026-11-25 -->
 
 # SVG schematic style guide
 
@@ -167,3 +167,14 @@ Use this structure for a complete schematic; the composer emits the equivalent e
 4. Before publishing, confirm that node circles and all text clear electrical strokes; electrical centering is correct; blocks have square corners; embedded symbols match the library; wires meet ports precisely; nothing is clipped; and 40-unit margins remain. When showing subcircuits and their combined network, show the detailed parts first and the combined schematic immediately before its code or results unless the note calls for another order.
 
 The validator recomposes an SVG from its embedded description and current canonical symbols and requires an exact match. It also checks described routing, label margins, and some clearances. It cannot prove agreement with an external sketch or replace rendered visual inspection. Move questionable annotations rather than accepting near contact.
+
+## Runtime named-node enclosures
+
+Runtime nodal networks also accept string and long numeric node identifiers.
+Preserve their identity and displayed text. Short numeric IDs retain circled
+markers; wider identifiers use measured rounded enclosures so names remain
+legible. Use the same enclosure metrics in annotation collision checks, rendering
+and view bounds across board, cascade and drawing-input paths. This does not
+change the positive-integer node contract of static RF circuit descriptions or
+canonical symbol geometry. Simple numeric R/L/C values use engineering SI
+prefixes before caption measurement, retaining the requested significant digits.

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-15 -->
+<!-- Modified: 2026-11-24 -->
 # Nodal Analysis
 
 `nP.nodal()` combines arbitrary one-port and multiport S-parameter objects into a new n-port. It is the general composition tool for circuit topologies that are not a simple two-port cascade.
@@ -21,7 +21,7 @@ var result = nP.nodal(
 
 The number of labels after a component must equal that component's number of ports. The order of those labels is the component's public port order.
 
-Connection labels are identifiers, not electrical voltages. Equal labels tell the algorithm which wave ports are directly connected. Labels may be any integers used consistently; their numeric magnitude and ordering have no electrical meaning.
+Connection labels are identifiers, not electrical voltages. Equal labels tell the algorithm which wave ports are directly connected. Labels are strings or finite numbers; numeric and string labels are distinct. Their numeric magnitude and ordering have no electrical meaning.
 
 ## Pairwise connection rule
 
@@ -43,7 +43,7 @@ var divider = nP.nodal(
 );
 ```
 
-The current implementation does not issue a clear validation error for every malformed label pattern. Callers and future validation work must preserve this pairwise invariant.
+`nodalConnections()` validates labels after flattening shape groups and before DC descriptors, bias solving or RF matrix assembly. A label appearing once or more than twice raises an error identifying the label and its count. Each output label must pair with a component terminal; two output entries cannot pair with each other. This validation applies to every placement, including reused objects and reordered rows, without changing the caller's arrays.
 
 ## Wave interpretation
 
@@ -79,7 +79,7 @@ Component blocks appear in the same order as the arguments. Within each block, S
 - The number of frequency iterations.
 - The settings snapshot captured by the result.
 
-All participating components must have aligned frequency rows and the same reference impedance. The routine rejects mismatched frequency rows, indexes every component by the same row number, and does not interpolate or renormalize.
+All participating components must have aligned frequency rows and the same positive, finite reference impedance. Shared `validateNetworkComponents()` checks captured component contexts before DC inspection and is also used by `.cas()`, `cascade()` and RF rebuilding. `cascade()` checks all arguments before its first partial composition. The routines do not interpolate or renormalize.
 
 Construct components with matching frequency lists and reference impedances. Separate circuit contexts are valid when those settings agree.
 

@@ -1,4 +1,4 @@
-// Modified: 2026-11-19
+// Modified: 2026-11-25
 // Declarative board settings consumed by the schematic layout interpreter.
 
 function twoTerminalSlot(name, symbols) {
@@ -226,7 +226,122 @@ const commonEmitterVariants = ['split', 'combined', 'resistor'].flatMap(emitter 
         (bypass ? ['collectorFirst', 'sourceFirst'] : ['sourceFirst'])
             .map(order => dividerBiasedAmplifierBoard(emitter, bypass, common, order)))));
 
+const detectorDiodes = ['schottky-diode', 'diode-1n4148', 'zener-diode', 'varactor-diode'];
+
+function detectorOutput(prefix) {
+    const slot = suffix => prefix + suffix;
+    return {
+        slots: [{name: slot('Output'), symbols: ['tee'], portCount: 3,
+            ports: {device: [1], load: [2, 3], bypass: [2, 3]}},
+        twoTerminalSlot(slot('Load'), ['resistor']), twoTerminalSlot(slot('Bypass'), ['capacitor']),
+        groundSlot(slot('LoadGround')), groundSlot(slot('BypassGround'))],
+        components: [
+            {slot: slot('Output'), anchor: 'device', directions: {device: 'up', load: 'left', bypass: 'right'}},
+            {slot: slot('Load'), anchor: 'in', directions: {in: 'up', out: 'down'}},
+            {slot: slot('Bypass'), anchor: 'in', directions: {in: 'up', out: 'down'}},
+            {slot: slot('LoadGround'), anchor: 'in', directions: {in: 'up'}},
+            {slot: slot('BypassGround'), anchor: 'in', directions: {in: 'up'}}],
+        wires: [
+            {from: {slot: slot('Diode'), port: 'cathode'}, to: {slot: slot('Output'), port: 'device'}},
+            {from: {slot: slot('Output'), port: 'load'}, to: {slot: slot('Load'), port: 'in'}},
+            {from: {slot: slot('Output'), port: 'bypass'}, to: {slot: slot('Bypass'), port: 'in'}},
+            {from: {slot: slot('Load'), port: 'out'}, to: {slot: slot('LoadGround'), port: 'in'}},
+            {from: {slot: slot('Bypass'), port: 'out'}, to: {slot: slot('BypassGround'), port: 'in'}}]
+    };
+}
+
+function diodeDetectorBoard(coupled) {
+    const output = detectorOutput('detector');
+    const slots = [{name: 'detectorDiode', symbols: detectorDiodes, portCount: 2, ports: {anode: [1], cathode: [2]}},
+        {name: 'inputJunction', symbols: ['tee'], portCount: 3, ports: {input: [2, 3], device: [2, 3], return: [1]}},
+        twoTerminalSlot('return', ['inductor', 'resistor']), groundSlot('returnGround'), ...output.slots];
+    const components = [
+        {slot: 'detectorDiode', anchor: 'anode', directions: {anode: 'left', cathode: 'right'}},
+        {slot: 'inputJunction', anchor: 'device', directions: {input: 'left', device: 'right', return: 'down'}},
+        {slot: 'return', anchor: 'in', directions: {in: 'up', out: 'down'}},
+        {slot: 'returnGround', anchor: 'in', directions: {in: 'up'}}, ...output.components];
+    const wires = [
+        {from: {slot: 'inputJunction', port: 'device'}, to: {slot: 'detectorDiode', port: 'anode'}},
+        {from: {slot: 'inputJunction', port: 'return'}, to: {slot: 'return', port: 'in'}},
+        {from: {slot: 'return', port: 'out'}, to: {slot: 'returnGround', port: 'in'}}, ...output.wires];
+    if (coupled) {
+        slots.push(twoTerminalSlot('input', ['capacitor']));
+        components.unshift({slot: 'input', anchor: 'out', directions: {in: 'left', out: 'right'}});
+        wires.push({from: {externalPort: 1}, to: {slot: 'input', port: 'in'}},
+            {from: {slot: 'input', port: 'out'}, to: {slot: 'inputJunction', port: 'input'}});
+    } else wires.push({from: {externalPort: 1}, to: {slot: 'inputJunction', port: 'input'}});
+    return {name: 'diodeDetector', version: 1, variant: coupled ? 'coupled' : 'direct',
+        match: {externalPortCount: 1, slots}, board: {grid: 10, layout: 'relations', components, wires,
+            order: [{axis: 'x', slots: [...(coupled ? ['input'] : []), 'inputJunction', 'detectorDiode', 'detectorOutput']}],
+            centerlines: [{axis: 'y', reference: {slot: 'returnGround', port: 'in'},
+                align: [{slot: 'detectorLoadGround', port: 'in'}, {slot: 'detectorBypassGround', port: 'in'}]}],
+            externalPorts: [{port: 1, from: coupled ? {slot: 'input', port: 'in'} :
+                {slot: 'inputJunction', port: 'input'}, side: 'left'}]}};
+}
+
+function differentialDetectorBoard(supplyBypass) {
+    const outputs = [detectorOutput('detector'), detectorOutput('reference')];
+    const slots = [twoTerminalSlot('input', ['capacitor']),
+        {name: 'inputJunction', symbols: ['tee'], portCount: 3, ports: {bias: [1], input: [2, 3], device: [2, 3]}},
+        ...['detector', 'reference'].flatMap(prefix => [
+            {name: prefix + 'Diode', symbols: detectorDiodes, portCount: 2, ports: {anode: [1], cathode: [2]}},
+            twoTerminalSlot(prefix + 'Choke', ['inductor'])]),
+        {name: 'biasJunction', symbols: ['tee'], portCount: 3, ports: {supply: [1], detector: [2, 3], reference: [2, 3]}},
+        twoTerminalSlot('biasResistor', ['resistor']),
+        {name: 'source', symbols: ['voltage-source'], portCount: 2, ports: {in: [1], out: [2]}},
+        groundSlot('sourceGround'), ...outputs.flatMap(output => output.slots)];
+    const components = [
+        {slot: 'input', anchor: 'out', directions: {in: 'left', out: 'right'}},
+        {slot: 'inputJunction', anchor: 'device', directions: {input: 'left', device: 'right', bias: 'up'}},
+        ...['detector', 'reference'].flatMap(prefix => [
+            {slot: prefix + 'Diode', anchor: 'anode', directions: {anode: 'left', cathode: 'right'}},
+            {slot: prefix + 'Choke', anchor: 'out', directions: {in: 'up', out: 'down'}}]),
+        {slot: 'biasJunction', anchor: 'supply', directions: {supply: 'up', detector: 'left', reference: 'right'}},
+        {slot: 'biasResistor', anchor: 'out', directions: {in: 'up', out: 'down'}},
+        {slot: 'source', anchor: 'in', directions: {in: 'up', out: 'down'}},
+        {slot: 'sourceGround', anchor: 'in', directions: {in: 'up'}}, ...outputs.flatMap(output => output.components)];
+    const wires = [
+        {from: {externalPort: 1}, to: {slot: 'input', port: 'in'}},
+        {from: {slot: 'input', port: 'out'}, to: {slot: 'inputJunction', port: 'input'}},
+        {from: {slot: 'inputJunction', port: 'device'}, to: {slot: 'detectorDiode', port: 'anode'}},
+        {from: {slot: 'detectorChoke', port: 'out'}, to: {slot: 'inputJunction', port: 'bias'}},
+        {from: {slot: 'referenceChoke', port: 'out'}, to: {slot: 'referenceDiode', port: 'anode'}},
+        {from: {slot: 'biasResistor', port: 'out'}, to: {slot: 'biasJunction', port: 'supply'}},
+        {from: {slot: 'biasJunction', port: 'detector'}, to: {slot: 'detectorChoke', port: 'in'}},
+        {from: {slot: 'biasJunction', port: 'reference'}, to: {slot: 'referenceChoke', port: 'in'}},
+        {from: {slot: 'source', port: 'out'}, to: {slot: 'sourceGround', port: 'in'}},
+        ...outputs.flatMap(output => output.wires)];
+    if (supplyBypass) {
+        slots.push({name: 'supplyJunction', symbols: ['tee'], portCount: 3, ports: {source: [1], bias: [2, 3], bypass: [2, 3]}},
+            twoTerminalSlot('supplyBypass', ['capacitor']), groundSlot('supplyBypassGround'));
+        components.push({slot: 'supplyJunction', anchor: 'source', directions: {source: 'right', bias: 'up', bypass: 'down'}},
+            {slot: 'supplyBypass', anchor: 'in', directions: {in: 'up', out: 'down'}},
+            {slot: 'supplyBypassGround', anchor: 'in', directions: {in: 'up'}});
+        wires.push({from: {slot: 'supplyJunction', port: 'source'}, to: {slot: 'source', port: 'in'}},
+            {from: {slot: 'supplyJunction', port: 'bias'}, to: {slot: 'biasResistor', port: 'in'}},
+            {from: {slot: 'supplyJunction', port: 'bypass'}, to: {slot: 'supplyBypass', port: 'in'}},
+            {from: {slot: 'supplyBypass', port: 'out'}, to: {slot: 'supplyBypassGround', port: 'in'}});
+    } else wires.push({from: {slot: 'source', port: 'in'}, to: {slot: 'biasResistor', port: 'in'}});
+    return {name: 'differentialDetector', version: 1, variant: supplyBypass ? 'supply-bypass' : 'basic',
+        match: {externalPortCount: 1, slots}, board: {grid: 10, layout: 'relations', components, wires,
+            order: [{axis: 'x', slots: ['input', 'inputJunction', 'detectorDiode', 'detectorOutput', 'referenceChoke', 'referenceDiode', 'referenceOutput']},
+                {axis: 'x', slots: ['biasResistor', ...(supplyBypass ? ['supplyBypass'] : []), 'source']},
+                {axis: 'y', slots: [['sourceGround', ...(supplyBypass ? ['supplyBypassGround'] : [])], 'biasJunction', ['detectorChoke', 'referenceChoke'], 'inputJunction']},
+                {axis: 'y', slots: ['biasResistor', 'biasJunction']}],
+            centerlines: [
+                {axis: 'y', reference: {slot: 'detectorDiode', port: 'anode'}, align: [{slot: 'referenceDiode', port: 'anode'}]},
+                {axis: 'y', reference: {slot: 'detectorOutput', port: 'device'}, align: [{slot: 'referenceOutput', port: 'device'}]},
+                {axis: 'y', reference: {slot: 'detectorLoadGround', port: 'in'}, align: [
+                    {slot: 'detectorBypassGround', port: 'in'}, {slot: 'referenceLoadGround', port: 'in'}, {slot: 'referenceBypassGround', port: 'in'}]}],
+            externalPorts: [{port: 1, from: {slot: 'input', port: 'in'}, side: 'left'}]}};
+}
+
+const diodeDetectorVariants = [true, false].map(diodeDetectorBoard);
+const differentialDetectorVariants = [true, false].map(differentialDetectorBoard);
+
 export const schematicShapeBoards = {
+    diodeDetector: {...diodeDetectorVariants[0], detect: true, interface: {from: [1], to: []}, alternatives: diodeDetectorVariants.slice(1)},
+    differentialDetector: {...differentialDetectorVariants[0], detect: true, interface: {from: [1], to: []}, alternatives: differentialDetectorVariants.slice(1)},
     commonSource: {...commonSourceVariants[0], detect: true, interface: {from: [1], to: [2]}, alternatives: commonSourceVariants.slice(1)},
     commonEmitter: {...commonEmitterVariants[0], detect: true, interface: {from: [1], to: [2]},
         alternatives: commonEmitterVariants.slice(1)},

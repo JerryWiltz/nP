@@ -1,0 +1,112 @@
+<!doctype html>
+<!-- Modified: 2026-11-25 -->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Schottky power detectors</title>
+    <script src="../dist/nP.js"></script>
+</head>
+<body>
+    <h1>Schottky power detectors</h1>
+    <p>Second-order DC output at 1 GHz and 27 °C. This is a weak-signal analysis.</p>
+    <h2>Zero-bias detector</h2>
+    <p>DC output is measured across the 10 kΩ load. The input choke provides its DC return.</p>
+    <div id="singleSchematic"></div>
+    <h2>Detector and reference with shared bias</h2>
+    <p>The DC measurement is detector minus reference. Both junctions share the 1 V supply and 10 kΩ bias resistor.</p>
+    <p>Both drawings use automatically detected detector shapes. <strong>Fit drawing</strong> shows the complete view.</p>
+    <div id="differentialSchematic"></div>
+    <h2>Detected output</h2>
+    <script>
+        nP.global.fList = [1e9];
+        nP.global.twoTone = undefined;
+        nP.global.Ro = 50;
+        nP.global.Temp = 300.15;
+
+        var d1 = nP.D({model: 'SMS7630', temperature: 300.15});
+        var t1 = nP.Tee();
+        var t2 = nP.Tee();
+        var l1 = nP.L(1e-6);
+        var c1 = nP.C(1e-9);
+        var c2 = nP.C(100e-12);
+        var r1 = nP.R(10000);
+        var ground = nP.Short();
+        var detector = nP.nodal(
+            [c1, 'rf', 'input'],
+            [t1, 'choke', 'input', 'anode'],
+            [l1, 'choke', 'return'],
+            [ground, 'return'],
+            [d1, 'anode', 'cathode'],
+            [t2, 'cathode', 'load', 'bypass'],
+            [r1, 'load', 'ground'],
+            [ground, 'ground'],
+            [c2, 'bypass', 'capGround'],
+            [ground, 'capGround'],
+            ['out', 'rf']
+        );
+        var singleDrawing = nP.schematic(detector, {mount: '#singleSchematic'});
+
+        // Two matched junctions share a bias resistor and specified temperature.
+        // The second junction receives only RF leakage through the bias network.
+        var d2 = nP.D({model: 'SMS7630', temperature: 300.15});
+        var d3 = nP.D({model: 'SMS7630', temperature: 300.15});
+        var v1 = nP.V(1);
+        var r2 = nP.R(10000);
+        var r3 = nP.R(1000);
+        var r4 = nP.R(1000);
+        var l2 = nP.L(1e-6);
+        var l3 = nP.L(1e-6);
+        var c3 = nP.C(1e-9);
+        var c4 = nP.C(100e-12);
+        var c5 = nP.C(100e-12);
+        var t3 = nP.Tee();
+        var t4 = nP.Tee();
+        var t5 = nP.Tee();
+        var t6 = nP.Tee();
+        var t7 = nP.Tee();
+        var c6 = nP.C(10e-9);
+        var differentialDetector = nP.nodal(
+            [v1, 'supplyTap', 'supplyGround'],
+            [ground, 'supplyGround'],
+            [t7, 'supplyTap', 'supply', 'decouple'],
+            [c6, 'decouple', 'decoupleGround'],
+            [ground, 'decoupleGround'],
+            [r2, 'supply', 'rail'],
+            [t3, 'rail', 'feed1', 'feed2'],
+            [l2, 'feed1', 'bias1'],
+            [l3, 'feed2', 'anode2'],
+            [c3, 'rf', 'input'],
+            [t4, 'bias1', 'input', 'anode1'],
+            [d2, 'anode1', 'cathode1'],
+            [t5, 'cathode1', 'detector', 'bypass1'],
+            [r3, 'detector', 'ground1'],
+            [ground, 'ground1'],
+            [c4, 'bypass1', 'capGround1'],
+            [ground, 'capGround1'],
+            [d3, 'anode2', 'cathode2'],
+            [t6, 'cathode2', 'reference', 'bypass2'],
+            [r4, 'reference', 'ground2'],
+            [ground, 'ground2'],
+            [c5, 'bypass2', 'capGround2'],
+            [ground, 'capGround2'],
+            ['out', 'rf']
+        );
+        var differentialDrawing = nP.schematic(differentialDetector, {mount: '#differentialSchematic'});
+
+        var detected = [['Input (dBm)', 'Single diode (µV)', 'Differential (µV)']];
+        for (var power = -90; power <= -60; power += 5) {
+            var single = detector.rectify({frequencyHz: 1e9, inputPowerDbm: power,
+                outputNodes: ['load', 'ground']});
+            var differential = differentialDetector.rectify({frequencyHz: 1e9, inputPowerDbm: power,
+                outputNodes: ['detector', 'reference']});
+            detected.push([power, single.deltaVoltage * 1e6, differential.deltaVoltage * 1e6]);
+        }
+        nP.lineChart({inputTable: [detected], title: 'RF-induced DC output', metricPrefix: 'none',
+            xAxisTitle: 'Available RF input (dBm)', yAxisTitle: 'DC change (µV)'});
+        nP.lineTable({inputTable: [detected], metricPrefix: 'none', columnWidth: 180});
+        var sensitivity = 'Differential sensitivity at −60 dBm: ' +
+            differential.sensitivityVoltsPerWatt.toFixed(2) + ' V/W';
+        nP.log(sensitivity);
+    </script>
+</body>
+</html>

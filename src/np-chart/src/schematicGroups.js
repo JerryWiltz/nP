@@ -1,4 +1,4 @@
-// Modified: 2026-11-13
+// Modified: 2026-11-25
 import {matchSchematicBoard} from './schematicBoardInterpreter';
 import {boardInterface, validateSchematicSections} from './schematicBoardComposition';
 
@@ -81,10 +81,11 @@ function interfaceCandidates(root, region, definitions, boards, geometry, depths
             if (region.boundaries.includes(root.externalNodes[0]) && !from.includes(root.externalNodes[0]) ||
                 root.externalNodes.slice(1).some(node => region.boundaries.includes(node) && !to.includes(node))) continue;
             if (!matchSchematicBoard({kind: 'nodal', components, externalNodes}, definition, {...geometry, boards})) continue;
-            const meanFrom = from.reduce((sum, node) => sum + (depths.get(node) ?? 0), 0) / from.length;
-            const meanTo = to.reduce((sum, node) => sum + (depths.get(node) ?? 0), 0) / to.length;
+            const meanFrom = from.reduce((sum, node) => sum + (depths.get(node) ?? 0), 0) / (from.length || 1);
+            const meanTo = to.reduce((sum, node) => sum + (depths.get(node) ?? 0), 0) / (to.length || 1);
             candidates.push({section: {name, from: nodesValue(from), to: nodesValue(to)},
-                cost: meanFrom - meanTo, priority: definition.detectionPriority ?? 0});
+                cost: from.length && to.length ? meanFrom - meanTo : 0,
+                priority: definition.detectionPriority ?? 0});
         }
     }
     return candidates.sort((a, b) => a.cost - b.cost || b.priority - a.priority);

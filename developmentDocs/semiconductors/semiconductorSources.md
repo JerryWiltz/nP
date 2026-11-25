@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-22 -->
+<!-- Modified: 2026-11-25 -->
 # Semiconductor sources of truth
 
 This is the provenance index for the twelve implemented semiconductor constructors.
@@ -192,3 +192,14 @@ implemented numerical models.
 
 [skyworks-varactor]: https://www.skyworksinc.com/-/media/SkyWorks/Documents/Products/1-100/Varactor_SPICE_Model_AN_200315C.pdf
 [smv1231]: https://www.skyworksinc.com/-/media/F9C9BC1315644EB890723BD8C726746E.pdf
+
+## RF-to-DC detector analysis
+
+[Weak-signal rectification](../analysis/rectification.md) derives the average
+quadratic current `0.5 * Isecond * Vrms^2` from the existing D() current law.
+Its loaded RF excitation and shared DC Jacobian response are nP derivations;
+[Skyworks detector theory](https://www.skyworksinc.com/-/media/SkyWorks/Documents/Products/1-100/200826A.pdf)
+describes square-law detection and impedance dependence. The independent
+`schottky-detector.cir` and `schottky-differential-detector.cir` transient decks
+validate weak DC outputs under the same card/temperature/load conditions.
+They do not validate high-power detection, self-heating or measured sensitivity.

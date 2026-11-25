@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-21 -->
+<!-- Modified: 2026-11-25 -->
 # Schottky diode records
 
 `D({model: 'SMS7621'})` and `D({model: 'SMS7630'})` select the Skyworks
@@ -84,6 +84,17 @@ card's current/charge derivatives through third order and explicit SI units.
 Two-tone checks verify 20/30 dB product slopes per 10 dB equal-tone increase.
 These checks validate the implementation of the printed card. They do not
 establish measured detector sensitivity, package bandwidth, zero-bias/excess/
-avalanche noise, compression or finite-power rectification. The shared
+avalanche noise, compression or large-signal rectification. The shared
 classical shot-noise approximation and direct-Taylor omissions in the
 [diode contract](diodeModels.md) still apply.
+
+## Weak-signal power detection
+
+Current networks also expose `rectify()` for a single CW input's second-order
+DC output, using these same named/supplied records and the physical bias/load
+network. It solves passive RF-off bias, intrinsic junction excitation and the
+coupled DC increment, including detector/reference pairs sharing a bias resistor.
+See [analysis contract and independent transient references](../analysis/rectification.md).
+This separate analysis does not alter fixed-Q S-parameters, two-tone outputs,
+or solveDC semantics, and is not a packaged detector sensitivity/noise fit or
+a high-power/charging-transient solver.

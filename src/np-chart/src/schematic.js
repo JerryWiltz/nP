@@ -1,4 +1,4 @@
-// Modified: 2026-11-22
+// Modified: 2026-11-25
 import {schematicSymbols} from './schematicSymbols';
 import {nodalBlockSymbol, symbolForSchematicEntry} from './nodalBlockSymbol';
 import {schematicShapeBoards} from './schematicShapeBoards';
@@ -6,6 +6,7 @@ import {interpretSchematicBoard} from './schematicBoardInterpreter';
 import {detectSchematicShapes} from './schematicShapeDetector';
 import {groupedSchematicShapes} from './schematicGroups';
 import {placeBoardNodeMarkers} from './schematicNodeMarkers';
+import {nodeLabelMetrics, nodeLabelBounds, nodeLabelPosition} from './schematicNodeLabels';
 import {parseSchematicInput} from './schematicInputParser';
 import {layoutSchematicInput} from './schematicInputLayout';
 import {annotateSchematicInput, renderSchematicInputAnnotations} from './schematicInputAnnotations';
@@ -48,6 +49,15 @@ function formatSchematicNumber(value, digits) {
         String(Number(value.toPrecision(digits))) : String(value);
 }
 
+function engineeringValue(value, unit, digits) {
+    if (!Number.isFinite(value) || value === 0) return `${formatSchematicNumber(value, digits)} ${unit}`;
+    const prefixes = ['f', 'p', 'n', 'µ', 'm', '', 'k', 'M', 'G', 'T'];
+    let power = Math.max(-15, Math.min(12, 3 * Math.floor(Math.log10(Math.abs(value)) / 3)));
+    let scaled = Number((value / 10 ** power).toPrecision(digits));
+    if (Math.abs(scaled) >= 1000 && power < 12) { power += 3; scaled /= 1000; }
+    return `${formatSchematicNumber(scaled, digits)} ${prefixes[power / 3 + 5]}${unit}`;
+}
+
 function componentLabel(part, id, digits) {
     if (part.displayValue !== undefined) return `${part.displayName || id} = ${part.displayValue
         .replace(/\bohms?\b/gi, 'Ω').replace(/\bVrms\b/g, 'V RMS').replace(/\s\*\s/g, ' × ')}`;
@@ -56,7 +66,9 @@ function componentLabel(part, id, digits) {
         ['capacitor', 'parallel-capacitor'].includes(part.symbol) ? ' F' :
         ['inductor', 'parallel-inductor'].includes(part.symbol) ? ' H' : part.symbol === 'attenuator' ||
         part.symbol === 'amplifier' ? ' dB' : '';
-    return `${id} = ${formatSchematicNumber(part.value, digits)}${unit}`;
+    const value = typeof part.value === 'number' && [' Ω', ' F', ' H'].includes(unit) ?
+        engineeringValue(part.value, unit.trim(), digits) : `${formatSchematicNumber(part.value, digits)}${unit}`;
+    return `${id} = ${value}`;
 }
 
 function escapeXml(value) {
@@ -185,7 +197,7 @@ function nodeGroupCandidates(group) {
         const members = group.nodes.map(node => {
             const x = group.axis === 'horizontal' ? node.point[0] : group.baseline + distance;
             const y = group.axis === 'horizontal' ? group.baseline - distance : node.point[1];
-            return {id: node.id, x, y, bounds: circleBounds(x, y)};
+            return {id: node.id, x, y, bounds: nodeLabelBounds(node.id, x, y)};
         });
         candidates.push({members, cost: distance * members.length});
     }
@@ -416,7 +428,7 @@ function renderNodes(layout, dots) {
         const number = layout.nodeNumbers[index];
         const external = index === 0 || index === layout.nodes.length - 1;
         const dot = (external ? dots.ports : dots.nodes) ? schematicDot(node, external ? 'port' : 'node') : '';
-        return `${dot}<circle cx="${number.x}" cy="${number.y}" r="12" fill="#ffffff" stroke="#202020" stroke-width="2"/><text x="${number.x}" y="${number.y + 5}" text-anchor="middle">${number.id}</text>`;
+        return dot + nodeLabelSvg({id: number.id, numberAt: [number.x, number.y]});
     }).join('');
 }
 
@@ -506,6 +518,12 @@ function hasShapeBoard(name) {
     return Object.prototype.hasOwnProperty.call(schematicShapeBoards, name);
 }
 
+function schematicNodeBoundary(boundary) {
+    const nodes = Array.isArray(boundary) ? boundary : [boundary];
+    return nodes.every(node => typeof node === 'string' || typeof node === 'number' && Number.isFinite(node)) &&
+        new Set(nodes).size === nodes.length;
+}
+
 function requestedShape(options) {
     if (options.shapes === undefined) return null;
     const shapes = options.shapes;
@@ -513,9 +531,7 @@ function requestedShape(options) {
         (['series', 'ladder', 'powerDivider'].includes(shapes[0]) ||
             hasShapeBoard(shapes[0]))) return shapes[0];
     if (Array.isArray(shapes) && shapes.length && shapes.every(shape => shape &&
-        hasShapeBoard(shape.name) && [shape.from, shape.to].every(boundary =>
-            Number.isInteger(boundary) || Array.isArray(boundary) && boundary.length &&
-            boundary.every(Number.isInteger) && new Set(boundary).size === boundary.length))) {
+        hasShapeBoard(shape.name) && [shape.from, shape.to].every(schematicNodeBoundary))) {
         return shapes.map(shape => ({name: shape.name, from: shape.from, to: shape.to}));
     }
     const boardShapes = Object.keys(schematicShapeBoards).map(name => `"${name}"`);
@@ -622,14 +638,16 @@ function treeLayoutBounds(placement) {
         placement.at, placement.rotation, placement.mirrorY, placement.mirrorX);
 }
 
-function treeNodeCandidates(point, reach = 60) {
+function treeNodeCandidates(point, reach = 60, id = '') {
     const offsets = [[0, -40], [0, 40], [40, 0], [-40, 0],
         [0, -60], [0, 60], [60, 0], [-60, 0]];
     for (let distance = 80; distance <= reach; distance += 20) {
         offsets.push([0, -distance], [0, distance], [distance, 0], [-distance, 0]);
     }
-    return offsets.map(([dx, dy], index) => ({x: point[0] + dx, y: point[1] + dy,
-        bounds: circleBounds(point[0] + dx, point[1] + dy), cost: 40 + index * 4}));
+    return offsets.map((offset, index) => {
+        const [x, y] = nodeLabelPosition(id, point, offset);
+        return {x, y, bounds: nodeLabelBounds(id, x, y), cost: 40 + index * 4};
+    });
 }
 
 function portLabelCandidates(port, board) {
@@ -751,7 +769,7 @@ function finishNodalModel(root, result, shapeDefinition, digits) {
     const nodeIds = [...new Set(root.components.flatMap(entry => entry.nodes)
         .concat(root.externalNodes))];
     if (nodeIds.some(node => !nodePoints.has(node))) return null;
-    const nodeTasks = nodeIds.map(node => ({candidates: treeNodeCandidates(nodePoints.get(node), shapeDefinition.automatic ? 240 : 60)}));
+    const nodeTasks = nodeIds.map(node => ({candidates: treeNodeCandidates(nodePoints.get(node), shapeDefinition.automatic ? 240 : 60, node)}));
     const portTasks = externalPorts.map(port => ({text: `Port ${port.port}`, candidates: portLabelCandidates(port, board)}));
     const placementsBounds = placements.map(treeLayoutBounds);
     if (placementsBounds.some((bounds, index) => placementsBounds.slice(index + 1)
@@ -774,6 +792,8 @@ function finishNodalModel(root, result, shapeDefinition, digits) {
     if (!boxes) return null;
     const allPoints = placements.flatMap(placement => placement.ports.map(port => port.at))
         .concat(wires.flatMap(wire => wire.points), nodes.flatMap(node => [node.at, node.numberAt]),
+            choices.slice(labelTasks.length, labelTasks.length + nodeIds.length).flatMap(label =>
+                [[label.bounds[0], label.bounds[1]], [label.bounds[2], label.bounds[3]]]),
             annotationChoices.flatMap(label => [[label.bounds[0], label.bounds[1]], [label.bounds[2], label.bounds[3]]]), placementsBounds.flatMap(bounds =>
                 [[bounds[0], bounds[1]], [bounds[2], bounds[3]]]));
     const minX = Math.floor((Math.min(...allPoints.map(point => point[0])) - 100) / GRID) * GRID;
@@ -986,6 +1006,14 @@ function buildSchematicModel(circuit, options = {}, detected = detectedShapes(ci
     return {layout, graph, topology: buildSchematicTopology(graph), detected, dots};
 }
 
+function nodeLabelSvg(node) {
+    const [x, y] = node.numberAt, {width, fontSize} = nodeLabelMetrics(node.id);
+    const enclosure = width === 24 ? `<circle cx="${x}" cy="${y}" r="12"` :
+        `<rect x="${x - width / 2}" y="${y - 12}" width="${width}" height="24" rx="12"`;
+    return `${enclosure} fill="#ffffff" stroke="#202020" stroke-width="2"/>` +
+        `<text x="${x}" y="${y + 5}" text-anchor="middle" font-size="${fontSize}">${escapeXml(node.id)}</text>`;
+}
+
 function renderNodalSvg(model) {
     const {graph, dots} = model;
     const [minX, minY, width, height] = graph.viewBox;
@@ -1012,9 +1040,7 @@ function renderNodalSvg(model) {
     }).join('');
     const nodes = graph.nodes.map(node => (!dots.nodes || graph.showNodeDots === false ? '' :
         schematicDot(node.at, 'node')) +
-        `<circle cx="${node.numberAt[0]}" cy="${node.numberAt[1]}" r="12" fill="#ffffff" stroke="#202020" stroke-width="2"/>` +
-        `<text x="${node.numberAt[0]}" y="${node.numberAt[1] + 5}" text-anchor="middle"` +
-        `${String(node.id).length > 2 ? ' font-size="10"' : ''}>${escapeXml(node.id)}</text>`).join('');
+        nodeLabelSvg(node)).join('');
     const labels = graph.labels.map(label => `<text x="${label.at[0]}" y="${label.at[1]}" text-anchor="middle">${escapeXml(label.text)}</text>`).join('');
     const extra = renderSchematicInputAnnotations(graph.annotations, escapeXml);
     const name = graph.kind === 'schematic-input' ? 'Authored schematic' : 'Nodal nPort schematic';

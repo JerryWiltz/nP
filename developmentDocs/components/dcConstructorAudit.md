@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-22 -->
+<!-- Modified: 2026-11-25 -->
 # DC constructor audit
 
 This source-inspected inventory supports the [shared DC analysis contract](../analysis/dcAnalysis.md). Electrical constructors attach validated immutable `_dcModel` descriptors. Existing `nodal()`, `cas()` and `cascade()` preserve their component connections and child DC models. `nPort.solveDC()` implements the linear reductions/equations below. NPN/PNP, NJF/PJF, NMOS/PMOS, MESFET, HEMT and both diode adapters implement nonlinear solving and automatic DC-before-RF handoff for networks with explicit `V()` supplies. Missing physical DC laws and unsupported definitions are reported with placement paths before assembly. Existing I–V methods and 0 Hz S rows remain separate from network DC solving.
@@ -160,3 +160,12 @@ These drawing names are absent from the numerical n-port export list. Their impl
 Descriptors are implemented/tested for every electrical row, including actionable requirements for behavior absent from current inputs. New constructors must supply the same contract and update this inventory and its coverage tests. Recognizing `requiresModel` does not establish a physical DC law. `solveDC()` reports every missing or unsupported nonlinear model before solving; never skip an unsupported component because it lies outside a guessed bias path.
 
 Check coverage against actual exports whenever constructors change. Verify reductions against hand calculations, declared model limits or independent simulator references. Check terminal order/signs for series junctions, transformers and coupled lines: a finite matrix alone does not establish correct DC topology.
+
+## Weak RF-to-DC response
+
+`rectify()` is an nPort method rather than another electrical constructor. It
+uses the same immutable descriptors and retained placements, solves RF-off DC
+even without V(), then solves a second-order increment from D() junction
+currents. Existing solveDC and automatic supply-bias behavior are unchanged.
+Other nonlinear families and requiresModel leaves reject; external RF ports
+add no DC loads. See [rectification](../analysis/rectification.md).

@@ -8,8 +8,10 @@ import {cascadeDcModel} from './dcModel';
 import {solveDC} from './dcSolver';
 import {rfConnection, withOperatingPoints} from './operatingPointHandoff';
 import {prepareDcBias, retainDcBias} from './dcBias';
+import {validateNetworkComponents} from './combining/connectionValidation';
+import {rectify} from './rectification';
 
-// Modified: 2026-11-21
+// Modified: 2026-11-25
 var conjugate = function (value) { return complex(value.getR(), -value.getI()); };
 
 export function nPort() { this._noise = undefined; this._signal = undefined; }; // base class for nPort objects
@@ -53,10 +55,6 @@ function cascadeRf(n2, description) { // cascade two 2-ports along with method c
 			sparsA = this.getspars(),
 			sparsB = n2.getspars(),
 			s11, s12, s21, s22, s11a, s12a, s21a, s22a, s11b, s12b, s21b, s22b, sparsArray = [];
-		if (sparsA.length !== sparsB.length ||
-			sparsA.some(function (row, index) { return row[0] !== sparsB[index][0]; })) {
-			throw new RangeError('Cascaded nPorts must have matching frequency rows.');
-		}
 		for (freqCount = 0; freqCount < this.spars.length; freqCount++) {
 			s11a = sparsA[freqCount][1]; s12a = sparsA[freqCount][2]; s21a = sparsA[freqCount][3]; s22a = sparsA[freqCount][4];			
 			s11b = sparsB[freqCount][1]; s12b = sparsB[freqCount][2]; s21b = sparsB[freqCount][3]; s22b = sparsB[freqCount][4];
@@ -132,7 +130,10 @@ function cascadeRf(n2, description) { // cascade two 2-ports along with method c
 		return casOut;
 }
 
-function rebuildCascade(components) { return cascadeRf.call(components[0], components[1]); }
+function rebuildCascade(components) {
+	validateNetworkComponents(components, 'cas()');
+	return cascadeRf.call(components[0], components[1]);
+}
 
 nPort.prototype = {
 	constructor: nPort,
@@ -154,6 +155,7 @@ nPort.prototype = {
 		if (options.length) throw new TypeError('nPort.solveDC() currently takes no arguments.');
 		return solveDC(this);
 	},
+	rectify: function (options) { return rectify(this, options); },
 	_withOperatingPoints: function (records) { return withOperatingPoints(this, records); },
 	get stability() { return stabilityRows(this.spars); },
 	get noise() {
@@ -166,6 +168,7 @@ nPort.prototype = {
 	get signal() { return this._signal; },
 	set signal(signalData) { this._signal = validateSignal(signalData, this.spars); },
 	cas: function cas(n2) {
+		validateNetworkComponents([this, n2], 'cas()');
 		var description = cascadeDcModel(this, n2, this.global);
 		var prepared = prepareDcBias(description, [this, n2]);
 		var components = prepared ? prepared.components : [this, n2];

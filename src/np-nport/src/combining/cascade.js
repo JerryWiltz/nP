@@ -1,10 +1,12 @@
-// Modified: 2026-11-17
+// Modified: 2026-11-24
 import {nPort} from '../nPort';
 import {applyInputSignal} from '../signal';
+import {validateNetworkComponents} from './connectionValidation';
 
 export function cascade(...nPorts) {
 	var signalOptions = nPorts.length && !nPorts[nPorts.length - 1].getspars ? nPorts.pop() : undefined;
 	if (nPorts.length === 0) throw new TypeError('cascade() requires at least one nPort.');
+	validateNetworkComponents(nPorts, 'cascade()');
 	var combined = nPorts[0];
 	for (var i = 1; i < nPorts.length; i++) {
 		// cas() combines S-parameters and noise, and keeps both nonlinear stages.

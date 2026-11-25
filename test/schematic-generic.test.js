@@ -1,4 +1,4 @@
-// Modified: 2026-11-08
+// Modified: 2026-11-24
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as nP from '../src/index.js';
@@ -6,6 +6,7 @@ import {schematicGraph, schematicTopology} from '../src/np-chart/src/schematic';
 import {schematicShapeBoards} from '../src/np-chart/src/schematicShapeBoards';
 import {buildSchematicCases} from '../dev/schematicCases';
 import {buildSchematicStressCases} from '../dev/schematicStressCases';
+import {drawingNetwork} from './fixtures/schematic-topology';
 
 function assertElectricalDrawing(graph) {
     const terminals = graph.components.flatMap(part => part.ports).concat(graph.externalPorts);
@@ -111,8 +112,8 @@ test('generic flow direction is board data rather than an RF pattern choice', ()
     }
 });
 
-test('an implicit shared electrical node becomes a real junction, not a false loop', () => {
-    const circuit = nP.nodal(
+test('a drawing-only shared electrical node becomes a real junction, not a false loop', () => {
+    const circuit = drawingNetwork(
         [nP.R(50), 1, 2],
         [nP.R(75), 2, 3],
         [nP.R(100), 2, 4],

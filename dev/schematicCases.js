@@ -1,4 +1,4 @@
-// Modified: 2026-11-01
+// Modified: 2026-11-24
 
 export function buildSchematicCases(nP) {
     nP.global.fList = [2e9];
@@ -6,9 +6,13 @@ export function buildSchematicCases(nP) {
 
     const parallelR1 = nP.R(50);
     const parallelR2 = nP.R(100);
+    const parallelInput = nP.Tee();
+    const parallelOutput = nP.Tee();
     const parallel = nP.nodal(
-        [parallelR1, 1, 2],
-        [parallelR2, 1, 2],
+        [parallelInput, 1, 11, 12],
+        [parallelR1, 11, 21],
+        [parallelR2, 12, 22],
+        [parallelOutput, 2, 21, 22],
         ['out', 1, 2]
     );
     cases.push({id: 'parallel-resistors', title: 'Two parallel resistors', circuit: parallel});

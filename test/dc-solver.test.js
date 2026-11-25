@@ -1,4 +1,4 @@
-// Modified: 2026-11-22
+// Modified: 2026-11-24
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as nP from '../src/index.js';
@@ -174,9 +174,10 @@ test('physical via/film resistances, ideal lines, Load and seriesTee use their d
     const saved = nP.global.Ro;
     try {
         nP.global.Ro = 75;
-        const load = nP.Load();
+        const load = nP.Load(), tee = nP.Tee(), source = nP.V(1), ground = nP.Short();
         nP.global.Ro = 50;
-        const loaded = nP.nodal([nP.Tee(), 1, 2, 3], [nP.V(1), 1, 4], [nP.Short(), 4], [load, 3], ['out', 2]);
+        const loaded = nP.nodal([tee, 1, 2, 3], [source, 1, 4], [ground, 4], [load, 3], ['out', 2]);
+        assert.equal(loaded.global.Ro, 75);
         close(component(loaded.solveDC(), 'p4').terminalCurrents[0], 1 / 75);
     } finally { nP.global.Ro = saved; }
 });

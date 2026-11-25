@@ -1,11 +1,36 @@
-// Modified: 2026-11-08
+// Modified: 2026-11-24
 // Normalize once, before nodal builds Gamma and the frequency-dependent W matrices.
+import {validateDcNode} from '../dcModel';
+
 function connectionRow(row) {
     if (!Array.isArray(row) || row.length < 2 || row[0] === 'out' ||
         !row[0] || !Array.isArray(row[0].spars)) {
         throw new TypeError('nodal() needs component rows [nPort, node, ...]; shape groups contain only component rows.');
     }
     return row.slice();
+}
+
+function validateConnectionLabels(connections) {
+    const labels = new Map();
+    connections.forEach((row, rowIndex) => {
+        for (const node of row.slice(1)) {
+            validateDcNode(node);
+            const entry = labels.get(node) || {count: 0, outputs: 0};
+            entry.count++;
+            if (rowIndex === connections.length - 1) entry.outputs++;
+            labels.set(node, entry);
+        }
+    });
+    for (const [node, entry] of labels) {
+        const label = JSON.stringify(node);
+        if (entry.count !== 2) {
+            throw new RangeError('nodal() label ' + label + ' appears ' + entry.count +
+                ' times; each label must appear exactly twice. Use an explicit Tee(), Tee4() or Tee5() for branches.');
+        }
+        if (entry.outputs > 1) {
+            throw new RangeError('nodal() output label ' + label + ' must connect one component terminal to one output port.');
+        }
+    }
 }
 
 export function nodalConnections(input) {
@@ -39,5 +64,6 @@ export function nodalConnections(input) {
     }
     if (!connections.length) throw new TypeError('nodal() requires at least one component row.');
     connections.push(output.slice());
+    validateConnectionLabels(connections);
     return {connections, groups, signalOptions};
 }
