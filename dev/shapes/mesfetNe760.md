@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-21 -->
+<!-- Modified: 2026-11-26 -->
 # NE760 common-source amplifier
 
 Open [the harness](mesfetNe760.html) with the current browser bundle. It uses
@@ -19,3 +19,7 @@ DC, AC and classical noise in ngspice. Agreement with SPICE checks the model
 implementation, not agreement with measured device/package performance.
 See [the model contract](../../developmentDocs/semiconductors/mesfetModels.md) for assumptions.
 The separate [SPICE reference harness](mesfetCommonSource.html) is preserved.
+
+The DC table comes directly from `network.operatingPoint.out('vgs', 'vds',
+'idmA', {component: q1, label: 'Q1'})`; the library selects the placement and
+converts amperes to milliamperes. The example does not assemble DC table rows.

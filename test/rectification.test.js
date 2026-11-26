@@ -1,4 +1,4 @@
-// Modified: 2026-11-25
+// Modified: 2026-11-26
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as nP from '../src/index.js';
@@ -117,4 +117,84 @@ test('rectification rejects unsupported analyses, undefined measurements and exc
     const tx = nP.mod({mode: 'VNA-frequency', fList: [1e9]});
     const driven = nP.nodal([network, 'rf'], ['out', 'rf'], {signal: tx});
     assert.throws(() => driven.rectify({...options(), outputPath: 'p1'}), /without attached/);
+});
+
+test('power sweeps preserve scalar results, bias, polarity and caller-owned settings', () => {
+    setup();
+    for (const [network, outputNodes] of [[singleDetector(), ['load', 'ground']],
+        [differentialDetector(), ['detector', 'reference']]]) {
+        const inputPowerDbm = [-60, -90, -70];
+        const opt = {...options(), outputNodes, inputPowerDbm};
+        const before = structuredClone(network.solveDC());
+        const sweep = network.rectify(opt);
+        assert.equal(sweep.kind, 'weak-signal-rectification-sweep');
+        assert.deepEqual(sweep.inputPowerDbm, inputPowerDbm);
+        inputPowerDbm[0] = -80;
+        assert.equal(sweep.inputPowerDbm[0], -60);
+        for (const result of sweep.results) {
+            const scalar = network.rectify({...opt, inputPowerDbm: result.inputPowerDbm});
+            assert.deepEqual(result, scalar);
+            assert.strictEqual(result.operatingPoint, sweep.results[0].operatingPoint);
+            assert.ok(Object.isFrozen(result.sources[0]));
+        }
+        assert.deepEqual(network.solveDC(), before);
+        assert.ok(Object.isFrozen(sweep.results));
+        assert.doesNotThrow(() => structuredClone(sweep));
+        const reverse = network.rectify({...opt, outputNodes: [...outputNodes].reverse()});
+        close(reverse.results[0].deltaVoltage, -network.rectify({...opt, inputPowerDbm: inputPowerDbm[0]}).deltaVoltage);
+    }
+});
+
+test('power ranges include both endpoints; output tables convert units without changing results', () => {
+    setup();
+    const network = singleDetector();
+    const sweep = network.rectify(options({start: -90, stop: -60, points: 7}));
+    assert.deepEqual(sweep.inputPowerDbm, [-90, -85, -80, -75, -70, -65, -60]);
+    const descending = network.rectify(options({start: -60, stop: -90, points: 7}));
+    assert.deepEqual(descending.inputPowerDbm, [...sweep.inputPowerDbm].reverse());
+    const table = sweep.out('deltaVoltageuV', {label: 'Single diode'});
+    assert.deepEqual(table[0], ['Input (dBm)', 'Single diode (µV)']);
+    for (let index = 0; index < sweep.results.length; index++) {
+        assert.equal(table[index + 1][0], sweep.results[index].inputPowerDbm);
+        close(table[index + 1][1], sweep.results[index].deltaVoltage * 1e6);
+    }
+    table[1][1] = -1;
+    assert.ok(sweep.out('deltaVoltageuV')[1][1] > 0);
+    const scalar = sweep.results[0];
+    assert.equal(scalar.out('deltaVoltage')[1][1], scalar.deltaVoltage);
+    for (const result of [scalar, sweep]) {
+        const before = JSON.stringify(result);
+        for (const args of [[], [Object.freeze({label: 'Detector'})]]) {
+            assert.throws(() => result.out(...args), {name: 'TypeError', message: /requires a measurement selector.*deltaVoltageuV/});
+        }
+        assert.equal(JSON.stringify(result), before);
+    }
+    for (const field of ['baselineVoltage', 'deltaVoltage', 'voltage']) {
+        assert.equal(scalar.out(field + 'mV')[1][1], scalar[field] * 1e3);
+        assert.equal(scalar.out(field + 'uV')[1][1], scalar[field] * 1e6);
+    }
+    const multi = sweep.out('voltage', 'deltaVoltagemV', 'sensitivityVoltsPerWatt', {label: 'Detector'});
+    assert.equal(multi[0][1], 'Detector: DC output (V)');
+    assert.equal(multi[1][3], scalar.sensitivityVoltsPerWatt);
+    assert.equal(network.rectify(options([-70])).results.length, 1);
+});
+
+test('invalid sweep settings, excessive points of drive and invalid table selectors reject', () => {
+    setup();
+    const network = singleDetector();
+    for (const power of [[], [-70, NaN], [-70, undefined], new Array(2), [-70, 4000],
+        {start: -90, stop: -60, points: 1}, {start: -90, stop: -60, points: 2.5},
+        {start: -90, stop: -60, points: 3, step: 5}, {start: -70, stop: -70, points: 2},
+        {start: -Infinity, stop: -60, points: 2}, 'sweep']) {
+        assert.throws(() => network.rectify(options(power)));
+    }
+    assert.throws(() => network.rectify(options([-90, -20])), /weak-signal/);
+    const sweep = network.rectify(options([-70, -Infinity]));
+    assert.equal(sweep.results[1].deltaVoltage, 0);
+    assert.throws(() => sweep.out('deltaVoltage'), /finite powers/);
+    const result = sweep.results[0];
+    for (const selectors of [['typo'], ['__proto__'], ['deltaVoltage', 'deltaVoltage'],
+        ['voltage', {label: ''}], ['voltage', {label: 'Detector', typo: 1}], ['voltage', null]]) {
+        assert.throws(() => result.out(...selectors));
+    }
 });

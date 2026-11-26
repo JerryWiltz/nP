@@ -1,4 +1,6 @@
-// Modified: 2026-10-22
+// Modified: 2026-11-26
+import {withOutputUnits} from '../../np-global/src/outputUnits';
+import {transmitterUnits} from './outputUnitProfiles';
 import {createSourceWaveform} from './sourceWaveform';
 import {modulateAdvanced} from './advancedModes';
 import {fftBins, invFFT} from '../../np-math/src/fft';
@@ -288,7 +290,7 @@ function analogAngle(options) {
 }
 
 // Prepare a sampled digital waveform or sparse, single-tone analog source.
-export function mod(options = {}) {
+function createMod(options = {}) {
 	if (!options || Array.isArray(options) || typeof options !== 'object') {
 		throw new TypeError('mod expects an options object.');
 	}
@@ -495,4 +497,8 @@ export function mod(options = {}) {
 		return originalOut(selector);
 	};
 	return tx;
+}
+
+export function mod(options = {}) {
+	return withOutputUnits(createMod(options), transmitterUnits);
 }

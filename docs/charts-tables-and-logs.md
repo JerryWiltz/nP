@@ -1,5 +1,15 @@
-<!-- Modified: 2026-11-08 -->
+<!-- Modified: 2026-11-26 -->
 # Charts, tables, and logs
+
+[Output-unit options](./output-units.md) let `.out()` supply already converted
+measurement tables. Original unit-selected tables bypass the legacy default
+`giga` scaling in line charts, tables and Smith charts; omit `metricPrefix` or
+use `'none'`. Other explicit prefixes reject to prevent double scaling.
+Line plots require matching horizontal units across their tables. Copied,
+JSON-cloned or worker-transported tables lose private unit metadata; use
+`metricPrefix:'none'` for those copies. Existing calls without a `units` map
+retain their current scaling behavior. Unit-aware line plots derive default
+axis titles from the output declarations; caller-provided titles still win.
 
 Use `nP.lineChart()`, `nP.smithChart()`, and `nP.lineTable()` for visual results in a browser, or `nP.log()` for quick values. The charts and table accept the numeric tables returned by an [nPort's `.out()` method](./nport-object.md#read-results-with-out). Each call adds a display to the page.
 

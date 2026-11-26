@@ -1,0 +1,37 @@
+<!doctype html>
+<!-- Modified: 2026-11-26 -->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>nP output units</title>
+    <script src="../dist/nP.js"></script>
+</head>
+<body>
+    <script>
+        var g = nP.global();
+        g.fList = g.fGen(1e9, 3e9, 21);
+
+        var r1 = nP.R(75);
+        var response = r1.out('s21dB', {units: {frequency: 'GHz'}});
+        nP.lineChart({inputTable: [response], title: 'RF frequency in GHz'});
+        nP.lineTable({inputTable: [response]});
+
+        var q1 = nP.NPN();
+        var curves = q1.ivTable({ib: {points: 3}, vce: {points: 51}});
+        var current = curves.out('ic', {units: {current: 'mA'}});
+        nP.lineChart({inputTable: [current], title: 'Collector current in mA'});
+
+        g.tList = g.tGen(0, 63e-9, 64);
+        var source = nP.waveform({shape: 'square', period: 16e-9,
+            lowVolts: -1e-3, highVolts: 1e-3});
+        var waveform = source.out('waveform', {units: {time: 'ns', voltage: 'mV'}});
+        nP.lineChart({inputTable: [waveform], title: 'Time in ns, voltage in mV'});
+
+        var samples = source.out('samples');
+        var spectrum = nP.FFT(samples);
+        var amplitude = spectrum.out('dBV', {floorDbv: -120,
+            units: {frequency: 'MHz', voltage: 'mV'}});
+        nP.lineChart({inputTable: [amplitude], title: 'RMS spectrum in MHz and mV'});
+    </script>
+</body>
+</html>

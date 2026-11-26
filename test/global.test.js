@@ -1,4 +1,4 @@
-// Modified: 2026-10-20
+// Modified: 2026-11-26
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -20,6 +20,54 @@ test('fGen generates evenly spaced frequency lists', () => {
 	const fList = global.fGen(0, 10, 6);
 
 	assert.deepEqual(fList, [0, 2, 4, 6, 8, 10]);
+});
+
+test('frequency grids retain one-point, descending, constant and signed frequency support', () => {
+	assert.deepEqual(global.fGen(2e9, 3e9, 1), [2e9]);
+	assert.deepEqual(global.fGen(2e9, 2e9, 1), [2e9]);
+	assert.deepEqual(global.fGen(3, 1, 3), [3, 2, 1]);
+	assert.deepEqual(global.fGen(7, 7, 3), [7, 7, 7]);
+	assert.deepEqual(global.fGen(-2, 2, 5), [-2, -1, 0, 1, 2]);
+	const frequencies = global.fGen(2e9, 2e9, 1), attenuator = Attn(3, undefined, {fList: frequencies});
+	const response = attenuator.out('s21dB');
+	assert.equal(response.length, 2); assert.equal(response[1][0], 2e9);
+	assert.ok(Math.abs(response[1][1] + 3) < 1e-12);
+});
+
+test('grid generators validate counts and endpoints before generating samples', () => {
+	for (const generate of [global.fGen, global.tGen]) {
+		for (const points of [undefined, null, false, '3', {}, [], 0, -1, .5, 2.5, NaN, Infinity, -Infinity, 2 ** 32, Number.MAX_SAFE_INTEGER]) {
+			assert.throws(() => generate(0, 1, points), {name: 'RangeError', message: /points must be an integer/});
+		}
+		for (const endpoint of [undefined, null, false, '1', {}, [], NaN, Infinity, -Infinity]) {
+			assert.throws(() => generate(endpoint, 1, 3), /start and stop must be finite numbers/);
+			assert.throws(() => generate(0, endpoint, 3), /start and stop must be finite numbers/);
+		}
+		assert.throws(() => generate(-Number.MAX_VALUE, Number.MAX_VALUE, 3), /numeric range/);
+		assert.throws(() => generate(1e16, 1e16 + 2, 3), /spacing cannot be represented/);
+		assert.throws(() => generate(0, Number.MIN_VALUE, 3), /spacing cannot be represented/);
+	}
+	assert.throws(() => global.fGen(1, Infinity, 1), /finite numbers/);
+	assert.throws(() => global.tGen(0, 1, 1), /at least two points/);
+	assert.throws(() => global.tGen(1, 0, 3), /stop must be greater/);
+	assert.throws(() => global.tGen(1, 1, 3), /stop must be greater/);
+});
+
+test('grids include exact endpoints and generation does not change context settings', () => {
+	const saved = {fList: global.fList, tList: global.tList};
+	for (const generate of [global.fGen, global.tGen]) {
+		const values = generate(.1, 1, 7);
+		assert.equal(values[0], .1); assert.equal(values.at(-1), 1); assert.equal(values.length, 7);
+		for (let index = 1; index < values.length; index++) {
+			assert.ok(values[index] > values[index - 1]);
+			assert.ok(Math.abs((values[index] - values[index - 1]) - .15) < 1e-15);
+		}
+		values[0] = 99;
+		assert.equal(generate(.1, 1, 7)[0], .1);
+		assert.throws(() => generate(0, 1, Infinity));
+	}
+	assert.strictEqual(global.fList, saved.fList); assert.strictEqual(global.tList, saved.tList);
+	assert.deepEqual(global.tGen(-1, 1, 3), [-1, 0, 1]);
 });
 
 test('tGen includes both endpoints and requires a valid time grid', () => {

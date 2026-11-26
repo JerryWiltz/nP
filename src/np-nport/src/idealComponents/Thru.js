@@ -1,18 +1,18 @@
-// Modified: 2026-11-16
+// Modified: 2026-11-26
 import {connectionDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {global} from '../../../np-global/src/global';
 import {nPort} from '../nPort';
 import {analysisFrequencies} from '../analysisFrequencies';
-import {componentSettings} from '../componentSettings';
+import {validatedComponentSettings, checkedSpars} from '../numericValidation';
 
 // Matched, lossless, zero-length two-port connection, including at DC.
 export function Thru(options = {}) {
 	var thru = new nPort();
 	var sparsArray = [];
 	var noiseArray = [];
-	var settings = componentSettings(global, options);
+	var settings = validatedComponentSettings(global, options, 'Thru');
 	var frequencies = analysisFrequencies(settings);
 	for (var i = 0; i < frequencies.length; i++) {
 		var frequency = frequencies[i];
@@ -25,7 +25,7 @@ export function Thru(options = {}) {
 			]
 		};
 	}
-	thru.setspars(sparsArray);
+	thru.setspars(checkedSpars('Thru', sparsArray));
 	thru.noise = noiseArray;
 	thru.setglobal(settings);
 	thru._schematic = schematicPart('Thru');

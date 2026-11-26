@@ -1,7 +1,14 @@
-<!-- Modified: 2026-11-25 -->
+<!-- Modified: 2026-11-26 -->
 # DC constructor audit
 
 This source-inspected inventory supports the [shared DC analysis contract](../analysis/dcAnalysis.md). Electrical constructors attach validated immutable `_dcModel` descriptors. Existing `nodal()`, `cas()` and `cascade()` preserve their component connections and child DC models. `nPort.solveDC()` implements the linear reductions/equations below. NPN/PNP, NJF/PJF, NMOS/PMOS, MESFET, HEMT and both diode adapters implement nonlinear solving and automatic DC-before-RF handoff for networks with explicit `V()` supplies. Missing physical DC laws and unsupported definitions are reported with placement paths before assembly. Existing I–V methods and 0 Hz S rows remain separate from network DC solving.
+
+Explicit and automatic operating-point results expose a non-enumerable `.out()`
+reader for device, terminal and node measurements, units and table labels.
+The immutable serialized data remain compatible; charge-storage PIN qPoint adds
+its already calculated bulk resistance. The reader uses the retained observation
+solution for floating voltage differences without changing solve timing or stamps.
+See [DC output](../analysis/dcOutput.md).
 
 `src/np-nport/src/index.js` exports 67 functions: 61 direct components, `lpfGen()`, `nodal()`, `cascade()` and three synthesis helpers. Thus 64 return nPorts. Export-coverage tests check every export against this inventory and require each electrical result to have a validated DC descriptor. Add an explicit test fixture if a future constructor requires arguments; never silently exclude it from coverage. The `Tlin` export now uses the normal whitespace so generated symbol coverage includes it.
 
@@ -20,6 +27,12 @@ These classify implementation readiness. Descriptor `quality` separately identif
 ## Basic lumped components
 
 Source directory: `src/np-nport/src/rlc/`.
+
+R/L/C constructors now reject nonnumeric, nonfinite and negative passive values
+before RF/DC construction. Zero values retain their physical limits. Their
+shared RF branch calculation preserves the DC topology below and the same
+immutable descriptors; an invalid negative passive value no longer creates a
+`requiresModel` placeholder. See [numeric validation](numericValidation.md).
 
 | Constructor | Ports | Class | Planned DC behavior |
 | --- | --- | --- | --- |

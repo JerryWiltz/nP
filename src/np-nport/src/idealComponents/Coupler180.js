@@ -1,11 +1,11 @@
-// Modified: 2026-11-16
+// Modified: 2026-11-26
 import {requiredDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {global} from '../../../np-global/src/global';
 import {nPort} from '../nPort';
 import {analysisFrequencies} from '../analysisFrequencies';
-import {componentSettings} from '../componentSettings';
+import {validatedComponentSettings, checkedSpars} from '../numericValidation';
 
 // Matched, reciprocal 180-degree coupler with the same response at every frequency.
 // Port 1 drives port 2 (through) and port 4 (coupled); port 3 is isolated.
@@ -19,7 +19,7 @@ export function Coupler180(options = {}) {
 	}
 	var coupling = 10 ** (-couplingDb / 20);
 	var through = Math.sqrt(1 - coupling * coupling);
-	var settings = componentSettings(global, options);
+	var settings = validatedComponentSettings(global, options, 'Coupler180');
 	var frequencies = analysisFrequencies(settings);
 	var sparsArray = [];
 	var noiseArray = [];
@@ -36,7 +36,7 @@ export function Coupler180(options = {}) {
 		noiseArray[i] = {frequency: frequencies[i], C: covariance};
 	}
 	var coupler = new nPort();
-	coupler.setspars(sparsArray);
+	coupler.setspars(checkedSpars('Coupler180', sparsArray));
 	coupler.noise = noiseArray;
 	coupler.setglobal(settings);
 	coupler._schematic = schematicPart('Coupler180', {value: couplingDb});

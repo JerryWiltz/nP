@@ -1,5 +1,13 @@
-<!-- Modified: 2026-11-21 -->
+<!-- Modified: 2026-11-26 -->
 # Chart and table functions
+
+The [output-unit contract](../analysis/outputUnits.md) lets original tables from
+`.out(...,{units})` declare their own numeric units. Charts/tables then skip the
+legacy default metric division and reject a conflicting explicit prefix.
+`metricPrefix:'none'` remains valid, including after JSON/worker/copy transport
+loses private metadata. Existing unconverted tables keep their legacy scaling.
+Line plots require matching x units; unit-aware defaults use declared axis
+titles. No schematic geometry or layout policy changes with this feature.
 
 `nP.lineChart()`, `nP.lineTable()`, and `nP.smithChart()` display data in a browser. They take one options object, append a container `<div>` to `mount` (the document body by default), and draw an SVG inside it. They return display objects, not nPorts. The examples below use tables returned by an nPort's `.out()` method.
 

@@ -1,4 +1,4 @@
-// Modified: 2026-11-04
+// Modified: 2026-11-26
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -13,7 +13,8 @@ test('every built-in n-port constructor accepts its own frequency list', () => {
 	global.fList = [2e9];
 	global.twoTone = undefined;
 	try {
-		['R', 'seR', 'paR'].forEach(function (name) {
+		cases.push(['R', function () { return nP.R(75, global.Temp, options); }]);
+		['seR', 'paR'].forEach(function (name) {
 			cases.push([name, function () { return nP[name](options); }]);
 		});
 		['L', 'seL', 'paL', 'C', 'seC', 'paC', 'trf', 'trf4Port'].forEach(function (name) {

@@ -1,4 +1,4 @@
-// Modified: 2026-11-22
+// Modified: 2026-11-26
 import {validateTerminalNetwork} from './transistors/contactNetwork';
 // Owned immutable data can be shared across circuit trees without copying each
 // earlier cascade again. Caller-owned objects are always copied before freezing.
@@ -91,6 +91,14 @@ export function dcSnapshot(value, ancestors = new Set()) {
     const result = Array.isArray(value) ? value.map(item => dcSnapshot(item, ancestors)) :
         Object.fromEntries(Object.entries(value).map(([key, item]) => [key, dcSnapshot(item, ancestors)]));
     ancestors.delete(value);
+    Object.freeze(result);
+    ownedData.add(result);
+    return result;
+}
+
+// Analysis results retain serializable owned data plus a non-enumerable reader.
+export function dcResultSnapshot(value, out) {
+    const result = Object.defineProperty({...dcSnapshot(value)}, 'out', {value: out});
     Object.freeze(result);
     ownedData.add(result);
     return result;

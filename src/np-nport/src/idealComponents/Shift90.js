@@ -1,15 +1,15 @@
-// Modified: 2026-11-21
+// Modified: 2026-11-26
 import {requiredDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort'
 import {global}  from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
-import {componentSettings} from '../componentSettings';
+import {validatedComponentSettings, checkedSpars} from '../numericValidation';
 
 export function Shift90(options = {}) { // lossless matched two-port with +90 degree through phase
 	var Shift90 = new nPort;
-	var settings = componentSettings(global, options);
+	var settings = validatedComponentSettings(global, options, 'Shift90');
 	var frequencyList = analysisFrequencies(settings);
 	var freqCount, s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
@@ -19,7 +19,7 @@ export function Shift90(options = {}) { // lossless matched two-port with +90 de
 		s22 = complex(0,0);
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	}
-	Shift90.setspars(sparsArray);
+	Shift90.setspars(checkedSpars('Shift90', sparsArray));
 	Shift90.setglobal(settings);
 	Shift90._schematic = schematicPart('Shift90', {labelPrefix: 'Shift90'});
 	Shift90._dcModel = requiredDcModel('Shift90', 2, 'Supply a real DC equivalent; a constant imaginary RF phase does not define static conduction.', {}, settings);

@@ -1,41 +1,12 @@
 # nP website code-writing agent
-<!-- Modified: 2026-11-25 -->
+<!-- Modified: 2026-11-26 -->
 
 ## Read this complete file first
 
 Automatic instruction loading may supply only a prefix of this file. Before
 using this guide to write or change a circuit, explicitly read its complete
 local text in consecutive, bounded ranges through the final end marker:
-`### Detector shapes and measured schematic labels (newer renderer)
-
-Current standalone browser renderers detect diodeDetector and differentialDetector,
-or accept `nP.schematic(network,{shapes:['diodeDetector']})` and the corresponding
-differentialDetector name. They have one RF input; the DC measurement uses
-internal nodes and does not need another RF port.
-
-Single diode: optional series input C, Tee with L/R-to-Short input return,
-anode-to-cathode diode and output Tee with separate R-to-Short and C-to-Short
-load/bypass branches. Pair: coupled RF input to one diode, separate bias chokes,
-a common bias Tee/R and V/Short supply, and separate R/C output branches for
-both diodes. A supply Tee/C/Short bypass is optional. Junction, Schottky, Zener
-and varactor symbols preserve their numbered anode/cathode terminals. Other
-bias circuits or combined RC parts need another supported layout; do not alter
-the circuit to make this shape match.
-
-The shared engine places RF left, common bias above and related output/load
-branches on aligned baselines. Do not supply tuned coordinates, compensating
-spacing or graph/SVG corrections. Grouped/composed paths may end in these
-one-port boards: their interface is from:[1],to:[], so explicit sections use
-from:inputNode,to:[]. Boundaries accept string/finite-number labels; numeric
-and string IDs remain distinct. Two-port boards still require their output.
-
-Numeric R/L/C captions use engineering units such as 10 kΩ, 1 µH and 100 pF
-at the selected significantDigits. Named/wide node IDs use measured rounded
-enclosures; ordinary short numeric IDs keep circles. These presentation rules
-preserve the analysis and node identities. Verify availability in the supplied
-bundle.
-
-<!-- End of nP websites agent instructions -->`. A mention of that marker here is not the end.
+`<!-- End of nP websites agent instructions -->`. A mention of that marker here is not the end.
 Retrieve missing ranges if output is truncated; a preview or search is not a
 complete reading. Reuse a complete reading while this file remains unchanged.
 Reading instructions is allowed during `--stop` and does not authorize running
@@ -132,10 +103,22 @@ avoid scaling all SVGs or changing the site's global styles. Keep defaults.
 reselects one it created. Set context/settings BEFORE dependent constructors;
 changing settings does not recompute existing parts.
 
-- `g.fGen(startHz,stopHz,points)` makes a linear endpoint-inclusive grid;
-  assign the result to `g.fList`. Use an increasing interval, count >=2, or
-  `[frequencyHz]` for one frequency. `g.tGen(startSeconds,stopSeconds,points)`
-  makes a uniform increasing endpoint-inclusive time grid for `g.tList`.
+- `g.fGen(startHz,stopHz,points)` returns a fresh linear grid in Hz. Both
+  endpoints must be finite numbers and points an integer >=1. One point returns
+  `[startHz]` after validating stopHz; a literal `[frequencyHz]` is also valid.
+  Multiple points include exact endpoints. Descending, constant and signed
+  frequency lists are supported, subject to the consuming analysis's limits.
+  Assign the returned array to `g.fList`; generation does not assign it.
+- `g.tGen(startSeconds,stopSeconds,points)` returns a fresh endpoint-inclusive
+  time grid in seconds, with finite endpoints, stop > start and integer count
+  >=2. Time samples need an interval; a single RF frequency stands alone.
+  Negative time origins are allowed if the consuming mode supports them.
+  Assign the returned array to `g.tList` before dependent digital calls.
+- Current standalone generators reject nonnumeric/nonfinite endpoints, invalid
+  counts (zero, negative, fractional, nonfinite or above 4294967295), interval
+  overflow and nonconstant spacing that collapses at numeric resolution. Older
+  supplied/pinned builds may lack these stricter checks; always write valid
+  counts and bounds. Do not silently upgrade a pin or add a validation wrapper.
 - Connected parts need identical frequency rows/order and Ro; composition
   does not interpolate. Any options-level `fList` must match connected parts.
 - SI code units: Hz, s, Ω, H, F, m, V, A, K. GHz `1e9`, MHz `1e6`, kΩ `1e3`,
@@ -155,7 +138,7 @@ impedances between their terminals, not automatic connections to ground.
 
 | Call | Meaning and default |
 | --- | --- |
-| `R(resistance, temperature, options)` | Series R; 75 Ω, current `g.Temp`, `{}`. Object form accepts `resistance`, `temperature`, `fList`. |
+| `R(resistance, temperature, options)` | Series R; numeric resistance in Ω, default 75; temperature defaults to `g.Temp`; third argument `{fList}` is optional. Use `R(75)`, without a first-argument object. |
 | `L(inductance, options)` | Series L; 5 nH, `{}`. |
 | `C(capacitance, options)` | Series C; 1 pF, `{}`. |
 | `seR`, `seL`, `seC` | Established series aliases with corresponding arguments. |
@@ -174,6 +157,24 @@ impedances between their terminals, not automatic connections to ground.
 | `trf4Port(N, options)` | Ideal four-port transformer; N defaults to 0.5; winding pairs 1–3 and 2–4. |
 | `trfAuto()` | Three-port center-tapped autotransformer; port 1 center tap, 2/3 winding ends. Full winding to half winding is 2:1. |
 | `V(voltage, options)` | Floating two-terminal DC source; default 1 V; positive terminal 1 relative to terminal 2. |
+
+Numeric validation in current standalone bundles covers R/L/C and their
+combined forms, ideal lines, transformers, ideal fixtures and Chebyshev helpers.
+R/L/C values are finite nonnegative Ω/H/F; resistor temperature is finite
+nonnegative K. Zero R/L is a short and zero C an open; shared branch equations
+handle DC, zero values and exact LC resonance. Negative passive values reject.
+Tlin/Tclin impedances are finite positive Ω and lengths finite nonnegative m.
+Transformer ratios are finite signed numbers, retaining the zero-ratio ideal
+limit. R() remains numeric-only; seR/paR retain their existing object forms.
+Captured Ro must be positive finite, Temp nonnegative finite and frequency
+entries finite/dense. Empty construction grids and signed frequency rows retain
+their existing behavior; two-tone tones must stay positive. Invalid numeric
+arguments and unrepresentable RF/noise calculations throw errors instead of
+returning NaN rows. This does not make every options object strictly validated.
+Chebyshev synthesis needs positive values/integer order, stop frequency above
+pass frequency, rejection above ripple, and a positive prototype array containing
+source/load plus reactive entries. Older/pinned bundles may lack these checks;
+write valid numeric arguments in every environment.
 
 The listed ideal components accept an options object with `fList` where shown;
 junction/termination calls also accept `{fList}`. Do not treat an options-level
@@ -268,6 +269,22 @@ nP.lineChart({inputTable: [response], mount: '#np-result', metricPrefix: 'mega'}
 selected analysis frequency (two-tone output uses its requested sweep rows).
 Pass that named table to a direct display call. Reuse the same table when both
 a plot and a table are requested; do not rebuild it or mutate caller data.
+
+RF `.out()` accepts a final nonempty string label in current capable bundles:
+`var response = network.out('s21dB', {label: 'Amplifier gain (dB)'});`.
+One selector uses that exact heading; multiple selectors prefix each selector,
+for example `Amplifier: s11dB` and `Amplifier: s21dB` for `{label:'Amplifier'}`.
+Labels change only headings/trace names: frequency stays `Freq`, and numeric
+values, frequencies and units do not change. Units are not appended to a custom
+single-trace label; include them when needed. Empty/nonstring labels reject.
+Without a label, headings stay unchanged. The same final object may contain
+existing noise conditions or twoTone overrides. Do not rename table cells or
+write a helper to label traces. Always supply a measurement selector, such as
+network.out('s21dB'). Current standalone RF output rejects empty or options-only
+calls with an actionable error; it no longer returns frequency-only rows.
+DC and rectification output also require explicit selectors. Older runtimes
+may retain their previous defaults; always writing selectors works with both.
+This requirement does not change FFT or demodulation defaults.
 
 | Selector | Meaning |
 | --- | --- |
@@ -576,8 +593,8 @@ Ports are 1 anode, 2 cathode (not SOD323 physical pin numbering). VD=VA−VK and
 ID flows A-to-K, so both are negative in reverse breakdown. Standalone defaults
 remain VD=+.6 V and a 0–.8 V curve; choose negative Q explicitly or use external
 V/R bias before RF. `ivTable({vd:{start:-4.8,stop:-4.4,points:81}})` returns
-V/A rows without changing Q. Convert a separate current display column to mA
-if needed. The named card has IS=1.033e-15 A,N=1.001,BV=4.7 V,IBV=.005 A,
+V/A rows without changing Q. Use the returned curve's .out('idmA') for a
+current display in mA when the runtime supports this reader. The named card has IS=1.033e-15 A,N=1.001,BV=4.7 V,IBV=.005 A,
 RS=.387 ohms,CJO=258.9e-12 F,VJ=.8029 V,M=.3636,FC=.5. Omitted TT=0,EG=1.11,
 XTI=3,TNOM=300.15,NBV=1,KF=0,AF=1 are generic defaults, not fitted data.
 No explicit package L/C, fitted breakdown temperature coefficient, self-heating
@@ -624,10 +641,11 @@ conducting models also include contact/lead effects. This is not an RF
 capacitance at resonance. The curve preserves Q, RF/noise rows and I-V settings.
 smallSignal.totalCapacitance remains intrinsic; packageCapacitance,
 terminalCapacitance and seriesInductance expose the added package quantities.
-The API table stays in farads. For a readable linear C-V chart, create a
-separate pF display table using an explicit loop multiplying capacitance
-columns by 1e12; keep VR in volts and label the y axis pF. Do not add CSS or
-axis-spacing overrides to accommodate long decimal tick labels.
+The original API array stays in farads. In capable bundles, assign the C-V
+result to capacitance, then use capacitance.out('cjpF','ctpF') for a pF display
+table; VR stays in volts. Use metricPrefix:'none' and label the y axis pF.
+Do not write conversion loops or add CSS/axis-spacing overrides. Older pins
+may lack this reader; report that limit rather than adding a helper wrapper.
 D's standalone default is still VD=.6 V: explicitly choose negative VD for
 varactors, or supply an external bias network. The sourced fit covers reverse
 0–15 V; do not treat generic forward/leakage/breakdown defaults, classical
@@ -684,6 +702,26 @@ in outputPath (root default ''); nested namespaces use solveDC placement IDs.
 Numbers and strings are different node labels. Internal nodes can be measured
 without adding an external RF output port or its matched RF load.
 
+For power sweeps pass inputPowerDbm as a nonempty dBm array or
+{start:-90,stop:-60,points:7}. Ranges are linear in dBm, include both endpoints,
+and need distinct finite endpoints and an integer count >=2; descending ranges
+work. Lists preserve order. A sweep returns immutable inputPowerDbm and results
+arrays, one full scalar result per power, with a shared RF-off bias solution.
+A failing weak-signal point rejects the entire call.
+
+Scalar and sweep results provide .out(...selectors, {label}). Always specify
+at least one measurement, for example .out('deltaVoltageuV'). Empty and label-only
+calls reject in current capable bundles. Select baselineVoltage, deltaVoltage or voltage in V; append mV
+or uV for millivolts or microvolts (for example deltaVoltageuV). Also supported:
+sensitivityVoltsPerWatt (V/W). Optional nonempty label names a single trace or
+prefixes multiple trace names. The fresh table starts with Input (dBm) and
+measurement headers with units. Use metricPrefix:'none' in chart/table calls.
+Do not write loops, push table rows or multiply voltages to produce a detector
+power plot. Use named analysis results and their .out() tables. Tables require
+finite powers/results; inspect RF-off scalar fields directly. Methods are not
+included in JSON/structured clones. Older rectify-capable bundles may lack
+sweeps/.out; verify the supplied runtime before using this newer API.
+
 The method independently solves RF-off DC, including passive zero-bias circuits,
 and rebuilds each D() placement at that bias. It calculates loaded junction RMS
 RF voltages, their average quadratic currents and the coupled DC Jacobian
@@ -722,6 +760,164 @@ share the estimate/refine solver with BJTs but retain their own leakage
 placement, breakdown, temperature and RF/noise/nonlinearity treatment. Curves
 and reused templates stay unchanged. The legacy forward Cj clamp remains
 a model limitation; do not substitute it for a specialized diode model.
+
+
+### Common output units for measurement tables
+
+Current capable bundles accept a final units object across RF, DC, device
+curves, rectification, waveform/PN/mod/demod measurement tables and FFT output.
+Keep underlying settings and samples in their existing SI/native units; request
+display conversion inside .out(), without loops or helpers. Existing calls and
+legacy ns/s waveform defaults remain compatible.
+
+```js
+var response = network.out('s21dB', {units: {frequency: 'GHz'}});
+nP.lineChart({inputTable: [response], metricPrefix: 'none'});
+```
+
+Other examples: dc.out('ic',{component:q1,units:{current:'mA'}}),
+curves.out('ic',{units:{current:'mA'}}),
+source.out('waveform',{units:{time:'us',voltage:'mV'}}), and
+spectrum.out('dBV',{units:{frequency:'MHz',voltage:'mV'}}).
+Use named results before chart/table calls; do not nest nP calls.
+
+Accepted quantity/unit pairs (case-sensitive):
+- frequency: Hz/kHz/MHz/GHz/THz; time: s/ms/us/ns/ps.
+- voltage: V/mV/uV/nV/dBV; current: A/mA/uA/nA/pA.
+- capacitance: F/mF/uF/nF/pF/fF; resistance: ohm/kohm/Mohm; temperature: K.
+- angle: deg/rad; power: W/mW/uW/nW/pW/dBm/dBW.
+- powerDensity: W/Hz,mW/Hz,uW/Hz,nW/Hz,pW/Hz,dBm/Hz,dBW/Hz.
+- sensitivity: V/W,mV/W,uV/W.
+ASCII u displays as µ; micro signs and Ω/kΩ/MΩ aliases are accepted.
+A requested quantity must exist in the table. Unknown, incompatible and unused
+requests reject. All columns of that quantity convert. Unspecified quantities
+retain their chosen units. A units map overrides a selector suffix for the same
+quantity; prefer unsuffixed selectors with the map. Duplicate resulting headings
+reject. Existing label, component/node and FFT floor options remain supported
+where those readers already define them. Digital table readers accept units
+only; do not invent other options. Underlying results and captured data do not
+change. An empty units object makes declared units explicit without rescaling.
+
+Original unit-selected tables tell lineChart/lineTable/smithChart not to apply
+another default giga division. Omit metricPrefix or use 'none'/'one'; another
+explicit prefix rejects. Use matching horizontal units across one plot's input
+tables. Default line-chart axes follow unit declarations; explicit titles win.
+For copied, JSON/structured-cloned or worker-transported tables, use
+metricPrefix:'none': copies retain converted values/headings but lose private
+metadata. Always using none for unit-selected output is portable and simple.
+
+Units do not change amplitude convention. RF signal voltage is peak; FFT dBV
+is calibrated one-sided RMS with its existing floor. Raw FFT coefficients do
+not become volts. S/NF ratios keep their existing dB/linear selectors; they are
+not absolute power. Available input power, IM/OIP and noise density retain their
+references when converted (dBm=1mW, dBW=1W, dBV=1V). Negative arguments cannot
+become logarithms; zero becomes -Infinity without an invented floor. Signed
+linear currents/covariances and undetermined DC values retain their meaning.
+Advanced decoded-symbol waveform outputs contain bits, not volts: unit-selected
+headers say Decoded bit. Normalized VNA responses are dimensionless. Request a
+carrier waveform for physical voltage. Raw bits, settings, scalar outputs, raw
+sample vectors and complex spectra reject units requests; use a supported
+measurement table. Older outTable/noiseOut methods keep their legacy signatures.
+
+Only use this option with a verified capable runtime. Older supplied bundles
+and the baseline Obsidian pin may lack it or ignore it. Do not silently upgrade
+a pin, infer capability from the version string or add compatibility wrappers.
+
+### Device-curve result output
+
+In current capable bundles, every ivTable()/cvTable() result remains its
+original mutable SI table array and also exposes .out(...selectors, {label}).
+Use named steps; let the library select columns, label traces and convert units:
+
+```js
+var curves = q1.ivTable();
+var current = curves.out('icmA', {label: 'Q1'});
+```
+
+BJT common-emitter/common-base curves select ic; common-collector selects
+outward ie. FET and diode curves select id. C-V selects cj and/or ct, such as
+var capacitancePf = capacitance.out('cjpF', 'ctpF');. All existing stepped
+bias traces, signs and sweep order are preserved. Raw arrays remain V/A/F.
+Current suffixes: A/mA/uA/nA/pA; capacitance: F/mF/uF/nF/pF/fF.
+Optional first selector chooses the existing voltage axis in V/mV/uV:
+var current = curves.out('vcemV', 'icuA');. Omit it to keep the original V axis.
+Use only the table's supplied axis (vd,vr,vce,vcb,vds) and measurements.
+Do not select bias-step conditions as if they were measured columns; individual
+step filtering is not provided. At least one dependent measurement is required.
+Missing/unavailable measurements, incompatible units, duplicate columns and
+unknown options reject. Selected data and scaled values must be finite.
+
+A nonempty label names one column with units, or prefixes each quantity/bias
+heading for multiple columns. ASCII u displays as µ. Each .out() returns fresh
+rows from captured SI samples, without changing Q, RF, noise, curves or supplied
+records. Edits to the raw array or display rows do not change captured data.
+JSON/structured clones and ordinary array copies retain table data without the
+reader; call .out on the original result. Legacy diode1N4148 keeps its original
+positional ivTable and vD/iD headers; its reader selects lowercase vd/id.
+Display with nP.lineChart({inputTable:[current],metricPrefix:'none'}) or
+nP.lineTable({inputTable:[current],metricPrefix:'none'}); use the selected units
+in axis titles. Do not loop, scale samples or hand-build a display table.
+
+Older bundles may return bare arrays. Verify the actual runtime before using
+this reader; do not write a conversion/helper wrapper or silently upgrade a pin.
+
+### DC measurement tables in current standalone bundles
+
+Both network.solveDC() and the automatic network.operatingPoint result expose
+.out(...selectors, options). Verify this reader in older/pinned runtimes before
+using it; the pinned Obsidian bundle may still expose raw data only. Do not
+manufacture an HTML/npjs compatibility helper when the reader is absent.
+
+Use a named DC result, then a named table, then the built-in table renderer:
+
+```js
+var dc = network.operatingPoint;
+var biasTable = dc.out('vgs', 'vds', 'idmA', {component: q1, label: 'Q1'});
+```
+
+Use network.solveDC() for an explicit solve; reading .out does not solve again
+or change device bias. component:q1 selects the original component's captured
+model, independent of row ordering. If that template is placed more than once,
+select component:'p6' or a nested placement path such as 'p1/p3'; ambiguity is
+an error. A newly constructed equivalent part is not the original placement.
+label is optional nonempty text naming the selected table row.
+
+Selectors are required. Device fields include vbe/vce/vcb, ib/ic/ie,
+vgs/vds/vbs, ig/id/is, external terminal voltages, intrinsic voltages,
+junctionVoltage/junctionCurrent and temperature where the solved qPoint supplies
+them. Fields unavailable on a selected device reject. bulkResistance is available
+for the charge-storage PIN's solved DC state. BJT ie is outward, while i3 enters
+terminal 3. Default units V/A/ohm/K; append V/mV/uV, A/mA/uA, ohm/kohm or K as
+appropriate, for example ibuA, icmA, v12mV and bulkResistancekohm. ASCII u
+renders as µ in headings. Incompatible units and duplicate columns reject.
+
+Generic terminal selectors: v1 through v9 are absolute terminal voltage;
+v12/v21 mean first minus second terminal; v(12) or v(12,3) disambiguate
+multi-digit ports. i1/i2/... are entering terminal currents. All port numbering
+uses the constructor's public order. For a resistor use
+var resistorTable = dc.out('v12','i1mA',{component:r1,label:'R1'});
+
+Node observations: dc.out('voltage',{node:'rail'}) for one absolute voltage;
+dc.out('voltagemV',{nodes:['detector','reference']}) for a difference. path:''
+is the root node namespace; another string selects a nested namespace. Numeric
+and string node IDs stay distinct. The label 'g' does not select an implicit
+ground. Differential measurements use the retained observation equations, so
+known differences remain measurable between floating nodes. Undetermined values
+are text 'undetermined' in tables, while raw result fields remain null.
+
+Without component, device-field selectors read all qPoint-bearing devices;
+generic terminal selectors read all component records. Without node/nodes,
+voltage lists user nodes in the selected namespace. Do not mix component and
+node measurements in one call. Every requested field must exist on selected
+rows; use separate calls for incompatible device families.
+
+Tables have a text Component/Node column followed by measurements with unit
+headings. Display with nP.lineTable({inputTable:[biasTable],metricPrefix:'none'}).
+These are static DC observations, not numeric-x curve data for lineChart. Output rows are fresh
+copies; results remain deeply frozen. Non-enumerable .out methods are omitted
+from JSON/structured clones; cloned data do not retain the reader. Do not loop
+through component records, reconstruct a device to display DC bias, multiply
+currents for display, or hand-build DC tables when this API is available.
 
 
 ## Physical microstrip and filters
@@ -1221,5 +1417,34 @@ fixture is excluded. Independent SPICE agreement is tight, but comparison with
 the measured 2 V/15 mA table shows up to about 2.1 dB S21 magnitude and 28° phase
 difference over 0.5–6 GHz. Do not promise a close measured-data fit, packaged
 NF or large-signal behavior. Existing nominal-temperature limitations apply.
+
+### Detector shapes and measured schematic labels (newer renderer)
+
+Current standalone browser renderers detect diodeDetector and differentialDetector,
+or accept `nP.schematic(network,{shapes:['diodeDetector']})` and the corresponding
+differentialDetector name. They have one RF input; the DC measurement uses
+internal nodes and does not need another RF port.
+
+Single diode: optional series input C, Tee with L/R-to-Short input return,
+anode-to-cathode diode and output Tee with separate R-to-Short and C-to-Short
+load/bypass branches. Pair: coupled RF input to one diode, separate bias chokes,
+a common bias Tee/R and V/Short supply, and separate R/C output branches for
+both diodes. A supply Tee/C/Short bypass is optional. Junction, Schottky, Zener
+and varactor symbols preserve their numbered anode/cathode terminals. Other
+bias circuits or combined RC parts need another supported layout; do not alter
+the circuit to make this shape match.
+
+The shared engine places RF left, common bias above and related output/load
+branches on aligned baselines. Do not supply tuned coordinates, compensating
+spacing or graph/SVG corrections. Grouped/composed paths may end in these
+one-port boards: their interface is from:[1],to:[], so explicit sections use
+from:inputNode,to:[]. Boundaries accept string/finite-number labels; numeric
+and string IDs remain distinct. Two-port boards still require their output.
+
+Numeric R/L/C captions use engineering units such as 10 kΩ, 1 µH and 100 pF
+at the selected significantDigits. Named/wide node IDs use measured rounded
+enclosures; ordinary short numeric IDs keep circles. These presentation rules
+preserve the analysis and node identities. Verify availability in the supplied
+bundle.
 
 <!-- End of nP websites agent instructions -->

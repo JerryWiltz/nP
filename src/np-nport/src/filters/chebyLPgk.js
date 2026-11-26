@@ -1,6 +1,10 @@
-// Modified: 2026-11-21
+// Modified: 2026-11-26
+import {requireNumber} from '../numericValidation';
 // Generates an array of Chebyshev values based on the number of sections and ripple
 export function chebyLPgk (n = 3, ripple = 0.1) { // Returns gk's shown in formula 4.05-2 on page 99 of MYJ
+	requireNumber('chebyLPgk', 'section count', n, {positive: true, integer: true});
+	requireNumber('chebyLPgk', 'ripple (dB)', ripple, {positive: true});
+	if (n > 2 ** 32 - 4) throw new RangeError('chebyLPgk section count exceeds the array size limit.');
 	var	chebyLPgkin = new Array(1 + 1 + n + 1),  // Table title row, go row, gk's (n rows), and g(k+1)
 		chebyLPgkout = [],
 		i, row;
@@ -34,6 +38,7 @@ export function chebyLPgk (n = 3, ripple = 0.1) { // Returns gk's shown in formu
 
 	// Populate chebyLPgkout
 	for(row = 1; row < chebyLPgkin.length; row++) { chebyLPgkout[row - 1] = chebyLPgkin[row][2] };
+	chebyLPgkout.forEach(function (value) { requireNumber('chebyLPgk', 'calculated prototype value', value, {positive: true}); });
 
 	return chebyLPgkout;
 };

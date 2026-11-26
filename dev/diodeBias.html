@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Modified: 2026-11-19 -->
+<!-- Modified: 2026-11-26 -->
 <html lang="en">
 <head>
     <meta charset="utf-8">
@@ -35,8 +35,8 @@
             ['out', 100, 101]
         );
 
-        var bias = network.operatingPoint.components[5].qPoint;
-        var biasTable = [['VD (V)', 'ID (mA)'], [bias.vd, bias.id * 1e3]];
+        var dc = network.operatingPoint;
+        var biasTable = dc.out('vd', 'idmA', {component: d1, label: 'D1'});
         var response = network.out('s11dB', 's21dB');
 
         nP.lineTable({inputTable: [biasTable], title: 'External network DC bias', metricPrefix: 'none'});

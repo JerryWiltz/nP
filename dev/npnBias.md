@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-17 -->
+<!-- Modified: 2026-11-26 -->
 # Automatic NPN bias and RF
 
 Open `npnBias.html` using the local `../dist/nP.js` bundle. It builds a 2N3904
@@ -42,3 +42,7 @@ The emitter capacitor opens at DC, leaving the 2 kohm resistor to set bias.
 At RF the parallel capacitor reduces emitter degeneration. With the 50-ohm
 measurement reference, S21 is +7.81195 dB at 1 MHz and +6.83980 dB at 100 MHz.
 The schematic displays the parallel RC branch and both 10 nF coupling capacitors.
+
+DC measurements are displayed through the operating-point result’s `.out()`
+method and `nP.lineTable()`; placement selection, unit conversion and table
+assembly belong to the library.

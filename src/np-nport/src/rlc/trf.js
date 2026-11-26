@@ -1,15 +1,16 @@
-// Modified: 2026-11-21
+// Modified: 2026-11-26
 import {requiredDcModel} from '../dcModel';
 import { complex } from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import { nPort } from '../nPort'
 import { global } from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
-import {componentSettings} from '../componentSettings';
+import {validatedComponentSettings, requireNumber, checkedSpars} from '../numericValidation';
 
 export function trf(N = 0.5, options = {}) { // ideal transformer nPort object
+	requireNumber('trf', 'turns ratio', N);
 	var trf = new nPort;
-	var settings = componentSettings(global, options);
+	var settings = validatedComponentSettings(global, options, 'trf');
 	var frequencyList = analysisFrequencies(settings);
 	var freqCount, s11, s12, s21, s22, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
@@ -19,7 +20,7 @@ export function trf(N = 0.5, options = {}) { // ideal transformer nPort object
 		s22 = complex((1 - N ** 2) / (N ** 2 + 1), 0);
 		sparsArray[freqCount] = [frequencyList[freqCount], s11, s12, s21, s22];
 	}
-	trf.setspars(sparsArray);
+	trf.setspars(checkedSpars('trf', sparsArray));
 	trf.setglobal(settings);
 	trf._schematic = schematicPart('trf', {labelPrefix: 'trf', turnsRatio: N});
 	trf._dcModel = requiredDcModel('trf', 2, 'Supply winding DC resistance and return paths, or explicitly select an ideal transformer fixture.', {turnsRatio: N}, settings);

@@ -1,4 +1,5 @@
-// Modified: 2026-11-19
+// Modified: 2026-11-26
+import {withCurveOutput} from '../curveOutput';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {global} from '../../../np-global/src/global';
@@ -148,7 +149,7 @@ function legacyDiodeInstance(p, settings, state, description) {
 			table.push([voltage, legacyDiodeCurrentAtVoltage(voltage, p)]);
 		}
 
-		return table;
+		return withCurveOutput(table, {axis: 'vd', measurements: ['id']});
 	};
 
 	diodePort._schematic = schematicPart('diode1N4148');

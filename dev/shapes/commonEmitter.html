@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Modified: 2026-11-19 -->
+<!-- Modified: 2026-11-26 -->
 <html lang="en">
 <head>
     <meta charset="utf-8">
@@ -59,10 +59,10 @@
 
         var response = amplifier.out('s11dB', 's21dB');
         var operatingPoint = amplifier.operatingPoint;
-        var transistorPoint = operatingPoint.components[2].qPoint;
+        var transistorPoint = operatingPoint.out('vbe', 'vce', 'icmA', {component: q1, label: 'Q1'});
 
         var drawing = nP.schematic(amplifier);
-        nP.log(transistorPoint);
+        nP.lineTable({inputTable: [transistorPoint], metricPrefix: 'none'});
         nP.lineChart({inputTable: [response], title: 'Divider-biased NPN amplifier', metricPrefix: 'mega'});
     </script>
 </body>

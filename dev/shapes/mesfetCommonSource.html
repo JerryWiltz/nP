@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Modified: 2026-11-19 -->
+<!-- Modified: 2026-11-26 -->
 <html lang="en">
 <head>
     <meta charset="utf-8">
@@ -46,8 +46,8 @@
             [short1, 14],
             ['out', 100, 101]
         );
-        var point = network.operatingPoint.components[4].qPoint;
-        var dcTable = [['Vgs (V)', 'Vds (V)', 'Id (mA)'], [point.vgs, point.vds, 1000 * point.id]];
+        var dc = network.operatingPoint;
+        var dcTable = dc.out('vgs', 'vds', 'idmA', {component: q1, label: 'Q1'});
         nP.lineTable({inputTable: [dcTable], metricPrefix: 'none'});
         var response = network.out('s11dB', 's21dB');
         nP.lineChart({inputTable: [response], title: 'Self-biased MESFET reference: 50 ohm S-parameters', xAxisTitle: 'Frequency (MHz)', metricPrefix: 'M'});

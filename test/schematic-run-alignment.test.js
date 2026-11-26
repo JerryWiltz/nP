@@ -1,4 +1,4 @@
-// Modified: 2026-11-22
+// Modified: 2026-11-26
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as nP from '../src/index.js';
@@ -71,7 +71,7 @@ test('changing only a supplied part name cannot introduce a jog into the noise-s
 
 for (const flow of ['right', 'left', 'down', 'up']) test(`straight-run spacing depends on occupied geometry, not coarse packing; ${flow}`, () => {
     nP.global.fList = [10e9];
-    const parts = [nP.R(75), nP.Attn(10), nP.C(1e-12), nP.Load(50)];
+    const parts = [nP.R(75), nP.Attn(10), nP.C(1e-12), nP.Load()];
     const network = nP.nodal([parts[0], 1, 2], [parts[1], 2, 3], [parts[2], 3, 4], [parts[3], 4], ['out', 1]);
     const spans = [];
     for (const gap of [120, 1200]) withFlow(flow, options => {

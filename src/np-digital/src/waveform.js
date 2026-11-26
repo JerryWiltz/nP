@@ -1,4 +1,5 @@
-// Modified: 2026-10-20
+// Modified: 2026-11-26
+import {withOutputUnits, unitColumn} from '../../np-global/src/outputUnits';
 import {global} from '../../np-global/src/global';
 
 // Sample one periodic voltage waveform on the selected time grid.
@@ -106,5 +107,5 @@ export function waveform(options = {}) {
 		if (selector === 'period') return period;
 		throw new RangeError('Unknown waveform output: ' + selector);
 	};
-	return result;
+	return withOutputUnits(result, {waveform: [unitColumn('time', 's'), unitColumn('voltage', 'V')]}, 'waveform');
 }

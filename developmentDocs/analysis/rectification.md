@@ -1,5 +1,11 @@
-<!-- Modified: 2026-11-25 -->
+<!-- Modified: 2026-11-26 -->
 # Weak-signal RF-to-DC rectification
+
+Measurement tables support the common [output-unit map](outputUnits.md):
+`result.out('deltaVoltage',{units:{voltage:'uV',power:'W'}})` displays DC change
+in µV versus available input power in W. Sensitivity independently uses the
+`sensitivity` key (V/W, mV/W or uV/W). Scalar results, power settings and the
+electrical calculation remain unchanged.
 
 `network.rectify(options)` calculates the second-order steady DC response to
 one CW input, using the retained `nodal()`/`cascade()` network. This is a shared
@@ -24,8 +30,12 @@ var sensitivity = detected.sensitivityVoltsPerWatt;
 ```
 
 - `frequencyHz`: required positive frequency already in the component grid.
-- `inputPowerDbm`: required available source power in dBm, or `-Infinity` for RF
-  off. Finite powers that overflow or underflow the numeric range reject.
+- `inputPowerDbm`: required available source power in dBm, a nonempty power
+  array, or `{start, stop, points}` for an endpoint-inclusive linear dBm sweep.
+  Ranges need distinct finite endpoints and an integer count of at least two;
+  descending ranges are allowed. Lists preserve their order, including repeated
+  powers. `-Infinity` means RF off in a scalar or list. Finite powers that
+  overflow or underflow the numeric range reject.
 - `inputPort`: one-based driven external port, default 1. The source and every
   other external RF port are matched to the network's captured `Ro`.
 - `outputNodes`: required positive/negative node labels in the selected
@@ -56,6 +66,42 @@ previous operating point. It independently solves RF-off DC even in a passive
 network without `V()`, then rebuilds each diode at its own solved bias. The
 constructor's default 0.6 V is therefore not imposed on a passive detector.
 Ordinary construction and `solveDC()` retain their existing behavior.
+
+## Power sweeps and chart-ready output
+
+```js
+var inputPowers = {start: -90, stop: -60, points: 7};
+var sweep = network.rectify({frequencyHz: 1e9, inputPowerDbm: inputPowers,
+    outputNodes: ['detector', 'reference']});
+var detectedOutput = sweep.out('deltaVoltageuV', {label: 'Differential'});
+nP.lineChart({inputTable: [detectedOutput], metricPrefix: 'none',
+    xAxisTitle: 'Available RF input (dBm)', yAxisTitle: 'DC change (µV)'});
+```
+
+The library owns sweeping, table assembly and unit conversion. A sweep returns
+an immutable `kind: 'weak-signal-rectification-sweep'` object with common settings,
+the resolved `inputPowerDbm` array and `results`, one complete scalar result per
+power in the same order. It solves RF-off bias once and shares that immutable
+operating point across all results. Each power undergoes the existing RF and DC
+weak-signal checks; a failing point rejects the call without a partial result.
+Scalar input retains all previous fields and behavior.
+
+Both scalar and sweep results provide `.out(...selectors, {label})`. At least
+one measurement selector is required, such as `deltaVoltageuV`; there is no
+implicit default. Empty calls and label-only calls report an actionable error,
+matching RF and DC output. The optional nonempty `label` names a single trace
+or prefixes multiple trace names. Selectors are `baselineVoltage`, `deltaVoltage`
+and `voltage` in volts, their `mV` or `uV` suffixes for millivolts or microvolts
+(for example `deltaVoltageuV`), and `sensitivityVoltsPerWatt` in V/W. Returned
+tables begin `['Input (dBm)', ...columnLabels]`, followed by numeric data rows.
+They are fresh mutable copies suitable for `lineChart()` or `lineTable()`;
+changing a table does not change the analysis. Use `metricPrefix: 'none'`
+because the x values are already dBm. Unknown or duplicate selectors reject.
+
+Table output requires finite powers and finite selected results: RF-off rows
+reject rather than inserting nonnumeric chart data. Inspect those scalar
+results directly instead. `out` is non-enumerable; JSON/structured clones retain
+the data without copying the method. No new electrical approximation is added.
 
 ## Electrical calculation and provenance
 

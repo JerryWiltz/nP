@@ -1,4 +1,5 @@
-// Modified: 2026-11-19
+// Modified: 2026-11-26
+import {withCurveOutput} from '../../curveOutput';
 import {global} from '../../../../np-global/src/global';
 import {nPort} from '../../nPort';
 import {componentSettings} from '../../componentSettings';
@@ -68,7 +69,7 @@ function ivTable(p, configuration, bias, polarity, options = {}) {
             initial = [point.intrinsicVbe, point.intrinsicVbc];
         }
     }
-    return table;
+    return withCurveOutput(table, {axis: selected.voltage, measurements: [measured], step: {name: selected.current, values: stepped}});
 }
 
 function polarizedCoefficients(row, polarity) {

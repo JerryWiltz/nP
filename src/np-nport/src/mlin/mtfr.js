@@ -1,4 +1,4 @@
-// Modified: 2026-11-16
+// Modified: 2026-11-26
 import {namedDcModel} from '../dcModel';
 import {cascade} from '../combining/cascade';
 import {schematicPart} from '../schematicPart';
@@ -44,7 +44,7 @@ export function mtfr(input = {}) {
 		relativePermittivity: er, resistivity: 0, lossTangent: tand, roughnessRms: 0,
 		fList: options.fList
 	});
-	var resistorSection = R({resistance: resistancePerSection, fList: options.fList});
+	var resistorSection = R(resistancePerSection, Temp, {fList: options.fList});
 	var nPorts = [];
 
 	for (var section = 0; section < sectionCount; section++) {

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-21 -->
+<!-- Modified: 2026-11-26 -->
 # Self-biased pHEMT die common-source amplifier
 
 Open [the harness](hemtDieCommonSource.html) with the current browser bundle.
@@ -17,3 +17,7 @@ See [the model contract](../../developmentDocs/semiconductors/hemtModels.md) for
 partitioned static gate charge, die parasitics, P/R/C noise and limitations.
 Independent ngspice decks exercise DC and every S entry; their unit-current
 responses also provide an independent correlated-noise reference.
+
+The DC table comes directly from `network.operatingPoint.out('vgs', 'vds',
+'idmA', {component: q1, label: 'Q1'})`; the library selects the placement and
+converts amperes to milliamperes. The example does not assemble DC table rows.

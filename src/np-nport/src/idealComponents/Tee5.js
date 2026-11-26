@@ -1,15 +1,15 @@
-// Modified: 2026-11-21
+// Modified: 2026-11-26
 import {connectionDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort'
 import {global}  from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
-import {componentSettings} from '../componentSettings';
+import {validatedComponentSettings, checkedSpars} from '../numericValidation';
 
 export function Tee5(options = {}) { // an ideal five-port junction
 	var Tee5 = new nPort;
-	var settings = componentSettings(global, options);
+	var settings = validatedComponentSettings(global, options, 'Tee5');
 	var frequencyList = analysisFrequencies(settings);
 	var freqCount, s11, s12, s13, s14, s15, s21, s22, s23, s24, s25, s31, s32, s33, s34, s35, s41, s42, s43, s44, s45, s51, s52, s53, s54, s55, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
@@ -18,7 +18,7 @@ export function Tee5(options = {}) { // an ideal five-port junction
 		
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s14, s15, s21, s22, s23, s24, s25, s31, s32, s33, s34, s35, s41, s42, s43, s44, s45, s51, s52, s53, s54, s55];
 	}	
-	Tee5.setspars(sparsArray);
+	Tee5.setspars(checkedSpars('Tee5', sparsArray));
 	Tee5.setglobal(settings);
 	Tee5._schematic = schematicPart('Tee5', {labelPrefix: 'Tee5'});
 	Tee5._dcModel = connectionDcModel('Tee5', 5, [[1, 2, 3, 4, 5]], [], {}, settings);

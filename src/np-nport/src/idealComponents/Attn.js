@@ -1,11 +1,11 @@
-// Modified: 2026-11-16
+// Modified: 2026-11-26
 import {dcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {global} from '../../../np-global/src/global';
 import {nPort} from '../nPort';
 import {analysisFrequencies} from '../analysisFrequencies';
-import {componentSettings} from '../componentSettings';
+import {validatedComponentSettings, checkedSpars} from '../numericValidation';
 
 const kB = 1.380649e-23;
 
@@ -28,7 +28,7 @@ export function Attn(attenuationDb = 3, temperature = global.Temp, options = {})
 	var attenuator = new nPort();
 	var sparsArray = [];
 	var noiseArray = [];
-	var settings = componentSettings(global, options);
+	var settings = validatedComponentSettings(global, options, 'Attn');
 	var frequencies = analysisFrequencies(settings);
 	for (var i = 0; i < frequencies.length; i++) {
 		var frequency = frequencies[i];
@@ -41,7 +41,7 @@ export function Attn(attenuationDb = 3, temperature = global.Temp, options = {})
 			]
 		};
 	}
-	attenuator.setspars(sparsArray);
+	attenuator.setspars(checkedSpars('Attn', sparsArray));
 	attenuator.noise = noiseArray;
 	attenuator.setglobal(settings);
 	attenuator.temperature = temperature;

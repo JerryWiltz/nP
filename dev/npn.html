@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Modified: 2026-11-15 -->
+<!-- Modified: 2026-11-26 -->
 <html lang="en">
 <head>
     <meta charset="utf-8">
@@ -30,7 +30,8 @@
             [short, 3],
             ['out', 1, 2]
         );
-        var curves = q1.ivTable();
+        var curvesData = q1.ivTable();
+        var curves = curvesData.out('icmA');
         var fixedBias = q1.bias;
         var response = ce.out('s11dB', 's21dB');
         var stability = ce.out('K', 'deltaMag');
@@ -38,7 +39,7 @@
         var intercepts = ce.out('OIP2sum21dBm', 'OIP3lower21dBm');
 
         nP.lineChart({inputTable: [curves], title: '2N3904 common emitter: stepped IB',
-            metricPrefix: 'none', xAxisTitle: 'VCE (V)', yAxisTitle: 'IC (A)'});
+            metricPrefix: 'none', xAxisTitle: 'VCE (V)', yAxisTitle: 'IC (mA)'});
         nP.lineChart({inputTable: [response], title: '2N3904 common-emitter S-parameters',
             metricPrefix: 'mega', xAxisTitle: 'Frequency (MHz)', yAxisTitle: 'S (dB)'});
         nP.lineChart({inputTable: [stability], title: 'Final two-port stability',
@@ -52,15 +53,17 @@
 
         // Common-base curves: IC versus VCB, stepped outward IE
         var q2 = nP.NPN({configuration: 'commonBase', qPoint: {ie: 2e-3, vcb: 5}});
-        var baseCurves = q2.ivTable();
+        var baseCurvesData = q2.ivTable();
+        var baseCurves = baseCurvesData.out('icmA');
         nP.lineChart({inputTable: [baseCurves], title: '2N3904 common base: stepped IE',
-            metricPrefix: 'none', xAxisTitle: 'VCB (V)', yAxisTitle: 'IC (A)'});
+            metricPrefix: 'none', xAxisTitle: 'VCB (V)', yAxisTitle: 'IC (mA)'});
 
         // Common collector retains positive VCE and reports outward IE
         var q3 = nP.NPN({configuration: 'commonCollector'});
-        var collectorCurves = q3.ivTable();
+        var collectorCurvesData = q3.ivTable();
+        var collectorCurves = collectorCurvesData.out('iemA');
         nP.lineChart({inputTable: [collectorCurves], title: '2N3904 common collector: stepped IB',
-            metricPrefix: 'none', xAxisTitle: 'VCE (V)', yAxisTitle: 'IE (A)'});
+            metricPrefix: 'none', xAxisTitle: 'VCE (V)', yAxisTitle: 'IE (mA)'});
 
         // BFR93A includes its published SOT23 L/C network
         var q4 = nP.NPN({model: 'BFR93A', qPoint: {ib: 20e-6, vce: 5}});
@@ -69,10 +72,11 @@
             [short, 3],
             ['out', 1, 2]
         );
-        var bfrCurves = q4.ivTable();
+        var bfrCurvesData = q4.ivTable();
+        var bfrCurves = bfrCurvesData.out('icmA');
         var bfrResponse = bfr.out('s11dB', 's21dB');
         nP.lineChart({inputTable: [bfrCurves], title: 'BFR93A common emitter: stepped IB',
-            metricPrefix: 'none', xAxisTitle: 'VCE (V)', yAxisTitle: 'IC (A)'});
+            metricPrefix: 'none', xAxisTitle: 'VCE (V)', yAxisTitle: 'IC (mA)'});
         nP.lineChart({inputTable: [bfrResponse], title: 'BFR93A packaged RF model',
             metricPrefix: 'mega', xAxisTitle: 'Frequency (MHz)', yAxisTitle: 'S (dB)'});
     </script>

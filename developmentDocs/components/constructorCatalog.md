@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-25 -->
+<!-- Modified: 2026-11-26 -->
 # nP constructor catalog
 
 This catalog covers the 67 public functions that produce n-port objects from `src/np-nport/src/index.js`, the digital waveform functions from `src/np-digital`, and the exported math and low-pass prototype functions. Each JS call below spells out the **current defaults** where they exist. Each argument or property appears on its own line. Units are in comments. Each constructor has its own heading and code block.
@@ -28,7 +28,7 @@ Every n-port constructor uses `nP.global.fList` by default. For an independent f
 
 ```js
 var frequencies = [1e9, 1.5e9, 2e9];
-var resistor = nP.R({resistance: 75, fList: frequencies});
+var resistor = nP.R(75, nP.global.Temp, {fList: frequencies});
 var inductor = nP.L(5e-9, {fList: frequencies});
 var amplifier = nP.Amp({gainDb: 20, fList: frequencies});
 var attenuator = nP.Attn(3, nP.global.Temp, {fList: frequencies});
@@ -38,6 +38,16 @@ var filter = nP.lpfGen(undefined, {fList: frequencies});
 ```
 
 Each nPort stores a copy of its selected frequency list and analysis settings. Components in one `nodal()` or `cascade()` circuit must have matching frequency rows. Call `nP.global()` to create and select an independent circuit context. It holds its own `fList`, `tList`, `twoTone`, `Ro`, and `Temp`; `nP.global(g)` selects an earlier context `g` again. Existing `nP.global.fList` and related property calls use the selected context. `nP.global.tGen(start, stop, points)` returns a uniformly spaced time list in seconds, including both endpoints. Two-tone analysis still requires positive first-tone frequencies and a positive spacing.
+
+`fGen(start,stop,points)` requires finite numeric endpoints and an integer
+count >=1; one point returns `[start]` after validating both endpoints.
+Descending, constant and signed frequency lists remain supported.
+`tGen(start,stop,points)` requires finite endpoints, `stop > start` and an integer
+count >=2, since sampled analysis needs a time interval. Both return fresh
+arrays, preserve exact endpoints for multi-point lists, reject counts above
+the JavaScript array-length maximum (4294967295), and reject overflow or spacing
+that collapses adjacent points in a nonconstant interval. They do not assign
+`fList`/`tList`. See [grid generation](../analysis/gridGeneration.md).
 
 The 64 symbol-backed direct RF component constructors record internal schematic metadata and have bundled runtime symbols. Composite RLC parts retain their resistance, inductance, and capacitance values in schematic metadata; transformers retain their turns ratio. `lpfGen()` inherits a cascade tree from the components it constructs. `mbend({turn: 'left'})` selects a left-turn drawing; the default is a right turn. The turn changes only the drawing, not the bend S-parameters. `cas()` and `cascade()` preserve their construction tree. `nodal()` records each component placement's port-to-node assignments and the external port order. When a completed nodal nPort is used as a component, the renderer gives it a `nodal` block with the matching number of ports. Two-port circuits with a series path and simple shunt branches are laid out from their port-to-node connections; tree-shaped multiport circuits use their node connections for placement. Nodal circuits with loops use ORI's generic board or explicit shape guidance.
 
@@ -75,6 +85,24 @@ The renderer groups nodes along each straight run. Circled node numbers share on
 
 Positional arguments are JavaScript numbers. `R`, `L`, and `C` are the preferred series two-port names; `se` and `pa` expand to series and parallel.
 
+R/L/C values must be finite nonnegative numbers in Ω/H/F. Strings, booleans,
+null, arrays, NaN and infinities reject with a constructor/parameter error.
+Zero R/L is a short and zero C is an open; shared series/parallel branch rules
+retain these limits at DC and RF, including exact lossless LC resonance.
+Negative values are not passive elements and now reject rather than creating
+an RF result with an unsupported DC descriptor. Resistor temperatures must be
+finite nonnegative kelvin. R remains numeric-only in its first argument;
+existing seR/paR object forms remain available.
+
+The lumped, ideal-component and transformer constructors validate captured
+reference impedance (finite positive Ω), temperature (finite nonnegative K),
+finite frequency entries and options-object type. Empty construction grids
+and signed frequency rows remain supported; two-tone analysis retains its
+positive-frequency requirements. Computed nonfinite RF/noise values reject
+with a numeric-range error. This does not impose arbitrary component-value
+ceilings or change public argument positions/defaults. See
+[numeric validation](numericValidation.md) for coverage and limits.
+
 ### `R`
 
 ```js
@@ -84,13 +112,12 @@ nP.R(
     nP.global.Temp  // temperature: K
 );
 // returns an nPort object
-
-nP.R({
-    resistance: 75,             // Ω
-    temperature: nP.global.Temp // K
-});
-// returns an nPort object
 ```
+
+The resistance is a numeric positional argument in ohms, default 75; a
+first-argument object is rejected. Optional temperature remains the second
+argument and `{fList}` remains the third. For example,
+`nP.R(75, 290, {fList: frequencies})` selects 75 Ω at 290 K on that grid.
 
 ### `seR`
 
@@ -458,7 +485,7 @@ var network = nP.nodal(
 );
 var rf = network.out('s11dB', 's21dB', 's12dB', 's22dB');
 var dc = network.solveDC();
-var resistorCurrent = dc.components[4].terminalCurrents[0]; // 0.005714285714 A
+var resistorCurrent = dc.out('i1mA', {component: r1, label: 'R1'}); // table: 5.714285714 mA
 // dc.nodes: node 2 = 1 V, node 3 = 0.714285714 V, node 5 = 0.285714286 V.
 // dc.ports: nodes 6 and 7 have voltage null and DC current 0.
 ```
@@ -470,6 +497,20 @@ var resistorCurrent = dc.components[4].terminalCurrents[0]; // 0.005714285714 A
 `dc.converged` is true after residual checks. Nonlinear results include `components[].qPoint`, placement-specific `operatingPoints`, `initialEstimate` and `convergence` history. `dc.residuals` reports KCL/scaled equation residuals, `dc.linearSystem` reports rank/unknown count, and `dc.model` retains the immutable construction model. All results support structured cloning. Missing or unsupported nonlinear models throw `DC_UNSUPPORTED_MODELS` with an `issues` array; unsupported numerical ranges or failed residual checks throw `DC_NUMERICAL_FAILURE`.
 
 An explicit `.solveDC()` call returns data while preserving the original RF/noise/signal data and `.dc` curve settings. During automatic analysis, `nodal()`/`cas()` first solve the complete DC network, rebuild independent transistor instances, and then combine their RF response. Original constructor templates remain intact. A failed solve stops RF construction. `DC_NONCONVERGENCE` reports failed nonlinear refinement; `DC_FLOATING_BIAS` reports an undetermined transistor bias. The [engineering contract](../analysis/dcAnalysis.md#implemented-linear-solve) describes reference rules, solver tolerances and numerical limits.
+
+Both returned and automatic `operatingPoint` results provide
+`.out(...selectors, options)`. Select device qPoint fields (`vgs`, `vds`, `ic`,
+etc.), numbered terminal voltage/current (`v1`, `v12`, `i1`), or node `voltage`.
+Append V/mV/uV or A/mA/uA as appropriate; charge-storage PIN also reports
+`bulkResistance` (Ω, optional ohm/kohm suffix) and devices expose temperature K.
+`{component: q1}` selects the original component model; reused templates require
+a path string such as `{component:'p6'}`. Node options are `{node:3}` or
+`{nodes:[positive,negative],path:''}`. Label names the selected row. Tables have
+a text Component/Node column; use `lineTable({inputTable:[table],metricPrefix:'none'})`.
+Undetermined observations display `undetermined`, preserving raw nulls and
+determined floating differences. Selectors are required. The result stays
+immutable; output rows are copies. Non-enumerable methods are omitted from JSON
+and structured clones. See [DC output](../analysis/dcOutput.md) for the full API.
 
 ## External transistor bias
 
@@ -520,6 +561,11 @@ var response = amplifier.out('s11dB', 's21dB');
 At the default 293 K, this example gives approximately IC = 1.307764 mA, VB = 1.999633 V, VE = 1.316875 V and VC = 9.122919 V. Finite base-current loading is included. The initial fixed-VBE/beta estimate is refined with the selected card's nonlinear equations. `operatingPoint.initialEstimate` and `.convergence` report assumptions, fallback and source stepping; final acceptance uses the original circuit. Nested and reused transistors receive independent states. Purely RF examples without a `V()` supply keep their selected fixed Q points.
 
 ## Ideal components and fixtures
+
+`Tlin`/`Tclin` require finite positive line impedances and finite nonnegative
+lengths in meters. `trf`/`trf4Port` require finite numeric turns ratios; signed
+ratios and the existing zero-ratio ideal limit remain valid. These checks run
+before RF calculations. Their existing defaults and DC-model limitations remain.
 
 The following constructors use no arguments for defaults; each also accepts an optional `{fList}` object.
 
@@ -1595,6 +1641,40 @@ Here, `stage` is the single attenuator used in the earlier data examples. `chain
 
 ### Extracting results with `.out()`
 
+The final options object supports a common `units` map on measurement tables:
+`network.out('s21dB',{units:{frequency:'GHz'}})`,
+`source.out('waveform',{units:{time:'us',voltage:'mV'}})`,
+`dc.out('ic',{component:q1,units:{current:'mA'}})` and
+`curves.out('ic',{units:{current:'mA'}})`. Existing calls and selector suffixes
+remain compatible; explicit units override a suffix for the same quantity.
+FFT supports axis units and calibrated voltage through its `dBV` selector;
+raw coefficients are not implicitly volts. Typed output headings state the
+chosen units. All selected columns of a requested quantity are converted.
+Unknown, incompatible and unused requests reject. Scalars, raw vectors, bits,
+settings and older `noiseOut`/`outTable` do not accept this map.
+
+Original unit-selected tables tell charts to use their current numeric units,
+without another default metricPrefix division. Omit metricPrefix or use `none`;
+another explicit prefix rejects. Plot inputs must share horizontal units.
+Copies/JSON/worker transport lose the private metadata: always use
+`metricPrefix:'none'` there. See [the complete output-unit contract](../analysis/outputUnits.md)
+and the [public unit reference](../../docs/output-units.md).
+
+Device-curve arrays returned by `ivTable()` and `cvTable()` also provide a
+non-enumerable `.out()` reader while preserving their original SI array data.
+For example, assign `var curves = q1.ivTable();`, then
+`var current = curves.out('icmA');`. FET/diode curves use `id`, common-collector
+BJT uses outward `ie`, and C–V selects `cj`/`ct`, for example
+`capacitance.out('cjpF', 'ctpF')`. All existing bias-step columns and signs remain.
+Optional first selector controls the existing voltage axis units, such as
+`curves.out('vcemV', 'icuA')`; it is not a new sweep. Current units are
+A/mA/uA/nA/pA, voltage V/mV/uV and capacitance F/mF/uF/nF/pF/fF. Base units apply
+without suffixes. At least one dependent measurement is required. A final
+`{label:'Q1'}` names one trace with units or prefixes multiple quantity/bias
+headings. Each call returns a fresh table from captured samples, independent of
+edits to the mutable raw array. JSON/structured clones retain only the plain
+data. See [device-curve output](../analysis/deviceCurveOutput.md).
+
 ```js
 // S-parameter result
 var sParameters = chain.out('s21dB');
@@ -1633,7 +1713,27 @@ Intermodulation selectors:
 
 The S and covariance selectors shown here use single-digit port numbers. NF, noise-floor, IM, harmonic, and OIP selectors also accept parenthesized ports for larger n-ports, for example `NF(10,1)dB`. Intermodulation selectors require a two-tone setup.
 
-An optional final options object sets the noise measurement conditions:
+The final options object also accepts a nonempty string `label`:
+
+```js
+var gain = chain.out('s21dB', {label: 'Amplifier gain (dB)'});
+var response = chain.out('s11dB', 's21dB', {label: 'Amplifier'});
+```
+
+One selector uses the label as its heading. Multiple selectors use
+`Amplifier: s11dB`, `Amplifier: s21dB`, etc. The frequency heading remains
+`Freq`; numeric rows, selected frequencies and units remain unchanged.
+Labels do not infer or append units; include units in a single custom heading
+when needed. Without `label`, headings remain the selector strings. Empty or
+nonstring labels reject. Labels coexist with noise and `twoTone` options.
+At least one measurement selector is required, even with a final options object.
+An empty call reports an error suggesting `s21dB`; it no longer returns a
+frequency-only table. Read `spars` frequency entries or the captured frequency
+settings when frequencies alone are needed. Existing explicit selectors keep
+their headings and numeric results. DC and rectification output also require
+explicit selectors.
+
+The same final options object sets the noise measurement conditions:
 
 ```js
 // nPort.out: specify source and termination conditions
@@ -1669,6 +1769,21 @@ Ro; explicit DC loads/returns are required. The frequency must already exist.
 immutable operating-point/source/increment records. Nested outputPath uses DC
 placement IDs. Excessive junction RF voltage or DC shift rejects. No attached
 mod()/signal, compression, charging transient or detector-noise analysis.
+`inputPowerDbm` also accepts a nonempty dBm list or `{start,stop,points}` for a
+linear endpoint-inclusive sweep (distinct finite endpoints, integer count >=2;
+either direction). Sweeps solve RF-off bias once and return immutable
+`inputPowerDbm` and `results` arrays; each entry has the scalar result fields.
+Scalar and sweep results support `.out(...selectors, {label})`, returning a
+fresh table with input dBm followed by selected measurements. Select
+`baselineVoltage`, `deltaVoltage`, `voltage` in V, any of these with
+`mV`/`uV` suffixes, or `sensitivityVoltsPerWatt` in V/W. The optional label names
+a trace; multiple selectors prefix their measurement names. Use
+`metricPrefix:'none'` for charts/tables. RF-off values remain inspectable as
+scalar data; `.out()` requires finite powers/results. Every sweep point must
+pass the weak-signal checks or the whole call rejects.
+At least one measurement selector is required; `.out()` or a label-only call
+reports an error suggesting `deltaVoltageuV`. Use `.out('deltaVoltage')` to
+request the former default explicitly.
 See [rectification](../analysis/rectification.md) for the complete contract and
 [the browser example](../../dev/schottkyDetector.html).
 
@@ -1851,6 +1966,13 @@ complexSystem.solveGaussFBCplx(); // returns a complex one-column matrix
 ## Low-pass filter helpers
 
 Four helpers are exported: `chebyLPNsec()` chooses the section count, `chebyLPgk()` calculates normalized prototype values, `chebyLPLCs()` scales them to component values, and `lpfGen()` builds the two-port filter. The first three return numbers or arrays; `lpfGen()` returns an nPort that can be used in NF and IP analysis.
+
+The Chebyshev helpers require finite positive frequencies, ripple, rejection
+and impedance, a positive integer section count, and finite positive prototype
+entries. Rejection frequency must exceed pass frequency and rejection dB must
+exceed ripple dB. Prototype arrays need source/load entries and at least one
+reactive value. Unrepresentable calculated results reject; caller arrays remain
+unchanged. `lpfGen` retains its existing positive-value validation.
 
 ### `chebyLPNsec`
 

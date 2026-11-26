@@ -1,4 +1,5 @@
-// Modified: 2026-11-21
+// Modified: 2026-11-26
+import {withCurveOutput} from '../curveOutput';
 import {global} from '../../../np-global/src/global';
 import {componentSettings} from '../componentSettings';
 import {analysisFrequencies} from '../analysisFrequencies';
@@ -37,7 +38,7 @@ function cvTable(p, resistance, packageParameters, options = {}) {
         const point = diodeOperatingPoint(p, -voltage, resistance);
         table.push([voltage, point.junctionCapacitance, diodeTerminalCapacitance(point, p.RS, packageParameters)]);
     }
-    return table;
+    return withCurveOutput(table, {axis: 'vr', measurements: ['cj', 'ct']});
 }
 function ivTable(p, resistance, defaults, options = {}) {
     const sweep = sweepSettings(options, defaults), table = [['vd (V)', 'id (A)']];
@@ -46,7 +47,7 @@ function ivTable(p, resistance, defaults, options = {}) {
             sweep.start + index * (sweep.stop - sweep.start) / (sweep.points - 1);
         table.push([voltage, diodeOperatingPoint(p, voltage, resistance).id]);
     }
-    return table;
+    return withCurveOutput(table, {axis: 'vd', measurements: ['id']});
 }
 
 export function D(options = {}) {

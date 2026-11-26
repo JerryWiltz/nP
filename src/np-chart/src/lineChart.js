@@ -1,8 +1,9 @@
-// Modified: 2026-10-23
+// Modified: 2026-11-26
 import * as d3 from 'd3';
 import {normalizeInputTables} from './inputTables';
 import {CHART_FONT_FAMILY, CHART_FONT_SIZE} from './chartTypography';
 import {appendTooltipRows, formatTooltipFrequency, formatTooltipNumber} from './chartTooltip';
+import {explicitAxis} from '../../np-global/src/outputUnits';
 
 export function lineChart(options = {}) {
             // ======== Options & defaults ========
@@ -76,6 +77,9 @@ export function lineChart(options = {}) {
             } = options;
 
             const tables = normalizeInputTables(inputTable, 'lineChart', 'line');
+            const unitAxis = explicitAxis(tables, options.metricPrefix, 'lineChart');
+            const effectiveXAxisTitle = unitAxis ? options.xAxisTitle ?? unitAxis.xTitle : xAxisTitle;
+            const effectiveYAxisTitle = unitAxis ? options.yAxisTitle ?? unitAxis.yTitle : yAxisTitle;
             if (plotType !== 'line' && plotType !== 'bar') {
                 throw new RangeError('lineChart: plotType must be line or bar.');
             }
@@ -132,11 +136,11 @@ export function lineChart(options = {}) {
             let txtLabels = d3.selectAll([]);
 
             // Metric Scale
-            const pickScale = {
+            const pickScale = unitAxis ? 1 : ({
                 tera: 1e12, giga: 1e9, mega: 1e6, kilo: 1e3,
                 none: 1, one: 1, deci: 1e-1, centi: 1e-2,
                 milli: 1e-3, micro: 1e-6, nano: 1e-9, pico: 1e-12
-            }[metricPrefix] || 1e9;
+            }[metricPrefix] || 1e9);
 
             // Format Data
             const formattedData = tables.map(table => {
@@ -455,7 +459,7 @@ export function lineChart(options = {}) {
                 .attr('text-anchor', 'middle')
                 .attr('class', 'txtXAxisTitle')
                 .style('font-size', `${axisFontPx}px`)
-                .text(xAxisTitle);
+                .text(effectiveXAxisTitle);
 
             const txtYAxisTitle = svg.append('text')
                 .attr('x', -(layoutMargin.top + innerHeight / 2))
@@ -464,7 +468,7 @@ export function lineChart(options = {}) {
                 .attr('transform', 'rotate(-90)')
                 .attr('class', 'txtYAxisTitle')
                 .style('font-size', `${axisFontPx}px`)
-                .text(yAxisTitle);
+                .text(effectiveYAxisTitle);
 
             // Draw traces
             const groups = g.selectAll('.lineGroup')
@@ -537,14 +541,14 @@ export function lineChart(options = {}) {
                             .style('z-index', 10)
                             .style('left', `${px + 10}px`)
                             .style('top', `${py - 20}px`);
-                        const frequencyAxis = /^freq(?:uency)?$/i.test(String(xAxisTitle).trim());
+                        const frequencyAxis = !unitAxis && /^freq(?:uency)?$/i.test(String(effectiveXAxisTitle).trim());
                         appendTooltipRows(tooltip, [
                             ['Trace', trace.yName],
-                            [frequencyAxis ? 'Frequency' : xAxisTitle,
+                            [frequencyAxis ? 'Frequency' : effectiveXAxisTitle,
                                 frequencyAxis
                                     ? formatTooltipFrequency(d.xValue, metricPrefix)
                                     : formatTooltipNumber(d.xValue)],
-                            ['Value', `${formatTooltipNumber(d.yValue)}${yAxisTitle ? ` ${yAxisTitle}` : ''}`]
+                            ['Value', `${formatTooltipNumber(d.yValue)}${effectiveYAxisTitle ? ` ${effectiveYAxisTitle}` : ''}`]
                         ]);
                     })
                     .on('mousemove', (event) => {

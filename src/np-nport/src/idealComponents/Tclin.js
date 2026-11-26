@@ -1,16 +1,19 @@
-// Modified: 2026-11-21
+// Modified: 2026-11-26
 import {connectionDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
-import {componentSettings} from '../componentSettings';
+import {validatedComponentSettings, requireNumber, checkedSpars} from '../numericValidation';
 import {C0} from '../physicalConstants';
 
 export function Tclin(Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254, options = {}) { // 1.4732 is the quarter wavelength at 2GHz, (1.3412 at 2.2 GHz)
+	requireNumber('Tclin', 'even impedance (ohms)', Zoe, {positive: true});
+	requireNumber('Tclin', 'odd impedance (ohms)', Zoo, {positive: true});
+	requireNumber('Tclin', 'length (meters)', Length, {nonnegative: true});
 	var ctlin = new nPort;
-	var settings = componentSettings(global, options);
+	var settings = validatedComponentSettings(global, options, 'Tclin');
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), two = complex(2,0), freqCount, Zoetclin, Zootclin;
 	var s11oe, s12oe, s21oe, s22oe;
@@ -66,7 +69,7 @@ export function Tclin(Zoe = 100, Zoo = 30, Length = 1.47 * 0.0254, options = {})
 
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44];
 	};
-	ctlin.setspars(sparsArray);
+	ctlin.setspars(checkedSpars('Tclin', sparsArray));
 	ctlin.setglobal(settings);
 	ctlin._schematic = schematicPart('Tclin', {length: Length});
 	ctlin._dcModel = connectionDcModel('Tclin', 4, [[1, 2], [4, 3]], [], {evenImpedance: Zoe, oddImpedance: Zoo, length: Length}, settings);

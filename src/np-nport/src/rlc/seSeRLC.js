@@ -1,30 +1,15 @@
-// Modified: 2026-11-21
+// Modified: 2026-11-26
 import {lumpedDcModel} from '../dcModel';
-import {complex} from '../../../np-math/src/complex';
+import {lumpedSpars} from './lumpedSpars';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
-import {analysisFrequencies} from '../analysisFrequencies';
-import {componentSettings} from '../componentSettings';
-import {dcTwoPort} from './dcTwoPort';
+import {validatedComponentSettings} from '../numericValidation';
 
 export function seSeRLC(R = 75, L = 5e-9, C = 1e-12, options = {}) { // series inductor nPort object
+	var settings = validatedComponentSettings(global, options, 'seSeRLC');
 	var seSeRLC = new nPort;
-	var settings = componentSettings(global, options);
-	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0), two = complex(2,0), freqCount, Z = [], s11, s12, s21, s22, sparsArray = [];
-	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
-		if (frequencyList[freqCount] === 0) {
-			sparsArray[freqCount] = [0].concat(dcTwoPort('open', 0, Ro));
-			continue;
-		}
-		Z[freqCount] = complex(R, 2*Math.PI*L*frequencyList[freqCount] -1/(2*Math.PI*C*frequencyList[freqCount]));	
-		s11 = Z[freqCount].div(Z[freqCount].add(Zo.add(Zo)));
-		s21 = (two.mul(Zo)).div(Z[freqCount].add(Zo.add(Zo)));
-		s12 = s21;
-		s22 = s11;
-		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
-	};
+	var sparsArray = lumpedSpars('seSeRLC', settings, 'series', 'series', {resistance: R, inductance: L, capacitance: C});
 	seSeRLC.setspars(sparsArray);
 	seSeRLC.setglobal(settings);
 	seSeRLC._schematic = schematicPart('seSeRLC', {labelPrefix: 'seSeRLC', resistance: R, inductance: L, capacitance: C});

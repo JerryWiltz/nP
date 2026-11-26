@@ -1,15 +1,16 @@
-// Modified: 2026-11-21
+// Modified: 2026-11-26
 import {requiredDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort'
 import {global}  from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
-import {componentSettings} from '../componentSettings';
+import {validatedComponentSettings, requireNumber, checkedSpars} from '../numericValidation';
 
 export function trf4Port(N = 0.5, options = {}) { // parallel resistor nPort object
+	requireNumber('trf4Port', 'turns ratio', N);
 	var trf4Port = new nPort;
-	var settings = componentSettings(global, options);
+	var settings = validatedComponentSettings(global, options, 'trf4Port');
 	var frequencyList = analysisFrequencies(settings);
 	var freqCount, sparsArray = [];
 	var s11, s12, s13, s14,
@@ -23,7 +24,7 @@ export function trf4Port(N = 0.5, options = {}) { // parallel resistor nPort obj
 		s13 = s22 = s31 = s44 = complex((1)/(N**2+1),0);
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44];
 	}
-	trf4Port.setspars(sparsArray);
+	trf4Port.setspars(checkedSpars('trf4Port', sparsArray));
 	trf4Port.setglobal(settings);
 	trf4Port._schematic = schematicPart('trf4Port', {labelPrefix: 'trf4Port', turnsRatio: N});
 	trf4Port._dcModel = requiredDcModel('trf4Port', 4, 'Supply winding DC resistance for pairs 1-3 and 2-4, or explicitly select an ideal transformer fixture.', {turnsRatio: N, windingPairs: [[1, 3], [2, 4]]}, settings);

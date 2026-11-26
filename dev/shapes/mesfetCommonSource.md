@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-21 -->
+<!-- Modified: 2026-11-26 -->
 # MESFET reference common-source amplifier
 
 Open [the harness](mesfetCommonSource.html) with the current browser bundle. It
@@ -16,3 +16,7 @@ See [the model contract](../../developmentDocs/semiconductors/mesfetModels.md) f
 current law, differential gate-capacitance partition, approximate noise and
 weak nonlinear limits. Electrical temperature scaling, a commercial package
 and fitted microwave device performance are not supplied.
+
+The DC table comes directly from `network.operatingPoint.out('vgs', 'vds',
+'idmA', {component: q1, label: 'Q1'})`; the library selects the placement and
+converts amperes to milliamperes. The example does not assemble DC table rows.

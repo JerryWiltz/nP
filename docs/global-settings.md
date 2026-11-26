@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-22 -->
+<!-- Modified: 2026-11-26 -->
 # Global settings
 
 `nP.global` provides the settings for the currently selected analysis context. A context is a saved set of frequencies, times, reference impedance, temperature, and optional two-tone settings. Set the values you need before creating components: each n-port saves its settings when it is constructed.
@@ -28,6 +28,13 @@ var response = r1.out('s11dB');
 
 This example analyzes 51 frequencies from 100 MHz through 2 GHz. `response` has a heading row followed by one result row for each frequency.
 
+`fGen()` requires finite numeric endpoints and an integer count of at least one.
+With one point it returns `[start]`; `stop` is still validated but is unused.
+For example, `nP.global.fGen(2e9, 2e9, 1)` returns `[2e9]`. A literal `[2e9]`
+also specifies that single frequency. Multi-point lists include the exact
+requested endpoints. Descending, equal-endpoint and signed frequency lists are
+supported; each consuming analysis still applies its own frequency limits.
+
 Each n-port also stores **frequency rows** in its `.spars` array. A row starts with its frequency in hertz and then contains that frequency's complex S-parameters. For a two-port, the shape is `[frequency, s11, s12, s21, s22]`. Two components have matching frequency rows when these frequencies appear in the same order, one for one. `nP.nodal()` and `nP.cascade()` require that match when connecting components; having the same number of rows is not enough. When two-tone analysis is enabled, constructors add rows for the additional tone and product frequencies too.
 
 A constructor can use a separate frequency list by accepting `fList` in its options. Components intended for the same network still need matching rows. See [RF Constructors](./rf-constructors.md) for the component families.
@@ -35,6 +42,17 @@ A constructor can use a separate frequency list by accepting `fList` in its opti
 ## Time list
 
 `tGen(start, stop, points)` creates an evenly spaced array of time samples in seconds, including both endpoints. It requires finite start and stop values, an increasing interval, and at least two points.
+
+The count must be an integer. Two time samples establish the interval needed
+for sampled analysis; one RF frequency is a valid independent analysis point.
+That is why the generators have different minimum counts. Neither generator
+accepts zero, negative, fractional or nonfinite counts, coerces strings to
+numbers, or changes the selected lists until you assign its returned array.
+Counts above JavaScript's array-length limit (`4294967295`) reject. Intervals
+that overflow numerically, or nonconstant grids whose adjacent points collapse
+at floating-point resolution, report a clear error instead of invalid samples.
+Negative time origins are allowed when `stop > start`; individual signal modes
+may impose additional constraints such as a zero origin or a required length.
 
 ```js
 nP.global.tList = nP.global.tGen(0, 1e-6, 101);

@@ -1,5 +1,13 @@
-<!-- Modified: 2026-10-21 -->
+<!-- Modified: 2026-11-26 -->
 # FFT in nPort
+
+The common [output-unit option](./output-units.md) can convert the frequency or
+time axis. For calibrated real-voltage spectra,
+`spectrum.out('dBV',{units:{frequency:'MHz',voltage:'mV'}})` returns one-sided
+RMS mV after applying the existing dBV floor and normalization. Raw DFT
+real/imaginary/magnitude values are not implicitly calibrated as volts and
+reject voltage requests. Existing selectors, defaults and transform coefficients
+are unchanged. Use `metricPrefix:'none'` when displaying transported table copies.
 
 An FFT answers a practical question: **which frequencies are present in a sequence of samples, and with what amplitude and phase?** It can analyze voltage, acceleration, sound pressure, or any other sampled quantity. The input values do not have to represent an RF signal. Their sample times determine what the frequency axis means.
 

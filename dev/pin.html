@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Modified: 2026-11-22 -->
+<!-- Modified: 2026-11-26 -->
 <html lang="en">
 <head>
     <meta charset="utf-8">
@@ -30,13 +30,8 @@
             [short2, 14],
             ['out', 1, 4]
         );
-        var point;
-        for (var component of network.operatingPoint.components) {
-            if (component.constructorName === 'PIN') point = component.qPoint;
-        }
-        var solvedDiode = nP.PIN({qPoint: {vd: point.vd}});
-        var bias = [['VD (V)', 'ID (mA)', 'Rbulk (ohm)'],
-            [point.vd, point.id * 1000, solvedDiode.smallSignal.bulkResistance]];
+        var dc = network.operatingPoint;
+        var bias = dc.out('vd', 'idmA', 'bulkResistance', {component: d1, label: 'D1'});
         var response = network.out('s11dB', 's21dB');
 
         nP.log('Charge-storage reference: external DC bias solved before dynamic RF/noise. Generic numerical data; no calibrated manufacturer part or network transient solver.');

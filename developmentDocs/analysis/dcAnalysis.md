@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-25 -->
+<!-- Modified: 2026-11-26 -->
 # Shared circuit description and DC operating-point analysis
 
 This is the contract for circuit-derived bias in nP. The shared immutable DC descriptors and topology preservation within `nodal()`, `cas()` and `cascade()` are implemented. These existing composition APIs are the public network entry points. `network.solveDC()` solves linear, NPN/PNP and diode nonlinear DC models without a second netlist. Networks containing an explicit `V()` supply and nonlinear devices automatically solve DC before RF combination; supported transistor and diode states pass through the internal RF handoff. The result is exposed as `network.operatingPoint`. Standalone constructors and RF-only networks retain their selected fixed Q points. Both D() and diode1N4148() retain their own device equations, temperatures and leakage placement. Missing physical DC laws remain explicit errors.
@@ -137,7 +137,16 @@ Separate DC values from RF excitation and internal impedance. A conventional ide
 
 ## Implemented linear solve
 
-Call `network.solveDC()` with no arguments on an existing nPort. The method returns a new deeply frozen plain-data result. It reads only validated DC descriptors; it never reads S entries, uses `Ro` as a measurement load, changes global settings, modifies RF/noise/signal data or overwrites transistor/diode `.dc` curve settings. `reference: 'g'` denotes the common reference of explicit grounded models, not a user node named `0` or `'g'`.
+Call `network.solveDC()` with no arguments on an existing nPort. The method returns a new deeply frozen result with serializable data and a non-enumerable `.out()` reader. It reads only validated DC descriptors; it never reads S entries, uses `Ro` as a measurement load, changes global settings, modifies RF/noise/signal data or overwrites transistor/diode `.dc` curve settings. `reference: 'g'` denotes the common reference of explicit grounded models, not a user node named `0` or `'g'`.
+
+Explicit and automatically solved results share
+`dc.out('vgs', 'vds', 'idmA', {component: q1, label: 'Q1'})` for device tables and
+`dc.out('v12', 'i1mA', {component: r1})` for terminal measurements. Node selection
+uses `dc.out('voltage', {node: 3})` or `{nodes: [positive, negative], path: ''}`.
+Units, labels and fresh table rows belong to the reader; raw data, solve timing
+and placement bias handoff remain unchanged. Undetermined values display as text
+while raw nulls remain intact. JSON/structured clones carry data without methods.
+See [DC output](dcOutput.md) for selectors, units, identity and floating differences.
 
 `dcSolver.js` expands nested connection descriptors into placement-scoped nodes. Zero-volt interfaces retain nested-block terminal currents and keep repeated use of the same component template independent. Supported adapters are `lumped`, `junction`, `voltage-source`, `attenuator`, `series-junction` and `linear-constraints`. R branches retain resistance; external C branches open; external L and zero R branches impose zero voltage. Attenuators use their declared real DC voltage/current constraints, including 0 dB, without singular impedance conversion. Physical via and film resistances remain finite. Approximate model omissions appear in diagnostics.
 

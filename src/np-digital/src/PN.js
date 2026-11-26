@@ -1,4 +1,5 @@
-// Modified: 2026-10-21
+// Modified: 2026-11-26
+import {withOutputUnits, unitColumn} from '../../np-global/src/outputUnits';
 import {global} from '../../np-global/src/global';
 
 
@@ -93,5 +94,5 @@ export function PN(options = {}) {
 		}
 		throw new RangeError('Unknown PN output: ' + selector);
 	};
-	return waveform;
+	return withOutputUnits(waveform, {waveform: [unitColumn('time', 'ns'), unitColumn('voltage', 'V')]}, undefined);
 }

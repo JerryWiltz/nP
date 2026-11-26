@@ -1,31 +1,15 @@
-// Modified: 2026-11-21
+// Modified: 2026-11-26
 import {lumpedDcModel} from '../dcModel';
-import {complex} from '../../../np-math/src/complex';
+import {lumpedSpars} from './lumpedSpars';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
-import {analysisFrequencies} from '../analysisFrequencies';
-import {componentSettings} from '../componentSettings';
-import {dcTwoPort} from './dcTwoPort';
+import {validatedComponentSettings} from '../numericValidation';
 
 export function paPaRL(R = 75, L = 5e-9, options = {}) { // parallel capacitor nPort object
+	var settings = validatedComponentSettings(global, options, 'paPaRL');
 	var paPaRL = new nPort;
-	var settings = componentSettings(global, options);
-	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [];
-	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
-		if (frequencyList[freqCount] === 0) {
-			sparsArray[freqCount] = [0].concat(dcTwoPort('shuntShort', 0, Ro));
-			continue;
-		}
-		Z[freqCount] = (  (complex(R,0).inv()).add(complex(0, 2*Math.PI*L*frequencyList[freqCount]).inv())  ).inv();
-		Y[freqCount] = Z[freqCount].inv();
-		s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
-		s21 = (two.mul(Yo)).div(Y[freqCount].add(Yo.add(Yo)));  
-		s12 = s21;
-		s22 = s11;
-		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
-	}
+	var sparsArray = lumpedSpars('paPaRL', settings, 'shunt', 'parallel', {resistance: R, inductance: L});
 	paPaRL.setspars(sparsArray);
 	paPaRL.setglobal(settings);
 	paPaRL._schematic = schematicPart('paPaRL', {labelPrefix: 'paPaRL', resistance: R, inductance: L});

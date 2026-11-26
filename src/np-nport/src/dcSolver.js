@@ -1,4 +1,5 @@
-// Modified: 2026-11-25
+// Modified: 2026-11-26
+import {withDcOutput} from './dcOutput';
 import {dcModelOf, dcSnapshot} from './dcModel';
 import {solveDcLinearSystem, dcLinearValue, dcLinearError} from './dcLinearSystem';
 import {bjtDcDevice, solveDcNonlinear, solveDcIncrement} from './dcNonlinear';
@@ -266,17 +267,19 @@ function operatingPointResult({model, assembly, root, nonlinear, solution}) {
         if (component.device.kind !== 'bjt') {
             const [a, k] = component.device.nodes;
             const deviceVoltage = dcLinearValue(solution, difference(a, k));
-            const junctionVoltage = component.device.kind === 'pin-charge' && deviceVoltage !== null ?
-                diodeDcCurrent(component.device, deviceVoltage).point.junctionVoltage : deviceVoltage;
+            const storagePoint = component.device.kind === 'pin-charge' && deviceVoltage !== null ?
+                diodeDcCurrent(component.device, deviceVoltage).point : null;
+            const junctionVoltage = storagePoint ? storagePoint.junctionVoltage : deviceVoltage;
             const vd = dcLinearValue(solution, difference(...component.nodes));
             const result = components.find(entry => entry.path === component.path), id = result.terminalCurrents[0];
             if ([vd, junctionVoltage, id].includes(null)) throw dcLinearError('DC_FLOATING_BIAS', 'DC diode bias is undetermined at ' + (component.path || '(root)') + '.');
             const va = dcLinearValue(solution, new Map([[component.nodes[0], 1]]));
             const vk = dcLinearValue(solution, new Map([[component.nodes[1], 1]]));
             operatingPoints.push({path: component.path, vd, junctionVoltage, va, vk});
-            result.qPoint = {vd, id, junctionVoltage, junctionCurrent: component.device.kind === 'pin-charge' ?
-                diodeDcCurrent(component.device, deviceVoltage).point.junctionCurrent : diodeDcCurrent(component.device, junctionVoltage).current,
-                va, vk, temperature: component.model.definition.temperature};
+            result.qPoint = {vd, id, junctionVoltage, junctionCurrent: storagePoint ?
+                storagePoint.junctionCurrent : diodeDcCurrent(component.device, junctionVoltage).current,
+                va, vk, temperature: component.model.definition.temperature,
+                ...(storagePoint ? {bulkResistance: storagePoint.bulkResistance} : {})};
             continue;
         }
         const [b, c, e] = component.device.nodes;
@@ -295,7 +298,7 @@ function operatingPointResult({model, assembly, root, nonlinear, solution}) {
             intrinsicVbe: be, intrinsicVbc: bc, temperature: component.model.definition.temperature,
             configuration: component.model.definition.configuration};
     }
-    return dcSnapshot({kind: 'dc-operating-point', method: nonlinear ? 'nonlinear' : 'linear', converged: true, model,
+    return withDcOutput({kind: 'dc-operating-point', method: nonlinear ? 'nonlinear' : 'linear', converged: true, model,
         reference: 'g', nodes, components,
         ports: root.nodes.map((node, port) => ({port: port + 1,
             node: model.kind === 'connection' ? model.definition.externalNodes[port] : port + 1,
@@ -304,7 +307,7 @@ function operatingPointResult({model, assembly, root, nonlinear, solution}) {
             maxVoltageResidual: nonlinear.residuals.maxVoltageResidual, maxScaledResidual: nonlinear.residuals.maxScaledResidual,
             maxNormalizedResidual: nonlinear.residuals.norm} : solution.residuals,
         ...(nonlinear ? {operatingPoints, initialEstimate: nonlinear.initialEstimate, convergence: nonlinear.convergence} : {}),
-        linearSystem: {rank: solution.rank, unknownCount: assembly.variables.length}});
+        linearSystem: {rank: solution.rank, unknownCount: assembly.variables.length}}, assembly, solution);
 }
 
 // Internal perturbation result retains the same placement/node namespaces as

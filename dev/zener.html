@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Modified: 2026-11-22 -->
+<!-- Modified: 2026-11-26 -->
 <html lang="en">
 <head>
     <meta charset="utf-8">
@@ -34,15 +34,13 @@
             [c2, 7, 101],
             ['out', 100, 101]
         );
-        var bias = network.operatingPoint.components[5].qPoint;
+        var dc = network.operatingPoint;
+        var bias = dc.out('vd', 'idmA', {component: d1, label: 'D1'});
         var current = d1.ivTable({vd: {start: -4.8, stop: -4.4, points: 81}});
-        var currentMa = [['vd (V)', 'id (mA)']];
-        for (var row = 1; row < current.length; row++) {
-            currentMa.push([current[row][0], current[row][1] * 1000]);
-        }
+        var currentMa = current.out('idmA');
         var response = network.out('s11dB', 's21dB');
 
-        nP.log(bias);
+        nP.lineTable({inputTable: [bias], metricPrefix: 'none'});
         nP.schematic(network);
         nP.lineChart({inputTable: [currentMa], metricPrefix: 'none',
             title: 'BZX384-B4V7 reverse breakdown',

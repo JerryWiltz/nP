@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-21 -->
+<!-- Modified: 2026-11-26 -->
 # Self-biased packaged pHEMT common-source amplifier
 
 Open [the harness](hemtCommonSource.html) with the current browser bundle.
@@ -22,3 +22,7 @@ The earlier [die-only example](hemtDieCommonSource.html) is retained.
 The package agrees with independent SPICE numerically. Against the measured
 2 V/15 mA table, maximum S21 magnitude/phase differences over 0.5–6 GHz are
 about 2.1 dB/28°; this is not a measured-data fit. See the model contract.
+
+The DC table comes directly from `network.operatingPoint.out('vgs', 'vds',
+'idmA', {component: q1, label: 'Q1'})`; the library selects the placement and
+converts amperes to milliamperes. The example does not assemble DC table rows.

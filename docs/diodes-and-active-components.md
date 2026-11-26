@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-22 -->
+<!-- Modified: 2026-11-26 -->
 # Transistors and Diodes
 
 The public active-device constructors are `nP.Amp()`, `nP.NoiseDiode()`, `nP.PIN()`, `nP.D()`, `nP.diode1N4148()`, `nP.NPN()`, `nP.PNP()`, `nP.NJF()`, `nP.PJF()`, `nP.NMOS()`, `nP.PMOS()`, `nP.MESFET()` and `nP.HEMT()`. The amplifier is a configurable two-port gain/noise model. Diode and transistor models combine DC I–V curves with RF behavior at a fixed bias.
@@ -118,6 +118,32 @@ Completed two-ports provide `.stability` and `.out('K', 'deltaMag')`. Unconditio
 BFR93A includes its published SOT23 L/C network. The 2N3904 card includes terminal resistances but no explicit package L/C model. Noise uses classical shot/thermal sources, without fitted excess-noise or high-frequency induced-noise behavior. With `global.twoTone` set before construction, IM/OIP selectors use direct Taylor current and charge terms; they omit quadratic remixing, compression and harmonic balance. Neither card models avalanche or self-heating. Networks containing an explicit `V()` supply solve their DC bias before RF analysis, for named and supplied model records alike.
 
 Try [NPN curve tracer and RF in the REPL](/repl#example-npn-curve-tracer).
+
+## Read device-curve results
+
+I–V and C–V methods retain their existing SI table arrays and add `.out()`:
+
+```js
+var q1 = nP.NPN();
+var curves = q1.ivTable();
+var current = curves.out('icmA', {label: 'Q1'});
+nP.lineChart({inputTable: [current], metricPrefix: 'none',
+    xAxisTitle: 'VCE (V)', yAxisTitle: 'Collector current (mA)'});
+```
+
+`icmA` retains every stepped base-current trace and its label. Common-collector
+curves use `iemA`; FET and diode curves use `idmA`. Select `cjpF` and/or `ctpF`
+from a C–V result. Unsuffixed fields use A/F. Current suffixes are A/mA/uA/nA/pA;
+capacitance suffixes are F/mF/uF/nF/pF/fF. Optionally put the existing swept
+voltage first to select V/mV/uV, for example `curves.out('vcemV', 'icuA')`.
+
+At least one dependent measurement is required. Labels name a single trace
+with units, or prefix multiple quantity/bias headings. Each call returns fresh
+rows, preserving polarity and bias-step order. Editing a display table or the
+original array does not change captured curve samples or the device Q point.
+JSON and structured clones omit `.out()` while retaining ordinary table data.
+These methods require a current capable bundle; older/pinned builds may return
+only the original table arrays.
 
 ## PNP transistor
 
@@ -375,10 +401,7 @@ nP.global.fList = nP.global.fGen(10e6, 2e9, 51);
 
 var d1 = nP.D({model: 'SMV1231-079LF', qPoint: {vd: -3}, temperature: 300.15});
 var capacitance = d1.cvTable({vr: {start: 0, stop: 15, points: 31}});
-var capacitancePf = [['vr (V)', 'cj (pF)', 'ct (pF)']];
-for (var row = 1; row < capacitance.length; row++) {
-    capacitancePf.push([capacitance[row][0], capacitance[row][1] * 1e12, capacitance[row][2] * 1e12]);
-}
+var capacitancePf = capacitance.out('cjpF', 'ctpF');
 var response = d1.out('s11dB', 's21dB');
 
 nP.schematic(d1);

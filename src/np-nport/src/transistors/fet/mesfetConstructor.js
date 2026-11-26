@@ -1,4 +1,5 @@
-// Modified: 2026-11-19
+// Modified: 2026-11-26
+import {withCurveOutput} from '../../curveOutput';
 import {global} from '../../../../np-global/src/global';
 import {nPort} from '../../nPort';
 import {componentSettings} from '../../componentSettings';
@@ -30,7 +31,8 @@ function ivTable(description, input = {}) {
         for (let gate = 0; gate < settings.vgs.points; gate++) row.push(mesfetOperatingPoint(p, atInterval(settings.vgs, gate), voltage).id);
         table.push(row);
     }
-    return table;
+    return withCurveOutput(table, {axis: 'vds', measurements: ['id'],
+        step: {name: 'vgs', values: Array.from({length: settings.vgs.points}, (_, gate) => atInterval(settings.vgs, gate))}});
 }
 
 export function mesfetConstructor(options) {

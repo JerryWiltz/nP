@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-25 -->
+<!-- Modified: 2026-11-26 -->
 # RF Constructors
 
 Set the frequencies first. Then make each part of the circuit. These calls return [nPort objects](./nport-object.md) that you can [connect](./connecting-nports.md).
@@ -17,6 +17,10 @@ Every constructor below uses this frequency list unless you supply another one. 
 ## Resistors, inductors, and capacitors
 
 `R()`, `L()`, and `C()` are series two-port components. The value you enter is in ohms, henries, or farads.
+Values must be finite nonnegative numbers. Invalid types, NaN, infinities and
+negative values produce an error naming the constructor/parameter. Zero R/L
+is a short; zero C is an open. Combined RLC constructors follow the same rules,
+including their series/parallel DC and exact-resonance limits.
 
 ```js
 var r1 = nP.R();        // default: 75 Ω
@@ -30,6 +34,9 @@ var c2 = nP.C(2.2e-12); // 2.2 pF
 ```
 
 A resistor uses the selected circuit temperature for noise. To give one resistor a different temperature, use `nP.R(430, 290)` for 430 Ω at 290 K.
+The first argument to `R()` is a number in ohms; an options object in that
+position is rejected. An optional frequency grid remains the third argument:
+`nP.R(430, 290, {fList: frequencies})`.
 
 The `se` names are equivalent series forms. The `pa` names make parallel branches:
 
@@ -70,6 +77,10 @@ Use `Tee()` where a branch joins the main path. In `seriesTee()`, ports 1 and 2 
 ## Ideal transmission lines
 
 Lengths are entered in **meters**. The inch equivalents below make the defaults easier to recognize.
+Line impedances must be finite positive ohms and lengths finite nonnegative
+meters. Transformer turns ratios must be finite numbers; signed and zero-ratio
+ideal limits remain supported. Values beyond the supported calculation range
+produce an error instead of nonfinite RF results.
 
 ### Two-port line: `Tlin()`
 
@@ -301,6 +312,32 @@ The result separates `baselineVoltage`, `deltaVoltage` and their sum `voltage`.
 It retains RF-off operating points and generated-source/DC-increment details.
 It solves passive zero-bias circuits and coupled detector/reference pairs
 without changing the network's existing S-parameters or bias records.
+
+Power sweeps and table extraction are built in:
+
+```js
+var inputPowers = {start: -90, stop: -60, points: 7};
+var sweep = network.rectify({frequencyHz: 1e9, inputPowerDbm: inputPowers,
+  outputNodes: ['detector', 'reference']});
+var dcOutput = sweep.out('deltaVoltageuV', {label: 'Differential'});
+nP.lineChart({inputTable: [dcOutput], metricPrefix: 'none',
+  xAxisTitle: 'Available RF input (dBm)', yAxisTitle: 'DC change (µV)'});
+```
+
+`inputPowerDbm` also accepts a nonempty array. Linear ranges include both
+endpoints and require distinct finite endpoints and at least two integer-count
+points; descending ranges work too. A sweep returns common settings, a resolved
+`inputPowerDbm` array and full scalar `results`, sharing one RF-off bias solution.
+Every point must pass the weak-signal checks.
+
+Both scalar and sweep results have `.out(...selectors, {label})`. Select
+`baselineVoltage`, `deltaVoltage` or `voltage` in V; add `mV` or `uV`
+for scaled values, or select `sensitivityVoltsPerWatt`. Labels are optional.
+Tables use input dBm as x and already include unit conversion. Use
+`metricPrefix: 'none'`. RF-off data remain available in scalar fields;
+table extraction requires finite powers and selected values.
+At least one selector is required. Use `.out('deltaVoltage')` for the former
+default; empty or label-only calls now report a clear error.
 
 This supports named and supplied D() models. Other nonlinear families, attached
 mod()/signal data, absent physical DC models and excessive weak-signal drive

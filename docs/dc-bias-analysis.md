@@ -1,9 +1,9 @@
-<!-- Modified: 2026-11-21 -->
+<!-- Modified: 2026-11-26 -->
 # DC bias analysis
 
 DC analysis determines voltages and currents from the circuit's sources, components and connections. nP retains that information when you use `nodal()`, `.cas()` or `cascade()`, so DC and RF share one network description.
 
-The current browser bundle supports linear DC networks and NPN/PNP bias solving. An installed npm or Obsidian build can have different capabilities; use the APIs supported by the supplied bundle.
+The current standalone bundle supports linear DC networks and bias solving for the implemented BJT, JFET, MOSFET, MESFET, HEMT and diode families. An installed npm or Obsidian build can have different capabilities; use the APIs supported by the supplied bundle.
 
 ## What changes at DC
 
@@ -43,17 +43,10 @@ var network = nP.nodal(
 );
 
 var dc = network.solveDC();
-var resistorPoint = dc.components[3]; // r1 is placement p4
-var resistorVoltage = resistorPoint.terminalVoltages[0] - resistorPoint.terminalVoltages[1];
-var resistorCurrent = resistorPoint.terminalCurrents[0];
-var results = [
-    ['Quantity', 'Value', 'Unit'],
-    ['Resistor voltage', resistorVoltage, 'V'],
-    ['Resistor current', resistorCurrent, 'A']
-];
+var results = dc.out('v12', 'i1mA', {component: r1, label: 'R1'});
 
 nP.schematic(network);
-nP.log(results);
+nP.lineTable({inputTable: [results], metricPrefix: 'none'});
 ```
 
 The positive current enters the resistor's first terminal. The measurement port introduces no extra 50 Ω DC load. `.solveDC()` returns the result without rebuilding the existing RF data. It currently takes no arguments.
@@ -62,7 +55,25 @@ The positive current enters the resistor's first terminal. The measurement port 
 
 The returned record includes `converged`, `method`, `nodes`, `ports`, `components` and diagnostics. Each component record identifies its placement path and provides terminal voltages and currents in the constructor's public terminal order. Voltages are volts; currents are amperes and enter the component.
 
-Placement paths distinguish repeated uses of the same component object and nested networks. The example reads `p4`, the fourth component row. When the network changes, select the record for the intended placement. Floating absolute voltages or undetermined currents can be `null`; they are not zero.
+The example selects the original `r1` component, so reordering its netlist row does not change which resistor is measured. Placement paths distinguish repeated uses of the same component object and nested networks. For a reused template, select its path through `{component: 'p4'}`. Floating absolute voltages or undetermined currents remain `null` in raw data and display as `undetermined` in output tables.
+
+Both explicit results and `network.operatingPoint` provide `.out(...selectors, options)`.
+Device selectors read solved fields, for example
+`dc.out('vgs', 'vds', 'idmA', {component: q1, label: 'Q1'})`.
+Terminal `v1` is absolute voltage; `v12` means terminal 1 minus terminal 2;
+`i1` enters terminal 1. BJT named `ie` retains its outward convention.
+Voltage/current suffixes V/mV/uV and A/mA/uA select units inside the library.
+Charge-storage PIN also provides `bulkResistance` in ohms.
+
+Use `dc.out('voltage', {node: 'rail'})` for an absolute node observation or
+`dc.out('voltagemV', {nodes: ['detector', 'reference']})` for a difference.
+An optional node `path` selects a nested namespace. Differences can be determined
+even when both absolute voltages float. Numeric and string node IDs remain distinct.
+Selectors are required; missing measurements and ambiguous component reuse report errors.
+
+Each call returns a fresh table with a text Component/Node column, suitable for
+`lineTable()` using `metricPrefix:'none'`. Reading or changing that table does
+not alter the solved result. JSON/structured clones preserve data without `.out()`.
 
 ## Set transistor bias before RF analysis
 
@@ -76,6 +87,6 @@ The [NPN constructor Tech Note](./tech-notes-npn-constructor.md#let-an-external-
 
 `V()` is a floating two-terminal nPort, with positive terminal 1 relative to terminal 2. Its positive-frequency RF branch is open. Its 0 Hz incremental S-parameters describe a through connection; they do not encode the DC voltage constraint. Ground and bypass connections remain explicit.
 
-Constructors retain DC model information, but some physical or fitted RF models require additional DC information before solving. Unsupported models and inconsistent constraints report an error; do not silently replace them with an open, short or assumed transistor bias. Diode I–V curves are available separately, while diode network DC adapters remain unsupported.
+Constructors retain DC model information, but some physical or fitted RF models require additional DC information before solving. Unsupported models and inconsistent constraints report an error; do not silently replace them with an open, short or assumed transistor bias. Supported diode network adapters use their existing current laws; I–V curve methods remain separate analyses. The dedicated NoiseDiode fit has no DC I–V law and still requires a physical bias model.
 
 See [Connecting nPorts](./connecting-nports.md) for wiring rules, [Transistors and Diodes](./diodes-and-active-components.md) for device options, and the [DC model and solver details](https://github.com/JerryWiltz/nP/blob/master/developmentDocs/analysis/dcAnalysis.md) for model coverage and convergence diagnostics.

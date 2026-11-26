@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-21 -->
+<!-- Modified: 2026-11-26 -->
 # n-Port Data Model
 
 This document describes the object and table shapes that allow components, circuit combinations, output extractors, charts, and the Obsidian plugin to interoperate.
@@ -24,7 +24,8 @@ The selected circuit context exported from `src/np-global/src/global.js` contain
 - `twoTone` configures a two-tone intermodulation analysis when present.
 - `Ro` is the real reference impedance in ohms.
 - `Temp` is the shared temperature setting. Models must document the temperature scale they use.
-- `fGen()` creates a linearly spaced list including both endpoints when `points > 1`.
+- `fGen()` requires finite endpoints and an integer count >=1. It returns `[start]` for one point or a linearly spaced list with exact endpoints for more points; descending, constant and signed lists are supported.
+- `tGen()` requires finite endpoints, `stop > start` and an integer count >=2; sampled analysis needs a time interval. Both generators return fresh arrays without assigning the context's lists and reject invalid counts or numerically unrepresentable spacing. See [grid generation](../analysis/gridGeneration.md).
 
 Set these values before constructing components. Call `nP.global()` to create and select a separate circuit context, or `nP.global(context)` to select one again. Constructors calculate their S-parameter rows immediately; changing the selected context's `fList` later does not recalculate an existing component.
 
@@ -50,10 +51,24 @@ The common public surface is:
 | `.setspars(rows)` / `.getspars()` | Store and retrieve S-parameter rows. |
 | `.setglobal(settings)` / `.getglobal()` | Capture and retrieve component analysis settings. |
 | `.cas(other)` | Cascade this two-port with another two-port. |
-| `.out(...selectors)` | Produce a numeric chart/table input table. |
+| `.out(...selectors, options)` | Produce a numeric chart/table input table; optional `label` names its measurement headings. |
 | `.outTable(...selectors)` | Existing equivalent table-producing method. |
 
 Specialized constructors may add metadata such as `.microstrip`, `.diode`, `.filmResistor`, or `.ivTable()`.
+
+For `.out('s21dB', {label: 'Gain (dB)'})`, the header is `['Freq', 'Gain (dB)']`.
+With multiple selectors, `label` prefixes each selector, such as
+`Stage: s11dB` and `Stage: s21dB`. It must be a nonempty string. Unlabeled
+headings, numeric data and units remain unchanged; units are not appended to a
+custom single-column label. The final object can also contain the existing
+noise conditions and `twoTone` overrides. Reading labeled output does not mutate
+the network, options or previously returned tables.
+
+RF `.out()` requires at least one measurement selector. Calling it with no
+arguments, or only an options object, throws a TypeError suggesting `s21dB`.
+This replaces the former frequency-only output; explicit measurement calls
+retain their data and headings. DC and rectification `.out()` likewise require
+explicit selectors. This change does not alter FFT or demodulation defaults.
 
 ## S-parameter row shape
 

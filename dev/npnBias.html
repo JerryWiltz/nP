@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Modified: 2026-11-17 -->
+<!-- Modified: 2026-11-26 -->
 <html lang="en">
 
 <head>
@@ -62,48 +62,7 @@
         the DC bias; the capacitor reduces emitter degeneration at RF.</p>
 
     <h2>Solved transistor operating point</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Quantity</th>
-                <th>DC result</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <th scope="row">Base current, IB</th>
-                <td id="baseCurrent"></td>
-            </tr>
-            <tr>
-                <th scope="row">Collector current, IC</th>
-                <td id="collectorCurrent"></td>
-            </tr>
-            <tr>
-                <th scope="row">Emitter current, IE</th>
-                <td id="emitterCurrent"></td>
-            </tr>
-            <tr>
-                <th scope="row">Base voltage, VB</th>
-                <td id="baseVoltage"></td>
-            </tr>
-            <tr>
-                <th scope="row">Collector voltage, VC</th>
-                <td id="collectorVoltage"></td>
-            </tr>
-            <tr>
-                <th scope="row">Emitter voltage, VE</th>
-                <td id="emitterVoltage"></td>
-            </tr>
-            <tr>
-                <th scope="row">Base-emitter voltage, VBE</th>
-                <td id="baseEmitterVoltage"></td>
-            </tr>
-            <tr>
-                <th scope="row">Collector-emitter voltage, VCE</th>
-                <td id="collectorEmitterVoltage"></td>
-            </tr>
-        </tbody>
-    </table>
+    <div id="dcTable"></div>
 
     <h2>RF S-parameters at the solved bias</h2>
     <div id="rfChart"></div>
@@ -155,18 +114,12 @@
             if (!dc || !dc.converged || dc.method !== 'nonlinear') {
                 throw new Error('Expected an automatically solved nonlinear operating point.');
             }
-            var bias = dc.components[5].qPoint; // q1 is placement p6
+            var biasTable = dc.out('ibuA', 'icmA', 'iemA', 'vb', 'vc', 've', 'vbe', 'vce',
+                {component: q1, label: 'Q1'});
             var response = amplifier.out('s11dB', 's21dB', 's12dB', 's22dB');
 
             // 5. Display the solved bias and the RF response built from it.
-            document.getElementById('baseCurrent').textContent = (bias.ib * 1e6).toFixed(6) + ' µA';
-            document.getElementById('collectorCurrent').textContent = (bias.ic * 1000).toFixed(6) + ' mA';
-            document.getElementById('emitterCurrent').textContent = (bias.ie * 1000).toFixed(6) + ' mA';
-            document.getElementById('baseVoltage').textContent = bias.vb.toFixed(6) + ' V';
-            document.getElementById('collectorVoltage').textContent = bias.vc.toFixed(6) + ' V';
-            document.getElementById('emitterVoltage').textContent = bias.ve.toFixed(6) + ' V';
-            document.getElementById('baseEmitterVoltage').textContent = bias.vbe.toFixed(6) + ' V';
-            document.getElementById('collectorEmitterVoltage').textContent = bias.vce.toFixed(6) + ' V';
+            nP.lineTable({inputTable: [biasTable], mount: '#dcTable', metricPrefix: 'none'});
             nP.lineChart({
                 inputTable: [response],
                 mount: '#rfChart',

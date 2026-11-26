@@ -1,4 +1,5 @@
-// Modified: 2026-11-22
+// Modified: 2026-11-26
+import {withCurveOutput} from '../curveOutput';
 import {nPort} from '../nPort';
 import {dcModel} from '../dcModel';
 import {analysisFrequencies} from '../analysisFrequencies';
@@ -21,7 +22,7 @@ function ivTable(record, temperature, defaults, options = {}) {
         const vd = i === range.points - 1 ? range.stop : range.start + (range.stop - range.start) * i / (range.points - 1);
         result.push([vd, pinChargePoint(record, temperature, vd).id]);
     }
-    return result;
+    return withCurveOutput(result, {axis: 'vd', measurements: ['id']});
 }
 export function pinCharge(record, options, settings) {
     if (options.region !== undefined && options.region !== 'automatic') throw new RangeError('Charge-storage PIN determines its state from bias; region must be automatic or omitted.');

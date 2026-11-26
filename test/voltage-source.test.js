@@ -1,4 +1,4 @@
-// Modified: 2026-11-16
+// Modified: 2026-11-26
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as nP from '../src/index.js';
@@ -44,7 +44,7 @@ test('V options and two-tone grids preserve frequency/context ownership', () => 
         const frequencies = [10e6];
         const options = {voltage: -5, fList: frequencies};
         const source = nP.V(options), expected = source.spars.map(row => row[0]);
-        assert.deepEqual(expected, nP.R({fList: frequencies}).spars.map(row => row[0]));
+        assert.deepEqual(expected, nP.R(75, nP.global.Temp, {fList: frequencies}).spars.map(row => row[0]));
         assert.deepEqual(source.noise.map(row => row.frequency), expected);
         assert.ok(source.spars.every(row => row[1].x === 1 && row[2].mag() === 0 && row[3].mag() === 0 && row[4].x === 1));
         options.voltage = 99; frequencies.push(20e6);

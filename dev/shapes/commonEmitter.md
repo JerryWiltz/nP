@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-19 -->
+<!-- Modified: 2026-11-26 -->
 # Divider-biased common-emitter amplifier
 
 Open `commonEmitter.html` through a local server after `npm run build`.
@@ -32,3 +32,6 @@ V supply, a Tee4 base junction, Tee collector/supply branches, two coupling
 capacitors and either separate emitter R/C branches, `sePaRC()`, or an
 unbypassed emitter resistor. Supply bypass is optional. Other bias topologies
 remain outside this board's coverage.
+
+The DC table uses `operatingPoint.out('vbe', 'vce', 'icmA',
+{component: q1, label: 'Q1'})` and the built-in table renderer.

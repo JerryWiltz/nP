@@ -1,7 +1,8 @@
-// Modified: 2026-10-20
+// Modified: 2026-11-26
 import {complex} from './complex';
 import {global} from '../../np-global/src/global';
 import {sampleRateFromTime} from '../../np-global/src/timeGrid';
+import {outputTable, unitColumn} from '../../np-global/src/outputUnits';
 
 var fftTimeGrid = Symbol('FFT time grid');
 
@@ -46,7 +47,8 @@ function withOutput(values, axis, axisTitle, defaultSelector, lastIndex, realInp
 				}
 				table.push([axis[index], output]);
 			}
-			return table;
+			return outputTable(table, [unitColumn(axisTitle === 'Frequency (Hz)' ? 'frequency' : 'time',
+				axisTitle === 'Frequency (Hz)' ? 'Hz' : 's'), selector === 'dBV' ? unitColumn('voltage', 'dBV') : null], options?.units);
 		}
 	});
 	return values;

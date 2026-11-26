@@ -1,4 +1,4 @@
-// Modified: 2026-10-07
+// Modified: 2026-11-26
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -349,7 +349,7 @@ test('mixed R, line, microstrip, and Amp networks preserve NF and IP through nod
 	withTwoTone([1e9, 1.1e9], {spacingHz: 1e6, p1dBm: -40, p2dBm: -37}, () => {
 		var amp = Amp({gainDb: 20, noiseFigureDb: 4, oip2dBm: 42,
 			oip3dBm: 30, harmonicOip2dBm: 40});
-		var resistor = nP.R({resistance: 75, temperature: 320});
+		var resistor = nP.R(75, 320);
 		var line = nP.Tlin(50, 0.02);
 		var microstrip = nP.mlin({temperature: 320});
 		var attenuator = Attn(3);
@@ -372,7 +372,7 @@ test('mixed R, line, microstrip, and Amp networks preserve NF and IP through nod
 				close(a[index][field], b[index][field], 1e-6);
 			}
 		}
-		var cooler = cascade(amp, nP.R({resistance: 75, temperature: 290}),
+		var cooler = cascade(amp, nP.R(75, 290),
 			line, nP.mlin({temperature: 290}), attenuator);
 		assert.ok(viaCascade.out('NF21dB')[1][1] > cooler.out('NF21dB')[1][1]);
 	});

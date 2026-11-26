@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Modified: 2026-11-21 -->
+<!-- Modified: 2026-11-26 -->
 <html lang="en">
 <head>
     <meta charset="utf-8">
@@ -34,15 +34,13 @@
             [c2, 7, 101],
             ['out', 100, 101]
         );
-        var bias = network.operatingPoint.components[5].qPoint;
+        var dc = network.operatingPoint;
+        var bias = dc.out('vd', 'idmA', {component: d1, label: 'D1'});
         var capacitance = d1.cvTable({vr: {start: 0, stop: 15, points: 31}});
-        var capacitancePf = [['vr (V)', 'cj (pF)', 'ct (pF)']];
-        for (var row = 1; row < capacitance.length; row++) {
-            capacitancePf.push([capacitance[row][0], capacitance[row][1] * 1e12, capacitance[row][2] * 1e12]);
-        }
+        var capacitancePf = capacitance.out('cjpF', 'ctpF');
         var response = network.out('s11dB', 's21dB');
 
-        nP.log(bias);
+        nP.lineTable({inputTable: [bias], metricPrefix: 'none'});
         nP.schematic(network);
         nP.lineChart({inputTable: [capacitancePf], metricPrefix: 'none',
             title: 'SMV1231-079LF capacitance versus reverse voltage',

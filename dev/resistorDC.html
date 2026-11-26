@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Modified: 2026-11-16 -->
+<!-- Modified: 2026-11-26 -->
 <html lang="en">
 <head>
     <meta charset="utf-8">
@@ -17,7 +17,7 @@
 
     <section>
         <h2>1. With the first tee and DC supply</h2>
-        <p id="dcCurrent"></p>
+        <div id="dcCurrent"></div>
         <div id="withSupplyChart"></div>
     </section>
 
@@ -57,10 +57,9 @@
             ['out', 6, 7]
         );
         var dc = withSupply.solveDC();
-        var dcCurrent = dc.components[4].terminalCurrents[0]; // r1, amperes
-        var withSupplyOut = withSupply.out('s11dB', 's21dB', 's12dB', 's22dB');
-        document.getElementById('dcCurrent').textContent =
-            'DC current through R1, R2 and R3: ' + (dcCurrent * 1000).toFixed(6) + ' mA';
+        var dcCurrent = dc.out('i1mA', {component: r1, label: 'R1'});
+        var withSupplyOut = withSupply.out('s11dB', 's21dB', 's12dB', 's22dB', {label: 'With supply'});
+        nP.lineTable({inputTable: [dcCurrent], mount: '#dcCurrent', metricPrefix: 'none'});
         nP.lineChart({
             inputTable: [withSupplyOut],
             mount: '#withSupplyChart',
@@ -82,7 +81,7 @@
             [c2, 5, 7],
             ['out', 6, 7]
         );
-        var withoutSupplyOut = withoutSupply.out('s11dB', 's21dB', 's12dB', 's22dB');
+        var withoutSupplyOut = withoutSupply.out('s11dB', 's21dB', 's12dB', 's22dB', {label: 'Without supply'});
         nP.lineChart({
             inputTable: [withoutSupplyOut],
             mount: '#withoutSupplyChart',

@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-22 -->
+<!-- Modified: 2026-11-26 -->
 # Charge-storage PIN diode with external bias
 
 Open [pin.html](pin.html). A 2 V source and two 1 kΩ resistors bias a series
@@ -14,3 +14,7 @@ feedback. General network switching transients/HB and cross-device quadratic
 remixing are not implemented. The older SMP1307-011LF selected-region record
 remains available explicitly. See [equations, supplied records and independent
 SPICE evidence](../developmentDocs/semiconductors/pinModels.md).
+
+DC measurements are displayed through the operating-point result’s `.out()`
+method and `nP.lineTable()`; placement selection, unit conversion and table
+assembly belong to the library.

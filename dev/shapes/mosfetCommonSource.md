@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-21 -->
+<!-- Modified: 2026-11-26 -->
 # Divider-biased MOSFET common-source amplifier
 
 `mosfetCommonSource.html` loads the local browser bundle, solves external DC,
@@ -26,3 +26,7 @@ G/D/S/B order. Its equation-level body terminal is not an accessible pin on
 these three-terminal packaged parts. Standalone four-terminal drawings work;
 the named commonSource amplifier board currently covers three-terminal stages.
 See [model equations and limits](../../developmentDocs/semiconductors/mosfetModels.md).
+
+The DC table comes directly from `network.operatingPoint.out('vgs', 'vds',
+'idmA', {component: q1, label: 'Q1'})`; the library selects the placement and
+converts amperes to milliamperes. The example does not assemble DC table rows.

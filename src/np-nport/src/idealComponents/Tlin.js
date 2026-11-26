@@ -1,16 +1,18 @@
-// Modified: 2026-11-21
+// Modified: 2026-11-26
 import {schematicPart} from '../schematicPart';
 import {connectionDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {nPort} from '../nPort';
 import {global} from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
-import {componentSettings} from '../componentSettings';
+import {validatedComponentSettings, requireNumber, checkedSpars} from '../numericValidation';
 import {C0} from '../physicalConstants';
 
 export function Tlin(Z = 60, Length = 0.5 * 0.0254, options = {}) { // Z is in ohms and Length is in meters, sparameters of a physical transmission line
+	requireNumber('Tlin', 'impedance (ohms)', Z, {positive: true});
+	requireNumber('Tlin', 'length (meters)', Length, {nonnegative: true});
 	var Tlin = new nPort;
-	var settings = componentSettings(global, options);
+	var settings = validatedComponentSettings(global, options, 'Tlin');
 	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
 	var Zo = complex(Ro,0), two = complex(2,0), freqCount, Ztlin, s11, s12, s21, s22, sparsArray = [];
 	var Atlin, Btlin, Ctlin, Ds, alpha, beta, gamma;
@@ -33,7 +35,7 @@ export function Tlin(Z = 60, Length = 0.5 * 0.0254, options = {}) { // Z is in o
 		s22 = s11;
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
 	};
-	Tlin.setspars(sparsArray);
+	Tlin.setspars(checkedSpars('Tlin', sparsArray));
 	Tlin.setglobal(settings);
 	Tlin._schematic = schematicPart('Tlin', {impedance: Z, length: Length});
 	Tlin._dcModel = connectionDcModel('Tlin', 2, [[1, 2]], [], {impedance: Z, length: Length}, settings);

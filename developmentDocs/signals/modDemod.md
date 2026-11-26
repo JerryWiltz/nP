@@ -1,5 +1,16 @@
-<!-- Modified: 2026-10-20 -->
+<!-- Modified: 2026-11-26 -->
 # Modulation and demodulation in nP
+
+Supported measurement-table outputs now accept a common
+[units map](../analysis/outputUnits.md), for example
+`tx.out('waveform',{units:{time:'us',voltage:'mV'}})` or
+`rx.out('phase',{units:{angle:'rad'}})`. Existing ns/s defaults and all raw
+arrays, bits, counts and settings remain compatible. Explicit requests for
+units on non-table outputs reject. Advanced decoded-bit waveforms and normalized
+VNA responses do not acquire a physical voltage calibration; use a carrier
+waveform for volts. Analog phase/frequency-deviation units preserve their
+existing mathematical definitions. Display copied/worker tables with
+`metricPrefix:'none'` to keep their already selected numeric units.
 
 `nP.mod()` describes a signal to apply to a circuit. It produces the frequencies the circuit must analyze and the complex input voltage at each frequency. It does **not** return an nPort. Build components after calling `mod()`, combine them with `nodal()` or `cascade()`, and attach the transmitter to the completed circuit. `nP.demod()` then reads the signal carried by that nPort and reconstructs or measures its output.
 

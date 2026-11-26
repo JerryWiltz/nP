@@ -1,20 +1,33 @@
-// Modified: 2026-10-13
+// Modified: 2026-11-26
 
-function fGen(fStart, fStop, points) {
-	var out = [];
-	var fStep = (fStop - fStart) / (points - 1);
-	var frequency = fStart;
-	for (var i = 0; i < points; i++, frequency += fStep) out.push(frequency);
-	return out;
+function linearGrid(start, stop, points, minimum, caller, increasing = false) {
+	if (!Number.isFinite(start) || !Number.isFinite(stop)) {
+		throw new RangeError(caller + ' start and stop must be finite numbers.');
+	}
+	if (!Number.isInteger(points) || points < minimum || points > 0xffffffff) {
+		throw new RangeError(caller + ' needs at least ' + (minimum === 1 ? 'one point' : 'two points') +
+			'; points must be an integer no greater than 4294967295.');
+	}
+	if (points === 1) return [start];
+	if (increasing && stop <= start) throw new RangeError(caller + ' stop must be greater than start.');
+	var span = stop - start, step = span / (points - 1), values = [];
+	if (!Number.isFinite(span)) throw new RangeError(caller + ' interval exceeds the numeric range.');
+	for (var index = 0; index < points; index++) {
+		var value = index === 0 ? start : index === points - 1 ? stop : start + index * step;
+		if (!Number.isFinite(value) || index > 0 && span !== 0 && (value - values[index - 1]) * Math.sign(span) <= 0) {
+			throw new RangeError(caller + ' spacing cannot be represented; reduce points or change the interval.');
+		}
+		values.push(value);
+	}
+	return values;
+}
+
+function fGen(start, stop, points) {
+	return linearGrid(start, stop, points, 1, 'fGen');
 }
 
 function tGen(start, stop, points) {
-	if (!Number.isFinite(start) || !Number.isFinite(stop) ||
-		!Number.isInteger(points) || points < 2 || stop <= start) {
-		throw new RangeError('tGen needs a finite increasing interval and at least two points.');
-	}
-	var step = (stop - start) / (points - 1);
-	return Array.from({length: points}, function (_, index) { return start + index * step; });
+	return linearGrid(start, stop, points, 2, 'tGen', true);
 }
 
 function newContext() {

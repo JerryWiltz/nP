@@ -1,4 +1,4 @@
-// Modified: 2026-11-22
+// Modified: 2026-11-26
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as nP from '../src/index.js';
@@ -122,7 +122,7 @@ test('drawing descriptions reserve nearby captions while preserving explicit ali
 
 test('generic one-port attachments use terminal geometry without a selected-device flag', () => {
     nP.global.fList = [1e9];
-    const junction = nP.Tee4(), short = nP.Short(), load = nP.Load(50);
+    const junction = nP.Tee4(), short = nP.Short(), load = nP.Load();
     const network = nP.nodal([junction, 1, 2, 3, 4], [short, 3], [load, 4], ['out', 1, 2]);
     const graph = schematicGraph(network, {shapes: ['generic']});
     assert.equal(graph.components.find(part => part.symbol === 'short').id, 'SHORT1');
@@ -132,7 +132,7 @@ test('generic one-port attachments use terminal geometry without a selected-devi
 
 test('a coupled section with outward terminations composes without a tuned display lead', () => {
     nP.global.fList = [1e9];
-    const line = nP.Tclin(), load = nP.Load(50), r1 = nP.R(25);
+    const line = nP.Tclin(), load = nP.Load(), r1 = nP.R(25);
     const network = nP.nodal(
         {edgeCoupledFilter: [[line, 1, 10, 2, 11], [load, 10], [load, 11]]},
         {series: [[r1, 2, 3]]},

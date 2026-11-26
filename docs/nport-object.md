@@ -1,4 +1,4 @@
-<!-- Modified: 2026-10-19 -->
+<!-- Modified: 2026-11-26 -->
 # nPort object
 
 An **nPort object** represents an electrical component or an assembled circuit at a set of analysis frequencies. Constructors such as `nP.R()` and `nP.Tee()` return nPorts. So do `nP.nodal()`, `nP.cascade()`, and an nPort's `.cas()` method. The base `nPort` constructor is internal; use these public functions to create one.
@@ -30,6 +30,15 @@ Changing `nP.global` after construction does not recalculate an existing nPort. 
 ## Read results with `.out()`
 
 Call `.out(...selectors)` to turn the nPort's complex data into a numeric table. The first row contains column names; each later row starts with frequency in hertz.
+
+An optional final [units map](./output-units.md) selects display units, for
+example `.out('s21dB', {units: {frequency: 'GHz'}})`. Without it, existing units
+and headings remain unchanged. This changes only the returned display table.
+
+Supply at least one measurement, such as `.out('s21dB')`. Calling `.out()`
+without a selector, or with only an options object, reports an error. It no
+longer returns frequency-only rows. Existing explicit selector calls are
+unchanged. DC and rectification results also require an explicit measurement.
 
 ```js
 nP.global.fList = nP.global.fGen(100e6, 2e9, 51);

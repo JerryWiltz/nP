@@ -1,41 +1,30 @@
-// Modified: 2026-11-21
+// Modified: 2026-11-26
 import {lumpedDcModel} from '../dcModel';
+import {lumpedSpars} from './lumpedSpars';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort'
 import {global}  from '../../../np-global/src/global';
-import {analysisFrequencies} from '../analysisFrequencies';
-import {componentSettings} from '../componentSettings';
+import {validatedComponentSettings, requireNumber, checkedNoise} from '../numericValidation';
 
 const kB = 1.380649e-23;
 
 export function paR(R = 75, temperature = global.Temp, options = {}) { // parallel resistor nPort object
-	if (typeof R === 'object') {
+	if (R !== null && typeof R === 'object' && !Array.isArray(R)) {
 		options = R;
 		temperature = R.temperature === undefined ? global.Temp : R.temperature;
 		R = R.resistance === undefined ? 75 : R.resistance;
 	}
+	var settings = validatedComponentSettings(global, options, 'paR');
+	requireNumber('paR', 'temperature (kelvin)', temperature, {nonnegative: true});
 	var paR = new nPort;
-	var settings = componentSettings(global, options);
-	var frequencyList = analysisFrequencies(settings), Ro = global.Ro;
-	var Zo = complex(Ro,0), Yo = Zo.inv(), two = complex(2,0), freqCount, Z = [], Y = [], s11, s12, s21, s22, sparsArray = [], noiseArray = [];
-	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
-		Z[freqCount] = complex(R, 0);
-		Y[freqCount] = Z[freqCount].inv();
-		s11 = (Y[freqCount].neg()).div(Y[freqCount].add(Yo.add(Yo)));
-		s21 = (two.mul(Yo)).div(Y[freqCount].add(Yo.add(Yo)));  
-		s12 = s21;
-		s22 = s11;
-		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s21, s22];
-		var noise = kB * temperature * 4 * R * Ro / ((Ro + 2 * R) ** 2);
-		noiseArray[freqCount] = {
-			frequency: frequencyList[freqCount],
-			C: [
-				[complex(noise, 0), complex(noise, 0)],
-				[complex(noise, 0), complex(noise, 0)]
-			]
-		};
-	}
+	var sparsArray = lumpedSpars('paR', settings, 'shunt', 'series', {resistance: R});
+	var noise = kB * temperature * 4 * R * settings.Ro / ((settings.Ro + 2 * R) ** 2);
+	var noiseArray = sparsArray.map(function (row) {
+		return {frequency: row[0], C: [[complex(noise, 0), complex(noise, 0)],
+			[complex(noise, 0), complex(noise, 0)]]};
+	});
+	checkedNoise('paR', noiseArray);
 	paR.setspars(sparsArray);
 	paR.noise = noiseArray;
 	paR.setglobal(settings);

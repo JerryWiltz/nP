@@ -1,15 +1,15 @@
-// Modified: 2026-11-21
+// Modified: 2026-11-26
 import {connectionDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {nPort} from '../nPort'
 import {global}  from '../../../np-global/src/global';
 import {analysisFrequencies} from '../analysisFrequencies';
-import {componentSettings} from '../componentSettings';
+import {validatedComponentSettings, checkedSpars} from '../numericValidation';
 
 export function Tee4(options = {}) { // a 4-port dummy connection
 	var Tee4 = new nPort;
-	var settings = componentSettings(global, options);
+	var settings = validatedComponentSettings(global, options, 'Tee4');
 	var frequencyList = analysisFrequencies(settings);
 	var freqCount, s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44, sparsArray = [];
 	for (freqCount = 0; freqCount < frequencyList.length; freqCount++) {
@@ -18,7 +18,7 @@ export function Tee4(options = {}) { // a 4-port dummy connection
 		
 		sparsArray[freqCount] =	[frequencyList[freqCount],s11, s12, s13, s14, s21, s22, s23, s24, s31, s32, s33, s34, s41, s42, s43, s44];
 	}	
-	Tee4.setspars(sparsArray);
+	Tee4.setspars(checkedSpars('Tee4', sparsArray));
 	Tee4.setglobal(settings);
 	Tee4._schematic = schematicPart('Tee4', {labelPrefix: 'Tee4'});
 	Tee4._dcModel = connectionDcModel('Tee4', 4, [[1, 2, 3, 4]], [], {}, settings);

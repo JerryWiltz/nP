@@ -1,4 +1,6 @@
-// Modified: 2026-10-22
+// Modified: 2026-11-26
+import {withOutputUnits} from '../../np-global/src/outputUnits';
+import {receiverUnits} from './outputUnitProfiles';
 import {receiveWaveform} from './receiverWaveform';
 import {receiveVnaFrequency} from './vnaFrequencyReceiver';
 import {demodulateAdvanced} from './advancedModes';
@@ -298,7 +300,7 @@ function demodFSK(receiver, signal) {
 }
 
 // Recover baseband levels from a real carrier using the known carrier phase.
-export function demod(stage, options = {}) {
+function createDemod(stage, options = {}) {
 	if (!stage || !Array.isArray(stage.spars)) stage = directStage(stage);
 	if (stage.signal && stage.signal.mode === 'VNA-frequency') {
 		return receiveVnaFrequency(stage, options);
@@ -387,4 +389,11 @@ export function demod(stage, options = {}) {
 			return receiver.out(selector);
 		}
 	};
+}
+
+export function demod(stage, options = {}) {
+	const result = createDemod(stage, options);
+	const mode = stage.signal ? stage.signal.mode : stage.mode;
+	return withOutputUnits(result, receiverUnits(mode, options), mode === 'VNA-frequency' ? 'response dB' :
+		['AM', 'FM', 'PM', 'SSB', 'DSB-SC'].includes(mode) ? undefined : 'waveform');
 }

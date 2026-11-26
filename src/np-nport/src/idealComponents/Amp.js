@@ -1,11 +1,11 @@
-// Modified: 2026-11-16
+// Modified: 2026-11-26
 import {requiredDcModel} from '../dcModel';
 import {complex} from '../../../np-math/src/complex';
 import {schematicPart} from '../schematicPart';
 import {global} from '../../../np-global/src/global';
 import {nPort} from '../nPort';
 import {analysisFrequencies} from '../analysisFrequencies';
-import {componentSettings} from '../componentSettings';
+import {validatedComponentSettings, checkedSpars} from '../numericValidation';
 
 const kB = 1.380649e-23;
 
@@ -158,7 +158,7 @@ export function Amp(gainDb = 20, noiseFigureDb = 4, referenceTemperature = 290, 
 	var amplifier = new nPort();
 	var sparsArray = [];
 	var noiseArray = [];
-	var settings = componentSettings(global, options);
+	var settings = validatedComponentSettings(global, options, 'Amp');
 	var frequencies = analysisFrequencies(settings);
 	for (var i = 0; i < frequencies.length; i++) {
 		var frequency = frequencies[i];
@@ -170,7 +170,7 @@ export function Amp(gainDb = 20, noiseFigureDb = 4, referenceTemperature = 290, 
 			})
 		};
 	}
-	amplifier.setspars(sparsArray);
+	amplifier.setspars(checkedSpars('Amp', sparsArray));
 	amplifier.noise = noiseArray;
 	amplifier.setglobal(settings);
 	amplifier.referenceTemperature = referenceTemperature;

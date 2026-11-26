@@ -1,4 +1,5 @@
-// Modified: 2026-11-21
+// Modified: 2026-11-26
+import {withCurveOutput} from '../../curveOutput';
 import {global} from '../../../../np-global/src/global';
 import {nPort} from '../../nPort';
 import {componentSettings} from '../../componentSettings';
@@ -37,7 +38,8 @@ function ivTable(description, input = {}) {
         for (let gate = 0; gate < settings.vgs.points; gate++) row.push(mosfetOperatingPoint(p, atInterval(settings.vgs, gate), voltage, settings.vbs, polarity, body).id);
         table.push(row);
     }
-    return table;
+    return withCurveOutput(table, {axis: 'vds', measurements: ['id'],
+        step: {name: 'vgs', values: Array.from({length: settings.vgs.points}, (_, gate) => atInterval(settings.vgs, gate))}});
 }
 export function mosfetConstructor(options, polarity) {
     const type = polarity === 1 ? 'NMOS' : 'PMOS';

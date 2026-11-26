@@ -1,4 +1,4 @@
-// Modified: 2026-11-18
+// Modified: 2026-11-26
 import { examples } from './theme/replExamples.js'
 
 function replSidebarItems(category) {
@@ -93,6 +93,7 @@ const config = {
                     { text: 'RF constructors', link: '/rf-constructors' },
                     { text: 'Connecting nPorts', link: '/connecting-nports' },
                     { text: 'Charts, tables, and logs', link: '/charts-tables-and-logs' },
+                    { text: 'Output units', link: '/output-units' },
                     { text: 'Schematics', link: '/schematics' }
                 ]
             },

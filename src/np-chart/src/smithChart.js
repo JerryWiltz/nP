@@ -1,8 +1,9 @@
-// Modified: 2026-10-22
+// Modified: 2026-11-26
 import * as d3 from 'd3';
 import {normalizeInputTables} from './inputTables';
 import {CHART_FONT_FAMILY, CHART_FONT_SIZE} from './chartTypography';
 import {appendTooltipRows, formatTooltipFrequency, formatTooltipNumber} from './chartTooltip';
+import {explicitAxis} from '../../np-global/src/outputUnits';
 
 export function smithChart(options = {}) {
 	// ======== Options & defaults ========
@@ -65,11 +66,12 @@ export function smithChart(options = {}) {
 	const isNarrowViewport = width < 420;
 	let txtLabels = d3.selectAll([]);
 
-	const pickScale = {
+	const unitAxis = explicitAxis(tables, options.metricPrefix, 'smithChart');
+	const pickScale = unitAxis ? 1 : ({
 		tera: 1e12, giga: 1e9, mega: 1e6, kilo: 1e3,
 		none: 1, one: 1, deci: 1e-1, centi: 1e-2,
 		milli: 1e-3, micro: 1e-6, nano: 1e-9, pico: 1e-12
-	}[metricPrefix] || 1e9;
+	}[metricPrefix] || 1e9);
 
 	function stripComplexSuffix(header) {
 		return String(header).replace(/(?:Re|Im)$/i, '');
@@ -358,7 +360,7 @@ export function smithChart(options = {}) {
 					.style('top', `${py - 20}px`);
 				appendTooltipRows(tooltip, [
 					['Trace', d.traceName],
-					['Frequency', formatTooltipFrequency(d.frequency, metricPrefix)],
+					[unitAxis ? unitAxis.xTitle : 'Frequency', unitAxis ? formatTooltipNumber(d.frequency) : formatTooltipFrequency(d.frequency, metricPrefix)],
 					['Re', formatTooltipNumber(d.re)],
 					['Im', formatTooltipNumber(d.im)],
 					['Magnitude', formatTooltipNumber(Math.hypot(d.re, d.im))],

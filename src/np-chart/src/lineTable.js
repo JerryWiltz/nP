@@ -1,5 +1,6 @@
-// Modified: 2026-11-21
+// Modified: 2026-11-26
 import * as d3 from 'd3';
+import {outputUnitInfo} from '../../np-global/src/outputUnits';
 import {normalizeInputTables} from './inputTables';
 import {CHART_FONT_FAMILY, CHART_FONT_SIZE} from './chartTypography';
 
@@ -89,9 +90,13 @@ export function lineTable(options = {}) {
 		const data = tables.map(table =>
 			table.map(row => row.slice())
 		);
-		const freqScale = pickScale(metricPrefix);
-		const freqPrefixLabel = metricPrefixLabel(metricPrefix);
-		data.forEach(tbl => {
+		data.forEach((tbl, index) => {
+			const explicit = outputUnitInfo(tables[index])?.explicit;
+			if (explicit && options.metricPrefix !== undefined && !['none', 'one'].includes(options.metricPrefix)) {
+				throw new RangeError('lineTable: output units are already selected; omit metricPrefix or use none.');
+			}
+			const freqScale = explicit ? 1 : pickScale(metricPrefix);
+			const freqPrefixLabel = explicit ? '' : metricPrefixLabel(metricPrefix);
 			if (tbl[0] && typeof tbl[0][0] === 'string' && freqPrefixLabel) {
 				tbl[0][0] = `${tbl[0][0]} ${freqPrefixLabel}`;
 			}

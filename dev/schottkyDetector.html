@@ -93,20 +93,18 @@
         );
         var differentialDrawing = nP.schematic(differentialDetector, {mount: '#differentialSchematic'});
 
-        var detected = [['Input (dBm)', 'Single diode (µV)', 'Differential (µV)']];
-        for (var power = -90; power <= -60; power += 5) {
-            var single = detector.rectify({frequencyHz: 1e9, inputPowerDbm: power,
-                outputNodes: ['load', 'ground']});
-            var differential = differentialDetector.rectify({frequencyHz: 1e9, inputPowerDbm: power,
-                outputNodes: ['detector', 'reference']});
-            detected.push([power, single.deltaVoltage * 1e6, differential.deltaVoltage * 1e6]);
-        }
-        nP.lineChart({inputTable: [detected], title: 'RF-induced DC output', metricPrefix: 'none',
+        var inputPowers = {start: -90, stop: -60, points: 7};
+        var single = detector.rectify({frequencyHz: 1e9, inputPowerDbm: inputPowers,
+            outputNodes: ['load', 'ground']});
+        var differential = differentialDetector.rectify({frequencyHz: 1e9, inputPowerDbm: inputPowers,
+            outputNodes: ['detector', 'reference']});
+        var singleOutput = single.out('deltaVoltageuV', {label: 'Single diode'});
+        var differentialOutput = differential.out('deltaVoltageuV', {label: 'Differential'});
+        var differentialSensitivity = differential.out('sensitivityVoltsPerWatt');
+        nP.lineChart({inputTable: [singleOutput, differentialOutput], title: 'RF-induced DC output', metricPrefix: 'none',
             xAxisTitle: 'Available RF input (dBm)', yAxisTitle: 'DC change (µV)'});
-        nP.lineTable({inputTable: [detected], metricPrefix: 'none', columnWidth: 180});
-        var sensitivity = 'Differential sensitivity at −60 dBm: ' +
-            differential.sensitivityVoltsPerWatt.toFixed(2) + ' V/W';
-        nP.log(sensitivity);
+        nP.lineTable({inputTable: [singleOutput, differentialOutput], metricPrefix: 'none', columnWidth: 180});
+        nP.lineTable({inputTable: [differentialSensitivity], title: 'Differential sensitivity', metricPrefix: 'none', columnWidth: 180});
     </script>
 </body>
 </html>

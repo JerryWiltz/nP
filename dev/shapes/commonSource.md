@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-19 -->
+<!-- Modified: 2026-11-26 -->
 # Self-biased JFET common-source amplifier
 
 Open `commonSource.html` against the rebuilt browser bundle. The NJF uses the
@@ -16,3 +16,7 @@ separate bypass capacitor supplies the RF return.
 unbypassed source resistance, with optional supply bypass. The shape states
 engineering organization; the shared relational solver chooses U-turn direction,
 clearance and related branch baselines. No example coordinates are supplied.
+
+The DC table comes directly from `network.operatingPoint.out('vgs', 'vds',
+'idmA', {component: q1, label: 'Q1'})`; the library selects the placement and
+converts amperes to milliamperes. The example does not assemble DC table rows.

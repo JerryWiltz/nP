@@ -10,9 +10,34 @@ import {rfConnection, withOperatingPoints} from './operatingPointHandoff';
 import {prepareDcBias, retainDcBias} from './dcBias';
 import {validateNetworkComponents} from './combining/connectionValidation';
 import {rectify} from './rectification';
+import {outputTable, unitColumn} from '../../np-global/src/outputUnits';
 
-// Modified: 2026-11-25
+// Modified: 2026-11-26
 var conjugate = function (value) { return complex(value.getR(), -value.getI()); };
+
+function outputHeadings(selectors, options) {
+	if (!options || Array.isArray(options)) throw new TypeError('nPort.out() options must be an object.');
+	var label = options.label;
+	if (label === undefined) return selectors;
+	if (typeof label !== 'string' || !label.trim()) throw new TypeError('nPort.out() label must be a nonempty string.');
+	return selectors.map(selector => selectors.length === 1 ? label : label + ': ' + selector);
+}
+
+function rfUnitColumn(selection, selector, heading) {
+	const suffix = selection.kind === 'signal' ? selection.format : selection.kind === 'IM' || selection.kind === 'OIP' ? 'dBm' :
+		selection.kind === 'noiseFloor' && selector.endsWith('dBmHz') ? 'dBmHz' :
+		selection.format === 'dB' ? 'dB' : '';
+	const name = suffix ? selector.slice(0, -suffix.length) : selector;
+	const title = heading === selector ? name : heading.endsWith(': ' + selector) ? heading.slice(0, -selector.length) + name : heading;
+	if (selection.kind === 'signal') return unitColumn(selection.format === 'V' ? 'voltage' : selection.format === 'Deg' ? 'angle' : 'power',
+		selection.format === 'Deg' ? 'deg' : selection.format, title);
+	if (selection.kind === 's' && selection.format === 'ang') return unitColumn('angle', 'deg');
+	if (selection.kind === 'c') return unitColumn('powerDensity', selection.format === 'dB' ? 'dBW/Hz' : 'W/Hz', title);
+	if (selection.kind === 'noiseFloor') return unitColumn('powerDensity', 'dBm/Hz', title);
+	if (selection.kind === 'IM' || selection.kind === 'OIP') return unitColumn('power', 'dBm', title);
+	if (selection.format === 'dB') return {unit: 'dB', title};
+	return null;
+}
 
 export function nPort() { this._noise = undefined; this._signal = undefined; }; // base class for nPort objects
 
@@ -175,10 +200,12 @@ nPort.prototype = {
 		return retainDcBias(cascadeRf.call(components[0], components[1], description), prepared);
 	},
 	out : function out (...selectors) {
-		var spars = this.getspars();
-		var portCount = Math.sqrt(spars[0].length - 1);
 		var options = selectors.length && typeof selectors[selectors.length - 1] === 'object' ?
 			selectors.pop() : {};
+		if (!selectors.length) throw new TypeError('nPort.out() requires a measurement selector, such as s21dB.');
+		var spars = this.getspars();
+		var portCount = Math.sqrt(spars[0].length - 1);
+		var headings = outputHeadings(selectors, options);
 		var parsed = selectors.map(function (selector) {
 			if (selector === 'K' || selector === 'deltaMag') return {kind: 'stability', format: selector};
 			var match = /^s([1-9])([1-9])(dB|mag|ang|Re|Im)$/.exec(selector);
@@ -220,7 +247,7 @@ nPort.prototype = {
 				throw new RangeError('Signal tone selectors require an analog signal on the nPort.');
 			}
 		}, this);
-		var output = [['Freq'].concat(selectors)];
+		var output = [['Freq'].concat(headings)];
 		for (var frequencyIndex = 0; frequencyIndex < spars.length; frequencyIndex++) {
 			var sparsRow = spars[frequencyIndex];
 			if (this._displayFrequencies && !this._displayFrequencies.includes(sparsRow[0])) continue;
@@ -279,7 +306,7 @@ nPort.prototype = {
 			}
 			output.push(row);
 		}
-		return output;
+		return outputTable(output, [unitColumn('frequency', 'Hz'), ...parsed.map((selection, index) => rfUnitColumn(selection, selectors[index], headings[index]))], options.units);
 	},
 	noiseOut : function noiseOut (...noiseArguments) {
 		if (noiseArguments.length === 0) throw new TypeError('nPort.noiseOut() requires at least one covariance selector.');

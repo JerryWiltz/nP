@@ -1,4 +1,5 @@
-// Modified: 2026-11-22
+// Modified: 2026-11-26
+import {withCurveOutput} from '../curveOutput';
 import {global} from '../../../np-global/src/global';
 import {componentSettings} from '../componentSettings';
 import {analysisFrequencies} from '../analysisFrequencies';
@@ -31,7 +32,7 @@ function ivTable(record, temperature, region, defaults, options = {}) {
         const vd = i === range.points - 1 ? range.stop : range.start + i * (range.stop - range.start) / (range.points - 1);
         table.push([vd, pinPoint(record, temperature, region, vd).id]);
     }
-    return table;
+    return withCurveOutput(table, {axis: 'vd', measurements: ['id']});
 }
 
 export function PIN(options = {}) {

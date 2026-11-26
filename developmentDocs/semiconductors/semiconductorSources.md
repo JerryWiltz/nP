@@ -1,5 +1,9 @@
-<!-- Modified: 2026-11-25 -->
+<!-- Modified: 2026-11-26 -->
 # Semiconductor sources of truth
+
+[Device-curve output](../analysis/deviceCurveOutput.md) is shared presentation
+of the existing calculated SI samples. Its measurement selection, labels and
+unit conversion introduce no new electrical equations or fitted parameters.
 
 This is the provenance index for the twelve implemented semiconductor constructors.
 It separates **equation definitions**, **device parameter records**, **nP-derived

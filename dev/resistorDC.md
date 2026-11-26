@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-16 -->
+<!-- Modified: 2026-11-26 -->
 # resistorDC
 
 Open `resistorDC.html` to compare two circuits using the local `../dist/nP.js` bundle.
@@ -12,3 +12,9 @@ with 50-ohm reference impedance and two 1 nF coupling capacitors.
 
 The two S-parameter plots agree because V() is open at positive RF frequencies,
 so the first tee's remaining two ports behave as a through connection.
+The final `.out()` label option names their RF columns `With supply: s21dB`,
+`Without supply: s21dB`, etc.; only headings differ, not their numeric data.
+
+DC measurements are displayed through the operating-point result’s `.out()`
+method and `nP.lineTable()`; placement selection, unit conversion and table
+assembly belong to the library.

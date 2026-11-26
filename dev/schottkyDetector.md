@@ -18,6 +18,10 @@ coordinates or routing overrides. Named node labels use measured enclosures,
 and numeric R/L/C captions use engineering units.
 
 The plot/table report RF-induced DC changes in µV versus available input dBm.
+The `inputPowerDbm: {start: -90, stop: -60, points: 7}` sweep belongs to
+`rectify()`. Named `.out('deltaVoltageuV', {label: ...})` tables go directly to
+the chart/table helpers; the HTML contains no sweep loop, table assembly or
+voltage conversion. A separate output table reports differential sensitivity.
 `rectify()` solves RF-off bias, loaded junction RF voltage and a second-order
 DC correction. The returned source records expose generated junction currents and shifts.
 The reference diode is not artificially held fixed or RF-isolated by the solver.

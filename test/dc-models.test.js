@@ -1,4 +1,4 @@
-// Modified: 2026-11-22
+// Modified: 2026-11-26
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -51,7 +51,7 @@ test('series/shunt and series/parallel RLC definitions retain their actual branc
     assert.deepEqual(nP.paL(8e-9)._dcModel.definition.elements,
         [{type: 'inductor', terminals: [1, 'g'], inductance: 8e-9}]);
     assert.equal(nP.R(0)._dcModel.definition.elements[0].resistance, 0);
-    assert.equal(nP.R(-1)._dcModel.kind, 'requiresModel');
+    assert.throws(() => nP.R(-1), /resistance.*nonnegative/);
     assert.deepEqual(nP.Tclin()._dcModel.definition.joins, [[1, 2], [4, 3]]);
     assert.deepEqual(nP.seriesTee()._dcModel.definition.voltageConstraint, [1, -1, 1]);
     assert.deepEqual(nP.seriesTee()._dcModel.definition.currentRatios, [1, -1, 1]);
@@ -63,7 +63,7 @@ test('resolved values, temperature and analysis context are owned snapshots', ()
         global.Ro = 75;
         const frequencies = [1e6, 2e6];
         const options = {resistance: 42, temperature: 330, fList: frequencies};
-        const resistor = nP.R(options), load = nP.Load(), attenuator = nP.Attn(6);
+        const resistor = nP.R(options.resistance, options.temperature, {fList: frequencies}), load = nP.Load(), attenuator = nP.Attn(6);
         options.resistance = 99; frequencies.push(3e6); global.Ro = 50;
         resistor.global.fList.push(4e6);
         assert.equal(resistor._dcModel.definition.parameters.resistance, 42);

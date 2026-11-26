@@ -1,4 +1,4 @@
-<!-- Modified: 2026-11-25 -->
+<!-- Modified: 2026-11-26 -->
 # Connecting nPorts
 
 Constructors such as `nP.R()`, `nP.L()`, and `nP.Tee()` return [nPort objects](./nport-object.md). Connect those objects to make a larger circuit, then call `.out()` on the result. Set the [analysis frequencies](./global-settings.md#frequency-list) before creating the components.
@@ -130,6 +130,20 @@ var response = chain.out('s11dB', 's21dB');
 
 For two stages, `line1.cas(line2)` produces the same connection. `cas()` returns a new nPort, so `line1.cas(line2).cas(line3)` is also possible. Use `nodal()` when the circuit has a shunt branch or more than two external ports.
 
+Name an RF trace directly in `.out()`:
+
+```js
+var transmission = chain.out('s21dB', {label: 'Transmission (dB)'});
+nP.lineChart({inputTable: [transmission]});
+```
+
+One selector uses that label as its column heading and chart trace name.
+For multiple selectors, `{label: 'Chain'}` produces headings such as
+`Chain: s11dB` and `Chain: s21dB`. The label must be a nonempty string;
+numeric values, frequencies and units stay unchanged. Without a label,
+headings remain the selector names. Include units in a custom single-trace
+label when needed; the library does not append them.
+
 ## Reuse a completed circuit
 
 A network returned by `nodal()` or `cascade()` is itself an nPort. You can connect it as a building block in another network. Give it one label per exposed port, in the order chosen by its original `out` entry.
@@ -164,6 +178,9 @@ provide `rectify({frequencyHz,inputPowerDbm,outputNodes:[positive,negative]})`
 for weak single-CW detection with D() devices. It independently establishes
 RF-off bias, including passive zero-bias networks, and solves a second-order
 DC increment with the actual loads and shared bias network.
+For a power sweep, supply `inputPowerDbm: {start: -90, stop: -60, points: 7}`
+or a power array. The returned `.out('deltaVoltageuV')` provides an input-dBm
+and DC-microvolts table directly, without a user-written loop or conversion.
 See [weak-signal power detection](./rf-constructors.md#weak-signal-power-detection) for its matched-port convention,
 result fields, validation and limits. It does not add a nonlinear transient or
 harmonic-balance solver.
